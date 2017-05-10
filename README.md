@@ -1,11 +1,7 @@
 # Courier
 
-This is a private repo so need to configure git to use token authentication for HTTPS requests. 
-Create a github auth token and set it as an environment variable called `GITHUB_TOKEN`. Then run:
-
-```
-git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-```
+[![Build Status](https://travis-ci.org/nyaruka/courier.svg?branch=master)](https://travis-ci.org/nyaruka/courier)
+[![Coverage Status](https://coveralls.io/repos/github/nyaruka/courier/badge.svg?branch=master)](https://coveralls.io/github/nyaruka/courier?branch=master)
 
 Install Courier in your workspace with:
 
