@@ -60,12 +60,3 @@ func WriteReceiveSuccess(w http.ResponseWriter, msg Msg) error {
 func WriteStatusSuccess(w http.ResponseWriter, status MsgStatusUpdate) error {
 	return writeData(w, http.StatusOK, "Status Update Accepted", &statusData{status.Status()})
 }
-
-func stringArrayContains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}

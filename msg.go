@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/nyaruka/courier/utils"
 	uuid "github.com/satori/go.uuid"
 	"gopkg.in/h2non/filetype.v1"
 )

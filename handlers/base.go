@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -10,10 +9,10 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/gorilla/schema"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/utils"
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
@@ -56,28 +55,6 @@ var (
 func init() {
 	decoder.IgnoreUnknownKeys(true)
 	decoder.SetAliasTag("name")
-}
-
-func mapAsJSON(m map[string]string) []byte {
-	bytes, err := json.Marshal(m)
-	if err != nil {
-		panic(err)
-	}
-	return bytes
-}
-
-// JoinNonEmpty takes a vararg of strings and return the join of all the non-empty strings with a space between them
-func JoinNonEmpty(delim string, strings ...string) string {
-	var buf bytes.Buffer
-	for _, s := range strings {
-		if s != "" {
-			if buf.Len() > 0 {
-				buf.WriteString(delim)
-			}
-			buf.WriteString(s)
-		}
-	}
-	return buf.String()
 }
 
 func NameFromFirstLastUsername(first string, last string, username string) string {
@@ -174,7 +151,7 @@ func DecodePossibleBase64(original string) string {
 		return original
 	}
 
-	decoded := decodeUTF8(decodedBytes)
+	decoded := utils.DecodeUTF8(decodedBytes)
 	numASCIIChars := 0
 	for _, c := range decoded {
 		if c <= 127 {
@@ -187,23 +164,4 @@ func DecodePossibleBase64(original string) string {
 	}
 
 	return decoded
-}
-
-// decodeUTF8 is equivalent to .decode('utf-8', 'ignore') in Python
-func decodeUTF8(bytes []byte) string {
-	s := string(bytes)
-	if !utf8.ValidString(s) {
-		v := make([]rune, 0, len(s))
-		for i, r := range s {
-			if r == utf8.RuneError {
-				_, size := utf8.DecodeRuneInString(s[i:])
-				if size == 1 {
-					continue
-				}
-			}
-			v = append(v, r)
-		}
-		s = string(v)
-	}
-	return s
 }
