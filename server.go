@@ -19,6 +19,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier/config"
+	"github.com/nyaruka/courier/utils"
 )
 
 type Server interface {
@@ -227,7 +228,7 @@ func (s *server) initializeChannelHandlers() {
 	// initialize handlers which are included/not-excluded in the config
 	for _, handler := range registeredHandlers {
 		channelType := string(handler.ChannelType())
-		if (includes == nil || stringArrayContains(includes, channelType)) && (excludes == nil || !stringArrayContains(excludes, channelType)) {
+		if (includes == nil || utils.StringArrayContains(includes, channelType)) && (excludes == nil || !utils.StringArrayContains(excludes, channelType)) {
 			err := handler.Initialize(s)
 			if err != nil {
 				log.Fatal(err)

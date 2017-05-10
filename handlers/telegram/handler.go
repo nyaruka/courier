@@ -11,6 +11,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 )
 
 func init() {
@@ -81,7 +82,7 @@ func (h *telegramHandler) ReceiveMessage(channel courier.Channel, w http.Respons
 	} else if te.Message.Document != nil {
 		mediaURL, err = resolveFileID(channel, te.Message.Document.FileID)
 	} else if te.Message.Venue != nil {
-		text = handlers.JoinNonEmpty(", ", te.Message.Venue.Title, te.Message.Venue.Address)
+		text = utils.JoinNonEmpty(", ", te.Message.Venue.Title, te.Message.Venue.Address)
 		mediaURL = fmt.Sprintf("geo:%f,%f", te.Message.Location.Latitude, te.Message.Location.Longitude)
 	} else if te.Message.Location != nil {
 		text = fmt.Sprintf("%f,%f", te.Message.Location.Latitude, te.Message.Location.Longitude)
@@ -91,7 +92,7 @@ func (h *telegramHandler) ReceiveMessage(channel courier.Channel, w http.Respons
 		if te.Message.Contact.PhoneNumber != "" {
 			phone = fmt.Sprintf("(%s)", te.Message.Contact.PhoneNumber)
 		}
-		text = handlers.JoinNonEmpty(" ", te.Message.Contact.FirstName, te.Message.Contact.LastName, phone)
+		text = utils.JoinNonEmpty(" ", te.Message.Contact.FirstName, te.Message.Contact.LastName, phone)
 	}
 
 	// we had an error downloading media
@@ -132,7 +133,7 @@ func resolveFileID(channel courier.Channel, fileID string) (string, error) {
 		return "", err
 	}
 
-	_, body, err := courier.MakeHTTPRequest(req)
+	_, body, err := utils.MakeHTTPRequest(req)
 	if err != nil {
 		return "", err
 	}

@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/nyaruka/courier/utils"
 	uuid "github.com/satori/go.uuid"
 	"gopkg.in/h2non/filetype.v1"
 )
@@ -295,7 +296,7 @@ func downloadMediaToS3(s *server, msgUUID MsgUUID, mediaURL string) (string, err
 	if err != nil {
 		return "", err
 	}
-	resp, body, err := MakeHTTPRequest(req)
+	resp, body, err := utils.MakeHTTPRequest(req)
 	if err != nil {
 		return "", err
 	}
