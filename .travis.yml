@@ -1,15 +1,19 @@
-language: go 
-go: 
- - 1.8
+language: go
+go:
+- 1.8
 services:
- - redis-server
+- redis-server
 addons:
   postgresql: '9.3'
 before_script:
- - psql -U postgres -c "CREATE USER courier WITH PASSWORD 'courier';"
- - psql -U postgres -c "ALTER ROLE courier WITH SUPERUSER;"
- - psql -U postgres -c "CREATE DATABASE courier_test;"
- - psql -U postgres -d courier_test -f schema.sql
+- psql -U postgres -c "CREATE USER courier WITH PASSWORD 'courier';"
+- psql -U postgres -c "ALTER ROLE courier WITH SUPERUSER;"
+- psql -U postgres -c "CREATE DATABASE courier_test;"
+- psql -U postgres -d courier_test -f schema.sql
+- go get github.com/mattn/goveralls
 script:
- - go test $(go list ./... | grep -v /vendor/) -cover
- - go test $(go list ./... | grep -v /vendor/) -cover -bench=. -benchmem
+- go test -v -covermode=count -coverprofile=coverage.out 
+- $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+env:
+  global:
+    secure: Z9Jy4xfzNGSRNhI7IoO6OPlu5p+p7OBgkbo8CwFhSHL96w2w8sj/5q/r+ixlKSWHE/GELGFtIM+Y23x+DxZzbWVIqH5bYtJ0a2HvK+a48B2ps1kH+OAectjPLGMiYM29O6mKgToUAMBw0KPEHka+sQaAIlCHwTagA7OGzscQDsaJJ2MqBgKha/0AYPHfok+aNf551NpJVznGUDBYnPlFUES3G2l6Y04R2hov46b6br3Af/gAaq1GUh+tzM3v+6nwFdK5lh9kYn9fsgHSycFOSDmXkHShGOdDsFvV+cpcHmsZI7aG8+V8+mWd1WtJUQHs8M//6Z+nVrNk/4skyD715Ww+7MNb9S1YFNSFMu66Jo1xePUpWvg+mx/oLnFULMzD4P64waqrLawiukmgBROUcT7FTo6hN444HXsZwU/tYGIVV0g9082+yhrm0Xpa0Qwbj23+/lE4kOfha6b22n4IPDO/bCG9YomEfudDs43dljU1zGnLxpNK2uEJG6CHcU+CMWFgudY7cwigvekef7pK9qiCr4yli0vebTZbUMIvT34ieT9wzNe6EM0R9zxdtma/4+VH+G0fUTRQyArEpmN7HjEDnp36uZHyvZXyOYOCSxrXUX6ircdg4SmWTlG9mZxS2/9Rmi3eIoLMMaue1+cus+6Gb9qmVxBQWCtW55+gxzI=
