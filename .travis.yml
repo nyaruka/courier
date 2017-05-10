@@ -1,0 +1,15 @@
+language: go 
+go: 
+ - 1.8
+services:
+ - redis-server
+addons:
+  postgresql: '9.3'
+before_script:
+ - psql -U postgres -c "CREATE USER courier WITH PASSWORD 'courier';"
+ - psql -U postgres -c "ALTER ROLE courier WITH SUPERUSER;"
+ - psql -U postgres -c "CREATE DATABASE courier_test;"
+ - psql -U postgres -d courier_test -f schema.sql
+script:
+ - go test $(go list ./... | grep -v /vendor/) -cover
+ - go test $(go list ./... | grep -v /vendor/) -cover -bench=. -benchmem

@@ -1,0 +1,37 @@
+#-------------------------------------------------------------------------------------
+# Courier settings can be set in four different wants, in order of preference:
+#
+# 1) Courier defaults
+# 2) Config file options as defined below
+# 3) Env variable, which are prefixed with COURIER_, ex: export COURIER_PORT=8000
+# 4) Command line options, ex: courier -port 8000
+#
+#-------------------------------------------------------------------------------------
+
+# The externally accessible base URL of the server
+base_url = "https://localhost:8080"
+
+# What port courier will run on
+port = 8080
+
+# Our database connection string, right now only Postgres is supported
+db = "postgres://courier@localhost/courier?sslmode=disable"
+
+# Our redis connection string, path is our database
+redis = "redis://localhost:6379/0"
+
+# Our spool directory for storing messages when Redis is down, this must exist and be writeable
+spool_dir = "/var/spool/courier"
+
+# Our AWS access credentials
+aws_access_key_id = "missing_aws_access_key_id"
+aws_secret_access_key = "missing_aws_secret_access_key"
+
+# The region our AWS bucket is in
+s3_region = "us-east-2"
+
+# The S3 bucket we will write our media files to
+s3_media_bucket = "courier-test"
+
+# prefix to our filenames for media (files will be named after the msg uuid)
+s3_media_prefix = "media"
