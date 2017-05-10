@@ -11,6 +11,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 )
 
 func init() {
@@ -132,7 +133,7 @@ func resolveFileID(channel courier.Channel, fileID string) (string, error) {
 		return "", err
 	}
 
-	_, body, err := courier.MakeHTTPRequest(req)
+	_, body, err := utils.MakeHTTPRequest(req)
 	if err != nil {
 		return "", err
 	}

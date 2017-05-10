@@ -295,7 +295,7 @@ func downloadMediaToS3(s *server, msgUUID MsgUUID, mediaURL string) (string, err
 	if err != nil {
 		return "", err
 	}
-	resp, body, err := MakeHTTPRequest(req)
+	resp, body, err := utils.MakeHTTPRequest(req)
 	if err != nil {
 		return "", err
 	}

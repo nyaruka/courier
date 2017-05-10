@@ -1,4 +1,4 @@
-package courier
+package utils
 
 import (
 	"fmt"
