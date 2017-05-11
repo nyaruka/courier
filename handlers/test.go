@@ -37,14 +37,6 @@ type ChannelTestCase struct {
 	PrepRequest RequestPrepFunc
 }
 
-// GetMediaURLs returns the media urls that are expected for this test case
-func (c ChannelTestCase) GetMediaURLs() []string {
-	if c.MediaURL != nil {
-		return []string{*c.MediaURL}
-	}
-	return c.MediaURLs
-}
-
 // Sp is a utility method to get the pointer to the passed in string
 func Sp(str string) *string { return &str }
 
@@ -138,7 +130,7 @@ func RunChannelTestCases(t *testing.T, channels []*courier.Channel, handler cour
 				if testCase.External != nil {
 					require.Equal(*testCase.External, msg.ExternalID)
 				}
-				if testCase.MediaURL != nil || len(testCase.MediaURLs) > 0 {
+				if len(testCase.MediaURLs) > 0 {
 					require.Equal(testCase.MediaURLs, msg.MediaURLs)
 				}
 				if testCase.Date != nil {
