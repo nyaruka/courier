@@ -337,7 +337,6 @@ func RegisterHandler(handler ChannelHandler) {
 }
 
 var registeredHandlers = make(map[ChannelType]ChannelHandler)
-var handlers map[ChannelType]ChannelHandler
 var activeHandlers = make(map[ChannelType]ChannelHandler)
 
 var splash = `
