@@ -180,8 +180,8 @@ func startMsgSpoolFlusher(s *server) {
 	s.waitGroup.Add(1)
 	defer s.waitGroup.Done()
 
-	msgsDir := path.Join(s.config.Spool_Dir, "msgs")
-	statusesDir := path.Join(s.config.Spool_Dir, "statuses")
+	msgsDir := path.Join(s.config.SpoolDir, "msgs")
+	statusesDir := path.Join(s.config.SpoolDir, "statuses")
 
 	msgWalker := s.msgSpoolWalker(msgsDir)
 	statusWalker := s.statusSpoolWalker(statusesDir)
@@ -309,7 +309,7 @@ func downloadMediaToS3(s *server, msgUUID MsgUUID, mediaURL string) (string, err
 //-----------------------------------------------------------------------------
 
 func testSpoolDirs(s *server) (err error) {
-	msgsDir := path.Join(s.config.Spool_Dir, "msgs")
+	msgsDir := path.Join(s.config.SpoolDir, "msgs")
 	if _, err = os.Stat(msgsDir); os.IsNotExist(err) {
 		err = os.MkdirAll(msgsDir, 0770)
 	}
@@ -317,7 +317,7 @@ func testSpoolDirs(s *server) (err error) {
 		return err
 	}
 
-	statusesDir := path.Join(s.config.Spool_Dir, "statuses")
+	statusesDir := path.Join(s.config.SpoolDir, "statuses")
 	if _, err = os.Stat(statusesDir); os.IsNotExist(err) {
 		err = os.MkdirAll(statusesDir, 0770)
 	}
@@ -325,7 +325,7 @@ func testSpoolDirs(s *server) (err error) {
 }
 
 func writeToSpool(s *server, subdir string, contents []byte) error {
-	filename := path.Join(s.config.Spool_Dir, subdir, fmt.Sprintf("%d.json", time.Now().UnixNano()))
+	filename := path.Join(s.config.SpoolDir, subdir, fmt.Sprintf("%d.json", time.Now().UnixNano()))
 	return ioutil.WriteFile(filename, contents, 0640)
 }
 

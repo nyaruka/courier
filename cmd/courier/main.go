@@ -6,7 +6,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/koding/multiconfig"
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/config"
@@ -20,7 +19,7 @@ import (
 )
 
 func main() {
-	m := multiconfig.NewWithPath("courier.toml")
+	m := config.NewWithPath("courier.toml")
 	config := &config.Courier{}
 
 	err := m.Load(config)

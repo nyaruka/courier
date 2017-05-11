@@ -127,8 +127,8 @@ func (s *server) Start() error {
 
 	// create our s3 client
 	s3Session, err := session.NewSession(&aws.Config{
-		Credentials: credentials.NewStaticCredentials(s.config.AWS_Access_Key_ID, s.config.AWS_Secret_Access_Key, ""),
-		Region:      aws.String(s.config.S3_Region),
+		Credentials: credentials.NewStaticCredentials(s.config.AWSAccessKeyID, s.config.AWSSecretAccessKey, ""),
+		Region:      aws.String(s.config.S3Region),
 	})
 	if err != nil {
 		return err
@@ -254,8 +254,8 @@ type server struct {
 }
 
 func (s *server) initializeChannelHandlers() {
-	includes := s.config.Include_Channels
-	excludes := s.config.Exclude_Channels
+	includes := s.config.IncludeChannels
+	excludes := s.config.ExcludeChannels
 
 	// initialize handlers which are included/not-excluded in the config
 	for _, handler := range registeredHandlers {

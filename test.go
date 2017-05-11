@@ -36,7 +36,7 @@ type MockServer struct {
 
 // NewMockServer creates a new mock server
 func NewMockServer() *MockServer {
-	testConfig := config.Courier{Base_URL: "http://courier.test"}
+	testConfig := config.Courier{BaseURL: "http://courier.test"}
 	channels := make(map[ChannelUUID]*Channel)
 	router := mux.NewRouter()
 	chanRouter := router.PathPrefix("/c/").Subrouter()

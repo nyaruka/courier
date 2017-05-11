@@ -12,7 +12,7 @@ import (
 
 func testS3(s *server) error {
 	params := &s3.HeadBucketInput{
-		Bucket: aws.String(s.config.S3_Media_Bucket),
+		Bucket: aws.String(s.config.S3MediaBucket),
 	}
 	_, err := s.s3Client.HeadBucket(params)
 	if err != nil {
@@ -23,13 +23,13 @@ func testS3(s *server) error {
 }
 
 func putS3File(s *server, filename string, contentType string, contents []byte) (string, error) {
-	path := filepath.Join(s.config.S3_Media_Prefix, filename[:4], filename)
+	path := filepath.Join(s.config.S3MediaPrefix, filename[:4], filename)
 	if !strings.HasPrefix(path, "/") {
 		path = fmt.Sprintf("/%s", path)
 	}
 
 	params := &s3.PutObjectInput{
-		Bucket:      aws.String(s.config.S3_Media_Bucket),
+		Bucket:      aws.String(s.config.S3MediaBucket),
 		Body:        bytes.NewReader(contents),
 		Key:         aws.String(path),
 		ContentType: aws.String(contentType),
@@ -39,6 +39,6 @@ func putS3File(s *server, filename string, contentType string, contents []byte) 
 		return "", err
 	}
 
-	url := fmt.Sprintf("https://%s.s3.amazonaws.com%s", s.config.S3_Media_Bucket, path)
+	url := fmt.Sprintf("https://%s.s3.amazonaws.com%s", s.config.S3MediaBucket, path)
 	return url, nil
 }
