@@ -99,7 +99,7 @@ func testHandlerRequest(tb testing.TB, s *courier.MockServer, url string, data s
 	return body
 }
 
-func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
+func RunChannelTestCases(t *testing.T, channels []*courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
 	s := courier.NewMockServer()
 	for _, ch := range channels {
 		s.AddChannel(ch)
@@ -123,24 +123,24 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 				defer msg.Release()
 
 				if testCase.Name != nil {
-					require.Equal(*testCase.Name, msg.Name())
+					require.Equal(*testCase.Name, msg.ContactName)
 				}
 				if testCase.Text != nil {
-					require.Equal(*testCase.Text, msg.Text())
+					require.Equal(*testCase.Text, msg.Text)
 				}
 				if testCase.URN != nil {
-					require.Equal(*testCase.URN, string(msg.URN()))
+					require.Equal(*testCase.URN, string(msg.ContactURN))
 				}
 				if testCase.External != nil {
-					require.Equal(*testCase.External, msg.ExternalID())
+					require.Equal(*testCase.External, msg.ExternalID)
 				}
 				if testCase.MediaURL != nil || len(testCase.MediaURLs) > 0 {
-					require.Equal(testCase.GetMediaURLs(), msg.MediaURLs())
+					require.Equal(testCase.GetMediaURLs(), msg.MediaURLs)
 				}
 				if testCase.Date != nil {
-					require.Equal(*testCase.Date, msg.Date())
+					require.Equal(*testCase.Date, msg.SentOn)
 				}
-			} else if err != courier.ErrNoMsg {
+			} else if err != courier.ErrMsgNotFound {
 				t.Fatalf("unexpected msg inserted: %v", err)
 			}
 		})
@@ -161,7 +161,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 	})
 }
 
-func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
+func RunChannelBenchmarks(b *testing.B, channels []*courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
 	s := courier.NewMockServer()
 	for _, ch := range channels {
 		s.AddChannel(ch)

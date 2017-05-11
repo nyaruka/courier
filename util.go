@@ -53,10 +53,10 @@ func WriteIgnored(w http.ResponseWriter, message string) error {
 	return writeData(w, http.StatusOK, message, struct{}{})
 }
 
-func WriteReceiveSuccess(w http.ResponseWriter, msg Msg) error {
-	return writeData(w, http.StatusOK, "Message Accepted", &receiveData{msg.UUID()})
+func WriteReceiveSuccess(w http.ResponseWriter, msg *Msg) error {
+	return writeData(w, http.StatusOK, "Message Accepted", &receiveData{msg.UUID})
 }
 
-func WriteStatusSuccess(w http.ResponseWriter, status MsgStatusUpdate) error {
-	return writeData(w, http.StatusOK, "Status Update Accepted", &statusData{status.Status()})
+func WriteStatusSuccess(w http.ResponseWriter, status *MsgStatusUpdate) error {
+	return writeData(w, http.StatusOK, "Status Update Accepted", &statusData{status.Status})
 }

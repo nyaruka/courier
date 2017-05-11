@@ -1,6 +1,7 @@
 package courier
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -25,8 +26,8 @@ var testConfig = config.Courier{
 // MockServer is a mocked version of server which doesn't require a real database or cache
 type MockServer struct {
 	config       *config.Courier
-	channels     map[ChannelUUID]Channel
-	queueMsgs    []Msg
+	channels     map[ChannelUUID]*Channel
+	queueMsgs    []*Msg
 	errorOnQueue bool
 
 	router     *mux.Router
@@ -36,7 +37,7 @@ type MockServer struct {
 // NewMockServer creates a new mock server
 func NewMockServer() *MockServer {
 	testConfig := config.Courier{Base_URL: "http://courier.test"}
-	channels := make(map[ChannelUUID]Channel)
+	channels := make(map[ChannelUUID]*Channel)
 	router := mux.NewRouter()
 	chanRouter := router.PathPrefix("/c/").Subrouter()
 	ts := &MockServer{config: &testConfig, channels: channels, router: router, chanRouter: chanRouter}
@@ -45,9 +46,9 @@ func NewMockServer() *MockServer {
 
 func (ts *MockServer) Router() *mux.Router { return ts.router }
 
-func (ts *MockServer) GetLastQueueMsg() (Msg, error) {
+func (ts *MockServer) GetLastQueueMsg() (*Msg, error) {
 	if len(ts.queueMsgs) == 0 {
-		return nil, ErrNoMsg
+		return nil, ErrMsgNotFound
 	}
 	return ts.queueMsgs[len(ts.queueMsgs)-1], nil
 }
@@ -56,7 +57,7 @@ func (ts *MockServer) SetErrorOnQueue(shouldError bool) {
 	ts.errorOnQueue = shouldError
 }
 
-func (ts *MockServer) QueueMsg(m Msg) error {
+func (ts *MockServer) QueueMsg(m *Msg) error {
 	if ts.errorOnQueue {
 		return errors.New("unable to queue message")
 	}
@@ -65,7 +66,7 @@ func (ts *MockServer) QueueMsg(m Msg) error {
 	return nil
 }
 
-func (ts *MockServer) UpdateMsgStatus(status MsgStatusUpdate) error {
+func (ts *MockServer) UpdateMsgStatus(status *MsgStatusUpdate) error {
 	return nil
 }
 
@@ -77,7 +78,7 @@ func (ts *MockServer) GetConfig() *config.Courier {
 	return ts.config
 }
 
-func (ts *MockServer) GetChannel(cType ChannelType, uuid string) (Channel, error) {
+func (ts *MockServer) GetChannel(cType ChannelType, uuid string) (*Channel, error) {
 	cUUID, err := NewChannelUUID(uuid)
 	if err != nil {
 		return nil, err
@@ -90,8 +91,8 @@ func (ts *MockServer) GetChannel(cType ChannelType, uuid string) (Channel, error
 }
 
 // AddChannel adds a test channel to the test server
-func (ts *MockServer) AddChannel(channel Channel) {
-	ts.channels[channel.UUID()] = channel
+func (ts *MockServer) AddChannel(channel *Channel) {
+	ts.channels[channel.UUID] = channel
 }
 
 func (ts *MockServer) ClearChannels() {
@@ -132,27 +133,25 @@ func (ts *MockServer) AddChannelRoute(handler ChannelHandler, method string, act
 // Mock channel implementation
 //-----------------------------------------------------------------------------
 
-type mockChannel struct {
-	uuid        ChannelUUID
-	channelType ChannelType
-	address     string
-	country     string
-	config      map[string]string
-}
-
-func (c *mockChannel) UUID() ChannelUUID        { return c.uuid }
-func (c *mockChannel) ChannelType() ChannelType { return c.channelType }
-func (c *mockChannel) Address() string          { return c.address }
-func (c *mockChannel) Country() string          { return c.country }
-func (c *mockChannel) GetConfig(key string) string {
-	if c.config == nil {
-		return ""
-	}
-	return c.config[key]
-}
-
-func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]string) Channel {
+func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]string) *Channel {
 	cUUID, _ := NewChannelUUID(uuid)
-	channel := &mockChannel{cUUID, ChannelType(channelType), address, country, config}
+
+	configJSON := ""
+	if config != nil {
+		configBytes, err := json.Marshal(config)
+		if err != nil {
+			panic(err)
+		}
+		configJSON = string(configBytes)
+	}
+
+	channel := &Channel{
+		UUID:        cUUID,
+		ChannelType: ChannelType(channelType),
+		Address:     address,
+		Country:     country,
+		Config:      configJSON,
+	}
+	channel.parseConfig()
 	return channel
 }

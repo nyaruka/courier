@@ -1,4 +1,5 @@
 create table channels_channel (
+	org_id serial not null,
 	id serial not null constraint channels_channel_pkey primary key,
 	uuid varchar(36) not null constraint channels_channel_uuid_key unique,
 	channel_type varchar(3) not null,

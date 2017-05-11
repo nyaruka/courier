@@ -1,8 +1,5 @@
 # Courier
 
-[![Build Status](https://travis-ci.org/nyaruka/courier.svg?branch=master)](https://travis-ci.org/nyaruka/courier)
-[![Coverage Status](https://coveralls.io/repos/github/nyaruka/courier/badge.svg?branch=master)](https://coveralls.io/github/nyaruka/courier?branch=master)
-
 Install Courier in your workspace with:
 
 ```

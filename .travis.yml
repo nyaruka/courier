@@ -1,5 +1,5 @@
-language: go
-go:
+language: go 
+go: 
 - 1.8
 services:
 - redis-server

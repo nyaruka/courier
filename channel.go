@@ -13,17 +13,30 @@ import (
 )
 
 const (
+	// ConfigAuthToken is our constant key used in channel configs for auth tokens
 	ConfigAuthToken = "auth_token"
 )
 
+// ChannelID is our SQL type for a channel's id
+type ChannelID struct {
+	sql.NullInt64
+}
+
+// NilChannelID is our nil value for ChannelIDs
+var NilChannelID = ChannelID{sql.NullInt64{Int64: 0, Valid: false}}
+
+// ChannelType is our typing of the two char channel types
 type ChannelType string
 
+// ChannelUUID is our typing of a channel's UUID
 type ChannelUUID struct {
 	uuid.UUID
 }
 
+// NilChannelUUID is our nil value for channel UUIDs
 var NilChannelUUID = ChannelUUID{uuid.Nil}
 
+// NewChannelUUID creates a new ChannelUUID for the passed in string
 func NewChannelUUID(u string) (ChannelUUID, error) {
 	channelUUID, err := uuid.FromString(strings.ToLower(u))
 	if err != nil {
@@ -32,13 +45,14 @@ func NewChannelUUID(u string) (ChannelUUID, error) {
 	return ChannelUUID{channelUUID}, nil
 }
 
-type Channel interface {
-	UUID() ChannelUUID
-	ChannelType() ChannelType
-	Address() string
-	Country() string
-	GetConfig(string) string
-}
+// ErrChannelExpired is returned when our cached channel has outlived it's TTL
+var ErrChannelExpired = errors.New("channel expired")
+
+// ErrChannelNotFound is returned when we fail to find a channel in the db
+var ErrChannelNotFound = errors.New("channel not found")
+
+// ErrChannelWrongType is returned when we find a channel with the set UUID but with a different type
+var ErrChannelWrongType = errors.New("channel type wrong")
 
 // ChannelFromUUID will look up the channel with the passed in UUID and channel type.
 // It will return an error if the channel does not exist or is not active.
@@ -50,7 +64,7 @@ type Channel interface {
 //     it locally if found
 //  3) Postgres Lookup, we will lookup the value in our database, caching the result
 //     both locally and in Redis
-func ChannelFromUUID(s *server, channelType ChannelType, uuidStr string) (Channel, error) {
+func ChannelFromUUID(s *server, channelType ChannelType, uuidStr string) (*Channel, error) {
 	channelUUID, err := NewChannelUUID(uuidStr)
 	if err != nil {
 		return nil, err
@@ -88,12 +102,13 @@ func ChannelFromUUID(s *server, channelType ChannelType, uuidStr string) (Channe
 	return channel, nil
 }
 
-const lookupChannelFromUUIDSQL = `SELECT uuid, channel_type, address, country, config 
+const lookupChannelFromUUIDSQL = `
+SELECT org_id, id, uuid, channel_type, address, country, config 
 FROM channels_channel 
 WHERE channel_type = $1 AND uuid = $2 AND is_active = true`
 
 // ChannelForUUID attempts to look up the channel with the passed in UUID, returning it
-func loadChannelFromDB(s *server, channel *channel, channelType ChannelType, uuid ChannelUUID) error {
+func loadChannelFromDB(s *server, channel *Channel, channelType ChannelType, uuid ChannelUUID) error {
 	// select just the fields we need
 	err := s.db.Get(channel, lookupChannelFromUUIDSQL, channelType, uuid)
 
@@ -115,14 +130,10 @@ func loadChannelFromDB(s *server, channel *channel, channelType ChannelType, uui
 }
 
 var cacheMutex sync.RWMutex
-var channelCache = make(map[ChannelUUID]*channel)
-
-var ErrChannelExpired = errors.New("channel expired")
-var ErrChannelNotFound = errors.New("channel not found")
-var ErrChannelWrongType = errors.New("channel type wrong")
+var channelCache = make(map[ChannelUUID]*Channel)
 
 // getLocalChannel returns a Channel object for the passed in type and UUID.
-func getLocalChannel(channelType ChannelType, uuid ChannelUUID) (*channel, error) {
+func getLocalChannel(channelType ChannelType, uuid ChannelUUID) (*Channel, error) {
 	// first see if the channel exists in our local cache
 	cacheMutex.RLock()
 	channel, found := channelCache[uuid]
@@ -130,7 +141,7 @@ func getLocalChannel(channelType ChannelType, uuid ChannelUUID) (*channel, error
 
 	if found {
 		// if it was found but the type is wrong, that's an error
-		if channel.ChannelType() != channelType {
+		if channel.ChannelType != channelType {
 			return newChannel(channelType, uuid), ErrChannelWrongType
 		}
 
@@ -145,13 +156,13 @@ func getLocalChannel(channelType ChannelType, uuid ChannelUUID) (*channel, error
 	return newChannel(channelType, uuid), ErrChannelNotFound
 }
 
-func cacheLocalChannel(channel *channel) {
+func cacheLocalChannel(channel *Channel) {
 	// set our expiration
 	channel.expiration = time.Now().Add(localTTL * time.Second)
 
 	// first write to our local cache
 	cacheMutex.Lock()
-	channelCache[channel.UUID()] = channel
+	channelCache[channel.UUID] = channel
 	cacheMutex.Unlock()
 }
 
@@ -168,35 +179,36 @@ const localTTL = 60
 // Channel implementation
 //-----------------------------------------------------------------------------
 
-type channel struct {
-	UUID_        ChannelUUID `db:"uuid"         json:"uuid"`
-	ChannelType_ ChannelType `db:"channel_type" json:"channel_type"`
-	Address_     string      `db:"address"      json:"address"`
-	Country_     string      `db:"country"      json:"country"`
-	Config_      string      `db:"config"       json:"config"`
+// Channel is our struct for json and db representations of our channel
+type Channel struct {
+	OrgID       OrgID       `json:"org_id"        db:"org_id"`
+	ID          ChannelID   `json:"id"            db:"id"`
+	UUID        ChannelUUID `json:"uuid"          db:"uuid"`
+	ChannelType ChannelType `json:"channel_type"  db:"channel_type"`
+	Address     string      `json:"address"       db:"address"`
+	Country     string      `json:"country"       db:"country"`
+	Config      string      `json:"config"        db:"config"`
 
 	expiration time.Time
 	config     map[string]string
 }
 
-func (c *channel) UUID() ChannelUUID           { return c.UUID_ }
-func (c *channel) ChannelType() ChannelType    { return c.ChannelType_ }
-func (c *channel) Address() string             { return c.Address_ }
-func (c *channel) Country() string             { return c.Country_ }
-func (c *channel) GetConfig(key string) string { return c.config[key] }
+// GetConfig returns the value of the passed in config key
+func (c *Channel) GetConfig(key string) string { return c.config[key] }
 
-func (c *channel) parseConfig() {
+func (c *Channel) parseConfig() {
 	c.config = make(map[string]string)
 
-	if c.Config_ != "" {
-		err := json.Unmarshal([]byte(c.Config_), &c.config)
+	if c.Config != "" {
+		err := json.Unmarshal([]byte(c.Config), &c.config)
 		if err != nil {
-			log.Printf("ERROR parsing channel config '%s': %s", c.Config_, err)
+			log.Printf("ERROR parsing channel config '%s': %s", c.Config, err)
 		}
 	}
 }
 
-func newChannel(channelType ChannelType, uuid ChannelUUID) *channel {
+// Constructor to create a new empty channel
+func newChannel(channelType ChannelType, uuid ChannelUUID) *Channel {
 	config := make(map[string]string)
-	return &channel{ChannelType_: channelType, UUID_: uuid, config: config}
+	return &Channel{ChannelType: channelType, UUID: uuid, config: config}
 }
