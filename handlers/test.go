@@ -9,13 +9,15 @@ import (
 
 	"fmt"
 
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
 	"github.com/stretchr/testify/require"
 )
 
+// RequestPrepFunc is our type for a hook for tests to use before a request is fired in a test
 type RequestPrepFunc func(*http.Request)
 
+// ChannelTestCase defines the test values for a particular test case
 type ChannelTestCase struct {
 	Label string
 
@@ -35,17 +37,10 @@ type ChannelTestCase struct {
 	PrepRequest RequestPrepFunc
 }
 
-func (c ChannelTestCase) GetMediaURLs() []string {
-	if c.MediaURL != nil {
-		return []string{*c.MediaURL}
-	}
-	return c.MediaURLs
-}
-
-// utility method to get the pointer to the passed in string
+// Sp is a utility method to get the pointer to the passed in string
 func Sp(str string) *string { return &str }
 
-// utility method to get the pointer to the pased in time
+// Tp is utility method to get the pointer to the passed in time
 func Tp(tm time.Time) *time.Time { return &tm }
 
 // utility method to make sure the passed in host is up, prevents races with our test server
@@ -99,7 +94,8 @@ func testHandlerRequest(tb testing.TB, s *courier.MockServer, url string, data s
 	return body
 }
 
-func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
+// RunChannelTestCases runs all the passed in tests cases for the passed in channel configurations
+func RunChannelTestCases(t *testing.T, channels []*courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
 	s := courier.NewMockServer()
 	for _, ch := range channels {
 		s.AddChannel(ch)
@@ -123,24 +119,24 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 				defer msg.Release()
 
 				if testCase.Name != nil {
-					require.Equal(*testCase.Name, msg.Name())
+					require.Equal(*testCase.Name, msg.ContactName)
 				}
 				if testCase.Text != nil {
-					require.Equal(*testCase.Text, msg.Text())
+					require.Equal(*testCase.Text, msg.Text)
 				}
 				if testCase.URN != nil {
-					require.Equal(*testCase.URN, string(msg.URN()))
+					require.Equal(*testCase.URN, string(msg.ContactURN))
 				}
 				if testCase.External != nil {
-					require.Equal(*testCase.External, msg.ExternalID())
+					require.Equal(*testCase.External, msg.ExternalID)
 				}
-				if testCase.MediaURL != nil || len(testCase.MediaURLs) > 0 {
-					require.Equal(testCase.GetMediaURLs(), msg.MediaURLs())
+				if len(testCase.MediaURLs) > 0 {
+					require.Equal(testCase.MediaURLs, msg.MediaURLs)
 				}
 				if testCase.Date != nil {
-					require.Equal(*testCase.Date, msg.Date())
+					require.Equal(*testCase.Date, msg.SentOn)
 				}
-			} else if err != courier.ErrNoMsg {
+			} else if err != courier.ErrMsgNotFound {
 				t.Fatalf("unexpected msg inserted: %v", err)
 			}
 		})
@@ -161,7 +157,8 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 	})
 }
 
-func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
+// RunChannelBenchmarks runs all the passed in test cases for the passed in channels
+func RunChannelBenchmarks(b *testing.B, channels []*courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
 	s := courier.NewMockServer()
 	for _, ch := range channels {
 		s.AddChannel(ch)

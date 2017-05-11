@@ -32,7 +32,8 @@ type twHandler struct {
 	handlers.BaseHandler
 }
 
-func NewHandler() *twHandler {
+// NewHandler returns a new TwilioHandler ready to be registered
+func NewHandler() courier.ChannelHandler {
 	return &twHandler{handlers.NewBaseHandler(courier.ChannelType("TW"), "Twilio")}
 }
 
@@ -78,7 +79,7 @@ var twStatusMapping = map[string]courier.MsgStatus{
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *twHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *twHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return err
@@ -119,7 +120,7 @@ func (h *twHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWrite
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *twHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *twHandler) StatusMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return err
@@ -157,7 +158,7 @@ func (h *twHandler) writeReceiveSuccess(w http.ResponseWriter) error {
 }
 
 // see https://www.twilio.com/docs/api/security
-func (h *twHandler) validateSignature(channel courier.Channel, r *http.Request) error {
+func (h *twHandler) validateSignature(channel *courier.Channel, r *http.Request) error {
 	if err := r.ParseForm(); err != nil {
 		return err
 	}

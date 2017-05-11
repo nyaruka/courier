@@ -17,7 +17,8 @@ type kannelHandler struct {
 	handlers.BaseHandler
 }
 
-func NewHandler() *kannelHandler {
+// NewHandler returns a new KannelHandler
+func NewHandler() courier.ChannelHandler {
 	return &kannelHandler{handlers.NewBaseHandler(courier.ChannelType("KN"), "Kannel")}
 }
 
@@ -34,7 +35,7 @@ func (h *kannelHandler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *kannelHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *kannelHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	// get our params
 	kannelMsg := &kannelMessage{}
 	err := handlers.DecodeAndValidateQueryParams(kannelMsg, r)
@@ -46,10 +47,10 @@ func (h *kannelHandler) ReceiveMessage(channel courier.Channel, w http.ResponseW
 	date := time.Unix(kannelMsg.Timestamp, 0).UTC()
 
 	// create our URN
-	urn := courier.NewTelURN(kannelMsg.Sender, channel.Country())
+	urn := courier.NewTelURN(kannelMsg.Sender, channel.Country)
 
 	// build our msg
-	msg := courier.NewMsg(channel, urn, kannelMsg.Message).WithExternalID(fmt.Sprintf("%d", kannelMsg.ID)).WithDate(date)
+	msg := courier.NewMsg(channel, urn, kannelMsg.Message).WithExternalID(fmt.Sprintf("%d", kannelMsg.ID)).WithReceivedOn(date)
 	defer msg.Release()
 
 	// and finally queue our message
@@ -77,7 +78,7 @@ var kannelStatusMapping = map[int]courier.MsgStatus{
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *kannelHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *kannelHandler) StatusMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	// get our params
 	kannelStatus := &kannelStatus{}
 	err := handlers.DecodeAndValidateQueryParams(kannelStatus, r)

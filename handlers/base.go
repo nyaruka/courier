@@ -19,20 +19,24 @@ import (
 var base64Regex, _ = regexp.Compile("^([a-zA-Z0-9+/=]{4})+$")
 var base64Encoding = base64.StdEncoding.Strict()
 
+// BaseHandler is the base class for most handlers, it just stored the server, name and channel type for the handler
 type BaseHandler struct {
 	channelType courier.ChannelType
 	name        string
 	server      courier.Server
 }
 
+// NewBaseHandler returns a newly constructed BaseHandler with the passed in parameters
 func NewBaseHandler(channelType courier.ChannelType, name string) BaseHandler {
 	return BaseHandler{channelType: channelType, name: name}
 }
 
+// SetServer can be used to change the server on a BaseHandler
 func (h *BaseHandler) SetServer(server courier.Server) {
 	h.server = server
 }
 
+// Server returns the server instance on the BaseHandler
 func (h *BaseHandler) Server() courier.Server {
 	return h.server
 }
@@ -57,6 +61,8 @@ func init() {
 	decoder.SetAliasTag("name")
 }
 
+// NameFromFirstLastUsername is a utility function to build a contact's name from the passed
+// in values, all of which can be empty
 func NameFromFirstLastUsername(first string, last string, username string) string {
 	if first != "" && last != "" {
 		return fmt.Sprintf("%s %s", first, last)
@@ -70,19 +76,21 @@ func NameFromFirstLastUsername(first string, last string, username string) strin
 	return ""
 }
 
-func DecodeAndValidateForm(data interface{}, r *http.Request) error {
+// DecodeAndValidateForm takes the passed in form and attempts to parse and validate it from the
+// POST parameters of the passed in request
+func DecodeAndValidateForm(form interface{}, r *http.Request) error {
 	err := r.ParseForm()
 	if err != nil {
 		return err
 	}
 
-	err = decoder.Decode(data, r.Form)
+	err = decoder.Decode(form, r.Form)
 	if err != nil {
 		return err
 	}
 
 	// check our input is valid
-	err = validate.Struct(data)
+	err = validate.Struct(form)
 	if err != nil {
 		return err
 	}
@@ -90,14 +98,16 @@ func DecodeAndValidateForm(data interface{}, r *http.Request) error {
 	return nil
 }
 
-func DecodeAndValidateQueryParams(data interface{}, r *http.Request) error {
-	err := decoder.Decode(data, r.URL.Query())
+// DecodeAndValidateQueryParams takes the passed in form and attempts to parse and validate it from the
+// GET parameters of the passed in request
+func DecodeAndValidateQueryParams(form interface{}, r *http.Request) error {
+	err := decoder.Decode(form, r.URL.Query())
 	if err != nil {
 		return err
 	}
 
 	// check our input is valid
-	err = validate.Struct(data)
+	err = validate.Struct(form)
 	if err != nil {
 		return err
 	}
@@ -105,6 +115,8 @@ func DecodeAndValidateQueryParams(data interface{}, r *http.Request) error {
 	return nil
 }
 
+// DecodeAndValidateJSON takes the passed in envelope and tries to unmarshal it from the body
+// of the passed in request, then validating it
 func DecodeAndValidateJSON(envelope interface{}, r *http.Request) error {
 	// read our body
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))

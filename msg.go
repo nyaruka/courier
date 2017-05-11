@@ -22,6 +22,17 @@ import (
 	"gopkg.in/h2non/filetype.v1"
 )
 
+// ErrMsgNotFound is returned when trying to queue the status for a Msg that doesn't exit
+var ErrMsgNotFound = errors.New("message not found")
+
+// MsgID is our typing of the db int type
+type MsgID struct {
+	sql.NullInt64
+}
+
+// NilMsgID is our nil value for MsgID
+var NilMsgID = MsgID{sql.NullInt64{Int64: 0, Valid: false}}
+
 // MsgStatus is the status of a message
 type MsgStatus string
 
@@ -42,57 +53,28 @@ type MsgUUID struct {
 // NilMsgUUID is a "zero value" message UUID
 var NilMsgUUID = MsgUUID{uuid.Nil}
 
-// Msg is a message which has been received by a handler
-type Msg interface {
-	UUID() MsgUUID
-	Channel() ChannelUUID
-	URN() URN
-	Name() string
-	Text() string
-	ExternalID() string
-	Date() time.Time
-	MediaURLs() []string
-
-	WithName(string) Msg
-	WithExternalID(string) Msg
-	WithDate(time.Time) Msg
-
-	AddMediaURL(string)
-
-	Release()
-}
-
-// MsgStatusUpdate is a queued item describing a status update of a message in the database
-type MsgStatusUpdate interface {
-	Channel() ChannelUUID
-	ID() string
-	ExternalID() string
-	Status() MsgStatus
-	Release()
-}
-
 // NewMsgUUID creates a new unique message UUID
 func NewMsgUUID() MsgUUID {
 	return MsgUUID{uuid.NewV4()}
 }
 
 // NewMsg creates a new message from the given params
-func NewMsg(channel Channel, urn URN, text string) Msg {
-	m := msgPool.Get().(*msg)
+func NewMsg(channel *Channel, urn URN, text string) *Msg {
+	m := msgPool.Get().(*Msg)
 	m.clear()
 
-	m.UUID_ = NewMsgUUID()
-	m.Channel_ = channel.UUID()
-	m.URN_ = urn
-	m.Text_ = text
-	m.Date_ = time.Now()
+	m.UUID = NewMsgUUID()
+	m.ChannelUUID = channel.UUID
+	m.ContactURN = urn
+	m.Text = text
+	m.SentOn = time.Now()
 
 	return m
 }
 
 // NewMsgFromJSON creates a new message from the given JSON
-func NewMsgFromJSON(msgJSON string) (Msg, error) {
-	m := msgPool.Get().(*msg)
+func NewMsgFromJSON(msgJSON string) (*Msg, error) {
+	m := msgPool.Get().(*Msg)
 	m.clear()
 
 	err := json.Unmarshal([]byte(msgJSON), m)
@@ -105,8 +87,8 @@ func NewMsgFromJSON(msgJSON string) (Msg, error) {
 }
 
 // NewStatusUpdateForJSON creates a new status update from the given JSON
-func NewStatusUpdateForJSON(statusJSON string) (MsgStatusUpdate, error) {
-	s := statusPool.Get().(*msgStatusUpdate)
+func NewStatusUpdateForJSON(statusJSON string) (*MsgStatusUpdate, error) {
+	s := statusPool.Get().(*MsgStatusUpdate)
 	s.clear()
 
 	err := json.Unmarshal([]byte(statusJSON), s)
@@ -119,40 +101,37 @@ func NewStatusUpdateForJSON(statusJSON string) (MsgStatusUpdate, error) {
 }
 
 // NewStatusUpdateForID creates a new status update for a message identified by its primary key
-func NewStatusUpdateForID(channel Channel, id string, status MsgStatus) MsgStatusUpdate {
-	s := statusPool.Get().(*msgStatusUpdate)
-	s.Channel_ = channel.UUID()
-	s.ID_ = id
-	s.ExternalID_ = ""
-	s.Status_ = status
-	s.ModifiedOn_ = time.Now()
+func NewStatusUpdateForID(channel *Channel, id string, status MsgStatus) *MsgStatusUpdate {
+	s := statusPool.Get().(*MsgStatusUpdate)
+	s.ChannelUUID = channel.UUID
+	s.ID = id
+	s.ExternalID = ""
+	s.Status = status
+	s.ModifiedOn = time.Now()
 	return s
 }
 
 // NewStatusUpdateForExternalID creates a new status update for a message identified by its external ID
-func NewStatusUpdateForExternalID(channel Channel, externalID string, status MsgStatus) MsgStatusUpdate {
-	s := statusPool.Get().(*msgStatusUpdate)
-	s.Channel_ = channel.UUID()
-	s.ID_ = ""
-	s.ExternalID_ = externalID
-	s.Status_ = status
-	s.ModifiedOn_ = time.Now()
+func NewStatusUpdateForExternalID(channel *Channel, externalID string, status MsgStatus) *MsgStatusUpdate {
+	s := statusPool.Get().(*MsgStatusUpdate)
+	s.ChannelUUID = channel.UUID
+	s.ID = ""
+	s.ExternalID = externalID
+	s.Status = status
+	s.ModifiedOn = time.Now()
 	return s
 }
 
-var ErrNoMsg = errors.New("no message")
-var ErrMsgNotFound = errors.New("message not found")
-
 // queueMsg creates a message given the passed in arguments, returning the uuid of the created message
-func queueMsg(s *server, m Msg) error {
+func queueMsg(s *server, m *Msg) error {
 	// if we have media, go download it to S3
-	for i, mediaURL := range m.MediaURLs() {
+	for i, mediaURL := range m.MediaURLs {
 		if strings.HasPrefix(mediaURL, "http") {
-			url, err := downloadMediaToS3(s, m.UUID(), mediaURL)
+			url, err := downloadMediaToS3(s, m.UUID, mediaURL)
 			if err != nil {
 				return err
 			}
-			m.(*msg).MediaURLs_[i] = url
+			m.MediaURLs[i] = url
 		}
 	}
 
@@ -174,7 +153,7 @@ func queueMsg(s *server, m Msg) error {
 }
 
 // queueMsgStatus writes the passed in status to the database, queueing it to our spool in case the database is down
-func queueMsgStatus(s *server, status MsgStatusUpdate) error {
+func queueMsgStatus(s *server, status *MsgStatusUpdate) error {
 	// first check if this msg exists
 	err := checkMsgExists(s, status)
 	if err == ErrMsgNotFound {
@@ -227,15 +206,15 @@ func startMsgSpoolFlusher(s *server) {
 
 }
 
-func writeMsgToRedis(s *server, m Msg, msgJSON []byte) error {
+func writeMsgToRedis(s *server, m *Msg, msgJSON []byte) error {
 	// write it to redis
 	r := s.redisPool.Get()
 	defer r.Close()
 
 	// we push to two different queues, one that is URN specific and the other that is our global queue (and to this only the URN)
 	r.Send("MULTI")
-	r.Send("RPUSH", fmt.Sprintf("c:u:%s", m.URN()), msgJSON)
-	r.Send("RPUSH", "c:msgs", m.URN())
+	r.Send("RPUSH", fmt.Sprintf("c:u:%s", m.ContactURN), msgJSON)
+	r.Send("RPUSH", "c:msgs", m.ContactURN)
 	_, err := r.Do("EXEC")
 	if err != nil {
 		return err
@@ -250,13 +229,13 @@ SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_i
 const selectMsgIDForExternalID = `
 SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (m."external_id" = $1 AND c."uuid" = $2)`
 
-func checkMsgExists(s *server, status MsgStatusUpdate) (err error) {
+func checkMsgExists(s *server, status *MsgStatusUpdate) (err error) {
 	var id int64
 
-	if status.ID() != "" {
-		err = s.db.QueryRow(selectMsgIDForID, status.ID(), status.Channel()).Scan(&id)
-	} else if status.ExternalID() != "" {
-		err = s.db.QueryRow(selectMsgIDForExternalID, status.ExternalID(), status.Channel()).Scan(&id)
+	if status.ID != "" {
+		err = s.db.QueryRow(selectMsgIDForID, status.ID, status.ChannelUUID).Scan(&id)
+	} else if status.ExternalID != "" {
+		err = s.db.QueryRow(selectMsgIDForExternalID, status.ExternalID, status.ChannelUUID).Scan(&id)
 	} else {
 		return fmt.Errorf("no id or external id for status update")
 	}
@@ -267,7 +246,7 @@ func checkMsgExists(s *server, status MsgStatusUpdate) (err error) {
 	return err
 }
 
-func writeMsgStatusToRedis(s *server, status MsgStatusUpdate, statusJSON []byte) (err error) {
+func writeMsgStatusToRedis(s *server, status *MsgStatusUpdate, statusJSON []byte) (err error) {
 	// write it to redis
 	r := s.redisPool.Get()
 	defer r.Close()
@@ -424,73 +403,108 @@ func (s *server) statusSpoolWalker(dir string) filepath.WalkFunc {
 	})
 }
 
-var msgPool = sync.Pool{New: func() interface{} { return &msg{} }}
-var statusPool = sync.Pool{New: func() interface{} { return &msgStatusUpdate{} }}
+var msgPool = sync.Pool{New: func() interface{} { return &Msg{} }}
+var statusPool = sync.Pool{New: func() interface{} { return &MsgStatusUpdate{} }}
 
 //-----------------------------------------------------------------------------
 // Msg implementation
 //-----------------------------------------------------------------------------
 
-type msg struct {
-	UUID_       MsgUUID     `json:"uuid"`
-	Channel_    ChannelUUID `json:"channel"`
-	URN_        URN         `json:"urn"`
-	Name_       string      `json:"name"`
-	Text_       string      `json:"text"`
-	ExternalID_ string      `json:"external_id"`
-	Date_       time.Time   `json:"date"`
-	MediaURLs_  []string    `json:"media_urls"`
+// Msg is our base struct to represent msgs both in our JSON and db representations
+type Msg struct {
+	OrgID      OrgID    `json:"org_id"       db:"org_id"`
+	ID         MsgID    `json:"id"           db:"id"`
+	UUID       MsgUUID  `json:"uuid"`
+	Direction  string   `json:"direction"    db:"direction"`
+	Text       string   `json:"text"         db:"text"`
+	Priority   int      `json:"priority"     db:"priority"`
+	Visibility string   `json:"visibility"   db:"visibility"`
+	MediaURLs  []string `json:"media_urls"`
+	ExternalID string   `json:"external_id"  db:"external_id"`
+
+	ChannelID    ChannelID    `json:"channel_id"      db:"channel_id"`
+	ContactID    ContactID    `json:"contact_id"      db:"contact_id"`
+	ContactURNID ContactURNID `json:"contact_urn_id"  db:"contact_urn_id"`
+
+	MessageCount int `json:"msg_count"    db:"msg_count"`
+	ErrorCount   int `json:"error_count"  db:"error_count"`
+
+	ChannelUUID ChannelUUID `json:"channel_uuid"`
+	ContactURN  URN         `json:"urn"`
+	ContactName string      `json:"contact_name"`
+
+	NextAttempt time.Time `json:"next_attempt"  db:"next_attempt"`
+	CreatedOn   time.Time `json:"created_on"    db:"created_on"`
+	ModifiedOn  time.Time `json:"modified_on"   db:"modified_on"`
+	QueuedOn    time.Time `json:"queued_on"     db:"queued_on"`
+	SentOn      time.Time `json:"sent_on"       db:"sent_on"`
 }
 
-func (m *msg) UUID() MsgUUID        { return m.UUID_ }
-func (m *msg) Channel() ChannelUUID { return m.Channel_ }
-func (m *msg) URN() URN             { return m.URN_ }
-func (m *msg) Name() string         { return m.Name_ }
-func (m *msg) Text() string         { return m.Text_ }
-func (m *msg) ExternalID() string   { return m.ExternalID_ }
-func (m *msg) Date() time.Time      { return m.Date_ }
-func (m *msg) MediaURLs() []string  { return m.MediaURLs_ }
-func (m *msg) Release()             { msgPool.Put(m) }
+// Release releases this msg and assigns it back to our pool for reuse
+func (m *Msg) Release() { msgPool.Put(m) }
 
-func (m *msg) WithName(name string) Msg     { m.Name_ = name; return m }
-func (m *msg) WithDate(date time.Time) Msg  { m.Date_ = date; return m }
-func (m *msg) WithExternalID(id string) Msg { m.ExternalID_ = id; return m }
+// WithContactName can be used to set the contact name on a msg
+func (m *Msg) WithContactName(name string) *Msg { m.ContactName = name; return m }
 
-func (m *msg) AddMediaURL(url string) { m.MediaURLs_ = append(m.MediaURLs_, url) }
+// WithReceivedOn can be used to set sent_on on a msg in a chained call
+func (m *Msg) WithReceivedOn(date time.Time) *Msg { m.SentOn = date; return m }
 
-func (m *msg) clear() {
-	m.UUID_ = NilMsgUUID
-	m.Channel_ = NilChannelUUID
-	m.URN_ = NilURN
-	m.Name_ = ""
-	m.Text_ = ""
-	m.ExternalID_ = ""
-	m.Date_ = time.Time{}
-	m.MediaURLs_ = nil
+// WithExternalID can be used to set the external id on a msg in a chained call
+func (m *Msg) WithExternalID(id string) *Msg { m.ExternalID = id; return m }
+
+// AddMediaURL can be used to append to the media urls for a message
+func (m *Msg) AddMediaURL(url string) { m.MediaURLs = append(m.MediaURLs, url) }
+
+// clears our message for future reuse in our message pool
+func (m *Msg) clear() {
+	m.OrgID = NilOrgID
+	m.ID = NilMsgID
+	m.UUID = NilMsgUUID
+	m.Direction = ""
+	m.Text = ""
+	m.Priority = 0
+	m.Visibility = ""
+	m.MediaURLs = nil
+	m.ExternalID = ""
+
+	m.ChannelID = NilChannelID
+	m.ContactID = NilContactID
+	m.ContactURNID = NilContactURNID
+
+	m.MessageCount = 0
+	m.ErrorCount = 0
+
+	m.ChannelUUID = NilChannelUUID
+	m.ContactURN = NilURN
+	m.ContactName = ""
+
+	m.NextAttempt = time.Time{}
+	m.CreatedOn = time.Time{}
+	m.ModifiedOn = time.Time{}
+	m.QueuedOn = time.Time{}
+	m.SentOn = time.Time{}
 }
 
 //-----------------------------------------------------------------------------
 // MsgStatusUpdate implementation
 //-----------------------------------------------------------------------------
 
-type msgStatusUpdate struct {
-	Channel_    ChannelUUID `json:"channel"                  db:"channel"`
-	ID_         string      `json:"id,omitempty"             db:"id"`
-	ExternalID_ string      `json:"external_id,omitempty"    db:"external_id"`
-	Status_     MsgStatus   `json:"status"                   db:"status"`
-	ModifiedOn_ time.Time   `json:"modified_on"              db:"modified_on"`
+// MsgStatusUpdate represents a status update on a message
+type MsgStatusUpdate struct {
+	ChannelUUID ChannelUUID `json:"channel"                  db:"channel"`
+	ID          string      `json:"id,omitempty"             db:"id"`
+	ExternalID  string      `json:"external_id,omitempty"    db:"external_id"`
+	Status      MsgStatus   `json:"status"                   db:"status"`
+	ModifiedOn  time.Time   `json:"modified_on"              db:"modified_on"`
 }
 
-func (m *msgStatusUpdate) Channel() ChannelUUID { return m.Channel_ }
-func (m *msgStatusUpdate) ID() string           { return m.ID_ }
-func (m *msgStatusUpdate) ExternalID() string   { return m.ExternalID_ }
-func (m *msgStatusUpdate) Status() MsgStatus    { return m.Status_ }
-func (m *msgStatusUpdate) Release()             { statusPool.Put(m) }
+// Release releases this status and assigns it back to our pool for reuse
+func (m *MsgStatusUpdate) Release() { statusPool.Put(m) }
 
-func (m *msgStatusUpdate) clear() {
-	m.Channel_ = NilChannelUUID
-	m.ID_ = ""
-	m.ExternalID_ = ""
-	m.Status_ = ""
-	m.ModifiedOn_ = time.Time{}
+func (m *MsgStatusUpdate) clear() {
+	m.ChannelUUID = NilChannelUUID
+	m.ID = ""
+	m.ExternalID = ""
+	m.Status = ""
+	m.ModifiedOn = time.Time{}
 }

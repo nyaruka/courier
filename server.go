@@ -22,26 +22,33 @@ import (
 	"github.com/nyaruka/courier/utils"
 )
 
+// Server is the main interface ChannelHandlers use to interact with the database and redis. It provides an
+// abstraction that makes mocking easier for isolated unit tests
 type Server interface {
 	GetConfig() *config.Courier
 	AddChannelRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelActionHandlerFunc) *mux.Route
-	GetChannel(ChannelType, string) (Channel, error)
+	GetChannel(ChannelType, string) (*Channel, error)
 
-	QueueMsg(Msg) error
-	UpdateMsgStatus(MsgStatusUpdate) error
+	QueueMsg(*Msg) error
+	UpdateMsgStatus(*MsgStatusUpdate) error
 
 	Start() error
 	Stop()
 }
 
-type ChannelActionHandlerFunc func(Channel, http.ResponseWriter, *http.Request) error
+// ChannelActionHandlerFunc is the interface ChannelHandler functions must satisfy to handle various requests.
+// The Server will take care of looking up the channel by UUID before passing it to this function.
+type ChannelActionHandlerFunc func(*Channel, http.ResponseWriter, *http.Request) error
 
+// ChannelHandler is the interface all handlers must satisfy
 type ChannelHandler interface {
 	Initialize(Server) error
 	ChannelType() ChannelType
 	ChannelName() string
 }
 
+// NewServer creates a new Server for the passed in configuration. The server will have to be started
+// afterwards, which is when configuration options are checked.
 func NewServer(config *config.Courier) Server {
 	// create our top level router
 	router := mux.NewRouter()
@@ -58,6 +65,9 @@ func NewServer(config *config.Courier) Server {
 	}
 }
 
+// Start starts the Server listening for incoming requests and sending messages. It will return an error
+// if it encounters any unrecoverable (or ignorable) error, though its bias is to move forward despite
+// connection errors
 func (s *server) Start() error {
 	// parse and test our db config
 	dbURL, err := url.Parse(s.config.DB)
@@ -147,6 +157,7 @@ func (s *server) Start() error {
 	// wire up our index page
 	s.router.HandleFunc("/", s.handleIndex).Name("Index")
 
+	// initialize our handlers
 	s.initializeChannelHandlers()
 
 	// build a map of the routes we have installed
@@ -183,6 +194,7 @@ func (s *server) Start() error {
 	return nil
 }
 
+// Stop stops the server, returning only after all threads have stopped
 func (s *server) Stop() {
 	log.Println("Stopping courier processes")
 
@@ -205,11 +217,11 @@ func (s *server) Stop() {
 	log.Printf("[X] Server: stopped listening\n")
 }
 
-func (s *server) QueueMsg(msg Msg) error {
+func (s *server) QueueMsg(msg *Msg) error {
 	return queueMsg(s, msg)
 }
 
-func (s *server) UpdateMsgStatus(status MsgStatusUpdate) error {
+func (s *server) UpdateMsgStatus(status *MsgStatusUpdate) error {
 	return queueMsgStatus(s, status)
 }
 
@@ -217,27 +229,8 @@ func (s *server) GetConfig() *config.Courier {
 	return s.config
 }
 
-func (s *server) GetChannel(cType ChannelType, cUUID string) (Channel, error) {
+func (s *server) GetChannel(cType ChannelType, cUUID string) (*Channel, error) {
 	return ChannelFromUUID(s, cType, cUUID)
-}
-
-func (s *server) initializeChannelHandlers() {
-	includes := s.config.Include_Channels
-	excludes := s.config.Exclude_Channels
-
-	// initialize handlers which are included/not-excluded in the config
-	for _, handler := range registeredHandlers {
-		channelType := string(handler.ChannelType())
-		if (includes == nil || utils.StringArrayContains(includes, channelType)) && (excludes == nil || !utils.StringArrayContains(excludes, channelType)) {
-			err := handler.Initialize(s)
-			if err != nil {
-				log.Fatal(err)
-			}
-			activeHandlers[handler.ChannelType()] = handler
-
-			log.Printf("[X] Server: initialized handler for channel type \"%s\" (%s)", handler.ChannelName(), channelType)
-		}
-	}
 }
 
 type server struct {
@@ -258,6 +251,25 @@ type server struct {
 	stopped   bool
 
 	routeHelp string
+}
+
+func (s *server) initializeChannelHandlers() {
+	includes := s.config.Include_Channels
+	excludes := s.config.Exclude_Channels
+
+	// initialize handlers which are included/not-excluded in the config
+	for _, handler := range registeredHandlers {
+		channelType := string(handler.ChannelType())
+		if (includes == nil || utils.StringArrayContains(includes, channelType)) && (excludes == nil || !utils.StringArrayContains(excludes, channelType)) {
+			err := handler.Initialize(s)
+			if err != nil {
+				log.Fatal(err)
+			}
+			activeHandlers[handler.ChannelType()] = handler
+
+			log.Printf("[X] Server: initialized handler for channel type \"%s\" (%s)", handler.ChannelName(), channelType)
+		}
+	}
 }
 
 func (s *server) Router() *mux.Router { return s.chanRouter }
@@ -326,6 +338,7 @@ func RegisterHandler(handler ChannelHandler) {
 
 var registeredHandlers = make(map[ChannelType]ChannelHandler)
 var activeHandlers = make(map[ChannelType]ChannelHandler)
+
 var splash = `
  ____________                   _____             
    ___  ____/_________  ___________(_)____________

@@ -17,7 +17,8 @@ type handler struct {
 	handlers.BaseHandler
 }
 
-func NewHandler() *handler {
+// NewHandler returns a new Africa's Talking handler
+func NewHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("AT"), "Africas Talking")}
 }
 
@@ -55,7 +56,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *handler) ReceiveMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	// get our params
 	atMsg := &messageRequest{}
 	err := handlers.DecodeAndValidateForm(atMsg, r)
@@ -71,10 +72,10 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// create our URN
-	urn := courier.NewTelURN(atMsg.From, channel.Country())
+	urn := courier.NewTelURN(atMsg.From, channel.Country)
 
 	// build our msg
-	msg := courier.NewMsg(channel, urn, atMsg.Text).WithExternalID(atMsg.ID).WithDate(date)
+	msg := courier.NewMsg(channel, urn, atMsg.Text).WithExternalID(atMsg.ID).WithReceivedOn(date)
 	defer msg.Release()
 
 	// and finally queue our message
@@ -87,7 +88,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *handler) StatusMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	// get our params
 	atStatus := &statusRequest{}
 	err := handlers.DecodeAndValidateForm(atStatus, r)

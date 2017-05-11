@@ -40,10 +40,13 @@ func (ts *MsgTestSuite) TestCheckMsgExists() {
 	var msg1Id int
 	row.Scan(&msg1Id)
 
-	channel, _ := ChannelFromUUID(ts.s, ChannelType("KN"), "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	channel, err := ChannelFromUUID(ts.s, ChannelType("KN"), "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	if err != nil {
+		ts.FailNow("Error getting channel: ", err.Error())
+	}
 
 	// check with invalid message id
-	err := checkMsgExists(ts.s, NewStatusUpdateForID(channel, "-1", MsgStatus("S")))
+	err = checkMsgExists(ts.s, NewStatusUpdateForID(channel, "-1", MsgStatus("S")))
 	ts.Equal(err, ErrMsgNotFound)
 
 	// check with valid message id
@@ -60,7 +63,7 @@ func (ts *MsgTestSuite) TestCheckMsgExists() {
 	ts.Nil(err)
 
 	// check with neither kind of id
-	status.(*msgStatusUpdate).clear()
+	status.clear()
 	err = checkMsgExists(ts.s, status)
 	ts.EqualError(err, "no id or external id for status update")
 }
