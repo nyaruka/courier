@@ -9,13 +9,15 @@ import (
 
 	"fmt"
 
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
 	"github.com/stretchr/testify/require"
 )
 
+// RequestPrepFunc is our type for a hook for tests to use before a request is fired in a test
 type RequestPrepFunc func(*http.Request)
 
+// ChannelTestCase defines the test values for a particular test case
 type ChannelTestCase struct {
 	Label string
 
@@ -35,6 +37,7 @@ type ChannelTestCase struct {
 	PrepRequest RequestPrepFunc
 }
 
+// GetMediaURLs returns the media urls that are expected for this test case
 func (c ChannelTestCase) GetMediaURLs() []string {
 	if c.MediaURL != nil {
 		return []string{*c.MediaURL}
@@ -42,10 +45,10 @@ func (c ChannelTestCase) GetMediaURLs() []string {
 	return c.MediaURLs
 }
 
-// utility method to get the pointer to the passed in string
+// Sp is a utility method to get the pointer to the passed in string
 func Sp(str string) *string { return &str }
 
-// utility method to get the pointer to the pased in time
+// Tp is utility method to get the pointer to the passed in time
 func Tp(tm time.Time) *time.Time { return &tm }
 
 // utility method to make sure the passed in host is up, prevents races with our test server
@@ -99,6 +102,7 @@ func testHandlerRequest(tb testing.TB, s *courier.MockServer, url string, data s
 	return body
 }
 
+// RunChannelTestCases runs all the passed in tests cases for the passed in channel configurations
 func RunChannelTestCases(t *testing.T, channels []*courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
 	s := courier.NewMockServer()
 	for _, ch := range channels {
@@ -135,7 +139,7 @@ func RunChannelTestCases(t *testing.T, channels []*courier.Channel, handler cour
 					require.Equal(*testCase.External, msg.ExternalID)
 				}
 				if testCase.MediaURL != nil || len(testCase.MediaURLs) > 0 {
-					require.Equal(testCase.GetMediaURLs(), msg.MediaURLs)
+					require.Equal(testCase.MediaURLs, msg.MediaURLs)
 				}
 				if testCase.Date != nil {
 					require.Equal(*testCase.Date, msg.SentOn)
@@ -161,6 +165,7 @@ func RunChannelTestCases(t *testing.T, channels []*courier.Channel, handler cour
 	})
 }
 
+// RunChannelBenchmarks runs all the passed in test cases for the passed in channels
 func RunChannelBenchmarks(b *testing.B, channels []*courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
 	s := courier.NewMockServer()
 	for _, ch := range channels {

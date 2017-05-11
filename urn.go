@@ -124,7 +124,7 @@ func NewContactURN(org OrgID, channel ChannelID, contact ContactID, urn URN) *Co
 }
 
 // ContactURNForURN returns the ContactURN for the passed in org and URN, creating and associating
-//  it with the passed in contact if necessary
+// it with the passed in contact if necessary
 func ContactURNForURN(db *sqlx.DB, org OrgID, channel ChannelID, contact ContactID, urn URN) (*ContactURN, error) {
 	contactURN := NewContactURN(org, channel, contact, urn)
 	err := db.Get(contactURN, selectOrgURN, org, urn)

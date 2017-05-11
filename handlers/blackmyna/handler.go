@@ -12,7 +12,8 @@ type bmHandler struct {
 	handlers.BaseHandler
 }
 
-func NewHandler() *bmHandler {
+// NewHandler returns a new Blackmyna Handler
+func NewHandler() courier.ChannelHandler {
 	return &bmHandler{handlers.NewBaseHandler(courier.ChannelType("BM"), "Blackmyna")}
 }
 
@@ -33,7 +34,7 @@ func (h *bmHandler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *bmHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *bmHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	// get our params
 	bmMsg := &bmMessage{}
 	err := handlers.DecodeAndValidateForm(bmMsg, r)
@@ -42,7 +43,7 @@ func (h *bmHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWrite
 	}
 
 	// create our URN
-	urn := courier.NewTelURN(bmMsg.From, channel.Country())
+	urn := courier.NewTelURN(bmMsg.From, channel.Country)
 
 	// build our msg
 	msg := courier.NewMsg(channel, urn, bmMsg.Text)
@@ -71,7 +72,7 @@ var bmStatusMapping = map[int]courier.MsgStatus{
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *bmHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *bmHandler) StatusMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	// get our params
 	bmStatus := &bmStatus{}
 	err := handlers.DecodeAndValidateForm(bmStatus, r)

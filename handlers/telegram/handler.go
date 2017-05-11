@@ -22,7 +22,8 @@ type telegramHandler struct {
 	handlers.BaseHandler
 }
 
-func NewHandler() *telegramHandler {
+// NewHandler returns a new TelegramHandler ready to be registered
+func NewHandler() courier.ChannelHandler {
 	return &telegramHandler{handlers.NewBaseHandler(courier.ChannelType("TG"), "Telegram")}
 }
 
@@ -34,7 +35,7 @@ func (h *telegramHandler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *telegramHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *telegramHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	te := &telegramEnvelope{}
 	err := handlers.DecodeAndValidateJSON(te, r)
 	if err != nil {
@@ -101,7 +102,7 @@ func (h *telegramHandler) ReceiveMessage(channel courier.Channel, w http.Respons
 	}
 
 	// build our msg
-	msg := courier.NewMsg(channel, urn, text).WithDate(date).WithExternalID(fmt.Sprintf("%d", te.Message.MessageID)).WithName(name)
+	msg := courier.NewMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(fmt.Sprintf("%d", te.Message.MessageID)).WithContactName(name)
 	defer msg.Release()
 
 	if mediaURL != "" {
@@ -119,7 +120,7 @@ func (h *telegramHandler) ReceiveMessage(channel courier.Channel, w http.Respons
 
 var telegramAPIURL = "https://api.telegram.org"
 
-func resolveFileID(channel courier.Channel, fileID string) (string, error) {
+func resolveFileID(channel *courier.Channel, fileID string) (string, error) {
 	authToken := channel.GetConfig(courier.ConfigAuthToken)
 	fileURL := fmt.Sprintf("%s/bot%s/getFile", telegramAPIURL, authToken)
 
