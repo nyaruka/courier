@@ -163,7 +163,7 @@ func (h *twHandler) validateSignature(channel *courier.Channel, r *http.Request)
 		return err
 	}
 
-	url := fmt.Sprintf("%s%s", h.Server().GetConfig().Base_URL, r.URL.RequestURI())
+	url := fmt.Sprintf("%s%s", h.Server().GetConfig().BaseURL, r.URL.RequestURI())
 	authToken := channel.GetConfig(courier.ConfigAuthToken)
 
 	expected, err := twCalculateSignature(url, r.PostForm, authToken)

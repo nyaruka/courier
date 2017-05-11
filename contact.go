@@ -45,20 +45,20 @@ VALUES(:org_id, TRUE, FALSE, FALSE, FALSE, :uuid, :created_on, :modified_on, :cr
 RETURNING id
 `
 
-// InsertContact inserts the passed in contact, the id field will be populated with the result on success
-func InsertContact(db *sqlx.DB, contact *Contact) error {
+// insertContact inserts the passed in contact, the id field will be populated with the result on success
+func insertContact(db *sqlx.DB, contact *Contact) error {
 	rows, err := db.NamedQuery(insertContactSQL, contact)
 	if err != nil {
 		return err
 	}
 	if rows.Next() {
-		rows.Scan(&contact.ID)
+		err = rows.Scan(&contact.ID)
 	}
 	return err
 }
 
-// ContactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
-func ContactForURN(db *sqlx.DB, org OrgID, channel ChannelID, urn URN, name string) (*Contact, error) {
+// contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
+func contactForURN(db *sqlx.DB, org OrgID, channel ChannelID, urn URN, name string) (*Contact, error) {
 	// try to look up our contact by URN
 	var contact Contact
 	err := db.Get(&contact, lookupContactFromURNSQL, urn, org)
@@ -81,7 +81,7 @@ func ContactForURN(db *sqlx.DB, org OrgID, channel ChannelID, urn URN, name stri
 	contact.ModifiedBy = 1
 
 	// Insert it
-	err = InsertContact(db, &contact)
+	err = insertContact(db, &contact)
 	if err != nil {
 		return nil, err
 	}

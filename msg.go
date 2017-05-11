@@ -64,6 +64,8 @@ func NewMsg(channel *Channel, urn URN, text string) *Msg {
 	m.clear()
 
 	m.UUID = NewMsgUUID()
+	m.OrgID = channel.OrgID
+	m.ChannelID = channel.ID
 	m.ChannelUUID = channel.UUID
 	m.ContactURN = urn
 	m.Text = text
@@ -135,18 +137,20 @@ func queueMsg(s *server, m *Msg) error {
 		}
 	}
 
-	// marshal this msg to JSON
-	msgJSON, err := json.Marshal(m)
+	// grab the contact for this msg
+	_, err := contactForURN(s.db, m.OrgID, m.ChannelID, m.ContactURN, m.ContactName)
+
+	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {
-		return err
+		return writeToSpool(s, "msgs", m)
 	}
 
 	// try to write this to redis
-	err = writeMsgToRedis(s, m, msgJSON)
+	err = writeMsgToRedis(s, m)
 
 	// we failed our write to redis, write to disk instead
 	if err != nil {
-		err = writeToSpool(s, "msgs", msgJSON)
+		err = writeToSpool(s, "msgs", m)
 	}
 
 	return err
@@ -160,17 +164,11 @@ func queueMsgStatus(s *server, status *MsgStatusUpdate) error {
 		return err
 	}
 
-	// other errors are DB errors, courier keeps running in this case and queues up the status anyways
-	statusJSON, err := json.Marshal(status)
-	if err != nil {
-		return err
-	}
-
-	err = writeMsgStatusToRedis(s, status, statusJSON)
+	err = writeMsgStatusToRedis(s, status)
 
 	// failed writing, write to our spool instead
 	if err != nil {
-		err = writeToSpool(s, "statuses", statusJSON)
+		err = writeToSpool(s, "statuses", status)
 	}
 
 	return err
@@ -206,7 +204,12 @@ func startMsgSpoolFlusher(s *server) {
 
 }
 
-func writeMsgToRedis(s *server, m *Msg, msgJSON []byte) error {
+func writeMsgToRedis(s *server, m *Msg) error {
+	msgJSON, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+
 	// write it to redis
 	r := s.redisPool.Get()
 	defer r.Close()
@@ -215,7 +218,7 @@ func writeMsgToRedis(s *server, m *Msg, msgJSON []byte) error {
 	r.Send("MULTI")
 	r.Send("RPUSH", fmt.Sprintf("c:u:%s", m.ContactURN), msgJSON)
 	r.Send("RPUSH", "c:msgs", m.ContactURN)
-	_, err := r.Do("EXEC")
+	_, err = r.Do("EXEC")
 	if err != nil {
 		return err
 	}
@@ -246,7 +249,12 @@ func checkMsgExists(s *server, status *MsgStatusUpdate) (err error) {
 	return err
 }
 
-func writeMsgStatusToRedis(s *server, status *MsgStatusUpdate, statusJSON []byte) (err error) {
+func writeMsgStatusToRedis(s *server, status *MsgStatusUpdate) (err error) {
+	statusJSON, err := json.Marshal(status)
+	if err != nil {
+		return err
+	}
+
 	// write it to redis
 	r := s.redisPool.Get()
 	defer r.Close()
@@ -324,9 +332,14 @@ func testSpoolDirs(s *server) (err error) {
 	return err
 }
 
-func writeToSpool(s *server, subdir string, contents []byte) error {
+func writeToSpool(s *server, subdir string, contents interface{}) error {
+	contentBytes, err := json.Marshal(contents)
+	if err != nil {
+		return err
+	}
+
 	filename := path.Join(s.config.SpoolDir, subdir, fmt.Sprintf("%d.json", time.Now().UnixNano()))
-	return ioutil.WriteFile(filename, contents, 0640)
+	return ioutil.WriteFile(filename, contentBytes, 0640)
 }
 
 type fileFlusher func(filename string, contents []byte) error
@@ -385,7 +398,7 @@ func (s *server) msgSpoolWalker(dir string) filepath.WalkFunc {
 		}
 
 		// try to flush to redis
-		return writeMsgToRedis(s, msg, contents)
+		return writeMsgToRedis(s, msg)
 	})
 }
 
@@ -399,7 +412,7 @@ func (s *server) statusSpoolWalker(dir string) filepath.WalkFunc {
 		}
 
 		// try to flush to redis
-		return writeMsgStatusToRedis(s, status, contents)
+		return writeMsgStatusToRedis(s, status)
 	})
 }
 
