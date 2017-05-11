@@ -19,6 +19,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier/config"
+	"github.com/nyaruka/courier/utils"
 )
 
 // Server is the main interface ChannelHandlers use to interact with the database and redis. It provides an
@@ -156,13 +157,8 @@ func (s *server) Start() error {
 	// wire up our index page
 	s.router.HandleFunc("/", s.handleIndex).Name("Index")
 
-	// register each of our handlers
-	for _, handler := range handlers {
-		err := handler.Initialize(s)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	// initialize our handlers
+	s.initializeChannelHandlers()
 
 	// build a map of the routes we have installed
 	var help bytes.Buffer
@@ -257,6 +253,25 @@ type server struct {
 	routeHelp string
 }
 
+func (s *server) initializeChannelHandlers() {
+	includes := s.config.Include_Channels
+	excludes := s.config.Exclude_Channels
+
+	// initialize handlers which are included/not-excluded in the config
+	for _, handler := range registeredHandlers {
+		channelType := string(handler.ChannelType())
+		if (includes == nil || utils.StringArrayContains(includes, channelType)) && (excludes == nil || !utils.StringArrayContains(excludes, channelType)) {
+			err := handler.Initialize(s)
+			if err != nil {
+				log.Fatal(err)
+			}
+			activeHandlers[handler.ChannelType()] = handler
+
+			log.Printf("[X] Server: initialized handler for channel type \"%s\" (%s)", handler.ChannelName(), channelType)
+		}
+	}
+}
+
 func (s *server) Router() *mux.Router { return s.chanRouter }
 func (s *server) RouteHelp() string   { return s.routeHelp }
 
@@ -318,13 +333,13 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 // RegisterHandler adds a new handler for a channel type, this is called by individual handlers when they are initialized
 func RegisterHandler(handler ChannelHandler) {
-	if handlers == nil {
-		handlers = make(map[ChannelType]ChannelHandler)
-	}
-	handlers[handler.ChannelType()] = handler
+	registeredHandlers[handler.ChannelType()] = handler
 }
 
+var registeredHandlers = make(map[ChannelType]ChannelHandler)
 var handlers map[ChannelType]ChannelHandler
+var activeHandlers = make(map[ChannelType]ChannelHandler)
+
 var splash = `
  ____________                   _____             
    ___  ____/_________  ___________(_)____________

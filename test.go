@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier/config"
 )
 
@@ -44,8 +44,10 @@ func NewMockServer() *MockServer {
 	return ts
 }
 
+// Router returns the Gorilla router our server
 func (ts *MockServer) Router() *mux.Router { return ts.router }
 
+// GetLastQueueMsg returns the last message queued to the server
 func (ts *MockServer) GetLastQueueMsg() (*Msg, error) {
 	if len(ts.queueMsgs) == 0 {
 		return nil, ErrMsgNotFound
@@ -53,10 +55,12 @@ func (ts *MockServer) GetLastQueueMsg() (*Msg, error) {
 	return ts.queueMsgs[len(ts.queueMsgs)-1], nil
 }
 
+// SetErrorOnQueue is a mock method which makes the QueueMsg call throw the passed in error on next call
 func (ts *MockServer) SetErrorOnQueue(shouldError bool) {
 	ts.errorOnQueue = shouldError
 }
 
+// QueueMsg queues the passed in message internally
 func (ts *MockServer) QueueMsg(m *Msg) error {
 	if ts.errorOnQueue {
 		return errors.New("unable to queue message")
@@ -66,18 +70,17 @@ func (ts *MockServer) QueueMsg(m *Msg) error {
 	return nil
 }
 
+// UpdateMsgStatus writes the status update to our queue
 func (ts *MockServer) UpdateMsgStatus(status *MsgStatusUpdate) error {
 	return nil
 }
 
-func (ts *MockServer) SaveMedia(Msg, []byte) (string, error) {
-	return "", fmt.Errorf("Save media not implemented on test server")
-}
-
+// GetConfig returns the config for our server
 func (ts *MockServer) GetConfig() *config.Courier {
 	return ts.config
 }
 
+// GetChannel returns
 func (ts *MockServer) GetChannel(cType ChannelType, uuid string) (*Channel, error) {
 	cUUID, err := NewChannelUUID(uuid)
 	if err != nil {
@@ -95,12 +98,18 @@ func (ts *MockServer) AddChannel(channel *Channel) {
 	ts.channels[channel.UUID] = channel
 }
 
+// ClearChannels is a utility function on our mock server to clear all added channels
 func (ts *MockServer) ClearChannels() {
 	ts.channels = nil
 }
 
+// Start starts our mock server
 func (ts *MockServer) Start() error { return nil }
-func (ts *MockServer) Stop()        {}
+
+// Stop stops our mock server
+func (ts *MockServer) Stop() {}
+
+// ClearQueueMsgs clears our mock msg queue
 func (ts *MockServer) ClearQueueMsgs() {
 	ts.queueMsgs = nil
 }
@@ -121,6 +130,7 @@ func (ts *MockServer) channelFunctionWrapper(handler ChannelHandler, handlerFunc
 	}
 }
 
+// AddChannelRoute adds the passed in handler to our router
 func (ts *MockServer) AddChannelRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelActionHandlerFunc) *mux.Route {
 	path := fmt.Sprintf("/%s/{uuid:[a-zA-Z0-9-]{36}}/%s/", strings.ToLower(string(handler.ChannelType())), action)
 	route := ts.chanRouter.HandleFunc(path, ts.channelFunctionWrapper(handler, handlerFunc))
@@ -133,6 +143,7 @@ func (ts *MockServer) AddChannelRoute(handler ChannelHandler, method string, act
 // Mock channel implementation
 //-----------------------------------------------------------------------------
 
+// NewMockChannel creates a new mock channel for the passed in type, address, country and config
 func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]string) *Channel {
 	cUUID, _ := NewChannelUUID(uuid)
 
