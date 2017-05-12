@@ -43,10 +43,10 @@ func (h *bmHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWrit
 	}
 
 	// create our URN
-	urn := courier.NewTelURN(bmMsg.From, channel.Country)
+	urn := courier.NewTelURNForChannel(bmMsg.From, channel)
 
 	// build our msg
-	msg := courier.NewMsg(channel, urn, bmMsg.Text)
+	msg := courier.NewIncomingMsg(channel, urn, bmMsg.Text)
 	defer msg.Release()
 
 	// and finally queue our message

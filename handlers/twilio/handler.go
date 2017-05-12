@@ -93,7 +93,7 @@ func (h *twHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWrit
 	}
 
 	// create our URN
-	urn := courier.NewTelURN(twMsg.From, twMsg.FromCountry)
+	urn := courier.NewTelURNForCountry(twMsg.From, twMsg.FromCountry)
 
 	if twMsg.Body != "" {
 		// Twilio sometimes sends concatenated sms as base64 encoded MMS
@@ -101,7 +101,7 @@ func (h *twHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWrit
 	}
 
 	// build our msg
-	msg := courier.NewMsg(channel, urn, twMsg.Body).WithExternalID(twMsg.MessageSID)
+	msg := courier.NewIncomingMsg(channel, urn, twMsg.Body).WithExternalID(twMsg.MessageSID)
 	defer msg.Release()
 
 	// process any attached media

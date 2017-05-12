@@ -2,13 +2,12 @@ package courier
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
-	"log"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/nyaruka/courier/utils"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -112,9 +111,6 @@ func loadChannelFromDB(s *server, channel *Channel, channelType ChannelType, uui
 	// select just the fields we need
 	err := s.db.Get(channel, lookupChannelFromUUIDSQL, channelType, uuid)
 
-	// parse our config
-	channel.parseConfig()
-
 	// we didn't find a match
 	if err == sql.ErrNoRows {
 		return ErrChannelNotFound
@@ -181,34 +177,25 @@ const localTTL = 60
 
 // Channel is our struct for json and db representations of our channel
 type Channel struct {
-	OrgID       OrgID       `json:"org_id"        db:"org_id"`
-	ID          ChannelID   `json:"id"            db:"id"`
-	UUID        ChannelUUID `json:"uuid"          db:"uuid"`
-	ChannelType ChannelType `json:"channel_type"  db:"channel_type"`
-	Address     string      `json:"address"       db:"address"`
-	Country     string      `json:"country"       db:"country"`
-	Config      string      `json:"config"        db:"config"`
-
-	expiration time.Time
-	config     map[string]string
+	OrgID       OrgID          `json:"org_id"        db:"org_id"`
+	ID          ChannelID      `json:"id"            db:"id"`
+	UUID        ChannelUUID    `json:"uuid"          db:"uuid"`
+	ChannelType ChannelType    `json:"channel_type"  db:"channel_type"`
+	Address     sql.NullString `json:"address"       db:"address"`
+	Country     sql.NullString `json:"country"       db:"country"`
+	Config      utils.NullDict `json:"config"        db:"config"`
+	expiration  time.Time
 }
 
 // GetConfig returns the value of the passed in config key
-func (c *Channel) GetConfig(key string) string { return c.config[key] }
-
-func (c *Channel) parseConfig() {
-	c.config = make(map[string]string)
-
-	if c.Config != "" {
-		err := json.Unmarshal([]byte(c.Config), &c.config)
-		if err != nil {
-			log.Printf("ERROR parsing channel config '%s': %s", c.Config, err)
-		}
+func (c *Channel) GetConfig(key string) string {
+	if c.Config.Valid {
+		return c.Config.Dict[key]
 	}
+	return ""
 }
 
 // Constructor to create a new empty channel
 func newChannel(channelType ChannelType, uuid ChannelUUID) *Channel {
-	config := make(map[string]string)
-	return &Channel{ChannelType: channelType, UUID: uuid, config: config}
+	return &Channel{ChannelType: channelType, UUID: uuid}
 }

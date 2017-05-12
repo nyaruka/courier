@@ -102,7 +102,7 @@ func (h *telegramHandler) ReceiveMessage(channel *courier.Channel, w http.Respon
 	}
 
 	// build our msg
-	msg := courier.NewMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(fmt.Sprintf("%d", te.Message.MessageID)).WithContactName(name)
+	msg := courier.NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(fmt.Sprintf("%d", te.Message.MessageID)).WithContactName(name)
 	defer msg.Release()
 
 	if mediaURL != "" {

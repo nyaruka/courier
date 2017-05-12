@@ -25,7 +25,7 @@ func TestTelURNs(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		urn := NewTelURN(tc.number, tc.country)
+		urn := NewTelURNForCountry(tc.number, tc.country)
 		if urn != URN(tc.expected) {
 			t.Errorf("Failed tel parsing, got '%s', expected '%s' for '%s:%s'", urn, tc.expected, tc.number, tc.country)
 		}
@@ -79,12 +79,12 @@ func TestFromParts(t *testing.T) {
 
 func BenchmarkValidTel(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		NewTelURN("2065551212", "US")
+		NewTelURNForCountry("2065551212", "US")
 	}
 }
 
 func BenchmarkInvalidTel(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		NewTelURN("notnumber", "US")
+		NewTelURNForCountry("notnumber", "US")
 	}
 }

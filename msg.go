@@ -1,14 +1,11 @@
 package courier
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -26,12 +23,10 @@ import (
 var ErrMsgNotFound = errors.New("message not found")
 
 // MsgID is our typing of the db int type
-type MsgID struct {
-	sql.NullInt64
-}
+type MsgID int64
 
 // NilMsgID is our nil value for MsgID
-var NilMsgID = MsgID{sql.NullInt64{Int64: 0, Valid: false}}
+var NilMsgID = MsgID(0)
 
 // MsgStatus is the status of a message
 type MsgStatus string
@@ -43,6 +38,37 @@ const (
 	MsgSent      MsgStatus = "S"
 	MsgDelivered MsgStatus = "D"
 	MsgFailed    MsgStatus = "F"
+	NilMsgStatus MsgStatus = ""
+)
+
+// MsgDirection is the direction of a message
+type MsgDirection string
+
+// Possible values for MsgDirection
+const (
+	MsgIncoming     MsgDirection = "I"
+	MsgOutgoing     MsgDirection = "O"
+	NilMsgDirection MsgDirection = ""
+)
+
+// MsgPriority is the priority of our message
+type MsgPriority int
+
+// Possible values for MsgPriority
+const (
+	BulkPriority    MsgPriority = 100
+	DefaultPriority MsgPriority = 500
+	HighPriority    MsgPriority = 1000
+)
+
+// MsgVisibility is the visibility of a message
+type MsgVisibility string
+
+// Possible values for MsgVisibility
+const (
+	MsgVisible  MsgVisibility = "V"
+	MsgDeleted  MsgVisibility = "D"
+	MsgArchived MsgVisibility = "A"
 )
 
 // MsgUUID is the UUID of a message which has been received
@@ -58,8 +84,8 @@ func NewMsgUUID() MsgUUID {
 	return MsgUUID{uuid.NewV4()}
 }
 
-// NewMsg creates a new message from the given params
-func NewMsg(channel *Channel, urn URN, text string) *Msg {
+// NewIncomingMsg creates a new message from the given params
+func NewIncomingMsg(channel *Channel, urn URN, text string) *Msg {
 	m := msgPool.Get().(*Msg)
 	m.clear()
 
@@ -69,7 +95,19 @@ func NewMsg(channel *Channel, urn URN, text string) *Msg {
 	m.ChannelUUID = channel.UUID
 	m.ContactURN = urn
 	m.Text = text
-	m.SentOn = time.Now()
+
+	m.Visibility = MsgVisible
+	m.MessageCount = 1
+	m.Direction = MsgIncoming
+	m.Status = MsgPending
+	m.Priority = DefaultPriority
+
+	now := time.Now()
+	m.CreatedOn = now
+	m.ModifiedOn = now
+	m.SentOn = now
+	m.QueuedOn = now
+	m.NextAttempt = now
 
 	return m
 }
@@ -88,42 +126,6 @@ func NewMsgFromJSON(msgJSON string) (*Msg, error) {
 	return m, err
 }
 
-// NewStatusUpdateForJSON creates a new status update from the given JSON
-func NewStatusUpdateForJSON(statusJSON string) (*MsgStatusUpdate, error) {
-	s := statusPool.Get().(*MsgStatusUpdate)
-	s.clear()
-
-	err := json.Unmarshal([]byte(statusJSON), s)
-	if err != nil {
-		s.Release()
-		return nil, err
-	}
-
-	return s, err
-}
-
-// NewStatusUpdateForID creates a new status update for a message identified by its primary key
-func NewStatusUpdateForID(channel *Channel, id string, status MsgStatus) *MsgStatusUpdate {
-	s := statusPool.Get().(*MsgStatusUpdate)
-	s.ChannelUUID = channel.UUID
-	s.ID = id
-	s.ExternalID = ""
-	s.Status = status
-	s.ModifiedOn = time.Now()
-	return s
-}
-
-// NewStatusUpdateForExternalID creates a new status update for a message identified by its external ID
-func NewStatusUpdateForExternalID(channel *Channel, externalID string, status MsgStatus) *MsgStatusUpdate {
-	s := statusPool.Get().(*MsgStatusUpdate)
-	s.ChannelUUID = channel.UUID
-	s.ID = ""
-	s.ExternalID = externalID
-	s.Status = status
-	s.ModifiedOn = time.Now()
-	return s
-}
-
 // queueMsg creates a message given the passed in arguments, returning the uuid of the created message
 func queueMsg(s *server, m *Msg) error {
 	// if we have media, go download it to S3
@@ -137,88 +139,31 @@ func queueMsg(s *server, m *Msg) error {
 		}
 	}
 
-	// grab the contact for this msg
-	_, err := contactForURN(s.db, m.OrgID, m.ChannelID, m.ContactURN, m.ContactName)
+	// try to write it our db
+	err := writeMsgToDB(s, m)
 
-	// our db is down, write to the spool, we will write/queue this later
+	// fail? spool for later
 	if err != nil {
 		return writeToSpool(s, "msgs", m)
 	}
 
-	// try to write this to redis
-	err = writeMsgToRedis(s, m)
+	// finally try to add this message to our handling queue
+	err = addToHandleQueue(s, m)
 
-	// we failed our write to redis, write to disk instead
-	if err != nil {
-		err = writeToSpool(s, "msgs", m)
-	}
-
+	// TODO: spool backdown for failure to add to redis
 	return err
 }
 
-// queueMsgStatus writes the passed in status to the database, queueing it to our spool in case the database is down
-func queueMsgStatus(s *server, status *MsgStatusUpdate) error {
-	// first check if this msg exists
-	err := checkMsgExists(s, status)
-	if err == ErrMsgNotFound {
-		return err
-	}
-
-	err = writeMsgStatusToRedis(s, status)
-
-	// failed writing, write to our spool instead
-	if err != nil {
-		err = writeToSpool(s, "statuses", status)
-	}
-
-	return err
-}
-
-func startMsgSpoolFlusher(s *server) {
-	s.waitGroup.Add(1)
-	defer s.waitGroup.Done()
-
-	msgsDir := path.Join(s.config.SpoolDir, "msgs")
-	statusesDir := path.Join(s.config.SpoolDir, "statuses")
-
-	msgWalker := s.msgSpoolWalker(msgsDir)
-	statusWalker := s.statusSpoolWalker(statusesDir)
-
-	log.Println("[X] Spool: flush process started")
-
-	// runs until stopped, checking every 30 seconds if there is anything to flush from our spool
-	for {
-		select {
-
-		// our server is shutting down, exit
-		case <-s.stopChan:
-			log.Println("[X] Spool: flush process stopped")
-			return
-
-		// every 30 seconds we check to see if there are any files to spool
-		case <-time.After(30 * time.Second):
-			filepath.Walk(msgsDir, msgWalker)
-			filepath.Walk(statusesDir, statusWalker)
-		}
-	}
-
-}
-
-func writeMsgToRedis(s *server, m *Msg) error {
-	msgJSON, err := json.Marshal(m)
-	if err != nil {
-		return err
-	}
-
+func addToHandleQueue(s *server, m *Msg) error {
 	// write it to redis
 	r := s.redisPool.Get()
 	defer r.Close()
 
 	// we push to two different queues, one that is URN specific and the other that is our global queue (and to this only the URN)
 	r.Send("MULTI")
-	r.Send("RPUSH", fmt.Sprintf("c:u:%s", m.ContactURN), msgJSON)
+	r.Send("RPUSH", fmt.Sprintf("c:u:%s", m.ContactURN), m.ID)
 	r.Send("RPUSH", "c:msgs", m.ContactURN)
-	_, err = r.Do("EXEC")
+	_, err := r.Do("EXEC")
 	if err != nil {
 		return err
 	}
@@ -226,46 +171,35 @@ func writeMsgToRedis(s *server, m *Msg) error {
 	return nil
 }
 
-const selectMsgIDForID = `
-SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (m."id" = $1 AND c."uuid" = $2)`
+const insertMsgSQL = `
+INSERT INTO msgs_msg(org_id, direction, has_template_error, text, msg_count, error_count, priority, status, 
+                     visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on)
+VALUES(:org_id, :direction, FALSE, :text, :msg_count, :error_count, :priority, :status, 
+       :visibility, :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :next_attempt, :queued_on, :sent_on)
+RETURNING id
+`
 
-const selectMsgIDForExternalID = `
-SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (m."external_id" = $1 AND c."uuid" = $2)`
+func writeMsgToDB(s *server, m *Msg) error {
+	// grab the contact for this msg
+	contact, err := contactForURN(s.db, m.OrgID, m.ChannelID, m.ContactURN, m.ContactName)
 
-func checkMsgExists(s *server, status *MsgStatusUpdate) (err error) {
-	var id int64
-
-	if status.ID != "" {
-		err = s.db.QueryRow(selectMsgIDForID, status.ID, status.ChannelUUID).Scan(&id)
-	} else if status.ExternalID != "" {
-		err = s.db.QueryRow(selectMsgIDForExternalID, status.ExternalID, status.ChannelUUID).Scan(&id)
-	} else {
-		return fmt.Errorf("no id or external id for status update")
+	// our db is down, write to the spool, we will write/queue this later
+	if err != nil {
+		return writeToSpool(s, "msgs", m)
 	}
 
-	if err == sql.ErrNoRows {
-		return ErrMsgNotFound
+	// set our contact and urn ids from our contact
+	m.ContactID = contact.ID
+	m.ContactURNID = contact.URNID
+
+	rows, err := s.db.NamedQuery(insertMsgSQL, m)
+	if err != nil {
+		return err
+	}
+	if rows.Next() {
+		rows.Scan(&m.ID)
 	}
 	return err
-}
-
-func writeMsgStatusToRedis(s *server, status *MsgStatusUpdate) (err error) {
-	statusJSON, err := json.Marshal(status)
-	if err != nil {
-		return err
-	}
-
-	// write it to redis
-	r := s.redisPool.Get()
-	defer r.Close()
-
-	// we push status updates to a single redis queue called c:statuses
-	_, err = r.Do("RPUSH", "c:statuses", statusJSON)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 //-----------------------------------------------------------------------------
@@ -313,80 +247,8 @@ func downloadMediaToS3(s *server, msgUUID MsgUUID, mediaURL string) (string, err
 }
 
 //-----------------------------------------------------------------------------
-// Spool Utility functions
+// Spool walker for flushing failed writes
 //-----------------------------------------------------------------------------
-
-func testSpoolDirs(s *server) (err error) {
-	msgsDir := path.Join(s.config.SpoolDir, "msgs")
-	if _, err = os.Stat(msgsDir); os.IsNotExist(err) {
-		err = os.MkdirAll(msgsDir, 0770)
-	}
-	if err != nil {
-		return err
-	}
-
-	statusesDir := path.Join(s.config.SpoolDir, "statuses")
-	if _, err = os.Stat(statusesDir); os.IsNotExist(err) {
-		err = os.MkdirAll(statusesDir, 0770)
-	}
-	return err
-}
-
-func writeToSpool(s *server, subdir string, contents interface{}) error {
-	contentBytes, err := json.Marshal(contents)
-	if err != nil {
-		return err
-	}
-
-	filename := path.Join(s.config.SpoolDir, subdir, fmt.Sprintf("%d.json", time.Now().UnixNano()))
-	return ioutil.WriteFile(filename, contentBytes, 0640)
-}
-
-type fileFlusher func(filename string, contents []byte) error
-
-func (s *server) newSpoolWalker(dir string, flusher fileFlusher) filepath.WalkFunc {
-	return func(filename string, info os.FileInfo, err error) error {
-		if filename == dir {
-			return nil
-		}
-
-		// we've been stopped, exit
-		if s.stopped {
-			return errors.New("spool flush process stopped")
-		}
-
-		// we don't care about subdirectories
-		if info.IsDir() {
-			return filepath.SkipDir
-		}
-
-		// ignore non-json files
-		if !strings.HasSuffix(filename, ".json") {
-			return nil
-		}
-
-		// otherwise, read our msg json
-		contents, err := ioutil.ReadFile(filename)
-		if err != nil {
-			log.Printf("ERROR reading spool file '%s': %s\n", filename, err)
-			return nil
-		}
-
-		err = flusher(filename, contents)
-		if err != nil {
-			log.Printf("ERROR flushing file '%s': %s\n", filename, err)
-			return err
-		}
-
-		log.Printf("Spool: flushed '%s' to redis", filename)
-
-		// we flushed to redis, remove our file if it is still present
-		if _, e := os.Stat(filename); e == nil {
-			err = os.Remove(filename)
-		}
-		return err
-	}
-}
 
 func (s *server) msgSpoolWalker(dir string) filepath.WalkFunc {
 	return s.newSpoolWalker(dir, func(filename string, contents []byte) error {
@@ -397,43 +259,36 @@ func (s *server) msgSpoolWalker(dir string) filepath.WalkFunc {
 			return nil
 		}
 
-		// try to flush to redis
-		return writeMsgToRedis(s, msg)
-	})
-}
+		// try to write it our db
+		err = writeMsgToDB(s, msg)
 
-func (s *server) statusSpoolWalker(dir string) filepath.WalkFunc {
-	return s.newSpoolWalker(dir, func(filename string, contents []byte) error {
-		status, err := NewStatusUpdateForJSON(string(contents))
+		// fail? oh well, we'll try again later
 		if err != nil {
-			log.Printf("ERROR unmarshalling spool file '%s', renaming: %s\n", filename, err)
-			os.Rename(filename, fmt.Sprintf("%s.error", filename))
-			return nil
+			return err
 		}
 
-		// try to flush to redis
-		return writeMsgStatusToRedis(s, status)
+		// finally try to add this message to our handling queue
+		// TODO: if we fail here how do we avoid double inserts above?
+		return addToHandleQueue(s, msg)
 	})
 }
 
-var msgPool = sync.Pool{New: func() interface{} { return &Msg{} }}
-var statusPool = sync.Pool{New: func() interface{} { return &MsgStatusUpdate{} }}
-
 //-----------------------------------------------------------------------------
-// Msg implementation
+// Msg
 //-----------------------------------------------------------------------------
 
 // Msg is our base struct to represent msgs both in our JSON and db representations
 type Msg struct {
-	OrgID      OrgID    `json:"org_id"       db:"org_id"`
-	ID         MsgID    `json:"id"           db:"id"`
-	UUID       MsgUUID  `json:"uuid"`
-	Direction  string   `json:"direction"    db:"direction"`
-	Text       string   `json:"text"         db:"text"`
-	Priority   int      `json:"priority"     db:"priority"`
-	Visibility string   `json:"visibility"   db:"visibility"`
-	MediaURLs  []string `json:"media_urls"`
-	ExternalID string   `json:"external_id"  db:"external_id"`
+	OrgID      OrgID         `json:"org_id"       db:"org_id"`
+	ID         MsgID         `json:"id"           db:"id"`
+	UUID       MsgUUID       `json:"uuid"`
+	Direction  MsgDirection  `json:"direction"    db:"direction"`
+	Status     MsgStatus     `json:"status"       db:"status"`
+	Visibility MsgVisibility `json:"visibility"   db:"visibility"`
+	Priority   MsgPriority   `json:"priority"     db:"priority"`
+	Text       string        `json:"text"         db:"text"`
+	MediaURLs  []string      `json:"media_urls"`
+	ExternalID string        `json:"external_id"  db:"external_id"`
 
 	ChannelID    ChannelID    `json:"channel_id"      db:"channel_id"`
 	ContactID    ContactID    `json:"contact_id"      db:"contact_id"`
@@ -473,10 +328,11 @@ func (m *Msg) clear() {
 	m.OrgID = NilOrgID
 	m.ID = NilMsgID
 	m.UUID = NilMsgUUID
-	m.Direction = ""
+	m.Direction = NilMsgDirection
+	m.Status = NilMsgStatus
 	m.Text = ""
-	m.Priority = 0
-	m.Visibility = ""
+	m.Priority = DefaultPriority
+	m.Visibility = MsgVisible
 	m.MediaURLs = nil
 	m.ExternalID = ""
 
@@ -498,26 +354,4 @@ func (m *Msg) clear() {
 	m.SentOn = time.Time{}
 }
 
-//-----------------------------------------------------------------------------
-// MsgStatusUpdate implementation
-//-----------------------------------------------------------------------------
-
-// MsgStatusUpdate represents a status update on a message
-type MsgStatusUpdate struct {
-	ChannelUUID ChannelUUID `json:"channel"                  db:"channel"`
-	ID          string      `json:"id,omitempty"             db:"id"`
-	ExternalID  string      `json:"external_id,omitempty"    db:"external_id"`
-	Status      MsgStatus   `json:"status"                   db:"status"`
-	ModifiedOn  time.Time   `json:"modified_on"              db:"modified_on"`
-}
-
-// Release releases this status and assigns it back to our pool for reuse
-func (m *MsgStatusUpdate) Release() { statusPool.Put(m) }
-
-func (m *MsgStatusUpdate) clear() {
-	m.ChannelUUID = NilChannelUUID
-	m.ID = ""
-	m.ExternalID = ""
-	m.Status = ""
-	m.ModifiedOn = time.Time{}
-}
+var msgPool = sync.Pool{New: func() interface{} { return &Msg{} }}
