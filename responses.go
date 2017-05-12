@@ -30,7 +30,7 @@ func WriteIgnored(w http.ResponseWriter, message string) error {
 
 // WriteReceiveSuccess writes a JSON response for the passed in msg indicating we handled it
 func WriteReceiveSuccess(w http.ResponseWriter, msg *Msg) error {
-	return writeData(w, http.StatusOK, "Message Accepted", &receiveData{msg.UUID})
+	return writeData(w, http.StatusOK, "Message Accepted", &receiveData{msg.ID, msg.UUID})
 }
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
@@ -48,6 +48,7 @@ type successResponse struct {
 }
 
 type receiveData struct {
+	ID   MsgID   `json:"id"`
 	UUID MsgUUID `json:"uuid"`
 }
 

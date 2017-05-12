@@ -1,6 +1,7 @@
 package courier
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -159,9 +160,9 @@ func NewMockChannel(uuid string, channelType string, address string, country str
 	channel := &Channel{
 		UUID:        cUUID,
 		ChannelType: ChannelType(channelType),
-		Address:     address,
-		Country:     country,
-		Config:      configJSON,
+		Address:     sql.NullString{String: address, Valid: true},
+		Country:     sql.NullString{String: country, Valid: true},
+		Config:      sql.NullString{String: configJSON, Valid: true},
 	}
 	channel.parseConfig()
 	return channel

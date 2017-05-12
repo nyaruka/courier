@@ -17,14 +17,19 @@ type ContactID struct {
 // NilContactID represents our nil value for ContactID
 var NilContactID = ContactID{sql.NullInt64{Int64: 0, Valid: false}}
 
+// ContactUUID is our typing of a contact's UUID
+type ContactUUID struct {
+	uuid.UUID
+}
+
 // Contact is our struct for a contact in the database
 type Contact struct {
-	Org  OrgID     `db:"org_id"`
-	ID   ContactID `db:"id"`
-	UUID string    `db:"uuid"`
-	Name string    `db:"name"`
+	Org  OrgID       `db:"org_id"`
+	ID   ContactID   `db:"id"`
+	UUID ContactUUID `db:"uuid"`
+	Name string      `db:"name"`
 
-	URN ContactURNID `db:"urn_id"`
+	URNID ContactURNID `db:"urn_id"`
 
 	CreatedOn  time.Time `db:"created_on"`
 	ModifiedOn time.Time `db:"modified_on"`
@@ -32,12 +37,6 @@ type Contact struct {
 	CreatedBy  int `db:"created_by_id"`
 	ModifiedBy int `db:"modified_by_id"`
 }
-
-const lookupContactFromURNSQL = `
-SELECT c.org_id, c.id, c.uuid, c.name, u.id as "urn_id"
-FROM contacts_contact AS c, contacts_contacturn AS u 
-WHERE u.urn = $1 AND u.contact_id = c.id AND u.org_id = $2 AND c.is_active = TRUE AND c.is_test = FALSE
-`
 
 const insertContactSQL = `
 INSERT INTO contacts_contact(org_id, is_active, is_blocked, is_test, is_stopped, uuid, created_on, modified_on, created_by_id, modified_by_id, name) 
@@ -51,11 +50,18 @@ func insertContact(db *sqlx.DB, contact *Contact) error {
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 	if rows.Next() {
 		err = rows.Scan(&contact.ID)
 	}
 	return err
 }
+
+const lookupContactFromURNSQL = `
+SELECT c.org_id, c.id, c.uuid, c.name, u.id as "urn_id"
+FROM contacts_contact AS c, contacts_contacturn AS u 
+WHERE u.urn = $1 AND u.contact_id = c.id AND u.org_id = $2 AND c.is_active = TRUE AND c.is_test = FALSE
+`
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
 func contactForURN(db *sqlx.DB, org OrgID, channel ChannelID, urn URN, name string) (*Contact, error) {
@@ -73,7 +79,7 @@ func contactForURN(db *sqlx.DB, org OrgID, channel ChannelID, urn URN, name stri
 
 	// didn't find it, we need to create it instead
 	contact.Org = org
-	contact.UUID = uuid.NewV4().String()
+	contact.UUID = ContactUUID{uuid.NewV4()}
 	contact.Name = name
 
 	// TODO: Set these to a system user
@@ -86,14 +92,14 @@ func contactForURN(db *sqlx.DB, org OrgID, channel ChannelID, urn URN, name stri
 		return nil, err
 	}
 
-	// now find our URN
+	// associate our URN
 	contactURN, err := ContactURNForURN(db, org, channel, contact.ID, urn)
 	if err != nil {
 		return nil, err
 	}
 
 	// save this URN on our contact
-	contact.URN = contactURN.ID
+	contact.URNID = contactURN.ID
 
 	// and return it
 	return &contact, err

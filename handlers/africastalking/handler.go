@@ -72,10 +72,10 @@ func (h *handler) ReceiveMessage(channel *courier.Channel, w http.ResponseWriter
 	}
 
 	// create our URN
-	urn := courier.NewTelURN(atMsg.From, channel.Country)
+	urn := courier.NewTelURNForChannel(atMsg.From, channel)
 
 	// build our msg
-	msg := courier.NewMsg(channel, urn, atMsg.Text).WithExternalID(atMsg.ID).WithReceivedOn(date)
+	msg := courier.NewIncomingMsg(channel, urn, atMsg.Text).WithExternalID(atMsg.ID).WithReceivedOn(date)
 	defer msg.Release()
 
 	// and finally queue our message

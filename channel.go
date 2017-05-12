@@ -181,13 +181,13 @@ const localTTL = 60
 
 // Channel is our struct for json and db representations of our channel
 type Channel struct {
-	OrgID       OrgID       `json:"org_id"        db:"org_id"`
-	ID          ChannelID   `json:"id"            db:"id"`
-	UUID        ChannelUUID `json:"uuid"          db:"uuid"`
-	ChannelType ChannelType `json:"channel_type"  db:"channel_type"`
-	Address     string      `json:"address"       db:"address"`
-	Country     string      `json:"country"       db:"country"`
-	Config      string      `json:"config"        db:"config"`
+	OrgID       OrgID          `json:"org_id"        db:"org_id"`
+	ID          ChannelID      `json:"id"            db:"id"`
+	UUID        ChannelUUID    `json:"uuid"          db:"uuid"`
+	ChannelType ChannelType    `json:"channel_type"  db:"channel_type"`
+	Address     sql.NullString `json:"address"       db:"address"`
+	Country     sql.NullString `json:"country"       db:"country"`
+	Config      sql.NullString `json:"config"        db:"config"`
 
 	expiration time.Time
 	config     map[string]string
@@ -199,10 +199,10 @@ func (c *Channel) GetConfig(key string) string { return c.config[key] }
 func (c *Channel) parseConfig() {
 	c.config = make(map[string]string)
 
-	if c.Config != "" {
-		err := json.Unmarshal([]byte(c.Config), &c.config)
+	if c.Config.Valid {
+		err := json.Unmarshal([]byte(c.Config.String), &c.config)
 		if err != nil {
-			log.Printf("ERROR parsing channel config '%s': %s", c.Config, err)
+			log.Printf("ERROR parsing channel config '%s': %s", c.Config.Value, err)
 		}
 	}
 }
