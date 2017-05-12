@@ -2,7 +2,6 @@ package courier
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier/config"
+	"github.com/nyaruka/courier/utils"
 )
 
 var testDatabaseURL = "postgres://courier@localhost/courier_test?sslmode=disable"
@@ -148,22 +148,12 @@ func (ts *MockServer) AddChannelRoute(handler ChannelHandler, method string, act
 func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]string) *Channel {
 	cUUID, _ := NewChannelUUID(uuid)
 
-	configJSON := ""
-	if config != nil {
-		configBytes, err := json.Marshal(config)
-		if err != nil {
-			panic(err)
-		}
-		configJSON = string(configBytes)
-	}
-
 	channel := &Channel{
 		UUID:        cUUID,
 		ChannelType: ChannelType(channelType),
 		Address:     sql.NullString{String: address, Valid: true},
 		Country:     sql.NullString{String: country, Valid: true},
-		Config:      sql.NullString{String: configJSON, Valid: true},
+		Config:      utils.NullDict{Dict: config, Valid: true},
 	}
-	channel.parseConfig()
 	return channel
 }

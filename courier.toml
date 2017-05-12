@@ -15,7 +15,7 @@ base_url = "https://localhost:8080"
 port = 8080
 
 # Our database connection string, right now only Postgres is supported
-db = "postgres://courier@localhost/courier_test?sslmode=disable"
+db = "postgres://courier@localhost/courier?sslmode=disable"
 
 # Our redis connection string, path is our database
 redis = "redis://localhost:6379/0"

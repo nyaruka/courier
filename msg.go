@@ -66,10 +66,9 @@ type MsgVisibility string
 
 // Possible values for MsgVisibility
 const (
-	MsgVisible       MsgVisibility = "V"
-	MsgDeleted       MsgVisibility = "D"
-	MsgArchived      MsgVisibility = "A"
-	NilMsgVisibility MsgVisibility = ""
+	MsgVisible  MsgVisibility = "V"
+	MsgDeleted  MsgVisibility = "D"
+	MsgArchived MsgVisibility = "A"
 )
 
 // MsgUUID is the UUID of a message which has been received
@@ -333,7 +332,7 @@ func (m *Msg) clear() {
 	m.Status = NilMsgStatus
 	m.Text = ""
 	m.Priority = DefaultPriority
-	m.Visibility = NilMsgVisibility
+	m.Visibility = MsgVisible
 	m.MediaURLs = nil
 	m.ExternalID = ""
 
