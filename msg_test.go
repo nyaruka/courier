@@ -2,14 +2,12 @@ package courier
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 )
-
-var insertChannelSQL = `INSERT INTO channels_channel(uuid, channel_type, address, country, config, is_active) VALUES($1, $2, $3, $4, $5, TRUE) RETURNING id`
-var insertMsgSQL = `INSERT INTO msgs_msg(uuid, external_id, channel_id) VALUES($1, $2, $3) RETURNING id`
 
 type MsgTestSuite struct {
 	suite.Suite
@@ -23,8 +21,12 @@ func (ts *MsgTestSuite) SetupSuite() {
 		log.Fatalf("unable to start server for testing: %v", err)
 	}
 
-	ts.s.db.Exec("DELETE FROM msgs_msg")
-	ts.s.db.Exec("DELETE FROM channels_channel")
+	// read our testdata sql
+	sql, err := ioutil.ReadFile("testdata.sql")
+	if err != nil {
+		panic(fmt.Errorf("Unable to read testdata.sql: %s", err))
+	}
+	ts.s.db.MustExec(string(sql))
 }
 
 func (ts *MsgTestSuite) TearDownSuite() {
@@ -32,14 +34,6 @@ func (ts *MsgTestSuite) TearDownSuite() {
 }
 
 func (ts *MsgTestSuite) TestCheckMsgExists() {
-	row := ts.s.db.QueryRow(insertChannelSQL, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", "KN", "12345", "RW", "{}")
-	var ch1Id int
-	row.Scan(&ch1Id)
-
-	row = ts.s.db.QueryRow(insertMsgSQL, "de4e333b-1111-4fa6-be65-a355df933035", "ext1", ch1Id)
-	var msg1Id int
-	row.Scan(&msg1Id)
-
 	channel, err := ChannelFromUUID(ts.s, ChannelType("KN"), "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	if err != nil {
 		ts.FailNow("Error getting channel: ", err.Error())
@@ -50,7 +44,7 @@ func (ts *MsgTestSuite) TestCheckMsgExists() {
 	ts.Equal(err, ErrMsgNotFound)
 
 	// check with valid message id
-	err = checkMsgExists(ts.s, NewStatusUpdateForID(channel, fmt.Sprint(msg1Id), MsgStatus("S")))
+	err = checkMsgExists(ts.s, NewStatusUpdateForID(channel, "104", MsgStatus("S")))
 	ts.Nil(err)
 
 	// check with invalid external id

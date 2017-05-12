@@ -31,7 +31,7 @@ CREATE TABLE contacts_contact (
     "language" character varying(3),
     "created_by_id" integer NOT NULL,
     "modified_by_id" integer NOT NULL,
-    "org_id" integer REFERENCES orgs_org (id)
+    "org_id" integer REFERENCES orgs_org (id) on delete cascade
 );
 
 CREATE TABLE contacts_contacturn (
@@ -40,9 +40,9 @@ CREATE TABLE contacts_contacturn (
     "path" character varying(255) NOT NULL,
     "scheme" character varying(128) NOT NULL,
     "priority" integer NOT NULL,
-    "channel_id" integer REFERENCES channels_channel (id),
-    "contact_id" integer REFERENCES contacts_contact (id),
-    "org_id" integer REFERENCES orgs_org (id),
+    "channel_id" integer REFERENCES channels_channel (id) on delete cascade,
+    "contact_id" integer REFERENCES contacts_contact (id) on delete cascade,
+    "org_id" integer REFERENCES orgs_org (id) on delete cascade,
     "auth" text
 );
 
@@ -65,8 +65,8 @@ CREATE TABLE msgs_msg (
     "external_id" character varying(255),
     "attachments" character varying(255),
     "channel_id" integer REFERENCES channels_channel (id),
-    "contact_id" integer NOT NULL REFERENCES contacts_contact (id),
-    "contact_urn_id" integer REFERENCES contacts_contacturn (id),
-    "org_id" integer REFERENCES orgs_org (id),
+    "contact_id" integer NOT NULL REFERENCES contacts_contact (id) on delete cascade,
+    "contact_urn_id" integer REFERENCES contacts_contacturn (id) on delete cascade,
+    "org_id" integer REFERENCES orgs_org (id) on delete cascade,
     "topup_id" integer
 );
