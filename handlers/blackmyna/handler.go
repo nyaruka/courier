@@ -34,7 +34,7 @@ func (h *bmHandler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *bmHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *bmHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	// get our params
 	bmMsg := &bmMessage{}
 	err := handlers.DecodeAndValidateForm(bmMsg, r)
@@ -43,14 +43,13 @@ func (h *bmHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWrit
 	}
 
 	// create our URN
-	urn := courier.NewTelURN(bmMsg.From, channel.Country)
+	urn := courier.NewTelURNForChannel(bmMsg.From, channel)
 
 	// build our msg
-	msg := courier.NewMsg(channel, urn, bmMsg.Text)
-	defer msg.Release()
+	msg := courier.NewIncomingMsg(channel, urn, bmMsg.Text)
 
 	// and finally queue our message
-	err = h.Server().QueueMsg(msg)
+	err = h.Server().WriteMsg(msg)
 	if err != nil {
 		return err
 	}
@@ -72,7 +71,7 @@ var bmStatusMapping = map[int]courier.MsgStatus{
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *bmHandler) StatusMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *bmHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	// get our params
 	bmStatus := &bmStatus{}
 	err := handlers.DecodeAndValidateForm(bmStatus, r)
@@ -88,7 +87,7 @@ func (h *bmHandler) StatusMessage(channel *courier.Channel, w http.ResponseWrite
 	// write our status
 	status := courier.NewStatusUpdateForExternalID(channel, bmStatus.ID, msgStatus)
 	defer status.Release()
-	err = h.Server().UpdateMsgStatus(status)
+	err = h.Server().WriteMsgStatus(status)
 	if err != nil {
 		return err
 	}

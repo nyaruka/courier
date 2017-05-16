@@ -35,7 +35,7 @@ func (h *kannelHandler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *kannelHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *kannelHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	// get our params
 	kannelMsg := &kannelMessage{}
 	err := handlers.DecodeAndValidateQueryParams(kannelMsg, r)
@@ -47,14 +47,13 @@ func (h *kannelHandler) ReceiveMessage(channel *courier.Channel, w http.Response
 	date := time.Unix(kannelMsg.Timestamp, 0).UTC()
 
 	// create our URN
-	urn := courier.NewTelURN(kannelMsg.Sender, channel.Country)
+	urn := courier.NewTelURNForChannel(kannelMsg.Sender, channel)
 
 	// build our msg
-	msg := courier.NewMsg(channel, urn, kannelMsg.Message).WithExternalID(fmt.Sprintf("%d", kannelMsg.ID)).WithReceivedOn(date)
-	defer msg.Release()
+	msg := courier.NewIncomingMsg(channel, urn, kannelMsg.Message).WithExternalID(fmt.Sprintf("%d", kannelMsg.ID)).WithReceivedOn(date)
 
 	// and finally queue our message
-	err = h.Server().QueueMsg(msg)
+	err = h.Server().WriteMsg(msg)
 	if err != nil {
 		return err
 	}
@@ -78,7 +77,7 @@ var kannelStatusMapping = map[int]courier.MsgStatus{
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *kannelHandler) StatusMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *kannelHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	// get our params
 	kannelStatus := &kannelStatus{}
 	err := handlers.DecodeAndValidateQueryParams(kannelStatus, r)
@@ -93,8 +92,7 @@ func (h *kannelHandler) StatusMessage(channel *courier.Channel, w http.ResponseW
 
 	// write our status
 	status := courier.NewStatusUpdateForID(channel, kannelStatus.ID, msgStatus)
-	defer status.Release()
-	err = h.Server().UpdateMsgStatus(status)
+	err = h.Server().WriteMsgStatus(status)
 	if err != nil {
 		return err
 	}
@@ -103,6 +101,6 @@ func (h *kannelHandler) StatusMessage(channel *courier.Channel, w http.ResponseW
 }
 
 type kannelStatus struct {
-	ID     string `validate:"required" name:"id"`
-	Status int    `validate:"required" name:"status"`
+	ID     courier.MsgID `validate:"required" name:"id"`
+	Status int           `validate:"required" name:"status"`
 }

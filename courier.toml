@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------------
-# Courier settings can be set in four different wants, in order of preference:
+# Courier settings can be set in four different wants, in order of preference, last
+# being highest priority:
 #
 # 1) Courier defaults
 # 2) Config file options as defined below

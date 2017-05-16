@@ -5,19 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
 	"sync"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/garyburd/redigo/redis"
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/utils"
 )
@@ -25,43 +18,40 @@ import (
 // Server is the main interface ChannelHandlers use to interact with the database and redis. It provides an
 // abstraction that makes mocking easier for isolated unit tests
 type Server interface {
-	GetConfig() *config.Courier
+	Config() *config.Courier
 	AddChannelRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelActionHandlerFunc) *mux.Route
-	GetChannel(ChannelType, string) (*Channel, error)
 
-	QueueMsg(*Msg) error
-	UpdateMsgStatus(*MsgStatusUpdate) error
+	GetChannel(ChannelType, ChannelUUID) (Channel, error)
+	WriteMsg(*Msg) error
+	WriteMsgStatus(*MsgStatusUpdate) error
+
+	WaitGroup() *sync.WaitGroup
+	StopChan() chan bool
+	Stopped() bool
+
+	Router() *mux.Router
 
 	Start() error
-	Stop()
-}
-
-// ChannelActionHandlerFunc is the interface ChannelHandler functions must satisfy to handle various requests.
-// The Server will take care of looking up the channel by UUID before passing it to this function.
-type ChannelActionHandlerFunc func(*Channel, http.ResponseWriter, *http.Request) error
-
-// ChannelHandler is the interface all handlers must satisfy
-type ChannelHandler interface {
-	Initialize(Server) error
-	ChannelType() ChannelType
-	ChannelName() string
+	Stop() error
 }
 
 // NewServer creates a new Server for the passed in configuration. The server will have to be started
 // afterwards, which is when configuration options are checked.
-func NewServer(config *config.Courier) Server {
+func NewServer(config *config.Courier, backend Backend) Server {
 	// create our top level router
 	router := mux.NewRouter()
 	chanRouter := router.PathPrefix("/c/").Subrouter()
 
 	return &server{
-		config: config,
+		config:  config,
+		backend: backend,
 
 		router:     router,
 		chanRouter: chanRouter,
 
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},
+		stopped:   false,
 	}
 }
 
@@ -69,90 +59,14 @@ func NewServer(config *config.Courier) Server {
 // if it encounters any unrecoverable (or ignorable) error, though its bias is to move forward despite
 // connection errors
 func (s *server) Start() error {
-	// parse and test our db config
-	dbURL, err := url.Parse(s.config.DB)
-	if err != nil {
-		return fmt.Errorf("unable to parse DB URL '%s': %s", s.config.DB, err)
-	}
-
-	if dbURL.Scheme != "postgres" {
-		return fmt.Errorf("invalid DB URL: '%s', only postgres is supported", s.config.DB)
-	}
-
-	fmt.Println(splash)
-
-	// test our db connection
-	db, err := sqlx.Connect("postgres", s.config.DB)
-	if err != nil {
-		log.Printf("[ ] DB: error connecting: %s\n", err)
-	} else {
-		log.Println("[X] DB: connection ok")
-	}
-	s.db = db
-
-	// parse and test our redis config
-	redisURL, err := url.Parse(s.config.Redis)
-	if err != nil {
-		return fmt.Errorf("unable to parse Redis URL '%s': %s", s.config.Redis, err)
-	}
-
-	// create our pool
-	redisPool := &redis.Pool{
-		Wait:        true,              // makes callers wait for a connection
-		MaxActive:   5,                 // only open this many concurrent connections at once
-		MaxIdle:     2,                 // only keep up to 2 idle
-		IdleTimeout: 240 * time.Second, // how long to wait before reaping a connection
-		Dial: func() (redis.Conn, error) {
-			conn, err := redis.Dial("tcp", fmt.Sprintf("%s", redisURL.Host))
-			if err != nil {
-				return nil, err
-			}
-
-			// switch to the right DB
-			_, err = conn.Do("SELECT", strings.TrimLeft(redisURL.Path, "/"))
-			return conn, err
-		},
-	}
-	s.redisPool = redisPool
-
-	// test our redis connection
-	conn := redisPool.Get()
-	defer conn.Close()
-	_, err = conn.Do("PING")
-	if err != nil {
-		log.Printf("[ ] Redis: error connecting: %s\n", err)
-	} else {
-		log.Println("[X] Redis: connection ok")
-	}
-
-	// create our s3 client
-	s3Session, err := session.NewSession(&aws.Config{
-		Credentials: credentials.NewStaticCredentials(s.config.AWSAccessKeyID, s.config.AWSSecretAccessKey, ""),
-		Region:      aws.String(s.config.S3Region),
-	})
+	// start our backend
+	err := s.backend.Start()
 	if err != nil {
 		return err
 	}
-	s.s3Client = s3.New(s3Session)
 
-	// test out our S3 credentials
-	err = testS3(s)
-	if err != nil {
-		log.Printf("[ ] S3: bucket inaccessible, media may not save: %s\n", err)
-	} else {
-		log.Println("[X] S3: bucket accessible")
-	}
-
-	// make sure our spool dirs are writable
-	err = testSpoolDirs(s)
-	if err != nil {
-		log.Printf("[ ] Spool: spool directories not present, spooling may fail: %s\n", err)
-	} else {
-		log.Println("[X] Spool: spool directories present")
-	}
-
-	// start our msg flusher
-	go startMsgSpoolFlusher(s)
+	// start our spool flushers
+	startSpoolFlushers(s)
 
 	// wire up our index page
 	s.router.HandleFunc("/", s.handleIndex).Name("Index")
@@ -195,14 +109,13 @@ func (s *server) Start() error {
 }
 
 // Stop stops the server, returning only after all threads have stopped
-func (s *server) Stop() {
+func (s *server) Stop() error {
 	log.Println("Stopping courier processes")
 
-	if s.db != nil {
-		s.db.Close()
+	err := s.backend.Stop()
+	if err != nil {
+		return err
 	}
-
-	s.redisPool.Close()
 
 	s.stopped = true
 	close(s.stopChan)
@@ -215,34 +128,35 @@ func (s *server) Stop() {
 	s.waitGroup.Wait()
 
 	log.Printf("[X] Server: stopped listening\n")
+	return nil
 }
 
-func (s *server) QueueMsg(msg *Msg) error {
-	return queueMsg(s, msg)
+func (s *server) GetChannel(cType ChannelType, cUUID ChannelUUID) (Channel, error) {
+	return s.backend.GetChannel(cType, cUUID)
 }
 
-func (s *server) UpdateMsgStatus(status *MsgStatusUpdate) error {
-	return queueMsgStatus(s, status)
+func (s *server) WriteMsg(msg *Msg) error {
+	return s.backend.WriteMsg(msg)
 }
 
-func (s *server) GetConfig() *config.Courier {
-	return s.config
+func (s *server) WriteMsgStatus(status *MsgStatusUpdate) error {
+	return s.backend.WriteMsgStatus(status)
 }
 
-func (s *server) GetChannel(cType ChannelType, cUUID string) (*Channel, error) {
-	return ChannelFromUUID(s, cType, cUUID)
-}
+func (s *server) WaitGroup() *sync.WaitGroup { return s.waitGroup }
+func (s *server) StopChan() chan bool        { return s.stopChan }
+func (s *server) Config() *config.Courier    { return s.config }
+func (s *server) Stopped() bool              { return s.stopped }
+
+func (s *server) Backend() Backend    { return s.backend }
+func (s *server) Router() *mux.Router { return s.router }
 
 type server struct {
-	db        *sqlx.DB
-	redisPool *redis.Pool
-	s3Client  *s3.S3
+	backend Backend
 
 	httpServer *http.Server
 	router     *mux.Router
 	chanRouter *mux.Router
-
-	awsCreds *credentials.Credentials
 
 	config *config.Courier
 
@@ -272,13 +186,15 @@ func (s *server) initializeChannelHandlers() {
 	}
 }
 
-func (s *server) Router() *mux.Router { return s.chanRouter }
-func (s *server) RouteHelp() string   { return s.routeHelp }
-
 func (s *server) channelFunctionWrapper(handler ChannelHandler, handlerFunc ChannelActionHandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		uuid := mux.Vars(r)["uuid"]
-		channel, err := s.GetChannel(handler.ChannelType(), uuid)
+		uuid, err := NewChannelUUID(mux.Vars(r)["uuid"])
+		if err != nil {
+			WriteError(w, err)
+			return
+		}
+
+		channel, err := s.backend.GetChannel(handler.ChannelType(), uuid)
 		if err != nil {
 			WriteError(w, err)
 			return
@@ -300,44 +216,18 @@ func (s *server) AddChannelRoute(handler ChannelHandler, method string, action s
 }
 
 func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
-	// test redis
-	rc := s.redisPool.Get()
-	_, redisErr := rc.Do("PING")
-	defer rc.Close()
-
-	// test our db
-	_, dbErr := s.db.Exec("SELECT 1")
-
-	if redisErr == nil && dbErr == nil {
-		w.WriteHeader(http.StatusOK)
-	} else {
-		w.WriteHeader(http.StatusServiceUnavailable)
-	}
 
 	var buf bytes.Buffer
 	buf.WriteString("<title>courier</title><body><pre>\n")
 	buf.WriteString(splash)
 
-	if redisErr != nil {
-		buf.WriteString(fmt.Sprintf("\n% 16s: %v", "redis err", redisErr))
-	}
-	if dbErr != nil {
-		buf.WriteString(fmt.Sprintf("\n% 16s: %v", "db err", dbErr))
-	}
+	buf.WriteString(s.backend.Health())
 
 	buf.WriteString("\n\n")
-	buf.WriteString(s.RouteHelp())
+	buf.WriteString(s.routeHelp)
 	buf.WriteString("</pre></body>")
 	w.Write(buf.Bytes())
 }
-
-// RegisterHandler adds a new handler for a channel type, this is called by individual handlers when they are initialized
-func RegisterHandler(handler ChannelHandler) {
-	registeredHandlers[handler.ChannelType()] = handler
-}
-
-var registeredHandlers = make(map[ChannelType]ChannelHandler)
-var activeHandlers = make(map[ChannelType]ChannelHandler)
 
 var splash = `
  ____________                   _____             

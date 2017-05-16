@@ -16,6 +16,9 @@ import (
 	_ "github.com/nyaruka/courier/handlers/kannel"
 	_ "github.com/nyaruka/courier/handlers/telegram"
 	_ "github.com/nyaruka/courier/handlers/twilio"
+
+	// load available backends
+	_ "github.com/nyaruka/courier/backends/rapidpro"
 )
 
 func main() {
@@ -27,7 +30,13 @@ func main() {
 		log.Fatalf("Error loading configuration: %s", err)
 	}
 
-	server := courier.NewServer(config)
+	// load our backend
+	backend, err := courier.NewBackend(config)
+	if err != nil {
+		log.Fatalf("Error creating backend: %s", err)
+	}
+
+	server := courier.NewServer(config, backend)
 	err = server.Start()
 	if err != nil {
 		log.Fatalf("Error starting server: %s", err)

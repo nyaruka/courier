@@ -1,4 +1,4 @@
-package courier
+package rapidpro
 
 import (
 	"time"
@@ -6,6 +6,7 @@ import (
 	"database/sql"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/nyaruka/courier"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -24,7 +25,7 @@ type Contact struct {
 	UUID string    `db:"uuid"`
 	Name string    `db:"name"`
 
-	URN ContactURNID `db:"urn_id"`
+	URNID ContactURNID `db:"urn_id"`
 
 	CreatedOn  time.Time `db:"created_on"`
 	ModifiedOn time.Time `db:"modified_on"`
@@ -58,7 +59,7 @@ func insertContact(db *sqlx.DB, contact *Contact) error {
 }
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
-func contactForURN(db *sqlx.DB, org OrgID, channel ChannelID, urn URN, name string) (*Contact, error) {
+func contactForURN(db *sqlx.DB, org OrgID, channelID ChannelID, urn courier.URN, name string) (*Contact, error) {
 	// try to look up our contact by URN
 	var contact Contact
 	err := db.Get(&contact, lookupContactFromURNSQL, urn, org)
@@ -86,14 +87,14 @@ func contactForURN(db *sqlx.DB, org OrgID, channel ChannelID, urn URN, name stri
 		return nil, err
 	}
 
-	// now find our URN
-	contactURN, err := ContactURNForURN(db, org, channel, contact.ID, urn)
+	// associate our URN
+	contactURN, err := contactURNForURN(db, org, channelID, contact.ID, urn)
 	if err != nil {
 		return nil, err
 	}
 
 	// save this URN on our contact
-	contact.URN = contactURN.ID
+	contact.URNID = contactURN.ID
 
 	// and return it
 	return &contact, err

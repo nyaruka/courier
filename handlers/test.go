@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,13 +27,13 @@ type ChannelTestCase struct {
 	Status   int
 	Response string
 
-	Name      *string
-	Text      *string
-	URN       *string
-	External  *string
-	MediaURL  *string
-	MediaURLs []string
-	Date      *time.Time
+	Name        *string
+	Text        *string
+	URN         *string
+	External    *string
+	Attachment  *string
+	Attachments []string
+	Date        *time.Time
 
 	PrepRequest RequestPrepFunc
 }
@@ -55,7 +56,7 @@ func ensureTestServerUp(host string) {
 }
 
 // utility method to make a request to a handler URL
-func testHandlerRequest(tb testing.TB, s *courier.MockServer, url string, data string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
+func testHandlerRequest(tb testing.TB, s courier.Server, url string, data string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
 	var req *http.Request
 	var err error
 
@@ -95,10 +96,12 @@ func testHandlerRequest(tb testing.TB, s *courier.MockServer, url string, data s
 }
 
 // RunChannelTestCases runs all the passed in tests cases for the passed in channel configurations
-func RunChannelTestCases(t *testing.T, channels []*courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
-	s := courier.NewMockServer()
+func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
+	mb := courier.NewMockBackend()
+	s := courier.NewServer(config.NewTest(), mb)
+
 	for _, ch := range channels {
-		s.AddChannel(ch)
+		mb.AddChannel(ch)
 	}
 	handler.Initialize(s)
 
@@ -106,17 +109,15 @@ func RunChannelTestCases(t *testing.T, channels []*courier.Channel, handler cour
 		t.Run(testCase.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			s.ClearQueueMsgs()
+			mb.ClearQueueMsgs()
 
 			testHandlerRequest(t, s, testCase.URL, testCase.Data, testCase.Status, &testCase.Response, testCase.PrepRequest)
 
 			// pop our message off and test against it
-			msg, err := s.GetLastQueueMsg()
+			msg, err := mb.GetLastQueueMsg()
 
 			if testCase.Status == 200 && testCase.Text != nil {
 				require.Nil(err)
-
-				defer msg.Release()
 
 				if testCase.Name != nil {
 					require.Equal(*testCase.Name, msg.ContactName)
@@ -125,16 +126,19 @@ func RunChannelTestCases(t *testing.T, channels []*courier.Channel, handler cour
 					require.Equal(*testCase.Text, msg.Text)
 				}
 				if testCase.URN != nil {
-					require.Equal(*testCase.URN, string(msg.ContactURN))
+					require.Equal(*testCase.URN, string(msg.URN))
 				}
 				if testCase.External != nil {
 					require.Equal(*testCase.External, msg.ExternalID)
 				}
-				if len(testCase.MediaURLs) > 0 {
-					require.Equal(testCase.MediaURLs, msg.MediaURLs)
+				if testCase.Attachment != nil {
+					require.Equal([]string{*testCase.Attachment}, msg.Attachments)
+				}
+				if len(testCase.Attachments) > 0 {
+					require.Equal(testCase.Attachments, msg.Attachments)
 				}
 				if testCase.Date != nil {
-					require.Equal(*testCase.Date, msg.SentOn)
+					require.Equal(*testCase.Date, msg.ReceivedOn)
 				}
 			} else if err != courier.ErrMsgNotFound {
 				t.Fatalf("unexpected msg inserted: %v", err)
@@ -146,27 +150,29 @@ func RunChannelTestCases(t *testing.T, channels []*courier.Channel, handler cour
 	validCase := testCases[0]
 
 	t.Run("Queue Error", func(t *testing.T) {
-		s.SetErrorOnQueue(true)
-		defer s.SetErrorOnQueue(false)
+		mb.SetErrorOnQueue(true)
+		defer mb.SetErrorOnQueue(false)
 		testHandlerRequest(t, s, validCase.URL, validCase.Data, 400, Sp("unable to queue message"), validCase.PrepRequest)
 	})
 
 	t.Run("Receive With Invalid Channel", func(t *testing.T) {
-		s.ClearChannels()
+		mb.ClearChannels()
 		testHandlerRequest(t, s, validCase.URL, validCase.Data, 400, Sp("channel not found"), validCase.PrepRequest)
 	})
 }
 
 // RunChannelBenchmarks runs all the passed in test cases for the passed in channels
-func RunChannelBenchmarks(b *testing.B, channels []*courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
-	s := courier.NewMockServer()
+func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
+	mb := courier.NewMockBackend()
+	s := courier.NewServer(config.NewTest(), mb)
+
 	for _, ch := range channels {
-		s.AddChannel(ch)
+		mb.AddChannel(ch)
 	}
 	handler.Initialize(s)
 
 	for _, testCase := range testCases {
-		s.ClearQueueMsgs()
+		mb.ClearQueueMsgs()
 
 		b.Run(testCase.Label, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {

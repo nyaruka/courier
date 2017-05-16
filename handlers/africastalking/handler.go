@@ -56,7 +56,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	// get our params
 	atMsg := &messageRequest{}
 	err := handlers.DecodeAndValidateForm(atMsg, r)
@@ -72,14 +72,13 @@ func (h *handler) ReceiveMessage(channel *courier.Channel, w http.ResponseWriter
 	}
 
 	// create our URN
-	urn := courier.NewTelURN(atMsg.From, channel.Country)
+	urn := courier.NewTelURNForChannel(atMsg.From, channel)
 
 	// build our msg
-	msg := courier.NewMsg(channel, urn, atMsg.Text).WithExternalID(atMsg.ID).WithReceivedOn(date)
-	defer msg.Release()
+	msg := courier.NewIncomingMsg(channel, urn, atMsg.Text).WithExternalID(atMsg.ID).WithReceivedOn(date)
 
 	// and finally queue our message
-	err = h.Server().QueueMsg(msg)
+	err = h.Server().WriteMsg(msg)
 	if err != nil {
 		return err
 	}
@@ -88,7 +87,7 @@ func (h *handler) ReceiveMessage(channel *courier.Channel, w http.ResponseWriter
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	// get our params
 	atStatus := &statusRequest{}
 	err := handlers.DecodeAndValidateForm(atStatus, r)
@@ -104,7 +103,7 @@ func (h *handler) StatusMessage(channel *courier.Channel, w http.ResponseWriter,
 	// write our status
 	status := courier.NewStatusUpdateForExternalID(channel, atStatus.ID, msgStatus)
 	defer status.Release()
-	err = h.Server().UpdateMsgStatus(status)
+	err = h.Server().WriteMsgStatus(status)
 	if err != nil {
 		return err
 	}
