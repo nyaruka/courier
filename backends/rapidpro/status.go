@@ -13,14 +13,8 @@ import (
 
 // WriteMsgStatus writes the passed in status to the database, queueing it to our spool in case the database is down
 func writeMsgStatus(b *backend, status *courier.MsgStatusUpdate) error {
-	// first check if this msg exists
-	err := checkMsgExists(b, status)
-	if err == courier.ErrMsgNotFound {
-		return err
-	}
-
-	// if so, create our local msg status object
-	rpStatus := &MsgStatusUpdate{
+	// create our msg status object
+	dbStatus := &DBMsgStatus{
 		ChannelUUID: status.Channel.UUID(),
 		ID:          status.ID,
 		ExternalID:  status.ExternalID,
@@ -28,11 +22,14 @@ func writeMsgStatus(b *backend, status *courier.MsgStatusUpdate) error {
 		ModifiedOn:  status.CreatedOn,
 	}
 
-	err = writeMsgStatusToRedis(b, rpStatus)
+	err := writeMsgStatusToDB(b, dbStatus)
+	if err == courier.ErrMsgNotFound {
+		return err
+	}
 
 	// failed writing, write to our spool instead
 	if err != nil {
-		err = courier.WriteToSpool(b.config.SpoolDir, "statuses", rpStatus)
+		err = courier.WriteToSpool(b.config.SpoolDir, "statuses", dbStatus)
 	}
 
 	return err
@@ -61,27 +58,47 @@ func checkMsgExists(b *backend, status *courier.MsgStatusUpdate) (err error) {
 	return err
 }
 
-func writeMsgStatusToRedis(b *backend, status *MsgStatusUpdate) (err error) {
-	statusJSON, err := json.Marshal(status)
+const updateMsgID = `
+UPDATE msgs_msg SET status = :status, modified_on = :modified_on WHERE msgs_msg.id IN
+	(SELECT msgs_msg.id FROM msgs_msg INNER JOIN channels_channel ON (msgs_msg.channel_id = channels_channel.id) 
+WHERE (msgs_msg.id = :msg_id AND channels_channel.uuid = :channel_uuid))
+`
+
+const updateMsgExternalID = `
+UPDATE msgs_msg SET status = :status, modified_on = :modified_on WHERE msgs_msg.id IN
+	(SELECT msgs_msg.id FROM msgs_msg INNER JOIN channels_channel ON (msgs_msg.channel_id = channels_channel.id) 
+WHERE (msgs_msg.external_id = :external_id AND channels_channel.uuid = :channel_uuid))
+`
+
+// writeMsgStatusToDB writes the passed in msg status to our db
+func writeMsgStatusToDB(b *backend, status *DBMsgStatus) error {
+	var result sql.Result
+	var err error
+	if status.ID != courier.NilMsgID {
+		result, err = b.db.NamedExec(updateMsgID, status)
+	} else if status.ExternalID != "" {
+		result, err = b.db.NamedExec(updateMsgExternalID, status)
+	} else {
+		return fmt.Errorf("attempt to update msg status without id or external id")
+	}
 	if err != nil {
 		return err
 	}
 
-	// write it to redis
-	r := b.redisPool.Get()
-	defer r.Close()
-
-	// we push status updates to a single redis queue called c:statuses
-	_, err = r.Do("RPUSH", "c:statuses", statusJSON)
+	rows, err := result.RowsAffected()
 	if err != nil {
 		return err
+	}
+
+	if rows == 0 {
+		return courier.ErrMsgNotFound
 	}
 
 	return nil
 }
 
 func (b *backend) flushStatusFile(filename string, contents []byte) error {
-	status := &MsgStatusUpdate{}
+	status := &DBMsgStatus{}
 	err := json.Unmarshal(contents, status)
 	if err != nil {
 		log.Printf("ERROR unmarshalling spool file '%s', renaming: %s\n", filename, err)
@@ -90,17 +107,17 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 	}
 
 	// try to flush to redis
-	return writeMsgStatusToRedis(b, status)
+	return writeMsgStatusToDB(b, status)
 }
 
 //-----------------------------------------------------------------------------
 // MsgStatusUpdate implementation
 //-----------------------------------------------------------------------------
 
-// MsgStatusUpdate represents a status update on a message
-type MsgStatusUpdate struct {
-	ChannelUUID courier.ChannelUUID `json:"channel"                  db:"channel"`
-	ID          courier.MsgID       `json:"id,omitempty"             db:"id"`
+// DBMsgStatus represents a status update on a message
+type DBMsgStatus struct {
+	ChannelUUID courier.ChannelUUID `json:"channel_uuid"             db:"channel_uuid"`
+	ID          courier.MsgID       `json:"msg_id,omitempty"             db:"msg_id"`
 	ExternalID  string              `json:"external_id,omitempty"    db:"external_id"`
 	Status      courier.MsgStatus   `json:"status"                   db:"status"`
 	ModifiedOn  time.Time           `json:"modified_on"              db:"modified_on"`

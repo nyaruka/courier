@@ -6,7 +6,7 @@ import (
 
 // Courier is our top level configuration object
 type Courier struct {
-	Backend string `default"rapidpro"`
+	Backend string `default:"rapidpro"`
 
 	BaseURL  string `default:"https://localhost:8080"`
 	Port     int    `default:"8080"`

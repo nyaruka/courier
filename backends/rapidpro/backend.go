@@ -136,6 +136,9 @@ func (b *backend) Start() error {
 
 	// make sure our spool dirs are writable
 	err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "msgs")
+	if err == nil {
+		err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "statuses")
+	}
 	if err != nil {
 		log.Printf("[ ] Spool: spool directories not present, spooling may fail: %s\n", err)
 	} else {

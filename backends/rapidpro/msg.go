@@ -48,7 +48,7 @@ const (
 
 // WriteMsg creates a message given the passed in arguments, returning the uuid of the created message
 func writeMsg(b *backend, msg *courier.Msg) error {
-	m := newMsgFromMsg(msg)
+	m := newDBMsgFromMsg(msg)
 
 	// if we have media, go download it to S3
 	for i, attachment := range msg.Attachments {
@@ -72,11 +72,14 @@ func writeMsg(b *backend, msg *courier.Msg) error {
 	// finally try to add this message to our handling queue
 	err = addToHandleQueue(b, m)
 
+	// set the id on the message returned (could be 0, that's ok)
+	msg.ID = m.ID
+
 	// TODO: spool backdown for failure to add to redis
 	return err
 }
 
-func newMsgFromMsg(m *courier.Msg) *Msg {
+func newDBMsgFromMsg(m *courier.Msg) *DBMsg {
 	attachments := make([]string, len(m.Attachments))
 	for i := range m.Attachments {
 		attachments[i] = m.Attachments[i]
@@ -84,9 +87,9 @@ func newMsgFromMsg(m *courier.Msg) *Msg {
 
 	now := time.Now()
 
-	rpChannel := m.Channel.(*Channel)
+	rpChannel := m.Channel.(*DBChannel)
 
-	return &Msg{
+	return &DBMsg{
 		OrgID:       rpChannel.OrgID(),
 		UUID:        m.UUID,
 		Direction:   MsgIncoming,
@@ -112,7 +115,7 @@ func newMsgFromMsg(m *courier.Msg) *Msg {
 	}
 }
 
-func addToHandleQueue(b *backend, m *Msg) error {
+func addToHandleQueue(b *backend, m *DBMsg) error {
 	// write it to redis
 	r := b.redisPool.Get()
 	defer r.Close()
@@ -137,7 +140,7 @@ INSERT INTO msgs_msg(org_id, direction, has_template_error, text, msg_count, err
 RETURNING id
 `
 
-func writeMsgToDB(b *backend, m *Msg) error {
+func writeMsgToDB(b *backend, m *DBMsg) error {
 	// grab the contact for this msg
 	contact, err := contactForURN(b.db, m.OrgID, m.ChannelID, m.URN, m.ContactName)
 
@@ -154,10 +157,25 @@ func writeMsgToDB(b *backend, m *Msg) error {
 	if err != nil {
 		return err
 	}
-	if rows.Next() {
-		rows.Scan(&m.ID)
+	rows.Next()
+	err = rows.Scan(&m.ID)
+	if err != nil {
+		return err
 	}
 	return err
+}
+
+const selectMsgSQL = `
+SELECT org_id, direction, text, msg_count, error_count, priority, status, 
+       visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on
+FROM msgs_msg
+WHERE id = $1
+`
+
+func readMsgFromDB(b *backend, id courier.MsgID) (*DBMsg, error) {
+	m := &DBMsg{}
+	err := b.db.Get(m, selectMsgSQL, id)
+	return m, err
 }
 
 //-----------------------------------------------------------------------------
@@ -214,7 +232,7 @@ func downloadMediaToS3(b *backend, msgUUID courier.MsgUUID, mediaURL string) (st
 //-----------------------------------------------------------------------------
 
 func (b *backend) flushMsgFile(filename string, contents []byte) error {
-	msg := &Msg{}
+	msg := &DBMsg{}
 	err := json.Unmarshal(contents, msg)
 	if err != nil {
 		log.Printf("ERROR unmarshalling spool file '%s', renaming: %s\n", filename, err)
@@ -235,12 +253,8 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 	return addToHandleQueue(b, msg)
 }
 
-//-----------------------------------------------------------------------------
-// Msg
-//-----------------------------------------------------------------------------
-
-// Msg is our base struct to represent msgs both in our JSON and db representations
-type Msg struct {
+// DBMsg is our base struct to represent msgs both in our JSON and db representations
+type DBMsg struct {
 	OrgID       OrgID             `json:"org_id"       db:"org_id"`
 	ID          courier.MsgID     `json:"id"           db:"id"`
 	UUID        courier.MsgUUID   `json:"uuid"`

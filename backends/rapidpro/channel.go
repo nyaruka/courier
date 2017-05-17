@@ -58,7 +58,7 @@ FROM channels_channel
 WHERE channel_type = $1 AND uuid = $2 AND is_active = true`
 
 // ChannelForUUID attempts to look up the channel with the passed in UUID, returning it
-func loadChannelFromDB(b *backend, channel *Channel, channelType courier.ChannelType, uuid courier.ChannelUUID) error {
+func loadChannelFromDB(b *backend, channel *DBChannel, channelType courier.ChannelType, uuid courier.ChannelUUID) error {
 	// select just the fields we need
 	err := b.db.Get(channel, lookupChannelFromUUIDSQL, channelType, uuid)
 
@@ -77,7 +77,7 @@ func loadChannelFromDB(b *backend, channel *Channel, channelType courier.Channel
 }
 
 // getLocalChannel returns a Channel object for the passed in type and UUID.
-func getLocalChannel(channelType courier.ChannelType, uuid courier.ChannelUUID) (*Channel, error) {
+func getLocalChannel(channelType courier.ChannelType, uuid courier.ChannelUUID) (*DBChannel, error) {
 	// first see if the channel exists in our local cache
 	cacheMutex.RLock()
 	channel, found := channelCache[uuid]
@@ -86,7 +86,7 @@ func getLocalChannel(channelType courier.ChannelType, uuid courier.ChannelUUID) 
 	if found {
 		// if it was found but the type is wrong, that's an error
 		if channel.ChannelType() != channelType {
-			return &Channel{ChannelType_: channelType, UUID_: uuid}, courier.ErrChannelWrongType
+			return &DBChannel{ChannelType_: channelType, UUID_: uuid}, courier.ErrChannelWrongType
 		}
 
 		// if we've expired, clear our cache and return it
@@ -97,10 +97,10 @@ func getLocalChannel(channelType courier.ChannelType, uuid courier.ChannelUUID) 
 		return channel, nil
 	}
 
-	return &Channel{ChannelType_: channelType, UUID_: uuid}, courier.ErrChannelNotFound
+	return &DBChannel{ChannelType_: channelType, UUID_: uuid}, courier.ErrChannelNotFound
 }
 
-func cacheLocalChannel(channel *Channel) {
+func cacheLocalChannel(channel *DBChannel) {
 	// set our expiration
 	channel.expiration = time.Now().Add(localTTL * time.Second)
 
@@ -119,14 +119,14 @@ func clearLocalChannel(uuid courier.ChannelUUID) {
 const localTTL = 60
 
 var cacheMutex sync.RWMutex
-var channelCache = make(map[courier.ChannelUUID]*Channel)
+var channelCache = make(map[courier.ChannelUUID]*DBChannel)
 
 //-----------------------------------------------------------------------------
 // Channel Implementation
 //-----------------------------------------------------------------------------
 
-// Channel is the RapidPro specific concrete type satisfying the courier.Channel interface
-type Channel struct {
+// DBChannel is the RapidPro specific concrete type satisfying the courier.Channel interface
+type DBChannel struct {
 	OrgID_       OrgID               `db:"org_id"`
 	ID_          ChannelID           `db:"id"`
 	ChannelType_ courier.ChannelType `db:"channel_type"`
@@ -139,25 +139,25 @@ type Channel struct {
 }
 
 // OrgID returns the id of the org this channel is for
-func (c *Channel) OrgID() OrgID { return c.OrgID_ }
+func (c *DBChannel) OrgID() OrgID { return c.OrgID_ }
 
 // ChannelType returns the type of this channel
-func (c *Channel) ChannelType() courier.ChannelType { return c.ChannelType_ }
+func (c *DBChannel) ChannelType() courier.ChannelType { return c.ChannelType_ }
 
 // ID returns the id of this channel
-func (c *Channel) ID() ChannelID { return c.ID_ }
+func (c *DBChannel) ID() ChannelID { return c.ID_ }
 
 // UUID returns the UUID of this channel
-func (c *Channel) UUID() courier.ChannelUUID { return c.UUID_ }
+func (c *DBChannel) UUID() courier.ChannelUUID { return c.UUID_ }
 
 // Address returns the address of this channel
-func (c *Channel) Address() string { return c.Address_.String }
+func (c *DBChannel) Address() string { return c.Address_.String }
 
 // Country returns the country code for this channel if any
-func (c *Channel) Country() string { return c.Country_.String }
+func (c *DBChannel) Country() string { return c.Country_.String }
 
 // ConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
-func (c *Channel) ConfigForKey(key string, defaultValue interface{}) interface{} {
+func (c *DBChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
 	// no value, return our default value
 	if !c.Config_.Valid {
 		return defaultValue
