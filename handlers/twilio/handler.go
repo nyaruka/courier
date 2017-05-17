@@ -79,7 +79,7 @@ var twStatusMapping = map[string]courier.MsgStatus{
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *twHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *twHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return err
@@ -93,7 +93,7 @@ func (h *twHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWrit
 	}
 
 	// create our URN
-	urn := courier.NewTelURN(twMsg.From, twMsg.FromCountry)
+	urn := courier.NewTelURNForCountry(twMsg.From, twMsg.FromCountry)
 
 	if twMsg.Body != "" {
 		// Twilio sometimes sends concatenated sms as base64 encoded MMS
@@ -101,17 +101,16 @@ func (h *twHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWrit
 	}
 
 	// build our msg
-	msg := courier.NewMsg(channel, urn, twMsg.Body).WithExternalID(twMsg.MessageSID)
-	defer msg.Release()
+	msg := courier.NewIncomingMsg(channel, urn, twMsg.Body).WithExternalID(twMsg.MessageSID)
 
 	// process any attached media
 	for i := 0; i < twMsg.NumMedia; i++ {
 		mediaURL := r.PostForm.Get(fmt.Sprintf("MediaUrl%d", i))
-		msg.AddMediaURL(mediaURL)
+		msg.AddAttachment(mediaURL)
 	}
 
 	// and finally queue our message
-	err = h.Server().QueueMsg(msg)
+	err = h.Server().WriteMsg(msg)
 	if err != nil {
 		return err
 	}
@@ -120,7 +119,7 @@ func (h *twHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWrit
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *twHandler) StatusMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *twHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return err
@@ -141,7 +140,7 @@ func (h *twHandler) StatusMessage(channel *courier.Channel, w http.ResponseWrite
 	// write our status
 	status := courier.NewStatusUpdateForExternalID(channel, twStatus.MessageSID, msgStatus)
 	defer status.Release()
-	err = h.Server().UpdateMsgStatus(status)
+	err = h.Server().WriteMsgStatus(status)
 	if err != nil {
 		return err
 	}
@@ -158,13 +157,17 @@ func (h *twHandler) writeReceiveSuccess(w http.ResponseWriter) error {
 }
 
 // see https://www.twilio.com/docs/api/security
-func (h *twHandler) validateSignature(channel *courier.Channel, r *http.Request) error {
+func (h *twHandler) validateSignature(channel courier.Channel, r *http.Request) error {
 	if err := r.ParseForm(); err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("%s%s", h.Server().GetConfig().BaseURL, r.URL.RequestURI())
-	authToken := channel.GetConfig(courier.ConfigAuthToken)
+	url := fmt.Sprintf("%s%s", h.Server().Config().BaseURL, r.URL.RequestURI())
+	confAuth := channel.ConfigForKey(courier.ConfigAuthToken, "")
+	authToken, isStr := confAuth.(string)
+	if !isStr || authToken == "" {
+		return fmt.Errorf("invalid or missing auth token in config")
+	}
 
 	expected, err := twCalculateSignature(url, r.PostForm, authToken)
 	if err != nil {

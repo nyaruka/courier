@@ -6,6 +6,8 @@ import (
 
 // Courier is our top level configuration object
 type Courier struct {
+	Backend string `default:"rapidpro"`
+
 	BaseURL  string `default:"https://localhost:8080"`
 	Port     int    `default:"8080"`
 	DB       string `default:"postgres://courier@localhost/courier?sslmode=disable"`

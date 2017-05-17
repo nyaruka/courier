@@ -1,4 +1,4 @@
-package courier
+package rapidpro
 
 import "database/sql"
 

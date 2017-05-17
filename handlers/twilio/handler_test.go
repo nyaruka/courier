@@ -10,8 +10,8 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 )
 
-var testChannels = []*courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TW", "2020", "US", map[string]string{"auth_token": "6789"}),
+var testChannels = []courier.Channel{
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TW", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
 }
 
 var (
@@ -35,7 +35,7 @@ var testCases = []ChannelTestCase{
 	{Label: "Receive No Params", URL: receiveURL, Data: " ", Status: 400, Response: "field 'messagesid' required",
 		PrepRequest: addValidSignature},
 	{Label: "Receive Media", URL: receiveURL, Data: receiveMedia, Status: 200, Response: "<Response/>",
-		Text: Sp("Msg"), URN: Sp("tel:+14133881111"), External: Sp("SMe287d7109a5a925f182f0e07fe5b223b"), MediaURLs: []string{"cat.jpg", "dog.jpg"},
+		Text: Sp("Msg"), URN: Sp("tel:+14133881111"), External: Sp("SMe287d7109a5a925f182f0e07fe5b223b"), Attachments: []string{"cat.jpg", "dog.jpg"},
 		PrepRequest: addValidSignature},
 	{Label: "Receive Base64", URL: receiveURL, Data: receiveBase64, Status: 200, Response: "<Response/>",
 		Text: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), URN: Sp("tel:+14133881111"), External: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),

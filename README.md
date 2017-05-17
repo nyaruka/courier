@@ -19,7 +19,7 @@ To run the tests you need to create the test database:
 ```
 $ createdb courier_test
 $ createuser -P -E courier
-$ psql -d courier_test -f schema.sql
+$ psql -d courier_test -f backends/rapidpro/schema.sql
 $ psql -d courier_test -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO courier;"
 $ psql -d courier_test -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO courier;"
 ```

@@ -1,92 +1,59 @@
 package courier
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"net/http"
-	"strings"
 
-	"github.com/gorilla/mux"
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier/config"
 )
 
-var testDatabaseURL = "postgres://courier@localhost/courier_test?sslmode=disable"
-var testRedisURL = "redis://localhost:6379/10"
-var testConfig = config.Courier{
-	DB:    testDatabaseURL,
-	Redis: testRedisURL,
-}
-
 //-----------------------------------------------------------------------------
-// Mock server implementation
+// Mock backend implementation
 //-----------------------------------------------------------------------------
 
-// MockServer is a mocked version of server which doesn't require a real database or cache
-type MockServer struct {
-	config       *config.Courier
-	channels     map[ChannelUUID]*Channel
+// MockBackend is a mocked version of a backend which doesn't require a real database or cache
+type MockBackend struct {
+	channels     map[ChannelUUID]Channel
 	queueMsgs    []*Msg
 	errorOnQueue bool
-
-	router     *mux.Router
-	chanRouter *mux.Router
 }
 
-// NewMockServer creates a new mock server
-func NewMockServer() *MockServer {
-	testConfig := config.Courier{BaseURL: "http://courier.test"}
-	channels := make(map[ChannelUUID]*Channel)
-	router := mux.NewRouter()
-	chanRouter := router.PathPrefix("/c/").Subrouter()
-	ts := &MockServer{config: &testConfig, channels: channels, router: router, chanRouter: chanRouter}
-	return ts
+// NewMockBackend returns a new mock backend suitable for testing
+func NewMockBackend() *MockBackend {
+	return &MockBackend{channels: make(map[ChannelUUID]Channel)}
 }
-
-// Router returns the Gorilla router our server
-func (ts *MockServer) Router() *mux.Router { return ts.router }
 
 // GetLastQueueMsg returns the last message queued to the server
-func (ts *MockServer) GetLastQueueMsg() (*Msg, error) {
-	if len(ts.queueMsgs) == 0 {
+func (mb *MockBackend) GetLastQueueMsg() (*Msg, error) {
+	if len(mb.queueMsgs) == 0 {
 		return nil, ErrMsgNotFound
 	}
-	return ts.queueMsgs[len(ts.queueMsgs)-1], nil
+	return mb.queueMsgs[len(mb.queueMsgs)-1], nil
 }
 
 // SetErrorOnQueue is a mock method which makes the QueueMsg call throw the passed in error on next call
-func (ts *MockServer) SetErrorOnQueue(shouldError bool) {
-	ts.errorOnQueue = shouldError
+func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
+	mb.errorOnQueue = shouldError
 }
 
-// QueueMsg queues the passed in message internally
-func (ts *MockServer) QueueMsg(m *Msg) error {
-	if ts.errorOnQueue {
+// WriteMsg queues the passed in message internally
+func (mb *MockBackend) WriteMsg(m *Msg) error {
+	if mb.errorOnQueue {
 		return errors.New("unable to queue message")
 	}
 
-	ts.queueMsgs = append(ts.queueMsgs, m)
+	mb.queueMsgs = append(mb.queueMsgs, m)
 	return nil
 }
 
-// UpdateMsgStatus writes the status update to our queue
-func (ts *MockServer) UpdateMsgStatus(status *MsgStatusUpdate) error {
+// WriteMsgStatus writes the status update to our queue
+func (mb *MockBackend) WriteMsgStatus(status *MsgStatusUpdate) error {
 	return nil
 }
 
-// GetConfig returns the config for our server
-func (ts *MockServer) GetConfig() *config.Courier {
-	return ts.config
-}
-
-// GetChannel returns
-func (ts *MockServer) GetChannel(cType ChannelType, uuid string) (*Channel, error) {
-	cUUID, err := NewChannelUUID(uuid)
-	if err != nil {
-		return nil, err
-	}
-	channel, found := ts.channels[cUUID]
+// GetChannel returns the channel with the passed in type and channel uuid
+func (mb *MockBackend) GetChannel(cType ChannelType, uuid ChannelUUID) (Channel, error) {
+	channel, found := mb.channels[uuid]
 	if !found {
 		return nil, ErrChannelNotFound
 	}
@@ -94,75 +61,73 @@ func (ts *MockServer) GetChannel(cType ChannelType, uuid string) (*Channel, erro
 }
 
 // AddChannel adds a test channel to the test server
-func (ts *MockServer) AddChannel(channel *Channel) {
-	ts.channels[channel.UUID] = channel
+func (mb *MockBackend) AddChannel(channel Channel) {
+	mb.channels[channel.UUID()] = channel
 }
 
 // ClearChannels is a utility function on our mock server to clear all added channels
-func (ts *MockServer) ClearChannels() {
-	ts.channels = nil
+func (mb *MockBackend) ClearChannels() {
+	mb.channels = nil
 }
 
-// Start starts our mock server
-func (ts *MockServer) Start() error { return nil }
+// Start starts our mock backend
+func (mb *MockBackend) Start() error { return nil }
 
-// Stop stops our mock server
-func (ts *MockServer) Stop() {}
+// Stop stops our mock backend
+func (mb *MockBackend) Stop() error { return nil }
 
 // ClearQueueMsgs clears our mock msg queue
-func (ts *MockServer) ClearQueueMsgs() {
-	ts.queueMsgs = nil
+func (mb *MockBackend) ClearQueueMsgs() {
+	mb.queueMsgs = nil
 }
 
-func (ts *MockServer) channelFunctionWrapper(handler ChannelHandler, handlerFunc ChannelActionHandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		uuid := mux.Vars(r)["uuid"]
-		channel, err := ts.GetChannel(handler.ChannelType(), uuid)
-		if err != nil {
-			WriteError(w, err)
-			return
-		}
-
-		err = handlerFunc(channel, w, r)
-		if err != nil {
-			WriteError(w, err)
-		}
-	}
+// Health gives a string representing our health, empty for our mock
+func (mb *MockBackend) Health() string {
+	return ""
 }
 
-// AddChannelRoute adds the passed in handler to our router
-func (ts *MockServer) AddChannelRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelActionHandlerFunc) *mux.Route {
-	path := fmt.Sprintf("/%s/{uuid:[a-zA-Z0-9-]{36}}/%s/", strings.ToLower(string(handler.ChannelType())), action)
-	route := ts.chanRouter.HandleFunc(path, ts.channelFunctionWrapper(handler, handlerFunc))
-	route.Methods(method)
-	route.Name(fmt.Sprintf("%s %s", handler.ChannelName(), strings.Title(action)))
-	return route
+func buildMockBackend(config *config.Courier) Backend {
+	return NewMockBackend()
+}
+
+func init() {
+	RegisterBackend("mock", buildMockBackend)
 }
 
 //-----------------------------------------------------------------------------
 // Mock channel implementation
 //-----------------------------------------------------------------------------
 
+type mockChannel struct {
+	uuid        ChannelUUID
+	channelType ChannelType
+	address     string
+	country     string
+	config      map[string]interface{}
+}
+
+func (c *mockChannel) UUID() ChannelUUID        { return c.uuid }
+func (c *mockChannel) ChannelType() ChannelType { return c.channelType }
+func (c *mockChannel) Address() string          { return c.address }
+func (c *mockChannel) Country() string          { return c.country }
+func (c *mockChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
+	value, found := c.config[key]
+	if !found {
+		return defaultValue
+	}
+	return value
+}
+
 // NewMockChannel creates a new mock channel for the passed in type, address, country and config
-func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]string) *Channel {
+func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}) Channel {
 	cUUID, _ := NewChannelUUID(uuid)
 
-	configJSON := ""
-	if config != nil {
-		configBytes, err := json.Marshal(config)
-		if err != nil {
-			panic(err)
-		}
-		configJSON = string(configBytes)
+	channel := &mockChannel{
+		uuid:        cUUID,
+		channelType: ChannelType(channelType),
+		address:     address,
+		country:     country,
+		config:      config,
 	}
-
-	channel := &Channel{
-		UUID:        cUUID,
-		ChannelType: ChannelType(channelType),
-		Address:     address,
-		Country:     country,
-		Config:      configJSON,
-	}
-	channel.parseConfig()
 	return channel
 }

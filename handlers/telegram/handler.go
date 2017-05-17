@@ -35,7 +35,7 @@ func (h *telegramHandler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *telegramHandler) ReceiveMessage(channel *courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *telegramHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
 	te := &telegramEnvelope{}
 	err := handlers.DecodeAndValidateJSON(te, r)
 	if err != nil {
@@ -102,15 +102,14 @@ func (h *telegramHandler) ReceiveMessage(channel *courier.Channel, w http.Respon
 	}
 
 	// build our msg
-	msg := courier.NewMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(fmt.Sprintf("%d", te.Message.MessageID)).WithContactName(name)
-	defer msg.Release()
+	msg := courier.NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(fmt.Sprintf("%d", te.Message.MessageID)).WithContactName(name)
 
 	if mediaURL != "" {
-		msg.AddMediaURL(mediaURL)
+		msg.AddAttachment(mediaURL)
 	}
 
 	// queue our message
-	err = h.Server().QueueMsg(msg)
+	err = h.Server().WriteMsg(msg)
 	if err != nil {
 		return err
 	}
@@ -120,8 +119,13 @@ func (h *telegramHandler) ReceiveMessage(channel *courier.Channel, w http.Respon
 
 var telegramAPIURL = "https://api.telegram.org"
 
-func resolveFileID(channel *courier.Channel, fileID string) (string, error) {
-	authToken := channel.GetConfig(courier.ConfigAuthToken)
+func resolveFileID(channel courier.Channel, fileID string) (string, error) {
+	confAuth := channel.ConfigForKey(courier.ConfigAuthToken, "")
+	authToken, isStr := confAuth.(string)
+	if !isStr || authToken == "" {
+		return "", fmt.Errorf("invalid auth token config")
+	}
+
 	fileURL := fmt.Sprintf("%s/bot%s/getFile", telegramAPIURL, authToken)
 
 	form := url.Values{}
