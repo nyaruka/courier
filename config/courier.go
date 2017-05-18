@@ -36,7 +36,7 @@ func NewWithPath(path string) *multiconfig.DefaultLoader {
 
 	loaders = append(loaders, &multiconfig.TagLoader{})
 	loaders = append(loaders, &multiconfig.TOMLLoader{Path: path})
-	loaders = append(loaders, &multiconfig.EnvironmentLoader{})
+	loaders = append(loaders, &multiconfig.EnvironmentLoader{CamelCase: true})
 	loaders = append(loaders, &multiconfig.FlagLoader{CamelCase: true})
 	loader := multiconfig.MultiLoader(loaders...)
 
