@@ -5,12 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // FlusherFunc defines our interface for flushers, they are handed a filename and byte blob and are expected
@@ -24,7 +25,7 @@ func RegisterFlusher(directory string, flusherFunc FlusherFunc) {
 
 // WriteToSpool writes the passed in object to the passed in subdir
 func WriteToSpool(spoolDir string, subdir string, contents interface{}) error {
-	contentBytes, err := json.Marshal(contents)
+	contentBytes, err := json.MarshalIndent(contents, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -45,7 +46,8 @@ func startSpoolFlushers(s Server) {
 		s.WaitGroup().Add(1)
 		defer s.WaitGroup().Done()
 
-		log.Println("[X] Spool: flush process started")
+		log := logrus.WithField("comp", "spool")
+		log.WithField("state", "started").Info("spool started")
 
 		// runs until stopped, checking every 30 seconds if there is anything to flush from our spool
 		for {
@@ -53,7 +55,7 @@ func startSpoolFlushers(s Server) {
 
 			// our server is shutting down, exit
 			case <-s.StopChan():
-				log.Println("[X] Spool: flush process stopped")
+				log.WithField("state", "stopped").Info("spool stopped")
 				return
 
 			// every 30 seconds we check to see if there are any files to spool
@@ -97,22 +99,23 @@ func newSpoolFlusher(s Server, dir string, flusherFunc FlusherFunc) *flusher {
 			return nil
 		}
 
+		log := logrus.WithField("comp", "spool").WithField("filename", filename)
+
 		// otherwise, read our msg json
 		contents, err := ioutil.ReadFile(filename)
 		if err != nil {
-			log.Printf("ERROR reading spool file '%s': %s\n", filename, err)
+			log.WithError(err).Error("reading spool file")
 			return nil
 		}
 
 		err = flusherFunc(filename, contents)
 		if err != nil {
-			log.Printf("ERROR flushing file '%s': %s\n", filename, err)
+			log.WithError(err).Error("flushing spool file")
 			return err
 		}
+		log.Info("flushed")
 
-		log.Printf("Spool: flushed '%s' to redis", filename)
-
-		// we flushed to redis, remove our file if it is still present
+		// we flushed, remove our file if it is still present
 		if _, e := os.Stat(filename); e == nil {
 			err = os.Remove(filename)
 		}

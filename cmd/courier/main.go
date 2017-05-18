@@ -9,6 +9,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/config"
+	"github.com/sirupsen/logrus"
 
 	// load channel handler packages
 	_ "github.com/nyaruka/courier/handlers/africastalking"
@@ -29,6 +30,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading configuration: %s", err)
 	}
+
+	// configure our logger
+	//logrus.SetFormatter(&logrus.JSONFormatter{})
+	logrus.SetOutput(os.Stdout)
+	level, err := logrus.ParseLevel(config.LogLevel)
+	if err != nil {
+		log.Fatalf("Invalid log level '%s'", level)
+	}
+	logrus.SetLevel(level)
 
 	// load our backend
 	backend, err := courier.NewBackend(config)

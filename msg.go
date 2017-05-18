@@ -2,7 +2,9 @@ package courier
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -30,6 +32,16 @@ func (i *MsgID) UnmarshalText(text []byte) (err error) {
 		i.Valid = false
 	}
 	return err
+}
+
+// UnmarshalJSON satisfies json unmarshalling so ids can be decoded from JSON
+func (i *MsgID) UnmarshalJSON(bytes []byte) (err error) {
+	return json.Unmarshal(bytes, &i.NullInt64)
+}
+
+// String satisfies the Stringer interface
+func (i *MsgID) String() string {
+	return fmt.Sprintf("%d", i.Int64)
 }
 
 // NilMsgID is our nil value for MsgID
