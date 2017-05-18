@@ -22,9 +22,13 @@ import (
 	_ "github.com/nyaruka/courier/backends/rapidpro"
 )
 
+var version = "master"
+
 func main() {
 	m := config.NewWithPath("courier.toml")
 	config := &config.Courier{}
+
+	log.Println("Starting version: ", version)
 
 	err := m.Load(config)
 	if err != nil {

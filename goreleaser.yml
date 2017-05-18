@@ -1,0 +1,9 @@
+build:
+  main: ./cmd/courier/main.go
+  binary: courier
+  goos:
+    - windows
+    - darwin
+    - linux
+  goarch:
+    - amd64
