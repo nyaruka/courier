@@ -7,3 +7,9 @@ build:
     - linux
   goarch:
     - amd64
+
+archive:
+  files:
+    - LICENSE.txt
+    - courier.toml
+    - README.md
