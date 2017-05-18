@@ -10,6 +10,6 @@ build:
 
 archive:
   files:
-    - LICENSE.txt
-    - courier.toml
+    - LICENSE
     - README.md
+    - courier.toml
