@@ -3,9 +3,10 @@ package rapidpro
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"net/url"
+	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -17,6 +18,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/utils"
+	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -62,6 +64,12 @@ func (b *backend) Health() string {
 
 // Start starts our RapidPro backend, this tests our various connections and starts our spool flushers
 func (b *backend) Start() error {
+	log := logrus.WithFields(logrus.Fields{
+		"comp":  "backend",
+		"state": "starting",
+	})
+	log.Info("starting backend")
+
 	// parse and test our db config
 	dbURL, err := url.Parse(b.config.DB)
 	if err != nil {
@@ -75,9 +83,9 @@ func (b *backend) Start() error {
 	// test our db connection
 	db, err := sqlx.Connect("postgres", b.config.DB)
 	if err != nil {
-		log.Printf("[ ] DB: error connecting: %s\n", err)
+		log.Error("db not reachable")
 	} else {
-		log.Println("[X] DB: connection ok")
+		log.Info("db ok")
 	}
 	b.db = db
 
@@ -111,9 +119,9 @@ func (b *backend) Start() error {
 	defer conn.Close()
 	_, err = conn.Do("PING")
 	if err != nil {
-		log.Printf("[ ] Redis: error connecting: %s\n", err)
+		log.WithError(err).Error("redis not reachable")
 	} else {
-		log.Println("[X] Redis: connection ok")
+		log.Info("redis ok")
 	}
 
 	// create our s3 client
@@ -129,9 +137,9 @@ func (b *backend) Start() error {
 	// test out our S3 credentials
 	err = utils.TestS3(b.s3Client, b.config.S3MediaBucket)
 	if err != nil {
-		log.Printf("[ ] S3: bucket inaccessible, media may not save: %s\n", err)
+		log.WithError(err).Error("s3 bucket not reachable")
 	} else {
-		log.Println("[X] S3: bucket accessible")
+		log.Info("s3 bucket ok")
 	}
 
 	// make sure our spool dirs are writable
@@ -140,14 +148,24 @@ func (b *backend) Start() error {
 		err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "statuses")
 	}
 	if err != nil {
-		log.Printf("[ ] Spool: spool directories not present, spooling may fail: %s\n", err)
+		log.WithError(err).Error("spool directories not writable")
 	} else {
-		log.Println("[X] Spool: spool directories present")
+		log.Info("spool directories ok")
 	}
 
+	// start our rapidpro notifier
+	b.notifier = newNotifier(b.config)
+	b.notifier.start(b)
+
 	// register and start our msg spool flushers
-	courier.RegisterFlusher("msgs", b.flushMsgFile)
-	courier.RegisterFlusher("statuses", b.flushStatusFile)
+	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "msgs"), b.flushMsgFile)
+	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "statuses"), b.flushStatusFile)
+
+	logrus.WithFields(logrus.Fields{
+		"comp":  "backend",
+		"state": "started",
+	}).Info("backend started")
+
 	return nil
 }
 
@@ -158,12 +176,24 @@ func (b *backend) Stop() error {
 	}
 
 	b.redisPool.Close()
+
+	// close our stop channel
+	close(b.stopChan)
+
+	// wait for our threads to exit
+	b.waitGroup.Wait()
+
 	return nil
 }
 
 // NewBackend creates a new RapidPro backend
 func newBackend(config *config.Courier) courier.Backend {
-	return &backend{config: config}
+	return &backend{
+		config: config,
+
+		stopChan:  make(chan bool),
+		waitGroup: &sync.WaitGroup{},
+	}
 }
 
 type backend struct {
@@ -173,4 +203,9 @@ type backend struct {
 	redisPool *redis.Pool
 	s3Client  *s3.S3
 	awsCreds  *credentials.Credentials
+
+	notifier *notifier
+
+	stopChan  chan bool
+	waitGroup *sync.WaitGroup
 }

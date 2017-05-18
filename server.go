@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"sync"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/utils"
+	"github.com/sirupsen/logrus"
 )
 
 // Server is the main interface ChannelHandlers use to interact with the database and redis. It provides an
@@ -89,7 +92,7 @@ func (s *server) Start() error {
 	// configure timeouts on our server
 	s.httpServer = &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.config.Port),
-		Handler:      s.router,
+		Handler:      handlers.LoggingHandler(os.Stdout, s.router),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
@@ -100,17 +103,28 @@ func (s *server) Start() error {
 		defer s.waitGroup.Done()
 		err := s.httpServer.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
-			log.Printf("ERROR: %s", err)
+			logrus.WithFields(logrus.Fields{
+				"comp":  "server",
+				"state": "stopping",
+				"err":   err,
+			}).Error()
 		}
 	}()
 
-	log.Printf("[X] Server: listening on port %d\n", s.config.Port)
+	logrus.WithFields(logrus.Fields{
+		"comp":  "server",
+		"port":  s.config.Port,
+		"state": "listening",
+	}).Info("server listening on ", s.config.Port)
 	return nil
 }
 
 // Stop stops the server, returning only after all threads have stopped
 func (s *server) Stop() error {
-	log.Println("Stopping courier processes")
+	logrus.WithFields(logrus.Fields{
+		"comp":  "server",
+		"state": "stopping",
+	}).Info("stopping server")
 
 	err := s.backend.Stop()
 	if err != nil {
@@ -122,12 +136,19 @@ func (s *server) Stop() error {
 
 	// shut down our HTTP server
 	if err := s.httpServer.Shutdown(nil); err != nil {
-		log.Printf("ERROR gracefully shutting down server: %s\n", err)
+		logrus.WithFields(logrus.Fields{
+			"comp": "server",
+			"err":  err,
+		}).Error("shutting down server")
 	}
 
 	s.waitGroup.Wait()
 
-	log.Printf("[X] Server: stopped listening\n")
+	logrus.WithFields(logrus.Fields{
+		"comp":  "server",
+		"state": "stopped",
+	}).Info("server stopped")
+
 	return nil
 }
 
@@ -181,7 +202,7 @@ func (s *server) initializeChannelHandlers() {
 			}
 			activeHandlers[handler.ChannelType()] = handler
 
-			log.Printf("[X] Server: initialized handler for channel type \"%s\" (%s)", handler.ChannelName(), channelType)
+			logrus.WithField("comp", "server").WithField("handler", handler.ChannelName()).WithField("handler_type", channelType).Info("handler initialized")
 		}
 	}
 }

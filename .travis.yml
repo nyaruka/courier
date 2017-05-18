@@ -1,15 +1,23 @@
 language: go
+
 go:
 - 1.8
+
 services:
 - redis-server
+
 addons:
   postgresql: '9.3'
+
 before_script:
 - psql -U postgres -c "CREATE USER courier WITH PASSWORD 'courier';"
 - psql -U postgres -c "ALTER ROLE courier WITH SUPERUSER;"
 - psql -U postgres -c "CREATE DATABASE courier_test;"
 - psql -U postgres -d courier_test -f backends/rapidpro/schema.sql
 - go get github.com/mattn/goveralls
+
 script:
 - $HOME/gopath/bin/goveralls -service=travis-ci
+
+after_success:
+  test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash

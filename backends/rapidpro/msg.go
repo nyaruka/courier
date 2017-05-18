@@ -69,9 +69,6 @@ func writeMsg(b *backend, msg *courier.Msg) error {
 		return courier.WriteToSpool(b.config.SpoolDir, "msgs", m)
 	}
 
-	// finally try to add this message to our handling queue
-	err = addToHandleQueue(b, m)
-
 	// set the id on the message returned (could be 0, that's ok)
 	msg.ID = m.ID
 
@@ -115,6 +112,7 @@ func newDBMsgFromMsg(m *courier.Msg) *DBMsg {
 	}
 }
 
+// adds the message to a redis queue for handling. CURRENTLY UNUSED
 func addToHandleQueue(b *backend, m *DBMsg) error {
 	// write it to redis
 	r := b.redisPool.Get()
@@ -146,7 +144,7 @@ func writeMsgToDB(b *backend, m *DBMsg) error {
 
 	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {
-		return courier.WriteToSpool(b.config.SpoolDir, "msgs", m)
+		return err
 	}
 
 	// set our contact and urn ids from our contact
@@ -162,6 +160,10 @@ func writeMsgToDB(b *backend, m *DBMsg) error {
 	if err != nil {
 		return err
 	}
+
+	// queue this up to be handled by RapidPro
+	b.notifier.addMsg(m.ID)
+
 	return err
 }
 
@@ -244,13 +246,7 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 	err = writeMsgToDB(b, msg)
 
 	// fail? oh well, we'll try again later
-	if err != nil {
-		return err
-	}
-
-	// finally try to add this message to our handling queue
-	// TODO: if we fail here how do we avoid double inserts above?
-	return addToHandleQueue(b, msg)
+	return err
 }
 
 // DBMsg is our base struct to represent msgs both in our JSON and db representations
