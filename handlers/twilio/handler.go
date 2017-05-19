@@ -44,13 +44,12 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *twHandler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	route := s.AddChannelRoute(h, "POST", "receive", h.ReceiveMessage)
-	if route.GetError() != nil {
-		return route.GetError()
+	err := s.AddChannelRoute(h, "POST", "receive", h.ReceiveMessage)
+	if err != nil {
+		return err
 	}
 
-	route = s.AddChannelRoute(h, "POST", "status", h.StatusMessage)
-	return route.GetError()
+	return s.AddChannelRoute(h, "POST", "status", h.StatusMessage)
 }
 
 type twMessage struct {
@@ -145,7 +144,7 @@ func (h *twHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter
 		return err
 	}
 
-	return courier.WriteStatusSuccess(w, status)
+	return courier.WriteStatusSuccess(w, r, status)
 }
 
 // Twilio expects Twiml from a message receive request

@@ -25,13 +25,12 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *kannelHandler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	route := s.AddChannelRoute(h, "POST", "receive", h.ReceiveMessage)
-	if route.GetError() != nil {
-		return route.GetError()
+	err := s.AddChannelRoute(h, "POST", "receive", h.ReceiveMessage)
+	if err != nil {
+		return err
 	}
 
-	route = s.AddChannelRoute(h, "GET", "status", h.StatusMessage)
-	return route.GetError()
+	return s.AddChannelRoute(h, "GET", "status", h.StatusMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
@@ -58,7 +57,7 @@ func (h *kannelHandler) ReceiveMessage(channel courier.Channel, w http.ResponseW
 		return err
 	}
 
-	return courier.WriteReceiveSuccess(w, msg)
+	return courier.WriteReceiveSuccess(w, r, msg)
 }
 
 type kannelMessage struct {
@@ -97,7 +96,7 @@ func (h *kannelHandler) StatusMessage(channel courier.Channel, w http.ResponseWr
 		return err
 	}
 
-	return courier.WriteStatusSuccess(w, status)
+	return courier.WriteStatusSuccess(w, r, status)
 }
 
 type kannelStatus struct {

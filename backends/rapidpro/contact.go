@@ -37,7 +37,7 @@ func insertContact(db *sqlx.DB, contact *DBContact) error {
 }
 
 const lookupContactFromURNSQL = `
-SELECT c.org_id, c.id, c.uuid, c.name, u.id as "urn_id"
+SELECT c.org_id, c.id, c.uuid, c.modified_on, c.created_on, c.name, u.id as "urn_id"
 FROM contacts_contact AS c, contacts_contacturn AS u 
 WHERE u.urn = $1 AND u.contact_id = c.id AND u.org_id = $2 AND c.is_active = TRUE AND c.is_test = FALSE
 `
@@ -60,6 +60,8 @@ func contactForURN(db *sqlx.DB, org OrgID, channelID ChannelID, urn courier.URN,
 	contact.OrgID = org
 	contact.UUID = uuid.NewV4().String()
 	contact.Name = name
+	contact.CreatedOn = time.Now()
+	contact.ModifiedOn = time.Now()
 
 	// TODO: Set these to a system user
 	contact.CreatedBy = 1

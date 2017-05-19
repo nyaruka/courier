@@ -46,13 +46,11 @@ var statusMapping = map[string]courier.MsgStatus{
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	route := s.AddChannelRoute(h, "POST", "receive", h.ReceiveMessage)
-	if route.GetError() != nil {
-		return route.GetError()
+	err := s.AddChannelRoute(h, "POST", "receive", h.ReceiveMessage)
+	if err != nil {
+		return err
 	}
-
-	route = s.AddChannelRoute(h, "POST", "status", h.StatusMessage)
-	return route.GetError()
+	return s.AddChannelRoute(h, "POST", "status", h.StatusMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
@@ -83,7 +81,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return err
 	}
 
-	return courier.WriteReceiveSuccess(w, msg)
+	return courier.WriteReceiveSuccess(w, r, msg)
 }
 
 // StatusMessage is our HTTP handler function for status updates
@@ -108,5 +106,5 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 		return err
 	}
 
-	return courier.WriteStatusSuccess(w, status)
+	return courier.WriteStatusSuccess(w, r, status)
 }

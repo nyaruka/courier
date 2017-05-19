@@ -21,13 +21,15 @@ type Courier struct {
 	AWSAccessKeyID     string `default:"missing_aws_access_key_id"`
 	AWSSecretAccessKey string `default:"missing_aws_secret_access_key"`
 
-	RapidproHandleURL string `default:"https://app.rapidpro.io/handlers/mage/handle_message/"`
+	RapidproHandleURL string `default:"https://app.rapidpro.io/handlers/mage/handle_message"`
 	RapidproToken     string `default:"missing_rapidpro_token"`
 
 	LogLevel string `default:"error"`
 
 	IncludeChannels []string
 	ExcludeChannels []string
+
+	Version string `default:"Dev"`
 }
 
 // NewWithPath returns a new instance of Loader to read from the given configuration file using our config options

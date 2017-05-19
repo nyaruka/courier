@@ -79,6 +79,32 @@ func (ts *MsgTestSuite) TestCheckMsgExists() {
 	ts.Nil(err)
 }
 
+func (ts *MsgTestSuite) TestContact() {
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	urn := courier.NewTelURNForCountry("12065551518", "US")
+
+	now := time.Now()
+
+	// create our new contact
+	contact, err := contactForURN(ts.b.db, knChannel.OrgID(), knChannel.ID(), urn, "Ryan Lewis")
+	ts.NoError(err)
+
+	now2 := time.Now()
+
+	// load this contact again by URN, should be same contact, name unchanged
+	contact2, err := contactForURN(ts.b.db, knChannel.OrgID(), knChannel.ID(), urn, "Other Name")
+	ts.NoError(err)
+
+	ts.Equal(contact.UUID, contact2.UUID)
+	ts.Equal(contact.ID, contact2.ID)
+	ts.Equal(knChannel.OrgID(), contact2.OrgID)
+	ts.Equal("Ryan Lewis", contact2.Name)
+	ts.True(contact2.ModifiedOn.After(now))
+	ts.True(contact2.CreatedOn.After(now))
+	ts.True(contact2.ModifiedOn.Before(now2))
+	ts.True(contact2.CreatedOn.Before(now2))
+}
+
 func (ts *MsgTestSuite) TestContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")

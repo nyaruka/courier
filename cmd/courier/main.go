@@ -22,21 +22,22 @@ import (
 	_ "github.com/nyaruka/courier/backends/rapidpro"
 )
 
-var version = "master"
+var version = "Dev"
 
 func main() {
 	m := config.NewWithPath("courier.toml")
 	config := &config.Courier{}
-
-	log.Println("Starting version: ", version)
-
 	err := m.Load(config)
 	if err != nil {
 		log.Fatalf("Error loading configuration: %s", err)
 	}
 
+	// if we have a custom version, use it
+	if version != "Dev" {
+		config.Version = version
+	}
+
 	// configure our logger
-	//logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetOutput(os.Stdout)
 	level, err := logrus.ParseLevel(config.LogLevel)
 	if err != nil {

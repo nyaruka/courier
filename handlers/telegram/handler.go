@@ -30,8 +30,7 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *telegramHandler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	route := s.AddChannelRoute(h, "POST", "receive", h.ReceiveMessage)
-	return route.GetError()
+	return s.AddChannelRoute(h, "POST", "receive", h.ReceiveMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
@@ -44,7 +43,7 @@ func (h *telegramHandler) ReceiveMessage(channel courier.Channel, w http.Respons
 
 	// no message? ignore this
 	if te.Message.MessageID == 0 {
-		return courier.WriteIgnored(w, "Ignoring request, no message")
+		return courier.WriteIgnored(w, r, "Ignoring request, no message")
 	}
 
 	// create our date from the timestamp
@@ -114,7 +113,7 @@ func (h *telegramHandler) ReceiveMessage(channel courier.Channel, w http.Respons
 		return err
 	}
 
-	return courier.WriteReceiveSuccess(w, msg)
+	return courier.WriteReceiveSuccess(w, r, msg)
 }
 
 var telegramAPIURL = "https://api.telegram.org"

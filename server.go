@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
+	"sort"
 	"strings"
 	"time"
 
 	"sync"
 
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/utils"
+	"github.com/pressly/chi"
+	"github.com/pressly/chi/middleware"
+	"github.com/pressly/lg"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,7 +23,7 @@ import (
 // abstraction that makes mocking easier for isolated unit tests
 type Server interface {
 	Config() *config.Courier
-	AddChannelRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelActionHandlerFunc) *mux.Route
+	AddChannelRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelActionHandlerFunc) error
 
 	GetChannel(ChannelType, ChannelUUID) (Channel, error)
 	WriteMsg(*Msg) error
@@ -32,7 +33,7 @@ type Server interface {
 	StopChan() chan bool
 	Stopped() bool
 
-	Router() *mux.Router
+	Router() chi.Router
 
 	Start() error
 	Stop() error
@@ -42,8 +43,17 @@ type Server interface {
 // afterwards, which is when configuration options are checked.
 func NewServer(config *config.Courier, backend Backend) Server {
 	// create our top level router
-	router := mux.NewRouter()
-	chanRouter := router.PathPrefix("/c/").Subrouter()
+	logger := logrus.New()
+	lg.RedirectStdlogOutput(logger)
+	lg.DefaultLogger = logger
+
+	router := chi.NewRouter()
+	router.Use(middleware.RequestID)
+	router.Use(lg.RequestLogger(logger))
+	router.Use(middleware.Recoverer)
+
+	chanRouter := chi.NewRouter()
+	router.Mount("/c/", chanRouter)
 
 	return &server{
 		config:  config,
@@ -72,27 +82,15 @@ func (s *server) Start() error {
 	startSpoolFlushers(s)
 
 	// wire up our index page
-	s.router.HandleFunc("/", s.handleIndex).Name("Index")
+	s.router.Get("/", s.handleIndex)
 
 	// initialize our handlers
 	s.initializeChannelHandlers()
 
-	// build a map of the routes we have installed
-	var help bytes.Buffer
-	s.chanRouter.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
-		t, err := route.GetPathTemplate()
-		if err != nil {
-			return err
-		}
-		help.WriteString(fmt.Sprintf("% 24s: %s\n", route.GetName(), t))
-		return nil
-	})
-	s.routeHelp = help.String()
-
 	// configure timeouts on our server
 	s.httpServer = &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.config.Port),
-		Handler:      handlers.LoggingHandler(os.Stdout, s.router),
+		Handler:      s.router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
@@ -112,9 +110,10 @@ func (s *server) Start() error {
 	}()
 
 	logrus.WithFields(logrus.Fields{
-		"comp":  "server",
-		"port":  s.config.Port,
-		"state": "listening",
+		"comp":    "server",
+		"port":    s.config.Port,
+		"state":   "started",
+		"version": s.config.Version,
 	}).Info("server listening on ", s.config.Port)
 	return nil
 }
@@ -169,15 +168,15 @@ func (s *server) StopChan() chan bool        { return s.stopChan }
 func (s *server) Config() *config.Courier    { return s.config }
 func (s *server) Stopped() bool              { return s.stopped }
 
-func (s *server) Backend() Backend    { return s.backend }
-func (s *server) Router() *mux.Router { return s.router }
+func (s *server) Backend() Backend   { return s.backend }
+func (s *server) Router() chi.Router { return s.router }
 
 type server struct {
 	backend Backend
 
 	httpServer *http.Server
-	router     *mux.Router
-	chanRouter *mux.Router
+	router     *chi.Mux
+	chanRouter *chi.Mux
 
 	config *config.Courier
 
@@ -185,7 +184,7 @@ type server struct {
 	stopChan  chan bool
 	stopped   bool
 
-	routeHelp string
+	routes []string
 }
 
 func (s *server) initializeChannelHandlers() {
@@ -205,35 +204,47 @@ func (s *server) initializeChannelHandlers() {
 			logrus.WithField("comp", "server").WithField("handler", handler.ChannelName()).WithField("handler_type", channelType).Info("handler initialized")
 		}
 	}
+
+	// sort our route help
+	sort.Strings(s.routes)
 }
 
 func (s *server) channelFunctionWrapper(handler ChannelHandler, handlerFunc ChannelActionHandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		uuid, err := NewChannelUUID(mux.Vars(r)["uuid"])
+		uuid, err := NewChannelUUID(chi.URLParam(r, "uuid"))
+
 		if err != nil {
-			WriteError(w, err)
+			WriteError(w, r, err)
 			return
 		}
 
 		channel, err := s.backend.GetChannel(handler.ChannelType(), uuid)
 		if err != nil {
-			WriteError(w, err)
+			WriteError(w, r, err)
 			return
 		}
 
 		err = handlerFunc(channel, w, r)
 		if err != nil {
-			WriteError(w, err)
+			WriteError(w, r, err)
 		}
 	}
 }
 
-func (s *server) AddChannelRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelActionHandlerFunc) *mux.Route {
-	path := fmt.Sprintf("/%s/{uuid:[a-zA-Z0-9-]{36}}/%s/", strings.ToLower(string(handler.ChannelType())), action)
-	route := s.chanRouter.HandleFunc(path, s.channelFunctionWrapper(handler, handlerFunc))
-	route.Methods(method)
-	route.Name(fmt.Sprintf("%s %s", handler.ChannelName(), strings.Title(action)))
-	return route
+func (s *server) AddChannelRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelActionHandlerFunc) error {
+	method = strings.ToLower(method)
+	channelType := strings.ToLower(string(handler.ChannelType()))
+
+	path := fmt.Sprintf("/%s/:uuid/%s/", channelType, action)
+	if method == "get" {
+		s.chanRouter.Get(path, s.channelFunctionWrapper(handler, handlerFunc))
+	} else if method == "post" {
+		s.chanRouter.Post(path, s.channelFunctionWrapper(handler, handlerFunc))
+	} else {
+		return fmt.Errorf("unsupported method: %s", method)
+	}
+	s.routes = append(s.routes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
+	return nil
 }
 
 func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -241,11 +252,12 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	var buf bytes.Buffer
 	buf.WriteString("<title>courier</title><body><pre>\n")
 	buf.WriteString(splash)
+	buf.WriteString(s.config.Version)
 
 	buf.WriteString(s.backend.Health())
 
 	buf.WriteString("\n\n")
-	buf.WriteString(s.routeHelp)
+	buf.WriteString(strings.Join(s.routes, "\n"))
 	buf.WriteString("</pre></body>")
 	w.Write(buf.Bytes())
 }
@@ -255,5 +267,4 @@ var splash = `
    ___  ____/_________  ___________(_)____________
     _  /  __  __ \  / / /_  ___/_  /_  _ \_  ___/
     / /__  / /_/ / /_/ /_  /   _  / /  __/  /    
-    \____/ \____/\__,_/ /_/    /_/  \___//_/ v0.1                                              
-`
+    \____/ \____/\__,_/ /_/    /_/  \___//_/ v`

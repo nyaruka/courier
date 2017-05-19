@@ -24,13 +24,12 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *bmHandler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	route := s.AddChannelRoute(h, "GET", "receive", h.ReceiveMessage)
-	if route.GetError() != nil {
-		return route.GetError()
+	err := s.AddChannelRoute(h, "GET", "receive", h.ReceiveMessage)
+	if err != nil {
+		return err
 	}
 
-	route = s.AddChannelRoute(h, "GET", "status", h.StatusMessage)
-	return route.GetError()
+	return s.AddChannelRoute(h, "GET", "status", h.StatusMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
@@ -54,7 +53,7 @@ func (h *bmHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWrite
 		return err
 	}
 
-	return courier.WriteReceiveSuccess(w, msg)
+	return courier.WriteReceiveSuccess(w, r, msg)
 }
 
 type bmMessage struct {
@@ -92,7 +91,7 @@ func (h *bmHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter
 		return err
 	}
 
-	return courier.WriteStatusSuccess(w, status)
+	return courier.WriteStatusSuccess(w, r, status)
 }
 
 type bmStatus struct {
