@@ -13,7 +13,6 @@ services:
 - redis-server
 
 before_script:
-- redis-cli info
 - psql -U postgres -c "CREATE USER courier WITH PASSWORD 'courier';"
 - psql -U postgres -c "ALTER ROLE courier WITH SUPERUSER;"
 - psql -U postgres -c "CREATE DATABASE courier_test;"

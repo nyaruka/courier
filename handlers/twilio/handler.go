@@ -1,16 +1,8 @@
 package twilio
 
 /*
-Handler for Twilio channels, see https://www.twilio.com/docs/api
-
-Examples:
-
-POST /c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/
-ToCountry=US&ToState=IN&SmsMessageSid=SMa741ddeb574e5dda5516c73417fcd28a&NumMedia=0&ToCity=&FromZip=46204&SmsSid=SMa741ddeb574e5dda5516c73417fcd28a&FromState=IN&SmsStatus=received&FromCity=INDIANAPOLIS&Body=Hi+there+from+Twilio&FromCountry=US&To=%2B13177933221&ToZip=&NumSegments=1&MessageSid=SMa741ddeb574e5dda5516c73417fcd28a&AccountSid=AC7ef44158dbb01b972d64d7e5c851c8d7&From=%2B13177592786&ApiVersion=2010-04-01
-
-POST /c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/
-MessageStatus=sent&ApiVersion=2010-04-01&SmsSid=SM7ac25b8b7f04410093ff54e1fd2b4256&SmsStatus=sent&To=%2B13177933221&From=%2B13177592786&MessageSid=SM7ac25b8b7f04410093ff54e1fd2b4256&AccountSid=AC7ef44158dbb01b972d64d7e5c851c8d7
-*/
+ * Handler for Twilio channels, see https://www.twilio.com/docs/api
+ */
 
 import (
 	"bytes"
@@ -21,10 +13,20 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strings"
+
+	"github.com/buger/jsonparser"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
+	"github.com/pkg/errors"
 )
+
+// TODO: agree on case!
+const configAccountSID = "ACCOUNT_SID"
+const configMessagingServiceSID = "messaging_service_sid"
+const configSendURL = "send_url"
 
 const twSignatureHeader = "X-Twilio-Signature"
 
@@ -149,7 +151,66 @@ func (h *twHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter
 
 // SendMsg sends the passed in message, returning any error
 func (h *twHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
-	return nil, fmt.Errorf("sending not implemented channel type: %s", msg.Channel.ChannelType())
+	// build our callback URL
+	callbackURL := fmt.Sprintf("%s/c/kn/%s/status/", h.Server().Config().BaseURL, msg.Channel.UUID())
+
+	accountSID := msg.Channel.StringConfigForKey(configAccountSID, "")
+	if accountSID == "" {
+		return nil, fmt.Errorf("missing account sid for twilio channel")
+	}
+
+	accountToken := msg.Channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	if accountToken == "" {
+		return nil, fmt.Errorf("missing account auth token for twilio channel")
+	}
+
+	// build our request
+	form := url.Values{
+		"To":             []string{msg.URN.Path()},
+		"Body":           []string{msg.Text},
+		"StatusCallback": []string{callbackURL},
+	}
+
+	// add any media URL
+	if len(msg.Attachments) > 0 {
+		_, mediaURL := courier.SplitAttachment(msg.Attachments[0])
+		form["MediaURL"] = []string{mediaURL}
+	}
+
+	// set our from, either as a messaging service or from our address
+	serviceSID := msg.Channel.StringConfigForKey(configMessagingServiceSID, "")
+	if serviceSID != "" {
+		form["MessagingServiceSID"] = []string{serviceSID}
+	} else {
+		form["From"] = []string{msg.Channel.Address()}
+	}
+
+	baseSendURL := msg.Channel.StringConfigForKey(configSendURL, "https://api.twilio.com/2010-04-01/Accounts/")
+	sendURL := fmt.Sprintf("%s%s/Messages.json", baseSendURL, accountSID)
+	req, err := http.NewRequest("POST", sendURL, strings.NewReader(form.Encode()))
+	rr, err := utils.MakeHTTPRequest(req)
+
+	// record our status and log
+	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
+	status.AddLog(courier.NewChannelLogFromRR(msg.Channel, msg.ID, rr))
+
+	// was this request successful?
+	errorCode, _ := jsonparser.GetInt([]byte(rr.Body), "error_code")
+	if err != nil || errorCode != 0 {
+		// TODO: Notify RapidPro of blocked contacts (code 21610)
+		return status, errors.Errorf("received error from twilio")
+	}
+
+	// grab the external id
+	externalID, err := jsonparser.GetString([]byte(rr.Body), "sid")
+	if err != nil {
+		return status, errors.Errorf("unable to get sid from body")
+	}
+
+	status.Status = courier.MsgWired
+	status.ExternalID = externalID
+
+	return status, nil
 }
 
 // Twilio expects Twiml from a message receive request

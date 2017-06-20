@@ -132,6 +132,15 @@ func (c *mockChannel) ConfigForKey(key string, defaultValue interface{}) interfa
 	return value
 }
 
+func (c *mockChannel) StringConfigForKey(key string, defaultValue string) string {
+	val := c.ConfigForKey(key, defaultValue)
+	str, isStr := val.(string)
+	if !isStr {
+		return defaultValue
+	}
+	return str
+}
+
 // NewMockChannel creates a new mock channel for the passed in type, address, country and config
 func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}) Channel {
 	cUUID, _ := NewChannelUUID(uuid)

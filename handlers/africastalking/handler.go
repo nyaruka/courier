@@ -3,11 +3,18 @@ package africastalking
 import (
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
+	"github.com/pkg/errors"
 )
+
+const configIsShared = "is_shared"
 
 func init() {
 	courier.RegisterHandler(NewHandler())
@@ -111,5 +118,48 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
-	return nil, fmt.Errorf("sending not implemented channel type: %s", msg.Channel.ChannelType())
+	isSharedStr := msg.Channel.ConfigForKey(configIsShared, false)
+	isShared, _ := isSharedStr.(bool)
+
+	username := msg.Channel.StringConfigForKey(courier.ConfigUsername, "")
+	if username == "" {
+		return nil, fmt.Errorf("no username set for AT channel")
+	}
+
+	apiKey := msg.Channel.StringConfigForKey(courier.ConfigAPIKey, "")
+	if apiKey == "" {
+		return nil, fmt.Errorf("no API key set for AT channel")
+	}
+
+	// build our request
+	form := url.Values{
+		"username": []string{username},
+		"to":       []string{msg.URN.Path()},
+		"message":  []string{msg.Text},
+	}
+
+	// if this isn't shared, include our from
+	if !isShared {
+		form["from"] = []string{msg.Channel.Address()}
+	}
+
+	req, err := http.NewRequest("POST", "https://api.africastalking.com/version1/messaging", strings.NewReader(form.Encode()))
+	rr, err := utils.MakeHTTPRequest(req)
+
+	// record our status and log
+	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
+	status.AddLog(courier.NewChannelLogFromRR(msg.Channel, msg.ID, rr))
+
+	// was this request successful?
+	msgStatus, _ := jsonparser.GetString([]byte(rr.Body), "SMSMessageData", "Recipients", "[0]", "status")
+	if err != nil || msgStatus != "Success" {
+		return status, errors.Errorf("received error sending message: %s", msgStatus)
+	}
+
+	// grab the external id if we can
+	externalID, _ := jsonparser.GetString([]byte(rr.Body), "SMSMessageData", "Recipients", "[0]", "messageId")
+	status.Status = courier.MsgWired
+	status.ExternalID = externalID
+
+	return status, nil
 }

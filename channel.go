@@ -8,8 +8,20 @@ import (
 )
 
 const (
-	// ConfigAuthToken is our constant key used in channel configs for auth tokens
+	// ConfigAuthToken is a constant key for channel configs
 	ConfigAuthToken = "auth_token"
+
+	// ConfigUsername is a constant key for channel configs
+	ConfigUsername = "username"
+
+	// ConfigPassword is a constant key for channel configs
+	ConfigPassword = "password"
+
+	// ConfigAPIKey is a constant key for channel configs
+	ConfigAPIKey = "api_key"
+
+	// ConfigSendURL is a constant key for channel configs
+	ConfigSendURL = "send_url"
 )
 
 // ChannelType is our typing of the two char channel types
@@ -55,4 +67,5 @@ type Channel interface {
 	Country() string
 	Address() string
 	ConfigForKey(key string, defaultValue interface{}) interface{}
+	StringConfigForKey(key string, defaultValue string) string
 }

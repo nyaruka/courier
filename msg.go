@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nyaruka/courier/queue"
@@ -119,3 +120,12 @@ func (m *Msg) WithExternalID(id string) *Msg { m.ExternalID = id; return m }
 
 // AddAttachment can be used to append to the media urls for a message
 func (m *Msg) AddAttachment(url string) *Msg { m.Attachments = append(m.Attachments, url); return m }
+
+// SplitAttachment takes an attachment string and returns the media type and URL for the attachment
+func SplitAttachment(attachment string) (string, string) {
+	parts := strings.SplitN(attachment, ":", 2)
+	if len(parts) < 2 {
+		return "", parts[0]
+	}
+	return parts[0], parts[1]
+}

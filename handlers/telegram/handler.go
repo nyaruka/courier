@@ -155,7 +155,7 @@ func (h *telegramHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, e
 	}
 
 	// the status that will be written for this message
-	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.NilMsgStatus)
+	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
 
 	// whether we encountered any errors sending any parts
 	hasError := true
@@ -174,16 +174,11 @@ func (h *telegramHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, e
 
 	// send each attachment
 	for _, attachment := range msg.Attachments {
-		mediaParts := strings.SplitN(attachment, "/", 2)
-		if len(mediaParts) < 2 {
-			status.AddLog(courier.NewChannelLog(msg.Channel, msg.ID, "", courier.NilStatusCode,
-				fmt.Errorf("invalid attachment: %s", attachment), "", "", time.Duration(0), time.Now()))
-			continue
-		}
-		switch mediaParts[0] {
+		mediaType, mediaURL := courier.SplitAttachment(attachment)
+		switch mediaType {
 		case "image":
 			form := url.Values{
-				"photo":   []string{mediaParts[1]},
+				"photo":   []string{mediaURL},
 				"caption": []string{caption},
 			}
 			externalID, log, err := h.sendMsgPart(msg, authToken, "sendPhoto", form)
@@ -193,7 +188,7 @@ func (h *telegramHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, e
 
 		case "video":
 			form := url.Values{
-				"video":   []string{mediaParts[1]},
+				"video":   []string{mediaURL},
 				"caption": []string{caption},
 			}
 			externalID, log, err := h.sendMsgPart(msg, authToken, "sendVideo", form)
@@ -203,7 +198,7 @@ func (h *telegramHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, e
 
 		case "audio":
 			form := url.Values{
-				"audio":   []string{mediaParts[1]},
+				"audio":   []string{mediaURL},
 				"caption": []string{caption},
 			}
 			externalID, log, err := h.sendMsgPart(msg, authToken, "sendAudio", form)
@@ -213,14 +208,12 @@ func (h *telegramHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, e
 
 		default:
 			status.AddLog(courier.NewChannelLog(msg.Channel, msg.ID, "", courier.NilStatusCode,
-				fmt.Errorf("unknown media type: %s", mediaParts[0]), "", "", time.Duration(0), time.Now()))
+				fmt.Errorf("unknown media type: %s", mediaType), "", "", time.Duration(0), time.Now()))
 			hasError = true
 		}
 	}
 
-	if hasError {
-		status.Status = courier.MsgErrored
-	} else {
+	if !hasError {
 		status.Status = courier.MsgWired
 	}
 

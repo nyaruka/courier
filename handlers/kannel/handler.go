@@ -3,11 +3,26 @@ package kannel
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
+	"strings"
+
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/phonenumbers"
+	"github.com/pkg/errors"
 )
+
+const configUseNational = "use_national"
+const configEncoding = "encoding"
+const configVerifySSL = "verify_ssl"
+
+const encodingDefault = "D"
+const encodingUnicode = "U"
+const encodingSmart = "S"
 
 func init() {
 	courier.RegisterHandler(NewHandler())
@@ -101,7 +116,99 @@ func (h *kannelHandler) StatusMessage(channel courier.Channel, w http.ResponseWr
 
 // SendMsg sends the passed in message, returning any error
 func (h *kannelHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
-	return nil, fmt.Errorf("sending not implemented channel type: %s", msg.Channel.ChannelType())
+	username := msg.Channel.StringConfigForKey(courier.ConfigUsername, "")
+	if username == "" {
+		return nil, fmt.Errorf("no username set for KN channel")
+	}
+
+	password := msg.Channel.StringConfigForKey(courier.ConfigPassword, "")
+	if password == "" {
+		return nil, fmt.Errorf("no password set for KN channel")
+	}
+
+	sendURL := msg.Channel.StringConfigForKey(courier.ConfigSendURL, "")
+	if sendURL == "" {
+		return nil, fmt.Errorf("no send url set for KN channel")
+	}
+
+	dlrURL := fmt.Sprintf("%s%s%s/?id=%d&status=%%d", h.Server().Config().BaseURL, "/c/kn/", msg.Channel.UUID(), msg.ID.Int64)
+
+	// build our request
+	form := url.Values{
+		"username": []string{username},
+		"password": []string{password},
+		"from":     []string{msg.Channel.Address()},
+		"text":     []string{msg.Text},
+		"to":       []string{msg.URN.Path()},
+		"dlr-url":  []string{dlrURL},
+		"dlr-mask": []string{"31"},
+	}
+
+	// TODO: higher priority for responses
+	//if msg.ResponseTo != 0 {
+	//	form["priority"] = []string{"1"}
+	//}
+
+	useNationalStr := msg.Channel.ConfigForKey(configUseNational, false)
+	useNational, _ := useNationalStr.(bool)
+
+	// if we are meant to use national formatting (no country code) pull that out
+	if useNational {
+		parsed, err := phonenumbers.Parse(msg.URN.Path(), encodingDefault)
+		if err == nil {
+			form["to"] = []string{fmt.Sprintf("%d", *parsed.NationalNumber)}
+		}
+	}
+
+	// figure out what encoding to tell kannel to send as
+	encoding := msg.Channel.StringConfigForKey(configEncoding, "")
+
+	// if we are smart, first try to convert to GSM7 chars
+	if encoding == encodingSmart {
+		replaced := gsm7.ReplaceNonGSM7Chars(msg.Text)
+		if gsm7.IsGSM7(replaced) {
+			form["text"] = []string{replaced}
+		} else {
+			encoding = encodingUnicode
+		}
+	}
+
+	// if we are UTF8, set our coding appropriately
+	if encoding == encodingUnicode {
+		form["coding"] = []string{"2"}
+		form["charset"] = []string{"utf8"}
+	}
+
+	// our send URL may have form parameters in it already, append our own afterwards
+	encodedForm := form.Encode()
+	if strings.Contains(sendURL, "?") {
+		sendURL = fmt.Sprintf("%s&%s", sendURL, encodedForm)
+	} else {
+		sendURL = fmt.Sprintf("%s?%s", sendURL, encodedForm)
+	}
+
+	// ignore SSL warnings if they ask
+	verifySSLStr := msg.Channel.ConfigForKey(configVerifySSL, true)
+	verifySSL, _ := verifySSLStr.(bool)
+
+	req, err := http.NewRequest("GET", sendURL, nil)
+	var rr *utils.RequestResponse
+
+	if verifySSL {
+		rr, err = utils.MakeHTTPRequest(req)
+	} else {
+		rr, err = utils.MakeInsecureHTTPRequest(req)
+	}
+
+	// record our status and log
+	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
+	status.AddLog(courier.NewChannelLogFromRR(msg.Channel, msg.ID, rr))
+	if err != nil {
+		return status, errors.Errorf("received error sending message")
+	}
+
+	status.Status = courier.MsgWired
+	return status, nil
 }
 
 type kannelStatus struct {

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -34,6 +35,28 @@ const (
 	// RRStatusFailure represents that the webhook had a non 2xx status code
 	RRStatusFailure RequestResponseStatus = "E"
 )
+
+// MakeInsecureHTTPRequest fires the passed in http request against a transport that does not validate
+// SSL certificates.
+func MakeInsecureHTTPRequest(req *http.Request) (*RequestResponse, error) {
+	start := time.Now()
+	requestTrace, err := httputil.DumpRequestOut(req, true)
+	if err != nil {
+		rr, _ := newRRFromRequestAndError(req, string(requestTrace), err)
+		return rr, err
+	}
+
+	resp, err := GetInsecureHTTPClient().Do(req)
+	if err != nil {
+		rr, _ := newRRFromRequestAndError(req, string(requestTrace), err)
+		return rr, err
+	}
+	defer resp.Body.Close()
+
+	rr, err := newRRFromResponse(string(requestTrace), resp)
+	rr.Elapsed = time.Now().Sub(start)
+	return rr, err
+}
 
 // MakeHTTPRequest fires the passed in http request, returning any errors encountered. RequestResponse is always set
 // regardless of any errors being set
@@ -133,6 +156,21 @@ func GetHTTPClient() *http.Client {
 		transport = &http.Transport{
 			MaxIdleConns:    10,
 			IdleConnTimeout: 30 * time.Second,
+		}
+		client = &http.Client{Transport: transport, Timeout: timeout}
+	})
+
+	return client
+}
+
+// GetInsecureHTTPClient returns the shared HTTP client used by all Courier threads
+func GetInsecureHTTPClient() *http.Client {
+	once.Do(func() {
+		timeout := time.Duration(30 * time.Second)
+		transport = &http.Transport{
+			MaxIdleConns:    10,
+			IdleConnTimeout: 30 * time.Second,
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		client = &http.Client{Transport: transport, Timeout: timeout}
 	})

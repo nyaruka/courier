@@ -3,9 +3,14 @@ package blackmyna
 import (
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
+	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
+	"github.com/pkg/errors"
 )
 
 type bmHandler struct {
@@ -96,7 +101,46 @@ func (h *bmHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter
 
 // SendMsg sends the passed in message, returning any error
 func (h *bmHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
-	return nil, fmt.Errorf("sending not implemented channel type: %s", msg.Channel.ChannelType())
+	username := msg.Channel.StringConfigForKey(courier.ConfigUsername, "")
+	if username == "" {
+		return nil, fmt.Errorf("no username set for BM channel")
+	}
+
+	password := msg.Channel.StringConfigForKey(courier.ConfigPassword, "")
+	if password == "" {
+		return nil, fmt.Errorf("no password set for BM channel")
+	}
+
+	apiKey := msg.Channel.StringConfigForKey(courier.ConfigAPIKey, "")
+	if apiKey == "" {
+		return nil, fmt.Errorf("no API key set for AT channel")
+	}
+
+	// build our request
+	form := url.Values{
+		"address":       []string{msg.URN.Path()},
+		"senderaddress": []string{msg.Channel.Address()},
+		"message":       []string{msg.Text},
+	}
+
+	req, err := http.NewRequest("POST", "http://api.blackmyna.com/2/smsmessaging/outbound", strings.NewReader(form.Encode()))
+	req.SetBasicAuth(username, password)
+	rr, err := utils.MakeHTTPRequest(req)
+
+	// record our status and log
+	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
+	status.AddLog(courier.NewChannelLogFromRR(msg.Channel, msg.ID, rr))
+
+	// get our external id
+	externalID, _ := jsonparser.GetString([]byte(rr.Body), "[0]", "id")
+	if err != nil || externalID == "" {
+		return status, errors.Errorf("received error sending message")
+	}
+
+	status.Status = courier.MsgWired
+	status.ExternalID = externalID
+
+	return status, nil
 }
 
 type bmStatus struct {

@@ -174,3 +174,13 @@ func (c *DBChannel) ConfigForKey(key string, defaultValue interface{}) interface
 	}
 	return value
 }
+
+// StringConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
+func (c *DBChannel) StringConfigForKey(key string, defaultValue string) string {
+	val := c.ConfigForKey(key, defaultValue)
+	str, isStr := val.(string)
+	if !isStr {
+		return defaultValue
+	}
+	return str
+}
