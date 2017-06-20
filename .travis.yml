@@ -1,5 +1,10 @@
 language: go
 
+addons:
+  apt:
+    packages:
+      - redis-server
+
 go:
 - 1.8
 
