@@ -25,21 +25,21 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *kannelHandler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddChannelRoute(h, "POST", "receive", h.ReceiveMessage)
+	err := s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
 
-	return s.AddChannelRoute(h, "GET", "status", h.StatusMessage)
+	return s.AddUpdateStatusRoute(h, "GET", "status", h.StatusMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *kannelHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *kannelHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
 	// get our params
 	kannelMsg := &kannelMessage{}
 	err := handlers.DecodeAndValidateQueryParams(kannelMsg, r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// create our date from the timestamp
@@ -54,10 +54,10 @@ func (h *kannelHandler) ReceiveMessage(channel courier.Channel, w http.ResponseW
 	// and finally queue our message
 	err = h.Server().WriteMsg(msg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return courier.WriteReceiveSuccess(w, r, msg)
+	return []*courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
 }
 
 type kannelMessage struct {
@@ -76,27 +76,32 @@ var kannelStatusMapping = map[int]courier.MsgStatus{
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *kannelHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *kannelHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.MsgStatusUpdate, error) {
 	// get our params
 	kannelStatus := &kannelStatus{}
 	err := handlers.DecodeAndValidateQueryParams(kannelStatus, r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	msgStatus, found := kannelStatusMapping[kannelStatus.Status]
 	if !found {
-		return fmt.Errorf("unknown status '%d', must be one of 1,2,4,8,16", kannelStatus.Status)
+		return nil, fmt.Errorf("unknown status '%d', must be one of 1,2,4,8,16", kannelStatus.Status)
 	}
 
 	// write our status
 	status := courier.NewStatusUpdateForID(channel, kannelStatus.ID, msgStatus)
 	err = h.Server().WriteMsgStatus(status)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return courier.WriteStatusSuccess(w, r, status)
+	return []*courier.MsgStatusUpdate{status}, courier.WriteStatusSuccess(w, r, status)
+}
+
+// SendMsg sends the passed in message, returning any error
+func (h *kannelHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
+	return nil, fmt.Errorf("sending not implemented channel type: %s", msg.Channel.ChannelType())
 }
 
 type kannelStatus struct {

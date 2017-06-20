@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/evalphobia/logrus_sentry"
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/config"
@@ -14,11 +15,13 @@ import (
 	// load channel handler packages
 	_ "github.com/nyaruka/courier/handlers/africastalking"
 	_ "github.com/nyaruka/courier/handlers/blackmyna"
+	_ "github.com/nyaruka/courier/handlers/dummy"
 	_ "github.com/nyaruka/courier/handlers/kannel"
 	_ "github.com/nyaruka/courier/handlers/telegram"
 	_ "github.com/nyaruka/courier/handlers/twilio"
 
 	// load available backends
+
 	_ "github.com/nyaruka/courier/backends/rapidpro"
 )
 
@@ -44,6 +47,19 @@ func main() {
 		log.Fatalf("Invalid log level '%s'", level)
 	}
 	logrus.SetLevel(level)
+
+	// if we have a DSN entry, try to initialize it
+	if config.DSN != "" {
+		hook, err := logrus_sentry.NewSentryHook(config.DSN, []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel})
+		hook.Timeout = 0
+		hook.StacktraceConfiguration.Enable = true
+		hook.StacktraceConfiguration.Skip = 4
+		hook.StacktraceConfiguration.Context = 5
+		if err != nil {
+			log.Fatalf("Invalid sentry DSN: '%s': %s", config.DSN, err)
+		}
+		logrus.StandardLogger().Hooks.Add(hook)
+	}
 
 	// load our backend
 	backend, err := courier.NewBackend(config)

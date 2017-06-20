@@ -18,6 +18,10 @@ type Backend interface {
 	GetChannel(ChannelType, ChannelUUID) (Channel, error)
 	WriteMsg(*Msg) error
 	WriteMsgStatus(*MsgStatusUpdate) error
+	WriteChannelLogs([]*ChannelLog) error
+
+	PopNextOutgoingMsg() (*Msg, error)
+	MarkOutgoingMsgComplete(*Msg)
 
 	Health() string
 }

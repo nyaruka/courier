@@ -8,6 +8,8 @@ import (
 type Courier struct {
 	Backend string `default:"rapidpro"`
 
+	DSN string `default:""`
+
 	BaseURL  string `default:"https://localhost:8080"`
 	Port     int    `default:"8080"`
 	DB       string `default:"postgres://courier@localhost/courier?sslmode=disable"`
@@ -20,6 +22,8 @@ type Courier struct {
 
 	AWSAccessKeyID     string `default:"missing_aws_access_key_id"`
 	AWSSecretAccessKey string `default:"missing_aws_secret_access_key"`
+
+	MaxWorkers int `default:"32"`
 
 	RapidproHandleURL string `default:"https://app.rapidpro.io/handlers/mage/handle_message"`
 	RapidproToken     string `default:"missing_rapidpro_token"`

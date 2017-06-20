@@ -55,12 +55,12 @@ func getChannel(b *backend, channelType courier.ChannelType, channelUUID courier
 const lookupChannelFromUUIDSQL = `
 SELECT org_id, id, uuid, channel_type, address, country, config 
 FROM channels_channel 
-WHERE channel_type = $1 AND uuid = $2 AND is_active = true`
+WHERE uuid = $1 AND is_active = true`
 
 // ChannelForUUID attempts to look up the channel with the passed in UUID, returning it
 func loadChannelFromDB(b *backend, channel *DBChannel, channelType courier.ChannelType, uuid courier.ChannelUUID) error {
 	// select just the fields we need
-	err := b.db.Get(channel, lookupChannelFromUUIDSQL, channelType, uuid)
+	err := b.db.Get(channel, lookupChannelFromUUIDSQL, uuid)
 
 	// we didn't find a match
 	if err == sql.ErrNoRows {
@@ -70,6 +70,11 @@ func loadChannelFromDB(b *backend, channel *DBChannel, channelType courier.Chann
 	// other error
 	if err != nil {
 		return err
+	}
+
+	// is it the right type?
+	if channelType != courier.AnyChannelType && channelType != channel.ChannelType() {
+		return courier.ErrChannelWrongType
 	}
 
 	// found it, return it
@@ -85,7 +90,7 @@ func getLocalChannel(channelType courier.ChannelType, uuid courier.ChannelUUID) 
 
 	if found {
 		// if it was found but the type is wrong, that's an error
-		if channel.ChannelType() != channelType {
+		if channelType != courier.AnyChannelType && channel.ChannelType() != channelType {
 			return &DBChannel{ChannelType_: channelType, UUID_: uuid}, courier.ErrChannelWrongType
 		}
 

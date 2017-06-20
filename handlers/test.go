@@ -138,7 +138,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 					require.Equal(testCase.Attachments, msg.Attachments)
 				}
 				if testCase.Date != nil {
-					require.Equal(*testCase.Date, msg.ReceivedOn)
+					require.Equal(*testCase.Date, *msg.ReceivedOn)
 				}
 			} else if err != courier.ErrMsgNotFound {
 				t.Fatalf("unexpected msg inserted: %v", err)

@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 )
 
@@ -30,6 +31,11 @@ func writeMsgStatus(b *backend, status *courier.MsgStatusUpdate) error {
 	// failed writing, write to our spool instead
 	if err != nil {
 		err = courier.WriteToSpool(b.config.SpoolDir, "statuses", dbStatus)
+	}
+
+	// update our msg id on our passed in msg
+	if dbStatus.ID != courier.NilMsgID {
+		status.ID = dbStatus.ID
 	}
 
 	return err
@@ -61,23 +67,23 @@ func checkMsgExists(b *backend, status *courier.MsgStatusUpdate) (err error) {
 const updateMsgID = `
 UPDATE msgs_msg SET status = :status, modified_on = :modified_on WHERE msgs_msg.id IN
 	(SELECT msgs_msg.id FROM msgs_msg INNER JOIN channels_channel ON (msgs_msg.channel_id = channels_channel.id) 
-WHERE (msgs_msg.id = :msg_id AND channels_channel.uuid = :channel_uuid))
+WHERE (msgs_msg.id = :msg_id AND channels_channel.uuid = :channel_uuid)) RETURNING msgs_msg.id
 `
 
 const updateMsgExternalID = `
 UPDATE msgs_msg SET status = :status, modified_on = :modified_on WHERE msgs_msg.id IN
 	(SELECT msgs_msg.id FROM msgs_msg INNER JOIN channels_channel ON (msgs_msg.channel_id = channels_channel.id) 
-WHERE (msgs_msg.external_id = :external_id AND channels_channel.uuid = :channel_uuid))
+WHERE (msgs_msg.external_id = :external_id AND channels_channel.uuid = :channel_uuid)) RETURNING msgs_msg.id
 `
 
 // writeMsgStatusToDB writes the passed in msg status to our db
 func writeMsgStatusToDB(b *backend, status *DBMsgStatus) error {
-	var result sql.Result
+	var rows *sqlx.Rows
 	var err error
 	if status.ID != courier.NilMsgID {
-		result, err = b.db.NamedExec(updateMsgID, status)
+		rows, err = b.db.NamedQuery(updateMsgID, status)
 	} else if status.ExternalID != "" {
-		result, err = b.db.NamedExec(updateMsgExternalID, status)
+		rows, err = b.db.NamedQuery(updateMsgExternalID, status)
 	} else {
 		return fmt.Errorf("attempt to update msg status without id or external id")
 	}
@@ -85,12 +91,10 @@ func writeMsgStatusToDB(b *backend, status *DBMsgStatus) error {
 		return err
 	}
 
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rows == 0 {
+	// scan and read the id of the msg that was updated
+	if rows.Next() {
+		rows.Scan(&status.ID)
+	} else {
 		return courier.ErrMsgNotFound
 	}
 
@@ -117,7 +121,7 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 // DBMsgStatus represents a status update on a message
 type DBMsgStatus struct {
 	ChannelUUID courier.ChannelUUID `json:"channel_uuid"             db:"channel_uuid"`
-	ID          courier.MsgID       `json:"msg_id,omitempty"             db:"msg_id"`
+	ID          courier.MsgID       `json:"msg_id,omitempty"         db:"msg_id"`
 	ExternalID  string              `json:"external_id,omitempty"    db:"external_id"`
 	Status      courier.MsgStatus   `json:"status"                   db:"status"`
 	ModifiedOn  time.Time           `json:"modified_on"              db:"modified_on"`

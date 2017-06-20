@@ -31,6 +31,20 @@ func (mb *MockBackend) GetLastQueueMsg() (*Msg, error) {
 	return mb.queueMsgs[len(mb.queueMsgs)-1], nil
 }
 
+// PopNextOutgoingMsg returns the next message that should be sent, or nil if there are none to send
+func (mb *MockBackend) PopNextOutgoingMsg() (*Msg, error) {
+	return nil, nil
+}
+
+// MarkOutgoingMsgComplete marks the passed msg as having been dealt with
+func (mb *MockBackend) MarkOutgoingMsgComplete(m *Msg) {
+}
+
+// WriteChannelLogs writes the passed in channel logs to the DB
+func (mb *MockBackend) WriteChannelLogs(logs []*ChannelLog) error {
+	return nil
+}
+
 // SetErrorOnQueue is a mock method which makes the QueueMsg call throw the passed in error on next call
 func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 	mb.errorOnQueue = shouldError

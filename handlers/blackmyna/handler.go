@@ -24,21 +24,21 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *bmHandler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddChannelRoute(h, "GET", "receive", h.ReceiveMessage)
+	err := s.AddReceiveMsgRoute(h, "GET", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
 
-	return s.AddChannelRoute(h, "GET", "status", h.StatusMessage)
+	return s.AddUpdateStatusRoute(h, "GET", "status", h.StatusMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *bmHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *bmHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
 	// get our params
 	bmMsg := &bmMessage{}
 	err := handlers.DecodeAndValidateForm(bmMsg, r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// create our URN
@@ -50,10 +50,10 @@ func (h *bmHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWrite
 	// and finally queue our message
 	err = h.Server().WriteMsg(msg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return courier.WriteReceiveSuccess(w, r, msg)
+	return []*courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
 }
 
 type bmMessage struct {
@@ -70,17 +70,17 @@ var bmStatusMapping = map[int]courier.MsgStatus{
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *bmHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *bmHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.MsgStatusUpdate, error) {
 	// get our params
 	bmStatus := &bmStatus{}
 	err := handlers.DecodeAndValidateForm(bmStatus, r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	msgStatus, found := bmStatusMapping[bmStatus.Status]
 	if !found {
-		return fmt.Errorf("unknown status '%d', must be one of 1, 2, 8 or 16", bmStatus.Status)
+		return nil, fmt.Errorf("unknown status '%d', must be one of 1, 2, 8 or 16", bmStatus.Status)
 	}
 
 	// write our status
@@ -88,10 +88,15 @@ func (h *bmHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter
 	defer status.Release()
 	err = h.Server().WriteMsgStatus(status)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return courier.WriteStatusSuccess(w, r, status)
+	return []*courier.MsgStatusUpdate{status}, courier.WriteStatusSuccess(w, r, status)
+}
+
+// SendMsg sends the passed in message, returning any error
+func (h *bmHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
+	return nil, fmt.Errorf("sending not implemented channel type: %s", msg.Channel.ChannelType())
 }
 
 type bmStatus struct {

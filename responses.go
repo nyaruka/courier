@@ -13,8 +13,6 @@ import (
 
 // WriteError writes a JSON response for the passed in error
 func WriteError(w http.ResponseWriter, r *http.Request, err error) error {
-	lg.Log(r.Context()).WithError(err).Error()
-
 	errors := []string{err.Error()}
 
 	vErrs, isValidation := err.(validator.ValidationErrors)
@@ -23,6 +21,8 @@ func WriteError(w http.ResponseWriter, r *http.Request, err error) error {
 		for i := range vErrs {
 			errors = append(errors, fmt.Sprintf("field '%s' %s", strings.ToLower(vErrs[i].Field()), vErrs[i].Tag()))
 		}
+	} else {
+		lg.Log(r.Context()).WithError(err).Error()
 	}
 	return writeJSONResponse(w, http.StatusBadRequest, &errorResponse{errors})
 }

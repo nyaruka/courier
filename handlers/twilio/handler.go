@@ -44,12 +44,12 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *twHandler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddChannelRoute(h, "POST", "receive", h.ReceiveMessage)
+	err := s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
 
-	return s.AddChannelRoute(h, "POST", "status", h.StatusMessage)
+	return s.AddUpdateStatusRoute(h, "POST", "status", h.StatusMessage)
 }
 
 type twMessage struct {
@@ -78,17 +78,17 @@ var twStatusMapping = map[string]courier.MsgStatus{
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *twHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *twHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// get our params
 	twMsg := &twMessage{}
 	err = handlers.DecodeAndValidateForm(twMsg, r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// create our URN
@@ -111,29 +111,29 @@ func (h *twHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWrite
 	// and finally queue our message
 	err = h.Server().WriteMsg(msg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return h.writeReceiveSuccess(w)
+	return []*courier.Msg{msg}, h.writeReceiveSuccess(w)
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *twHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *twHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.MsgStatusUpdate, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// get our params
 	twStatus := &twStatus{}
 	err = handlers.DecodeAndValidateForm(twStatus, r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	msgStatus, found := twStatusMapping[twStatus.MessageStatus]
 	if !found {
-		return fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", twStatus.MessageStatus)
+		return nil, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", twStatus.MessageStatus)
 	}
 
 	// write our status
@@ -141,10 +141,15 @@ func (h *twHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter
 	defer status.Release()
 	err = h.Server().WriteMsgStatus(status)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return courier.WriteStatusSuccess(w, r, status)
+	return []*courier.MsgStatusUpdate{status}, courier.WriteStatusSuccess(w, r, status)
+}
+
+// SendMsg sends the passed in message, returning any error
+func (h *twHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
+	return nil, fmt.Errorf("sending not implemented channel type: %s", msg.Channel.ChannelType())
 }
 
 // Twilio expects Twiml from a message receive request

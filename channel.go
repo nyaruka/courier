@@ -15,6 +15,9 @@ const (
 // ChannelType is our typing of the two char channel types
 type ChannelType string
 
+// AnyChannelType is our empty channel type used when doing lookups without channel type assertions
+var AnyChannelType = ChannelType("")
+
 // ChannelUUID is our typing of a channel's UUID
 type ChannelUUID struct {
 	uuid.UUID

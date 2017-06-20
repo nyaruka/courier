@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/nyaruka/courier/queue"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -67,7 +68,20 @@ func NewIncomingMsg(channel Channel, urn URN, text string) *Msg {
 	m.Channel = channel
 	m.Text = text
 	m.URN = urn
-	m.ReceivedOn = time.Now()
+
+	now := time.Now()
+	m.ReceivedOn = &now
+
+	return m
+}
+
+// NewOutgoingMsg creates a new message from the given params
+func NewOutgoingMsg(channel Channel, urn URN, text string) *Msg {
+	m := &Msg{}
+	m.UUID = NewMsgUUID()
+	m.Channel = channel
+	m.Text = text
+	m.URN = urn
 
 	return m
 }
@@ -86,14 +100,19 @@ type Msg struct {
 	ExternalID  string
 	URN         URN
 	ContactName string
-	ReceivedOn  time.Time
+
+	WorkerToken queue.WorkerToken
+
+	ReceivedOn *time.Time
+	SentOn     *time.Time
+	WiredOn    *time.Time
 }
 
 // WithContactName can be used to set the contact name on a msg
 func (m *Msg) WithContactName(name string) *Msg { m.ContactName = name; return m }
 
 // WithReceivedOn can be used to set sent_on on a msg in a chained call
-func (m *Msg) WithReceivedOn(date time.Time) *Msg { m.ReceivedOn = date; return m }
+func (m *Msg) WithReceivedOn(date time.Time) *Msg { m.ReceivedOn = &date; return m }
 
 // WithExternalID can be used to set the external id on a msg in a chained call
 func (m *Msg) WithExternalID(id string) *Msg { m.ExternalID = id; return m }

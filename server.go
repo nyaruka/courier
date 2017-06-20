@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"sort"
 	"strings"
 	"time"
@@ -23,12 +24,18 @@ import (
 // abstraction that makes mocking easier for isolated unit tests
 type Server interface {
 	Config() *config.Courier
+
 	AddChannelRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelActionHandlerFunc) error
+	AddReceiveMsgRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelReceiveMsgFunc) error
+	AddUpdateStatusRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelUpdateStatusFunc) error
 
 	GetChannel(ChannelType, ChannelUUID) (Channel, error)
 	WriteMsg(*Msg) error
 	WriteMsgStatus(*MsgStatusUpdate) error
 
+	SendMsg(*Msg) (*MsgStatusUpdate, error)
+
+	Backend() Backend
 	WaitGroup() *sync.WaitGroup
 	StopChan() chan bool
 	Stopped() bool
@@ -115,16 +122,28 @@ func (s *server) Start() error {
 		"state":   "started",
 		"version": s.config.Version,
 	}).Info("server listening on ", s.config.Port)
+
+	// start our foreman for outgoing messages
+	s.foreman = NewForeman(s, s.config.MaxWorkers)
+	s.foreman.Start()
+
 	return nil
 }
 
 // Stop stops the server, returning only after all threads have stopped
 func (s *server) Stop() error {
-	logrus.WithFields(logrus.Fields{
-		"comp":  "server",
-		"state": "stopping",
-	}).Info("stopping server")
+	log := logrus.WithField("comp", "server")
+	log.WithField("state", "stopping").Info("stopping server")
 
+	// stop our foreman
+	s.foreman.Stop()
+
+	// shut down our HTTP server
+	if err := s.httpServer.Shutdown(nil); err != nil {
+		log.WithField("state", "stopping").WithError(err).Error("error shutting down server")
+	}
+
+	// stop our backend
 	err := s.backend.Stop()
 	if err != nil {
 		return err
@@ -133,21 +152,10 @@ func (s *server) Stop() error {
 	s.stopped = true
 	close(s.stopChan)
 
-	// shut down our HTTP server
-	if err := s.httpServer.Shutdown(nil); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"comp": "server",
-			"err":  err,
-		}).Error("shutting down server")
-	}
-
+	// wait for everything to stop
 	s.waitGroup.Wait()
 
-	logrus.WithFields(logrus.Fields{
-		"comp":  "server",
-		"state": "stopped",
-	}).Info("server stopped")
-
+	log.WithField("state", "stopped").Info("server stopped")
 	return nil
 }
 
@@ -161,6 +169,17 @@ func (s *server) WriteMsg(msg *Msg) error {
 
 func (s *server) WriteMsgStatus(status *MsgStatusUpdate) error {
 	return s.backend.WriteMsgStatus(status)
+}
+
+func (s *server) SendMsg(msg *Msg) (*MsgStatusUpdate, error) {
+	// find the handler for this message type
+	handler, found := activeHandlers[msg.Channel.ChannelType()]
+	if !found {
+		return nil, fmt.Errorf("unable to find handler for channel type: %s", msg.Channel.ChannelType())
+	}
+
+	// have the handler send it
+	return handler.SendMsg(msg)
 }
 
 func (s *server) WaitGroup() *sync.WaitGroup { return s.waitGroup }
@@ -177,6 +196,8 @@ type server struct {
 	httpServer *http.Server
 	router     *chi.Mux
 	chanRouter *chi.Mux
+
+	foreman *Foreman
 
 	config *config.Courier
 
@@ -212,7 +233,6 @@ func (s *server) initializeChannelHandlers() {
 func (s *server) channelFunctionWrapper(handler ChannelHandler, handlerFunc ChannelActionHandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		uuid, err := NewChannelUUID(chi.URLParam(r, "uuid"))
-
 		if err != nil {
 			WriteError(w, r, err)
 			return
@@ -231,20 +251,121 @@ func (s *server) channelFunctionWrapper(handler ChannelHandler, handlerFunc Chan
 	}
 }
 
+func (s *server) channelUpdateStatusWrapper(handler ChannelHandler, handlerFunc ChannelUpdateStatusFunc) http.HandlerFunc {
+	return s.channelFunctionWrapper(handler, func(channel Channel, w http.ResponseWriter, r *http.Request) error {
+		start := time.Now()
+
+		// read the bytes from our body so we can create a channel log for this request
+		response := &bytes.Buffer{}
+		request, err := httputil.DumpRequest(r, true)
+		if err != nil {
+			return err
+		}
+		url := fmt.Sprintf("http://%s%s", r.Host, r.URL.RequestURI())
+
+		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+		ww.Tee(response)
+
+		logs := make([]*ChannelLog, 0, 1)
+		statuses, err := handlerFunc(channel, ww, r)
+		elapsed := time.Now().Sub(start)
+		if err != nil {
+			WriteError(ww, r, err)
+			logs = append(logs, NewChannelLog(channel, NilMsgID, url, ww.Status(), err, string(request), response.String(), elapsed, start))
+		}
+
+		// create channel logs for each of our msgs
+		for _, status := range statuses {
+			logs = append(logs, NewChannelLog(channel, status.ID, url, ww.Status(), err, string(request), response.String(), elapsed, start))
+		}
+
+		// and write these out
+		err = s.backend.WriteChannelLogs(logs)
+
+		// log any error writing our channel log but don't break the request
+		if err != nil {
+			logrus.WithError(err).Error("error writing channel log")
+		}
+
+		return nil
+	})
+}
+
+func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc ChannelReceiveMsgFunc) http.HandlerFunc {
+	return s.channelFunctionWrapper(handler, func(channel Channel, w http.ResponseWriter, r *http.Request) error {
+		start := time.Now()
+
+		// read the bytes from our body so we can create a channel log for this request
+		response := &bytes.Buffer{}
+		request, err := httputil.DumpRequest(r, true)
+		if err != nil {
+			return err
+		}
+		url := fmt.Sprintf("http://%s%s", r.Host, r.URL.RequestURI())
+		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+
+		ww.Tee(response)
+
+		logs := make([]*ChannelLog, 0, 1)
+		msgs, err := handlerFunc(channel, ww, r)
+		elapsed := time.Now().Sub(start)
+		if err != nil {
+			WriteError(ww, r, err)
+			logs = append(logs, NewChannelLog(channel, NilMsgID, url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), elapsed, start))
+		}
+
+		// create channel logs for each of our msgs
+		for _, msg := range msgs {
+			logs = append(logs, NewChannelLog(channel, msg.ID, url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), elapsed, start))
+		}
+
+		// and write these out
+		err = s.backend.WriteChannelLogs(logs)
+
+		// log any error writing our channel log but don't break the request
+		if err != nil {
+			logrus.WithError(err).Error("error writing channel log")
+		}
+
+		return nil
+	})
+}
+
+func (s *server) AddReceiveMsgRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelReceiveMsgFunc) error {
+	return s.addRoute(handler, method, action, s.channelReceiveMsgWrapper(handler, handlerFunc))
+}
+
+func (s *server) AddUpdateStatusRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelUpdateStatusFunc) error {
+	return s.addRoute(handler, method, action, s.channelUpdateStatusWrapper(handler, handlerFunc))
+}
+
 func (s *server) AddChannelRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelActionHandlerFunc) error {
+	return s.addRoute(handler, method, action, s.channelFunctionWrapper(handler, handlerFunc))
+}
+
+func (s *server) addRoute(handler ChannelHandler, method string, action string, handlerFunc http.HandlerFunc) error {
 	method = strings.ToLower(method)
 	channelType := strings.ToLower(string(handler.ChannelType()))
 
 	path := fmt.Sprintf("/%s/:uuid/%s/", channelType, action)
 	if method == "get" {
-		s.chanRouter.Get(path, s.channelFunctionWrapper(handler, handlerFunc))
+		s.chanRouter.Get(path, handlerFunc)
 	} else if method == "post" {
-		s.chanRouter.Post(path, s.channelFunctionWrapper(handler, handlerFunc))
+		s.chanRouter.Post(path, handlerFunc)
 	} else {
 		return fmt.Errorf("unsupported method: %s", method)
 	}
 	s.routes = append(s.routes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
 	return nil
+}
+
+func prependHeaders(body string, statusCode int, resp http.ResponseWriter) string {
+	output := &bytes.Buffer{}
+	output.WriteString(fmt.Sprintf("HTTP/1.1 %d %s\r\n", statusCode, http.StatusText(statusCode)))
+	resp.Header().Write(output)
+	output.WriteString("\n")
+	output.WriteString(body)
+	return output.String()
 }
 
 func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {

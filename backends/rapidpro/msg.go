@@ -3,6 +3,7 @@ package rapidpro
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -108,7 +109,7 @@ func newDBMsgFromMsg(m *courier.Msg) *DBMsg {
 		CreatedOn:   now,
 		ModifiedOn:  now,
 		QueuedOn:    now,
-		SentOn:      m.ReceivedOn,
+		SentOn:      *m.ReceivedOn,
 	}
 }
 
@@ -195,7 +196,12 @@ func downloadMediaToS3(b *backend, msgUUID courier.MsgUUID, mediaURL string) (st
 	if err != nil {
 		return "", err
 	}
-	resp, body, err := utils.MakeHTTPRequest(req)
+	resp, err := utils.GetHTTPClient().Do(req)
+	if err != nil {
+		return "", err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
 	if err != nil {
 		return "", err
 	}

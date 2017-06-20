@@ -46,27 +46,27 @@ var statusMapping = map[string]courier.MsgStatus{
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddChannelRoute(h, "POST", "receive", h.ReceiveMessage)
+	err := s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
-	return s.AddChannelRoute(h, "POST", "status", h.StatusMessage)
+	return s.AddUpdateStatusRoute(h, "POST", "status", h.StatusMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
 	// get our params
 	atMsg := &messageRequest{}
 	err := handlers.DecodeAndValidateForm(atMsg, r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// create our date from the timestamp
 	// 2017-05-03T06:04:45Z
 	date, err := time.Parse("2006-01-02T15:04:05Z", atMsg.Date)
 	if err != nil {
-		return fmt.Errorf("invalid date format: %s", atMsg.Date)
+		return nil, fmt.Errorf("invalid date format: %s", atMsg.Date)
 	}
 
 	// create our URN
@@ -78,24 +78,24 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	// and finally queue our message
 	err = h.Server().WriteMsg(msg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return courier.WriteReceiveSuccess(w, r, msg)
+	return []*courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.MsgStatusUpdate, error) {
 	// get our params
 	atStatus := &statusRequest{}
 	err := handlers.DecodeAndValidateForm(atStatus, r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	msgStatus, found := statusMapping[atStatus.Status]
 	if !found {
-		return fmt.Errorf("unknown status '%s', must be one of 'Success','Sent','Buffered','Rejected' or 'Failed'", atStatus.Status)
+		return nil, fmt.Errorf("unknown status '%s', must be one of 'Success','Sent','Buffered','Rejected' or 'Failed'", atStatus.Status)
 	}
 
 	// write our status
@@ -103,8 +103,13 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 	defer status.Release()
 	err = h.Server().WriteMsgStatus(status)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return courier.WriteStatusSuccess(w, r, status)
+	return []*courier.MsgStatusUpdate{status}, courier.WriteStatusSuccess(w, r, status)
+}
+
+// SendMsg sends the passed in message, returning any error
+func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
+	return nil, fmt.Errorf("sending not implemented channel type: %s", msg.Channel.ChannelType())
 }
