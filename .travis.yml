@@ -4,15 +4,13 @@ addons:
   apt:
     packages:
       - redis-server
+  postgresql: '9.3'
 
 go:
 - 1.8
 
 services:
 - redis-server
-
-addons:
-  postgresql: '9.3'
 
 before_script:
 - redis-cli info
