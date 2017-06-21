@@ -30,13 +30,15 @@ const configSendURL = "send_url"
 
 const twSignatureHeader = "X-Twilio-Signature"
 
-type twHandler struct {
+var sendURL = "https://api.twilio.com/2010-04-01/Accounts"
+
+type handler struct {
 	handlers.BaseHandler
 }
 
 // NewHandler returns a new TwilioHandler ready to be registered
 func NewHandler() courier.ChannelHandler {
-	return &twHandler{handlers.NewBaseHandler(courier.ChannelType("TW"), "Twilio")}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("TW"), "Twilio")}
 }
 
 func init() {
@@ -44,7 +46,7 @@ func init() {
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *twHandler) Initialize(s courier.Server) error {
+func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	err := s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
 	if err != nil {
@@ -80,7 +82,7 @@ var twStatusMapping = map[string]courier.MsgStatus{
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *twHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -120,7 +122,7 @@ func (h *twHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWrite
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *twHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.MsgStatusUpdate, error) {
+func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.MsgStatusUpdate, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -150,7 +152,7 @@ func (h *twHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *twHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
+func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 	// build our callback URL
 	callbackURL := fmt.Sprintf("%s/c/kn/%s/status/", h.Server().Config().BaseURL, msg.Channel.UUID())
 
@@ -185,20 +187,31 @@ func (h *twHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) 
 		form["From"] = []string{msg.Channel.Address()}
 	}
 
-	baseSendURL := msg.Channel.StringConfigForKey(configSendURL, "https://api.twilio.com/2010-04-01/Accounts/")
-	sendURL := fmt.Sprintf("%s%s/Messages.json", baseSendURL, accountSID)
-	req, err := http.NewRequest("POST", sendURL, strings.NewReader(form.Encode()))
+	baseSendURL := msg.Channel.StringConfigForKey(configSendURL, sendURL)
+	sendURL, err := utils.AddURLPath(baseSendURL, accountSID, "Messages.json")
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log
 	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
 	status.AddLog(courier.NewChannelLogFromRR(msg.Channel, msg.ID, rr))
 
+	// fail if we received an error
+	if err != nil {
+		return status, err
+	}
+
 	// was this request successful?
 	errorCode, _ := jsonparser.GetInt([]byte(rr.Body), "error_code")
-	if err != nil || errorCode != 0 {
+	if errorCode != 0 {
 		// TODO: Notify RapidPro of blocked contacts (code 21610)
-		return status, errors.Errorf("received error from twilio")
+		return status, errors.Errorf("received error code from twilio '%d'", errorCode)
 	}
 
 	// grab the external id
@@ -214,7 +227,7 @@ func (h *twHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) 
 }
 
 // Twilio expects Twiml from a message receive request
-func (h *twHandler) writeReceiveSuccess(w http.ResponseWriter) error {
+func (h *handler) writeReceiveSuccess(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "<Response/>")
@@ -222,7 +235,7 @@ func (h *twHandler) writeReceiveSuccess(w http.ResponseWriter) error {
 }
 
 // see https://www.twilio.com/docs/api/security
-func (h *twHandler) validateSignature(channel courier.Channel, r *http.Request) error {
+func (h *handler) validateSignature(channel courier.Channel, r *http.Request) error {
 	if err := r.ParseForm(); err != nil {
 		return err
 	}

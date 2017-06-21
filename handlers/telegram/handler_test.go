@@ -429,7 +429,7 @@ var contactMsg = `
     }
 }`
 
-var testCases = []ChannelTestCase{
+var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: helloMsg, Status: 200, Response: "Accepted",
 		Name: Sp("Nic Pottier"), Text: Sp("Hello World"), URN: Sp("telegram:3527065"), External: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 
@@ -472,7 +472,7 @@ var testCases = []ChannelTestCase{
 	{Label: "Receive No FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noFile, Status: 400, Response: "result.file_path"},
 }
 
-func buildMockTelegramService(testCases []ChannelTestCase) *httptest.Server {
+func buildMockTelegramService(testCases []ChannelHandleTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fileID := r.FormValue("file_id")
 		defer r.Body.Close()

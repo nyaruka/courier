@@ -13,13 +13,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-type bmHandler struct {
+var sendURL = "http://api.blackmyna.com/2/smsmessaging/outbound"
+
+type handler struct {
 	handlers.BaseHandler
 }
 
 // NewHandler returns a new Blackmyna Handler
 func NewHandler() courier.ChannelHandler {
-	return &bmHandler{handlers.NewBaseHandler(courier.ChannelType("BM"), "Blackmyna")}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("BM"), "Blackmyna")}
 }
 
 func init() {
@@ -27,7 +29,7 @@ func init() {
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *bmHandler) Initialize(s courier.Server) error {
+func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	err := s.AddReceiveMsgRoute(h, "GET", "receive", h.ReceiveMessage)
 	if err != nil {
@@ -38,7 +40,7 @@ func (h *bmHandler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *bmHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
 	// get our params
 	bmMsg := &bmMessage{}
 	err := handlers.DecodeAndValidateForm(bmMsg, r)
@@ -75,7 +77,7 @@ var bmStatusMapping = map[int]courier.MsgStatus{
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *bmHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.MsgStatusUpdate, error) {
+func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.MsgStatusUpdate, error) {
 	// get our params
 	bmStatus := &bmStatus{}
 	err := handlers.DecodeAndValidateForm(bmStatus, r)
@@ -90,7 +92,6 @@ func (h *bmHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter
 
 	// write our status
 	status := courier.NewStatusUpdateForExternalID(channel, bmStatus.ID, msgStatus)
-	defer status.Release()
 	err = h.Server().WriteMsgStatus(status)
 	if err != nil {
 		return nil, err
@@ -100,7 +101,7 @@ func (h *bmHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *bmHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
+func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 	username := msg.Channel.StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for BM channel")
@@ -113,28 +114,32 @@ func (h *bmHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) 
 
 	apiKey := msg.Channel.StringConfigForKey(courier.ConfigAPIKey, "")
 	if apiKey == "" {
-		return nil, fmt.Errorf("no API key set for AT channel")
+		return nil, fmt.Errorf("no API key set for BM channel")
 	}
 
 	// build our request
 	form := url.Values{
 		"address":       []string{msg.URN.Path()},
 		"senderaddress": []string{msg.Channel.Address()},
-		"message":       []string{msg.Text},
+		"message":       []string{msg.TextAndAttachments()},
 	}
 
-	req, err := http.NewRequest("POST", "http://api.blackmyna.com/2/smsmessaging/outbound", strings.NewReader(form.Encode()))
+	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(username, password)
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log
 	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
 	status.AddLog(courier.NewChannelLogFromRR(msg.Channel, msg.ID, rr))
+	if err != nil {
+		return status, err
+	}
 
 	// get our external id
 	externalID, _ := jsonparser.GetString([]byte(rr.Body), "[0]", "id")
-	if err != nil || externalID == "" {
-		return status, errors.Errorf("received error sending message")
+	if externalID == "" {
+		return status, errors.Errorf("no external id returned in body")
 	}
 
 	status.Status = courier.MsgWired

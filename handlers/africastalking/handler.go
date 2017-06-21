@@ -16,6 +16,8 @@ import (
 
 const configIsShared = "is_shared"
 
+var sendURL = "https://api.africastalking.com/version1/messaging"
+
 func init() {
 	courier.RegisterHandler(NewHandler())
 }
@@ -107,7 +109,6 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 
 	// write our status
 	status := courier.NewStatusUpdateForExternalID(channel, atStatus.ID, msgStatus)
-	defer status.Release()
 	err = h.Server().WriteMsgStatus(status)
 	if err != nil {
 		return nil, err
@@ -135,7 +136,7 @@ func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 	form := url.Values{
 		"username": []string{username},
 		"to":       []string{msg.URN.Path()},
-		"message":  []string{msg.Text},
+		"message":  []string{msg.TextAndAttachments()},
 	}
 
 	// if this isn't shared, include our from
@@ -143,17 +144,23 @@ func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 		form["from"] = []string{msg.Channel.Address()}
 	}
 
-	req, err := http.NewRequest("POST", "https://api.africastalking.com/version1/messaging", strings.NewReader(form.Encode()))
+	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("apikey", apiKey)
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log
 	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
 	status.AddLog(courier.NewChannelLogFromRR(msg.Channel, msg.ID, rr))
+	if err != nil {
+		return status, err
+	}
 
 	// was this request successful?
 	msgStatus, _ := jsonparser.GetString([]byte(rr.Body), "SMSMessageData", "Recipients", "[0]", "status")
-	if err != nil || msgStatus != "Success" {
-		return status, errors.Errorf("received error sending message: %s", msgStatus)
+	if msgStatus != "Success" {
+		return status, errors.Errorf("received non-success status '%s'", msgStatus)
 	}
 
 	// grab the external id if we can

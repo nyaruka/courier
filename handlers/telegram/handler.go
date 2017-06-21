@@ -19,23 +19,23 @@ func init() {
 	courier.RegisterHandler(NewHandler())
 }
 
-type telegramHandler struct {
+type handler struct {
 	handlers.BaseHandler
 }
 
 // NewHandler returns a new TelegramHandler ready to be registered
 func NewHandler() courier.ChannelHandler {
-	return &telegramHandler{handlers.NewBaseHandler(courier.ChannelType("TG"), "Telegram")}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("TG"), "Telegram")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *telegramHandler) Initialize(s courier.Server) error {
+func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
+	return s.AddReceiveMsgRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *telegramHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
 	te := &telegramEnvelope{}
 	err := handlers.DecodeAndValidateJSON(te, r)
 	if err != nil {
@@ -117,9 +117,9 @@ func (h *telegramHandler) ReceiveMessage(channel courier.Channel, w http.Respons
 	return []*courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
 }
 
-func (h *telegramHandler) sendMsgPart(msg *courier.Msg, token string, path string, form url.Values) (string, *courier.ChannelLog, error) {
+func (h *handler) sendMsgPart(msg *courier.Msg, token string, path string, form url.Values) (string, *courier.ChannelLog, error) {
 	sendURL := fmt.Sprintf("%s/bot%s/%s", telegramAPIURL, token, path)
-	req, err := http.NewRequest("POST", sendURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// build our channel log
@@ -141,7 +141,7 @@ func (h *telegramHandler) sendMsgPart(msg *courier.Msg, token string, path strin
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *telegramHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
+func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 	confAuth := msg.Channel.ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
@@ -234,7 +234,7 @@ func resolveFileID(channel courier.Channel, fileID string) (string, error) {
 	form := url.Values{}
 	form.Set("file_id", fileID)
 
-	req, err := http.NewRequest("POST", fileURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequest(http.MethodPost, fileURL, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	if err != nil {

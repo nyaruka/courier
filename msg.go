@@ -1,6 +1,7 @@
 package courier
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -120,6 +121,17 @@ func (m *Msg) WithExternalID(id string) *Msg { m.ExternalID = id; return m }
 
 // AddAttachment can be used to append to the media urls for a message
 func (m *Msg) AddAttachment(url string) *Msg { m.Attachments = append(m.Attachments, url); return m }
+
+// TextAndAttachments returns both the text of our message as well as any attachments, newline delimited
+func (m *Msg) TextAndAttachments() string {
+	buf := bytes.NewBuffer([]byte(m.Text))
+	for _, a := range m.Attachments {
+		_, url := SplitAttachment(a)
+		buf.WriteString("\n")
+		buf.WriteString(url)
+	}
+	return buf.String()
+}
 
 // SplitAttachment takes an attachment string and returns the media type and URL for the attachment
 func SplitAttachment(attachment string) (string, string) {

@@ -28,17 +28,17 @@ func init() {
 	courier.RegisterHandler(NewHandler())
 }
 
-type kannelHandler struct {
+type handler struct {
 	handlers.BaseHandler
 }
 
 // NewHandler returns a new KannelHandler
 func NewHandler() courier.ChannelHandler {
-	return &kannelHandler{handlers.NewBaseHandler(courier.ChannelType("KN"), "Kannel")}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("KN"), "Kannel")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *kannelHandler) Initialize(s courier.Server) error {
+func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	err := s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
 	if err != nil {
@@ -49,7 +49,7 @@ func (h *kannelHandler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *kannelHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
 	// get our params
 	kannelMsg := &kannelMessage{}
 	err := handlers.DecodeAndValidateQueryParams(kannelMsg, r)
@@ -91,7 +91,7 @@ var kannelStatusMapping = map[int]courier.MsgStatus{
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *kannelHandler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.MsgStatusUpdate, error) {
+func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.MsgStatusUpdate, error) {
 	// get our params
 	kannelStatus := &kannelStatus{}
 	err := handlers.DecodeAndValidateQueryParams(kannelStatus, r)
@@ -115,7 +115,7 @@ func (h *kannelHandler) StatusMessage(channel courier.Channel, w http.ResponseWr
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *kannelHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
+func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 	username := msg.Channel.StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for KN channel")
@@ -138,7 +138,7 @@ func (h *kannelHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, err
 		"username": []string{username},
 		"password": []string{password},
 		"from":     []string{msg.Channel.Address()},
-		"text":     []string{msg.Text},
+		"text":     []string{msg.TextAndAttachments()},
 		"to":       []string{msg.URN.Path()},
 		"dlr-url":  []string{dlrURL},
 		"dlr-mask": []string{"31"},
@@ -156,16 +156,16 @@ func (h *kannelHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, err
 	if useNational {
 		parsed, err := phonenumbers.Parse(msg.URN.Path(), encodingDefault)
 		if err == nil {
-			form["to"] = []string{fmt.Sprintf("%d", *parsed.NationalNumber)}
+			form["to"] = []string{strings.Replace(phonenumbers.Format(parsed, phonenumbers.NATIONAL), " ", "", -1)}
 		}
 	}
 
 	// figure out what encoding to tell kannel to send as
-	encoding := msg.Channel.StringConfigForKey(configEncoding, "")
+	encoding := msg.Channel.StringConfigForKey(configEncoding, encodingSmart)
 
 	// if we are smart, first try to convert to GSM7 chars
 	if encoding == encodingSmart {
-		replaced := gsm7.ReplaceNonGSM7Chars(msg.Text)
+		replaced := gsm7.ReplaceNonGSM7Chars(msg.TextAndAttachments())
 		if gsm7.IsGSM7(replaced) {
 			form["text"] = []string{replaced}
 		} else {
@@ -191,7 +191,7 @@ func (h *kannelHandler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, err
 	verifySSLStr := msg.Channel.ConfigForKey(configVerifySSL, true)
 	verifySSL, _ := verifySSLStr.(bool)
 
-	req, err := http.NewRequest("GET", sendURL, nil)
+	req, err := http.NewRequest(http.MethodGet, sendURL, nil)
 	var rr *utils.RequestResponse
 
 	if verifySSL {

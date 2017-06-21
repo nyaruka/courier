@@ -112,7 +112,7 @@ func init() {
 // Mock channel implementation
 //-----------------------------------------------------------------------------
 
-type mockChannel struct {
+type MockChannel struct {
 	uuid        ChannelUUID
 	channelType ChannelType
 	address     string
@@ -120,11 +120,16 @@ type mockChannel struct {
 	config      map[string]interface{}
 }
 
-func (c *mockChannel) UUID() ChannelUUID        { return c.uuid }
-func (c *mockChannel) ChannelType() ChannelType { return c.channelType }
-func (c *mockChannel) Address() string          { return c.address }
-func (c *mockChannel) Country() string          { return c.country }
-func (c *mockChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
+func (c *MockChannel) UUID() ChannelUUID        { return c.uuid }
+func (c *MockChannel) ChannelType() ChannelType { return c.channelType }
+func (c *MockChannel) Address() string          { return c.address }
+func (c *MockChannel) Country() string          { return c.country }
+
+func (c *MockChannel) SetConfig(key string, value interface{}) {
+	c.config[key] = value
+}
+
+func (c *MockChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
 	value, found := c.config[key]
 	if !found {
 		return defaultValue
@@ -132,7 +137,7 @@ func (c *mockChannel) ConfigForKey(key string, defaultValue interface{}) interfa
 	return value
 }
 
-func (c *mockChannel) StringConfigForKey(key string, defaultValue string) string {
+func (c *MockChannel) StringConfigForKey(key string, defaultValue string) string {
 	val := c.ConfigForKey(key, defaultValue)
 	str, isStr := val.(string)
 	if !isStr {
@@ -145,7 +150,7 @@ func (c *mockChannel) StringConfigForKey(key string, defaultValue string) string
 func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}) Channel {
 	cUUID, _ := NewChannelUUID(uuid)
 
-	channel := &mockChannel{
+	channel := &MockChannel{
 		uuid:        cUUID,
 		channelType: ChannelType(channelType),
 		address:     address,
