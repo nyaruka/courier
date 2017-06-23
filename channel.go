@@ -22,6 +22,15 @@ const (
 
 	// ConfigSendURL is a constant key for channel configs
 	ConfigSendURL = "send_url"
+
+	// ConfigSendBody is a constant key for channel configs
+	ConfigSendBody = "send_body"
+
+	// ConfigSendMethod is a constant key for channel configs
+	ConfigSendMethod = "send_method"
+
+	// ConfigContentType is a constant key for channel configs
+	ConfigContentType = "content_type"
 )
 
 // ChannelType is our typing of the two char channel types
@@ -64,6 +73,7 @@ var ErrChannelWrongType = errors.New("channel type wrong")
 type Channel interface {
 	UUID() ChannelUUID
 	ChannelType() ChannelType
+	Scheme() string
 	Country() string
 	Address() string
 	ConfigForKey(key string, defaultValue interface{}) interface{}
