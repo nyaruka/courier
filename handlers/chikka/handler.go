@@ -1,3 +1,0 @@
-package chikka
-
-/* no logs */

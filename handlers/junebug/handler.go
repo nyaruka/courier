@@ -1,3 +1,0 @@
-package junebug
-
-/* no logs */

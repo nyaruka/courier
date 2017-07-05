@@ -1,3 +1,0 @@
-package firebase
-
-/* no logs */

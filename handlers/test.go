@@ -54,9 +54,10 @@ type ChannelSendTestCase struct {
 	ResponseStatus int
 	ResponseBody   string
 
-	URLParams  map[string]string
-	PostParams map[string]string
-	Headers    map[string]string
+	URLParams   map[string]string
+	PostParams  map[string]string
+	RequestBody string
+	Headers     map[string]string
 
 	Error      string
 	Status     string
@@ -179,6 +180,11 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 					value := testRequest.PostFormValue(k)
 					require.Equal(v, value)
 				}
+			}
+
+			if testCase.RequestBody != "" {
+				value, _ := ioutil.ReadAll(testRequest.Body)
+				require.Equal(testCase.RequestBody, string(value))
 			}
 
 			if testCase.Headers != nil {

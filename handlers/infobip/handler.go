@@ -1,3 +1,0 @@
-package infobip
-
-/* no logs */
