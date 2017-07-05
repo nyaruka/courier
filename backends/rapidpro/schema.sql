@@ -13,6 +13,7 @@ CREATE TABLE channels_channel (
     modified_on timestamp with time zone NOT NULL,
     uuid character varying(36) NOT NULL,
     channel_type character varying(3) NOT NULL,
+    scheme character varying(16) NOT NULL,
     name character varying(64),
     address character varying(64),
     country character varying(2),
