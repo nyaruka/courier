@@ -1,13 +1,16 @@
 language: go
 
+addons:
+  apt:
+    packages:
+      - redis-server
+  postgresql: '9.3'
+
 go:
 - 1.8
 
 services:
 - redis-server
-
-addons:
-  postgresql: '9.3'
 
 before_script:
 - psql -U postgres -c "CREATE USER courier WITH PASSWORD 'courier';"

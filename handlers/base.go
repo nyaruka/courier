@@ -76,6 +76,11 @@ func NameFromFirstLastUsername(first string, last string, username string) strin
 	return ""
 }
 
+// Validate validates the passe din struct using our shared validator instance
+func Validate(form interface{}) error {
+	return validate.Struct(form)
+}
+
 // DecodeAndValidateForm takes the passed in form and attempts to parse and validate it from the
 // POST parameters of the passed in request
 func DecodeAndValidateForm(form interface{}, r *http.Request) error {

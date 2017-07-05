@@ -13,6 +13,8 @@ const (
 	MsgPending   MsgStatus = "P"
 	MsgQueued    MsgStatus = "Q"
 	MsgSent      MsgStatus = "S"
+	MsgWired     MsgStatus = "W"
+	MsgErrored   MsgStatus = "E"
 	MsgDelivered MsgStatus = "D"
 	MsgFailed    MsgStatus = "F"
 	NilMsgStatus MsgStatus = ""
@@ -40,6 +42,11 @@ func NewStatusUpdateForExternalID(channel Channel, externalID string, status Msg
 	return s
 }
 
+// AddLog adds a channel log object to the passed in status
+func (m *MsgStatusUpdate) AddLog(log *ChannelLog) {
+	m.Logs = append(m.Logs, log)
+}
+
 var statusPool = sync.Pool{New: func() interface{} { return &MsgStatusUpdate{} }}
 
 //-----------------------------------------------------------------------------
@@ -53,10 +60,14 @@ type MsgStatusUpdate struct {
 	ExternalID string
 	Status     MsgStatus
 	CreatedOn  time.Time
+	Logs       []*ChannelLog
 }
 
 // Release releases this status and assigns it back to our pool for reuse
-func (m *MsgStatusUpdate) Release() { statusPool.Put(m) }
+func (m *MsgStatusUpdate) Release() {
+	m.clear()
+	statusPool.Put(m)
+}
 
 func (m *MsgStatusUpdate) clear() {
 	m.Channel = nil
@@ -64,4 +75,5 @@ func (m *MsgStatusUpdate) clear() {
 	m.ExternalID = ""
 	m.Status = ""
 	m.CreatedOn = time.Time{}
+	m.Logs = nil
 }

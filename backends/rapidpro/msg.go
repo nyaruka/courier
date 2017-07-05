@@ -3,6 +3,7 @@ package rapidpro
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -108,26 +109,8 @@ func newDBMsgFromMsg(m *courier.Msg) *DBMsg {
 		CreatedOn:   now,
 		ModifiedOn:  now,
 		QueuedOn:    now,
-		SentOn:      m.ReceivedOn,
+		SentOn:      *m.ReceivedOn,
 	}
-}
-
-// adds the message to a redis queue for handling. CURRENTLY UNUSED
-func addToHandleQueue(b *backend, m *DBMsg) error {
-	// write it to redis
-	r := b.redisPool.Get()
-	defer r.Close()
-
-	// we push to two different queues, one that is URN specific and the other that is our global queue (and to this only the URN)
-	r.Send("MULTI")
-	r.Send("RPUSH", fmt.Sprintf("c:u:%s", m.URN), m.ID)
-	r.Send("RPUSH", "c:msgs", m.URN)
-	_, err := r.Do("EXEC")
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 const insertMsgSQL = `
@@ -195,7 +178,12 @@ func downloadMediaToS3(b *backend, msgUUID courier.MsgUUID, mediaURL string) (st
 	if err != nil {
 		return "", err
 	}
-	resp, body, err := utils.MakeHTTPRequest(req)
+	resp, err := utils.GetHTTPClient().Do(req)
+	if err != nil {
+		return "", err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
 	if err != nil {
 		return "", err
 	}

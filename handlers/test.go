@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"bytes"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,8 +20,8 @@ import (
 // RequestPrepFunc is our type for a hook for tests to use before a request is fired in a test
 type RequestPrepFunc func(*http.Request)
 
-// ChannelTestCase defines the test values for a particular test case
-type ChannelTestCase struct {
+// ChannelHandleTestCase defines the test values for a particular test case
+type ChannelHandleTestCase struct {
 	Label string
 
 	URL      string
@@ -36,6 +38,32 @@ type ChannelTestCase struct {
 	Date        *time.Time
 
 	PrepRequest RequestPrepFunc
+}
+
+// SendPrepFunc allows test cases to modify the channel, msg or server before a message is sent
+type SendPrepFunc func(*httptest.Server, courier.Channel, *courier.Msg)
+
+// ChannelSendTestCase defines the test values for a particular test case
+type ChannelSendTestCase struct {
+	Label string
+
+	Text        string
+	URN         string
+	Attachments []string
+
+	ResponseStatus int
+	ResponseBody   string
+
+	URLParams   map[string]string
+	PostParams  map[string]string
+	RequestBody string
+	Headers     map[string]string
+
+	Error      string
+	Status     string
+	ExternalID string
+
+	SendPrep SendPrepFunc
 }
 
 // Sp is a utility method to get the pointer to the passed in string
@@ -95,8 +123,91 @@ func testHandlerRequest(tb testing.TB, s courier.Server, url string, data string
 	return body
 }
 
+// RunChannelSendTestCases runs all the passed in test cases against the channel
+func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler courier.ChannelHandler, testCases []ChannelSendTestCase) {
+	mb := courier.NewMockBackend()
+	s := courier.NewServer(config.NewTest(), mb)
+	mb.AddChannel(channel)
+	handler.Initialize(s)
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Label, func(t *testing.T) {
+			require := require.New(t)
+
+			msg := courier.NewOutgoingMsg(channel, courier.URN(testCase.URN), testCase.Text)
+			for _, a := range testCase.Attachments {
+				msg.AddAttachment(a)
+			}
+
+			var testRequest *http.Request
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, _ := ioutil.ReadAll(r.Body)
+				testRequest = httptest.NewRequest(r.Method, r.URL.String(), bytes.NewBuffer(body))
+				testRequest.Header = r.Header
+				w.WriteHeader(testCase.ResponseStatus)
+				w.Write([]byte(testCase.ResponseBody))
+			}))
+			defer server.Close()
+
+			// call our prep function if we have one
+			if testCase.SendPrep != nil {
+				testCase.SendPrep(server, channel, msg)
+			}
+
+			status, err := handler.SendMsg(msg)
+
+			if testCase.Error != "" {
+				if err == nil {
+					t.Errorf("expected error: %s", testCase.Error)
+				} else {
+					require.Equal(testCase.Error, err.Error())
+				}
+			} else if err != nil {
+				t.Errorf("unexpected error: %s", err.Error())
+			}
+
+			require.NotNil(testRequest)
+
+			if testCase.URLParams != nil {
+				for k, v := range testCase.URLParams {
+					value := testRequest.URL.Query().Get(k)
+					require.Equal(v, value)
+				}
+			}
+
+			if testCase.PostParams != nil {
+				for k, v := range testCase.PostParams {
+					value := testRequest.PostFormValue(k)
+					require.Equal(v, value)
+				}
+			}
+
+			if testCase.RequestBody != "" {
+				value, _ := ioutil.ReadAll(testRequest.Body)
+				require.Equal(testCase.RequestBody, string(value))
+			}
+
+			if testCase.Headers != nil {
+				for k, v := range testCase.Headers {
+					value := testRequest.Header.Get(k)
+					require.Equal(v, value)
+				}
+			}
+
+			if testCase.ExternalID != "" {
+				require.Equal(testCase.ExternalID, status.ExternalID)
+			}
+
+			if testCase.Status != "" {
+				require.Equal(testCase.Status, string(status.Status))
+			}
+		})
+	}
+
+}
+
 // RunChannelTestCases runs all the passed in tests cases for the passed in channel configurations
-func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
+func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelHandleTestCase) {
 	mb := courier.NewMockBackend()
 	s := courier.NewServer(config.NewTest(), mb)
 
@@ -138,7 +249,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 					require.Equal(testCase.Attachments, msg.Attachments)
 				}
 				if testCase.Date != nil {
-					require.Equal(*testCase.Date, msg.ReceivedOn)
+					require.Equal(*testCase.Date, *msg.ReceivedOn)
 				}
 			} else if err != courier.ErrMsgNotFound {
 				t.Fatalf("unexpected msg inserted: %v", err)
@@ -162,7 +273,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 }
 
 // RunChannelBenchmarks runs all the passed in test cases for the passed in channels
-func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelTestCase) {
+func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelHandleTestCase) {
 	mb := courier.NewMockBackend()
 	s := courier.NewServer(config.NewTest(), mb)
 

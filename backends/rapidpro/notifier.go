@@ -29,7 +29,7 @@ func notifyRapidPro(config *config.Courier, msgID courier.MsgID) error {
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("AUTHORIZATION", fmt.Sprintf("Token %s", config.RapidproToken))
-	_, _, err = utils.MakeHTTPRequest(req)
+	_, err = utils.MakeHTTPRequest(req)
 
 	return err
 }
@@ -53,6 +53,8 @@ func (n *notifier) start(backend *backend) {
 		log := logrus.WithField("comp", "notifier")
 		log.WithField("state", "started").Info("notifier started")
 
+		lastError := false
+
 		for {
 			select {
 			case msgID := <-n.msgIDChan:
@@ -61,8 +63,13 @@ func (n *notifier) start(backend *backend) {
 
 				// we failed, append it to our retries
 				if err != nil {
-					log.WithError(err).Error("error notifying rapidpro")
+					if !lastError {
+						log.WithError(err).Error("error notifying rapidpro")
+					}
 					n.retries = append(n.retries, msgID)
+					lastError = true
+				} else {
+					lastError = false
 				}
 
 				// otherwise, all is well, move onto the next
@@ -81,9 +88,15 @@ func (n *notifier) start(backend *backend) {
 
 					err := notifyRapidPro(n.config, msgID)
 					if err != nil {
-						log.WithError(err).Error("error notifying rapidpro")
+						if !lastError {
+							log.WithError(err).Error("error notifying rapidpro")
+						}
 						n.retries = append(n.retries, msgID)
+						lastError = true
+					} else {
+						lastError = false
 					}
+
 					retried++
 				}
 			}

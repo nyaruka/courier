@@ -2,6 +2,7 @@ package rapidpro
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"path"
@@ -17,9 +18,13 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/config"
+	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
 	"github.com/sirupsen/logrus"
 )
+
+// the name for our message queue
+const msgQueueName = "msgs"
 
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
@@ -30,6 +35,46 @@ func (b *backend) GetChannel(ct courier.ChannelType, uuid courier.ChannelUUID) (
 	return getChannel(b, ct, uuid)
 }
 
+// PopNextOutgoingMsg pops the next message that needs to be sent
+func (b *backend) PopNextOutgoingMsg() (*courier.Msg, error) {
+	// pop the next message off our queue
+	rc := b.redisPool.Get()
+	defer rc.Close()
+
+	token, msgJSON, err := queue.PopFromQueue(rc, msgQueueName)
+	for token == queue.Retry {
+		token, msgJSON, err = queue.PopFromQueue(rc, msgQueueName)
+	}
+
+	var msg *courier.Msg
+	if msgJSON != "" {
+		dbMsg := &DBMsg{}
+		err = json.Unmarshal([]byte(msgJSON), dbMsg)
+		if err != nil {
+			return nil, err
+		}
+
+		// load our channel
+		channel, err := b.GetChannel(courier.AnyChannelType, dbMsg.ChannelUUID)
+		if err != nil {
+			return nil, err
+		}
+
+		// then create our outgoing msg
+		msg = courier.NewOutgoingMsg(channel, dbMsg.URN, dbMsg.Text)
+		msg.WorkerToken = token
+	}
+
+	return msg, nil
+}
+
+// MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel
+func (b *backend) MarkOutgoingMsgComplete(msg *courier.Msg) {
+	rc := b.redisPool.Get()
+	defer rc.Close()
+	queue.MarkComplete(rc, msgQueueName, msg.WorkerToken)
+}
+
 // WriteMsg writes the passed in message to our store
 func (b *backend) WriteMsg(m *courier.Msg) error {
 	return writeMsg(b, m)
@@ -38,6 +83,17 @@ func (b *backend) WriteMsg(m *courier.Msg) error {
 // WriteMsgStatus writes the passed in MsgStatus to our store
 func (b *backend) WriteMsgStatus(status *courier.MsgStatusUpdate) error {
 	return writeMsgStatus(b, status)
+}
+
+// WriteChannelLogs persists the passed in logs to our database, for rapidpro we swallow all errors, logging isn't critical
+func (b *backend) WriteChannelLogs(logs []*courier.ChannelLog) error {
+	for _, l := range logs {
+		err := writeChannelLog(b, l)
+		if err != nil {
+			logrus.WithError(err).Error("error writing channel log")
+		}
+	}
+	return nil
 }
 
 // Health returns the health of this backend as a string, returning "" if all is well
@@ -124,6 +180,9 @@ func (b *backend) Start() error {
 		log.Info("redis ok")
 	}
 
+	// initialize our pop script
+	b.popScript = redis.NewScript(3, luaPopScript)
+
 	// create our s3 client
 	s3Session, err := session.NewSession(&aws.Config{
 		Credentials: credentials.NewStaticCredentials(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, ""),
@@ -204,8 +263,22 @@ type backend struct {
 	s3Client  *s3.S3
 	awsCreds  *credentials.Credentials
 
+	popScript *redis.Script
+
 	notifier *notifier
 
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
 }
+
+var luaPopScript = `
+local val = redis.call('zrange', ARGV[2], 0, 0);
+if not next(val) then 
+    redis.call('zrem', ARGV[1], ARGV[3]);
+    return nil;
+else 
+    redis.call('zincrby', ARGV[1], 1, ARGV[3]); 
+    redis.call('zremrangebyrank', ARGV[2], 0, 0);
+	return val[1];
+end
+`

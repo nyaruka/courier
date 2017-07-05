@@ -53,14 +53,14 @@ func getChannel(b *backend, channelType courier.ChannelType, channelUUID courier
 }
 
 const lookupChannelFromUUIDSQL = `
-SELECT org_id, id, uuid, channel_type, address, country, config 
+SELECT org_id, id, uuid, channel_type, scheme, address, country, config 
 FROM channels_channel 
-WHERE channel_type = $1 AND uuid = $2 AND is_active = true`
+WHERE uuid = $1 AND is_active = true`
 
 // ChannelForUUID attempts to look up the channel with the passed in UUID, returning it
 func loadChannelFromDB(b *backend, channel *DBChannel, channelType courier.ChannelType, uuid courier.ChannelUUID) error {
 	// select just the fields we need
-	err := b.db.Get(channel, lookupChannelFromUUIDSQL, channelType, uuid)
+	err := b.db.Get(channel, lookupChannelFromUUIDSQL, uuid)
 
 	// we didn't find a match
 	if err == sql.ErrNoRows {
@@ -70,6 +70,11 @@ func loadChannelFromDB(b *backend, channel *DBChannel, channelType courier.Chann
 	// other error
 	if err != nil {
 		return err
+	}
+
+	// is it the right type?
+	if channelType != courier.AnyChannelType && channelType != channel.ChannelType() {
+		return courier.ErrChannelWrongType
 	}
 
 	// found it, return it
@@ -85,7 +90,7 @@ func getLocalChannel(channelType courier.ChannelType, uuid courier.ChannelUUID) 
 
 	if found {
 		// if it was found but the type is wrong, that's an error
-		if channel.ChannelType() != channelType {
+		if channelType != courier.AnyChannelType && channel.ChannelType() != channelType {
 			return &DBChannel{ChannelType_: channelType, UUID_: uuid}, courier.ErrChannelWrongType
 		}
 
@@ -130,6 +135,7 @@ type DBChannel struct {
 	OrgID_       OrgID               `db:"org_id"`
 	ID_          ChannelID           `db:"id"`
 	ChannelType_ courier.ChannelType `db:"channel_type"`
+	Scheme_      string              `db:"scheme"`
 	UUID_        courier.ChannelUUID `db:"uuid"`
 	Address_     sql.NullString      `db:"address"`
 	Country_     sql.NullString      `db:"country"`
@@ -143,6 +149,9 @@ func (c *DBChannel) OrgID() OrgID { return c.OrgID_ }
 
 // ChannelType returns the type of this channel
 func (c *DBChannel) ChannelType() courier.ChannelType { return c.ChannelType_ }
+
+// Scheme returns the scheme of the URNs this channel deals with
+func (c *DBChannel) Scheme() string { return c.Scheme_ }
 
 // ID returns the id of this channel
 func (c *DBChannel) ID() ChannelID { return c.ID_ }
@@ -168,4 +177,14 @@ func (c *DBChannel) ConfigForKey(key string, defaultValue interface{}) interface
 		return defaultValue
 	}
 	return value
+}
+
+// StringConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
+func (c *DBChannel) StringConfigForKey(key string, defaultValue string) string {
+	val := c.ConfigForKey(key, defaultValue)
+	str, isStr := val.(string)
+	if !isStr {
+		return defaultValue
+	}
+	return str
 }

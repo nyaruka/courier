@@ -45,3 +45,6 @@ rapidpro_handle_url = "https://app.rapidpro.io/handlers/mage/handle_message/"
 
 # the token used for authentication agains the RapidPro instance
 rapidpro_token = "missing_rapidpro_token"
+
+# the DSN token for reporting errors to sentry
+dsn = ""

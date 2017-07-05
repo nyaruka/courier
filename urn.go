@@ -25,6 +25,29 @@ const (
 // URN represents a Universal Resource Name, we use this for contact identifiers like phone numbers etc..
 type URN string
 
+// Path returns the path portion for the URN
+func (u URN) Path() string {
+	parts := strings.SplitN(string(u), ":", 2)
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return string(u)
+}
+
+// Scheme returns the scheme portion for the URN
+func (u URN) Scheme() string {
+	parts := strings.SplitN(string(u), ":", 2)
+	if len(parts) == 2 {
+		return parts[0]
+	}
+	return ""
+}
+
+// String returns a string representation of our URN
+func (u URN) String() string {
+	return string(u)
+}
+
 // NilURN is our constant for nil URNs
 var NilURN = URN("")
 

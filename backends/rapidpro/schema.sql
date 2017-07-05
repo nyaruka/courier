@@ -1,9 +1,11 @@
+DROP TABLE IF EXISTS orgs_org CASCADE;
 CREATE TABLE orgs_org (
     id serial primary key,
     name character varying(255) NOT NULL,
     language character varying(64)
 );
 
+DROP TABLE IF EXISTS channels_channel CASCADE;
 CREATE TABLE channels_channel (
     id serial primary key,
     is_active boolean NOT NULL,
@@ -11,6 +13,7 @@ CREATE TABLE channels_channel (
     modified_on timestamp with time zone NOT NULL,
     uuid character varying(36) NOT NULL,
     channel_type character varying(3) NOT NULL,
+    scheme character varying(16) NOT NULL,
     name character varying(64),
     address character varying(64),
     country character varying(2),
@@ -18,6 +21,7 @@ CREATE TABLE channels_channel (
     org_id integer references orgs_org(id) on delete cascade
 );
 
+DROP TABLE IF EXISTS contacts_contact CASCADE;
 CREATE TABLE contacts_contact (
     id serial primary key,
     is_active boolean NOT NULL,
@@ -34,6 +38,7 @@ CREATE TABLE contacts_contact (
     org_id integer references orgs_org(id) on delete cascade
 );
 
+DROP TABLE IF EXISTS contacts_contacturn CASCADE;
 CREATE TABLE contacts_contacturn (
     id serial primary key,
     urn character varying(255) NOT NULL,
@@ -46,6 +51,7 @@ CREATE TABLE contacts_contacturn (
     auth text
 );
 
+DROP TABLE IF EXISTS msgs_msg CASCADE;
 CREATE TABLE msgs_msg (
     id serial primary key,
     text text NOT NULL,
@@ -69,4 +75,21 @@ CREATE TABLE msgs_msg (
     contact_urn_id integer references contacts_contacturn(id) on delete cascade,
     org_id integer references orgs_org(id) on delete cascade,
     topup_id integer
+);
+
+DROP TABLE IF EXISTS channels_channellog CASCADE;
+CREATE TABLE channels_channellog (
+    id serial primary key,
+    description character varying(255) NOT NULL,
+    is_error boolean NOT NULL,
+    url text,
+    method character varying(16),
+    request text,
+    response text,
+    response_status integer,
+    created_on timestamp with time zone NOT NULL,
+    request_time integer,
+    channel_id integer NOT NULL,
+    msg_id integer references msgs_msg(id) on delete cascade,
+    session_id integer references channels_channel(id) on delete cascade
 );

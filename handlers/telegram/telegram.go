@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,32 +19,32 @@ func init() {
 	courier.RegisterHandler(NewHandler())
 }
 
-type telegramHandler struct {
+type handler struct {
 	handlers.BaseHandler
 }
 
 // NewHandler returns a new TelegramHandler ready to be registered
 func NewHandler() courier.ChannelHandler {
-	return &telegramHandler{handlers.NewBaseHandler(courier.ChannelType("TG"), "Telegram")}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("TG"), "Telegram")}
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *telegramHandler) Initialize(s courier.Server) error {
+func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddChannelRoute(h, "POST", "receive", h.ReceiveMessage)
+	return s.AddReceiveMsgRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *telegramHandler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) error {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
 	te := &telegramEnvelope{}
 	err := handlers.DecodeAndValidateJSON(te, r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// no message? ignore this
 	if te.Message.MessageID == 0 {
-		return courier.WriteIgnored(w, r, "Ignoring request, no message")
+		return nil, courier.WriteIgnored(w, r, "Ignoring request, no message")
 	}
 
 	// create our date from the timestamp
@@ -97,7 +98,7 @@ func (h *telegramHandler) ReceiveMessage(channel courier.Channel, w http.Respons
 
 	// we had an error downloading media
 	if err != nil {
-		return errors.WrapPrefix(err, "error retrieving media", 0)
+		return nil, errors.WrapPrefix(err, "error retrieving media", 0)
 	}
 
 	// build our msg
@@ -110,10 +111,113 @@ func (h *telegramHandler) ReceiveMessage(channel courier.Channel, w http.Respons
 	// queue our message
 	err = h.Server().WriteMsg(msg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return courier.WriteReceiveSuccess(w, r, msg)
+	return []*courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
+}
+
+func (h *handler) sendMsgPart(msg *courier.Msg, token string, path string, form url.Values) (string, *courier.ChannelLog, error) {
+	sendURL := fmt.Sprintf("%s/bot%s/%s", telegramAPIURL, token, path)
+	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+	rr, err := utils.MakeHTTPRequest(req)
+
+	// build our channel log
+	log := courier.NewChannelLogFromRR(msg.Channel, msg.ID, rr)
+
+	// was this request successful?
+	ok, err := jsonparser.GetBoolean([]byte(rr.Body), "ok")
+	if err != nil || !ok {
+		return "", log, errors.Errorf("response not 'ok'")
+	}
+
+	// grab our message id
+	externalID, err := jsonparser.GetInt([]byte(rr.Body), "result", "message_id")
+	if err != nil {
+		return "", log, errors.Errorf("no 'result.message_id' in response")
+	}
+
+	return strconv.FormatInt(externalID, 10), log, nil
+}
+
+// SendMsg sends the passed in message, returning any error
+func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
+	confAuth := msg.Channel.ConfigForKey(courier.ConfigAuthToken, "")
+	authToken, isStr := confAuth.(string)
+	if !isStr || authToken == "" {
+		return nil, fmt.Errorf("invalid auth token config")
+	}
+
+	// we only caption if there is only a single attachment
+	caption := ""
+	if len(msg.Attachments) == 1 {
+		caption = msg.Text
+	}
+
+	// the status that will be written for this message
+	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
+
+	// whether we encountered any errors sending any parts
+	hasError := true
+
+	// if we have text, send that if we aren't sending it as a caption
+	if msg.Text != "" && caption == "" {
+		form := url.Values{
+			"chat_id": []string{msg.URN.Path()},
+			"text":    []string{msg.Text},
+		}
+		externalID, log, err := h.sendMsgPart(msg, authToken, "sendMessage", form)
+		status.ExternalID = externalID
+		hasError = err != nil
+		status.AddLog(log)
+	}
+
+	// send each attachment
+	for _, attachment := range msg.Attachments {
+		mediaType, mediaURL := courier.SplitAttachment(attachment)
+		switch mediaType {
+		case "image":
+			form := url.Values{
+				"photo":   []string{mediaURL},
+				"caption": []string{caption},
+			}
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendPhoto", form)
+			status.ExternalID = externalID
+			hasError = err != nil
+			status.AddLog(log)
+
+		case "video":
+			form := url.Values{
+				"video":   []string{mediaURL},
+				"caption": []string{caption},
+			}
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendVideo", form)
+			status.ExternalID = externalID
+			hasError = err != nil
+			status.AddLog(log)
+
+		case "audio":
+			form := url.Values{
+				"audio":   []string{mediaURL},
+				"caption": []string{caption},
+			}
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendAudio", form)
+			status.ExternalID = externalID
+			hasError = err != nil
+			status.AddLog(log)
+
+		default:
+			status.AddLog(courier.NewChannelLog(msg.Channel, msg.ID, "", courier.NilStatusCode,
+				fmt.Errorf("unknown media type: %s", mediaType), "", "", time.Duration(0), time.Now()))
+			hasError = true
+		}
+	}
+
+	if !hasError {
+		status.Status = courier.MsgWired
+	}
+
+	return status, nil
 }
 
 var telegramAPIURL = "https://api.telegram.org"
@@ -130,20 +234,20 @@ func resolveFileID(channel courier.Channel, fileID string) (string, error) {
 	form := url.Values{}
 	form.Set("file_id", fileID)
 
-	req, err := http.NewRequest("POST", fileURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequest(http.MethodPost, fileURL, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	if err != nil {
 		return "", err
 	}
 
-	_, body, err := utils.MakeHTTPRequest(req)
+	rr, err := utils.MakeHTTPRequest(req)
 	if err != nil {
 		return "", err
 	}
 
 	// was this request successful?
-	ok, err := jsonparser.GetBoolean(body, "ok")
+	ok, err := jsonparser.GetBoolean([]byte(rr.Body), "ok")
 	if err != nil {
 		return "", errors.Errorf("no 'ok' in response")
 	}
@@ -153,7 +257,7 @@ func resolveFileID(channel courier.Channel, fileID string) (string, error) {
 	}
 
 	// grab the path for our file
-	filePath, err := jsonparser.GetString(body, "result", "file_path")
+	filePath, err := jsonparser.GetString([]byte(rr.Body), "result", "file_path")
 	if err != nil {
 		return "", errors.Errorf("no 'result.file_path' in response")
 	}

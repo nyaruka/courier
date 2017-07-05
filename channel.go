@@ -8,12 +8,36 @@ import (
 )
 
 const (
-	// ConfigAuthToken is our constant key used in channel configs for auth tokens
+	// ConfigAuthToken is a constant key for channel configs
 	ConfigAuthToken = "auth_token"
+
+	// ConfigUsername is a constant key for channel configs
+	ConfigUsername = "username"
+
+	// ConfigPassword is a constant key for channel configs
+	ConfigPassword = "password"
+
+	// ConfigAPIKey is a constant key for channel configs
+	ConfigAPIKey = "api_key"
+
+	// ConfigSendURL is a constant key for channel configs
+	ConfigSendURL = "send_url"
+
+	// ConfigSendBody is a constant key for channel configs
+	ConfigSendBody = "send_body"
+
+	// ConfigSendMethod is a constant key for channel configs
+	ConfigSendMethod = "send_method"
+
+	// ConfigContentType is a constant key for channel configs
+	ConfigContentType = "content_type"
 )
 
 // ChannelType is our typing of the two char channel types
 type ChannelType string
+
+// AnyChannelType is our empty channel type used when doing lookups without channel type assertions
+var AnyChannelType = ChannelType("")
 
 // ChannelUUID is our typing of a channel's UUID
 type ChannelUUID struct {
@@ -49,7 +73,9 @@ var ErrChannelWrongType = errors.New("channel type wrong")
 type Channel interface {
 	UUID() ChannelUUID
 	ChannelType() ChannelType
+	Scheme() string
 	Country() string
 	Address() string
 	ConfigForKey(key string, defaultValue interface{}) interface{}
+	StringConfigForKey(key string, defaultValue string) string
 }

@@ -1,13 +1,16 @@
 package courier
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/nyaruka/courier/queue"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -67,7 +70,20 @@ func NewIncomingMsg(channel Channel, urn URN, text string) *Msg {
 	m.Channel = channel
 	m.Text = text
 	m.URN = urn
-	m.ReceivedOn = time.Now()
+
+	now := time.Now()
+	m.ReceivedOn = &now
+
+	return m
+}
+
+// NewOutgoingMsg creates a new message from the given params
+func NewOutgoingMsg(channel Channel, urn URN, text string) *Msg {
+	m := &Msg{}
+	m.UUID = NewMsgUUID()
+	m.Channel = channel
+	m.Text = text
+	m.URN = urn
 
 	return m
 }
@@ -86,17 +102,42 @@ type Msg struct {
 	ExternalID  string
 	URN         URN
 	ContactName string
-	ReceivedOn  time.Time
+
+	WorkerToken queue.WorkerToken
+
+	ReceivedOn *time.Time
+	SentOn     *time.Time
+	WiredOn    *time.Time
 }
 
 // WithContactName can be used to set the contact name on a msg
 func (m *Msg) WithContactName(name string) *Msg { m.ContactName = name; return m }
 
 // WithReceivedOn can be used to set sent_on on a msg in a chained call
-func (m *Msg) WithReceivedOn(date time.Time) *Msg { m.ReceivedOn = date; return m }
+func (m *Msg) WithReceivedOn(date time.Time) *Msg { m.ReceivedOn = &date; return m }
 
 // WithExternalID can be used to set the external id on a msg in a chained call
 func (m *Msg) WithExternalID(id string) *Msg { m.ExternalID = id; return m }
 
 // AddAttachment can be used to append to the media urls for a message
 func (m *Msg) AddAttachment(url string) *Msg { m.Attachments = append(m.Attachments, url); return m }
+
+// TextAndAttachments returns both the text of our message as well as any attachments, newline delimited
+func (m *Msg) TextAndAttachments() string {
+	buf := bytes.NewBuffer([]byte(m.Text))
+	for _, a := range m.Attachments {
+		_, url := SplitAttachment(a)
+		buf.WriteString("\n")
+		buf.WriteString(url)
+	}
+	return buf.String()
+}
+
+// SplitAttachment takes an attachment string and returns the media type and URL for the attachment
+func SplitAttachment(attachment string) (string, string) {
+	parts := strings.SplitN(attachment, ":", 2)
+	if len(parts) < 2 {
+		return "", parts[0]
+	}
+	return parts[0], parts[1]
+}

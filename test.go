@@ -31,6 +31,20 @@ func (mb *MockBackend) GetLastQueueMsg() (*Msg, error) {
 	return mb.queueMsgs[len(mb.queueMsgs)-1], nil
 }
 
+// PopNextOutgoingMsg returns the next message that should be sent, or nil if there are none to send
+func (mb *MockBackend) PopNextOutgoingMsg() (*Msg, error) {
+	return nil, nil
+}
+
+// MarkOutgoingMsgComplete marks the passed msg as having been dealt with
+func (mb *MockBackend) MarkOutgoingMsgComplete(m *Msg) {
+}
+
+// WriteChannelLogs writes the passed in channel logs to the DB
+func (mb *MockBackend) WriteChannelLogs(logs []*ChannelLog) error {
+	return nil
+}
+
 // SetErrorOnQueue is a mock method which makes the QueueMsg call throw the passed in error on next call
 func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 	mb.errorOnQueue = shouldError
@@ -98,19 +112,26 @@ func init() {
 // Mock channel implementation
 //-----------------------------------------------------------------------------
 
-type mockChannel struct {
+type MockChannel struct {
 	uuid        ChannelUUID
 	channelType ChannelType
+	scheme      string
 	address     string
 	country     string
 	config      map[string]interface{}
 }
 
-func (c *mockChannel) UUID() ChannelUUID        { return c.uuid }
-func (c *mockChannel) ChannelType() ChannelType { return c.channelType }
-func (c *mockChannel) Address() string          { return c.address }
-func (c *mockChannel) Country() string          { return c.country }
-func (c *mockChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
+func (c *MockChannel) UUID() ChannelUUID        { return c.uuid }
+func (c *MockChannel) ChannelType() ChannelType { return c.channelType }
+func (c *MockChannel) Scheme() string           { return c.scheme }
+func (c *MockChannel) Address() string          { return c.address }
+func (c *MockChannel) Country() string          { return c.country }
+
+func (c *MockChannel) SetConfig(key string, value interface{}) {
+	c.config[key] = value
+}
+
+func (c *MockChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
 	value, found := c.config[key]
 	if !found {
 		return defaultValue
@@ -118,13 +139,23 @@ func (c *mockChannel) ConfigForKey(key string, defaultValue interface{}) interfa
 	return value
 }
 
+func (c *MockChannel) StringConfigForKey(key string, defaultValue string) string {
+	val := c.ConfigForKey(key, defaultValue)
+	str, isStr := val.(string)
+	if !isStr {
+		return defaultValue
+	}
+	return str
+}
+
 // NewMockChannel creates a new mock channel for the passed in type, address, country and config
 func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}) Channel {
 	cUUID, _ := NewChannelUUID(uuid)
 
-	channel := &mockChannel{
+	channel := &MockChannel{
 		uuid:        cUUID,
 		channelType: ChannelType(channelType),
+		scheme:      TelScheme,
 		address:     address,
 		country:     country,
 		config:      config,
