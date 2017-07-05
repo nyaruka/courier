@@ -17,10 +17,9 @@ before_script:
 - psql -U postgres -c "ALTER ROLE courier WITH SUPERUSER;"
 - psql -U postgres -c "CREATE DATABASE courier_test;"
 - psql -U postgres -d courier_test -f backends/rapidpro/schema.sql
-- go get github.com/mattn/goveralls
 
 script:
-- $HOME/gopath/bin/goveralls -service=travis-ci
+  - go test github.com/nyaruka/courier/... -race -coverprofile=coverage.txt -covermode=atomic
 
 after_success:
-  test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
+  - bash <(curl -s https://codecov.io/bash)
