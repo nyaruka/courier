@@ -1,0 +1,3 @@
+package verboice
+
+/* no logs */
