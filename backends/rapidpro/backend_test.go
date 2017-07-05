@@ -7,8 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"encoding/json"
+
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/config"
+	"github.com/nyaruka/courier/queue"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -158,6 +161,48 @@ func (ts *MsgTestSuite) TestStatus() {
 	status = courier.NewStatusUpdateForExternalID(channel, "ext2", courier.MsgSent)
 	err = ts.b.WriteMsgStatus(status)
 	ts.Error(err)
+}
+
+func (ts *MsgTestSuite) TestHealth() {
+	// all should be well in test land
+	ts.Equal(ts.b.Health(), "")
+}
+
+func (ts *MsgTestSuite) TestOutgoingQueue() {
+	// add one of our outgoing messages to the queue
+	r := ts.b.redisPool.Get()
+	defer r.Close()
+
+	dbMsg, err := readMsgFromDB(ts.b, courier.NewMsgID(10000))
+	dbMsg.ChannelUUID, _ = courier.NewChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	ts.NoError(err)
+	ts.NotNil(dbMsg)
+
+	// serialize our message
+	msgJSON, err := json.Marshal(dbMsg)
+	ts.NoError(err)
+
+	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 1, string(msgJSON), queue.DefaultPriority)
+	ts.NoError(err)
+
+	// pop a message off our queue
+	msg, err := ts.b.PopNextOutgoingMsg()
+	ts.NoError(err)
+	ts.NotNil(msg)
+
+	// make sure it is the message we just added
+	ts.Equal(dbMsg.ID, msg.ID)
+
+	// and that it has the appropriate text
+	ts.Equal(msg.Text, "test message")
+
+	// mark this message as dealt with
+	ts.b.MarkOutgoingMsgComplete(msg)
+
+	// pop another message off, shouldn't get anything
+	msg, err = ts.b.PopNextOutgoingMsg()
+	ts.Nil(msg)
+	ts.Nil(err)
 }
 
 func (ts *MsgTestSuite) TestChannel() {

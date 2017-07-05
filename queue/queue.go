@@ -125,8 +125,8 @@ var luaPop = redis.NewScript(2, `-- KEYS: [Epoch QueueType]
 
 // PopFromQueue pops the next available message from the passed in queue. If QueueRetry
 // is returned the caller should immediately make another call to get the next value. A
-// value of QueueEmpty there are no more items to retrive. Otherwise QueueResult
-// should be saved in order to mark the task as complete
+// worker token of EmptyQueue will be returned if there are no more items to retrive.
+// Otherwise the WorkerToken should be saved in order to mark the task as complete later.
 func PopFromQueue(conn redis.Conn, qType string) (WorkerToken, string, error) {
 	epoch := time.Now().Unix()
 	values, err := redis.Strings(luaPop.Do(conn, strconv.FormatInt(epoch, 10), qType))

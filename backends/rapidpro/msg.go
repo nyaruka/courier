@@ -113,24 +113,6 @@ func newDBMsgFromMsg(m *courier.Msg) *DBMsg {
 	}
 }
 
-// adds the message to a redis queue for handling. CURRENTLY UNUSED
-func addToHandleQueue(b *backend, m *DBMsg) error {
-	// write it to redis
-	r := b.redisPool.Get()
-	defer r.Close()
-
-	// we push to two different queues, one that is URN specific and the other that is our global queue (and to this only the URN)
-	r.Send("MULTI")
-	r.Send("RPUSH", fmt.Sprintf("c:u:%s", m.URN), m.ID)
-	r.Send("RPUSH", "c:msgs", m.URN)
-	_, err := r.Do("EXEC")
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 const insertMsgSQL = `
 INSERT INTO msgs_msg(org_id, direction, has_template_error, text, msg_count, error_count, priority, status, 
                      visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on)
