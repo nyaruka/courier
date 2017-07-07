@@ -78,9 +78,10 @@ func NewIncomingMsg(channel Channel, urn URN, text string) *Msg {
 }
 
 // NewOutgoingMsg creates a new message from the given params
-func NewOutgoingMsg(channel Channel, urn URN, text string) *Msg {
+func NewOutgoingMsg(channel Channel, id MsgID, uuid MsgUUID, urn URN, text string) *Msg {
 	m := &Msg{}
-	m.UUID = NewMsgUUID()
+	m.ID = id
+	m.UUID = uuid
 	m.Channel = channel
 	m.Text = text
 	m.URN = urn

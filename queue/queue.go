@@ -16,18 +16,15 @@ type Priority int64
 type WorkerToken string
 
 const (
-	// LowPriority is our lowest priority, penalty of one day
-	LowPriority = Priority(time.Hour / 1000 * 24)
+	// DefaultPriority is the normal priority for msgs, messages are sent first in first out
+	DefaultPriority = 1
 
-	// DefaultPriority just queues according to the current time
-	DefaultPriority = Priority(0)
+	// BulkPriority is our priority for bulk messages (sent in batches) These will only be
+	// processed after all default priority messages are deault with
+	BulkPriority = 0
+)
 
-	// HighPriority subtracts one day
-	HighPriority = Priority(time.Hour / 1000 * -24)
-
-	// HigherPriority subtracts two days
-	HigherPriority = Priority(time.Hour / 1000 * -48)
-
+const (
 	// EmptyQueue means there are no items to retrive, caller should sleep and try again later
 	EmptyQueue = WorkerToken("empty")
 
@@ -35,17 +32,21 @@ const (
 	Retry = WorkerToken("retry")
 )
 
-var luaPush = redis.NewScript(6, `-- KEYS: [Epoch, QueueType, QueueName, TPS, Score, Value]
+var luaPush = redis.NewScript(6, `-- KEYS: [EpochMS, QueueType, QueueName, TPS, Priority, Value]
 	-- first push onto our specific queue
+	-- our queue name is built from the type, name and tps, usually something like: "msgs:uuid1-uuid2-uuid3-uuid4|tps"
 	local queueKey = KEYS[2] .. ":" .. KEYS[3] .. "|" .. KEYS[4]
-	redis.call("zadd", queueKey, KEYS[5], KEYS[6])
+
+	-- our priority queue name also includes the priority of the message (we have one queue for default and one for bulk)
+	local priorityQueueKey = queueKey .. "/" .. KEYS[5]
+	redis.call("zadd", priorityQueueKey, KEYS[1], KEYS[6])
 
 	local tps = tonumber(KEYS[4])
 
 	-- if we have a TPS, check whether we are currently throttled
 	local curr = -1
 	if tps > 0 then
-   	    local tpsKey = queueKey .. ":tps:" .. KEYS[1]
+   	    local tpsKey = queueKey .. ":tps:" .. math.floor(KEYS[1])
 	    curr = tonumber(redis.call("get", tpsKey))
 	end
 
@@ -62,13 +63,12 @@ var luaPush = redis.NewScript(6, `-- KEYS: [Epoch, QueueType, QueueName, TPS, Sc
 // specified transactions per second are popped off at a time. A tps value of 0 means there is no
 // limit to the rate that messages can be consumed
 func PushOntoQueue(conn redis.Conn, qType string, queue string, tps int, value string, priority Priority) error {
-	epoch := time.Now().Unix()
-	score := time.Now().UnixNano()/1000 + int64(priority)
-	_, err := redis.Int(luaPush.Do(conn, epoch, qType, queue, tps, strconv.FormatInt(score, 10), value))
+	epochMS := strconv.FormatFloat(float64(time.Now().UnixNano()/int64(time.Microsecond))/float64(1000000), 'f', 6, 64)
+	_, err := redis.Int(luaPush.Do(conn, epochMS, qType, queue, tps, priority, value))
 	return err
 }
 
-var luaPop = redis.NewScript(2, `-- KEYS: [Epoch QueueType]
+var luaPop = redis.NewScript(2, `-- KEYS: [EpochMS QueueType]
 	-- get the first key off our active list
 	local result = redis.call("zrange", KEYS[2] .. ":active", 0, 0, "WITHSCORES")
 	local queue = result[1]
@@ -82,39 +82,90 @@ var luaPop = redis.NewScript(2, `-- KEYS: [Epoch QueueType]
 	-- figure out our max transaction per second
 	local delim = string.find(queue, "|")
 	local tps = 0
+	local tpsKey = ""
 	if delim then
 	    tps = tonumber(string.sub(queue, delim+1))
 	end
 
 	-- if we have a tps, then check whether we exceed it
 	if tps > 0 then
-	    local tpsKey = queue .. ":tps:" .. KEYS[1]
+	    tpsKey = queue .. ":tps:" .. math.floor(KEYS[1])
 	    local curr = tonumber(redis.call("get", tpsKey))
 	    
-		-- we are under our max tps, increase our # of transactions on this second
-		if not curr or curr < tps then
-	        redis.call("incr", tpsKey)
-		    redis.call("expire", tpsKey, 10)
-	    
-		-- we are above our tps, move to our throttled queue
-		else
+		-- we are at or above our tps, move to our throttled queue
+		if curr and curr >= tps then 
 			redis.call("zincrby", KEYS[2] .. ":throttled", workers, queue)
 			redis.call("zrem", KEYS[2] .. ":active", queue)
 			return {"retry", ""}
   	    end
 	end
 
-	-- pop our next value out
-	result = redis.call("zrange", queue, 0, 0)
+	-- pop our next value out, first from our default queue
+	local priorityQueue = queue .. "/1"
+	local result = redis.call("zrangebyscore", priorityQueue, 0, "+inf", "WITHSCORES", "LIMIT", 0, 1)
+	
+	-- keep track as to whether this result is in the future (and therefore ineligible)
+	local isFutureResult = result[1] and result[2] > KEYS[1]
+
+	-- if we didn't find one, try again from our default
+	if not result[1] or isFutureResult then
+		priorityQueue = queue .. "/0"
+		result = redis.call("zrangebyscore", priorityQueue, 0, "+inf", "WITHSCORES", "LIMIT", 0, 1)
+
+		-- set whether we are a future result
+		if result[1] and result[2] > KEYS[1] then
+		    isFutureResult = true
+		else 
+			isFutureResult = false
+		end
+	end
 
 	-- if we found one
-	if result[1] then
+	if result[1] and not isFutureResult then
 		-- then remove it from the queue
-		redis.call('zremrangebyrank', queue, 0, 0)
+		redis.call('zremrangebyrank', priorityQueue, 0, 0)
+
+		-- increment our tps for this second if we have a limit
+		if tps > 0 then 
+		    redis.call("incr", tpsKey)
+		    redis.call("expire", tpsKey, 10)
+		end 
 
 		-- and add a worker to this queue
 		redis.call("zincrby", KEYS[2] .. ":active", 1, queue)
-		return {queue, result[1]}
+
+		-- is this a compound message? (a JSON array, if so, we return the first element but schedule the others
+		-- for 5 seconds from now
+		local popValue = result[1]
+		redis.call("set", "debug", popValue)
+		if string.sub(popValue, 1, 1) == "[" then
+		    -- parse it as JSON to get the first element out
+		    local valueList = cjson.decode(popValue)
+		    popValue = cjson.encode(valueList[1])
+		    table.remove(valueList, 1)
+
+		    -- encode it back if there is anything left
+		    if table.getn(valueList) > 0 then
+				local remaining = ""
+				if table.getn(valueList) == 1 then
+				    remaining = cjson.encode(valueList[1])
+				else 
+				    remaining = cjson.encode(valueList)
+				end
+
+			    -- schedule it in the future 5 seconds on our main queue
+			    redis.call("zadd", queue .. "/0", tonumber(KEYS[1]) + 5, remaining)
+			    redis.call("zincrby", KEYS[2] .. ":future", 0, queue)
+			end
+		end
+
+		return {queue, popValue}
+
+	-- otherwise, the queue only contains future results, remove from active and add to future, have the caller retry
+	elseif isFutureResult then
+	    redis.call("zincrby", KEYS[2] .. ":future", 0, queue)
+	    redis.call("zrem", KEYS[2] .. ":active", queue)
+		return {"retry", ""}
 	
 	-- otherwise, the queue is empty, remove it from active
 	else
@@ -128,8 +179,8 @@ var luaPop = redis.NewScript(2, `-- KEYS: [Epoch QueueType]
 // worker token of EmptyQueue will be returned if there are no more items to retrive.
 // Otherwise the WorkerToken should be saved in order to mark the task as complete later.
 func PopFromQueue(conn redis.Conn, qType string) (WorkerToken, string, error) {
-	epoch := time.Now().Unix()
-	values, err := redis.Strings(luaPop.Do(conn, strconv.FormatInt(epoch, 10), qType))
+	epochMS := strconv.FormatFloat(float64(time.Now().UnixNano()/int64(time.Microsecond))/float64(1000000), 'f', 6, 64)
+	values, err := redis.Strings(luaPop.Do(conn, epochMS, qType))
 	if err != nil {
 		return "", "", err
 	}
@@ -170,6 +221,18 @@ var luaDethrottle = redis.NewScript(1, `-- KEYS: [QueueType]
 			redis.call("zincrby", activeKey, throttled[i+1], throttled[i])
 		end
 		redis.call("del", KEYS[1] .. ":throttled")
+	end
+
+	-- get all the keys in the future
+	local future = redis.call("zrange", KEYS[1] .. ":future", 0, -1, "WITHSCORES")
+
+	-- add them to our active list
+	if next(future) then
+		local activeKey = KEYS[1] .. ":active"
+		for i=1,#future,2 do
+			redis.call("zincrby", activeKey, future[i+1], future[i])
+		end
+		redis.call("del", KEYS[1] .. ":future")
 	end
 `)
 

@@ -40,13 +40,18 @@ func getPool() *redis.Pool {
 func TestLua(t *testing.T) {
 	assert := assert.New(t)
 
+	// start our dethrottler
 	pool := getPool()
 	conn := pool.Get()
 	defer conn.Close()
+	quitter := make(chan bool)
+	wg := &sync.WaitGroup{}
+	StartDethrottler(pool, quitter, wg, "msgs")
+	defer close(quitter)
 
 	rate := 10
-	for i := 0; i < 30; i++ {
-		err := PushOntoQueue(conn, "msgs", "chan1", rate, fmt.Sprintf("msg:%d", i), DefaultPriority)
+	for i := 0; i < 15; i++ {
+		err := PushOntoQueue(conn, "msgs", "chan1", rate, fmt.Sprintf("msg:%d", i), BulkPriority)
 		assert.NoError(err)
 	}
 
@@ -79,7 +84,7 @@ func TestLua(t *testing.T) {
 	if value != "" && queue != EmptyQueue {
 		t.Fatal("Should be throttled")
 	}
-	err = PushOntoQueue(conn, "msgs", "chan1", rate, "msg:30", HighPriority)
+	err = PushOntoQueue(conn, "msgs", "chan1", rate, "msg:30", BulkPriority)
 	assert.NoError(err)
 
 	count, err = redis.Int(conn.Do("zcard", "msgs:throttled"))
@@ -96,8 +101,51 @@ func TestLua(t *testing.T) {
 	assert.NoError(err)
 
 	queue, value, err = PopFromQueue(conn, "msgs")
-	if value != "msg:30" && queue != "msgs:chan1|10" {
-		t.Fatalf("Should have received chan1 and msg30, got: %s and %s", queue, value)
+	if value != "msg:31" || queue != "msgs:chan1|10" {
+		t.Fatalf("Should have received chan1 and msg:31, got: %s and %s", queue, value)
+	}
+
+	// clear out our queue of remaining items
+	for i := 0; i < 5; i++ {
+		_, _, err := PopFromQueue(conn, "msgs")
+		assert.NoError(err)
+	}
+
+	// push on a compound message
+	err = PushOntoQueue(conn, "msgs", "chan1", rate, `[{"id":"msg:32"}, {"id":"msg:33"}]`, DefaultPriority)
+
+	queue, value, err = PopFromQueue(conn, "msgs")
+	assert.NoError(err)
+	if value != `{"id":"msg:32"}` || queue != "msgs:chan1|10" {
+		t.Fatalf("Should have received chan1 and msg:32, got: %s and %s", queue, value)
+	}
+
+	// next value should be 30 even though it is bulk
+	queue, value, err = PopFromQueue(conn, "msgs")
+	assert.NoError(err)
+	if value != "msg:30" || queue != "msgs:chan1|10" {
+		t.Fatalf("Should have received chan1 and msg:30, got: %s and %s", queue, value)
+	}
+
+	// popping again should give us nothing since it is too soon to send 33
+	queue, value, err = PopFromQueue(conn, "msgs")
+	assert.NoError(err)
+	if value != "" && queue != EmptyQueue {
+		t.Fatal("Should be throttled")
+	}
+
+	// but if we sleep 6 seconds should get it
+	time.Sleep(time.Second * 6)
+
+	queue, value, err = PopFromQueue(conn, "msgs")
+	if value != `{"id":"msg:33"}` || queue != "msgs:chan1|10" {
+		t.Fatalf("Should have received chan1 and msg:33, got: %s and %s", queue, value)
+	}
+
+	// nothing should be left
+	queue, value, err = PopFromQueue(conn, "msgs")
+	if value != "" && queue != EmptyQueue {
+		t.Fatal("Should be empty")
 	}
 }
 
@@ -174,7 +222,7 @@ func BenchmarkQueue(b *testing.B) {
 
 		queue, value, err := PopFromQueue(conn, "msgs")
 		assert.NoError(err)
-		assert.Equal("msgs:chan1|0", queue, "Mismatched queue")
+		assert.Equal(WorkerToken("msgs:chan1|0"), queue, "Mismatched queue")
 		assert.Equal(insertValue, value, "Mismatched value")
 
 		err = MarkComplete(conn, "msgs", queue)
