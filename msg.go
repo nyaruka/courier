@@ -66,6 +66,7 @@ func NewMsgUUID() MsgUUID {
 // NewIncomingMsg creates a new message from the given params
 func NewIncomingMsg(channel Channel, urn URN, text string) *Msg {
 	m := &Msg{}
+	m.ID = NilMsgID
 	m.UUID = NewMsgUUID()
 	m.Channel = channel
 	m.Text = text
@@ -78,10 +79,10 @@ func NewIncomingMsg(channel Channel, urn URN, text string) *Msg {
 }
 
 // NewOutgoingMsg creates a new message from the given params
-func NewOutgoingMsg(channel Channel, id MsgID, uuid MsgUUID, urn URN, text string) *Msg {
+func NewOutgoingMsg(channel Channel, urn URN, text string) *Msg {
 	m := &Msg{}
-	m.ID = id
-	m.UUID = uuid
+	m.ID = NilMsgID
+	m.UUID = NilMsgUUID
 	m.Channel = channel
 	m.Text = text
 	m.URN = urn
@@ -119,6 +120,12 @@ func (m *Msg) WithReceivedOn(date time.Time) *Msg { m.ReceivedOn = &date; return
 
 // WithExternalID can be used to set the external id on a msg in a chained call
 func (m *Msg) WithExternalID(id string) *Msg { m.ExternalID = id; return m }
+
+// WithID can be used to set the id on a msg in a chained call
+func (m *Msg) WithID(id MsgID) *Msg { m.ID = id; return m }
+
+// WithUUID can be used to set the id on a msg in a chained call
+func (m *Msg) WithUUID(uuid MsgUUID) *Msg { m.UUID = uuid; return m }
 
 // AddAttachment can be used to append to the media urls for a message
 func (m *Msg) AddAttachment(url string) *Msg { m.Attachments = append(m.Attachments, url); return m }

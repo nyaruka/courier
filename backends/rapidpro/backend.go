@@ -60,8 +60,7 @@ func (b *backend) PopNextOutgoingMsg() (*courier.Msg, error) {
 		}
 
 		// TODO: what other attributes are needed here?
-		msg := courier.NewOutgoingMsg(channel, dbMsg.ID, courier.NilMsgUUID, dbMsg.URN, dbMsg.Text)
-		msg.ExternalID = dbMsg.ExternalID
+		msg := courier.NewOutgoingMsg(channel, dbMsg.URN, dbMsg.Text).WithID(dbMsg.ID).WithExternalID(dbMsg.ExternalID)
 		msg.WorkerToken = token
 
 		return msg, nil
