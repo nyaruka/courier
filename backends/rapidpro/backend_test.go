@@ -242,7 +242,7 @@ func (ts *MsgTestSuite) TestWriteMsg() {
 
 	// create a new courier msg
 	urn := courier.NewTelURNForChannel("12065551212", knChannel)
-	msg := newMsg(MsgIncoming, knChannel, urn, "test123").WithExternalID("ext123").WithReceivedOn(now).WithContactName("test contact")
+	msg := ts.b.NewIncomingMsg(knChannel, urn, "test123").WithExternalID("ext123").WithReceivedOn(now).WithContactName("test contact").(*DBMsg)
 
 	// try to write it to our db
 	err := ts.b.WriteMsg(msg)
@@ -284,6 +284,15 @@ func (ts *MsgTestSuite) TestWriteMsg() {
 	ts.Equal(m.ContactID_, contact.ID)
 	ts.NotNil(contact.UUID)
 	ts.NotNil(contact.ID)
+
+	// creating the incoming msg again should give us the same UUID and have the msg set as not to write
+	msg2 := ts.b.NewIncomingMsg(knChannel, urn, "test123").(*DBMsg)
+	ts.Equal(msg2.UUID(), msg.UUID())
+
+	// waiting 5 seconds should let us write it successfully
+	time.Sleep(5 * time.Second)
+	msg3 := ts.b.NewIncomingMsg(knChannel, urn, "test123").(*DBMsg)
+	ts.NotEqual(msg3.UUID(), msg.UUID())
 }
 
 func TestMsgSuite(t *testing.T) {

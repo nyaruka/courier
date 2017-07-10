@@ -62,6 +62,12 @@ func NewMsgUUID() MsgUUID {
 	return MsgUUID{uuid.NewV4()}
 }
 
+// NewMsgUUIDFromString creates a new message UUID for the passed in string
+func NewMsgUUIDFromString(uuidString string) MsgUUID {
+	uuid, _ := uuid.FromString(uuidString)
+	return MsgUUID{uuid}
+}
+
 //-----------------------------------------------------------------------------
 // Msg interface
 //-----------------------------------------------------------------------------

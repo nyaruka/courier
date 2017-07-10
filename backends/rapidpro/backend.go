@@ -37,7 +37,16 @@ func (b *backend) GetChannel(ct courier.ChannelType, uuid courier.ChannelUUID) (
 
 // NewIncomingMsg creates a new message from the given params
 func (b *backend) NewIncomingMsg(channel courier.Channel, urn courier.URN, text string) courier.Msg {
-	return newMsg(MsgIncoming, channel, urn, text)
+	msg := newMsg(MsgIncoming, channel, urn, text)
+
+	// have we seen this msg in the past period?
+	prevUUID := checkMsgSeen(b, msg)
+	if prevUUID != courier.NilMsgUUID {
+		// if so, use its UUID and mark that we've been written
+		msg.UUID_ = prevUUID
+		msg.AlreadyWritten_ = true
+	}
+	return msg
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
