@@ -31,7 +31,7 @@ func (mb *MockBackend) GetLastQueueMsg() (*Msg, error) {
 	return mb.queueMsgs[len(mb.queueMsgs)-1], nil
 }
 
-// PopNextOutgoingMsg returns the next message that should be sent, or nil if there are none to send
+// PopNextOutgoingMsgs returns the next message that should be sent, or nil if there are none to send
 func (mb *MockBackend) PopNextOutgoingMsg() (*Msg, error) {
 	return nil, nil
 }

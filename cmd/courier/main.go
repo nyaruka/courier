@@ -49,14 +49,14 @@ func main() {
 	logrus.SetLevel(level)
 
 	// if we have a DSN entry, try to initialize it
-	if config.DSN != "" {
-		hook, err := logrus_sentry.NewSentryHook(config.DSN, []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel})
+	if config.SentryDSN != "" {
+		hook, err := logrus_sentry.NewSentryHook(config.SentryDSN, []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel})
 		hook.Timeout = 0
 		hook.StacktraceConfiguration.Enable = true
 		hook.StacktraceConfiguration.Skip = 4
 		hook.StacktraceConfiguration.Context = 5
 		if err != nil {
-			log.Fatalf("Invalid sentry DSN: '%s': %s", config.DSN, err)
+			log.Fatalf("Invalid sentry DSN: '%s': %s", config.SentryDSN, err)
 		}
 		logrus.StandardLogger().Hooks.Add(hook)
 	}

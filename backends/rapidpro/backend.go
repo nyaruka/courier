@@ -46,26 +46,27 @@ func (b *backend) PopNextOutgoingMsg() (*courier.Msg, error) {
 		token, msgJSON, err = queue.PopFromQueue(rc, msgQueueName)
 	}
 
-	var msg *courier.Msg
 	if msgJSON != "" {
-		dbMsg := &DBMsg{}
-		err = json.Unmarshal([]byte(msgJSON), dbMsg)
+		dbMsg := DBMsg{}
+		err = json.Unmarshal([]byte(msgJSON), &dbMsg)
 		if err != nil {
 			return nil, err
 		}
 
-		// load our channel
+		// create courier msg from our db msg
 		channel, err := b.GetChannel(courier.AnyChannelType, dbMsg.ChannelUUID)
 		if err != nil {
 			return nil, err
 		}
 
-		// then create our outgoing msg
-		msg = courier.NewOutgoingMsg(channel, dbMsg.URN, dbMsg.Text)
+		// TODO: what other attributes are needed here?
+		msg := courier.NewOutgoingMsg(channel, dbMsg.URN, dbMsg.Text).WithID(dbMsg.ID).WithExternalID(dbMsg.ExternalID)
 		msg.WorkerToken = token
+
+		return msg, nil
 	}
 
-	return msg, nil
+	return nil, nil
 }
 
 // MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel

@@ -8,7 +8,7 @@ import (
 type Courier struct {
 	Backend string `default:"rapidpro"`
 
-	DSN string `default:""`
+	SentryDSN string `default:""`
 
 	BaseURL  string `default:"https://localhost:8080"`
 	Port     int    `default:"8080"`
