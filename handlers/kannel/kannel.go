@@ -49,7 +49,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
 	// get our params
 	kannelMsg := &kannelMessage{}
 	err := handlers.DecodeAndValidateQueryParams(kannelMsg, r)
@@ -64,15 +64,15 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	urn := courier.NewTelURNForChannel(kannelMsg.Sender, channel)
 
 	// build our msg
-	msg := courier.NewIncomingMsg(channel, urn, kannelMsg.Message).WithExternalID(fmt.Sprintf("%d", kannelMsg.ID)).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, kannelMsg.Message).WithExternalID(fmt.Sprintf("%d", kannelMsg.ID)).WithReceivedOn(date)
 
 	// and finally queue our message
-	err = h.Server().WriteMsg(msg)
+	err = h.Backend().WriteMsg(msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
+	return []courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
 }
 
 type kannelMessage struct {
@@ -106,7 +106,7 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 
 	// write our status
 	status := courier.NewStatusUpdateForID(channel, kannelStatus.ID, msgStatus)
-	err = h.Server().WriteMsgStatus(status)
+	err = h.Backend().WriteMsgStatus(status)
 	if err != nil {
 		return nil, err
 	}
@@ -115,31 +115,31 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
-	username := msg.Channel.StringConfigForKey(courier.ConfigUsername, "")
+func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
+	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for KN channel")
 	}
 
-	password := msg.Channel.StringConfigForKey(courier.ConfigPassword, "")
+	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	if password == "" {
 		return nil, fmt.Errorf("no password set for KN channel")
 	}
 
-	sendURL := msg.Channel.StringConfigForKey(courier.ConfigSendURL, "")
+	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
 		return nil, fmt.Errorf("no send url set for KN channel")
 	}
 
-	dlrURL := fmt.Sprintf("%s%s%s/?id=%d&status=%%d", h.Server().Config().BaseURL, "/c/kn/", msg.Channel.UUID(), msg.ID.Int64)
+	dlrURL := fmt.Sprintf("%s%s%s/?id=%d&status=%%d", h.Server().Config().BaseURL, "/c/kn/", msg.Channel().UUID(), msg.ID().Int64)
 
 	// build our request
 	form := url.Values{
 		"username": []string{username},
 		"password": []string{password},
-		"from":     []string{msg.Channel.Address()},
-		"text":     []string{msg.TextAndAttachments()},
-		"to":       []string{msg.URN.Path()},
+		"from":     []string{msg.Channel().Address()},
+		"text":     []string{courier.GetTextAndAttachments(msg)},
+		"to":       []string{msg.URN().Path()},
 		"dlr-url":  []string{dlrURL},
 		"dlr-mask": []string{"31"},
 	}
@@ -149,23 +149,23 @@ func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 	//	form["priority"] = []string{"1"}
 	//}
 
-	useNationalStr := msg.Channel.ConfigForKey(configUseNational, false)
+	useNationalStr := msg.Channel().ConfigForKey(configUseNational, false)
 	useNational, _ := useNationalStr.(bool)
 
 	// if we are meant to use national formatting (no country code) pull that out
 	if useNational {
-		parsed, err := phonenumbers.Parse(msg.URN.Path(), encodingDefault)
+		parsed, err := phonenumbers.Parse(msg.URN().Path(), encodingDefault)
 		if err == nil {
 			form["to"] = []string{strings.Replace(phonenumbers.Format(parsed, phonenumbers.NATIONAL), " ", "", -1)}
 		}
 	}
 
 	// figure out what encoding to tell kannel to send as
-	encoding := msg.Channel.StringConfigForKey(configEncoding, encodingSmart)
+	encoding := msg.Channel().StringConfigForKey(configEncoding, encodingSmart)
 
 	// if we are smart, first try to convert to GSM7 chars
 	if encoding == encodingSmart {
-		replaced := gsm7.ReplaceNonGSM7Chars(msg.TextAndAttachments())
+		replaced := gsm7.ReplaceNonGSM7Chars(courier.GetTextAndAttachments(msg))
 		if gsm7.IsGSM7(replaced) {
 			form["text"] = []string{replaced}
 		} else {
@@ -188,7 +188,7 @@ func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 	}
 
 	// ignore SSL warnings if they ask
-	verifySSLStr := msg.Channel.ConfigForKey(configVerifySSL, true)
+	verifySSLStr := msg.Channel().ConfigForKey(configVerifySSL, true)
 	verifySSL, _ := verifySSLStr.(bool)
 
 	req, err := http.NewRequest(http.MethodGet, sendURL, nil)
@@ -201,8 +201,8 @@ func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 	}
 
 	// record our status and log
-	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR(msg.Channel, msg.ID, rr))
+	status := courier.NewStatusUpdateForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr))
 	if err != nil {
 		return status, errors.Errorf("received error sending message")
 	}

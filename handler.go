@@ -6,7 +6,7 @@ import (
 
 // ChannelReceiveMsgFunc is the interface ChannelHandler functions must satisfy to handle incoming msgs
 // The Server will take care of looking up the channel by UUID before passing it to this function.
-type ChannelReceiveMsgFunc func(Channel, http.ResponseWriter, *http.Request) ([]*Msg, error)
+type ChannelReceiveMsgFunc func(Channel, http.ResponseWriter, *http.Request) ([]Msg, error)
 
 // ChannelUpdateStatusFunc is the interface ChannelHandler functions must satisfy to handle incoming
 // status requests. The Server will take care of looking up the channel by UUID before passing it to this function.
@@ -24,7 +24,7 @@ type ChannelHandler interface {
 	Initialize(Server) error
 	ChannelType() ChannelType
 	ChannelName() string
-	SendMsg(*Msg) (*MsgStatusUpdate, error)
+	SendMsg(Msg) (*MsgStatusUpdate, error)
 }
 
 // RegisterHandler adds a new handler for a channel type, this is called by individual handlers when they are initialized

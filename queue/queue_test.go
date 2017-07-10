@@ -50,7 +50,7 @@ func TestLua(t *testing.T) {
 	defer close(quitter)
 
 	rate := 10
-	for i := 0; i < 15; i++ {
+	for i := 0; i < 20; i++ {
 		err := PushOntoQueue(conn, "msgs", "chan1", rate, fmt.Sprintf("msg:%d", i), BulkPriority)
 		assert.NoError(err)
 	}
@@ -120,11 +120,17 @@ func TestLua(t *testing.T) {
 		t.Fatalf("Should have received chan1 and msg:32, got: %s and %s", queue, value)
 	}
 
-	// next value should be 30 even though it is bulk
+	// sleep a few seconds
+	time.Sleep(2 * time.Second)
+
+	// pop until we get to 30
 	queue, value, err = PopFromQueue(conn, "msgs")
-	assert.NoError(err)
-	if value != "msg:30" || queue != "msgs:chan1|10" {
-		t.Fatalf("Should have received chan1 and msg:30, got: %s and %s", queue, value)
+	for value != "msg:30" {
+		assert.NoError(err)
+		if queue == EmptyQueue {
+			t.Fatalf("Should not reach empty queue before msg:30, got: %s and %s", queue, value)
+		}
+		queue, value, err = PopFromQueue(conn, "msgs")
 	}
 
 	// popping again should give us nothing since it is too soon to send 33

@@ -58,7 +58,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
 	externalMessage := &externalMessage{}
 	handlers.DecodeAndValidateQueryParams(externalMessage, r)
 
@@ -103,15 +103,15 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// build our msg
-	msg := courier.NewIncomingMsg(channel, urn, externalMessage.Text).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, externalMessage.Text).WithReceivedOn(date)
 
 	// and write it
-	err = h.Server().WriteMsg(msg)
+	err = h.Backend().WriteMsg(msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
+	return []courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
 }
 
 type externalMessage struct {
@@ -153,7 +153,7 @@ func (h *handler) StatusMessage(statusString string, channel courier.Channel, w 
 
 	// write our status
 	status := courier.NewStatusUpdateForID(channel, courier.NewMsgID(statusForm.ID), msgStatus)
-	err = h.Server().WriteMsgStatus(status)
+	err = h.Backend().WriteMsgStatus(status)
 	if err != nil {
 		return nil, err
 	}
@@ -172,25 +172,25 @@ var statusMappings = map[string]courier.MsgStatus{
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
-	sendURL := msg.Channel.StringConfigForKey(courier.ConfigSendURL, "")
+func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
+	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
 		return nil, fmt.Errorf("no send url set for EX channel")
 	}
 
-	sendMethod := msg.Channel.StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
-	sendBody := msg.Channel.StringConfigForKey(courier.ConfigSendBody, "")
-	contentType := msg.Channel.StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
+	sendMethod := msg.Channel().StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
+	sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
+	contentType := msg.Channel().StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
 
 	// build our request
 	form := map[string]string{
-		"id":           strconv.FormatInt(msg.ID.Int64, 10),
-		"text":         msg.TextAndAttachments(),
-		"to":           msg.URN.Path(),
-		"to_no_plus":   strings.TrimPrefix(msg.URN.Path(), "+"),
-		"from":         msg.Channel.Address(),
-		"from_no_plus": strings.TrimPrefix(msg.Channel.Address(), "+"),
-		"channel":      msg.Channel.UUID().String(),
+		"id":           strconv.FormatInt(msg.ID().Int64, 10),
+		"text":         courier.GetTextAndAttachments(msg),
+		"to":           msg.URN().Path(),
+		"to_no_plus":   strings.TrimPrefix(msg.URN().Path(), "+"),
+		"from":         msg.Channel().Address(),
+		"from_no_plus": strings.TrimPrefix(msg.Channel().Address(), "+"),
+		"channel":      msg.Channel().UUID().String(),
 	}
 
 	url := replaceVariables(sendURL, form, contentURLEncoded)
@@ -207,8 +207,8 @@ func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log
-	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR(msg.Channel, msg.ID, rr))
+	status := courier.NewStatusUpdateForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr))
 	if err != nil {
 		return status, err
 	}

@@ -35,8 +35,18 @@ func (b *backend) GetChannel(ct courier.ChannelType, uuid courier.ChannelUUID) (
 	return getChannel(b, ct, uuid)
 }
 
+// NewIncomingMsg creates a new message from the given params
+func (b *backend) NewIncomingMsg(channel courier.Channel, urn courier.URN, text string) courier.Msg {
+	return newMsg(MsgIncoming, channel, urn, text)
+}
+
+// NewOutgoingMsg creates a new outgoing message from the given params
+func (b *backend) NewOutgoingMsg(channel courier.Channel, urn courier.URN, text string) courier.Msg {
+	return newMsg(MsgOutgoing, channel, urn, text)
+}
+
 // PopNextOutgoingMsg pops the next message that needs to be sent
-func (b *backend) PopNextOutgoingMsg() (*courier.Msg, error) {
+func (b *backend) PopNextOutgoingMsg() (courier.Msg, error) {
 	// pop the next message off our queue
 	rc := b.redisPool.Get()
 	defer rc.Close()
@@ -47,37 +57,36 @@ func (b *backend) PopNextOutgoingMsg() (*courier.Msg, error) {
 	}
 
 	if msgJSON != "" {
-		dbMsg := DBMsg{}
-		err = json.Unmarshal([]byte(msgJSON), &dbMsg)
+		dbMsg := &DBMsg{}
+		err = json.Unmarshal([]byte(msgJSON), dbMsg)
 		if err != nil {
 			return nil, err
 		}
 
-		// create courier msg from our db msg
-		channel, err := b.GetChannel(courier.AnyChannelType, dbMsg.ChannelUUID)
+		// populate the channel on our db msg
+		channel, err := b.GetChannel(courier.AnyChannelType, dbMsg.ChannelUUID_)
 		if err != nil {
 			return nil, err
 		}
-
-		// TODO: what other attributes are needed here?
-		msg := courier.NewOutgoingMsg(channel, dbMsg.URN, dbMsg.Text).WithID(dbMsg.ID).WithExternalID(dbMsg.ExternalID)
-		msg.WorkerToken = token
-
-		return msg, nil
+		dbMsg.Channel_ = channel
+		dbMsg.WorkerToken_ = token
+		return dbMsg, nil
 	}
 
 	return nil, nil
 }
 
 // MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel
-func (b *backend) MarkOutgoingMsgComplete(msg *courier.Msg) {
+func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
-	queue.MarkComplete(rc, msgQueueName, msg.WorkerToken)
+
+	dbMsg := msg.(*DBMsg)
+	queue.MarkComplete(rc, msgQueueName, dbMsg.WorkerToken_)
 }
 
 // WriteMsg writes the passed in message to our store
-func (b *backend) WriteMsg(m *courier.Msg) error {
+func (b *backend) WriteMsg(m courier.Msg) error {
 	return writeMsg(b, m)
 }
 

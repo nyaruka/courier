@@ -12,17 +12,39 @@ type BackendConstructorFunc func(*config.Courier) Backend
 
 // Backend represents the part of Courier that deals with looking up and writing channels and results
 type Backend interface {
+	// Start starts the backend and opens any db connections it needs
 	Start() error
+
+	// Stop stops the backend closing any db connections it has open
 	Stop() error
 
+	// GetChannel returns the channel with the passed in type and UUID
 	GetChannel(ChannelType, ChannelUUID) (Channel, error)
-	WriteMsg(*Msg) error
+
+	// NewIncomingMsg creates a new message from the given params
+	NewIncomingMsg(channel Channel, urn URN, text string) Msg
+
+	// NewOutgoingMsg creates a new outgoing message from the given params
+	NewOutgoingMsg(channel Channel, urn URN, text string) Msg
+
+	// WriteMsg writes the passed in message to our backend
+	WriteMsg(Msg) error
+
+	// WriteMsgStatus writes the passed in status update to our backend
 	WriteMsgStatus(*MsgStatusUpdate) error
+
+	// WriteChannelLogs writes the passed in channel logs to our backend
 	WriteChannelLogs([]*ChannelLog) error
 
-	PopNextOutgoingMsg() (*Msg, error)
-	MarkOutgoingMsgComplete(*Msg)
+	// PopNextOutgoingMsg returns the next message that needs to be sent, callers should call MarkOutgoingMsgComplete with the
+	// returned message when they have dealt with the message (regardless of whether it was sent or not)
+	PopNextOutgoingMsg() (Msg, error)
 
+	// MarkOutgoingMsgComplete marks the passed in message as having been processed. Note this should be called even in the case
+	// of errors during sending as it will manage the number of active workers per channel
+	MarkOutgoingMsgComplete(Msg)
+
+	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string
 }
 

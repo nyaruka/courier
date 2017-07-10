@@ -40,7 +40,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
 	// get our params
 	bmMsg := &bmMessage{}
 	err := handlers.DecodeAndValidateForm(bmMsg, r)
@@ -52,15 +52,15 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	urn := courier.NewTelURNForChannel(bmMsg.From, channel)
 
 	// build our msg
-	msg := courier.NewIncomingMsg(channel, urn, bmMsg.Text)
+	msg := h.Backend().NewIncomingMsg(channel, urn, bmMsg.Text)
 
 	// and finally queue our message
-	err = h.Server().WriteMsg(msg)
+	err = h.Backend().WriteMsg(msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
+	return []courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
 }
 
 type bmMessage struct {
@@ -92,7 +92,7 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 
 	// write our status
 	status := courier.NewStatusUpdateForExternalID(channel, bmStatus.ID, msgStatus)
-	err = h.Server().WriteMsgStatus(status)
+	err = h.Backend().WriteMsgStatus(status)
 	if err != nil {
 		return nil, err
 	}
@@ -101,27 +101,27 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
-	username := msg.Channel.StringConfigForKey(courier.ConfigUsername, "")
+func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
+	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for BM channel")
 	}
 
-	password := msg.Channel.StringConfigForKey(courier.ConfigPassword, "")
+	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	if password == "" {
 		return nil, fmt.Errorf("no password set for BM channel")
 	}
 
-	apiKey := msg.Channel.StringConfigForKey(courier.ConfigAPIKey, "")
+	apiKey := msg.Channel().StringConfigForKey(courier.ConfigAPIKey, "")
 	if apiKey == "" {
 		return nil, fmt.Errorf("no API key set for BM channel")
 	}
 
 	// build our request
 	form := url.Values{
-		"address":       []string{msg.URN.Path()},
-		"senderaddress": []string{msg.Channel.Address()},
-		"message":       []string{msg.TextAndAttachments()},
+		"address":       []string{msg.URN().Path()},
+		"senderaddress": []string{msg.Channel().Address()},
+		"message":       []string{courier.GetTextAndAttachments(msg)},
 	}
 
 	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
@@ -130,8 +130,8 @@ func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log
-	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR(msg.Channel, msg.ID, rr))
+	status := courier.NewStatusUpdateForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr))
 	if err != nil {
 		return status, err
 	}

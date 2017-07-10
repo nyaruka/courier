@@ -35,7 +35,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
 	te := &telegramEnvelope{}
 	err := handlers.DecodeAndValidateJSON(te, r)
 	if err != nil {
@@ -102,28 +102,28 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// build our msg
-	msg := courier.NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(fmt.Sprintf("%d", te.Message.MessageID)).WithContactName(name)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(fmt.Sprintf("%d", te.Message.MessageID)).WithContactName(name)
 
 	if mediaURL != "" {
-		msg.AddAttachment(mediaURL)
+		msg.WithAttachment(mediaURL)
 	}
 
 	// queue our message
-	err = h.Server().WriteMsg(msg)
+	err = h.Backend().WriteMsg(msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
+	return []courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
 }
 
-func (h *handler) sendMsgPart(msg *courier.Msg, token string, path string, form url.Values) (string, *courier.ChannelLog, error) {
+func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values) (string, *courier.ChannelLog, error) {
 	sendURL := fmt.Sprintf("%s/bot%s/%s", telegramAPIURL, token, path)
 	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// build our channel log
-	log := courier.NewChannelLogFromRR(msg.Channel, msg.ID, rr)
+	log := courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr)
 
 	// was this request successful?
 	ok, err := jsonparser.GetBoolean([]byte(rr.Body), "ok")
@@ -141,8 +141,8 @@ func (h *handler) sendMsgPart(msg *courier.Msg, token string, path string, form 
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
-	confAuth := msg.Channel.ConfigForKey(courier.ConfigAuthToken, "")
+func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
+	confAuth := msg.Channel().ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
 		return nil, fmt.Errorf("invalid auth token config")
@@ -150,21 +150,21 @@ func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 
 	// we only caption if there is only a single attachment
 	caption := ""
-	if len(msg.Attachments) == 1 {
-		caption = msg.Text
+	if len(msg.Attachments()) == 1 {
+		caption = msg.Text()
 	}
 
 	// the status that will be written for this message
-	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
+	status := courier.NewStatusUpdateForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
 	// whether we encountered any errors sending any parts
 	hasError := true
 
 	// if we have text, send that if we aren't sending it as a caption
-	if msg.Text != "" && caption == "" {
+	if msg.Text() != "" && caption == "" {
 		form := url.Values{
-			"chat_id": []string{msg.URN.Path()},
-			"text":    []string{msg.Text},
+			"chat_id": []string{msg.URN().Path()},
+			"text":    []string{msg.Text()},
 		}
 		externalID, log, err := h.sendMsgPart(msg, authToken, "sendMessage", form)
 		status.ExternalID = externalID
@@ -173,7 +173,7 @@ func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 	}
 
 	// send each attachment
-	for _, attachment := range msg.Attachments {
+	for _, attachment := range msg.Attachments() {
 		mediaType, mediaURL := courier.SplitAttachment(attachment)
 		switch mediaType {
 		case "image":
@@ -207,7 +207,7 @@ func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 			status.AddLog(log)
 
 		default:
-			status.AddLog(courier.NewChannelLog(msg.Channel, msg.ID, "", courier.NilStatusCode,
+			status.AddLog(courier.NewChannelLog(msg.Channel(), msg.ID(), "", courier.NilStatusCode,
 				fmt.Errorf("unknown media type: %s", mediaType), "", "", time.Duration(0), time.Now()))
 			hasError = true
 		}

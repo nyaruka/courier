@@ -27,7 +27,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
+func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
 	time.Sleep(time.Second * 1)
 	return nil, nil
 }

@@ -24,6 +24,7 @@ type BaseHandler struct {
 	channelType courier.ChannelType
 	name        string
 	server      courier.Server
+	backend     courier.Backend
 }
 
 // NewBaseHandler returns a newly constructed BaseHandler with the passed in parameters
@@ -34,11 +35,17 @@ func NewBaseHandler(channelType courier.ChannelType, name string) BaseHandler {
 // SetServer can be used to change the server on a BaseHandler
 func (h *BaseHandler) SetServer(server courier.Server) {
 	h.server = server
+	h.backend = server.Backend()
 }
 
 // Server returns the server instance on the BaseHandler
 func (h *BaseHandler) Server() courier.Server {
 	return h.server
+}
+
+// Backend returns the backend instance on the BaseHandler
+func (h *BaseHandler) Backend() courier.Backend {
+	return h.backend
 }
 
 // ChannelType returns the channel type that this handler deals with

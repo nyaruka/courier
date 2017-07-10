@@ -20,7 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Server is the main interface ChannelHandlers use to interact with the database and redis. It provides an
+// Server is the main interface ChannelHandlers use to interact with backends. It provides an
 // abstraction that makes mocking easier for isolated unit tests
 type Server interface {
 	Config() *config.Courier
@@ -29,13 +29,10 @@ type Server interface {
 	AddReceiveMsgRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelReceiveMsgFunc) error
 	AddUpdateStatusRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelUpdateStatusFunc) error
 
-	GetChannel(ChannelType, ChannelUUID) (Channel, error)
-	WriteMsg(*Msg) error
-	WriteMsgStatus(*MsgStatusUpdate) error
-
-	SendMsg(*Msg) (*MsgStatusUpdate, error)
+	SendMsg(Msg) (*MsgStatusUpdate, error)
 
 	Backend() Backend
+
 	WaitGroup() *sync.WaitGroup
 	StopChan() chan bool
 	Stopped() bool
@@ -159,23 +156,11 @@ func (s *server) Stop() error {
 	return nil
 }
 
-func (s *server) GetChannel(cType ChannelType, cUUID ChannelUUID) (Channel, error) {
-	return s.backend.GetChannel(cType, cUUID)
-}
-
-func (s *server) WriteMsg(msg *Msg) error {
-	return s.backend.WriteMsg(msg)
-}
-
-func (s *server) WriteMsgStatus(status *MsgStatusUpdate) error {
-	return s.backend.WriteMsgStatus(status)
-}
-
-func (s *server) SendMsg(msg *Msg) (*MsgStatusUpdate, error) {
+func (s *server) SendMsg(msg Msg) (*MsgStatusUpdate, error) {
 	// find the handler for this message type
-	handler, found := activeHandlers[msg.Channel.ChannelType()]
+	handler, found := activeHandlers[msg.Channel().ChannelType()]
 	if !found {
-		return nil, fmt.Errorf("unable to find handler for channel type: %s", msg.Channel.ChannelType())
+		return nil, fmt.Errorf("unable to find handler for channel type: %s", msg.Channel().ChannelType())
 	}
 
 	// have the handler send it
@@ -316,7 +301,7 @@ func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc Ch
 
 		// create channel logs for each of our msgs
 		for _, msg := range msgs {
-			logs = append(logs, NewChannelLog(channel, msg.ID, url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), elapsed, start))
+			logs = append(logs, NewChannelLog(channel, msg.ID(), url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), elapsed, start))
 		}
 
 		// and write these out

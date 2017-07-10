@@ -41,7 +41,7 @@ type ChannelHandleTestCase struct {
 }
 
 // SendPrepFunc allows test cases to modify the channel, msg or server before a message is sent
-type SendPrepFunc func(*httptest.Server, courier.Channel, *courier.Msg)
+type SendPrepFunc func(*httptest.Server, courier.Channel, courier.Msg)
 
 // ChannelSendTestCase defines the test values for a particular test case
 type ChannelSendTestCase struct {
@@ -134,9 +134,9 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 		t.Run(testCase.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			msg := courier.NewOutgoingMsg(channel, courier.URN(testCase.URN), testCase.Text)
+			msg := mb.NewOutgoingMsg(channel, courier.URN(testCase.URN), testCase.Text)
 			for _, a := range testCase.Attachments {
-				msg.AddAttachment(a)
+				msg.WithAttachment(a)
 			}
 
 			var testRequest *http.Request
@@ -231,25 +231,25 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 				require.Nil(err)
 
 				if testCase.Name != nil {
-					require.Equal(*testCase.Name, msg.ContactName)
+					require.Equal(*testCase.Name, msg.ContactName())
 				}
 				if testCase.Text != nil {
-					require.Equal(*testCase.Text, msg.Text)
+					require.Equal(*testCase.Text, msg.Text())
 				}
 				if testCase.URN != nil {
-					require.Equal(*testCase.URN, string(msg.URN))
+					require.Equal(*testCase.URN, string(msg.URN()))
 				}
 				if testCase.External != nil {
-					require.Equal(*testCase.External, msg.ExternalID)
+					require.Equal(*testCase.External, msg.ExternalID())
 				}
 				if testCase.Attachment != nil {
-					require.Equal([]string{*testCase.Attachment}, msg.Attachments)
+					require.Equal([]string{*testCase.Attachment}, msg.Attachments())
 				}
 				if len(testCase.Attachments) > 0 {
-					require.Equal(testCase.Attachments, msg.Attachments)
+					require.Equal(testCase.Attachments, msg.Attachments())
 				}
 				if testCase.Date != nil {
-					require.Equal(*testCase.Date, *msg.ReceivedOn)
+					require.Equal(*testCase.Date, *msg.ReceivedOn())
 				}
 			} else if err != courier.ErrMsgNotFound {
 				t.Fatalf("unexpected msg inserted: %v", err)

@@ -63,7 +63,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
 	// get our params
 	atMsg := &messageRequest{}
 	err := handlers.DecodeAndValidateForm(atMsg, r)
@@ -82,15 +82,15 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	urn := courier.NewTelURNForChannel(atMsg.From, channel)
 
 	// build our msg
-	msg := courier.NewIncomingMsg(channel, urn, atMsg.Text).WithExternalID(atMsg.ID).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, atMsg.Text).WithExternalID(atMsg.ID).WithReceivedOn(date)
 
 	// and finally queue our message
-	err = h.Server().WriteMsg(msg)
+	err = h.Backend().WriteMsg(msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
+	return []courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
 }
 
 // StatusMessage is our HTTP handler function for status updates
@@ -109,7 +109,7 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 
 	// write our status
 	status := courier.NewStatusUpdateForExternalID(channel, atStatus.ID, msgStatus)
-	err = h.Server().WriteMsgStatus(status)
+	err = h.Backend().WriteMsgStatus(status)
 	if err != nil {
 		return nil, err
 	}
@@ -118,16 +118,16 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
-	isSharedStr := msg.Channel.ConfigForKey(configIsShared, false)
+func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
+	isSharedStr := msg.Channel().ConfigForKey(configIsShared, false)
 	isShared, _ := isSharedStr.(bool)
 
-	username := msg.Channel.StringConfigForKey(courier.ConfigUsername, "")
+	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for AT channel")
 	}
 
-	apiKey := msg.Channel.StringConfigForKey(courier.ConfigAPIKey, "")
+	apiKey := msg.Channel().StringConfigForKey(courier.ConfigAPIKey, "")
 	if apiKey == "" {
 		return nil, fmt.Errorf("no API key set for AT channel")
 	}
@@ -135,13 +135,13 @@ func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 	// build our request
 	form := url.Values{
 		"username": []string{username},
-		"to":       []string{msg.URN.Path()},
-		"message":  []string{msg.TextAndAttachments()},
+		"to":       []string{msg.URN().Path()},
+		"message":  []string{courier.GetTextAndAttachments(msg)},
 	}
 
 	// if this isn't shared, include our from
 	if !isShared {
-		form["from"] = []string{msg.Channel.Address()}
+		form["from"] = []string{msg.Channel().Address()}
 	}
 
 	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
@@ -151,8 +151,8 @@ func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log
-	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR(msg.Channel, msg.ID, rr))
+	status := courier.NewStatusUpdateForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr))
 	if err != nil {
 		return status, err
 	}
