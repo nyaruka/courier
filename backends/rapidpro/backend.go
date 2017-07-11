@@ -203,8 +203,8 @@ func (b *backend) Start() error {
 		log.Info("redis ok")
 	}
 
-	// initialize our pop script
-	b.popScript = redis.NewScript(3, luaPopScript)
+	// start our dethrottler
+	queue.StartDethrottler(redisPool, b.stopChan, b.waitGroup, msgQueueName)
 
 	// create our s3 client
 	s3Session, err := session.NewSession(&aws.Config{
@@ -293,15 +293,3 @@ type backend struct {
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
 }
-
-var luaPopScript = `
-local val = redis.call('zrange', ARGV[2], 0, 0);
-if not next(val) then 
-    redis.call('zrem', ARGV[1], ARGV[3]);
-    return nil;
-else 
-    redis.call('zincrby', ARGV[1], 1, ARGV[3]); 
-    redis.call('zremrangebyrank', ARGV[2], 0, 0);
-	return val[1];
-end
-`

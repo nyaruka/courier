@@ -56,21 +56,24 @@ func TestLua(t *testing.T) {
 	}
 
 	// get ourselves aligned with a second boundary
-	delay := time.Second - time.Duration(time.Now().UnixNano()%int64(time.Second))
+	delay := time.Second*2 - time.Duration(time.Now().UnixNano()%int64(time.Second))
 	time.Sleep(delay)
 
-	// pop 11 items off
-	for i := 0; i < 11; i++ {
-		_, _, err := PopFromQueue(conn, "msgs")
+	// pop 10 items off
+	for i := 0; i < 10; i++ {
+		queue, value, err := PopFromQueue(conn, "msgs")
+		assert.NotEqual(queue, EmptyQueue)
+		assert.Equal(fmt.Sprintf("msg:%d", i), value)
 		assert.NoError(err)
 	}
 
+	// next value should be throttled
 	queue, value, err := PopFromQueue(conn, "msgs")
 	if value != "" && queue != EmptyQueue {
 		t.Fatal("Should be throttled")
 	}
 
-	// should now be throttled
+	// check our redis state
 	count, err := redis.Int(conn.Do("zcard", "msgs:throttled"))
 	assert.NoError(err)
 	assert.Equal(1, count, "Expected chan1 to be throttled")
@@ -101,13 +104,15 @@ func TestLua(t *testing.T) {
 	assert.NoError(err)
 
 	queue, value, err = PopFromQueue(conn, "msgs")
-	if value != "msg:31" || queue != "msgs:chan1|10" {
-		t.Fatalf("Should have received chan1 and msg:31, got: %s and %s", queue, value)
-	}
+	assert.NoError(err)
+	assert.Equal(WorkerToken("msgs:chan1|10"), queue)
+	assert.Equal(`msg:31`, value)
 
-	// clear out our queue of remaining items
-	for i := 0; i < 5; i++ {
-		_, _, err := PopFromQueue(conn, "msgs")
+	// should get next five bulk msgs fine
+	for i := 10; i < 15; i++ {
+		queue, value, err := PopFromQueue(conn, "msgs")
+		assert.NotEqual(queue, EmptyQueue)
+		assert.Equal(fmt.Sprintf("msg:%d", i), value)
 		assert.NoError(err)
 	}
 
@@ -116,40 +121,51 @@ func TestLua(t *testing.T) {
 
 	queue, value, err = PopFromQueue(conn, "msgs")
 	assert.NoError(err)
-	if value != `{"id":"msg:32"}` || queue != "msgs:chan1|10" {
-		t.Fatalf("Should have received chan1 and msg:32, got: %s and %s", queue, value)
-	}
+	assert.Equal(WorkerToken("msgs:chan1|10"), queue)
+	assert.Equal(`{"id":"msg:32"}`, value)
 
 	// sleep a few seconds
 	time.Sleep(2 * time.Second)
 
-	// pop until we get to 30
-	queue, value, err = PopFromQueue(conn, "msgs")
-	for value != "msg:30" {
+	// pop remaining bulk off
+	for i := 15; i < 20; i++ {
+		queue, value, err := PopFromQueue(conn, "msgs")
+		assert.NotEqual(queue, EmptyQueue)
+		assert.Equal(fmt.Sprintf("msg:%d", i), value)
 		assert.NoError(err)
-		queue, value, err = PopFromQueue(conn, "msgs")
 	}
 
-	// popping again should give us nothing since it is too soon to send 33
+	// next should be 30
 	queue, value, err = PopFromQueue(conn, "msgs")
+	assert.NotEqual(queue, EmptyQueue)
+	assert.Equal("msg:30", value)
 	assert.NoError(err)
-	if value != "" && queue != EmptyQueue {
-		t.Fatal("Should be throttled")
+
+	// popping again should give us nothing since it is too soon to send 33
+	queue = Retry
+	for queue == Retry {
+		queue, value, err = PopFromQueue(conn, "msgs")
 	}
+	assert.NoError(err)
+	assert.Equal(EmptyQueue, queue)
+	assert.Empty(value)
 
 	// but if we sleep 6 seconds should get it
 	time.Sleep(time.Second * 6)
 
 	queue, value, err = PopFromQueue(conn, "msgs")
-	if value != `{"id":"msg:33"}` || queue != "msgs:chan1|10" {
-		t.Fatalf("Should have received chan1 and msg:33, got: %s and %s", queue, value)
-	}
+	assert.NoError(err)
+	assert.Equal(WorkerToken("msgs:chan1|10"), queue)
+	assert.Equal(`{"id":"msg:33"}`, value)
 
 	// nothing should be left
-	queue, value, err = PopFromQueue(conn, "msgs")
-	if value != "" && queue != EmptyQueue {
-		t.Fatal("Should be empty")
+	queue = Retry
+	for queue == Retry {
+		queue, value, err = PopFromQueue(conn, "msgs")
 	}
+	assert.NoError(err)
+	assert.Equal(EmptyQueue, queue)
+	assert.Empty(value)
 }
 
 func TestThrottle(t *testing.T) {

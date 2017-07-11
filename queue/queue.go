@@ -137,7 +137,6 @@ var luaPop = redis.NewScript(2, `-- KEYS: [EpochMS QueueType]
 		-- is this a compound message? (a JSON array, if so, we return the first element but schedule the others
 		-- for 5 seconds from now
 		local popValue = result[1]
-		redis.call("set", "debug", popValue)
 		if string.sub(popValue, 1, 1) == "[" then
 		    -- parse it as JSON to get the first element out
 		    local valueList = cjson.decode(popValue)
