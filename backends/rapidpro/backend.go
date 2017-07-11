@@ -37,6 +37,10 @@ func (b *backend) GetChannel(ct courier.ChannelType, uuid courier.ChannelUUID) (
 
 // NewIncomingMsg creates a new message from the given params
 func (b *backend) NewIncomingMsg(channel courier.Channel, urn courier.URN, text string) courier.Msg {
+	// remove any control characters
+	text = utils.CleanString(text)
+
+	// create our msg
 	msg := newMsg(MsgIncoming, channel, urn, text)
 
 	// have we seen this msg in the past period?
