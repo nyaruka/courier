@@ -143,6 +143,4 @@ type DBMsgStatus struct {
 	ExternalID  string              `json:"external_id,omitempty"    db:"external_id"`
 	Status      courier.MsgStatus   `json:"status"                   db:"status"`
 	ModifiedOn  time.Time           `json:"modified_on"              db:"modified_on"`
-	ErrorCount  int                 `json:"error_count"              db:"error_count"`
-	NextAttempt time.Time           `json:"next_attempt"             db:"next_attempt"`
 }
