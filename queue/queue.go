@@ -1,12 +1,12 @@
 package queue
 
 import (
-	"fmt"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/sirupsen/logrus"
 )
 
 // Priority represents the priority of an item in a queue
@@ -107,7 +107,7 @@ var luaPop = redis.NewScript(2, `-- KEYS: [EpochMS QueueType]
 	-- keep track as to whether this result is in the future (and therefore ineligible)
 	local isFutureResult = result[1] and result[2] > KEYS[1]
 
-	-- if we didn't find one, try again from our default
+	-- if we didn't find one, try again from our bulk queue
 	if not result[1] or isFutureResult then
 		priorityQueue = queue .. "/0"
 		result = redis.call("zrangebyscore", priorityQueue, 0, "+inf", "WITHSCORES", "LIMIT", 0, 1)
@@ -137,7 +137,6 @@ var luaPop = redis.NewScript(2, `-- KEYS: [EpochMS QueueType]
 		-- is this a compound message? (a JSON array, if so, we return the first element but schedule the others
 		-- for 5 seconds from now
 		local popValue = result[1]
-		redis.call("set", "debug", popValue)
 		if string.sub(popValue, 1, 1) == "[" then
 		    -- parse it as JSON to get the first element out
 		    local valueList = cjson.decode(popValue)
@@ -255,7 +254,7 @@ func StartDethrottler(redis *redis.Pool, quitter chan bool, wg *sync.WaitGroup, 
 				conn := redis.Get()
 				_, err := luaDethrottle.Do(conn, qType)
 				if err != nil {
-					fmt.Println(err)
+					logrus.WithError(err).Error("error dethrottling")
 				}
 				conn.Close()
 

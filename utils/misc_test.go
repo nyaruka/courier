@@ -21,3 +21,8 @@ func TestStringArrayContains(t *testing.T) {
 	assert.False(t, StringArrayContains([]string{"a", "b"}, "x"))
 	assert.True(t, StringArrayContains([]string{"a", "b", "x", "y"}, "x"))
 }
+
+func TestCleanString(t *testing.T) {
+	assert.Equal(t, "\x41hello", CleanString("\x02\x41hello"))
+	assert.Equal(t, "😅 happy!", CleanString("😅 happy!"))
+}

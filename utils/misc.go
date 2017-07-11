@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
+	"regexp"
 	"unicode/utf8"
 )
 
@@ -56,4 +57,11 @@ func StringArrayContains(s []string, e string) bool {
 		}
 	}
 	return false
+}
+
+var invalidChars = regexp.MustCompile("([\u0000-\u0008]|[\u000B-\u000C]|[\u000E-\u001F])")
+
+// CleanString removes any control characters from the passed in string
+func CleanString(s string) string {
+	return invalidChars.ReplaceAllString(s, "")
 }
