@@ -127,9 +127,6 @@ func TestLua(t *testing.T) {
 	queue, value, err = PopFromQueue(conn, "msgs")
 	for value != "msg:30" {
 		assert.NoError(err)
-		if queue == EmptyQueue {
-			t.Fatalf("Should not reach empty queue before msg:30, got: %s and %s", queue, value)
-		}
 		queue, value, err = PopFromQueue(conn, "msgs")
 	}
 
