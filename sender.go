@@ -103,7 +103,7 @@ func (f *Foreman) Assign() {
 type Sender struct {
 	id      int
 	foreman *Foreman
-	job     chan *Msg
+	job     chan Msg
 }
 
 // NewSender creates a new sender responsible for sending messages
@@ -111,7 +111,7 @@ func NewSender(foreman *Foreman, id int) *Sender {
 	sender := &Sender{
 		id:      id,
 		foreman: foreman,
-		job:     make(chan *Msg, 1),
+		job:     make(chan Msg, 1),
 	}
 	return sender
 }
@@ -136,6 +136,7 @@ func (w *Sender) Send() {
 	log.Debug("started")
 
 	server := w.foreman.server
+	backend := server.Backend()
 
 	for true {
 		// list ourselves as available for work
@@ -152,18 +153,18 @@ func (w *Sender) Send() {
 
 		status, err := server.SendMsg(msg)
 		if err != nil {
-			log.WithField("msgID", msg.ID.Int64).WithError(err).Info("msg errored")
+			log.WithField("msgID", msg.ID().Int64).WithError(err).Info("msg errored")
 		} else {
-			log.WithField("msgID", msg.ID.Int64).Info("msg sent")
+			log.WithField("msgID", msg.ID().Int64).Info("msg sent")
 		}
 
 		// record our status
-		err = server.WriteMsgStatus(status)
+		err = backend.WriteMsgStatus(status)
 		if err != nil {
-			log.WithField("msgID", msg.ID.Int64).WithError(err).Info("error writing msg status")
+			log.WithField("msgID", msg.ID().Int64).WithError(err).Info("error writing msg status")
 		}
 
 		// mark our send task as complete
-		server.Backend().MarkOutgoingMsgComplete(msg)
+		backend.MarkOutgoingMsgComplete(msg)
 	}
 }

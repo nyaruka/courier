@@ -82,7 +82,7 @@ var twStatusMapping = map[string]courier.MsgStatus{
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -104,21 +104,21 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// build our msg
-	msg := courier.NewIncomingMsg(channel, urn, twMsg.Body).WithExternalID(twMsg.MessageSID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, twMsg.Body).WithExternalID(twMsg.MessageSID)
 
 	// process any attached media
 	for i := 0; i < twMsg.NumMedia; i++ {
 		mediaURL := r.PostForm.Get(fmt.Sprintf("MediaUrl%d", i))
-		msg.AddAttachment(mediaURL)
+		msg.WithAttachment(mediaURL)
 	}
 
 	// and finally queue our message
-	err = h.Server().WriteMsg(msg)
+	err = h.Backend().WriteMsg(msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*courier.Msg{msg}, h.writeReceiveSuccess(w)
+	return []courier.Msg{msg}, h.writeReceiveSuccess(w)
 }
 
 // StatusMessage is our HTTP handler function for status updates
@@ -143,7 +143,7 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 	// write our status
 	status := courier.NewStatusUpdateForExternalID(channel, twStatus.MessageSID, msgStatus)
 	defer status.Release()
-	err = h.Server().WriteMsgStatus(status)
+	err = h.Backend().WriteMsgStatus(status)
 	if err != nil {
 		return nil, err
 	}
@@ -152,42 +152,42 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
+func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
 	// build our callback URL
-	callbackURL := fmt.Sprintf("%s/c/kn/%s/status/", h.Server().Config().BaseURL, msg.Channel.UUID())
+	callbackURL := fmt.Sprintf("%s/c/kn/%s/status/", h.Server().Config().BaseURL, msg.Channel().UUID())
 
-	accountSID := msg.Channel.StringConfigForKey(configAccountSID, "")
+	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	if accountSID == "" {
 		return nil, fmt.Errorf("missing account sid for twilio channel")
 	}
 
-	accountToken := msg.Channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	accountToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if accountToken == "" {
 		return nil, fmt.Errorf("missing account auth token for twilio channel")
 	}
 
 	// build our request
 	form := url.Values{
-		"To":             []string{msg.URN.Path()},
-		"Body":           []string{msg.Text},
+		"To":             []string{msg.URN().Path()},
+		"Body":           []string{msg.Text()},
 		"StatusCallback": []string{callbackURL},
 	}
 
 	// add any media URL
-	if len(msg.Attachments) > 0 {
-		_, mediaURL := courier.SplitAttachment(msg.Attachments[0])
+	if len(msg.Attachments()) > 0 {
+		_, mediaURL := courier.SplitAttachment(msg.Attachments()[0])
 		form["MediaURL"] = []string{mediaURL}
 	}
 
 	// set our from, either as a messaging service or from our address
-	serviceSID := msg.Channel.StringConfigForKey(configMessagingServiceSID, "")
+	serviceSID := msg.Channel().StringConfigForKey(configMessagingServiceSID, "")
 	if serviceSID != "" {
 		form["MessagingServiceSID"] = []string{serviceSID}
 	} else {
-		form["From"] = []string{msg.Channel.Address()}
+		form["From"] = []string{msg.Channel().Address()}
 	}
 
-	baseSendURL := msg.Channel.StringConfigForKey(configSendURL, sendURL)
+	baseSendURL := msg.Channel().StringConfigForKey(configSendURL, sendURL)
 	sendURL, err := utils.AddURLPath(baseSendURL, accountSID, "Messages.json")
 	if err != nil {
 		return nil, err
@@ -199,8 +199,8 @@ func (h *handler) SendMsg(msg *courier.Msg) (*courier.MsgStatusUpdate, error) {
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log
-	status := courier.NewStatusUpdateForID(msg.Channel, msg.ID, courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR(msg.Channel, msg.ID, rr))
+	status := courier.NewStatusUpdateForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr))
 
 	// fail if we received an error
 	if err != nil {

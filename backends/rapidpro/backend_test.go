@@ -45,6 +45,11 @@ func (ts *MsgTestSuite) SetupSuite() {
 		panic(fmt.Errorf("Unable to read testdata.sql: %s", err))
 	}
 	ts.b.db.MustExec(string(sql))
+
+	// clear redis
+	r := ts.b.redisPool.Get()
+	defer r.Close()
+	r.Do("FLUSHDB")
 }
 
 func (ts *MsgTestSuite) TearDownSuite() {
@@ -145,8 +150,8 @@ func (ts *MsgTestSuite) TestStatus() {
 	ts.NoError(err)
 	m, err := readMsgFromDB(ts.b, courier.NewMsgID(10001))
 	ts.NoError(err)
-	ts.Equal(m.Status, courier.MsgSent)
-	ts.True(m.ModifiedOn.After(now))
+	ts.Equal(m.Status_, courier.MsgSent)
+	ts.True(m.ModifiedOn_.After(now))
 
 	// update by external id
 	status = courier.NewStatusUpdateForExternalID(channel, "ext1", courier.MsgFailed)
@@ -154,8 +159,8 @@ func (ts *MsgTestSuite) TestStatus() {
 	ts.NoError(err)
 	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10000))
 	ts.NoError(err)
-	ts.Equal(m.Status, courier.MsgFailed)
-	ts.True(m.ModifiedOn.After(now))
+	ts.Equal(m.Status_, courier.MsgFailed)
+	ts.True(m.ModifiedOn_.After(now))
 
 	// no such external id
 	status = courier.NewStatusUpdateForExternalID(channel, "ext2", courier.MsgSent)
@@ -174,7 +179,7 @@ func (ts *MsgTestSuite) TestOutgoingQueue() {
 	defer r.Close()
 
 	dbMsg, err := readMsgFromDB(ts.b, courier.NewMsgID(10000))
-	dbMsg.ChannelUUID, _ = courier.NewChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	dbMsg.ChannelUUID_, _ = courier.NewChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ts.NoError(err)
 	ts.NotNil(dbMsg)
 
@@ -191,10 +196,10 @@ func (ts *MsgTestSuite) TestOutgoingQueue() {
 	ts.NotNil(msg)
 
 	// make sure it is the message we just added
-	ts.Equal(dbMsg.ID, msg.ID)
+	ts.Equal(dbMsg.ID(), msg.ID())
 
 	// and that it has the appropriate text
-	ts.Equal(msg.Text, "test message")
+	ts.Equal(msg.Text(), "test message")
 
 	// mark this message as dealt with
 	ts.b.MarkOutgoingMsgComplete(msg)
@@ -237,7 +242,7 @@ func (ts *MsgTestSuite) TestWriteMsg() {
 
 	// create a new courier msg
 	urn := courier.NewTelURNForChannel("12065551212", knChannel)
-	msg := courier.NewIncomingMsg(knChannel, urn, "test123").WithExternalID("ext123").WithReceivedOn(now).WithContactName("test contact")
+	msg := ts.b.NewIncomingMsg(knChannel, urn, "test123").WithExternalID("ext123").WithReceivedOn(now).WithContactName("test contact").(*DBMsg)
 
 	// try to write it to our db
 	err := ts.b.WriteMsg(msg)
@@ -247,38 +252,47 @@ func (ts *MsgTestSuite) TestWriteMsg() {
 	ts.NotZero(msg.ID)
 
 	// load it back from the id
-	m, err := readMsgFromDB(ts.b, msg.ID)
+	m, err := readMsgFromDB(ts.b, msg.ID())
 	ts.NoError(err)
 
 	// load our URN
-	contactURN, err := contactURNForURN(ts.b.db, m.OrgID, m.ChannelID, m.ContactID, urn)
+	contactURN, err := contactURNForURN(ts.b.db, m.OrgID_, m.ChannelID_, m.ContactID_, urn)
 	ts.NoError(err)
 
 	// make sure our values are set appropriately
-	ts.Equal(knChannel.ID_, m.ChannelID)
-	ts.Equal(knChannel.OrgID_, m.OrgID)
-	ts.Equal(contactURN.ContactID, m.ContactID)
-	ts.Equal(contactURN.ID, m.ContactURNID)
-	ts.Equal(MsgIncoming, m.Direction)
-	ts.Equal(courier.MsgPending, m.Status)
-	ts.Equal(DefaultPriority, m.Priority)
-	ts.Equal("ext123", m.ExternalID)
-	ts.Equal("test123", m.Text)
-	ts.Equal([]string(nil), m.Attachments)
-	ts.Equal(1, m.MessageCount)
-	ts.Equal(0, m.ErrorCount)
-	ts.Equal(now, m.SentOn.In(time.UTC))
-	ts.NotNil(m.NextAttempt)
-	ts.NotNil(m.CreatedOn)
-	ts.NotNil(m.ModifiedOn)
-	ts.NotNil(m.QueuedOn)
+	ts.Equal(knChannel.ID_, m.ChannelID_)
+	ts.Equal(knChannel.OrgID_, m.OrgID_)
+	ts.Equal(contactURN.ContactID, m.ContactID_)
+	ts.Equal(contactURN.ID, m.ContactURNID_)
+	ts.Equal(MsgIncoming, m.Direction_)
+	ts.Equal(courier.MsgPending, m.Status_)
+	ts.Equal(DefaultPriority, m.Priority_)
+	ts.Equal("ext123", m.ExternalID_)
+	ts.Equal("test123", m.Text_)
+	ts.Equal([]string(nil), m.Attachments_)
+	ts.Equal(1, m.MessageCount_)
+	ts.Equal(0, m.ErrorCount_)
+	ts.Equal(now, m.SentOn_.In(time.UTC))
+	ts.NotNil(m.NextAttempt_)
+	ts.NotNil(m.CreatedOn_)
+	ts.NotNil(m.ModifiedOn_)
+	ts.NotNil(m.QueuedOn_)
 
-	contact, err := contactForURN(ts.b.db, m.OrgID, m.ChannelID, urn, "")
+	contact, err := contactForURN(ts.b.db, m.OrgID_, m.ChannelID_, urn, "")
 	ts.Equal("test contact", contact.Name)
-	ts.Equal(m.OrgID, contact.OrgID)
-	ts.Equal(m.ContactID, contact.ID)
+	ts.Equal(m.OrgID_, contact.OrgID)
+	ts.Equal(m.ContactID_, contact.ID)
 	ts.NotNil(contact.UUID)
 	ts.NotNil(contact.ID)
+
+	// creating the incoming msg again should give us the same UUID and have the msg set as not to write
+	msg2 := ts.b.NewIncomingMsg(knChannel, urn, "test123").(*DBMsg)
+	ts.Equal(msg2.UUID(), msg.UUID())
+
+	// waiting 5 seconds should let us write it successfully
+	time.Sleep(5 * time.Second)
+	msg3 := ts.b.NewIncomingMsg(knChannel, urn, "test123").(*DBMsg)
+	ts.NotEqual(msg3.UUID(), msg.UUID())
 }
 
 func TestMsgSuite(t *testing.T) {

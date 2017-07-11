@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nyaruka/courier/queue"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -63,77 +62,42 @@ func NewMsgUUID() MsgUUID {
 	return MsgUUID{uuid.NewV4()}
 }
 
-// NewIncomingMsg creates a new message from the given params
-func NewIncomingMsg(channel Channel, urn URN, text string) *Msg {
-	m := &Msg{}
-	m.ID = NilMsgID
-	m.UUID = NewMsgUUID()
-	m.Channel = channel
-	m.Text = text
-	m.URN = urn
-
-	now := time.Now()
-	m.ReceivedOn = &now
-
-	return m
-}
-
-// NewOutgoingMsg creates a new message from the given params
-func NewOutgoingMsg(channel Channel, urn URN, text string) *Msg {
-	m := &Msg{}
-	m.ID = NilMsgID
-	m.UUID = NilMsgUUID
-	m.Channel = channel
-	m.Text = text
-	m.URN = urn
-
-	return m
+// NewMsgUUIDFromString creates a new message UUID for the passed in string
+func NewMsgUUIDFromString(uuidString string) MsgUUID {
+	uuid, _ := uuid.FromString(uuidString)
+	return MsgUUID{uuid}
 }
 
 //-----------------------------------------------------------------------------
-// Msg implementation
+// Msg interface
 //-----------------------------------------------------------------------------
 
-// Msg is our base struct to represent an incoming or outgoing message
-type Msg struct {
-	Channel     Channel
-	ID          MsgID
-	UUID        MsgUUID
-	Text        string
-	Attachments []string
-	ExternalID  string
-	URN         URN
-	ContactName string
+// Msg is our interface to represent an incoming or outgoing message
+type Msg interface {
+	Channel() Channel
+	ID() MsgID
+	UUID() MsgUUID
+	Text() string
+	Attachments() []string
+	ExternalID() string
+	URN() URN
+	ContactName() string
 
-	WorkerToken queue.WorkerToken
+	ReceivedOn() *time.Time
+	SentOn() *time.Time
 
-	ReceivedOn *time.Time
-	SentOn     *time.Time
-	WiredOn    *time.Time
+	WithContactName(name string) Msg
+	WithReceivedOn(date time.Time) Msg
+	WithExternalID(id string) Msg
+	WithID(id MsgID) Msg
+	WithUUID(uuid MsgUUID) Msg
+	WithAttachment(url string) Msg
 }
 
-// WithContactName can be used to set the contact name on a msg
-func (m *Msg) WithContactName(name string) *Msg { m.ContactName = name; return m }
-
-// WithReceivedOn can be used to set sent_on on a msg in a chained call
-func (m *Msg) WithReceivedOn(date time.Time) *Msg { m.ReceivedOn = &date; return m }
-
-// WithExternalID can be used to set the external id on a msg in a chained call
-func (m *Msg) WithExternalID(id string) *Msg { m.ExternalID = id; return m }
-
-// WithID can be used to set the id on a msg in a chained call
-func (m *Msg) WithID(id MsgID) *Msg { m.ID = id; return m }
-
-// WithUUID can be used to set the id on a msg in a chained call
-func (m *Msg) WithUUID(uuid MsgUUID) *Msg { m.UUID = uuid; return m }
-
-// AddAttachment can be used to append to the media urls for a message
-func (m *Msg) AddAttachment(url string) *Msg { m.Attachments = append(m.Attachments, url); return m }
-
-// TextAndAttachments returns both the text of our message as well as any attachments, newline delimited
-func (m *Msg) TextAndAttachments() string {
-	buf := bytes.NewBuffer([]byte(m.Text))
-	for _, a := range m.Attachments {
+// GetTextAndAttachments returns both the text of our message as well as any attachments, newline delimited
+func GetTextAndAttachments(m Msg) string {
+	buf := bytes.NewBuffer([]byte(m.Text()))
+	for _, a := range m.Attachments() {
 		_, url := SplitAttachment(a)
 		buf.WriteString("\n")
 		buf.WriteString(url)

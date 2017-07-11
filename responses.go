@@ -34,9 +34,9 @@ func WriteIgnored(w http.ResponseWriter, r *http.Request, message string) error 
 }
 
 // WriteReceiveSuccess writes a JSON response for the passed in msg indicating we handled it
-func WriteReceiveSuccess(w http.ResponseWriter, r *http.Request, msg *Msg) error {
+func WriteReceiveSuccess(w http.ResponseWriter, r *http.Request, msg Msg) error {
 	lg.Log(r.Context()).WithField("msg_uuid", msg.UUID).Info("message received")
-	return writeData(w, http.StatusOK, "Message Accepted", &receiveData{msg.UUID})
+	return writeData(w, http.StatusOK, "Message Accepted", &receiveData{msg.UUID()})
 }
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
