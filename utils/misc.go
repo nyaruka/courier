@@ -59,7 +59,7 @@ func StringArrayContains(s []string, e string) bool {
 	return false
 }
 
-var invalidChars = regexp.MustCompile("([\u0000-\u0010]|[\u0013-\u0014]|[\u0016-\u0037])")
+var invalidChars = regexp.MustCompile("([\u0000-\u0008]|[\u000B-\u000C]|[\u000E-\u001F])")
 
 // CleanString removes any control characters from the passed in string
 func CleanString(s string) string {
