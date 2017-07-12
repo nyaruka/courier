@@ -73,7 +73,7 @@ type twStatus struct {
 	ErrorCode     string
 }
 
-var twStatusMapping = map[string]courier.MsgStatus{
+var twStatusMapping = map[string]courier.MsgStatusValue{
 	"queued":      courier.MsgSent,
 	"failed":      courier.MsgFailed,
 	"sent":        courier.MsgSent,
@@ -122,7 +122,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.MsgStatusUpdate, error) {
+func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -141,18 +141,17 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 	}
 
 	// write our status
-	status := courier.NewStatusUpdateForExternalID(channel, twStatus.MessageSID, msgStatus)
-	defer status.Release()
+	status := h.Backend().NewMsgStatusForExternalID(channel, twStatus.MessageSID, msgStatus)
 	err = h.Backend().WriteMsgStatus(status)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*courier.MsgStatusUpdate{status}, courier.WriteStatusSuccess(w, r, status)
+	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, status)
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
+func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	// build our callback URL
 	callbackURL := fmt.Sprintf("%s/c/kn/%s/status/", h.Server().Config().BaseURL, msg.Channel().UUID())
 
@@ -199,7 +198,7 @@ func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log
-	status := courier.NewStatusUpdateForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr))
 
 	// fail if we received an error
@@ -220,8 +219,8 @@ func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
 		return status, errors.Errorf("unable to get sid from body")
 	}
 
-	status.Status = courier.MsgWired
-	status.ExternalID = externalID
+	status.SetStatus(courier.MsgWired)
+	status.SetExternalID(externalID)
 
 	return status, nil
 }

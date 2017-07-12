@@ -72,8 +72,28 @@ func (mb *MockBackend) WriteMsg(m Msg) error {
 	return nil
 }
 
+// NewMsgStatusForID creates a new Status object for the given message id
+func (mb *MockBackend) NewMsgStatusForID(channel Channel, id MsgID, status MsgStatusValue) MsgStatus {
+	return &mockMsgStatus{
+		channel:   channel,
+		id:        id,
+		status:    status,
+		createdOn: time.Now().In(time.UTC),
+	}
+}
+
+// NewMsgStatusForExternalID creates a new Status object for the given external id
+func (mb *MockBackend) NewMsgStatusForExternalID(channel Channel, externalID string, status MsgStatusValue) MsgStatus {
+	return &mockMsgStatus{
+		channel:    channel,
+		externalID: externalID,
+		status:     status,
+		createdOn:  time.Now().In(time.UTC),
+	}
+}
+
 // WriteMsgStatus writes the status update to our queue
-func (mb *MockBackend) WriteMsgStatus(status *MsgStatusUpdate) error {
+func (mb *MockBackend) WriteMsgStatus(status MsgStatus) error {
 	return nil
 }
 
@@ -226,3 +246,29 @@ func (m *mockMsg) WithExternalID(id string) Msg      { m.externalID = id; return
 func (m *mockMsg) WithID(id MsgID) Msg               { m.id = id; return m }
 func (m *mockMsg) WithUUID(uuid MsgUUID) Msg         { m.uuid = uuid; return m }
 func (m *mockMsg) WithAttachment(url string) Msg     { m.attachments = append(m.attachments, url); return m }
+
+//-----------------------------------------------------------------------------
+// Mock status implementation
+//-----------------------------------------------------------------------------
+
+type mockMsgStatus struct {
+	channel    Channel
+	id         MsgID
+	externalID string
+	status     MsgStatusValue
+	createdOn  time.Time
+
+	logs []*ChannelLog
+}
+
+func (m *mockMsgStatus) ChannelUUID() ChannelUUID { return m.channel.UUID() }
+func (m *mockMsgStatus) ID() MsgID                { return m.id }
+
+func (m *mockMsgStatus) ExternalID() string      { return m.externalID }
+func (m *mockMsgStatus) SetExternalID(id string) { m.externalID = id }
+
+func (m *mockMsgStatus) Status() MsgStatusValue          { return m.status }
+func (m *mockMsgStatus) SetStatus(status MsgStatusValue) { m.status = status }
+
+func (m *mockMsgStatus) Logs() []*ChannelLog    { return m.logs }
+func (m *mockMsgStatus) AddLog(log *ChannelLog) { m.logs = append(m.logs, log) }

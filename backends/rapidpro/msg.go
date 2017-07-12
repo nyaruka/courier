@@ -299,17 +299,17 @@ func writeMsgSeen(b *backend, msg *DBMsg) {
 
 // DBMsg is our base struct to represent msgs both in our JSON and db representations
 type DBMsg struct {
-	OrgID_       OrgID             `json:"org_id"       db:"org_id"`
-	ID_          courier.MsgID     `json:"id"           db:"id"`
-	UUID_        courier.MsgUUID   `json:"uuid"`
-	Direction_   MsgDirection      `json:"direction"    db:"direction"`
-	Status_      courier.MsgStatus `json:"status"       db:"status"`
-	Visibility_  MsgVisibility     `json:"visibility"   db:"visibility"`
-	Priority_    MsgPriority       `json:"priority"     db:"priority"`
-	URN_         courier.URN       `json:"urn"`
-	Text_        string            `json:"text"         db:"text"`
-	Attachments_ []string          `json:"attachments"`
-	ExternalID_  string            `json:"external_id"  db:"external_id"`
+	OrgID_       OrgID                  `json:"org_id"       db:"org_id"`
+	ID_          courier.MsgID          `json:"id"           db:"id"`
+	UUID_        courier.MsgUUID        `json:"uuid"`
+	Direction_   MsgDirection           `json:"direction"    db:"direction"`
+	Status_      courier.MsgStatusValue `json:"status"       db:"status"`
+	Visibility_  MsgVisibility          `json:"visibility"   db:"visibility"`
+	Priority_    MsgPriority            `json:"priority"     db:"priority"`
+	URN_         courier.URN            `json:"urn"`
+	Text_        string                 `json:"text"         db:"text"`
+	Attachments_ []string               `json:"attachments"`
+	ExternalID_  string                 `json:"external_id"  db:"external_id"`
 
 	ChannelID_    ChannelID    `json:"channel_id"      db:"channel_id"`
 	ContactID_    ContactID    `json:"contact_id"      db:"contact_id"`
