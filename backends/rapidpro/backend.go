@@ -98,7 +98,7 @@ func (b *backend) WasMsgSent(msg courier.Msg) (bool, error) {
 	defer rc.Close()
 
 	dateKey := fmt.Sprintf(sentSetName, time.Now().In(time.UTC).Format("2006_01_02"))
-	found, err := redis.Bool(rc.Do("isismember", dateKey, msg.ID().Int64))
+	found, err := redis.Bool(rc.Do("sismember", dateKey, msg.ID().Int64))
 	if err != nil {
 		return false, err
 	}
