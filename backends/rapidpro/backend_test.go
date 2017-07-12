@@ -169,7 +169,7 @@ func (ts *MsgTestSuite) TestStatus() {
 
 	// error our msg
 	now = time.Now().In(time.UTC)
-	status = courier.NewStatusUpdateForExternalID(channel, "ext1", courier.MsgErrored)
+	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgErrored)
 	err = ts.b.WriteMsgStatus(status)
 	ts.NoError(err)
 	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10000))
@@ -180,7 +180,7 @@ func (ts *MsgTestSuite) TestStatus() {
 	ts.True(m.NextAttempt_.After(now))
 
 	// second go
-	status = courier.NewStatusUpdateForExternalID(channel, "ext1", courier.MsgErrored)
+	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgErrored)
 	err = ts.b.WriteMsgStatus(status)
 	ts.NoError(err)
 	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10000))
@@ -189,7 +189,7 @@ func (ts *MsgTestSuite) TestStatus() {
 	ts.Equal(m.ErrorCount_, 2)
 
 	// third go
-	status = courier.NewStatusUpdateForExternalID(channel, "ext1", courier.MsgErrored)
+	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgErrored)
 	err = ts.b.WriteMsgStatus(status)
 	ts.NoError(err)
 	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10000))
