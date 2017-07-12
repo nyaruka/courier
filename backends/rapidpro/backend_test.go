@@ -70,19 +70,19 @@ func (ts *MsgTestSuite) TestCheckMsgExists() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
 	// check with invalid message id
-	err := checkMsgExists(ts.b, courier.NewStatusUpdateForID(knChannel, courier.NewMsgID(-1), courier.MsgStatus("S")))
+	err := checkMsgExists(ts.b, ts.b.NewMsgStatusForID(knChannel, courier.NewMsgID(-1), courier.MsgStatusValue("S")))
 	ts.Equal(err, courier.ErrMsgNotFound)
 
 	// check with valid message id
-	err = checkMsgExists(ts.b, courier.NewStatusUpdateForID(knChannel, courier.NewMsgID(10000), courier.MsgStatus("S")))
+	err = checkMsgExists(ts.b, ts.b.NewMsgStatusForID(knChannel, courier.NewMsgID(10000), courier.MsgStatusValue("S")))
 	ts.Nil(err)
 
 	// check with invalid external id
-	err = checkMsgExists(ts.b, courier.NewStatusUpdateForExternalID(knChannel, "ext-invalid", courier.MsgStatus("S")))
+	err = checkMsgExists(ts.b, ts.b.NewMsgStatusForExternalID(knChannel, "ext-invalid", courier.MsgStatusValue("S")))
 	ts.Equal(err, courier.ErrMsgNotFound)
 
 	// check with valid external id
-	status := courier.NewStatusUpdateForExternalID(knChannel, "ext1", courier.MsgStatus("S"))
+	status := ts.b.NewMsgStatusForExternalID(knChannel, "ext1", courier.MsgStatusValue("S"))
 	err = checkMsgExists(ts.b, status)
 	ts.Nil(err)
 }
@@ -145,7 +145,7 @@ func (ts *MsgTestSuite) TestStatus() {
 	now := time.Now().In(time.UTC)
 
 	// update by id
-	status := courier.NewStatusUpdateForID(channel, courier.NewMsgID(10001), courier.MsgSent)
+	status := ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10001), courier.MsgSent)
 	err := ts.b.WriteMsgStatus(status)
 	ts.NoError(err)
 	m, err := readMsgFromDB(ts.b, courier.NewMsgID(10001))
@@ -154,7 +154,7 @@ func (ts *MsgTestSuite) TestStatus() {
 	ts.True(m.ModifiedOn_.After(now))
 
 	// update by external id
-	status = courier.NewStatusUpdateForExternalID(channel, "ext1", courier.MsgFailed)
+	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgFailed)
 	err = ts.b.WriteMsgStatus(status)
 	ts.NoError(err)
 	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10000))
@@ -163,7 +163,7 @@ func (ts *MsgTestSuite) TestStatus() {
 	ts.True(m.ModifiedOn_.After(now))
 
 	// no such external id
-	status = courier.NewStatusUpdateForExternalID(channel, "ext2", courier.MsgSent)
+	status = ts.b.NewMsgStatusForExternalID(channel, "ext2", courier.MsgSent)
 	err = ts.b.WriteMsgStatus(status)
 	ts.Error(err)
 }

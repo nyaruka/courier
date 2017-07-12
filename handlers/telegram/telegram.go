@@ -141,7 +141,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
+func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	confAuth := msg.Channel().ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
@@ -155,7 +155,7 @@ func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
 	}
 
 	// the status that will be written for this message
-	status := courier.NewStatusUpdateForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
 	// whether we encountered any errors sending any parts
 	hasError := true
@@ -167,7 +167,7 @@ func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
 			"text":    []string{msg.Text()},
 		}
 		externalID, log, err := h.sendMsgPart(msg, authToken, "sendMessage", form)
-		status.ExternalID = externalID
+		status.SetExternalID(externalID)
 		hasError = err != nil
 		status.AddLog(log)
 	}
@@ -182,7 +182,7 @@ func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
 				"caption": []string{caption},
 			}
 			externalID, log, err := h.sendMsgPart(msg, authToken, "sendPhoto", form)
-			status.ExternalID = externalID
+			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
 
@@ -192,7 +192,7 @@ func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
 				"caption": []string{caption},
 			}
 			externalID, log, err := h.sendMsgPart(msg, authToken, "sendVideo", form)
-			status.ExternalID = externalID
+			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
 
@@ -202,7 +202,7 @@ func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
 				"caption": []string{caption},
 			}
 			externalID, log, err := h.sendMsgPart(msg, authToken, "sendAudio", form)
-			status.ExternalID = externalID
+			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
 
@@ -214,7 +214,7 @@ func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
 	}
 
 	if !hasError {
-		status.Status = courier.MsgWired
+		status.SetStatus(courier.MsgWired)
 	}
 
 	return status, nil
