@@ -9,14 +9,6 @@ import (
 	"github.com/nyaruka/courier/utils"
 )
 
-// ChannelID is our SQL type for a channel's id
-type ChannelID struct {
-	sql.NullInt64
-}
-
-// NilChannelID is our nil value for ChannelIDs
-var NilChannelID = ChannelID{sql.NullInt64{Int64: 0, Valid: false}}
-
 // getChannelFromUUID will look up the channel with the passed in UUID and channel type.
 // It will return an error if the channel does not exist or is not active.
 func getChannel(b *backend, channelType courier.ChannelType, channelUUID courier.ChannelUUID) (courier.Channel, error) {
@@ -133,7 +125,7 @@ var channelCache = make(map[courier.ChannelUUID]*DBChannel)
 // DBChannel is the RapidPro specific concrete type satisfying the courier.Channel interface
 type DBChannel struct {
 	OrgID_       OrgID               `db:"org_id"`
-	ID_          ChannelID           `db:"id"`
+	ID_          courier.ChannelID   `db:"id"`
 	ChannelType_ courier.ChannelType `db:"channel_type"`
 	Scheme_      string              `db:"scheme"`
 	UUID_        courier.ChannelUUID `db:"uuid"`
@@ -154,7 +146,7 @@ func (c *DBChannel) ChannelType() courier.ChannelType { return c.ChannelType_ }
 func (c *DBChannel) Scheme() string { return c.Scheme_ }
 
 // ID returns the id of this channel
-func (c *DBChannel) ID() ChannelID { return c.ID_ }
+func (c *DBChannel) ID() courier.ChannelID { return c.ID_ }
 
 // UUID returns the UUID of this channel
 func (c *DBChannel) UUID() courier.ChannelUUID { return c.UUID_ }

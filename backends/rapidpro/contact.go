@@ -43,7 +43,7 @@ WHERE u.urn = $1 AND u.contact_id = c.id AND u.org_id = $2 AND c.is_active = TRU
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
-func contactForURN(db *sqlx.DB, org OrgID, channelID ChannelID, urn courier.URN, name string) (*DBContact, error) {
+func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn courier.URN, name string) (*DBContact, error) {
 	// try to look up our contact by URN
 	contact := DBContact{}
 	err := db.Get(&contact, lookupContactFromURNSQL, urn, org)

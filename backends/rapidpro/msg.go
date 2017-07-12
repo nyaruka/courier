@@ -313,9 +313,9 @@ type DBMsg struct {
 	Attachments_ []string               `json:"attachments"`
 	ExternalID_  string                 `json:"external_id"  db:"external_id"`
 
-	ChannelID_    ChannelID    `json:"channel_id"      db:"channel_id"`
-	ContactID_    ContactID    `json:"contact_id"      db:"contact_id"`
-	ContactURNID_ ContactURNID `json:"contact_urn_id"  db:"contact_urn_id"`
+	ChannelID_    courier.ChannelID `json:"channel_id"      db:"channel_id"`
+	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
+	ContactURNID_ ContactURNID      `json:"contact_urn_id"  db:"contact_urn_id"`
 
 	MessageCount_ int `json:"msg_count"    db:"msg_count"`
 	ErrorCount_   int `json:"error_count"  db:"error_count"`
