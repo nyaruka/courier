@@ -138,6 +138,8 @@ func (w *Sender) Send() {
 	server := w.foreman.server
 	backend := server.Backend()
 
+	var status MsgStatus
+
 	for true {
 		// list ourselves as available for work
 		w.foreman.availableSenders <- w
@@ -151,20 +153,37 @@ func (w *Sender) Send() {
 			return
 		}
 
-		status, err := server.SendMsg(msg)
+		// was this msg already sent? (from a double queue?)
+		sent, err := backend.WasMsgSent(msg)
+
+		// failing on a lookup isn't a halting problem but we should log it
 		if err != nil {
-			log.WithField("msgID", msg.ID().Int64).WithError(err).Info("msg errored")
-		} else {
-			log.WithField("msgID", msg.ID().Int64).Info("msg sent")
+			log.WithField("msgID", msg.ID().Int64).WithError(err).Warning("error looking up msg was sent")
 		}
 
-		// record our status
-		err = backend.WriteMsgStatus(status)
-		if err != nil {
-			log.WithField("msgID", msg.ID().Int64).WithError(err).Info("error writing msg status")
+		if sent {
+			// if this message was already sent, create a wired status for it
+			status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired)
+			log.WithField("msgID", msg.ID().Int64).Warning("duplicate send, marking as wired")
+		} else {
+			// send our message
+			status, err = server.SendMsg(msg)
+			if err != nil {
+				log.WithField("msgID", msg.ID().Int64).WithError(err).Info("msg errored")
+			} else {
+				log.WithField("msgID", msg.ID().Int64).Info("msg sent")
+			}
+		}
+
+		// record our status if we have one
+		if status != nil {
+			err = backend.WriteMsgStatus(status)
+			if err != nil {
+				log.WithField("msgID", msg.ID().Int64).WithError(err).Info("error writing msg status")
+			}
 		}
 
 		// mark our send task as complete
-		backend.MarkOutgoingMsgComplete(msg)
+		backend.MarkOutgoingMsgComplete(msg, status)
 	}
 }

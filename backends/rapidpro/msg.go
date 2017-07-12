@@ -158,7 +158,9 @@ WHERE id = $1
 `
 
 func readMsgFromDB(b *backend, id courier.MsgID) (*DBMsg, error) {
-	m := &DBMsg{}
+	m := &DBMsg{
+		ID_: id,
+	}
 	err := b.db.Get(m, selectMsgSQL, id)
 	return m, err
 }

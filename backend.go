@@ -46,9 +46,14 @@ type Backend interface {
 	// returned message when they have dealt with the message (regardless of whether it was sent or not)
 	PopNextOutgoingMsg() (Msg, error)
 
+	// WasMsgSent returns whether the backend thinks the passed in message was already sent. This can be used in cases where
+	// a backend wants to implement a failsafe against double sending messages (say if they were double queued)
+	WasMsgSent(msg Msg) (bool, error)
+
 	// MarkOutgoingMsgComplete marks the passed in message as having been processed. Note this should be called even in the case
-	// of errors during sending as it will manage the number of active workers per channel
-	MarkOutgoingMsgComplete(Msg)
+	// of errors during sending as it will manage the number of active workers per channel. The optional status parameter can be
+	// used to determine any sort of deduping of msg sends
+	MarkOutgoingMsgComplete(Msg, MsgStatus)
 
 	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string

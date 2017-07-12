@@ -48,8 +48,13 @@ func (mb *MockBackend) PopNextOutgoingMsg() (Msg, error) {
 	return nil, nil
 }
 
+// WasMsgSent returns whether the passed in msg was already sent
+func (mb *MockBackend) WasMsgSent(msg Msg) (bool, error) {
+	return false, nil
+}
+
 // MarkOutgoingMsgComplete marks the passed msg as having been dealt with
-func (mb *MockBackend) MarkOutgoingMsgComplete(m Msg) {
+func (mb *MockBackend) MarkOutgoingMsgComplete(m Msg, s MsgStatus) {
 }
 
 // WriteChannelLogs writes the passed in channel logs to the DB

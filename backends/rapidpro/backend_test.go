@@ -143,6 +143,7 @@ func (ts *MsgTestSuite) TestContactURN() {
 func (ts *MsgTestSuite) TestStatus() {
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	now := time.Now().In(time.UTC)
+	time.Sleep(2 * time.Millisecond)
 
 	// update by id
 	status := ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10001), courier.MsgSent)
@@ -169,6 +170,7 @@ func (ts *MsgTestSuite) TestStatus() {
 
 	// error our msg
 	now = time.Now().In(time.UTC)
+	time.Sleep(2 * time.Millisecond)
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgErrored)
 	err = ts.b.WriteMsgStatus(status)
 	ts.NoError(err)
@@ -232,12 +234,24 @@ func (ts *MsgTestSuite) TestOutgoingQueue() {
 	ts.Equal(msg.Text(), "test message")
 
 	// mark this message as dealt with
-	ts.b.MarkOutgoingMsgComplete(msg)
+	ts.b.MarkOutgoingMsgComplete(msg, ts.b.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgWired))
+
+	// this message should now be marked as sent
+	sent, err := ts.b.WasMsgSent(msg)
+	ts.NoError(err)
+	ts.True(sent)
 
 	// pop another message off, shouldn't get anything
 	msg, err = ts.b.PopNextOutgoingMsg()
 	ts.Nil(msg)
 	ts.Nil(err)
+
+	// checking another message should show unsent
+	msg, err = readMsgFromDB(ts.b, courier.NewMsgID(10001))
+	ts.NoError(err)
+	sent, err = ts.b.WasMsgSent(msg)
+	ts.NoError(err)
+	ts.False(sent)
 }
 
 func (ts *MsgTestSuite) TestChannel() {
@@ -290,6 +304,7 @@ func (ts *MsgTestSuite) TestWriteMsg() {
 	ts.NoError(err)
 
 	// make sure our values are set appropriately
+	ts.Equal(msg.ID(), m.ID())
 	ts.Equal(knChannel.ID_, m.ChannelID_)
 	ts.Equal(knChannel.OrgID_, m.OrgID_)
 	ts.Equal(contactURN.ContactID, m.ContactID_)
