@@ -82,7 +82,7 @@ type kannelMessage struct {
 	Sender    string `validate:"required" name:"sender"`
 }
 
-var kannelStatusMapping = map[int]courier.MsgStatus{
+var kannelStatusMapping = map[int]courier.MsgStatusValue{
 	1:  courier.MsgDelivered,
 	2:  courier.MsgFailed,
 	4:  courier.MsgSent,
@@ -91,7 +91,7 @@ var kannelStatusMapping = map[int]courier.MsgStatus{
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.MsgStatusUpdate, error) {
+func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
 	// get our params
 	kannelStatus := &kannelStatus{}
 	err := handlers.DecodeAndValidateQueryParams(kannelStatus, r)
@@ -105,17 +105,17 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 	}
 
 	// write our status
-	status := courier.NewStatusUpdateForID(channel, kannelStatus.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForID(channel, kannelStatus.ID, msgStatus)
 	err = h.Backend().WriteMsgStatus(status)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*courier.MsgStatusUpdate{status}, courier.WriteStatusSuccess(w, r, status)
+	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, status)
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
+func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for KN channel")
@@ -201,13 +201,13 @@ func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
 	}
 
 	// record our status and log
-	status := courier.NewStatusUpdateForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr))
 	if err != nil {
 		return status, errors.Errorf("received error sending message")
 	}
 
-	status.Status = courier.MsgWired
+	status.SetStatus(courier.MsgWired)
 	return status, nil
 }
 

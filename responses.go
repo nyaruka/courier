@@ -40,14 +40,14 @@ func WriteReceiveSuccess(w http.ResponseWriter, r *http.Request, msg Msg) error 
 }
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
-func WriteStatusSuccess(w http.ResponseWriter, r *http.Request, status *MsgStatusUpdate) error {
-	if status.ID != NilMsgID {
+func WriteStatusSuccess(w http.ResponseWriter, r *http.Request, status MsgStatus) error {
+	if status.ID() != NilMsgID {
 		lg.Log(r.Context()).WithField("msg_id", status.ID).Info("status updated")
 	} else {
 		lg.Log(r.Context()).WithField("msg_id", status.ExternalID).Info("status updated")
 	}
 
-	return writeData(w, http.StatusOK, "Status Update Accepted", &statusData{status.Status})
+	return writeData(w, http.StatusOK, "Status Update Accepted", &statusData{status.Status()})
 }
 
 type errorResponse struct {
@@ -64,7 +64,7 @@ type receiveData struct {
 }
 
 type statusData struct {
-	Status MsgStatus `json:"status"`
+	Status MsgStatusValue `json:"status"`
 }
 
 func writeJSONResponse(w http.ResponseWriter, statusCode int, response interface{}) error {

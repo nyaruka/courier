@@ -44,7 +44,7 @@ type statusRequest struct {
 	Status string `validate:"required" name:"status"`
 }
 
-var statusMapping = map[string]courier.MsgStatus{
+var statusMapping = map[string]courier.MsgStatusValue{
 	"Success":  courier.MsgDelivered,
 	"Sent":     courier.MsgSent,
 	"Buffered": courier.MsgSent,
@@ -94,7 +94,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]*courier.MsgStatusUpdate, error) {
+func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
 	// get our params
 	atStatus := &statusRequest{}
 	err := handlers.DecodeAndValidateForm(atStatus, r)
@@ -108,17 +108,17 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 	}
 
 	// write our status
-	status := courier.NewStatusUpdateForExternalID(channel, atStatus.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, atStatus.ID, msgStatus)
 	err = h.Backend().WriteMsgStatus(status)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*courier.MsgStatusUpdate{status}, courier.WriteStatusSuccess(w, r, status)
+	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, status)
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
+func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	isSharedStr := msg.Channel().ConfigForKey(configIsShared, false)
 	isShared, _ := isSharedStr.(bool)
 
@@ -151,7 +151,7 @@ func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log
-	status := courier.NewStatusUpdateForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr))
 	if err != nil {
 		return status, err
@@ -165,8 +165,8 @@ func (h *handler) SendMsg(msg courier.Msg) (*courier.MsgStatusUpdate, error) {
 
 	// grab the external id if we can
 	externalID, _ := jsonparser.GetString([]byte(rr.Body), "SMSMessageData", "Recipients", "[0]", "messageId")
-	status.Status = courier.MsgWired
-	status.ExternalID = externalID
+	status.SetStatus(courier.MsgWired)
+	status.SetExternalID(externalID)
 
 	return status, nil
 }

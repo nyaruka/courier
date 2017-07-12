@@ -103,8 +103,18 @@ func (b *backend) WriteMsg(m courier.Msg) error {
 	return writeMsg(b, m)
 }
 
+// NewStatusUpdateForID creates a new Status object for the given message id
+func (b *backend) NewMsgStatusForID(channel courier.Channel, id courier.MsgID, status courier.MsgStatusValue) courier.MsgStatus {
+	return newMsgStatus(channel, id, "", status)
+}
+
+// NewStatusUpdateForID creates a new Status object for the given message id
+func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID string, status courier.MsgStatusValue) courier.MsgStatus {
+	return newMsgStatus(channel, courier.NilMsgID, externalID, status)
+}
+
 // WriteMsgStatus writes the passed in MsgStatus to our store
-func (b *backend) WriteMsgStatus(status *courier.MsgStatusUpdate) error {
+func (b *backend) WriteMsgStatus(status courier.MsgStatus) error {
 	return writeMsgStatus(b, status)
 }
 

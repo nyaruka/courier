@@ -29,7 +29,7 @@ type Server interface {
 	AddReceiveMsgRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelReceiveMsgFunc) error
 	AddUpdateStatusRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelUpdateStatusFunc) error
 
-	SendMsg(Msg) (*MsgStatusUpdate, error)
+	SendMsg(Msg) (MsgStatus, error)
 
 	Backend() Backend
 
@@ -156,7 +156,7 @@ func (s *server) Stop() error {
 	return nil
 }
 
-func (s *server) SendMsg(msg Msg) (*MsgStatusUpdate, error) {
+func (s *server) SendMsg(msg Msg) (MsgStatus, error) {
 	// find the handler for this message type
 	handler, found := activeHandlers[msg.Channel().ChannelType()]
 	if !found {
@@ -261,7 +261,7 @@ func (s *server) channelUpdateStatusWrapper(handler ChannelHandler, handlerFunc 
 
 		// create channel logs for each of our msgs
 		for _, status := range statuses {
-			logs = append(logs, NewChannelLog(channel, status.ID, url, ww.Status(), err, string(request), response.String(), elapsed, start))
+			logs = append(logs, NewChannelLog(channel, status.ID(), url, ww.Status(), err, string(request), response.String(), elapsed, start))
 		}
 
 		// and write these out

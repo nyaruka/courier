@@ -195,11 +195,11 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if testCase.ExternalID != "" {
-				require.Equal(testCase.ExternalID, status.ExternalID)
+				require.Equal(testCase.ExternalID, status.ExternalID())
 			}
 
 			if testCase.Status != "" {
-				require.Equal(testCase.Status, string(status.Status))
+				require.Equal(testCase.Status, string(status.Status()))
 			}
 		})
 	}

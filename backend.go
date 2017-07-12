@@ -30,8 +30,14 @@ type Backend interface {
 	// WriteMsg writes the passed in message to our backend
 	WriteMsg(Msg) error
 
+	// NewMsgStatusForID creates a new Status object for the given message id
+	NewMsgStatusForID(Channel, MsgID, MsgStatusValue) MsgStatus
+
+	// NewMsgStatusForExternalID creates a new Status object for the given external id
+	NewMsgStatusForExternalID(Channel, string, MsgStatusValue) MsgStatus
+
 	// WriteMsgStatus writes the passed in status update to our backend
-	WriteMsgStatus(*MsgStatusUpdate) error
+	WriteMsgStatus(MsgStatus) error
 
 	// WriteChannelLogs writes the passed in channel logs to our backend
 	WriteChannelLogs([]*ChannelLog) error
