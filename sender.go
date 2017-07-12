@@ -175,10 +175,12 @@ func (w *Sender) Send() {
 			}
 		}
 
-		// record our status
-		err = backend.WriteMsgStatus(status)
-		if err != nil {
-			log.WithField("msgID", msg.ID().Int64).WithError(err).Info("error writing msg status")
+		// record our status if we have one
+		if status != nil {
+			err = backend.WriteMsgStatus(status)
+			if err != nil {
+				log.WithField("msgID", msg.ID().Int64).WithError(err).Info("error writing msg status")
+			}
 		}
 
 		// mark our send task as complete

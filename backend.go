@@ -51,7 +51,8 @@ type Backend interface {
 	WasMsgSent(msg Msg) (bool, error)
 
 	// MarkOutgoingMsgComplete marks the passed in message as having been processed. Note this should be called even in the case
-	// of errors during sending as it will manage the number of active workers per channel
+	// of errors during sending as it will manage the number of active workers per channel. The optional status parameter can be
+	// used to determine any sort of deduping of msg sends
 	MarkOutgoingMsgComplete(Msg, MsgStatus)
 
 	// Health returns a string describing any health problems the backend has, or empty string if all is well

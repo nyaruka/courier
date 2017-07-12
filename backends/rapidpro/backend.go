@@ -98,7 +98,7 @@ func (b *backend) WasMsgSent(msg courier.Msg) (bool, error) {
 	defer rc.Close()
 
 	dateKey := fmt.Sprintf(sentSetName, time.Now().In(time.UTC).Format("2006_01_02"))
-	found, err := redis.Bool(rc.Do("SISMEMBER", dateKey, msg.ID().Int64))
+	found, err := redis.Bool(rc.Do("isismember", dateKey, msg.ID().Int64))
 	if err != nil {
 		return false, err
 	}
@@ -107,7 +107,7 @@ func (b *backend) WasMsgSent(msg courier.Msg) (bool, error) {
 	}
 
 	dateKey = fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).In(time.UTC).Format("2006_01_02"))
-	found, err = redis.Bool(rc.Do("SISMEMBER", dateKey, msg.ID().Int64))
+	found, err = redis.Bool(rc.Do("sismember", dateKey, msg.ID().Int64))
 	return found, err
 }
 
@@ -120,9 +120,9 @@ func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg, status courier.MsgSta
 	queue.MarkComplete(rc, msgQueueName, dbMsg.WorkerToken_)
 
 	// mark as sent in redis as well if this was actually wired or sent
-	if status.Status() == courier.MsgSent || status.Status() == courier.MsgWired {
+	if status != nil && (status.Status() == courier.MsgSent || status.Status() == courier.MsgWired) {
 		dateKey := fmt.Sprintf(sentSetName, time.Now().In(time.UTC).Format("2006_01_02"))
-		rc.Do("SADD", dateKey, msg.ID().Int64)
+		rc.Do("sadd", dateKey, msg.ID().Int64)
 	}
 }
 
