@@ -26,6 +26,9 @@ import (
 // the name for our message queue
 const msgQueueName = "msgs"
 
+// the name of our set for tracking sends
+const sentSetName = "msgs_sent_%s"
+
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
 }
@@ -46,7 +49,7 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn courier.URN, text 
 	// have we seen this msg in the past period?
 	prevUUID := checkMsgSeen(b, msg)
 	if prevUUID != courier.NilMsgUUID {
-		// if so, use its UUID and mark that we've been written
+		// if so, use its UUID and that we've been written
 		msg.UUID_ = prevUUID
 		msg.AlreadyWritten_ = true
 	}
@@ -89,13 +92,38 @@ func (b *backend) PopNextOutgoingMsg() (courier.Msg, error) {
 	return nil, nil
 }
 
+// WasMsgSent returns whether the passed in message has already been sent
+func (b *backend) WasMsgSent(msg courier.Msg) (bool, error) {
+	rc := b.redisPool.Get()
+	defer rc.Close()
+
+	dateKey := fmt.Sprintf(sentSetName, time.Now().In(time.UTC).Format("2006_01_02"))
+	found, err := redis.Bool(rc.Do("SISMEMBER", dateKey, msg.ID().Int64))
+	if err != nil {
+		return false, err
+	}
+	if found {
+		return true, nil
+	}
+
+	dateKey = fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).In(time.UTC).Format("2006_01_02"))
+	found, err = redis.Bool(rc.Do("SISMEMBER", dateKey, msg.ID().Int64))
+	return found, err
+}
+
 // MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel
-func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg) {
+func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg, status courier.MsgStatus) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
 	dbMsg := msg.(*DBMsg)
 	queue.MarkComplete(rc, msgQueueName, dbMsg.WorkerToken_)
+
+	// mark as sent in redis as well if this was actually wired or sent
+	if status.Status() == courier.MsgSent || status.Status() == courier.MsgWired {
+		dateKey := fmt.Sprintf(sentSetName, time.Now().In(time.UTC).Format("2006_01_02"))
+		rc.Do("SADD", dateKey, msg.ID().Int64)
+	}
 }
 
 // WriteMsg writes the passed in message to our store
