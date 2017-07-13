@@ -51,6 +51,12 @@ func NewServer(config *config.Courier, backend Backend) Server {
 	lg.RedirectStdlogOutput(logger)
 	lg.DefaultLogger = logger
 
+	return NewServerWithLogger(config, backend, logger)
+}
+
+// NewServerWithLogger creates a new Server for the passed in configuration. The server will have to be started
+// afterwards, which is when configuration options are checked.
+func NewServerWithLogger(config *config.Courier, backend Backend, logger *logrus.Logger) Server {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(lg.RequestLogger(logger))
