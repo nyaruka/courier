@@ -17,7 +17,7 @@ type ContactURNID struct {
 var NilContactURNID = ContactURNID{sql.NullInt64{Int64: 0, Valid: false}}
 
 // NewDBContactURN returns a new ContactURN object for the passed in org, contact and string urn, this is not saved to the DB yet
-func newDBContactURN(org OrgID, channelID ChannelID, contactID ContactID, urn courier.URN) *DBContactURN {
+func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID, urn courier.URN) *DBContactURN {
 	offset := strings.Index(string(urn), ":")
 	scheme := string(urn)[:offset]
 	path := string(urn)[offset+1:]
@@ -34,7 +34,7 @@ ORDER BY priority desc LIMIT 1
 
 // contactURNForURN returns the ContactURN for the passed in org and URN, creating and associating
 // it with the passed in contact if necessary
-func contactURNForURN(db *sqlx.DB, org OrgID, channelID ChannelID, contactID ContactID, urn courier.URN) (*DBContactURN, error) {
+func contactURNForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, contactID ContactID, urn courier.URN) (*DBContactURN, error) {
 	contactURN := newDBContactURN(org, channelID, contactID, urn)
 	err := db.Get(contactURN, selectOrgURN, org, urn)
 	if err != nil && err != sql.ErrNoRows {
@@ -98,12 +98,12 @@ func updateContactURN(db *sqlx.DB, urn *DBContactURN) error {
 
 // DBContactURN is our struct to map to database level URNs
 type DBContactURN struct {
-	OrgID     OrgID        `db:"org_id"`
-	ID        ContactURNID `db:"id"`
-	URN       courier.URN  `db:"urn"`
-	Scheme    string       `db:"scheme"`
-	Path      string       `db:"path"`
-	Priority  int          `db:"priority"`
-	ChannelID ChannelID    `db:"channel_id"`
-	ContactID ContactID    `db:"contact_id"`
+	OrgID     OrgID             `db:"org_id"`
+	ID        ContactURNID      `db:"id"`
+	URN       courier.URN       `db:"urn"`
+	Scheme    string            `db:"scheme"`
+	Path      string            `db:"path"`
+	Priority  int               `db:"priority"`
+	ChannelID courier.ChannelID `db:"channel_id"`
+	ContactID ContactID         `db:"contact_id"`
 }

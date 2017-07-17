@@ -12,6 +12,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/queue"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -28,6 +29,9 @@ func testConfig() *config.Courier {
 }
 
 func (ts *MsgTestSuite) SetupSuite() {
+	// turn off logging
+	logrus.SetOutput(ioutil.Discard)
+
 	b, err := courier.NewBackend(testConfig())
 	if err != nil {
 		log.Fatalf("unable to create rapidpro backend: %v", err)

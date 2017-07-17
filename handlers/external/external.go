@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
 
 	"strings"
@@ -184,7 +183,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	// build our request
 	form := map[string]string{
-		"id":           strconv.FormatInt(msg.ID().Int64, 10),
+		"id":           fmt.Sprintf("%d", msg.ID()),
 		"text":         courier.GetTextAndAttachments(msg),
 		"to":           msg.URN().Path(),
 		"to_no_plus":   strings.TrimPrefix(msg.URN().Path(), "+"),

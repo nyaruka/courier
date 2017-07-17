@@ -158,29 +158,27 @@ func (w *Sender) Send() {
 
 		// failing on a lookup isn't a halting problem but we should log it
 		if err != nil {
-			log.WithField("msgID", msg.ID().Int64).WithError(err).Warning("error looking up msg was sent")
+			log.WithField("msgID", msg.ID()).WithError(err).Warning("error looking up msg was sent")
 		}
 
 		if sent {
 			// if this message was already sent, create a wired status for it
 			status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired)
-			log.WithField("msgID", msg.ID().Int64).Warning("duplicate send, marking as wired")
+			log.WithField("msgID", msg.ID()).Warning("duplicate send, marking as wired")
 		} else {
 			// send our message
 			status, err = server.SendMsg(msg)
 			if err != nil {
-				log.WithField("msgID", msg.ID().Int64).WithError(err).Info("msg errored")
+				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
+				log.WithField("msgID", msg.ID()).WithError(err).Info("msg errored")
 			} else {
-				log.WithField("msgID", msg.ID().Int64).Info("msg sent")
+				log.WithField("msgID", msg.ID()).Info("msg sent")
 			}
 		}
 
-		// record our status if we have one
-		if status != nil {
-			err = backend.WriteMsgStatus(status)
-			if err != nil {
-				log.WithField("msgID", msg.ID().Int64).WithError(err).Info("error writing msg status")
-			}
+		err = backend.WriteMsgStatus(status)
+		if err != nil {
+			log.WithField("msgID", msg.ID()).WithError(err).Info("error writing msg status")
 		}
 
 		// mark our send task as complete
