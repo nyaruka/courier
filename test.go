@@ -6,6 +6,8 @@ import (
 
 	"time"
 
+	"sync"
+
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier/config"
 )
@@ -25,13 +27,15 @@ type MockBackend struct {
 	msgStatuses  []MsgStatus
 
 	stoppedMsgContacts []Msg
-
 	sentMsgs map[MsgID]bool
 }
 
 // NewMockBackend returns a new mock backend suitable for testing
 func NewMockBackend() *MockBackend {
-	return &MockBackend{channels: make(map[ChannelUUID]Channel)}
+	return &MockBackend{
+		channels: make(map[ChannelUUID]Channel),
+		sentMsgs: make(map[MsgID]bool),
+	}
 }
 
 // GetLastQueueMsg returns the last message queued to the server
@@ -52,14 +56,34 @@ func (mb *MockBackend) NewOutgoingMsg(channel Channel, urn URN, text string) Msg
 	return &mockMsg{channel: channel, urn: urn, text: text}
 }
 
+// PushOutgoingMsg is a test method to add a message to our queue of messages to send
+func (mb *MockBackend) PushOutgoingMsg(msg Msg) {
+	mb.mutex.Lock()
+	defer mb.mutex.Unlock()
+
+	mb.outgoingMsgs = append(mb.outgoingMsgs, msg)
+}
+
 // PopNextOutgoingMsg returns the next message that should be sent, or nil if there are none to send
 func (mb *MockBackend) PopNextOutgoingMsg() (Msg, error) {
+	mb.mutex.Lock()
+	defer mb.mutex.Unlock()
+
+	if len(mb.outgoingMsgs) > 0 {
+		msg, rest := mb.outgoingMsgs[0], mb.outgoingMsgs[1:]
+		mb.outgoingMsgs = rest
+		return msg, nil
+	}
+
 	return nil, nil
 }
 
 // WasMsgSent returns whether the passed in msg was already sent
 func (mb *MockBackend) WasMsgSent(msg Msg) (bool, error) {
-	return false, nil
+	mb.mutex.Lock()
+	defer mb.mutex.Unlock()
+
+	return mb.sentMsgs[msg.ID()], nil
 }
 
 // StopMsgContact stops the contact for the passed in msg
@@ -76,7 +100,11 @@ func (mb *MockBackend) GetLastStoppedMsgContact() Msg {
 }
 
 // MarkOutgoingMsgComplete marks the passed msg as having been dealt with
-func (mb *MockBackend) MarkOutgoingMsgComplete(m Msg, s MsgStatus) {
+func (mb *MockBackend) MarkOutgoingMsgComplete(msg Msg, s MsgStatus) {
+	mb.mutex.Lock()
+	defer mb.mutex.Unlock()
+
+	mb.sentMsgs[msg.ID()] = true
 }
 
 // WriteChannelLogs writes the passed in channel logs to the DB
@@ -121,6 +149,10 @@ func (mb *MockBackend) NewMsgStatusForExternalID(channel Channel, externalID str
 
 // WriteMsgStatus writes the status update to our queue
 func (mb *MockBackend) WriteMsgStatus(status MsgStatus) error {
+	mb.mutex.Lock()
+	defer mb.mutex.Unlock()
+
+	mb.msgStatuses = append(mb.msgStatuses, status)
 	return nil
 }
 

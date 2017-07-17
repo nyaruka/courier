@@ -14,6 +14,8 @@ import (
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/config"
+	"github.com/pressly/lg"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -125,10 +127,21 @@ func testHandlerRequest(tb testing.TB, s courier.Server, url string, data string
 	return body
 }
 
+func newServer(backend courier.Backend) courier.Server {
+	// for benchmarks, log to null
+	logger := logrus.New()
+	logger.Out = ioutil.Discard
+	lg.RedirectStdlogOutput(logger)
+	lg.DefaultLogger = logger
+	logrus.SetOutput(ioutil.Discard)
+
+	return courier.NewServerWithLogger(config.NewTest(), backend, logger)
+}
+
 // RunChannelSendTestCases runs all the passed in test cases against the channel
 func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler courier.ChannelHandler, testCases []ChannelSendTestCase) {
 	mb := courier.NewMockBackend()
-	s := courier.NewServer(config.NewTest(), mb)
+	s := newServer(mb)
 	mb.AddChannel(channel)
 	handler.Initialize(s)
 
@@ -215,7 +228,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 // RunChannelTestCases runs all the passed in tests cases for the passed in channel configurations
 func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelHandleTestCase) {
 	mb := courier.NewMockBackend()
-	s := courier.NewServer(config.NewTest(), mb)
+	s := newServer(mb)
 
 	for _, ch := range channels {
 		mb.AddChannel(ch)
@@ -281,7 +294,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 // RunChannelBenchmarks runs all the passed in test cases for the passed in channels
 func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelHandleTestCase) {
 	mb := courier.NewMockBackend()
-	s := courier.NewServer(config.NewTest(), mb)
+	s := newServer(mb)
 
 	for _, ch := range channels {
 		mb.AddChannel(ch)

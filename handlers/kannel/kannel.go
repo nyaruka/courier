@@ -131,7 +131,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		return nil, fmt.Errorf("no send url set for KN channel")
 	}
 
-	dlrURL := fmt.Sprintf("%s%s%s/?id=%d&status=%%d", h.Server().Config().BaseURL, "/c/kn/", msg.Channel().UUID(), msg.ID().Int64)
+	dlrURL := fmt.Sprintf("%s%s%s/?id=%d&status=%%d", h.Server().Config().BaseURL, "/c/kn/", msg.Channel().UUID(), msg.ID())
 
 	// build our request
 	form := url.Values{

@@ -2,7 +2,6 @@ package courier
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,37 +16,43 @@ import (
 var ErrMsgNotFound = errors.New("message not found")
 
 // MsgID is our typing of the db int type
-type MsgID struct {
-	sql.NullInt64
-}
+type MsgID int64
 
 // NewMsgID creates a new MsgID for the passed in int64
 func NewMsgID(id int64) MsgID {
-	return MsgID{sql.NullInt64{Int64: id, Valid: true}}
+	return MsgID(id)
 }
 
 // UnmarshalText satisfies text unmarshalling so ids can be decoded from forms
 func (i *MsgID) UnmarshalText(text []byte) (err error) {
-	id, err := strconv.Atoi(string(text))
-	i.Int64 = int64(id)
+	id, err := strconv.ParseInt(string(text), 10, 64)
+	*i = MsgID(id)
 	if err != nil {
-		i.Valid = false
+		return err
 	}
 	return err
 }
 
 // UnmarshalJSON satisfies json unmarshalling so ids can be decoded from JSON
 func (i *MsgID) UnmarshalJSON(bytes []byte) (err error) {
-	return json.Unmarshal(bytes, &i.NullInt64)
+	var id int64
+	err = json.Unmarshal(bytes, &id)
+	*i = MsgID(id)
+	return err
+}
+
+// MarshalJSON satisfies json marshalling so ids can be encoded to JSON
+func (i *MsgID) MarshalJSON() ([]byte, error) {
+	return json.Marshal(int64(*i))
 }
 
 // String satisfies the Stringer interface
 func (i *MsgID) String() string {
-	return fmt.Sprintf("%d", i.Int64)
+	return fmt.Sprintf("%d", i)
 }
 
 // NilMsgID is our nil value for MsgID
-var NilMsgID = MsgID{sql.NullInt64{Int64: 0, Valid: false}}
+var NilMsgID = MsgID(0)
 
 // MsgUUID is the UUID of a message which has been received
 type MsgUUID struct {
