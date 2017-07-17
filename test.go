@@ -2,6 +2,7 @@ package courier
 
 import (
 	"errors"
+	"sync"
 
 	"time"
 
@@ -18,6 +19,14 @@ type MockBackend struct {
 	channels     map[ChannelUUID]Channel
 	queueMsgs    []Msg
 	errorOnQueue bool
+
+	mutex        sync.RWMutex
+	outgoingMsgs []Msg
+	msgStatuses  []MsgStatus
+
+	stoppedMsgContacts []Msg
+
+	sentMsgs map[MsgID]bool
 }
 
 // NewMockBackend returns a new mock backend suitable for testing
@@ -51,6 +60,19 @@ func (mb *MockBackend) PopNextOutgoingMsg() (Msg, error) {
 // WasMsgSent returns whether the passed in msg was already sent
 func (mb *MockBackend) WasMsgSent(msg Msg) (bool, error) {
 	return false, nil
+}
+
+// StopMsgContact stops the contact for the passed in msg
+func (mb *MockBackend) StopMsgContact(msg Msg) {
+	mb.stoppedMsgContacts = append(mb.stoppedMsgContacts, msg)
+}
+
+// GetLastStoppedMsgContact returns the last msg contact
+func (mb *MockBackend) GetLastStoppedMsgContact() Msg {
+	if len(mb.stoppedMsgContacts) > 0 {
+		return mb.stoppedMsgContacts[len(mb.stoppedMsgContacts)-1]
+	}
+	return nil
 }
 
 // MarkOutgoingMsgComplete marks the passed msg as having been dealt with

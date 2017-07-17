@@ -145,7 +145,7 @@ func writeMsgToDB(b *backend, m *DBMsg) error {
 	}
 
 	// queue this up to be handled by RapidPro
-	b.notifier.addMsg(m.ID_)
+	b.notifier.addHandleMsgNotification(m.ID_)
 
 	return err
 }

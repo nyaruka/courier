@@ -126,6 +126,12 @@ func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg, status courier.MsgSta
 	}
 }
 
+// StopMsgContact marks the contact for the passed in msg as stopped, that is they no longer want to receive messages
+func (b *backend) StopMsgContact(m courier.Msg) {
+	dbMsg := m.(*DBMsg)
+	b.notifier.addStopContactNotification(dbMsg.ContactID_)
+}
+
 // WriteMsg writes the passed in message to our store
 func (b *backend) WriteMsg(m courier.Msg) error {
 	return writeMsg(b, m)

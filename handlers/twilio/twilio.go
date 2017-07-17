@@ -32,6 +32,9 @@ const twSignatureHeader = "X-Twilio-Signature"
 
 var sendURL = "https://api.twilio.com/2010-04-01/Accounts"
 
+// error code twilio returns when a contact has sent "stop"
+const errorStopped = 21610
+
 type handler struct {
 	handlers.BaseHandler
 }
@@ -209,7 +212,10 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	// was this request successful?
 	errorCode, _ := jsonparser.GetInt([]byte(rr.Body), "error_code")
 	if errorCode != 0 {
-		// TODO: Notify RapidPro of blocked contacts (code 21610)
+		if errorCode == errorStopped {
+			status.SetStatus(courier.MsgFailed)
+			h.Backend().StopMsgContact(msg)
+		}
 		return status, errors.Errorf("received error code from twilio '%d'", errorCode)
 	}
 
