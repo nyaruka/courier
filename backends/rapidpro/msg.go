@@ -215,11 +215,13 @@ func downloadMediaToS3(b *backend, msgUUID courier.MsgUUID, mediaURL string) (st
 	// we still don't know our mime type, use our content header instead
 	if mimeType == "" {
 		mimeType, _, _ = mime.ParseMediaType(resp.Header.Get("Content-Type"))
-		extensions, err := mime.ExtensionsByType(mimeType)
-		if extensions == nil || err != nil {
-			extension = ""
-		} else {
-			extension = extensions[0][1:]
+		if extension == "" {
+			extensions, err := mime.ExtensionsByType(mimeType)
+			if extensions == nil || err != nil {
+				extension = ""
+			} else {
+				extension = extensions[0][1:]
+			}
 		}
 	}
 

@@ -334,7 +334,6 @@ func (ts *MsgTestSuite) TestWriteAttachment() {
 	err := ts.b.WriteMsg(msg)
 	ts.NoError(err)
 	ts.True(strings.HasPrefix(msg.Attachments()[0], "text/plain"))
-	ts.True(strings.HasSuffix(msg.Attachments()[0], ".txt"), "Attachment: %s", msg.Attachments()[0])
 
 	// use an extension for our attachment instead
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "jpg attachment").(*DBMsg)
