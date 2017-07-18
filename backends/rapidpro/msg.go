@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"mime"
+
 	"github.com/garyburd/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
@@ -190,33 +192,54 @@ func downloadMediaToS3(b *backend, msgUUID courier.MsgUUID, mediaURL string) (st
 		return "", err
 	}
 
-	// figure out the type of our media, our mime matcher only needs ~300 bytes
-	mimeType, err := filetype.Match(body[:300])
-	if err != nil || mimeType == filetype.Unknown {
-		mimeType = filetype.GetType(filepath.Ext(parsedURL.Path))
+	mimeType := ""
+	extension := filepath.Ext(parsedURL.Path)
+	if extension != "" {
+		extension = extension[1:]
 	}
 
-	// we can't guess our media type, use what was provided by our response
-	extension := mimeType.Extension
-	if mimeType == filetype.Unknown {
-		mimeType = filetype.NewType(resp.Header.Get("Content-Type"), "")
-		extension = filepath.Ext(parsedURL.Path)
+	// first try getting our mime type from the first 300 bytes of our body
+	fileType, err := filetype.Match(body[:300])
+	if fileType != filetype.Unknown {
+		mimeType = fileType.MIME.Value
+		extension = fileType.Extension
+	} else {
+		// if that didn't work, try from our extension
+		fileType = filetype.GetType(extension)
+		if fileType != filetype.Unknown {
+			mimeType = fileType.MIME.Value
+			extension = fileType.Extension
+		}
+	}
+
+	// we still don't know our mime type, use our content header instead
+	if mimeType == "" {
+		mimeType, _, _ = mime.ParseMediaType(resp.Header.Get("Content-Type"))
+		extensions, err := mime.ExtensionsByType(mimeType)
+		if extensions == nil || err != nil {
+			extension = ""
+		} else {
+			extension = extensions[0][1:]
+		}
 	}
 
 	// create our filename
-	filename := fmt.Sprintf("%s.%s", msgUUID, extension)
+	filename := msgUUID.String()
+	if extension != "" {
+		filename = fmt.Sprintf("%s.%s", msgUUID, extension)
+	}
 	path := filepath.Join(b.config.S3MediaPrefix, filename[:4], filename)
 	if !strings.HasPrefix(path, "/") {
 		path = fmt.Sprintf("/%s", path)
 	}
 
-	s3URL, err := utils.PutS3File(b.s3Client, b.config.S3MediaBucket, path, mimeType.MIME.Value, body)
+	s3URL, err := utils.PutS3File(b.s3Client, b.config.S3MediaBucket, path, mimeType, body)
 	if err != nil {
 		return "", err
 	}
 
 	// return our new media URL, which is prefixed by our content type
-	return fmt.Sprintf("%s:%s", mimeType.MIME.Value, s3URL), nil
+	return fmt.Sprintf("%s:%s", mimeType, s3URL), nil
 }
 
 //-----------------------------------------------------------------------------

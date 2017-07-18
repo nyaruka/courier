@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"encoding/json"
 
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/queue"
@@ -19,6 +24,18 @@ import (
 type MsgTestSuite struct {
 	suite.Suite
 	b *backend
+}
+
+type mockS3Client struct {
+	s3iface.S3API
+}
+
+func (m *mockS3Client) PutObject(*s3.PutObjectInput) (*s3.PutObjectOutput, error) {
+	return nil, nil
+}
+
+func (m *mockS3Client) HeadBucket(*s3.HeadBucketInput) (*s3.HeadBucketOutput, error) {
+	return nil, nil
 }
 
 func testConfig() *config.Courier {
@@ -54,6 +71,9 @@ func (ts *MsgTestSuite) SetupSuite() {
 	r := ts.b.redisPool.Get()
 	defer r.Close()
 	r.Do("FLUSHDB")
+
+	// plug in our mock s3 client
+	ts.b.s3Client = &mockS3Client{}
 }
 
 func (ts *MsgTestSuite) TearDownSuite() {
@@ -280,6 +300,68 @@ func (ts *MsgTestSuite) TestChannel() {
 	stringVal, isString = val.(string)
 	ts.True(isString)
 	ts.Equal("missingValue", val)
+}
+
+func (ts *MsgTestSuite) TestWriteAttachment() {
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+
+		content := ""
+		switch r.URL.Path {
+		case "/test.jpg":
+			content = "malformedjpegbody"
+
+		case "/giffy":
+			content = "GIF87aandstuff"
+
+		case "/header":
+			w.Header().Add("Content-Type", "image/png")
+			content = "nothingbody"
+
+		default:
+			content = "unknown"
+		}
+
+		w.Write([]byte(content))
+	}))
+
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	urn := courier.NewTelURNForChannel("12065551215", knChannel)
+	msg := ts.b.NewIncomingMsg(knChannel, urn, "invalid attachment").(*DBMsg)
+	msg.WithAttachment(testServer.URL)
+
+	// should just end up being text/plain
+	err := ts.b.WriteMsg(msg)
+	ts.NoError(err)
+	ts.True(strings.HasPrefix(msg.Attachments()[0], "text/plain"))
+	ts.True(strings.HasSuffix(msg.Attachments()[0], ".txt"))
+
+	// use an extension for our attachment instead
+	msg = ts.b.NewIncomingMsg(knChannel, urn, "jpg attachment").(*DBMsg)
+	msg.WithAttachment(testServer.URL + "/test.jpg")
+
+	err = ts.b.WriteMsg(msg)
+	ts.NoError(err)
+	ts.True(strings.HasPrefix(msg.Attachments()[0], "image/jpeg:"))
+	ts.True(strings.HasSuffix(msg.Attachments()[0], ".jpg"))
+
+	// ok, now derive it from magic bytes
+	msg = ts.b.NewIncomingMsg(knChannel, urn, "gif attachment").(*DBMsg)
+	msg.WithAttachment(testServer.URL + "/giffy")
+
+	err = ts.b.WriteMsg(msg)
+	ts.NoError(err)
+	ts.True(strings.HasPrefix(msg.Attachments()[0], "image/gif:"))
+	ts.True(strings.HasSuffix(msg.Attachments()[0], ".gif"))
+
+	// finally from our header
+	msg = ts.b.NewIncomingMsg(knChannel, urn, "png attachment").(*DBMsg)
+	msg.WithAttachment(testServer.URL + "/header")
+
+	err = ts.b.WriteMsg(msg)
+	ts.NoError(err)
+	ts.True(strings.HasPrefix(msg.Attachments()[0], "image/png:"))
+	ts.True(strings.HasSuffix(msg.Attachments()[0], ".png"))
 }
 
 func (ts *MsgTestSuite) TestWriteMsg() {
