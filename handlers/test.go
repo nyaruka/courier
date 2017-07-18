@@ -65,6 +65,8 @@ type ChannelSendTestCase struct {
 	Status     string
 	ExternalID string
 
+	Stopped bool
+
 	SendPrep SendPrepFunc
 }
 
@@ -213,6 +215,10 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 			if testCase.Status != "" {
 				require.Equal(testCase.Status, string(status.Status()))
+			}
+
+			if testCase.Stopped {
+				require.Equal(msg, mb.GetLastStoppedMsgContact())
 			}
 		})
 	}

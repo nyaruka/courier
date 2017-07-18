@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/garyburd/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
@@ -124,6 +125,12 @@ func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg, status courier.MsgSta
 		dateKey := fmt.Sprintf(sentSetName, time.Now().In(time.UTC).Format("2006_01_02"))
 		rc.Do("sadd", dateKey, msg.ID())
 	}
+}
+
+// StopMsgContact marks the contact for the passed in msg as stopped, that is they no longer want to receive messages
+func (b *backend) StopMsgContact(m courier.Msg) {
+	dbMsg := m.(*DBMsg)
+	b.notifier.addStopContactNotification(dbMsg.ContactID_)
 }
 
 // WriteMsg writes the passed in message to our store
@@ -321,7 +328,7 @@ type backend struct {
 
 	db        *sqlx.DB
 	redisPool *redis.Pool
-	s3Client  *s3.S3
+	s3Client  s3iface.S3API
 	awsCreds  *credentials.Credentials
 
 	popScript *redis.Script

@@ -2,10 +2,9 @@ package courier
 
 import (
 	"errors"
+	"sync"
 
 	"time"
-
-	"sync"
 
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier/config"
@@ -25,7 +24,8 @@ type MockBackend struct {
 	outgoingMsgs []Msg
 	msgStatuses  []MsgStatus
 
-	sentMsgs map[MsgID]bool
+	stoppedMsgContacts []Msg
+	sentMsgs           map[MsgID]bool
 }
 
 // NewMockBackend returns a new mock backend suitable for testing
@@ -82,6 +82,19 @@ func (mb *MockBackend) WasMsgSent(msg Msg) (bool, error) {
 	defer mb.mutex.Unlock()
 
 	return mb.sentMsgs[msg.ID()], nil
+}
+
+// StopMsgContact stops the contact for the passed in msg
+func (mb *MockBackend) StopMsgContact(msg Msg) {
+	mb.stoppedMsgContacts = append(mb.stoppedMsgContacts, msg)
+}
+
+// GetLastStoppedMsgContact returns the last msg contact
+func (mb *MockBackend) GetLastStoppedMsgContact() Msg {
+	if len(mb.stoppedMsgContacts) > 0 {
+		return mb.stoppedMsgContacts[len(mb.stoppedMsgContacts)-1]
+	}
+	return nil
 }
 
 // MarkOutgoingMsgComplete marks the passed msg as having been dealt with
