@@ -6,8 +6,6 @@ import (
 
 	"time"
 
-	"sync"
-
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier/config"
 )
@@ -27,7 +25,7 @@ type MockBackend struct {
 	msgStatuses  []MsgStatus
 
 	stoppedMsgContacts []Msg
-	sentMsgs map[MsgID]bool
+	sentMsgs           map[MsgID]bool
 }
 
 // NewMockBackend returns a new mock backend suitable for testing
