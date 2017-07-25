@@ -31,7 +31,7 @@ func TestSending(t *testing.T) {
 	dmChannel := NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "DM", "2020", "US", map[string]interface{}{})
 	msg := &mockMsg{
 		channel: xxChannel,
-		id:      101,
+		id:      NewMsgID(101),
 		uuid:    NilMsgUUID,
 		text:    "test message",
 		urn:     "tel:+250788383383",
@@ -52,7 +52,7 @@ func TestSending(t *testing.T) {
 	// change our channel to our dummy channel
 	msg = &mockMsg{
 		channel: dmChannel,
-		id:      102,
+		id:      NewMsgID(102),
 		uuid:    NilMsgUUID,
 		text:    "test message 2",
 		urn:     "tel:+250788383383",

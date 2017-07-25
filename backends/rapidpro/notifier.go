@@ -15,7 +15,7 @@ import (
 
 func notifyRapidPro(config *config.Courier, body url.Values) error {
 	// build our request
-	req, err := http.NewRequest("POST", config.RapidproHandleURL, strings.NewReader(body.Encode()))
+	req, err := http.NewRequest("POST", fmt.Sprintf(config.RapidproHandleURL, body.Get("action")), strings.NewReader(body.Encode()))
 
 	// this really should never happen, but if it does we only log it
 	if err != nil {
@@ -24,7 +24,7 @@ func notifyRapidPro(config *config.Courier, body url.Values) error {
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("AUTHORIZATION", fmt.Sprintf("Token %s", config.RapidproToken))
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", config.RapidproToken))
 	_, err = utils.MakeHTTPRequest(req)
 
 	return err
@@ -39,12 +39,14 @@ func newNotifier(config *config.Courier) *notifier {
 
 func (n *notifier) addHandleMsgNotification(msgID courier.MsgID) {
 	body := url.Values{}
+	body.Add("action", "handle_message")
 	body.Add("message_id", msgID.String())
 	n.notifications <- body
 }
 
 func (n *notifier) addStopContactNotification(contactID ContactID) {
 	body := url.Values{}
+	body.Add("action", "stop_contact")
 	body.Add("contact_id", fmt.Sprintf("%d", contactID.Int64))
 	n.notifications <- body
 }
@@ -68,7 +70,7 @@ func (n *notifier) start(backend *backend) {
 				// we failed, append it to our retries
 				if err != nil {
 					if !lastError {
-						log.WithError(err).Error("error notifying rapidpro")
+						log.WithError(err).WithField("body", body).Error("error notifying rapidpro")
 					}
 					n.retries = append(n.retries, body)
 					lastError = true

@@ -262,12 +262,12 @@ func (s *server) channelUpdateStatusWrapper(handler ChannelHandler, handlerFunc 
 		elapsed := time.Now().Sub(start)
 		if err != nil {
 			WriteError(ww, r, err)
-			logs = append(logs, NewChannelLog(channel, NilMsgID, url, ww.Status(), err, string(request), response.String(), elapsed, start))
+			logs = append(logs, NewChannelLog(channel, NilMsgID, r.Method, url, ww.Status(), err, string(request), response.String(), elapsed, start))
 		}
 
 		// create channel logs for each of our msgs
 		for _, status := range statuses {
-			logs = append(logs, NewChannelLog(channel, status.ID(), url, ww.Status(), err, string(request), response.String(), elapsed, start))
+			logs = append(logs, NewChannelLog(channel, status.ID(), r.Method, url, ww.Status(), err, string(request), response.String(), elapsed, start))
 		}
 
 		// and write these out
@@ -302,12 +302,12 @@ func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc Ch
 		elapsed := time.Now().Sub(start)
 		if err != nil {
 			WriteError(ww, r, err)
-			logs = append(logs, NewChannelLog(channel, NilMsgID, url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), elapsed, start))
+			logs = append(logs, NewChannelLog(channel, NilMsgID, r.Method, url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), elapsed, start))
 		}
 
 		// create channel logs for each of our msgs
 		for _, msg := range msgs {
-			logs = append(logs, NewChannelLog(channel, msg.ID(), url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), elapsed, start))
+			logs = append(logs, NewChannelLog(channel, msg.ID(), r.Method, url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), elapsed, start))
 		}
 
 		// and write these out

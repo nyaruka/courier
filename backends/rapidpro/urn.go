@@ -4,17 +4,19 @@ import (
 	"database/sql"
 	"strings"
 
+	null "gopkg.in/guregu/null.v3"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 )
 
 // ContactURNID represents a contact urn's id
 type ContactURNID struct {
-	sql.NullInt64
+	null.Int
 }
 
 // NilContactURNID is our nil value for ContactURNID
-var NilContactURNID = ContactURNID{sql.NullInt64{Int64: 0, Valid: false}}
+var NilContactURNID = ContactURNID{null.NewInt(0, false)}
 
 // NewDBContactURN returns a new ContactURN object for the passed in org, contact and string urn, this is not saved to the DB yet
 func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID, urn courier.URN) *DBContactURN {

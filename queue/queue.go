@@ -90,10 +90,10 @@ var luaPop = redis.NewScript(2, `-- KEYS: [EpochMS QueueType]
 	-- if we have a tps, then check whether we exceed it
 	if tps > 0 then
 	    tpsKey = queue .. ":tps:" .. math.floor(KEYS[1])
-	    local curr = tonumber(redis.call("get", tpsKey))
+	    local curr = redis.call("get", tpsKey)
 	    
 		-- we are at or above our tps, move to our throttled queue
-		if curr and curr >= tps then 
+		if curr and tonumber(curr) >= tps then 
 			redis.call("zincrby", KEYS[2] .. ":throttled", workers, queue)
 			redis.call("zrem", KEYS[2] .. ":active", queue)
 			return {"retry", ""}
@@ -101,29 +101,37 @@ var luaPop = redis.NewScript(2, `-- KEYS: [EpochMS QueueType]
 	end
 
 	-- pop our next value out, first from our default queue
-	local priorityQueue = queue .. "/1"
-	local result = redis.call("zrangebyscore", priorityQueue, 0, "+inf", "WITHSCORES", "LIMIT", 0, 1)
+	local resultQueue = queue .. "/1"
+	local result = redis.call("zrangebyscore", resultQueue, 0, "+inf", "WITHSCORES", "LIMIT", 0, 1)
 	
 	-- keep track as to whether this result is in the future (and therefore ineligible)
-	local isFutureResult = result[1] and result[2] > KEYS[1]
+	local isFutureResult = result[1] and tonumber(result[2]) > tonumber(KEYS[1])
 
 	-- if we didn't find one, try again from our bulk queue
 	if not result[1] or isFutureResult then
-		priorityQueue = queue .. "/0"
-		result = redis.call("zrangebyscore", priorityQueue, 0, "+inf", "WITHSCORES", "LIMIT", 0, 1)
+		local bulkQueue = queue .. "/0"
+		local bulkResult = redis.call("zrangebyscore", bulkQueue, 0, "+inf", "WITHSCORES", "LIMIT", 0, 1)
 
-		-- set whether we are a future result
-		if result[1] and result[2] > KEYS[1] then
-		    isFutureResult = true
-		else 
-			isFutureResult = false
+		-- if we got a result
+		if bulkResult[1] then
+			-- if it is in the future, set ourselves as in the future
+			if tonumber(bulkResult[2]) > tonumber(KEYS[1]) then
+				isFutureResult = true
+			
+			-- otherwise, this is a valid result
+			else 
+				redis.call("echo", "found result")
+				isFutureResult = false
+				result = bulkResult
+				resultQueue = bulkQueue
+			end
 		end
 	end
 
 	-- if we found one
 	if result[1] and not isFutureResult then
 		-- then remove it from the queue
-		redis.call('zremrangebyrank', priorityQueue, 0, 0)
+		redis.call('zremrangebyrank', resultQueue, 0, 0)
 
 		-- increment our tps for this second if we have a limit
 		if tps > 0 then 
@@ -181,6 +189,7 @@ func PopFromQueue(conn redis.Conn, qType string) (WorkerToken, string, error) {
 	epochMS := strconv.FormatFloat(float64(time.Now().UnixNano()/int64(time.Microsecond))/float64(1000000), 'f', 6, 64)
 	values, err := redis.Strings(luaPop.Do(conn, epochMS, qType))
 	if err != nil {
+		logrus.Error(err)
 		return "", "", err
 	}
 	return WorkerToken(values[0]), values[1], nil

@@ -3,6 +3,8 @@ package rapidpro
 import (
 	"time"
 
+	null "gopkg.in/guregu/null.v3"
+
 	"database/sql"
 
 	"github.com/jmoiron/sqlx"
@@ -12,11 +14,11 @@ import (
 
 // ContactID is our representation of our database contact id
 type ContactID struct {
-	sql.NullInt64
+	null.Int
 }
 
 // NilContactID represents our nil value for ContactID
-var NilContactID = ContactID{sql.NullInt64{Int64: 0, Valid: false}}
+var NilContactID = ContactID{null.NewInt(0, false)}
 
 const insertContactSQL = `
 INSERT INTO contacts_contact(org_id, is_active, is_blocked, is_test, is_stopped, uuid, created_on, modified_on, created_by_id, modified_by_id, name) 
