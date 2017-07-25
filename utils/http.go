@@ -16,6 +16,7 @@ type RequestResponseStatus string
 
 // RequestResponse represents both the outgoing request and response for a particular URL/method/body
 type RequestResponse struct {
+	Method     string
 	URL        string
 	Status     RequestResponseStatus
 	StatusCode int
@@ -53,7 +54,7 @@ func MakeInsecureHTTPRequest(req *http.Request) (*RequestResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	rr, err := newRRFromResponse(string(requestTrace), resp)
+	rr, err := newRRFromResponse(req.Method, string(requestTrace), resp)
 	rr.Elapsed = time.Now().Sub(start)
 	return rr, err
 }
@@ -75,7 +76,7 @@ func MakeHTTPRequest(req *http.Request) (*RequestResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	rr, err := newRRFromResponse(string(requestTrace), resp)
+	rr, err := newRRFromResponse(req.Method, string(requestTrace), resp)
 	rr.Elapsed = time.Now().Sub(start)
 	return rr, err
 }
@@ -83,6 +84,7 @@ func MakeHTTPRequest(req *http.Request) (*RequestResponse, error) {
 // newRRFromResponse creates a new RequestResponse based on the passed in http request and error (when we received no response)
 func newRRFromRequestAndError(r *http.Request, requestTrace string, requestError error) (*RequestResponse, error) {
 	rr := RequestResponse{}
+	rr.Method = r.Method
 	rr.URL = r.URL.String()
 
 	rr.Request = requestTrace
@@ -93,9 +95,10 @@ func newRRFromRequestAndError(r *http.Request, requestTrace string, requestError
 }
 
 // newRRFromResponse creates a new RequestResponse based on the passed in http Response
-func newRRFromResponse(requestTrace string, r *http.Response) (*RequestResponse, error) {
+func newRRFromResponse(method string, requestTrace string, r *http.Response) (*RequestResponse, error) {
 	var err error
 	rr := RequestResponse{}
+	rr.Method = method
 	rr.URL = r.Request.URL.String()
 	rr.StatusCode = r.StatusCode
 

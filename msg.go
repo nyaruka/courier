@@ -2,12 +2,12 @@ package courier
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
+
+	null "gopkg.in/guregu/null.v3"
 
 	uuid "github.com/satori/go.uuid"
 )
@@ -16,43 +16,25 @@ import (
 var ErrMsgNotFound = errors.New("message not found")
 
 // MsgID is our typing of the db int type
-type MsgID int64
+type MsgID struct {
+	null.Int
+}
 
 // NewMsgID creates a new MsgID for the passed in int64
 func NewMsgID(id int64) MsgID {
-	return MsgID(id)
-}
-
-// UnmarshalText satisfies text unmarshalling so ids can be decoded from forms
-func (i *MsgID) UnmarshalText(text []byte) (err error) {
-	id, err := strconv.ParseInt(string(text), 10, 64)
-	*i = MsgID(id)
-	if err != nil {
-		return err
-	}
-	return err
-}
-
-// UnmarshalJSON satisfies json unmarshalling so ids can be decoded from JSON
-func (i *MsgID) UnmarshalJSON(bytes []byte) (err error) {
-	var id int64
-	err = json.Unmarshal(bytes, &id)
-	*i = MsgID(id)
-	return err
-}
-
-// MarshalJSON satisfies json marshalling so ids can be encoded to JSON
-func (i *MsgID) MarshalJSON() ([]byte, error) {
-	return json.Marshal(int64(*i))
+	return MsgID{null.NewInt(id, true)}
 }
 
 // String satisfies the Stringer interface
-func (i *MsgID) String() string {
-	return fmt.Sprintf("%d", i)
+func (i MsgID) String() string {
+	if i.Valid {
+		return strconv.FormatInt(i.Int64, 10)
+	}
+	return "null"
 }
 
 // NilMsgID is our nil value for MsgID
-var NilMsgID = MsgID(0)
+var NilMsgID = MsgID{null.NewInt(0, false)}
 
 // MsgUUID is the UUID of a message which has been received
 type MsgUUID struct {

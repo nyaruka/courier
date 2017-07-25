@@ -47,7 +47,7 @@ func getChannel(b *backend, channelType courier.ChannelType, channelUUID courier
 const lookupChannelFromUUIDSQL = `
 SELECT org_id, id, uuid, channel_type, scheme, address, country, config 
 FROM channels_channel 
-WHERE uuid = $1 AND is_active = true`
+WHERE uuid = $1 AND is_active = true AND org_id IS NOT NULL`
 
 // ChannelForUUID attempts to look up the channel with the passed in UUID, returning it
 func loadChannelFromDB(b *backend, channel *DBChannel, channelType courier.ChannelType, uuid courier.ChannelUUID) error {

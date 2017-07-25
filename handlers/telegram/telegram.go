@@ -120,6 +120,8 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values) (string, *courier.ChannelLog, error) {
 	sendURL := fmt.Sprintf("%s/bot%s/%s", telegramAPIURL, token, path)
 	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// build our channel log
@@ -207,7 +209,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 			status.AddLog(log)
 
 		default:
-			status.AddLog(courier.NewChannelLog(msg.Channel(), msg.ID(), "", courier.NilStatusCode,
+			status.AddLog(courier.NewChannelLog(msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
 				fmt.Errorf("unknown media type: %s", mediaType), "", "", time.Duration(0), time.Now()))
 			hasError = true
 		}

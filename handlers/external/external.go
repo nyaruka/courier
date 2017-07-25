@@ -183,7 +183,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	// build our request
 	form := map[string]string{
-		"id":           fmt.Sprintf("%d", msg.ID()),
+		"id":           msg.ID().String(),
 		"text":         courier.GetTextAndAttachments(msg),
 		"to":           msg.URN().Path(),
 		"to_no_plus":   strings.TrimPrefix(msg.URN().Path(), "+"),

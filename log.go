@@ -11,7 +11,7 @@ import (
 const NilStatusCode int = 417
 
 // NewChannelLog creates a new channel log for the passed in channel, id, and request and response info
-func NewChannelLog(channel Channel, msgID MsgID, url string, statusCode int, err error,
+func NewChannelLog(channel Channel, msgID MsgID, method string, url string, statusCode int, err error,
 	request string, response string, elapsed time.Duration, createdOn time.Time) *ChannelLog {
 
 	errString := ""
@@ -22,6 +22,7 @@ func NewChannelLog(channel Channel, msgID MsgID, url string, statusCode int, err
 	return &ChannelLog{
 		Channel:    channel,
 		MsgID:      msgID,
+		Method:     method,
 		URL:        url,
 		StatusCode: statusCode,
 		Error:      errString,
@@ -37,6 +38,7 @@ func NewChannelLogFromRR(channel Channel, msgID MsgID, rr *utils.RequestResponse
 	return &ChannelLog{
 		Channel:    channel,
 		MsgID:      msgID,
+		Method:     rr.Method,
 		URL:        rr.URL,
 		StatusCode: rr.StatusCode,
 		Error:      "",
@@ -57,6 +59,7 @@ func (l *ChannelLog) String() string {
 type ChannelLog struct {
 	Channel    Channel
 	MsgID      MsgID
+	Method     string
 	URL        string
 	StatusCode int
 	Error      string

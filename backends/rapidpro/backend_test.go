@@ -90,6 +90,39 @@ func (ts *MsgTestSuite) getChannel(cType string, cUUID string) *DBChannel {
 	return channel.(*DBChannel)
 }
 
+func (ts *MsgTestSuite) TestMsgUnmarshal() {
+	msgJSON := `{
+		"status": "P", 
+		"direction": "O", 
+		"attachments": null, 
+		"queued_on": null, 
+		"text": "Test message 21", 
+		"contact_id": 30, 
+		"contact_urn_id": 14, 
+		"error_count": 0, 
+		"modified_on": "2017-07-21T19:22:23.254133Z", 
+		"id": 204, 
+		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba", 
+		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f", 
+		"next_attempt": "2017-07-21T19:22:23.254182Z", 
+		"urn": "telegram:3527065", 
+		"org_id": 1, 
+		"created_on": "2017-07-21T19:22:23.242757Z", 
+		"sent_on": null, 
+		"priority": 1000, 
+		"channel_id": 11, 
+		"response_to_id": 15, 
+		"external_id": null
+	}`
+
+	msg := DBMsg{}
+	err := json.Unmarshal([]byte(msgJSON), &msg)
+	ts.NoError(err)
+	ts.Equal(msg.ChannelUUID_.String(), "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba")
+	ts.Equal(msg.ChannelID_, courier.ChannelID(11))
+	ts.Equal(msg.ExternalID_, "")
+}
+
 func (ts *MsgTestSuite) TestCheckMsgExists() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
