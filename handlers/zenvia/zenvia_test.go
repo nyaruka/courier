@@ -1,6 +1,7 @@
 package zenvia
 
 import (
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -9,7 +10,7 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZV", "2020", "BR", map[string]interface{}{"username": "zv_account", "password": "zv-code"}),
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZV", "2020", "BR", map[string]interface{}{"username": "zv-username", "password": "zv-password"}),
 }
 
 var (
@@ -92,4 +93,73 @@ func TestHandler(t *testing.T) {
 
 func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, NewHandler(), testCases)
+}
+
+// setSendURL takes care of setting the sendURL to call
+func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Msg) {
+	sendURL = server.URL
+}
+
+var defaultSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text:           "Simple Message ☺",
+		URN:            "tel:+250788383383",
+		Status:         "W",
+		ExternalID:     "",
+		ResponseBody:   `{"sendSmsResponse":{"statusCode":"00","statusDescription":"Ok","detailCode":"000","detailDescription":"Message Sent"}}`,
+		ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Basic " + EncodeBase64([]string{"zv-username", ":", "zv-password"}),
+		},
+		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"Simple Message ☺","callbackOption":"1","id":"null","aggregateId":""}}
+`,
+		SendPrep: setSendURL},
+	{Label: "Send Attachment",
+		Text:           "My pic!",
+		URN:            "tel:+250788383383",
+		Attachments:    []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Status:         "W",
+		ExternalID:     "",
+		ResponseBody:   `{"sendSmsResponse":{"statusCode":"00","statusDescription":"Ok","detailCode":"000","detailDescription":"Message Sent"}}`,
+		ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Basic " + EncodeBase64([]string{"zv-username", ":", "zv-password"}),
+		},
+		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"My pic!\nhttps://foo.bar/image.jpg","callbackOption":"1","id":"null","aggregateId":""}}
+`,
+		SendPrep: setSendURL},
+	{Label: "No External Id",
+		Text:           "No External ID",
+		URN:            "tel:+250788383383",
+		Status:         "E",
+		ResponseBody:   `{"sendSmsResponse" :{"statusCode" :"05","statusDescription" :"Blocked","detailCode":"140","detailDescription":"Mobile number not covered"}}`,
+		ResponseStatus: 200,
+		Error:          "received non-success response from Zenvia '05'",
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Basic " + EncodeBase64([]string{"zv-username", ":", "zv-password"}),
+		},
+		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"No External ID","callbackOption":"1","id":"null","aggregateId":""}}
+`,
+		SendPrep: setSendURL},
+	{Label: "Error Sending",
+		Text:           "Error Message",
+		URN:            "tel:+250788383383",
+		Status:         "E",
+		ResponseBody:   `{ "error": "failed" }`,
+		ResponseStatus: 401,
+		Error:          "received non 200 status: 401",
+		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"Error Message","callbackOption":"1","id":"null","aggregateId":""}}
+`,
+		SendPrep: setSendURL},
+}
+
+func TestSending(t *testing.T) {
+	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZV", "2020", "BR", map[string]interface{}{"username": "zv-username", "password": "zv-password"})
+	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
 }

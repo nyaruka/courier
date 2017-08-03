@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -81,7 +82,7 @@ type statusRequest struct {
 //     }
 // }
 type zvOutgoingMsg struct {
-	SendSmsRequest zvSendSmsRequest
+	SendSmsRequest zvSendSmsRequest `json:"sendSmsRequest"`
 }
 
 type zvSendSmsRequest struct {
@@ -192,7 +193,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	zvMsg := zvOutgoingMsg{
 		SendSmsRequest: zvSendSmsRequest{
 			From:           "Sender",
-			To:             msg.URN().Path(),
+			To:             strings.TrimLeft(msg.URN().Path(), "+"),
 			Schedule:       "",
 			Msg:            courier.GetTextAndAttachments(msg),
 			ID:             msg.ID().String(),
@@ -224,6 +225,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	if msgStatus == courier.MsgErrored || !found {
 		return status, errors.Errorf("received non-success response from Zenvia '%s'", responseMsgStatus)
 	}
+	status.SetStatus(courier.MsgWired)
 
 	return status, nil
 
