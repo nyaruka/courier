@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -188,4 +189,13 @@ func DecodePossibleBase64(original string) string {
 	}
 
 	return decoded
+}
+
+// EncodeBase64 encodes the list of strings with Linux base64
+func EncodeBase64(strList []string) string {
+	var strBuffer bytes.Buffer
+	for _, l := range strList {
+		strBuffer.WriteString(l)
+	}
+	return strBuffer.String()
 }

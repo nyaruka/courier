@@ -1,20 +1,21 @@
 package zenvia
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/pkg/errors"
 )
 
-var sendURL = "http://www.zenvia360.com.br/GatewayIntegration/msgSms.do"
+var sendURL = "https://api-rest.zenvia360.com.br/services"
 
 func init() {
 	courier.RegisterHandler(NewHandler())
@@ -29,22 +30,82 @@ func NewHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("ZV"), "Zenvia")}
 }
 
+// {
+//     "callbackMoRequest": {
+// 	    	"id": "20690090",
+//         	"mobile": "555191951711",
+//         	"shortCode": "40001",
+//         	"account": "zenvia.envio",
+//         	"body": "Content of reply SMS",
+//         	"received": "2014-08-26T12:27:08.488-03:00",
+//         	"correlatedMessageSmsId": "hs765939061"
+//  	}
+// }
 type messageRequest struct {
-	ID   string `validate:"required" name:"id"`
-	Text string `validate:"required" name:"msg"`
-	From string `validate:"required" name:"from"`
-	To   string `validate:"required" name:"to"`
-	Date string `validate:"required" name:"date"`
+	CallbackMoRequest struct {
+		ID         string `validate:"required" json:"id"`
+		From       string `validate:"required" json:"mobile"`
+		Text       string `validate:"required" json:"body"`
+		Date       string `validate:"required" json:"received"`
+		ExternalID string `validate:"required" json:"correlatedMessageSmsId"`
+	}
 }
 
+// {
+// 		"callbackMtRequest": {
+//      	"status": "03",
+//         	"statusMessage": "Delivered",
+//         	"statusDetail": "120",
+//         	"statusDetailMessage": "Message received by mobile",
+//         	"id": "hs765939216",
+//         	"received": "2014-08-26T12:55:48.593-03:00",
+//         	"mobileOperatorName": "Claro"
+// 		}
+// }
 type statusRequest struct {
-	ID     string `validate:"required" name:"id"`
-	Status int32  `validate:"required" name:"status"`
+	CallbackMtRequest struct {
+		StatusCode string `validate:"required" json:"status"`
+		ID         string `validate:"required" json:"id"`
+	}
 }
 
-var statusMapping = map[int32]courier.MsgStatusValue{
-	120: courier.MsgDelivered,
-	111: courier.MsgSent,
+// {
+//     "sendSmsRequest": {
+//         "from": "Sender",
+//         "to": "555199999999",
+//         "schedule": "2014-08-22T14:55:00",
+//         "msg": "Test message.",
+//         "callbackOption": "NONE",
+//         "id": "002",
+//         "aggregateId": "1111"
+//     }
+// }
+type zvOutgoingMsg struct {
+	SendSmsRequest zvSendSmsRequest
+}
+
+type zvSendSmsRequest struct {
+	From           string `validate:"required" json:"from"`
+	To             string `validate:"required" json:"to"`
+	Schedule       string `validate:"required" json:"schedule"`
+	Msg            string `validate:"required" json:"msg"`
+	CallbackOption string `validate:"required" json:"callbackOption"`
+	ID             string `validate:"required" json:"id"`
+	AggregateID    string `validate:"required" json:"aggregateId"`
+}
+
+var statusMapping = map[string]courier.MsgStatusValue{
+	"00": courier.MsgSent,
+	"01": courier.MsgSent,
+	"02": courier.MsgSent,
+	"03": courier.MsgDelivered,
+	"04": courier.MsgErrored,
+	"05": courier.MsgErrored,
+	"06": courier.MsgErrored,
+	"07": courier.MsgErrored,
+	"08": courier.MsgErrored,
+	"09": courier.MsgErrored,
+	"10": courier.MsgErrored,
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -61,23 +122,23 @@ func (h *handler) Initialize(s courier.Server) error {
 func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
 	// get our params
 	zvMsg := &messageRequest{}
-	err := handlers.DecodeAndValidateForm(zvMsg, r)
+	err := handlers.DecodeAndValidateJSON(zvMsg, r)
 	if err != nil {
 		return nil, err
 	}
 
 	// create our date from the timestamp
-	// 03/05/2017 06:04:45
-	date, err := time.Parse("02/01/2006 15:04:05", zvMsg.Date)
+	// 2017-05-03T06:04:45.345-03:00
+	date, err := time.Parse("2006-01-02T15:04:05.000-07:00", zvMsg.CallbackMoRequest.Date)
 	if err != nil {
-		return nil, fmt.Errorf("invalid date format: %s", zvMsg.Date)
+		return nil, fmt.Errorf("invalid date format: %s", zvMsg.CallbackMoRequest.Date)
 	}
 
 	// create our URN
-	urn := courier.NewTelURNForChannel(zvMsg.From, channel)
+	urn := courier.NewTelURNForChannel(zvMsg.CallbackMoRequest.From, channel)
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, zvMsg.Text).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, zvMsg.CallbackMoRequest.Text).WithExternalID(zvMsg.CallbackMoRequest.ExternalID).WithReceivedOn(date.UTC())
 
 	// and finally queue our message
 	err = h.Backend().WriteMsg(msg)
@@ -92,18 +153,18 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
 	// get our params
 	zvStatus := &statusRequest{}
-	err := handlers.DecodeAndValidateForm(zvStatus, r)
+	err := handlers.DecodeAndValidateJSON(zvStatus, r)
 	if err != nil {
 		return nil, err
 	}
 
-	msgStatus, found := statusMapping[zvStatus.Status]
+	msgStatus, found := statusMapping[zvStatus.CallbackMtRequest.StatusCode]
 	if !found {
-		msgStatus = courier.MsgFailed
+		msgStatus = courier.MsgErrored
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, zvStatus.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, zvStatus.CallbackMtRequest.ID, msgStatus)
 	err = h.Backend().WriteMsgStatus(status)
 	if err != nil {
 		return nil, err
@@ -115,30 +176,39 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
-	account := msg.Channel().StringConfigForKey(courier.ConfigAccount, "")
-	if account == "" {
-		return nil, fmt.Errorf("no account set for Zenvia channel")
+	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
+	if username == "" {
+		return nil, fmt.Errorf("no username set for Zenvia channel")
 	}
 
-	code := msg.Channel().StringConfigForKey(courier.ConfigCode, "")
-	if code == "" {
-		return nil, fmt.Errorf("no code set for Zenvia channel")
+	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	if password == "" {
+		return nil, fmt.Errorf("no password set for Zenvia channel")
 	}
+
+	encodedCreds := handlers.EncodeBase64([]string{username, ":", password})
+	authHeader := "Basic " + encodedCreds
+
+	zvMsg := zvOutgoingMsg{
+		SendSmsRequest: zvSendSmsRequest{
+			From:           "Sender",
+			To:             msg.URN().Path(),
+			Schedule:       "",
+			Msg:            courier.GetTextAndAttachments(msg),
+			ID:             msg.ID().String(),
+			CallbackOption: strconv.Itoa(1),
+			AggregateID:    "",
+		},
+	}
+
+	requestBody := new(bytes.Buffer)
+	json.NewEncoder(requestBody).Encode(zvMsg)
 
 	// build our request
-	form := url.Values{
-		"dispatch":        []string{"send"},
-		"account":         []string{account},
-		"code":            []string{code},
-		"to":              []string{msg.URN().Path()},
-		"msg":             []string{courier.GetTextAndAttachments(msg)},
-		"id":              []string{msg.ID().String()},
-		"callbackOptions": []string{strconv.Itoa(1)},
-	}
-
-	req, err := http.NewRequest(http.MethodGet, sendURL, strings.NewReader(form.Encode()))
-	req.Header.Set("Content-Type", "text/html")
-	req.Header.Set("Accept-Charset", "ISO-8859-1")
+	req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", authHeader)
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log
@@ -149,14 +219,10 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	}
 
 	// was this request successful?
-	msgStatus, err := strconv.ParseInt(rr.Response, 10, 64)
-	if err != nil {
-		return status, err
-	}
-
-	if msgStatus != 0 {
-		msgStatusText := strconv.Itoa(123)
-		return status, errors.Errorf("received non-zero response from Zenvia '%s'", msgStatusText)
+	responseMsgStatus, _ := jsonparser.GetString([]byte(rr.Body), "sendSmsResponse", "statusCode")
+	msgStatus, found := statusMapping[responseMsgStatus]
+	if msgStatus == courier.MsgErrored || !found {
+		return status, errors.Errorf("received non-success response from Zenvia '%s'", responseMsgStatus)
 	}
 
 	return status, nil
