@@ -14,12 +14,6 @@ const (
 	// ConfigAuthToken is a constant key for channel configs
 	ConfigAuthToken = "auth_token"
 
-	// ConfigAccount is a constant key for channel configs
-	ConfigAccount = "account"
-
-	// ConfigCode  is a constant key for channel configs
-	ConfigCode = "code"
-
 	// ConfigUsername is a constant key for channel configs
 	ConfigUsername = "username"
 
