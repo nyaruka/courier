@@ -111,7 +111,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Headers: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",
-			"Authorization": "Basic " + EncodeBase64([]string{"zv-username", ":", "zv-password"}),
+			"Authorization": "Basic enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 		},
 		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"Simple Message ☺","callbackOption":"1","id":"null","aggregateId":""}}
 `,
@@ -127,7 +127,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Headers: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",
-			"Authorization": "Basic " + EncodeBase64([]string{"zv-username", ":", "zv-password"}),
+			"Authorization": "Basic enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 		},
 		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"My pic!\nhttps://foo.bar/image.jpg","callbackOption":"1","id":"null","aggregateId":""}}
 `,
@@ -142,7 +142,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Headers: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",
-			"Authorization": "Basic " + EncodeBase64([]string{"zv-username", ":", "zv-password"}),
+			"Authorization": "Basic enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 		},
 		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"No External ID","callbackOption":"1","id":"null","aggregateId":""}}
 `,

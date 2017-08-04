@@ -197,5 +197,5 @@ func EncodeBase64(strList []string) string {
 	for _, l := range strList {
 		strBuffer.WriteString(l)
 	}
-	return strBuffer.String()
+	return base64.StdEncoding.EncodeToString([]byte(strBuffer.String()))
 }
