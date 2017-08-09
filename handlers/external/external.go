@@ -30,7 +30,7 @@ type handler struct {
 	handlers.BaseHandler
 }
 
-// NewHandler returns a new Externla handler
+// NewHandler returns a new External handler
 func NewHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("EX"), "External")}
 }
