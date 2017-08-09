@@ -191,6 +191,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		"password":     []string{password},
 	}
 
+	var status courier.MsgStatus
 	encodedForm := form.Encode()
 	sendURLs := []string{sendURL1, sendURL2, sendURL3}
 
@@ -206,7 +207,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 			failed = true
 		}
 		// record our status and log
-		status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+		status = h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 		status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr))
 		if err != nil {
 			return status, err
@@ -242,6 +243,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 			h.Backend().StopMsgContact(msg)
 			return status, nil
 		}
+
 		if failed == false {
 			status.SetStatus(courier.MsgWired)
 			return status, nil
@@ -249,5 +251,5 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	}
 
-	return nil, errors.Errorf("Received error from Yo! API")
+	return status, errors.Errorf("Received error from Yo! API")
 }
