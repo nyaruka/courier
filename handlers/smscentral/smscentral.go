@@ -35,8 +35,15 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
-	s.AddReceiveMsgRoute(h, "GET", "receive", h.ReceiveMessage)
+	err := s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
+	if err != nil {
+		return err
+	}
+
+	err = s.AddReceiveMsgRoute(h, "GET", "receive", h.ReceiveMessage)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -82,12 +89,12 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
-		return nil, fmt.Errorf("no username set for KN channel")
+		return nil, fmt.Errorf("no username set for SC channel")
 	}
 
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	if password == "" {
-		return nil, fmt.Errorf("no password set for KN channel")
+		return nil, fmt.Errorf("no password set for SC channel")
 	}
 
 	// build our request
@@ -109,7 +116,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		return status, err
 	}
 
-	if rr.StatusCode != 200 && rr.StatusCode != 201 && rr.StatusCode != 202 {
+	if rr.StatusCode/100 != 2 {
 		return status, errors.Errorf("Got non-200 response [%d] from API")
 	}
 

@@ -37,21 +37,46 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
-	s.AddReceiveMsgRoute(h, "GET", "receive", h.ReceiveMessage)
+	err := s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
+	if err != nil {
+		return err
+	}
+
+	err = s.AddReceiveMsgRoute(h, "GET", "receive", h.ReceiveMessage)
+	if err != nil {
+		return err
+	}
 
 	sentHandler := h.buildStatusHandler("sent")
-	s.AddUpdateStatusRoute(h, "GET", "sent", sentHandler)
-	s.AddUpdateStatusRoute(h, "POST", "sent", sentHandler)
+
+	err = s.AddUpdateStatusRoute(h, "GET", "sent", sentHandler)
+	if err != nil {
+		return err
+	}
+	err = s.AddUpdateStatusRoute(h, "POST", "sent", sentHandler)
+	if err != nil {
+		return err
+	}
 
 	deliveredHandler := h.buildStatusHandler("delivered")
-	s.AddUpdateStatusRoute(h, "GET", "delivered", deliveredHandler)
-	s.AddUpdateStatusRoute(h, "POST", "delivered", deliveredHandler)
+	err = s.AddUpdateStatusRoute(h, "GET", "delivered", deliveredHandler)
+	if err != nil {
+		return err
+	}
+	err = s.AddUpdateStatusRoute(h, "POST", "delivered", deliveredHandler)
+	if err != nil {
+		return err
+	}
 
 	failedHandler := h.buildStatusHandler("failed")
-	s.AddUpdateStatusRoute(h, "GET", "failed", failedHandler)
-	s.AddUpdateStatusRoute(h, "POST", "failed", failedHandler)
-
+	err = s.AddUpdateStatusRoute(h, "GET", "failed", failedHandler)
+	if err != nil {
+		return err
+	}
+	err = s.AddUpdateStatusRoute(h, "POST", "failed", failedHandler)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
