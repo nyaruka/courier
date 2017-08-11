@@ -244,7 +244,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 			failed = true
 		}
 
-		if failed == false && rr.StatusCode != 200 && rr.StatusCode != 201 {
+		if !failed && rr.StatusCode != 200 && rr.StatusCode != 201 {
 			failed = true
 		}
 
@@ -253,7 +253,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 			ybsAutocreateStatus = []string{""}
 		}
 
-		if failed == false && ybsAutocreateStatus[0] != "OK" {
+		if !failed && ybsAutocreateStatus[0] != "OK" {
 			failed = true
 		}
 
@@ -263,13 +263,13 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 			ybsAutocreateMessage = []string{""}
 		}
 
-		if failed == true && strings.Contains(ybsAutocreateMessage[0], "BLACKLISTED") {
+		if failed && strings.Contains(ybsAutocreateMessage[0], "BLACKLISTED") {
 			status.SetStatus(courier.MsgFailed)
 			h.Backend().StopMsgContact(msg)
 			return status, nil
 		}
 
-		if failed == false {
+		if !failed {
 			status.SetStatus(courier.MsgWired)
 			return status, nil
 		}
