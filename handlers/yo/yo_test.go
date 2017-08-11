@@ -17,12 +17,6 @@ var (
 	receiveNoParams             = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	receiveNoSender             = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?text=Join"
 	receiveInvalidDate          = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join&time=20170623T123000Z"
-	failedNoParams              = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/"
-	failedValid                 = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/?id=12345"
-	sentValid                   = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/?id=12345"
-	invalidStatus               = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/wired/"
-	deliveredValid              = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?id=12345"
-	deliveredValidPost          = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/"
 )
 
 var testChannels = []courier.Channel{
@@ -30,23 +24,17 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", Status: 200, Response: "Accepted",
+	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive Valid From", URL: receiveValidMessageFrom, Data: "empty", Status: 200, Response: "Accepted",
+	{Label: "Receive Valid From", URL: receiveValidMessageFrom, Data: "", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive Valid Message With Date", URL: receiveValidMessageWithDate, Data: "empty", Status: 200, Response: "Accepted",
+	{Label: "Receive Valid Message With Date", URL: receiveValidMessageWithDate, Data: "", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC))},
-	{Label: "Receive Valid Message With Time", URL: receiveValidMessageWithTime, Data: "empty", Status: 200, Response: "Accepted",
+	{Label: "Receive Valid Message With Time", URL: receiveValidMessageWithTime, Data: "", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC))},
-	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", Status: 400, Response: "field 'text' required"},
-	{Label: "Receive No Sender", URL: receiveNoSender, Data: "empty", Status: 400, Response: "must have one of 'sender' or 'from' set"},
-	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "empty", Status: 400, Response: "invalid date format, must be RFC 3339"},
-	{Label: "Failed No Params", URL: failedNoParams, Status: 400, Response: "field 'id' required"},
-	{Label: "Failed Valid", URL: failedValid, Status: 200, Response: `{"status":"F"}`},
-	{Label: "Invalid Status", URL: invalidStatus, Status: 404, Response: `page not found`},
-	{Label: "Sent Valid", URL: sentValid, Status: 200, Response: `{"status":"S"}`},
-	{Label: "Delivered Valid", URL: deliveredValid, Status: 200, Response: `{"status":"D"}`},
-	{Label: "Delivered Valid Post", URL: deliveredValidPost, Data: "id=12345", Status: 200, Response: `{"status":"D"}`},
+	{Label: "Receive No Params", URL: receiveNoParams, Data: "", Status: 400, Response: "field 'text' required"},
+	{Label: "Receive No Sender", URL: receiveNoSender, Data: "", Status: 400, Response: "must have one of 'sender' or 'from' set"},
+	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "", Status: 400, Response: "invalid date format, must be RFC 3339"},
 }
 
 func TestHandler(t *testing.T) {
