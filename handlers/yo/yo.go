@@ -110,55 +110,6 @@ type yoMessage struct {
 	Time   string `name:"time"`
 }
 
-// buildStatusHandler deals with building a handler that takes what status is received in the URL
-func (h *handler) buildStatusHandler(status string) courier.ChannelUpdateStatusFunc {
-	return func(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
-		return h.StatusMessage(status, channel, w, r)
-	}
-}
-
-// StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(statusString string, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
-	statusForm := &statusForm{}
-	handlers.DecodeAndValidateQueryParams(statusForm, r)
-
-	// if this is a post, also try to parse the form body
-	if r.Method == http.MethodPost {
-		handlers.DecodeAndValidateForm(statusForm, r)
-	}
-
-	// validate whether our required fields are present
-	err := handlers.Validate(statusForm)
-	if err != nil {
-		return nil, err
-	}
-
-	// get our id
-	msgStatus, found := statusMappings[strings.ToLower(statusString)]
-	if !found {
-		return nil, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString)
-	}
-
-	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(statusForm.ID), msgStatus)
-	err = h.Backend().WriteMsgStatus(status)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, status)
-}
-
-type statusForm struct {
-	ID int64 `name:"id" validate:"required"`
-}
-
-var statusMappings = map[string]courier.MsgStatusValue{
-	"failed":    courier.MsgFailed,
-	"sent":      courier.MsgSent,
-	"delivered": courier.MsgDelivered,
-}
-
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
