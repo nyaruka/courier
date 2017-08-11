@@ -40,11 +40,6 @@ func (h *handler) Initialize(s courier.Server) error {
 		return err
 	}
 
-	err = s.AddReceiveMsgRoute(h, "GET", "receive", h.ReceiveMessage)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
