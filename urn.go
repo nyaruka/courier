@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strings"
 
+	null "gopkg.in/guregu/null.v3"
+
 	"github.com/nyaruka/phonenumbers"
 )
 
@@ -29,6 +31,10 @@ type URN string
 func (u URN) Path() string {
 	parts := strings.SplitN(string(u), ":", 2)
 	if len(parts) == 2 {
+		pathParts := strings.SplitN(parts[1], "#", 2)
+		if len(pathParts) == 2 {
+			return pathParts[0]
+		}
 		return parts[1]
 	}
 	return string(u)
@@ -41,6 +47,27 @@ func (u URN) Scheme() string {
 		return parts[0]
 	}
 	return ""
+}
+
+// Display returns the display portion for the URN (if any)
+func (u URN) Display() null.String {
+	parts := strings.SplitN(string(u), ":", 2)
+	if len(parts) == 2 {
+		pathParts := strings.SplitN(parts[1], "#", 2)
+		if len(pathParts) == 2 {
+			return null.NewString(pathParts[1], true)
+		}
+	}
+	return null.NewString("", false)
+}
+
+// Identity returns the URN with any display attributes stripped
+func (u URN) Identity() string {
+	parts := strings.SplitN(string(u), "#", 2)
+	if len(parts) == 2 {
+		return parts[0]
+	}
+	return string(u)
 }
 
 // String returns a string representation of our URN

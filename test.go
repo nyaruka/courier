@@ -205,7 +205,7 @@ func init() {
 type MockChannel struct {
 	uuid        ChannelUUID
 	channelType ChannelType
-	scheme      string
+	schemes     []string
 	address     string
 	country     string
 	config      map[string]interface{}
@@ -217,8 +217,8 @@ func (c *MockChannel) UUID() ChannelUUID { return c.uuid }
 // ChannelType returns the type of this channel
 func (c *MockChannel) ChannelType() ChannelType { return c.channelType }
 
-// Scheme returns the scheme of this channel
-func (c *MockChannel) Scheme() string { return c.scheme }
+// Schemes returns the schemes for this channel
+func (c *MockChannel) Schemes() []string { return c.schemes }
 
 // Address returns the address of this channel
 func (c *MockChannel) Address() string { return c.address }
@@ -257,7 +257,7 @@ func NewMockChannel(uuid string, channelType string, address string, country str
 	channel := &MockChannel{
 		uuid:        cUUID,
 		channelType: ChannelType(channelType),
-		scheme:      TelScheme,
+		schemes:     []string{TelScheme},
 		address:     address,
 		country:     country,
 		config:      config,

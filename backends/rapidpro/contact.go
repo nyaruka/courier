@@ -41,7 +41,7 @@ func insertContact(db *sqlx.DB, contact *DBContact) error {
 const lookupContactFromURNSQL = `
 SELECT c.org_id, c.id, c.uuid, c.modified_on, c.created_on, c.name, u.id as "urn_id"
 FROM contacts_contact AS c, contacts_contacturn AS u 
-WHERE u.urn = $1 AND u.contact_id = c.id AND u.org_id = $2 AND c.is_active = TRUE AND c.is_test = FALSE
+WHERE u.identity = $1 AND u.contact_id = c.id AND u.org_id = $2 AND c.is_active = TRUE AND c.is_test = FALSE
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one

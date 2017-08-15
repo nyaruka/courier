@@ -115,7 +115,7 @@ var ErrChannelWrongType = errors.New("channel type wrong")
 type Channel interface {
 	UUID() ChannelUUID
 	ChannelType() ChannelType
-	Scheme() string
+	Schemes() []string
 	Country() string
 	Address() string
 	ConfigForKey(key string, defaultValue interface{}) interface{}

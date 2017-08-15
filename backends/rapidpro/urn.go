@@ -2,7 +2,6 @@ package rapidpro
 
 import (
 	"database/sql"
-	"strings"
 
 	null "gopkg.in/guregu/null.v3"
 
@@ -20,17 +19,21 @@ var NilContactURNID = ContactURNID{null.NewInt(0, false)}
 
 // NewDBContactURN returns a new ContactURN object for the passed in org, contact and string urn, this is not saved to the DB yet
 func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID, urn courier.URN) *DBContactURN {
-	offset := strings.Index(string(urn), ":")
-	scheme := string(urn)[:offset]
-	path := string(urn)[offset+1:]
-
-	return &DBContactURN{OrgID: org, ChannelID: channelID, ContactID: contactID, URN: urn, Scheme: scheme, Path: path}
+	return &DBContactURN{
+		OrgID:     org,
+		ChannelID: channelID,
+		ContactID: contactID,
+		Identity:  urn.Identity(),
+		Scheme:    urn.Scheme(),
+		Path:      urn.Path(),
+		Display:   urn.Display(),
+	}
 }
 
 const selectOrgURN = `
-SELECT org_id, id, urn, scheme, path, priority, channel_id, contact_id 
+SELECT org_id, id, identity, scheme, path, display, priority, channel_id, contact_id 
 FROM contacts_contacturn
-WHERE org_id = $1 AND urn = $2
+WHERE org_id = $1 AND identity = $2
 ORDER BY priority desc LIMIT 1
 `
 
@@ -62,8 +65,8 @@ func contactURNForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, conta
 }
 
 const insertURN = `
-INSERT INTO contacts_contacturn(org_id, urn, path, scheme, priority, channel_id, contact_id)
-VALUES(:org_id, :urn, :path, :scheme, :priority, :channel_id, :contact_id)
+INSERT INTO contacts_contacturn(org_id, identity, path, scheme, display, priority, channel_id, contact_id)
+VALUES(:org_id, :identity, :path, :scheme, :display, :priority, :channel_id, :contact_id)
 RETURNING id
 `
 
@@ -102,9 +105,10 @@ func updateContactURN(db *sqlx.DB, urn *DBContactURN) error {
 type DBContactURN struct {
 	OrgID     OrgID             `db:"org_id"`
 	ID        ContactURNID      `db:"id"`
-	URN       courier.URN       `db:"urn"`
+	Identity  string            `db:"identity"`
 	Scheme    string            `db:"scheme"`
 	Path      string            `db:"path"`
+	Display   null.String       `db:"display"`
 	Priority  int               `db:"priority"`
 	ChannelID courier.ChannelID `db:"channel_id"`
 	ContactID ContactID         `db:"contact_id"`
