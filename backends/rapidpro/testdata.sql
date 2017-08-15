@@ -14,6 +14,9 @@ INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modifi
 INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "config")
                       VALUES('12', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c97a', 'DM', '4500', 1, 'US', NULL);                      
 
+INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "config")
+                      VALUES('13', '{"telegram"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c98a', 'TG', 'courierbot', 1, NULL, NULL);                                            
+
 /* Contact with id 100 */
 DELETE FROM contacts_contact;
 INSERT INTO contacts_contact("id", "is_active", "created_on", "modified_on", "uuid", "is_blocked", "is_test", "is_stopped", "language", "created_by_id", "modified_by_id", "org_id")

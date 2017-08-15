@@ -186,6 +186,16 @@ func (c *DBChannel) StringConfigForKey(key string, defaultValue string) string {
 	return str
 }
 
+// supportsScheme returns whether the passed in channel supports the passed in scheme
+func (c *DBChannel) supportsScheme(scheme string) bool {
+	for _, s := range c.Schemes_ {
+		if s == scheme {
+			return true
+		}
+	}
+	return false
+}
+
 // StringSlice is our custom implementation of a string array to support Postgres coding / encoding of schemes
 type StringSlice []string
 

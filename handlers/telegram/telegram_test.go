@@ -431,7 +431,7 @@ var contactMsg = `
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: helloMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("Hello World"), URN: Sp("telegram:3527065"), External: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+		Name: Sp("Nic Pottier"), Text: Sp("Hello World"), URN: Sp("telegram:3527065#nicpottier"), External: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 
 	{Label: "Receive No Params", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, Status: 200, Response: "Ignoring"},
 
@@ -441,25 +441,25 @@ var testCases = []ChannelHandleTestCase{
 		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/sticker.jpg"), URN: Sp("telegram:3527065"), External: Sp("44"), Date: Tp(time.Date(2016, 1, 30, 2, 07, 48, 0, time.UTC))},
 
 	{Label: "Receive Photo", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: photoMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("Photo Caption"), Attachment: Sp("/file/bota123/photo.jpg"), URN: Sp("telegram:3527065"), External: Sp("85"), Date: Tp(time.Date(2017, 5, 3, 20, 28, 38, 0, time.UTC))},
+		Name: Sp("Nic Pottier"), Text: Sp("Photo Caption"), Attachment: Sp("/file/bota123/photo.jpg"), URN: Sp("telegram:3527065#nicpottier"), External: Sp("85"), Date: Tp(time.Date(2017, 5, 3, 20, 28, 38, 0, time.UTC))},
 
 	{Label: "Receive Video", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: videoMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/video.jpg"), URN: Sp("telegram:3527065"), External: Sp("86"), Date: Tp(time.Date(2017, 5, 3, 20, 29, 24, 0, time.UTC))},
+		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/video.jpg"), URN: Sp("telegram:3527065#nicpottier"), External: Sp("86"), Date: Tp(time.Date(2017, 5, 3, 20, 29, 24, 0, time.UTC))},
 
 	{Label: "Receive Voice", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: voiceMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/voice.mp4"), URN: Sp("telegram:3527065"), External: Sp("91"), Date: Tp(time.Date(2017, 5, 3, 20, 50, 46, 0, time.UTC))},
+		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/voice.mp4"), URN: Sp("telegram:3527065#nicpottier"), External: Sp("91"), Date: Tp(time.Date(2017, 5, 3, 20, 50, 46, 0, time.UTC))},
 
 	{Label: "Receive Document", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: documentMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/document.xls"), URN: Sp("telegram:3527065"), External: Sp("92"), Date: Tp(time.Date(2017, 5, 3, 20, 58, 20, 0, time.UTC))},
+		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/document.xls"), URN: Sp("telegram:3527065#nicpottier"), External: Sp("92"), Date: Tp(time.Date(2017, 5, 3, 20, 58, 20, 0, time.UTC))},
 
 	{Label: "Receive Location", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: locationMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("-2.890287,-79.004333"), Attachment: Sp("geo:-2.890287,-79.004333"), URN: Sp("telegram:3527065"), External: Sp("94"), Date: Tp(time.Date(2017, 5, 3, 21, 00, 44, 0, time.UTC))},
+		Name: Sp("Nic Pottier"), Text: Sp("-2.890287,-79.004333"), Attachment: Sp("geo:-2.890287,-79.004333"), URN: Sp("telegram:3527065#nicpottier"), External: Sp("94"), Date: Tp(time.Date(2017, 5, 3, 21, 00, 44, 0, time.UTC))},
 
 	{Label: "Receive Venue", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: venueMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("Cuenca, Provincia del Azuay"), Attachment: Sp("geo:-2.898944,-79.006835"), URN: Sp("telegram:3527065"), External: Sp("95"), Date: Tp(time.Date(2017, 5, 3, 21, 05, 20, 0, time.UTC))},
+		Name: Sp("Nic Pottier"), Text: Sp("Cuenca, Provincia del Azuay"), Attachment: Sp("geo:-2.898944,-79.006835"), URN: Sp("telegram:3527065#nicpottier"), External: Sp("95"), Date: Tp(time.Date(2017, 5, 3, 21, 05, 20, 0, time.UTC))},
 
 	{Label: "Receive Contact", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: contactMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("Adolf Taxi (0788531373)"), URN: Sp("telegram:3527065"), External: Sp("96"), Date: Tp(time.Date(2017, 5, 3, 21, 9, 15, 0, time.UTC))},
+		Name: Sp("Nic Pottier"), Text: Sp("Adolf Taxi (0788531373)"), URN: Sp("telegram:3527065#nicpottier"), External: Sp("96"), Date: Tp(time.Date(2017, 5, 3, 21, 9, 15, 0, time.UTC))},
 
 	{Label: "Receive Empty", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, Status: 200, Response: "Ignoring"},
 

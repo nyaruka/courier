@@ -86,6 +86,7 @@ func (ts *MsgTestSuite) getChannel(cType string, cUUID string) *DBChannel {
 
 	channel, err := ts.b.GetChannel(courier.ChannelType(cType), channelUUID)
 	ts.NoError(err, "error building channel uuid")
+	ts.NotNil(channel)
 
 	return channel.(*DBChannel)
 }
@@ -195,6 +196,53 @@ func (ts *MsgTestSuite) TestContactURN() {
 
 	// and channel should be set to twitter
 	ts.Equal(twURN.ChannelID, twChannel.ID())
+
+	// test that we don't use display when looking up URNs
+	tgChannel := ts.getChannel("TG", "dbc126ed-66bc-4e28-b67b-81dc3327c98a")
+	tgURN := courier.NewTelegramURN(12345, "")
+
+	tgContact, err := contactForURN(ts.b.db, tgChannel.OrgID_, tgChannel.ID_, tgURN, "")
+	ts.NoError(err)
+
+	tgURNDisplay := courier.NewTelegramURN(12345, "Jane")
+	displayContact, err := contactForURN(ts.b.db, tgChannel.OrgID_, tgChannel.ID_, tgURNDisplay, "")
+
+	ts.Equal(tgContact.URNID, displayContact.URNID)
+	ts.Equal(tgContact.ID, displayContact.ID)
+
+	tgContactURN, err := contactURNForURN(ts.b.db, tgChannel.OrgID_, tgChannel.ID_, tgContact.ID, tgURNDisplay)
+	ts.Equal(tgContact.URNID, tgContactURN.ID)
+	ts.Equal("jane", tgContactURN.Display.String)
+}
+
+func (ts *MsgTestSuite) TestContactURNPriority() {
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
+	knURN := courier.NewTelURNForCountry("12065551111", "US")
+	twURN := courier.NewTelURNForCountry("12065552222", "US")
+
+	knContact, err := contactForURN(ts.b.db, knChannel.OrgID_, knChannel.ID_, knURN, "")
+	ts.NoError(err)
+
+	_, err = contactURNForURN(ts.b.db, knChannel.OrgID_, twChannel.ID_, knContact.ID, twURN)
+	ts.NoError(err)
+
+	// ok, now looking up our contact should reset our URNs and their affinity..
+	// TwitterURN should be first all all URNs should now use Twitter channel
+	twContact, err := contactForURN(ts.b.db, twChannel.OrgID_, twChannel.ID_, twURN, "")
+	ts.NoError(err)
+
+	ts.Equal(twContact.ID, knContact.ID)
+
+	// get all the URNs for this contact
+	urns, err := contactURNsForContact(ts.b.db, twContact.ID)
+	ts.NoError(err)
+
+	ts.Equal("tel:+12065552222", urns[0].Identity)
+	ts.Equal(twChannel.ID(), urns[0].ChannelID)
+
+	ts.Equal("tel:+12065551111", urns[1].Identity)
+	ts.Equal(twChannel.ID(), urns[1].ChannelID)
 }
 
 func (ts *MsgTestSuite) TestStatus() {

@@ -96,7 +96,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// create our URN
-	urn, err := courier.NewURNFromParts(channel.Schemes()[0], sender)
+	urn, err := courier.NewURNFromParts(channel.Schemes()[0], sender, "")
 	if err != nil {
 		return nil, err
 	}
