@@ -85,10 +85,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// create our URN
-	urn, err := courier.NewURNFromParts(channel.Scheme(), sender)
-	if err != nil {
-		return nil, err
-	}
+	urn := courier.NewTelURNForChannel(sender, channel)
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, yoMessage.Text).WithReceivedOn(date)
