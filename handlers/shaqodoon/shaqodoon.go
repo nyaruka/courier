@@ -92,7 +92,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// create our URN
-	urn, err := courier.NewTelURNForChannel(sender, channel)
+	urn := courier.NewTelURNForChannel(sender, channel)
 	if err != nil {
 		return nil, err
 	}
