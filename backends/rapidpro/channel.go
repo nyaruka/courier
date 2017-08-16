@@ -2,6 +2,11 @@ package rapidpro
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"encoding/csv"
+	"errors"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -45,7 +50,7 @@ func getChannel(b *backend, channelType courier.ChannelType, channelUUID courier
 }
 
 const lookupChannelFromUUIDSQL = `
-SELECT org_id, id, uuid, channel_type, scheme, address, country, config 
+SELECT org_id, id, uuid, channel_type, schemes, address, country, config 
 FROM channels_channel 
 WHERE uuid = $1 AND is_active = true AND org_id IS NOT NULL`
 
@@ -127,7 +132,7 @@ type DBChannel struct {
 	OrgID_       OrgID               `db:"org_id"`
 	ID_          courier.ChannelID   `db:"id"`
 	ChannelType_ courier.ChannelType `db:"channel_type"`
-	Scheme_      string              `db:"scheme"`
+	Schemes_     StringSlice         `db:"schemes"`
 	UUID_        courier.ChannelUUID `db:"uuid"`
 	Address_     sql.NullString      `db:"address"`
 	Country_     sql.NullString      `db:"country"`
@@ -142,8 +147,8 @@ func (c *DBChannel) OrgID() OrgID { return c.OrgID_ }
 // ChannelType returns the type of this channel
 func (c *DBChannel) ChannelType() courier.ChannelType { return c.ChannelType_ }
 
-// Scheme returns the scheme of the URNs this channel deals with
-func (c *DBChannel) Scheme() string { return c.Scheme_ }
+// Schemes returns the schemes this channels supports
+func (c *DBChannel) Schemes() []string { return []string(c.Schemes_) }
 
 // ID returns the id of this channel
 func (c *DBChannel) ID() courier.ChannelID { return c.ID_ }
@@ -179,4 +184,57 @@ func (c *DBChannel) StringConfigForKey(key string, defaultValue string) string {
 		return defaultValue
 	}
 	return str
+}
+
+// supportsScheme returns whether the passed in channel supports the passed in scheme
+func (c *DBChannel) supportsScheme(scheme string) bool {
+	for _, s := range c.Schemes_ {
+		if s == scheme {
+			return true
+		}
+	}
+	return false
+}
+
+// StringSlice is our custom implementation of a string array to support Postgres coding / encoding of schemes
+type StringSlice []string
+
+var quoteEscapeRegex = regexp.MustCompile(`([^\\]([\\]{2})*)\\"`)
+
+// Scan convert a SQL value into our string array
+// http://www.postgresql.org/docs/9.1/static/arrays.html#ARRAYS-IO
+func (s *StringSlice) Scan(src interface{}) error {
+	asBytes, ok := src.([]byte)
+	if !ok {
+		return error(errors.New("Scan source was not []bytes"))
+	}
+	str := string(asBytes)
+
+	// change quote escapes for csv parser
+	str = quoteEscapeRegex.ReplaceAllString(str, `$1""`)
+	str = strings.Replace(str, `\\`, `\`, -1)
+	// remove braces
+	str = str[1 : len(str)-1]
+	csvReader := csv.NewReader(strings.NewReader(str))
+
+	slice, err := csvReader.Read()
+
+	if err != nil {
+		return err
+	}
+
+	(*s) = StringSlice(slice)
+
+	return nil
+}
+
+// Value returns the SQL encoded version of our StringSlice
+func (s StringSlice) Value() (driver.Value, error) {
+	// string escapes.
+	// \ => \\\
+	// " => \"
+	for i, elem := range s {
+		s[i] = `"` + strings.Replace(strings.Replace(elem, `\`, `\\\`, -1), `"`, `\"`, -1) + `"`
+	}
+	return "{" + strings.Join(s, ",") + "}", nil
 }

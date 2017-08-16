@@ -5,14 +5,17 @@ INSERT INTO orgs_org("id", "name", "language")
 
 /* Channel with id 10, 11, 12 */
 DELETE FROM channels_channel;
-INSERT INTO channels_channel("id", "scheme", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "config")
-                      VALUES('10', 'tel', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c95d', 'KN', '2500', 1, 'RW', '{ "encoding": "smart", "use_national": true }');
+INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "config")
+                      VALUES('10', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c95d', 'KN', '2500', 1, 'RW', '{ "encoding": "smart", "use_national": true }');
 
-INSERT INTO channels_channel("id", "scheme", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "config")
-                      VALUES('11', 'tel', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c96a', 'TW', '4500', 1, 'US', NULL);
+INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "config")
+                      VALUES('11', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c96a', 'TW', '4500', 1, 'US', NULL);
 
-INSERT INTO channels_channel("id", "scheme", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "config")
-                      VALUES('12', 'tel', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c97a', 'DM', '4500', 1, 'US', NULL);                      
+INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "config")
+                      VALUES('12', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c97a', 'DM', '4500', 1, 'US', NULL);                      
+
+INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "config")
+                      VALUES('13', '{"telegram"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c98a', 'TG', 'courierbot', 1, NULL, NULL);                                            
 
 /* Contact with id 100 */
 DELETE FROM contacts_contact;
@@ -21,7 +24,7 @@ INSERT INTO contacts_contact("id", "is_active", "created_on", "modified_on", "uu
 
 /** ContactURN with id 1000 */
 DELETE FROM contacts_contacturn;
-INSERT INTO contacts_contacturn("id", "urn", "path", "scheme", "priority", "channel_id", "contact_id", "org_id")
+INSERT INTO contacts_contacturn("id", "identity", "path", "scheme", "priority", "channel_id", "contact_id", "org_id")
                          VALUES(1000, 'tel:+12067799192', '+12067799192', 'tel', 50, 10, 100, 1);
 
 /** Msg with id 10,000 */
