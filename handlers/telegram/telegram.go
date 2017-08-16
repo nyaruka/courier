@@ -51,7 +51,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	date := time.Unix(te.Message.Date, 0).UTC()
 
 	// create our URN
-	urn := courier.NewTelegramURN(te.Message.From.ContactID)
+	urn := courier.NewTelegramURN(te.Message.From.ContactID, te.Message.From.Username)
 
 	// build our name from first and last
 	name := handlers.NameFromFirstLastUsername(te.Message.From.FirstName, te.Message.From.LastName, te.Message.From.Username)
