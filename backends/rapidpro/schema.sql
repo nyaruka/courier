@@ -13,8 +13,8 @@ CREATE TABLE channels_channel (
     modified_on timestamp with time zone NOT NULL,
     uuid character varying(36) NOT NULL,
     channel_type character varying(3) NOT NULL,
-    scheme character varying(16) NOT NULL,
     name character varying(64),
+    schemes character varying(16)[] NOT NULL,
     address character varying(64),
     country character varying(2),
     config text,
@@ -41,9 +41,10 @@ CREATE TABLE contacts_contact (
 DROP TABLE IF EXISTS contacts_contacturn CASCADE;
 CREATE TABLE contacts_contacturn (
     id serial primary key,
-    urn character varying(255) NOT NULL,
+    identity character varying(255) NOT NULL,
     path character varying(255) NOT NULL,
     scheme character varying(128) NOT NULL,
+    display character varying(128) NULL,
     priority integer NOT NULL,
     channel_id integer references channels_channel(id) on delete cascade,
     contact_id integer references contacts_contact(id) on delete cascade,

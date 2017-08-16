@@ -41,21 +41,22 @@ func insertContact(db *sqlx.DB, contact *DBContact) error {
 const lookupContactFromURNSQL = `
 SELECT c.org_id, c.id, c.uuid, c.modified_on, c.created_on, c.name, u.id as "urn_id"
 FROM contacts_contact AS c, contacts_contacturn AS u 
-WHERE u.urn = $1 AND u.contact_id = c.id AND u.org_id = $2 AND c.is_active = TRUE AND c.is_test = FALSE
+WHERE u.identity = $1 AND u.contact_id = c.id AND u.org_id = $2 AND c.is_active = TRUE AND c.is_test = FALSE
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
 func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn courier.URN, name string) (*DBContact, error) {
 	// try to look up our contact by URN
-	contact := DBContact{}
-	err := db.Get(&contact, lookupContactFromURNSQL, urn, org)
+	contact := &DBContact{}
+	err := db.Get(contact, lookupContactFromURNSQL, urn.Identity(), org)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 
 	// we found it, return it
 	if err != sql.ErrNoRows {
-		return &contact, nil
+		err := setDefaultURN(db, channelID, contact, urn)
+		return contact, err
 	}
 
 	// didn't find it, we need to create it instead
@@ -70,7 +71,7 @@ func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn cour
 	contact.ModifiedBy = 1
 
 	// Insert it
-	err = insertContact(db, &contact)
+	err = insertContact(db, contact)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +86,7 @@ func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn cour
 	contact.URNID = contactURN.ID
 
 	// and return it
-	return &contact, err
+	return contact, err
 }
 
 // DBContact is our struct for a contact in the database

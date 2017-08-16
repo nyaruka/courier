@@ -35,13 +35,15 @@ func TestTelURNs(t *testing.T) {
 func TestTelegramURNs(t *testing.T) {
 	testCases := []struct {
 		identifier int64
+		display    string
 		expected   string
 	}{
-		{12345, "telegram:12345"},
+		{12345, "", "telegram:12345"},
+		{12345, "Sarah", "telegram:12345#sarah"},
 	}
 
 	for _, tc := range testCases {
-		urn := NewTelegramURN(tc.identifier)
+		urn := NewTelegramURN(tc.identifier, tc.display)
 		if urn != URN(tc.expected) {
 			t.Errorf("Failed telegram URN, got '%s', expected '%s' for '%d'", urn, tc.expected, tc.identifier)
 		}
@@ -52,18 +54,20 @@ func TestFromParts(t *testing.T) {
 	testCases := []struct {
 		scheme   string
 		path     string
+		display  string
 		expected string
+		identity string
 		err      bool
 	}{
-		{"TEL", "+250788383383", "tel:+250788383383", false},
-		{"telephone", "+250788383383", "", true},
-		{"twitter", "hello", "twitter:hello", false},
-		{"facebook", "hello", "facebook:hello", false},
-		{"telegram", "12345", "telegram:12345", false},
+		{"TEL", "+250788383383", "", "tel:+250788383383", "tel:+250788383383", false},
+		{"telephone", "+250788383383", "", "", "", true},
+		{"twitter", "hello", "", "twitter:hello", "twitter:hello", false},
+		{"facebook", "hello", "", "facebook:hello", "facebook:hello", false},
+		{"telegram", "12345", "Jane", "telegram:12345#jane", "telegram:12345", false},
 	}
 
 	for _, tc := range testCases {
-		urn, err := NewURNFromParts(tc.scheme, tc.path)
+		urn, err := NewURNFromParts(tc.scheme, tc.path, tc.display)
 		if err != nil && !tc.err {
 			t.Errorf("Unexpected error creating urn: %s:%s: %s", tc.scheme, tc.path, err)
 		}
@@ -73,6 +77,10 @@ func TestFromParts(t *testing.T) {
 
 		if urn != URN(tc.expected) {
 			t.Errorf("Failed creating urn, got '%s', expected '%s' for '%s:%s'", urn, tc.expected, tc.path, tc.scheme)
+		}
+
+		if urn.Identity() != tc.identity {
+			t.Errorf("Failed creating urn, got identity '%s', expected identity '%s' for '%s:%s'", urn, tc.expected, tc.path, tc.scheme)
 		}
 	}
 }
