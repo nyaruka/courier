@@ -153,7 +153,7 @@ func (w *Sender) Send() {
 			return
 		}
 
-		msgLog := log.WithField("msgID", msg.ID().String()).WithField("text", msg.Text()).WithField("urn", msg.URN().String())
+		msgLog := log.WithField("msgID", msg.ID().String()).WithField("text", msg.Text()).WithField("urn", msg.URN().Identity())
 		start := time.Now()
 
 		// was this msg already sent? (from a double queue?)
