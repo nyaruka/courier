@@ -82,6 +82,9 @@ func NewServerWithLogger(config *config.Courier, backend Backend, logger *logrus
 // if it encounters any unrecoverable (or ignorable) error, though its bias is to move forward despite
 // connection errors
 func (s *server) Start() error {
+	// set our user agent, needs to happen before we do anything so we don't change have threading issues
+	utils.HTTPUserAgent = fmt.Sprintf("Courier/%s", s.config.Version)
+
 	// start our backend
 	err := s.backend.Start()
 	if err != nil {
