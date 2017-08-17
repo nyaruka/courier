@@ -6,11 +6,11 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/pressly/chi/middleware"
+	"github.com/go-chi/chi/middleware"
 	"github.com/sirupsen/logrus"
 )
 
-// RequestLogger is a middleware for the github.com/Sirupsen/logrus to log requests.
+// RequestLogger is a middleware for the github.com/sirupsen/logrus to log requests.
 // It is equipt to handle recovery in case of panics and record the stack trace
 // with a panic log-level.
 func RequestLogger(logger *logrus.Logger) func(next http.Handler) http.Handler {

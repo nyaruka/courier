@@ -12,10 +12,10 @@ import (
 
 	"sync"
 
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/utils"
-	"github.com/pressly/chi"
-	"github.com/pressly/chi/middleware"
 	"github.com/pressly/lg"
 	"github.com/sirupsen/logrus"
 )
@@ -338,14 +338,8 @@ func (s *server) addRoute(handler ChannelHandler, method string, action string, 
 	method = strings.ToLower(method)
 	channelType := strings.ToLower(string(handler.ChannelType()))
 
-	path := fmt.Sprintf("/%s/:uuid/%s/", channelType, action)
-	if method == "get" {
-		s.chanRouter.Get(path, handlerFunc)
-	} else if method == "post" {
-		s.chanRouter.Post(path, handlerFunc)
-	} else {
-		return fmt.Errorf("unsupported method: %s", method)
-	}
+	path := fmt.Sprintf("/%s/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/%s/", channelType, action)
+	s.chanRouter.Method(method, path, handlerFunc)
 	s.routes = append(s.routes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
 	return nil
 }
