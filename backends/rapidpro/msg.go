@@ -15,6 +15,7 @@ import (
 	"mime"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
@@ -116,9 +117,9 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn courier.URN, te
 }
 
 const insertMsgSQL = `
-INSERT INTO msgs_msg(org_id, direction, has_template_error, text, msg_count, error_count, priority, status, 
+INSERT INTO msgs_msg(org_id, direction, has_template_error, text, attachments, msg_count, error_count, priority, status, 
                      visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on)
-              VALUES(:org_id, :direction, FALSE, :text, :msg_count, :error_count, :priority, :status, 
+              VALUES(:org_id, :direction, FALSE, :text, :attachments, :msg_count, :error_count, :priority, :status, 
                      :visibility, :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :next_attempt, :queued_on, :sent_on)
 RETURNING id
 `
@@ -153,7 +154,7 @@ func writeMsgToDB(b *backend, m *DBMsg) error {
 }
 
 const selectMsgSQL = `
-SELECT org_id, direction, text, msg_count, error_count, priority, status, 
+SELECT org_id, direction, text, attachments, msg_count, error_count, priority, status, 
        visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on
 FROM msgs_msg
 WHERE id = $1
@@ -335,7 +336,7 @@ type DBMsg struct {
 	Priority_    MsgPriority            `json:"priority"     db:"priority"`
 	URN_         courier.URN            `json:"urn"`
 	Text_        string                 `json:"text"         db:"text"`
-	Attachments_ []string               `json:"attachments"`
+	Attachments_ pq.StringArray         `json:"attachments"  db:"attachments"`
 	ExternalID_  string                 `json:"external_id"  db:"external_id"`
 
 	ChannelID_    courier.ChannelID `json:"channel_id"      db:"channel_id"`
@@ -363,7 +364,7 @@ func (m *DBMsg) Channel() courier.Channel { return m.Channel_ }
 func (m *DBMsg) ID() courier.MsgID        { return m.ID_ }
 func (m *DBMsg) UUID() courier.MsgUUID    { return m.UUID_ }
 func (m *DBMsg) Text() string             { return m.Text_ }
-func (m *DBMsg) Attachments() []string    { return m.Attachments_ }
+func (m *DBMsg) Attachments() []string    { return []string(m.Attachments_) }
 func (m *DBMsg) ExternalID() string       { return m.ExternalID_ }
 func (m *DBMsg) URN() courier.URN         { return m.URN_ }
 func (m *DBMsg) ContactName() string      { return m.ContactName_ }

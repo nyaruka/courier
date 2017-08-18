@@ -70,7 +70,7 @@ CREATE TABLE msgs_msg (
     error_count integer NOT NULL,
     next_attempt timestamp with time zone NOT NULL,
     external_id character varying(255),
-    attachments character varying(255),
+    attachments character varying(255)[],
     channel_id integer references channels_channel(id) on delete cascade,
     contact_id integer NOT NULL references contacts_contact(id) on delete cascade,
     contact_urn_id integer references contacts_contacturn(id) on delete cascade,

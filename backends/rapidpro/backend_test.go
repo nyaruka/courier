@@ -95,7 +95,7 @@ func (ts *MsgTestSuite) TestMsgUnmarshal() {
 	msgJSON := `{
 		"status": "P", 
 		"direction": "O", 
-		"attachments": null, 
+		"attachments": ["https://foo.bar/image.jpg"], 
 		"queued_on": null, 
 		"text": "Test message 21", 
 		"contact_id": 30, 
@@ -121,6 +121,7 @@ func (ts *MsgTestSuite) TestMsgUnmarshal() {
 	ts.NoError(err)
 	ts.Equal(msg.ChannelUUID_.String(), "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba")
 	ts.Equal(msg.ChannelID_, courier.ChannelID(11))
+	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	ts.Equal(msg.ExternalID_, "")
 }
 
@@ -442,6 +443,12 @@ func (ts *MsgTestSuite) TestWriteAttachment() {
 	ts.NoError(err)
 	ts.True(strings.HasPrefix(msg.Attachments()[0], "image/png:"))
 	ts.True(strings.HasSuffix(msg.Attachments()[0], ".png"))
+
+	// load it back from the id
+	m, err := readMsgFromDB(ts.b, msg.ID())
+	ts.NoError(err)
+	ts.True(strings.HasPrefix(m.Attachments()[0], "image/png:"))
+	ts.True(strings.HasSuffix(m.Attachments()[0], ".png"))
 }
 
 func (ts *MsgTestSuite) TestWriteMsg() {
@@ -480,7 +487,7 @@ func (ts *MsgTestSuite) TestWriteMsg() {
 	ts.Equal(DefaultPriority, m.Priority_)
 	ts.Equal("ext123", m.ExternalID_)
 	ts.Equal("test123", m.Text_)
-	ts.Equal([]string(nil), m.Attachments_)
+	ts.Equal(0, len(m.Attachments()))
 	ts.Equal(1, m.MessageCount_)
 	ts.Equal(0, m.ErrorCount_)
 	ts.Equal(now, m.SentOn_.In(time.UTC))
