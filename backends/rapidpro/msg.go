@@ -230,7 +230,7 @@ func downloadMediaToS3(b *backend, msgUUID courier.MsgUUID, mediaURL string) (st
 	if extension != "" {
 		filename = fmt.Sprintf("%s.%s", msgUUID, extension)
 	}
-	path := filepath.Join(b.config.S3MediaPrefix, filename[:4], filename)
+	path := filepath.Join(b.config.S3MediaPrefix, filename[:4], filename[4:8], filename)
 	if !strings.HasPrefix(path, "/") {
 		path = fmt.Sprintf("/%s", path)
 	}

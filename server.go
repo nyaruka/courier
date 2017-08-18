@@ -3,6 +3,8 @@ package courier
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -58,9 +60,13 @@ func NewServer(config *config.Courier, backend Backend) Server {
 // afterwards, which is when configuration options are checked.
 func NewServerWithLogger(config *config.Courier, backend Backend, logger *logrus.Logger) Server {
 	router := chi.NewRouter()
+	router.Use(middleware.DefaultCompress)
 	router.Use(middleware.RequestID)
+	router.Use(middleware.RealIP)
+	router.Use(traceErrors(logger))
 	router.Use(lg.RequestLogger(logger))
 	router.Use(middleware.Recoverer)
+	router.Use(middleware.Timeout(15 * time.Second))
 
 	chanRouter := chi.NewRouter()
 	router.Mount("/c/", chanRouter)
@@ -369,6 +375,26 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	buf.WriteString(strings.Join(s.routes, "\n"))
 	buf.WriteString("</pre></body>")
 	w.Write(buf.Bytes())
+}
+
+func traceErrors(logger *logrus.Logger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			body := bytes.Buffer{}
+			r.Body = ioutil.NopCloser(io.TeeReader(r.Body, &body))
+			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+			next.ServeHTTP(ww, r)
+
+			// we are returning an error of some kind, log the incoming request body
+			if ww.Status() != 200 && strings.ToLower(r.Method) == "post" {
+				logger.WithFields(logrus.Fields{
+					"request_body": body.String(),
+					"status":       ww.Status(),
+					"req_id":       r.Context().Value(middleware.RequestIDKey)}).Error()
+			}
+		}
+		return http.HandlerFunc(fn)
+	}
 }
 
 var splash = `
