@@ -120,7 +120,7 @@ func (ts *MsgTestSuite) TestMsgUnmarshal() {
 	err := json.Unmarshal([]byte(msgJSON), &msg)
 	ts.NoError(err)
 	ts.Equal(msg.ChannelUUID_.String(), "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba")
-	ts.Equal(msg.ChannelID_, courier.ChannelID(11))
+	ts.Equal(msg.ChannelID_, courier.NewChannelID(11))
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	ts.Equal(msg.ExternalID_, "")
 }

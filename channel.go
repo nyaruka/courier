@@ -1,11 +1,10 @@
 package courier
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"strconv"
 	"strings"
+
+	null "gopkg.in/guregu/null.v3"
 
 	uuid "github.com/satori/go.uuid"
 )
@@ -60,43 +59,17 @@ func NewChannelUUID(u string) (ChannelUUID, error) {
 }
 
 // ChannelID is our SQL type for a channel's id
-type ChannelID int64
+type ChannelID struct {
+	null.Int
+}
 
 // NewChannelID creates a new ChannelID for the passed in int64
 func NewChannelID(id int64) ChannelID {
-	return ChannelID(id)
-}
-
-// UnmarshalText satisfies text unmarshalling so ids can be decoded from forms
-func (i *ChannelID) UnmarshalText(text []byte) (err error) {
-	id, err := strconv.ParseInt(string(text), 10, 64)
-	*i = ChannelID(id)
-	if err != nil {
-		return err
-	}
-	return err
-}
-
-// UnmarshalJSON satisfies json unmarshalling so ids can be decoded from JSON
-func (i *ChannelID) UnmarshalJSON(bytes []byte) (err error) {
-	var id int64
-	err = json.Unmarshal(bytes, &id)
-	*i = ChannelID(id)
-	return err
-}
-
-// MarshalJSON satisfies json marshalling so ids can be encoded to JSON
-func (i *ChannelID) MarshalJSON() ([]byte, error) {
-	return json.Marshal(int64(*i))
-}
-
-// String satisfies the Stringer interface
-func (i *ChannelID) String() string {
-	return fmt.Sprintf("%d", i)
+	return ChannelID{null.NewInt(id, true)}
 }
 
 // NilChannelID is our nil value for ChannelIDs
-var NilChannelID = ChannelID(0)
+var NilChannelID = ChannelID{null.NewInt(0, false)}
 
 // ErrChannelExpired is returned when our cached channel has outlived it's TTL
 var ErrChannelExpired = errors.New("channel expired")
