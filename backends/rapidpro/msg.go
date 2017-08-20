@@ -20,6 +20,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
+	"github.com/sirupsen/logrus"
 	filetype "gopkg.in/h2non/filetype.v1"
 )
 
@@ -78,6 +79,7 @@ func writeMsg(b *backend, msg courier.Msg) error {
 
 	// fail? spool for later
 	if err != nil {
+		logrus.WithError(err).WithField("msg", m.UUID().String()).Error("error writing to db")
 		return courier.WriteToSpool(b.config.SpoolDir, "msgs", m)
 	}
 
