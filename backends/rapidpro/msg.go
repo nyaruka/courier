@@ -356,9 +356,9 @@ type DBMsg struct {
 	QueuedOn_    time.Time `json:"queued_on"     db:"queued_on"`
 	SentOn_      time.Time `json:"sent_on"       db:"sent_on"`
 
-	Channel_        courier.Channel
-	WorkerToken_    queue.WorkerToken
-	AlreadyWritten_ bool
+	Channel_        courier.Channel   `json:"-"`
+	WorkerToken_    queue.WorkerToken `json:"-"`
+	AlreadyWritten_ bool              `json:"-"`
 }
 
 func (m *DBMsg) Channel() courier.Channel { return m.Channel_ }
