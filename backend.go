@@ -58,6 +58,9 @@ type Backend interface {
 	// StopMsgContact marks the contact for the passed in msg as stopped
 	StopMsgContact(Msg)
 
+	// TriggerNewConversation handle the trigger for new conversation for this contact
+	TriggerNewConversationForUrn(channel Channel, urn URN, name string) error
+
 	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string
 }

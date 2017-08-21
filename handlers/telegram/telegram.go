@@ -62,6 +62,10 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		text = te.Message.Caption
 	}
 
+	if strings.TrimSpace(text) == "/start" {
+		return nil, h.Backend().TriggerNewConversationForUrn(channel, urn, name)
+	}
+
 	// deal with attachments
 	mediaURL := ""
 	if len(te.Message.Photo) > 0 {

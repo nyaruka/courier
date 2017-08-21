@@ -97,6 +97,11 @@ func (mb *MockBackend) GetLastStoppedMsgContact() Msg {
 	return nil
 }
 
+// TriggerNewConversationForUrn trigger a new conversation from the passed contact on the passed channel
+func (mb *MockBackend) TriggerNewConversationForUrn(channel Channel, urn URN, name string) error {
+	return nil
+}
+
 // MarkOutgoingMsgComplete marks the passed msg as having been dealt with
 func (mb *MockBackend) MarkOutgoingMsgComplete(msg Msg, s MsgStatus) {
 	mb.mutex.Lock()
