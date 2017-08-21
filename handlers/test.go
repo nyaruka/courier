@@ -246,8 +246,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 			testHandlerRequest(t, s, testCase.URL, testCase.Data, testCase.Status, &testCase.Response, testCase.PrepRequest)
 
 			if testCase.TriggeredNewConversatiionForUrn {
-				expectedTriggeredNewConversation := map[string]interface{}{"channel": channel, "urn": *testCase.URN}
-				require.Equal(expectedTriggeredNewConversation, mb.GetLastTriggeredNewConversationForURN())
+				require.Equal(*testCase.URN, mb.GetLastTriggeredNewConversationForURN())
 			}
 
 			// pop our message off and test against it

@@ -63,7 +63,11 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	if strings.TrimSpace(text) == "/start" {
-		return nil, h.Backend().TriggerNewConversationForURN(channel, urn, name)
+		err = h.Backend().TriggerNewConversationForURN(channel, urn, name)
+		if err != nil {
+			return nil, err
+		}
+		return nil, courier.WriteIgnored(w, r, "Conversation started")
 	}
 
 	// deal with attachments
