@@ -133,13 +133,13 @@ func (b *backend) StopMsgContact(m courier.Msg) {
 	b.notifier.addStopContactNotification(dbMsg.ContactID_)
 }
 
-func (b *backend) TriggerNewConversationForUrn(c courier.Channel, urn courier.URN, name string) error {
+func (b *backend) TriggerNewConversationForURN(c courier.Channel, urn courier.URN, name string) error {
 	dbChannel := c.(*DBChannel)
 	contact, err := contactForURN(b.db, dbChannel.OrgID(), dbChannel.ID(), urn, name)
 	if err != nil {
 		return err
 	}
-	b.notifier.addTriggerNewConversation(contact.ID, dbChannel.ID())
+	b.notifier.addNewConversationNotification(contact.ID, dbChannel.ID())
 	return err
 }
 

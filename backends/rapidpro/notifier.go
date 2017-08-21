@@ -51,7 +51,7 @@ func (n *notifier) addStopContactNotification(contactID ContactID) {
 	n.notifications <- body
 }
 
-func (n *notifier) addTriggerNewConversation(contactID ContactID, channelID courier.ChannelID) {
+func (n *notifier) addNewConversationNotification(contactID ContactID, channelID courier.ChannelID) {
 	body := url.Values{}
 	body.Add("action", "trigger_new_conversation")
 	body.Add("contact_id", fmt.Sprintf("%d", contactID.Int64))

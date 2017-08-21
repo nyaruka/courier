@@ -99,14 +99,14 @@ func (mb *MockBackend) GetLastStoppedMsgContact() Msg {
 	return nil
 }
 
-// TriggerNewConversationForUrn trigger a new conversation from the passed contact on the passed channel
-func (mb *MockBackend) TriggerNewConversationForUrn(channel Channel, urn URN, name string) error {
-	mb.triggeredNewConversations = append(mb.triggerredNewConversations, map[string]interface{}{"channel": channel, "urn": urn})
+// TriggerNewConversationForURN trigger a new conversation from the passed contact on the passed channel
+func (mb *MockBackend) TriggerNewConversationForURN(channel Channel, urn URN, name string) error {
+	mb.triggeredNewConversations = append(mb.triggeredNewConversations, map[string]interface{}{"channel": channel, "urn": urn})
 	return nil
 }
 
-// GetLastTriggeredNewConversationForUrn returns the last triggered new conversation map
-func (mb *MockBackend) GetLastTriggeredNewConversationForUrn() map[string]interface{} {
+// GetLastTriggeredNewConversationForURN returns the last triggered new conversation map
+func (mb *MockBackend) GetLastTriggeredNewConversationForURN() map[string]interface{} {
 	if len(mb.triggeredNewConversations) > 0 {
 		return mb.triggeredNewConversations[len(mb.triggeredNewConversations)-1]
 	}
