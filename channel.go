@@ -41,6 +41,10 @@ type ChannelType string
 // AnyChannelType is our empty channel type used when doing lookups without channel type assertions
 var AnyChannelType = ChannelType("")
 
+func (ct ChannelType) String() string {
+	return string(ct)
+}
+
 // ChannelUUID is our typing of a channel's UUID
 type ChannelUUID struct {
 	uuid.UUID

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/nyaruka/courier/config"
+	"github.com/nyaruka/courier/librato"
 	"github.com/nyaruka/courier/utils"
 	"github.com/pressly/lg"
 	"github.com/sirupsen/logrus"
@@ -88,6 +90,13 @@ func (s *server) Start() error {
 	// set our user agent, needs to happen before we do anything so we don't change have threading issues
 	utils.HTTPUserAgent = fmt.Sprintf("Courier/%s", s.config.Version)
 
+	// configure librato if we have configuration options for it
+	host, _ := os.Hostname()
+	if s.config.LibratoUsername != "" {
+		librato.Default = librato.NewSender(s.waitGroup, s.config.LibratoUsername, s.config.LibratoToken, host, 5)
+		librato.Default.Start()
+	}
+
 	// start our backend
 	err := s.backend.Start()
 	if err != nil {
@@ -160,6 +169,9 @@ func (s *server) Stop() error {
 
 	s.stopped = true
 	close(s.stopChan)
+
+	// stop our librato sender
+	librato.Default.Stop()
 
 	// wait for everything to stop
 	s.waitGroup.Wait()
@@ -265,15 +277,18 @@ func (s *server) channelUpdateStatusWrapper(handler ChannelHandler, handlerFunc 
 
 		logs := make([]*ChannelLog, 0, 1)
 		statuses, err := handlerFunc(channel, ww, r)
-		elapsed := time.Now().Sub(start)
+		duration := time.Now().Sub(start)
+		secondDuration := float64(duration) / float64(time.Second)
+
+		// create channel logs for each of our msgs or errors
 		if err != nil {
 			WriteError(ww, r, err)
-			logs = append(logs, NewChannelLog(channel, NilMsgID, r.Method, url, ww.Status(), err, string(request), response.String(), elapsed, start))
+			logs = append(logs, NewChannelLog(channel, NilMsgID, r.Method, url, ww.Status(), err, string(request), response.String(), duration, start))
+			librato.Default.AddGauge(fmt.Sprintf("courier.msg_status_error_%s", channel.ChannelType()), secondDuration)
 		}
-
-		// create channel logs for each of our msgs
 		for _, status := range statuses {
-			logs = append(logs, NewChannelLog(channel, status.ID(), r.Method, url, ww.Status(), err, string(request), response.String(), elapsed, start))
+			logs = append(logs, NewChannelLog(channel, status.ID(), r.Method, url, ww.Status(), err, string(request), response.String(), duration, start))
+			librato.Default.AddGauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
 		}
 
 		// and write these out
@@ -305,15 +320,18 @@ func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc Ch
 
 		logs := make([]*ChannelLog, 0, 1)
 		msgs, err := handlerFunc(channel, ww, r)
-		elapsed := time.Now().Sub(start)
+		duration := time.Now().Sub(start)
+		secondDuration := float64(duration) / float64(time.Second)
+
+		// create channel logs for each of our msgs or errors
 		if err != nil {
 			WriteError(ww, r, err)
-			logs = append(logs, NewChannelLog(channel, NilMsgID, r.Method, url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), elapsed, start))
+			logs = append(logs, NewChannelLog(channel, NilMsgID, r.Method, url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), duration, start))
+			librato.Default.AddGauge(fmt.Sprintf("courier.msg_receive_error_%s", channel.ChannelType()), secondDuration)
 		}
-
-		// create channel logs for each of our msgs
 		for _, msg := range msgs {
-			logs = append(logs, NewChannelLog(channel, msg.ID(), r.Method, url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), elapsed, start))
+			logs = append(logs, NewChannelLog(channel, msg.ID(), r.Method, url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), duration, start))
+			librato.Default.AddGauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
 		}
 
 		// and write these out
