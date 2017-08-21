@@ -57,12 +57,16 @@ func (c *Sender) Start() {
 		for {
 			select {
 			case <-c.stop:
-				c.flush(1000)
+				for len(c.buffer) > 0 {
+					c.flush(250)
+				}
 				logrus.WithField("comp", "librato").Info("stopped")
 				return
 
 			case <-time.After(c.timeout * time.Second):
-				c.flush(300)
+				for i := 0; i < 4; i++ {
+					c.flush(250)
+				}
 			}
 		}
 	}()
