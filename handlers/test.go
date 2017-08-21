@@ -40,6 +40,8 @@ type ChannelHandleTestCase struct {
 	Date        *time.Time
 
 	PrepRequest RequestPrepFunc
+
+	TriggeredNewConversatiionForUrn bool
 }
 
 // SendPrepFunc allows test cases to modify the channel, msg or server before a message is sent
@@ -242,6 +244,11 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 			mb.ClearQueueMsgs()
 
 			testHandlerRequest(t, s, testCase.URL, testCase.Data, testCase.Status, &testCase.Response, testCase.PrepRequest)
+
+			if testCase.TriggeredNewConversatiionForUrn {
+				expectedTriggeredNewConversation := map[string]interface{}{"channel": channel, "urn": *testCase.URN}
+				require.Equal(expectedTriggeredNewConversation, mb.GetLastTriggeredNewConversationForUrn())
+			}
 
 			// pop our message off and test against it
 			msg, err := mb.GetLastQueueMsg()

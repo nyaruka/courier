@@ -26,6 +26,8 @@ type MockBackend struct {
 
 	stoppedMsgContacts []Msg
 	sentMsgs           map[MsgID]bool
+
+	triggeredNewConversations []map[string]interface{}
 }
 
 // NewMockBackend returns a new mock backend suitable for testing
@@ -99,6 +101,15 @@ func (mb *MockBackend) GetLastStoppedMsgContact() Msg {
 
 // TriggerNewConversationForUrn trigger a new conversation from the passed contact on the passed channel
 func (mb *MockBackend) TriggerNewConversationForUrn(channel Channel, urn URN, name string) error {
+	mb.triggeredNewConversations = append(mb.triggerredNewConversations, map[string]interface{}{"channel": channel, "urn": urn})
+	return nil
+}
+
+// GetLastTriggeredNewConversationForUrn returns the last triggered new conversation map
+func (mb *MockBackend) GetLastTriggeredNewConversationForUrn() map[string]interface{} {
+	if len(mb.triggeredNewConversations) > 0 {
+		return mb.triggeredNewConversations[len(mb.triggeredNewConversations)-1]
+	}
 	return nil
 }
 
