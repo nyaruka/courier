@@ -93,7 +93,7 @@ func (s *server) Start() error {
 	// configure librato if we have configuration options for it
 	host, _ := os.Hostname()
 	if s.config.LibratoUsername != "" {
-		librato.Default = librato.NewSender(s.waitGroup, s.config.LibratoUsername, s.config.LibratoToken, host, 5)
+		librato.Default = librato.NewSender(s.waitGroup, s.config.LibratoUsername, s.config.LibratoToken, host, time.Second*5)
 		librato.Default.Start()
 	}
 

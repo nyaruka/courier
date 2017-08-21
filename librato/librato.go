@@ -65,7 +65,7 @@ func (c *Sender) Start() {
 				logrus.WithField("comp", "librato").Info("stopped")
 				return
 
-			case <-time.After(c.timeout * time.Second):
+			case <-time.After(c.timeout):
 				for i := 0; i < 4; i++ {
 					c.flush(250)
 				}
