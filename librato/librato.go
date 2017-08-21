@@ -54,6 +54,8 @@ func (c *Sender) Start() {
 	go func() {
 		c.waitGroup.Add(1)
 		defer c.waitGroup.Done()
+
+		logrus.WithField("comp", "librato").Info("started for username ", c.username)
 		for {
 			select {
 			case <-c.stop:
@@ -115,7 +117,7 @@ func (c *Sender) flush(count int) {
 		return
 	}
 
-	logrus.WithField("comp", "librato").WithField("body", string(encoded)).WithField("count", len(reqPayload.Gauges)).Debug("flushed to librato")
+	logrus.WithField("comp", "librato").WithField("count", len(reqPayload.Gauges)).Info("flushed to librato")
 }
 
 // Stop stops our sender, callers can use the WaitGroup used during initialization to block for stop
