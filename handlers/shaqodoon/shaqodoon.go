@@ -35,20 +35,6 @@ func NewHandler() courier.ChannelHandler {
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
-	s.AddReceiveMsgRoute(h, "GET", "receive", h.ReceiveMessage)
-
-	sentHandler := h.buildStatusHandler("sent")
-	s.AddUpdateStatusRoute(h, "GET", "sent", sentHandler)
-	s.AddUpdateStatusRoute(h, "POST", "sent", sentHandler)
-
-	deliveredHandler := h.buildStatusHandler("delivered")
-	s.AddUpdateStatusRoute(h, "GET", "delivered", deliveredHandler)
-	s.AddUpdateStatusRoute(h, "POST", "delivered", deliveredHandler)
-
-	failedHandler := h.buildStatusHandler("failed")
-	s.AddUpdateStatusRoute(h, "GET", "failed", failedHandler)
-	s.AddUpdateStatusRoute(h, "POST", "failed", failedHandler)
-
 	return nil
 }
 
