@@ -24,9 +24,6 @@ type Backend interface {
 	// NewIncomingMsg creates a new message from the given params
 	NewIncomingMsg(channel Channel, urn URN, text string) Msg
 
-	// NewOutgoingMsg creates a new outgoing message from the given params
-	NewOutgoingMsg(channel Channel, urn URN, text string) Msg
-
 	// WriteMsg writes the passed in message to our backend
 	WriteMsg(Msg) error
 

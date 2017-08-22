@@ -46,12 +46,12 @@ func (mb *MockBackend) GetLastQueueMsg() (Msg, error) {
 
 // NewIncomingMsg creates a new message from the given params
 func (mb *MockBackend) NewIncomingMsg(channel Channel, urn URN, text string) Msg {
-	return &mockMsg{channel: channel, urn: urn, text: text}
+	return &mockMsg{channel: channel, urn: urn, text: text, priority: DefaultPriority}
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel Channel, urn URN, text string) Msg {
-	return &mockMsg{channel: channel, urn: urn, text: text}
+func (mb *MockBackend) NewOutgoingMsg(channel Channel, urn URN, text string, priority MsgPriority) Msg {
+	return &mockMsg{channel: channel, urn: urn, text: text, priority: priority}
 }
 
 // PushOutgoingMsg is a test method to add a message to our queue of messages to send
@@ -283,6 +283,7 @@ type mockMsg struct {
 	externalID  string
 	urn         URN
 	contactName string
+	priority    MsgPriority
 
 	receivedOn *time.Time
 	sentOn     *time.Time
@@ -297,6 +298,7 @@ func (m *mockMsg) Attachments() []string { return m.attachments }
 func (m *mockMsg) ExternalID() string    { return m.externalID }
 func (m *mockMsg) URN() URN              { return m.urn }
 func (m *mockMsg) ContactName() string   { return m.contactName }
+func (m *mockMsg) Priority() MsgPriority { return m.priority }
 
 func (m *mockMsg) ReceivedOn() *time.Time { return m.receivedOn }
 func (m *mockMsg) SentOn() *time.Time     { return m.sentOn }

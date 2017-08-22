@@ -144,10 +144,10 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		"dlr-mask": []string{"31"},
 	}
 
-	// TODO: higher priority for responses
-	//if msg.ResponseTo != 0 {
-	//	form["priority"] = []string{"1"}
-	//}
+	// any message that isn't bulk priority should get prioritized
+	if msg.Priority() > courier.BulkPriority {
+		form["priority"] = []string{"1"}
+	}
 
 	useNationalStr := msg.Channel().ConfigForKey(configUseNational, false)
 	useNational, _ := useNationalStr.(bool)

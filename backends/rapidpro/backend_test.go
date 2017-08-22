@@ -512,7 +512,7 @@ func (ts *MsgTestSuite) TestWriteMsg() {
 	ts.Equal(contactURN.ID, m.ContactURNID_)
 	ts.Equal(MsgIncoming, m.Direction_)
 	ts.Equal(courier.MsgPending, m.Status_)
-	ts.Equal(DefaultPriority, m.Priority_)
+	ts.Equal(courier.DefaultPriority, m.Priority_)
 	ts.Equal("ext123", m.ExternalID_)
 	ts.Equal("test123", m.Text_)
 	ts.Equal(0, len(m.Attachments()))

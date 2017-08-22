@@ -52,6 +52,7 @@ type ChannelSendTestCase struct {
 	Text        string
 	URN         string
 	Attachments []string
+	Priority    courier.MsgPriority
 
 	ResponseStatus int
 	ResponseBody   string
@@ -149,7 +150,11 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 		t.Run(testCase.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			msg := mb.NewOutgoingMsg(channel, courier.URN(testCase.URN), testCase.Text)
+			priority := courier.DefaultPriority
+			if testCase.Priority != 0 {
+				priority = testCase.Priority
+			}
+			msg := mb.NewOutgoingMsg(channel, courier.URN(testCase.URN), testCase.Text, priority)
 			for _, a := range testCase.Attachments {
 				msg.WithAttachment(a)
 			}
@@ -186,7 +191,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			if testCase.URLParams != nil {
 				for k, v := range testCase.URLParams {
 					value := testRequest.URL.Query().Get(k)
-					require.Equal(v, value)
+					require.Equal(v, value, fmt.Sprintf("%s not equal", k))
 				}
 			}
 
