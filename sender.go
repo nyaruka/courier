@@ -1,8 +1,10 @@
 package courier
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/nyaruka/courier/librato"
 	"github.com/sirupsen/logrus"
 )
 
@@ -153,7 +155,7 @@ func (w *Sender) Send() {
 			return
 		}
 
-		msgLog := log.WithField("msgID", msg.ID().String()).WithField("text", msg.Text())
+		msgLog := log.WithField("msgID", msg.ID().String()).WithField("text", msg.Text()).WithField("urn", msg.URN().Identity())
 		start := time.Now()
 
 		// was this msg already sent? (from a double queue?)
@@ -171,11 +173,16 @@ func (w *Sender) Send() {
 		} else {
 			// send our message
 			status, err = server.SendMsg(msg)
+			duration := time.Now().Sub(start)
+			secondDuration := float64(duration) / float64(time.Second)
+
 			if err != nil {
 				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
-				msgLog.WithError(err).WithField("elapsed", time.Now().Sub(start)).Error("msg errored")
+				msgLog.WithError(err).WithField("elapsed", duration).Error("msg errored")
+				librato.Default.AddGauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
 			} else {
-				msgLog.WithField("elapsed", time.Now().Sub(start)).Info("msg sent")
+				msgLog.WithField("elapsed", duration).Info("msg sent")
+				librato.Default.AddGauge(fmt.Sprintf("courier.msg_send_%s", msg.Channel().ChannelType()), secondDuration)
 			}
 		}
 

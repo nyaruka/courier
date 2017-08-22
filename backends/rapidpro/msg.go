@@ -9,15 +9,18 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"mime"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
+	"github.com/sirupsen/logrus"
 	filetype "gopkg.in/h2non/filetype.v1"
 )
 
@@ -63,7 +66,7 @@ func writeMsg(b *backend, msg courier.Msg) error {
 	// if we have media, go download it to S3
 	for i, attachment := range m.Attachments_ {
 		if strings.HasPrefix(attachment, "http") {
-			url, err := downloadMediaToS3(b, m.UUID_, attachment)
+			url, err := downloadMediaToS3(b, m.OrgID_, m.UUID_, attachment)
 			if err != nil {
 				return err
 			}
@@ -76,6 +79,7 @@ func writeMsg(b *backend, msg courier.Msg) error {
 
 	// fail? spool for later
 	if err != nil {
+		logrus.WithError(err).WithField("msg", m.UUID().String()).Error("error writing to db")
 		return courier.WriteToSpool(b.config.SpoolDir, "msgs", m)
 	}
 
@@ -116,9 +120,9 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn courier.URN, te
 }
 
 const insertMsgSQL = `
-INSERT INTO msgs_msg(org_id, direction, has_template_error, text, msg_count, error_count, priority, status, 
+INSERT INTO msgs_msg(org_id, direction, has_template_error, text, attachments, msg_count, error_count, priority, status, 
                      visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on)
-              VALUES(:org_id, :direction, FALSE, :text, :msg_count, :error_count, :priority, :status, 
+              VALUES(:org_id, :direction, FALSE, :text, :attachments, :msg_count, :error_count, :priority, :status, 
                      :visibility, :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :next_attempt, :queued_on, :sent_on)
 RETURNING id
 `
@@ -153,7 +157,7 @@ func writeMsgToDB(b *backend, m *DBMsg) error {
 }
 
 const selectMsgSQL = `
-SELECT org_id, direction, text, msg_count, error_count, priority, status, 
+SELECT org_id, direction, text, attachments, msg_count, error_count, priority, status, 
        visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on
 FROM msgs_msg
 WHERE id = $1
@@ -171,7 +175,7 @@ func readMsgFromDB(b *backend, id courier.MsgID) (*DBMsg, error) {
 // Media download and classification
 //-----------------------------------------------------------------------------
 
-func downloadMediaToS3(b *backend, msgUUID courier.MsgUUID, mediaURL string) (string, error) {
+func downloadMediaToS3(b *backend, orgID OrgID, msgUUID courier.MsgUUID, mediaURL string) (string, error) {
 	parsedURL, err := url.Parse(mediaURL)
 	if err != nil {
 		return "", err
@@ -230,7 +234,7 @@ func downloadMediaToS3(b *backend, msgUUID courier.MsgUUID, mediaURL string) (st
 	if extension != "" {
 		filename = fmt.Sprintf("%s.%s", msgUUID, extension)
 	}
-	path := filepath.Join(b.config.S3MediaPrefix, filename[:4], filename)
+	path := filepath.Join(b.config.S3MediaPrefix, strconv.FormatInt(orgID.Int64, 10), filename[:4], filename[4:8], filename)
 	if !strings.HasPrefix(path, "/") {
 		path = fmt.Sprintf("/%s", path)
 	}
@@ -335,7 +339,7 @@ type DBMsg struct {
 	Priority_    MsgPriority            `json:"priority"     db:"priority"`
 	URN_         courier.URN            `json:"urn"`
 	Text_        string                 `json:"text"         db:"text"`
-	Attachments_ []string               `json:"attachments"`
+	Attachments_ pq.StringArray         `json:"attachments"  db:"attachments"`
 	ExternalID_  string                 `json:"external_id"  db:"external_id"`
 
 	ChannelID_    courier.ChannelID `json:"channel_id"      db:"channel_id"`
@@ -354,16 +358,16 @@ type DBMsg struct {
 	QueuedOn_    time.Time `json:"queued_on"     db:"queued_on"`
 	SentOn_      time.Time `json:"sent_on"       db:"sent_on"`
 
-	Channel_        courier.Channel
-	WorkerToken_    queue.WorkerToken
-	AlreadyWritten_ bool
+	Channel_        courier.Channel   `json:"-"`
+	WorkerToken_    queue.WorkerToken `json:"-"`
+	AlreadyWritten_ bool              `json:"-"`
 }
 
 func (m *DBMsg) Channel() courier.Channel { return m.Channel_ }
 func (m *DBMsg) ID() courier.MsgID        { return m.ID_ }
 func (m *DBMsg) UUID() courier.MsgUUID    { return m.UUID_ }
 func (m *DBMsg) Text() string             { return m.Text_ }
-func (m *DBMsg) Attachments() []string    { return m.Attachments_ }
+func (m *DBMsg) Attachments() []string    { return []string(m.Attachments_) }
 func (m *DBMsg) ExternalID() string       { return m.ExternalID_ }
 func (m *DBMsg) URN() courier.URN         { return m.URN_ }
 func (m *DBMsg) ContactName() string      { return m.ContactName_ }

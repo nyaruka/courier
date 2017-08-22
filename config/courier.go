@@ -25,6 +25,9 @@ type Courier struct {
 
 	MaxWorkers int `default:"32"`
 
+	LibratoUsername string `default:""`
+	LibratoToken    string `default:""`
+
 	RapidproHandleURL string `default:"https://app.rapidpro.io/handlers/mage/handle_message"`
 	RapidproToken     string `default:"missing_rapidpro_token"`
 

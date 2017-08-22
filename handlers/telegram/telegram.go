@@ -177,9 +177,10 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	// send each attachment
 	for _, attachment := range msg.Attachments() {
 		mediaType, mediaURL := courier.SplitAttachment(attachment)
-		switch mediaType {
+		switch strings.Split(mediaType, "/")[0] {
 		case "image":
 			form := url.Values{
+				"chat_id": []string{msg.URN().Path()},
 				"photo":   []string{mediaURL},
 				"caption": []string{caption},
 			}
@@ -190,6 +191,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 		case "video":
 			form := url.Values{
+				"chat_id": []string{msg.URN().Path()},
 				"video":   []string{mediaURL},
 				"caption": []string{caption},
 			}
@@ -200,6 +202,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 		case "audio":
 			form := url.Values{
+				"chat_id": []string{msg.URN().Path()},
 				"audio":   []string{mediaURL},
 				"caption": []string{caption},
 			}

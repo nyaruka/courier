@@ -31,6 +31,7 @@ func PutS3File(s3Client s3iface.S3API, bucket string, path string, contentType s
 		Body:        bytes.NewReader(contents),
 		Key:         aws.String(path),
 		ContentType: aws.String(contentType),
+		ACL:         aws.String(s3.BucketCannedACLPublicRead),
 	}
 	_, err := s3Client.PutObject(params)
 	if err != nil {

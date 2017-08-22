@@ -40,6 +40,8 @@ const (
 // MakeInsecureHTTPRequest fires the passed in http request against a transport that does not validate
 // SSL certificates.
 func MakeInsecureHTTPRequest(req *http.Request) (*RequestResponse, error) {
+	req.Header.Set("User-Agent", HTTPUserAgent)
+
 	start := time.Now()
 	requestTrace, err := httputil.DumpRequestOut(req, true)
 	if err != nil {
@@ -62,6 +64,8 @@ func MakeInsecureHTTPRequest(req *http.Request) (*RequestResponse, error) {
 // MakeHTTPRequest fires the passed in http request, returning any errors encountered. RequestResponse is always set
 // regardless of any errors being set
 func MakeHTTPRequest(req *http.Request) (*RequestResponse, error) {
+	req.Header.Set("User-Agent", HTTPUserAgent)
+
 	start := time.Now()
 	requestTrace, err := httputil.DumpRequestOut(req, true)
 	if err != nil {
@@ -180,3 +184,5 @@ func GetInsecureHTTPClient() *http.Client {
 
 	return client
 }
+
+var HTTPUserAgent = "Courier/vDev"
