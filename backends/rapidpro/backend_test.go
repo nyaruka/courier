@@ -332,7 +332,7 @@ func (ts *MsgTestSuite) TestStatus() {
 	ts.NoError(err)
 
 	// status should now contain that channel
-	ts.True(strings.Contains(ts.b.Status(), "dbc126ed-66bc-4e28-b67b-81dc3327c95d"), ts.b.Status())
+	ts.True(strings.Contains(ts.b.Status(), "1           0         0    10     KN   dbc126ed-66bc-4e28-b67b-81dc3327c95d"), ts.b.Status())
 }
 
 func (ts *MsgTestSuite) TestOutgoingQueue() {

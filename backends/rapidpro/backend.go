@@ -198,7 +198,7 @@ func (b *backend) Status() string {
 
 	status := bytes.Buffer{}
 	status.WriteString("-------------------------------------------------------------------------\n")
-	status.WriteString("     Size | Workers | TPS | Type | Channel              \n")
+	status.WriteString("     Size | Bulk Size | Workers | TPS | Type | Channel              \n")
 	status.WriteString("-------------------------------------------------------------------------\n")
 	var queue string
 	var workers float64
@@ -230,12 +230,19 @@ func (b *backend) Status() string {
 			channelType = channel.ChannelType().String()
 		}
 
-		// get # of items in the queue
-		size, err := redis.Int64(rc.Do("zcard", queue))
+		// get # of items in our normal queue
+		size, err := redis.Int64(rc.Do("zcard", fmt.Sprintf("%s:%s/1", msgQueueName, queue)))
 		if err != nil {
 			return fmt.Sprintf("error reading queue size: %v", err)
 		}
-		status.WriteString(fmt.Sprintf("% 9d   % 7d   % 3s   % 4s   %s\n", size, int(workers), tps, channelType, uuid))
+
+		// get # of items in the bulk queue
+		bulkSize, err := redis.Int64(rc.Do("zcard", fmt.Sprintf("%s:%s/0", msgQueueName, queue)))
+		if err != nil {
+			return fmt.Sprintf("error reading bulk queue size: %v", err)
+		}
+
+		status.WriteString(fmt.Sprintf("% 9d   % 9d   % 7d   % 3s   % 4s   %s\n", size, bulkSize, int(workers), tps, channelType, uuid))
 	}
 
 	return status.String()
