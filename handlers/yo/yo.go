@@ -189,5 +189,5 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	}
 
-	return status, errors.Errorf("Received error from Yo! API")
+	return status, errors.Errorf("received error from Yo! API")
 }

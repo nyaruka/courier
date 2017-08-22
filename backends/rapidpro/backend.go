@@ -108,8 +108,8 @@ func (b *backend) WasMsgSent(msg courier.Msg) (bool, error) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	todayKey := fmt.Sprintf(sentSetName, time.Now().In(time.UTC).Format("2006_01_02"))
-	yesterdayKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).In(time.UTC).Format("2006_01_02"))
+	todayKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
+	yesterdayKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).UTC().Format("2006_01_02"))
 	return redis.Bool(luaSent.Do(rc, todayKey, yesterdayKey, msg.ID().String()))
 }
 
@@ -123,7 +123,7 @@ func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg, status courier.MsgSta
 
 	// mark as sent in redis as well if this was actually wired or sent
 	if status != nil && (status.Status() == courier.MsgSent || status.Status() == courier.MsgWired) {
-		dateKey := fmt.Sprintf(sentSetName, time.Now().In(time.UTC).Format("2006_01_02"))
+		dateKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
 		rc.Do("sadd", dateKey, msg.ID().String())
 	}
 }
@@ -161,8 +161,8 @@ func (b *backend) WriteMsgStatus(status courier.MsgStatus) error {
 		rc := b.redisPool.Get()
 		defer rc.Close()
 
-		dateKey := fmt.Sprintf(sentSetName, time.Now().In(time.UTC).Format("2006_01_02"))
-		prevDateKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).In(time.UTC).Format("2006_01_02"))
+		dateKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
+		prevDateKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).UTC().Format("2006_01_02"))
 
 		// we pipeline the removals because we don't care about the return value
 		rc.Send("srem", dateKey, status.ID().String())

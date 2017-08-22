@@ -154,7 +154,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			if testCase.Priority != 0 {
 				priority = testCase.Priority
 			}
-			msg := mb.NewOutgoingMsg(channel, courier.URN(testCase.URN), testCase.Text, priority)
+			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), courier.URN(testCase.URN), testCase.Text, priority)
 			for _, a := range testCase.Attachments {
 				msg.WithAttachment(a)
 			}
