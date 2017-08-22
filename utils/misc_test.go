@@ -26,3 +26,7 @@ func TestCleanString(t *testing.T) {
 	assert.Equal(t, "\x41hello", CleanString("\x02\x41hello"))
 	assert.Equal(t, "😅 happy!", CleanString("😅 happy!"))
 }
+
+func TestEncodeBase64(t *testing.T) {
+	assert.Equal(t, "enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=", EncodeBase64([]string{"zv-username", ":", "zv-password"}))
+}

@@ -187,7 +187,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		return nil, fmt.Errorf("no password set for Zenvia channel")
 	}
 
-	encodedCreds := handlers.EncodeBase64([]string{username, ":", password})
+	encodedCreds := utils.EncodeBase64([]string{username, ":", password})
 	authHeader := "Basic " + encodedCreds
 
 	zvMsg := zvOutgoingMsg{

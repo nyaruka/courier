@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"regexp"
 	"unicode/utf8"
@@ -64,4 +65,13 @@ var invalidChars = regexp.MustCompile("([\u0000-\u0008]|[\u000B-\u000C]|[\u000E-
 // CleanString removes any control characters from the passed in string
 func CleanString(s string) string {
 	return invalidChars.ReplaceAllString(s, "")
+}
+
+// EncodeBase64 encodes the list of strings with Linux base64
+func EncodeBase64(strList []string) string {
+	var strBuffer bytes.Buffer
+	for _, l := range strList {
+		strBuffer.WriteString(l)
+	}
+	return base64.StdEncoding.EncodeToString([]byte(strBuffer.String()))
 }
