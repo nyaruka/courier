@@ -93,23 +93,24 @@ func (b *backend) PopNextOutgoingMsg() (courier.Msg, error) {
 	return nil, nil
 }
 
+var luaSent = redis.NewScript(3,
+	`-- KEYS: [TodayKey, YesterdayKey, MsgId]
+     local found = redis.call("sismember", KEYS[1], KEYS[3])
+     if found == 1 then
+	   return 1
+     end
+
+     return redis.call("sismember", KEYS[2], KEYS[3])
+`)
+
 // WasMsgSent returns whether the passed in message has already been sent
 func (b *backend) WasMsgSent(msg courier.Msg) (bool, error) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	dateKey := fmt.Sprintf(sentSetName, time.Now().In(time.UTC).Format("2006_01_02"))
-	found, err := redis.Bool(rc.Do("sismember", dateKey, msg.ID().String()))
-	if err != nil {
-		return false, err
-	}
-	if found {
-		return true, nil
-	}
-
-	dateKey = fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).In(time.UTC).Format("2006_01_02"))
-	found, err = redis.Bool(rc.Do("sismember", dateKey, msg.ID().String()))
-	return found, err
+	todayKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
+	yesterdayKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).UTC().Format("2006_01_02"))
+	return redis.Bool(luaSent.Do(rc, todayKey, yesterdayKey, msg.ID().String()))
 }
 
 // MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel
@@ -122,7 +123,7 @@ func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg, status courier.MsgSta
 
 	// mark as sent in redis as well if this was actually wired or sent
 	if status != nil && (status.Status() == courier.MsgSent || status.Status() == courier.MsgWired) {
-		dateKey := fmt.Sprintf(sentSetName, time.Now().In(time.UTC).Format("2006_01_02"))
+		dateKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
 		rc.Do("sadd", dateKey, msg.ID().String())
 	}
 }
@@ -150,7 +151,29 @@ func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID 
 
 // WriteMsgStatus writes the passed in MsgStatus to our store
 func (b *backend) WriteMsgStatus(status courier.MsgStatus) error {
-	return writeMsgStatus(b, status)
+	err := writeMsgStatus(b, status)
+	if err != nil {
+		return err
+	}
+
+	// if we have an id and are marking an outgoing msg as errored, then clear our sent flag
+	if status.ID() != courier.NilMsgID && status.Status() == courier.MsgErrored {
+		rc := b.redisPool.Get()
+		defer rc.Close()
+
+		dateKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
+		prevDateKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).UTC().Format("2006_01_02"))
+
+		// we pipeline the removals because we don't care about the return value
+		rc.Send("srem", dateKey, status.ID().String())
+		rc.Send("srem", prevDateKey, status.ID().String())
+		err := rc.Flush()
+		if err != nil {
+			logrus.WithError(err).WithField("msg", status.ID().String()).Error("error clearing sent flags")
+		}
+	}
+
+	return nil
 }
 
 // WriteChannelLogs persists the passed in logs to our database, for rapidpro we swallow all errors, logging isn't critical
@@ -197,9 +220,9 @@ func (b *backend) Status() string {
 	}
 
 	status := bytes.Buffer{}
-	status.WriteString("-------------------------------------------------------------------------\n")
+	status.WriteString("------------------------------------------------------------------------------------\n")
 	status.WriteString("     Size | Bulk Size | Workers | TPS | Type | Channel              \n")
-	status.WriteString("-------------------------------------------------------------------------\n")
+	status.WriteString("------------------------------------------------------------------------------------\n")
 	var queue string
 	var workers float64
 	var uuid string

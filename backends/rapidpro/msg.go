@@ -34,16 +34,6 @@ const (
 	NilMsgDirection MsgDirection = ""
 )
 
-// MsgPriority is the priority of our message
-type MsgPriority int
-
-// Possible values for MsgPriority
-const (
-	BulkPriority    MsgPriority = 100
-	DefaultPriority MsgPriority = 500
-	HighPriority    MsgPriority = 1000
-)
-
 // MsgVisibility is the visibility of a message
 type MsgVisibility string
 
@@ -99,7 +89,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn courier.URN, te
 		Direction_:  direction,
 		Status_:     courier.MsgPending,
 		Visibility_: MsgVisible,
-		Priority_:   DefaultPriority,
+		Priority_:   courier.DefaultPriority,
 		Text_:       text,
 
 		ChannelID_:   dbChannel.ID(),
@@ -336,7 +326,7 @@ type DBMsg struct {
 	Direction_   MsgDirection           `json:"direction"    db:"direction"`
 	Status_      courier.MsgStatusValue `json:"status"       db:"status"`
 	Visibility_  MsgVisibility          `json:"visibility"   db:"visibility"`
-	Priority_    MsgPriority            `json:"priority"     db:"priority"`
+	Priority_    courier.MsgPriority    `json:"priority"     db:"priority"`
 	URN_         courier.URN            `json:"urn"`
 	Text_        string                 `json:"text"         db:"text"`
 	Attachments_ pq.StringArray         `json:"attachments"  db:"attachments"`
@@ -363,14 +353,15 @@ type DBMsg struct {
 	AlreadyWritten_ bool              `json:"-"`
 }
 
-func (m *DBMsg) Channel() courier.Channel { return m.Channel_ }
-func (m *DBMsg) ID() courier.MsgID        { return m.ID_ }
-func (m *DBMsg) UUID() courier.MsgUUID    { return m.UUID_ }
-func (m *DBMsg) Text() string             { return m.Text_ }
-func (m *DBMsg) Attachments() []string    { return []string(m.Attachments_) }
-func (m *DBMsg) ExternalID() string       { return m.ExternalID_ }
-func (m *DBMsg) URN() courier.URN         { return m.URN_ }
-func (m *DBMsg) ContactName() string      { return m.ContactName_ }
+func (m *DBMsg) Channel() courier.Channel      { return m.Channel_ }
+func (m *DBMsg) ID() courier.MsgID             { return m.ID_ }
+func (m *DBMsg) UUID() courier.MsgUUID         { return m.UUID_ }
+func (m *DBMsg) Text() string                  { return m.Text_ }
+func (m *DBMsg) Attachments() []string         { return []string(m.Attachments_) }
+func (m *DBMsg) ExternalID() string            { return m.ExternalID_ }
+func (m *DBMsg) URN() courier.URN              { return m.URN_ }
+func (m *DBMsg) ContactName() string           { return m.ContactName_ }
+func (m *DBMsg) Priority() courier.MsgPriority { return m.Priority_ }
 
 func (m *DBMsg) ReceivedOn() *time.Time { return &m.SentOn_ }
 func (m *DBMsg) SentOn() *time.Time     { return &m.SentOn_ }

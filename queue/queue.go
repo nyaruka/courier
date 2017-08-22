@@ -161,7 +161,7 @@ var luaPop = redis.NewScript(2, `-- KEYS: [EpochMS QueueType]
 				end
 
 			    -- schedule it in the future 5 seconds on our main queue
-			    redis.call("zadd", queue .. "/0", tonumber(KEYS[1]) + 5, remaining)
+			    redis.call("zadd", queue .. "/1", tonumber(KEYS[1]) + 5, remaining)
 			    redis.call("zincrby", KEYS[2] .. ":future", 0, queue)
 			end
 		end

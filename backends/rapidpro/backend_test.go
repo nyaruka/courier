@@ -372,13 +372,22 @@ func (ts *MsgTestSuite) TestOutgoingQueue() {
 	ts.True(sent)
 
 	// pop another message off, shouldn't get anything
-	msg, err = ts.b.PopNextOutgoingMsg()
-	ts.Nil(msg)
+	msg2, err := ts.b.PopNextOutgoingMsg()
+	ts.Nil(msg2)
 	ts.Nil(err)
 
 	// checking another message should show unsent
-	msg, err = readMsgFromDB(ts.b, courier.NewMsgID(10001))
+	msg3, err := readMsgFromDB(ts.b, courier.NewMsgID(10001))
 	ts.NoError(err)
+	sent, err = ts.b.WasMsgSent(msg3)
+	ts.NoError(err)
+	ts.False(sent)
+
+	// write an error for our original message
+	err = ts.b.WriteMsgStatus(ts.b.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored))
+	ts.NoError(err)
+
+	// message should no longer be considered sent
 	sent, err = ts.b.WasMsgSent(msg)
 	ts.NoError(err)
 	ts.False(sent)
@@ -512,7 +521,7 @@ func (ts *MsgTestSuite) TestWriteMsg() {
 	ts.Equal(contactURN.ID, m.ContactURNID_)
 	ts.Equal(MsgIncoming, m.Direction_)
 	ts.Equal(courier.MsgPending, m.Status_)
-	ts.Equal(DefaultPriority, m.Priority_)
+	ts.Equal(courier.DefaultPriority, m.Priority_)
 	ts.Equal("ext123", m.ExternalID_)
 	ts.Equal("test123", m.Text_)
 	ts.Equal(0, len(m.Attachments()))
