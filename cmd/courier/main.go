@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -31,7 +30,7 @@ func main() {
 	config := &config.Courier{}
 	err := m.Load(config)
 	if err != nil {
-		log.Fatalf("Error loading configuration: %s", err)
+		logrus.Fatalf("Error loading configuration: %s", err)
 	}
 
 	// if we have a custom version, use it
@@ -43,7 +42,7 @@ func main() {
 	logrus.SetOutput(os.Stdout)
 	level, err := logrus.ParseLevel(config.LogLevel)
 	if err != nil {
-		log.Fatalf("Invalid log level '%s'", level)
+		logrus.Fatalf("Invalid log level '%s'", level)
 	}
 	logrus.SetLevel(level)
 
@@ -55,7 +54,7 @@ func main() {
 		hook.StacktraceConfiguration.Skip = 4
 		hook.StacktraceConfiguration.Context = 5
 		if err != nil {
-			log.Fatalf("Invalid sentry DSN: '%s': %s", config.SentryDSN, err)
+			logrus.Fatalf("Invalid sentry DSN: '%s': %s", config.SentryDSN, err)
 		}
 		logrus.StandardLogger().Hooks.Add(hook)
 	}
@@ -63,18 +62,18 @@ func main() {
 	// load our backend
 	backend, err := courier.NewBackend(config)
 	if err != nil {
-		log.Fatalf("Error creating backend: %s", err)
+		logrus.Fatalf("Error creating backend: %s", err)
 	}
 
 	server := courier.NewServer(config, backend)
 	err = server.Start()
 	if err != nil {
-		log.Fatalf("Error starting server: %s", err)
+		logrus.Fatalf("Error starting server: %s", err)
 	}
 
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	log.Println(<-ch)
+	logrus.WithField("comp", "main").WithField("signal", <-ch).Info("stopping")
 
 	server.Stop()
 }

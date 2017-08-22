@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -23,8 +24,9 @@ type validate struct {
 	slflParent   reflect.Value
 	slCurrent    reflect.Value
 	flField      reflect.Value
-	flParam      string
 	fldIsPointer bool
+	cf           *cField
+	ct           *cTag
 
 	// misc reusable values
 	misc []byte
@@ -33,7 +35,7 @@ type validate struct {
 }
 
 // parent and current will be the same the first run of validateStruct
-func (v *validate) validateStruct(parent reflect.Value, current reflect.Value, typ reflect.Type, ns []byte, structNs []byte, ct *cTag) {
+func (v *validate) validateStruct(ctx context.Context, parent reflect.Value, current reflect.Value, typ reflect.Type, ns []byte, structNs []byte, ct *cTag) {
 
 	cs, ok := v.v.structCache.Get(typ)
 	if !ok {
@@ -77,7 +79,7 @@ func (v *validate) validateStruct(parent reflect.Value, current reflect.Value, t
 				}
 			}
 
-			v.traverseField(parent, current.Field(f.idx), ns, structNs, f, f.cTags)
+			v.traverseField(ctx, parent, current.Field(f.idx), ns, structNs, f, f.cTags)
 		}
 	}
 
@@ -91,12 +93,12 @@ func (v *validate) validateStruct(parent reflect.Value, current reflect.Value, t
 		v.ns = ns
 		v.actualNs = structNs
 
-		cs.fn(v)
+		cs.fn(ctx, v)
 	}
 }
 
 // traverseField validates any field, be it a struct or single field, ensures it's validity and passes it along to be validated via it's tag options
-func (v *validate) traverseField(parent reflect.Value, current reflect.Value, ns []byte, structNs []byte, cf *cField, ct *cTag) {
+func (v *validate) traverseField(ctx context.Context, parent reflect.Value, current reflect.Value, ns []byte, structNs []byte, cf *cField, ct *cTag) {
 
 	var typ reflect.Type
 	var kind reflect.Kind
@@ -191,7 +193,7 @@ func (v *validate) traverseField(parent reflect.Value, current reflect.Value, ns
 				structNs = append(append(structNs, cf.name...), '.')
 			}
 
-			v.validateStruct(current, current, typ, ns, structNs, ct)
+			v.validateStruct(ctx, current, current, typ, ns, structNs, ct)
 			return
 		}
 	}
@@ -215,7 +217,8 @@ OUTER:
 			// set Field Level fields
 			v.slflParent = parent
 			v.flField = current
-			v.flParam = ""
+			v.cf = cf
+			v.ct = ct
 
 			if !v.fldIsPointer && !hasValue(v) {
 				return
@@ -259,7 +262,7 @@ OUTER:
 						reusableCF.altName = string(v.misc)
 					}
 
-					v.traverseField(parent, current.Index(i), ns, structNs, reusableCF, ct)
+					v.traverseField(ctx, parent, current.Index(i), ns, structNs, reusableCF, ct)
 				}
 
 			case reflect.Map:
@@ -289,7 +292,7 @@ OUTER:
 						reusableCF.altName = string(v.misc)
 					}
 
-					v.traverseField(parent, current.MapIndex(key), ns, structNs, reusableCF, ct)
+					v.traverseField(ctx, parent, current.MapIndex(key), ns, structNs, reusableCF, ct)
 				}
 
 			default:
@@ -309,9 +312,10 @@ OUTER:
 				// set Field Level fields
 				v.slflParent = parent
 				v.flField = current
-				v.flParam = ct.param
+				v.cf = cf
+				v.ct = ct
 
-				if ct.fn(v) {
+				if ct.fn(ctx, v) {
 
 					// drain rest of the 'or' values, then continue or leave
 					for {
@@ -397,13 +401,14 @@ OUTER:
 			// set Field Level fields
 			v.slflParent = parent
 			v.flField = current
-			v.flParam = ct.param
+			v.cf = cf
+			v.ct = ct
 
 			// // report error interface functions need these
 			// v.ns = ns
 			// v.actualNs = structNs
 
-			if !ct.fn(v) {
+			if !ct.fn(ctx, v) {
 
 				v.str1 = string(append(ns, cf.altName...))
 

@@ -1,61 +1,89 @@
 vendors:
 - path: github.com/BurntSushi/toml
-  rev: b26d9c308763d68093482582cea63d69be07a0f0
+  rev: a368813c5e648fee92e5f6c30e3944ff9d5e8895
 - path: github.com/aws/aws-sdk-go
-  rev: 0accf32f7d4f008ba6b524da34a92d346e955acd
+  rev: 2063d937ea693f6f5c8b213906785ff9e36ba0b6
 - path: github.com/davecgh/go-spew
-  rev: 346938d642f2ec3594ed81d874461961cd0faa76
+  rev: adab96458c51a58dc1783b3335dcce5461522e75
 - path: github.com/fatih/camelcase
   rev: f6a740d52f961c60348ebb109adde9f4635d7540
 - path: github.com/fatih/structs
-  rev: a720dfa8df582c51dee1b36feabb906bde1588bd
+  rev: 7e5a8eef611ee84dd359503f3969f80df4c50723
+- path: github.com/fsnotify/fsnotify
+  rev: 4da3e2cfbabc9f751898f250b49f2439785783a1
 - path: github.com/garyburd/redigo
-  rev: ac91d6ff49bd0d278a90201de77a4f8ad9628e25
+  rev: b925df3cc15d8646e9b5b333ebaf3011385aba11
+- path: github.com/go-chi/chi
+  rev: df0b91fada352490a0b4be1aad4ba53875ad4a43
 - path: github.com/go-ini/ini
-  rev: e7fea39b01aea8d5671f6858f0532f56e8bff3a5
+  rev: c787282c39ac1fc618827141a1f762240def08a3
 - path: github.com/go-playground/locales
   rev: 1e5f1161c6416a5ff48840eb8724a394e48cc534
 - path: github.com/go-playground/universal-translator
   rev: 71201497bace774495daed26a3874fd339e0b538
 - path: github.com/go-sql-driver/mysql
-  rev: ae5a66df4d33ba404d639bd0fc9189cd5ee79bcf
+  rev: 3955978caca48c1658a4bb7a9c6a0f084e326af3
 - path: github.com/gopherjs/gopherjs
-  rev: 9659c814f1d54d63f9c623449a7111d3864c1361
-- path: github.com/gorilla/context
-  rev: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
-- path: github.com/gorilla/mux
-  rev: 4c1c3952b7d9d0a061a3fa7b36fd373ba0398ebc
+  rev: 2b1d432c8a82c9bff0b0baffaeb3ec6e92974112
 - path: github.com/gorilla/schema
-  rev: 1c72d033473165ade8a126ba64180d76a9212dcd
+  rev: 8b1100835db5bbdae88541510f70d114b91a7e4d
+- path: github.com/inconshreveable/mousetrap
+  rev: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - path: github.com/jmespath/go-jmespath
   rev: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - path: github.com/jmoiron/sqlx
   rev: d9bd385d68c068f1fabb5057e3dedcbcbb039d0f
 - path: github.com/jtolds/gls
-  rev: bb0351aa7eb6f322f32667d51375f26a2bca6628
+  rev: 77f18212c9c7edc9bd6a33d383a7b545ce62f064
+- path: github.com/kisielk/gotool
+  rev: 0de1eaf82fa3f583ce21fde859f1e7e0c5e9b220
 - path: github.com/koding/multiconfig
-  rev: a7d0848fc58bf20f330c06b1704b354efb8d6b16
+  rev: 7ab5923ac43fc173d0c21e5e91da559469fa04f8
 - path: github.com/lib/pq
-  rev: 2704adc878c21e1329f46f6e56a1c387d788ff94
+  rev: e42267488fe361b9dc034be7a6bffef5b195bceb
 - path: github.com/mattn/go-sqlite3
-  rev: cf7286f069c3ef596efcc87781a4653a2e7607bd
+  rev: 6654e412c3c7eabb310d920cf73a2102dbf8c632
+- path: github.com/neelance/astrewrite
+  rev: 99348263ae862cc230986ce88deaddbf7edcc034
+- path: github.com/neelance/sourcemap
+  rev: 8c68805598ab8d5637b1a72b5f7d381ea0f39c31
 - path: github.com/pmezard/go-difflib
   rev: 792786c7400a136282c1664665ae0a8db921c6c2
 - path: github.com/satori/go.uuid
   rev: 5bf94b69c6b68ee1b541973bb8e1144db23a194b
+- path: github.com/shurcooL/go
+  rev: b2ea7b593ffddfdfb43ab719c308c25cb2054db0
+- path: github.com/shurcooL/httpfs
+  rev: bc35257962c2dea93e81c976b72c7c6eac45fd8a
 - path: github.com/smartystreets/assertions
-  rev: c9ee7d9e9a2aeec0bee7c4a516f3e0ad7cb7e558
+  rev: 1540c14c9f1bd1abeba90f29762a4c6e50582303
 - path: github.com/smartystreets/goconvey
-  rev: 3bd662eac601ad6436e64776af2e112069eb2edc
+  rev: 9e8dc3f972df6c8fcc0375ef492c24d0bb204857
+- path: github.com/smartystreets/gunit
+  rev: d235ada78c0707a08798236d7bd0ba99574c79f5
+- path: github.com/smartystreets/logging
+  rev: ac3a674540761aa0b4382094ba4795f917e85c7f
+- path: github.com/spf13/cobra
+  rev: cb731b898346822cc0c225c28550a8a29d93c732
+- path: github.com/spf13/pflag
+  rev: e57e3eeb33f795204c1ca35f56c44f83227c6e66
+- path: github.com/stretchr/objx
+  rev: 1a9d0bb9f541897e62256577b352fdbc1fb4fd94
 - path: github.com/stretchr/testify
-  rev: 4d4bfba8f1d1027c4fdbe371823030df51419987
+  rev: 890a5c3458b43e6104ff5da8dfa139d013d77544
+- path: golang.org/x/crypto
+  rev: b176d7def5d71bdd214203491f89843ed217f420
 - path: golang.org/x/net
-  rev: 0819898fb4973868bba6de59b6aaad75beea9a6a
+  rev: 1c05540f6879653db88113bc4a2b70aec4bd491f
+- path: golang.org/x/sys
+  rev: 9f7170bcd8e9f4d3691c06401119c46a769a1e03
+- path: golang.org/x/tools
+  rev: 84a35ef54dff3c5596983e180ec10919fc432242
 - path: gopkg.in/check.v1
   rev: 20d25e2804050c1cd24a7eea1e7a6447dd0e74ec
 - path: gopkg.in/go-playground/assert.v1
   rev: 4f4dfbc7d1c48336cf93399deae81aa9067e88af
 - path: gopkg.in/go-playground/validator.v9
-  rev: 6d8c18553ea1ac493d049edd6f102f52e618f085
+  rev: d529ee1b0f30352444f507cc6cdac96bfd12decc
 - path: gopkg.in/yaml.v2
-  rev: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
+  rev: eb3733d160e74a9c7e442f435eb3bea458e1d19f

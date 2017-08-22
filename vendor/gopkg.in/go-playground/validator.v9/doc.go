@@ -5,7 +5,7 @@ based on tags.
 It can also handle Cross-Field and Cross-Struct validation for nested structs
 and has the ability to dive into arrays and maps of any type.
 
-see more examples https://github.com/go-playground/validator/tree/v9/examples
+see more examples https://github.com/go-playground/validator/tree/v9/_examples
 
 Validation Functions Return Type error
 
@@ -793,6 +793,18 @@ This validates that a string value contains a valid MAC Adress.
 Note: See Go's ParseMAC for accepted formats and types:
 
 	http://golang.org/src/net/mac.go?s=866:918#L29
+
+Hostname
+
+This validates that a string value is a valid Hostname
+
+	Usage: hostname
+
+Full Qualified Domain Name (FQDN)
+
+This validates that a string value contains a valid FQDN.
+
+	Usage: fqdn
 
 Alias Validators and Tags
 

@@ -2,14 +2,10 @@ package rapidpro
 
 import (
 	"database/sql"
-	"database/sql/driver"
-	"encoding/csv"
-	"errors"
-	"regexp"
-	"strings"
 	"sync"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils"
 )
@@ -132,7 +128,7 @@ type DBChannel struct {
 	OrgID_       OrgID               `db:"org_id"`
 	ID_          courier.ChannelID   `db:"id"`
 	ChannelType_ courier.ChannelType `db:"channel_type"`
-	Schemes_     StringSlice         `db:"schemes"`
+	Schemes_     pq.StringArray      `db:"schemes"`
 	UUID_        courier.ChannelUUID `db:"uuid"`
 	Address_     sql.NullString      `db:"address"`
 	Country_     sql.NullString      `db:"country"`
@@ -194,47 +190,4 @@ func (c *DBChannel) supportsScheme(scheme string) bool {
 		}
 	}
 	return false
-}
-
-// StringSlice is our custom implementation of a string array to support Postgres coding / encoding of schemes
-type StringSlice []string
-
-var quoteEscapeRegex = regexp.MustCompile(`([^\\]([\\]{2})*)\\"`)
-
-// Scan convert a SQL value into our string array
-// http://www.postgresql.org/docs/9.1/static/arrays.html#ARRAYS-IO
-func (s *StringSlice) Scan(src interface{}) error {
-	asBytes, ok := src.([]byte)
-	if !ok {
-		return error(errors.New("Scan source was not []bytes"))
-	}
-	str := string(asBytes)
-
-	// change quote escapes for csv parser
-	str = quoteEscapeRegex.ReplaceAllString(str, `$1""`)
-	str = strings.Replace(str, `\\`, `\`, -1)
-	// remove braces
-	str = str[1 : len(str)-1]
-	csvReader := csv.NewReader(strings.NewReader(str))
-
-	slice, err := csvReader.Read()
-
-	if err != nil {
-		return err
-	}
-
-	(*s) = StringSlice(slice)
-
-	return nil
-}
-
-// Value returns the SQL encoded version of our StringSlice
-func (s StringSlice) Value() (driver.Value, error) {
-	// string escapes.
-	// \ => \\\
-	// " => \"
-	for i, elem := range s {
-		s[i] = `"` + strings.Replace(strings.Replace(elem, `\`, `\\\`, -1), `"`, `\"`, -1) + `"`
-	}
-	return "{" + strings.Join(s, ",") + "}", nil
 }
