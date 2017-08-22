@@ -72,10 +72,7 @@ func (f *Foreman) Assign() {
 			return
 
 		// otherwise, grab the next msg and assign it to a sender
-		default:
-			// get the next sender that is ready
-			sender := <-f.availableSenders
-
+		case sender := <-f.availableSenders:
 			// see if we have a message to work on
 			msg, err := backend.PopNextOutgoingMsg()
 

@@ -28,6 +28,9 @@ type Courier struct {
 	LibratoUsername string `default:""`
 	LibratoToken    string `default:""`
 
+	StatusUsername string `default:""`
+	StatusPassword string `default:""`
+
 	RapidproHandleURL string `default:"https://app.rapidpro.io/handlers/mage/handle_message"`
 	RapidproToken     string `default:"missing_rapidpro_token"`
 

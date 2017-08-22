@@ -189,6 +189,11 @@ func (mb *MockBackend) Health() string {
 	return ""
 }
 
+// Status returns a string describing the status of the service, queue size etc..
+func (mb *MockBackend) Status() string {
+	return ""
+}
+
 func buildMockBackend(config *config.Courier) Backend {
 	return NewMockBackend()
 }

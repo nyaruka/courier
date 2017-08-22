@@ -168,12 +168,11 @@ func (b *backend) WriteChannelLogs(logs []*courier.ChannelLog) error {
 func (b *backend) Health() string {
 	// test redis
 	rc := b.redisPool.Get()
-	_, redisErr := rc.Do("PING")
 	defer rc.Close()
+	_, redisErr := rc.Do("PING")
 
 	// test our db
 	_, dbErr := b.db.Exec("SELECT 1")
-
 	health := bytes.Buffer{}
 
 	if redisErr != nil {
@@ -184,6 +183,62 @@ func (b *backend) Health() string {
 	}
 
 	return health.String()
+}
+
+// Status returns information on our queue sizes, number of workers etc..
+func (b *backend) Status() string {
+	rc := b.redisPool.Get()
+	defer rc.Close()
+
+	// get all our active queues
+	values, err := redis.Values(rc.Do("zrevrangebyscore", fmt.Sprintf("%s:active", msgQueueName), "+inf", "-inf", "withscores"))
+	if err != nil {
+		return fmt.Sprintf("unable to read active queue: %v", err)
+	}
+
+	status := bytes.Buffer{}
+	status.WriteString("-------------------------------------------------------------------------\n")
+	status.WriteString("     Size | Workers | TPS | Type | Channel              \n")
+	status.WriteString("-------------------------------------------------------------------------\n")
+	var queue string
+	var workers float64
+	var uuid string
+	var tps string
+	var channelType = ""
+
+	for len(values) > 0 {
+		values, err = redis.Scan(values, &queue, &workers)
+		if err != nil {
+			return fmt.Sprintf("error reading active queues: %v", err)
+		}
+
+		// our queue name is in the format msgs:uuid|tps, break it apart
+		queue = strings.TrimPrefix(queue, "msgs:")
+		parts := strings.Split(queue, "|")
+		if len(parts) != 2 {
+			return fmt.Sprintf("error parsing queue name '%s'", queue)
+		}
+		uuid = parts[0]
+		tps = parts[1]
+
+		// try to look up our channel
+		channelUUID, _ := courier.NewChannelUUID(uuid)
+		channel, err := getChannel(b, courier.AnyChannelType, channelUUID)
+		if err != nil {
+			channelType = "!!"
+		} else {
+			channelType = channel.ChannelType().String()
+		}
+
+		// get # of items in the queue
+		size, err := redis.Int64(rc.Do("zcard", queue))
+		if err != nil {
+			return fmt.Sprintf("error reading queue size: %v", err)
+		}
+		status.WriteString(fmt.Sprintf("% 9d   % 7d   % 3s   % 4s   %s\n", size, int(workers), tps, channelType, uuid))
+	}
+
+	return status.String()
 }
 
 // Start starts our RapidPro backend, this tests our various connections and starts our spool flushers
@@ -338,5 +393,3 @@ type backend struct {
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
 }
-
-

@@ -106,8 +106,9 @@ func (s *server) Start() error {
 	// start our spool flushers
 	startSpoolFlushers(s)
 
-	// wire up our index page
+	// wire up our main pages
 	s.router.Get("/", s.handleIndex)
+	s.router.Get("/status", s.handleStatus)
 
 	// initialize our handlers
 	s.initializeChannelHandlers()
@@ -388,6 +389,29 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	buf.WriteString("\n\n")
 	buf.WriteString(strings.Join(s.routes, "\n"))
+	buf.WriteString("</pre></body>")
+	w.Write(buf.Bytes())
+}
+
+func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
+	if s.config.StatusUsername != "" {
+		user, pass, ok := r.BasicAuth()
+		if !ok || user != s.config.StatusUsername || pass != s.config.StatusPassword {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
+			w.WriteHeader(401)
+			w.Write([]byte("Unauthorised.\n"))
+			return
+		}
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("<title>courier</title><body><pre>\n")
+	buf.WriteString(splash)
+	buf.WriteString(s.config.Version)
+
+	buf.WriteString("\n\n")
+	buf.WriteString(s.backend.Status())
+	buf.WriteString("\n\n")
 	buf.WriteString("</pre></body>")
 	w.Write(buf.Bytes())
 }

@@ -246,7 +246,7 @@ func (ts *MsgTestSuite) TestContactURNPriority() {
 	ts.Equal(twChannel.ID(), urns[1].ChannelID)
 }
 
-func (ts *MsgTestSuite) TestStatus() {
+func (ts *MsgTestSuite) TestMsgStatus() {
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	now := time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)
@@ -311,6 +311,30 @@ func (ts *MsgTestSuite) TestHealth() {
 	ts.Equal(ts.b.Health(), "")
 }
 
+func (ts *MsgTestSuite) TestStatus() {
+	// our health should just contain the header
+	ts.True(strings.Contains(ts.b.Status(), "Channel"), ts.b.Status())
+
+	// add a message to our queue
+	r := ts.b.redisPool.Get()
+	defer r.Close()
+
+	dbMsg, err := readMsgFromDB(ts.b, courier.NewMsgID(10000))
+	dbMsg.ChannelUUID_, _ = courier.NewChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	ts.NoError(err)
+	ts.NotNil(dbMsg)
+
+	// serialize our message
+	msgJSON, err := json.Marshal(dbMsg)
+	ts.NoError(err)
+
+	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.DefaultPriority)
+	ts.NoError(err)
+
+	// status should now contain that channel
+	ts.True(strings.Contains(ts.b.Status(), "dbc126ed-66bc-4e28-b67b-81dc3327c95d"), ts.b.Status())
+}
+
 func (ts *MsgTestSuite) TestOutgoingQueue() {
 	// add one of our outgoing messages to the queue
 	r := ts.b.redisPool.Get()
@@ -325,7 +349,7 @@ func (ts *MsgTestSuite) TestOutgoingQueue() {
 	msgJSON, err := json.Marshal(dbMsg)
 	ts.NoError(err)
 
-	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 1, string(msgJSON), queue.DefaultPriority)
+	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.DefaultPriority)
 	ts.NoError(err)
 
 	// pop a message off our queue

@@ -60,6 +60,9 @@ type Backend interface {
 
 	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string
+
+	// Status returns a string describing the current status, this can detail queue sizes or other attributes
+	Status() string
 }
 
 // NewBackend creates the type of backend passed in
