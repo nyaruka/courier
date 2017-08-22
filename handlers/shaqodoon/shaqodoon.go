@@ -69,10 +69,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// must have one of from or sender set, error if neither
-	sender := shaqodoonMessage.Sender
-	if sender == "" {
-		sender = shaqodoonMessage.From
-	}
+	sender := shaqodoonMessage.From
 	if sender == "" {
 		return nil, errors.New("must have one of 'sender' or 'from' set")
 	}
@@ -110,11 +107,10 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 }
 
 type shaqodoonMessage struct {
-	From   string `name:"from"`
-	Sender string `name:"sender"`
-	Text   string `validate:"required" name:"text"`
-	Date   string `name:"date"`
-	Time   string `name:"time"`
+	From string `name:"from"`
+	Text string `validate:"required" name:"text"`
+	Date string `name:"date"`
+	Time string `name:"time"`
 }
 
 // buildStatusHandler deals with building a handler that takes what status is received in the URL
