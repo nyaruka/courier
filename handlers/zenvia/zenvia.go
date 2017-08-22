@@ -43,13 +43,13 @@ func NewHandler() courier.ChannelHandler {
 //  	}
 // }
 type messageRequest struct {
-	CallbackMoRequest struct {
+	CallbackMORequest struct {
 		ID         string `validate:"required" json:"id"`
 		From       string `validate:"required" json:"mobile"`
 		Text       string `validate:"required" json:"body"`
 		Date       string `validate:"required" json:"received"`
 		ExternalID string `validate:"required" json:"correlatedMessageSmsId"`
-	}
+	} `json:"callbackMoRequest"`
 }
 
 // {
@@ -64,7 +64,7 @@ type messageRequest struct {
 // 		}
 // }
 type statusRequest struct {
-	CallbackMtRequest struct {
+	CallbackMTRequest struct {
 		StatusCode string `validate:"required" json:"status"`
 		ID         string `validate:"required" json:"id"`
 	}
@@ -82,10 +82,10 @@ type statusRequest struct {
 //     }
 // }
 type zvOutgoingMsg struct {
-	SendSmsRequest zvSendSmsRequest `json:"sendSmsRequest"`
+	SendSMSRequest zvSendSMSRequest `json:"sendSmsRequest"`
 }
 
-type zvSendSmsRequest struct {
+type zvSendSMSRequest struct {
 	From           string `validate:"required" json:"from"`
 	To             string `validate:"required" json:"to"`
 	Schedule       string `validate:"required" json:"schedule"`
@@ -130,16 +130,16 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 
 	// create our date from the timestamp
 	// 2017-05-03T06:04:45.345-03:00
-	date, err := time.Parse("2006-01-02T15:04:05.000-07:00", zvMsg.CallbackMoRequest.Date)
+	date, err := time.Parse("2006-01-02T15:04:05.000-07:00", zvMsg.CallbackMORequest.Date)
 	if err != nil {
-		return nil, fmt.Errorf("invalid date format: %s", zvMsg.CallbackMoRequest.Date)
+		return nil, fmt.Errorf("invalid date format: %s", zvMsg.CallbackMORequest.Date)
 	}
 
 	// create our URN
-	urn := courier.NewTelURNForChannel(zvMsg.CallbackMoRequest.From, channel)
+	urn := courier.NewTelURNForChannel(zvMsg.CallbackMORequest.From, channel)
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, zvMsg.CallbackMoRequest.Text).WithExternalID(zvMsg.CallbackMoRequest.ExternalID).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(channel, urn, zvMsg.CallbackMORequest.Text).WithExternalID(zvMsg.CallbackMORequest.ExternalID).WithReceivedOn(date.UTC())
 
 	// and finally queue our message
 	err = h.Backend().WriteMsg(msg)
@@ -159,13 +159,13 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 		return nil, err
 	}
 
-	msgStatus, found := statusMapping[zvStatus.CallbackMtRequest.StatusCode]
+	msgStatus, found := statusMapping[zvStatus.CallbackMTRequest.StatusCode]
 	if !found {
 		msgStatus = courier.MsgErrored
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, zvStatus.CallbackMtRequest.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, zvStatus.CallbackMTRequest.ID, msgStatus)
 	err = h.Backend().WriteMsgStatus(status)
 	if err != nil {
 		return nil, err
@@ -191,7 +191,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	authHeader := "Basic " + encodedCreds
 
 	zvMsg := zvOutgoingMsg{
-		SendSmsRequest: zvSendSmsRequest{
+		SendSMSRequest: zvSendSMSRequest{
 			From:           "Sender",
 			To:             strings.TrimLeft(msg.URN().Path(), "+"),
 			Schedule:       "",
