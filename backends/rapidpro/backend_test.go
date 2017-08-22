@@ -465,6 +465,10 @@ func (ts *MsgTestSuite) TestWriteMsg() {
 	err := ts.b.WriteMsg(msg)
 	ts.NoError(err)
 
+	// creating the incoming msg again should give us the same UUID and have the msg set as not to write
+	msg2 := ts.b.NewIncomingMsg(knChannel, urn, "test123").(*DBMsg)
+	ts.Equal(msg2.UUID(), msg.UUID())
+
 	// check we had an id set
 	ts.NotZero(msg.ID)
 
@@ -502,10 +506,6 @@ func (ts *MsgTestSuite) TestWriteMsg() {
 	ts.Equal(m.ContactID_, contact.ID)
 	ts.NotNil(contact.UUID)
 	ts.NotNil(contact.ID)
-
-	// creating the incoming msg again should give us the same UUID and have the msg set as not to write
-	msg2 := ts.b.NewIncomingMsg(knChannel, urn, "test123").(*DBMsg)
-	ts.Equal(msg2.UUID(), msg.UUID())
 
 	// waiting 5 seconds should let us write it successfully
 	time.Sleep(5 * time.Second)
