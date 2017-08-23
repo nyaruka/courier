@@ -30,7 +30,7 @@ func WriteError(w http.ResponseWriter, r *http.Request, err error) error {
 
 // WriteIgnored writes a JSON response for the passed in message
 func WriteIgnored(w http.ResponseWriter, r *http.Request, message string) error {
-	lg.Log(r.Context()).Info("ignored message")
+	lg.Log(r.Context()).Info("msg ignored")
 	return writeData(w, http.StatusOK, message, struct{}{})
 }
 
@@ -43,7 +43,7 @@ func WriteReceiveSuccess(w http.ResponseWriter, r *http.Request, msg Msg) error 
 		"msg_urn":         msg.URN().Identity(),
 		"msg_text":        msg.Text(),
 		"msg_attachments": msg.Attachments(),
-	}).Info("message received")
+	}).Info("msg received")
 	return writeData(w, http.StatusOK, "Message Accepted", &receiveData{msg.UUID()})
 }
 

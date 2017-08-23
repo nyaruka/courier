@@ -179,7 +179,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	req, err := http.NewRequest(http.MethodGet, sendURL, nil)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	rr, err := utils.MakeHTTPRequest(req)
+	rr, err := utils.MakeInsecureHTTPRequest(req)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr))

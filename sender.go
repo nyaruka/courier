@@ -131,7 +131,7 @@ func (w *Sender) Send() {
 	w.foreman.server.WaitGroup().Add(1)
 	defer w.foreman.server.WaitGroup().Done()
 
-	log := logrus.WithField("comp", "sender").WithField("senderID", w.id)
+	log := logrus.WithField("comp", "sender").WithField("sender_id", w.id)
 	log.Debug("started")
 
 	server := w.foreman.server
@@ -174,7 +174,10 @@ func (w *Sender) Send() {
 			secondDuration := float64(duration) / float64(time.Second)
 
 			if err != nil {
-				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
+				// sender didn't give us a status, build one ourselves
+				if status == nil {
+					status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
+				}
 				msgLog.WithError(err).WithField("elapsed", duration).Error("msg errored")
 				librato.Default.AddGauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
 			} else {
