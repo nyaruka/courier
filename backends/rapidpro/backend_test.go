@@ -122,7 +122,7 @@ func (ts *MsgTestSuite) TestMsgUnmarshal() {
 	ts.Equal(msg.ChannelUUID_.String(), "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba")
 	ts.Equal(msg.ChannelID_, courier.NewChannelID(11))
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
-	ts.Equal(msg.ExternalID_, "")
+	ts.Equal(msg.ExternalID(), "")
 }
 
 func (ts *MsgTestSuite) TestCheckMsgExists() {
@@ -165,11 +165,19 @@ func (ts *MsgTestSuite) TestContact() {
 	ts.Equal(contact.UUID, contact2.UUID)
 	ts.Equal(contact.ID, contact2.ID)
 	ts.Equal(knChannel.OrgID(), contact2.OrgID)
-	ts.Equal("Ryan Lewis", contact2.Name)
+	ts.Equal("Ryan Lewis", contact2.Name.String)
 	ts.True(contact2.ModifiedOn.After(now))
 	ts.True(contact2.CreatedOn.After(now))
 	ts.True(contact2.ModifiedOn.Before(now2))
 	ts.True(contact2.CreatedOn.Before(now2))
+
+	// load a contact by URN instead (this one is in our testdata)
+	contact, err = contactForURN(ts.b.db, knChannel.OrgID(), knChannel.ID(), courier.NewTelURNForCountry("+12067799192", "US"), "")
+	ts.NoError(err)
+	ts.NotNil(contact)
+
+	ts.Equal("", contact.Name.String)
+	ts.Equal("a984069d-0008-4d8c-a772-b14a8a6acccc", contact.UUID)
 }
 
 func (ts *MsgTestSuite) TestContactURN() {
@@ -522,7 +530,7 @@ func (ts *MsgTestSuite) TestWriteMsg() {
 	ts.Equal(MsgIncoming, m.Direction_)
 	ts.Equal(courier.MsgPending, m.Status_)
 	ts.Equal(courier.DefaultPriority, m.Priority_)
-	ts.Equal("ext123", m.ExternalID_)
+	ts.Equal("ext123", m.ExternalID())
 	ts.Equal("test123", m.Text_)
 	ts.Equal(0, len(m.Attachments()))
 	ts.Equal(1, m.MessageCount_)
@@ -534,7 +542,7 @@ func (ts *MsgTestSuite) TestWriteMsg() {
 	ts.NotNil(m.QueuedOn_)
 
 	contact, err := contactForURN(ts.b.db, m.OrgID_, m.ChannelID_, urn, "")
-	ts.Equal("test contact", contact.Name)
+	ts.Equal("test contact", contact.Name.String)
 	ts.Equal(m.OrgID_, contact.OrgID)
 	ts.Equal(m.ContactID_, contact.ID)
 	ts.NotNil(contact.UUID)

@@ -62,9 +62,13 @@ func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn cour
 	// didn't find it, we need to create it instead
 	contact.OrgID = org
 	contact.UUID = uuid.NewV4().String()
-	contact.Name = name
 	contact.CreatedOn = time.Now()
 	contact.ModifiedOn = time.Now()
+
+	// TODO: don't set name for anonymous orgs
+	if name != "" {
+		contact.Name = null.StringFrom(name)
+	}
 
 	// TODO: Set these to a system user
 	contact.CreatedBy = 1
@@ -91,10 +95,10 @@ func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn cour
 
 // DBContact is our struct for a contact in the database
 type DBContact struct {
-	OrgID OrgID     `db:"org_id"`
-	ID    ContactID `db:"id"`
-	UUID  string    `db:"uuid"`
-	Name  string    `db:"name"`
+	OrgID OrgID       `db:"org_id"`
+	ID    ContactID   `db:"id"`
+	UUID  string      `db:"uuid"`
+	Name  null.String `db:"name"`
 
 	URNID ContactURNID `db:"urn_id"`
 

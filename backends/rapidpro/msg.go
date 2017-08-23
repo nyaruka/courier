@@ -21,6 +21,7 @@ import (
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
 	"github.com/sirupsen/logrus"
+	null "gopkg.in/guregu/null.v3"
 	filetype "gopkg.in/h2non/filetype.v1"
 )
 
@@ -330,7 +331,7 @@ type DBMsg struct {
 	URN_         courier.URN            `json:"urn"`
 	Text_        string                 `json:"text"         db:"text"`
 	Attachments_ pq.StringArray         `json:"attachments"  db:"attachments"`
-	ExternalID_  string                 `json:"external_id"  db:"external_id"`
+	ExternalID_  null.String            `json:"external_id"  db:"external_id"`
 
 	ChannelID_    courier.ChannelID `json:"channel_id"      db:"channel_id"`
 	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
@@ -358,7 +359,7 @@ func (m *DBMsg) ID() courier.MsgID             { return m.ID_ }
 func (m *DBMsg) UUID() courier.MsgUUID         { return m.UUID_ }
 func (m *DBMsg) Text() string                  { return m.Text_ }
 func (m *DBMsg) Attachments() []string         { return []string(m.Attachments_) }
-func (m *DBMsg) ExternalID() string            { return m.ExternalID_ }
+func (m *DBMsg) ExternalID() string            { return m.ExternalID_.String }
 func (m *DBMsg) URN() courier.URN              { return m.URN_ }
 func (m *DBMsg) ContactName() string           { return m.ContactName_ }
 func (m *DBMsg) Priority() courier.MsgPriority { return m.Priority_ }
@@ -378,7 +379,7 @@ func (m *DBMsg) WithContactName(name string) courier.Msg { m.ContactName_ = name
 func (m *DBMsg) WithReceivedOn(date time.Time) courier.Msg { m.SentOn_ = date; return m }
 
 // WithExternalID can be used to set the external id on a msg in a chained call
-func (m *DBMsg) WithExternalID(id string) courier.Msg { m.ExternalID_ = id; return m }
+func (m *DBMsg) WithExternalID(id string) courier.Msg { m.ExternalID_ = null.StringFrom(id); return m }
 
 // WithID can be used to set the id on a msg in a chained call
 func (m *DBMsg) WithID(id courier.MsgID) courier.Msg { m.ID_ = id; return m }
