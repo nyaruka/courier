@@ -383,17 +383,17 @@ func (b *backend) Start() error {
 
 // Stop stops our RapidPro backend, closing our db and redis connections
 func (b *backend) Stop() error {
-	if b.db != nil {
-		b.db.Close()
-	}
-
-	b.redisPool.Close()
-
 	// close our stop channel
 	close(b.stopChan)
 
 	// wait for our threads to exit
 	b.waitGroup.Wait()
+
+	// close our db and redis pool
+	if b.db != nil {
+		b.db.Close()
+	}
+	b.redisPool.Close()
 
 	return nil
 }

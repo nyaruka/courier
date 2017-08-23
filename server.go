@@ -163,14 +163,15 @@ func (s *server) Stop() error {
 		log.WithField("state", "stopping").WithError(err).Error("error shutting down server")
 	}
 
+	// stop everything
+	s.stopped = true
+	close(s.stopChan)
+
 	// stop our backend
 	err := s.backend.Stop()
 	if err != nil {
 		return err
 	}
-
-	s.stopped = true
-	close(s.stopChan)
 
 	// stop our librato sender
 	librato.Default.Stop()
