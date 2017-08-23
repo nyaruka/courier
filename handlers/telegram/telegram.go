@@ -125,7 +125,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// build our channel log
-	log := courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr)
+	log := courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr, err)
 
 	// was this request successful?
 	ok, err := jsonparser.GetBoolean([]byte(rr.Body), "ok")

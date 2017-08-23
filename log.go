@@ -34,19 +34,23 @@ func NewChannelLog(channel Channel, msgID MsgID, method string, url string, stat
 }
 
 // NewChannelLogFromRR creates a new channel log for the passed in channel, id, and request/response log
-func NewChannelLogFromRR(channel Channel, msgID MsgID, rr *utils.RequestResponse) *ChannelLog {
-	return &ChannelLog{
+func NewChannelLogFromRR(channel Channel, msgID MsgID, rr *utils.RequestResponse, err error) *ChannelLog {
+	log := &ChannelLog{
 		Channel:    channel,
 		MsgID:      msgID,
 		Method:     rr.Method,
 		URL:        rr.URL,
 		StatusCode: rr.StatusCode,
-		Error:      "",
 		Request:    rr.Request,
 		Response:   rr.Response,
 		CreatedOn:  time.Now(),
 		Elapsed:    rr.Elapsed,
 	}
+	if err != nil {
+		log.Error = err.Error()
+	}
+
+	return log
 }
 
 func (l *ChannelLog) String() string {

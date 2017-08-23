@@ -152,7 +152,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr))
+	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr, err))
 	if err != nil {
 		return status, err
 	}
