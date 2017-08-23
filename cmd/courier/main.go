@@ -15,6 +15,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/africastalking"
 	_ "github.com/nyaruka/courier/handlers/blackmyna"
 	_ "github.com/nyaruka/courier/handlers/kannel"
+	_ "github.com/nyaruka/courier/handlers/shaqodoon"
 	_ "github.com/nyaruka/courier/handlers/telegram"
 	_ "github.com/nyaruka/courier/handlers/twilio"
 

@@ -61,6 +61,7 @@ func NewServer(config *config.Courier, backend Backend) Server {
 func NewServerWithLogger(config *config.Courier, backend Backend, logger *logrus.Logger) Server {
 	router := chi.NewRouter()
 	router.Use(middleware.DefaultCompress)
+	router.Use(middleware.StripSlashes)
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
 	router.Use(lg.RequestLogger(logger))
@@ -363,7 +364,7 @@ func (s *server) addRoute(handler ChannelHandler, method string, action string, 
 	method = strings.ToLower(method)
 	channelType := strings.ToLower(string(handler.ChannelType()))
 
-	path := fmt.Sprintf("/%s/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/%s/", channelType, action)
+	path := fmt.Sprintf("/%s/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/%s", channelType, action)
 	s.chanRouter.Method(method, path, handlerFunc)
 	s.routes = append(s.routes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
 	return nil
