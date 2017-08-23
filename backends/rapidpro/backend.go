@@ -388,14 +388,15 @@ func (b *backend) Stop() error {
 
 	// wait for our threads to exit
 	b.waitGroup.Wait()
+	return nil
+}
 
+func (b *backend) Cleanup() error {
 	// close our db and redis pool
 	if b.db != nil {
 		b.db.Close()
 	}
-	b.redisPool.Close()
-
-	return nil
+	return b.redisPool.Close()
 }
 
 // NewBackend creates a new RapidPro backend

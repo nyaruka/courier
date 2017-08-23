@@ -179,6 +179,9 @@ func (mb *MockBackend) Start() error { return nil }
 // Stop stops our mock backend
 func (mb *MockBackend) Stop() error { return nil }
 
+// Cleanup cleans up any connections that are open
+func (mb *MockBackend) Cleanup() error { return nil }
+
 // ClearQueueMsgs clears our mock msg queue
 func (mb *MockBackend) ClearQueueMsgs() {
 	mb.queueMsgs = nil

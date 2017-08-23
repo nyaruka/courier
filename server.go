@@ -179,6 +179,9 @@ func (s *server) Stop() error {
 	// wait for everything to stop
 	s.waitGroup.Wait()
 
+	// clean things up, tearing down any connections
+	s.backend.Cleanup()
+
 	log.WithField("state", "stopped").Info("server stopped")
 	return nil
 }

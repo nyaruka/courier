@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pressly/lg"
+	"github.com/sirupsen/logrus"
 
 	validator "gopkg.in/go-playground/validator.v9"
 )
@@ -35,16 +36,23 @@ func WriteIgnored(w http.ResponseWriter, r *http.Request, message string) error 
 
 // WriteReceiveSuccess writes a JSON response for the passed in msg indicating we handled it
 func WriteReceiveSuccess(w http.ResponseWriter, r *http.Request, msg Msg) error {
-	lg.Log(r.Context()).WithField("msg_uuid", msg.UUID).Info("message received")
+	lg.Log(r.Context()).WithFields(logrus.Fields{
+		"channel_uuid":    msg.Channel().UUID(),
+		"msg_uuid":        msg.UUID(),
+		"msg_id":          msg.ID().Int64,
+		"msg_urn":         msg.URN().Identity(),
+		"msg_text":        msg.Text(),
+		"msg_attachments": msg.Attachments(),
+	}).Info("message received")
 	return writeData(w, http.StatusOK, "Message Accepted", &receiveData{msg.UUID()})
 }
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
 func WriteStatusSuccess(w http.ResponseWriter, r *http.Request, status MsgStatus) error {
 	if status.ID() != NilMsgID {
-		lg.Log(r.Context()).WithField("msg_id", status.ID).Info("status updated")
+		lg.Log(r.Context()).WithField("channel_uuid", status.ChannelUUID()).WithField("msg_id", status.ID().Int64).Info("status updated")
 	} else {
-		lg.Log(r.Context()).WithField("msg_id", status.ExternalID).Info("status updated")
+		lg.Log(r.Context()).WithField("channel_uuid", status.ChannelUUID()).WithField("msg_external_id", status.ExternalID()).Info("status updated")
 	}
 
 	return writeData(w, http.StatusOK, "Status Update Accepted", &statusData{status.Status()})

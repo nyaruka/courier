@@ -15,8 +15,11 @@ type Backend interface {
 	// Start starts the backend and opens any db connections it needs
 	Start() error
 
-	// Stop stops the backend closing any db connections it has open
+	// Stop stops any backend processes
 	Stop() error
+
+	// Cleanup closes any active connections to databases
+	Cleanup() error
 
 	// GetChannel returns the channel with the passed in type and UUID
 	GetChannel(ChannelType, ChannelUUID) (Channel, error)
