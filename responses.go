@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/pressly/lg"
 	"github.com/sirupsen/logrus"
@@ -44,7 +45,16 @@ func WriteReceiveSuccess(w http.ResponseWriter, r *http.Request, msg Msg) error 
 		"msg_text":        msg.Text(),
 		"msg_attachments": msg.Attachments(),
 	}).Info("msg received")
-	return writeData(w, http.StatusOK, "Message Accepted", &receiveData{msg.UUID()})
+	return writeData(w, http.StatusOK, "Message Accepted",
+		&receiveData{
+			msg.Channel().UUID(),
+			msg.UUID(),
+			msg.Text(),
+			msg.URN(),
+			msg.Attachments(),
+			msg.ExternalID(),
+			msg.ReceivedOn(),
+		})
 }
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
@@ -55,7 +65,13 @@ func WriteStatusSuccess(w http.ResponseWriter, r *http.Request, status MsgStatus
 		lg.Log(r.Context()).WithField("channel_uuid", status.ChannelUUID()).WithField("msg_external_id", status.ExternalID()).Info("status updated")
 	}
 
-	return writeData(w, http.StatusOK, "Status Update Accepted", &statusData{status.Status()})
+	return writeData(w, http.StatusOK, "Status Update Accepted",
+		&statusData{
+			status.ChannelUUID(),
+			status.Status(),
+			status.ID(),
+			status.ExternalID(),
+		})
 }
 
 type errorResponse struct {
@@ -68,11 +84,20 @@ type successResponse struct {
 }
 
 type receiveData struct {
-	UUID MsgUUID `json:"uuid"`
+	ChannelUUID ChannelUUID `json:"channel_uuid"`
+	MsgUUID     MsgUUID     `json:"msg_uuid"`
+	Text        string      `json:"text"`
+	URN         URN         `json:"urn"`
+	Attachments []string    `json:"attachments,omitempty"`
+	ExternalID  string      `json:"external_id,omitempty"`
+	ReceivedOn  *time.Time  `json:"received_on,omitempty"`
 }
 
 type statusData struct {
-	Status MsgStatusValue `json:"status"`
+	ChannelUUID ChannelUUID    `json:"channel_uuid"`
+	Status      MsgStatusValue `json:"status"`
+	MsgID       MsgID          `json:"msg_id,omitempty"`
+	ExternalID  string         `json:"external_id,omitempty"`
 }
 
 func writeJSONResponse(w http.ResponseWriter, statusCode int, response interface{}) error {

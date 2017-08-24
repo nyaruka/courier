@@ -45,11 +45,11 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive No Sender", URL: receiveNoSender, Data: "empty", Status: 400, Response: "must have one of 'sender' or 'from' set"},
 	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "empty", Status: 400, Response: "invalid date format, must be RFC 3339"},
 	{Label: "Failed No Params", URL: failedNoParams, Status: 400, Response: "field 'id' required"},
-	{Label: "Failed Valid", URL: failedValid, Status: 200, Response: `{"status":"F"}`},
+	{Label: "Failed Valid", URL: failedValid, Status: 200, Response: `"status":"F"`},
 	{Label: "Invalid Status", URL: invalidStatus, Status: 404, Response: `page not found`},
-	{Label: "Sent Valid", URL: sentValid, Status: 200, Response: `{"status":"S"}`},
-	{Label: "Delivered Valid", URL: deliveredValid, Status: 200, Response: `{"status":"D"}`},
-	{Label: "Delivered Valid Post", URL: deliveredValidPost, Data: "id=12345", Status: 200, Response: `{"status":"D"}`},
+	{Label: "Sent Valid", URL: sentValid, Status: 200, Response: `"status":"S"`},
+	{Label: "Delivered Valid", URL: deliveredValid, Status: 200, Response: `"status":"D"`},
+	{Label: "Delivered Valid Post", URL: deliveredValidPost, Data: "id=12345", Status: 200, Response: `"status":"D"`},
 }
 
 func TestHandler(t *testing.T) {

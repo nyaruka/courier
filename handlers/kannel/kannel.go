@@ -63,7 +63,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	urn := courier.NewTelURNForChannel(kannelMsg.Sender, channel)
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, kannelMsg.Message).WithExternalID(fmt.Sprintf("%d", kannelMsg.ID)).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, kannelMsg.Message).WithExternalID(kannelMsg.ID).WithReceivedOn(date)
 
 	// and finally queue our message
 	err = h.Backend().WriteMsg(msg)
@@ -75,7 +75,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 }
 
 type kannelMessage struct {
-	ID        int64  `validate:"required" name:"id"`
+	ID        string `validate:"required" name:"id"`
 	Timestamp int64  `validate:"required" name:"ts"`
 	Message   string `validate:"required" name:"message"`
 	Sender    string `validate:"required" name:"sender"`

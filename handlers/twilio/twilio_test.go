@@ -46,7 +46,7 @@ var testCases = []ChannelHandleTestCase{
 		PrepRequest: addValidSignature},
 	{Label: "Status Invalid Status", URL: statusURL, Data: statusInvalid, Status: 400, Response: "unknown status 'huh'",
 		PrepRequest: addValidSignature},
-	{Label: "Status Valid", URL: statusURL, Data: statusValid, Status: 200, Response: `{"status":"D"}`,
+	{Label: "Status Valid", URL: statusURL, Data: statusValid, Status: 200, Response: `"status":"D"`,
 		PrepRequest: addValidSignature},
 }
 
