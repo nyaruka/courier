@@ -39,7 +39,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	te := &telegramEnvelope{}
 	err := handlers.DecodeAndValidateJSON(te, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteError(w, r, err)
 	}
 
 	// no message? ignore this
@@ -98,7 +98,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 
 	// we had an error downloading media
 	if err != nil {
-		return nil, errors.WrapPrefix(err, "error retrieving media", 0)
+		return nil, courier.WriteError(w, r, errors.WrapPrefix(err, "error retrieving media", 0))
 	}
 
 	// build our msg

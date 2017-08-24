@@ -51,13 +51,13 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	// validate whether our required fields are present
 	err := handlers.Validate(shaqodoonMessage)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteError(w, r, err)
 	}
 
 	// must have one of from or sender set, error if neither
 	sender := shaqodoonMessage.From
 	if sender == "" {
-		return nil, errors.New("must have one of 'sender' or 'from' set")
+		return nil, courier.WriteError(w, r, errors.New("must have one of 'sender' or 'from' set"))
 	}
 
 	// if we have a date, parse it
@@ -70,14 +70,14 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	if dateString != "" {
 		date, err = time.Parse(time.RFC3339Nano, dateString)
 		if err != nil {
-			return nil, errors.New("invalid date format, must be RFC 3339")
+			return nil, courier.WriteError(w, r, errors.New("invalid date format, must be RFC 3339"))
 		}
 	}
 
 	// create our URN
 	urn := courier.NewTelURNForChannel(sender, channel)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteError(w, r, err)
 	}
 
 	// build our msg
@@ -119,13 +119,13 @@ func (h *handler) StatusMessage(statusString string, channel courier.Channel, w 
 	// validate whether our required fields are present
 	err := handlers.Validate(statusForm)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteError(w, r, err)
 	}
 
 	// get our id
 	msgStatus, found := statusMappings[strings.ToLower(statusString)]
 	if !found {
-		return nil, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString)
+		return nil, courier.WriteError(w, r, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString))
 	}
 
 	// write our status

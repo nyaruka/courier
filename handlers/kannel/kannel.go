@@ -13,7 +13,6 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/phonenumbers"
-	"github.com/pkg/errors"
 )
 
 const configUseNational = "use_national"
@@ -192,6 +191,10 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	verifySSL, _ := verifySSLStr.(bool)
 
 	req, err := http.NewRequest(http.MethodGet, sendURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	var rr *utils.RequestResponse
 
 	if verifySSL {
@@ -203,11 +206,10 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr, err))
-	if err != nil {
-		return status, errors.Errorf("received error sending message")
+	if err == nil {
+		status.SetStatus(courier.MsgWired)
 	}
 
-	status.SetStatus(courier.MsgWired)
 	return status, nil
 }
 

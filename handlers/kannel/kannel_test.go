@@ -72,7 +72,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text: "Error Message", URN: "tel:+250788383383", Priority: courier.BulkPriority,
 		Status:       "E",
 		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
-		Error:     "received error sending message",
 		URLParams: map[string]string{"text": `Error Message`, "to": "+250788383383", "coding": "", "priority": ""},
 		SendPrep:  setSendURL},
 	{Label: "Custom Params",

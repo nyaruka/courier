@@ -174,11 +174,15 @@ func (w *Sender) Send() {
 			secondDuration := float64(duration) / float64(time.Second)
 
 			if err != nil {
-				// sender didn't give us a status, build one ourselves
+				msgLog.WithError(err).WithField("elapsed", duration).Error("error sending message")
 				if status == nil {
 					status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
 				}
-				msgLog.WithError(err).WithField("elapsed", duration).Error("msg errored")
+			}
+
+			// report to librato and log locally
+			if status.Status() == MsgErrored || status.Status() == MsgFailed {
+				msgLog.WithField("elapsed", duration).Warning("msg errored")
 				librato.Default.AddGauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
 			} else {
 				msgLog.WithField("elapsed", duration).Info("msg sent")

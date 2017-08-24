@@ -286,9 +286,13 @@ func (s *server) channelUpdateStatusWrapper(handler ChannelHandler, handlerFunc 
 		duration := time.Now().Sub(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
-		// create channel logs for each of our msgs or errors
+		// we received an error, write it out
 		if err != nil {
 			WriteError(ww, r, err)
+		}
+
+		// if we don't have any statuses we still want a channel log, create one
+		if len(statuses) == 0 {
 			logs = append(logs, NewChannelLog(channel, NilMsgID, r.Method, url, ww.Status(), err, string(request), response.String(), duration, start))
 			librato.Default.AddGauge(fmt.Sprintf("courier.msg_status_error_%s", channel.ChannelType()), secondDuration)
 		}
@@ -329,12 +333,18 @@ func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc Ch
 		duration := time.Now().Sub(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
-		// create channel logs for each of our msgs or errors
+		// if we received an error, write it out
 		if err != nil {
 			WriteError(ww, r, err)
+		}
+
+		// if no messages were created we still want to log this to the channel, do so
+		if len(msgs) == 0 {
 			logs = append(logs, NewChannelLog(channel, NilMsgID, r.Method, url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), duration, start))
 			librato.Default.AddGauge(fmt.Sprintf("courier.msg_receive_error_%s", channel.ChannelType()), secondDuration)
 		}
+
+		// otherwise, log the request for each message
 		for _, msg := range msgs {
 			logs = append(logs, NewChannelLog(channel, msg.ID(), r.Method, url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), duration, start))
 			librato.Default.AddGauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
