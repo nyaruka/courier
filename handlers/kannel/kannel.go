@@ -86,7 +86,7 @@ var kannelStatusMapping = map[int]courier.MsgStatusValue{
 	2:  courier.MsgErrored,
 	4:  courier.MsgSent,
 	8:  courier.MsgSent,
-	16: courier.MsgFailed,
+	16: courier.MsgErrored,
 }
 
 // StatusMessage is our HTTP handler function for status updates
