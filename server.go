@@ -286,8 +286,9 @@ func (s *server) channelUpdateStatusWrapper(handler ChannelHandler, handlerFunc 
 		duration := time.Now().Sub(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
-		// we received an error, write it out
+		// we received an error, write it out and report it
 		if err != nil {
+			logrus.WithError(err).Error("error receiving status")
 			WriteError(ww, r, err)
 		}
 
@@ -333,8 +334,9 @@ func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc Ch
 		duration := time.Now().Sub(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
-		// if we received an error, write it out
+		// if we received an error, write it out and report it
 		if err != nil {
+			logrus.WithError(err).Error("error receiving message")
 			WriteError(ww, r, err)
 		}
 

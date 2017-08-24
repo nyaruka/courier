@@ -83,7 +83,7 @@ type kannelMessage struct {
 
 var kannelStatusMapping = map[int]courier.MsgStatusValue{
 	1:  courier.MsgDelivered,
-	2:  courier.MsgFailed,
+	2:  courier.MsgErrored,
 	4:  courier.MsgSent,
 	8:  courier.MsgSent,
 	16: courier.MsgFailed,
