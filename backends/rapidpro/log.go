@@ -26,7 +26,7 @@ func writeChannelLog(b *backend, log *courier.ChannelLog) error {
 		description = fmt.Sprintf("Error: %s", log.Error)
 	}
 
-	_, err := b.db.Exec(insertLogSQL, dbChan.ID(), log.MsgID, description, log.Error != "", log.Method, log.URL,
+	_, err := b.db.Exec(insertLogSQL, dbChan.ID(), log.MsgID, description[:255], log.Error != "", log.Method, log.URL,
 		log.Request, log.Response, log.StatusCode, log.CreatedOn, log.Elapsed/time.Millisecond)
 
 	return err

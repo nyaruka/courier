@@ -32,6 +32,7 @@ func insertContact(db *sqlx.DB, contact *DBContact) error {
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 	if rows.Next() {
 		err = rows.Scan(&contact.ID)
 	}

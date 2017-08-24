@@ -135,6 +135,8 @@ func writeMsgToDB(b *backend, m *DBMsg) error {
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
+
 	rows.Next()
 	err = rows.Scan(&m.ID_)
 	if err != nil {

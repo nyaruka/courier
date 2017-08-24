@@ -98,7 +98,7 @@ func writeMsgStatusToDB(b *backend, status *DBMsgStatus) error {
 	var rows *sqlx.Rows
 	var err error
 
-  if status.ID() != courier.NilMsgID {
+	if status.ID() != courier.NilMsgID {
 		rows, err = b.db.NamedQuery(updateMsgID, status)
 	} else if status.ExternalID() != "" {
 		rows, err = b.db.NamedQuery(updateMsgExternalID, status)
@@ -108,6 +108,7 @@ func writeMsgStatusToDB(b *backend, status *DBMsgStatus) error {
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 
 	// scan and read the id of the msg that was updated
 	if rows.Next() {

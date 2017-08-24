@@ -297,6 +297,8 @@ func (b *backend) Start() error {
 		log.Info("db ok")
 	}
 	b.db = db
+	b.db.SetMaxIdleConns(4)
+	b.db.SetMaxOpenConns(16)
 
 	// parse and test our redis config
 	redisURL, err := url.Parse(b.config.Redis)

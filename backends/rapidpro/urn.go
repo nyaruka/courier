@@ -45,6 +45,7 @@ func contactURNsForContact(db *sqlx.DB, contactID ContactID) ([]*DBContactURN, e
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	// read our URNs out
 	urns := make([]*DBContactURN, 0, 3)
@@ -163,6 +164,7 @@ func insertContactURN(db *sqlx.DB, urn *DBContactURN) error {
 		return err
 	}
 	defer rows.Close()
+
 	if rows.Next() {
 		err = rows.Scan(&urn.ID)
 	}
@@ -181,6 +183,8 @@ func updateContactURN(db *sqlx.DB, urn *DBContactURN) error {
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
+
 	if rows.Next() {
 		rows.Scan(&urn.ID)
 	}
