@@ -94,7 +94,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 
 type shaqodoonMessage struct {
 	From string `name:"from"`
-	Text string `validate:"required" name:"text"`
+	Text string `name:"text"`
 	Date string `name:"date"`
 	Time string `name:"time"`
 }

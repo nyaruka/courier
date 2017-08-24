@@ -53,7 +53,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	kannelMsg := &kannelMessage{}
 	err := handlers.DecodeAndValidateQueryParams(kannelMsg, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteError(w, r, err)
 	}
 
 	// create our date from the timestamp
@@ -77,7 +77,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 type kannelMessage struct {
 	ID        string `validate:"required" name:"id"`
 	Timestamp int64  `validate:"required" name:"ts"`
-	Message   string `validate:"required" name:"message"`
+	Message   string `name:"message"`
 	Sender    string `validate:"required" name:"sender"`
 }
 
