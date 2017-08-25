@@ -309,8 +309,8 @@ func (b *backend) Start() error {
 	// create our pool
 	redisPool := &redis.Pool{
 		Wait:        true,              // makes callers wait for a connection
-		MaxActive:   5,                 // only open this many concurrent connections at once
-		MaxIdle:     2,                 // only keep up to 2 idle
+		MaxActive:   8,                 // only open this many concurrent connections at once
+		MaxIdle:     4,                 // only keep up to this many idle
 		IdleTimeout: 240 * time.Second, // how long to wait before reaping a connection
 		Dial: func() (redis.Conn, error) {
 			conn, err := redis.Dial("tcp", fmt.Sprintf("%s", redisURL.Host))

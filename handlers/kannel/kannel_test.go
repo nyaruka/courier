@@ -57,7 +57,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		URLParams: map[string]string{"text": "Simple Message", "to": "+250788383383", "coding": "", "priority": "",
-			"dlr-url": "http://courier.test/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/?id=10&status=%d"},
+			"dlr-url": "http://courier.test/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%d"},
 		SendPrep: setSendURL},
 	{Label: "Unicode Send",
 		Text: "☺", URN: "tel:+250788383383", Priority: courier.BulkPriority,
