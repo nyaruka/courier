@@ -29,7 +29,7 @@ func writeChannelLog(b *backend, log *courier.ChannelLog) error {
 
 	// strip null chars from request and response, postgres doesn't like that
 	log.Request = strings.Trim(log.Request, "\x00")
-	log.Response = strings.Trim(log.Request, "\x00")
+	log.Response = strings.Trim(log.Response, "\x00")
 
 	_, err := b.db.Exec(insertLogSQL, dbChan.ID(), log.MsgID, log.Description, log.Error != "", log.Method, log.URL,
 		log.Request, log.Response, log.StatusCode, log.CreatedOn, log.Elapsed/time.Millisecond)
