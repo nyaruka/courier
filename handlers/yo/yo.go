@@ -146,9 +146,11 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		}
 		// record our status and log
 		status = h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-		status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr, err))
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
+
 		if err != nil {
-			return status, err
+			return status, nil
 		}
 
 		responseQS, err := url.ParseQuery(string(rr.Body))

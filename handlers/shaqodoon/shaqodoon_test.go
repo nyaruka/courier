@@ -66,7 +66,6 @@ var getSendTestCases = []ChannelSendTestCase{
 		Text: "Error Message", URN: "tel:+250788383383",
 		Status:       "E",
 		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
-		Error:     "received non 200 status: 401",
 		URLParams: map[string]string{"msg": `Error Message`, "to": "250788383383"},
 		SendPrep:  setSendURL},
 	{Label: "Send Attachment",

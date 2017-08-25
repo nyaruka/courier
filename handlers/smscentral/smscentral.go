@@ -106,13 +106,13 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr, err))
+	status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
 	if err != nil {
 		return status, err
 	}
 
 	if rr.StatusCode/100 != 2 {
-		return status, errors.Errorf("Got non-200 response [%d] from API")
+		return status, errors.Errorf("Got non-200 response [%d] from API", rr.StatusCode)
 	}
 
 	status.SetStatus(courier.MsgWired)

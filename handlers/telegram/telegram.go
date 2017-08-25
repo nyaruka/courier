@@ -125,7 +125,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// build our channel log
-	log := courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr, err)
+	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 
 	// was this request successful?
 	ok, err := jsonparser.GetBoolean([]byte(rr.Body), "ok")
@@ -212,8 +212,8 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 			status.AddLog(log)
 
 		default:
-			status.AddLog(courier.NewChannelLog(msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
-				fmt.Errorf("unknown media type: %s", mediaType), "", "", time.Duration(0), time.Now()))
+			status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
+				"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
 			hasError = true
 		}
 	}

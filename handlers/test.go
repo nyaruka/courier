@@ -14,7 +14,6 @@ import (
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/config"
-	"github.com/pressly/lg"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
@@ -132,8 +131,6 @@ func newServer(backend courier.Backend) courier.Server {
 	// for benchmarks, log to null
 	logger := logrus.New()
 	logger.Out = ioutil.Discard
-	lg.RedirectStdlogOutput(logger)
-	lg.DefaultLogger = logger
 	logrus.SetOutput(ioutil.Discard)
 
 	return courier.NewServerWithLogger(config.NewTest(), backend, logger)

@@ -117,7 +117,7 @@ func (c *Sender) flush(count int) {
 		return
 	}
 
-	logrus.WithField("comp", "librato").WithField("count", len(reqPayload.Gauges)).Info("flushed to librato")
+	logrus.WithField("comp", "librato").WithField("count", len(reqPayload.Gauges)).Debug("flushed to librato")
 }
 
 // Stop stops our sender, callers can use the WaitGroup used during initialization to block for stop

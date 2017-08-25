@@ -202,11 +202,12 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr, err))
+	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+	status.AddLog(log)
 
 	// fail if we received an error
 	if err != nil {
-		return status, err
+		return status, nil
 	}
 
 	// was this request successful?
@@ -216,13 +217,15 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 			status.SetStatus(courier.MsgFailed)
 			h.Backend().StopMsgContact(msg)
 		}
-		return status, errors.Errorf("received error code from twilio '%d'", errorCode)
+		log.WithError("Message Send Error", errors.Errorf("received error code from twilio '%d'", errorCode))
+		return status, nil
 	}
 
 	// grab the external id
 	externalID, err := jsonparser.GetString([]byte(rr.Body), "sid")
 	if err != nil {
-		return status, errors.Errorf("unable to get sid from body")
+		log.WithError("Message Send Error", errors.Errorf("unable to get sid from body"))
+		return status, nil
 	}
 
 	status.SetStatus(courier.MsgWired)

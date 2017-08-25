@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type MsgTestSuite struct {
+type BackendTestSuite struct {
 	suite.Suite
 	b *backend
 }
@@ -45,7 +45,7 @@ func testConfig() *config.Courier {
 	return config
 }
 
-func (ts *MsgTestSuite) SetupSuite() {
+func (ts *BackendTestSuite) SetupSuite() {
 	// turn off logging
 	logrus.SetOutput(ioutil.Discard)
 
@@ -76,11 +76,11 @@ func (ts *MsgTestSuite) SetupSuite() {
 	ts.b.s3Client = &mockS3Client{}
 }
 
-func (ts *MsgTestSuite) TearDownSuite() {
+func (ts *BackendTestSuite) TearDownSuite() {
 	ts.b.Stop()
 }
 
-func (ts *MsgTestSuite) getChannel(cType string, cUUID string) *DBChannel {
+func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *DBChannel {
 	channelUUID, err := courier.NewChannelUUID(cUUID)
 	ts.NoError(err, "error building channel uuid")
 
@@ -91,7 +91,7 @@ func (ts *MsgTestSuite) getChannel(cType string, cUUID string) *DBChannel {
 	return channel.(*DBChannel)
 }
 
-func (ts *MsgTestSuite) TestMsgUnmarshal() {
+func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	msgJSON := `{
 		"status": "P", 
 		"direction": "O", 
@@ -125,7 +125,7 @@ func (ts *MsgTestSuite) TestMsgUnmarshal() {
 	ts.Equal(msg.ExternalID(), "")
 }
 
-func (ts *MsgTestSuite) TestCheckMsgExists() {
+func (ts *BackendTestSuite) TestCheckMsgExists() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
 	// check with invalid message id
@@ -146,7 +146,7 @@ func (ts *MsgTestSuite) TestCheckMsgExists() {
 	ts.Nil(err)
 }
 
-func (ts *MsgTestSuite) TestContact() {
+func (ts *BackendTestSuite) TestContact() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	urn := courier.NewTelURNForCountry("12065551518", "US")
 
@@ -180,7 +180,7 @@ func (ts *MsgTestSuite) TestContact() {
 	ts.Equal("a984069d-0008-4d8c-a772-b14a8a6acccc", contact.UUID)
 }
 
-func (ts *MsgTestSuite) TestContactURN() {
+func (ts *BackendTestSuite) TestContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
 	urn := courier.NewTelURNForCountry("12065551515", "US")
@@ -224,7 +224,7 @@ func (ts *MsgTestSuite) TestContactURN() {
 	ts.Equal("jane", tgContactURN.Display.String)
 }
 
-func (ts *MsgTestSuite) TestContactURNPriority() {
+func (ts *BackendTestSuite) TestContactURNPriority() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
 	knURN := courier.NewTelURNForCountry("12065551111", "US")
@@ -254,7 +254,7 @@ func (ts *MsgTestSuite) TestContactURNPriority() {
 	ts.Equal(twChannel.ID(), urns[1].ChannelID)
 }
 
-func (ts *MsgTestSuite) TestMsgStatus() {
+func (ts *BackendTestSuite) TestMsgStatus() {
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	now := time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)
@@ -314,12 +314,12 @@ func (ts *MsgTestSuite) TestMsgStatus() {
 	ts.Equal(m.ErrorCount_, 3)
 }
 
-func (ts *MsgTestSuite) TestHealth() {
+func (ts *BackendTestSuite) TestHealth() {
 	// all should be well in test land
 	ts.Equal(ts.b.Health(), "")
 }
 
-func (ts *MsgTestSuite) TestStatus() {
+func (ts *BackendTestSuite) TestStatus() {
 	// our health should just contain the header
 	ts.True(strings.Contains(ts.b.Status(), "Channel"), ts.b.Status())
 
@@ -343,7 +343,7 @@ func (ts *MsgTestSuite) TestStatus() {
 	ts.True(strings.Contains(ts.b.Status(), "1           0         0    10     KN   dbc126ed-66bc-4e28-b67b-81dc3327c95d"), ts.b.Status())
 }
 
-func (ts *MsgTestSuite) TestOutgoingQueue() {
+func (ts *BackendTestSuite) TestOutgoingQueue() {
 	// add one of our outgoing messages to the queue
 	r := ts.b.redisPool.Get()
 	defer r.Close()
@@ -401,7 +401,7 @@ func (ts *MsgTestSuite) TestOutgoingQueue() {
 	ts.False(sent)
 }
 
-func (ts *MsgTestSuite) TestChannel() {
+func (ts *BackendTestSuite) TestChannel() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
 	ts.Equal("2500", knChannel.Address())
@@ -425,7 +425,17 @@ func (ts *MsgTestSuite) TestChannel() {
 	ts.Equal("missingValue", val)
 }
 
-func (ts *MsgTestSuite) TestWriteAttachment() {
+func (ts *BackendTestSuite) TestChanneLog() {
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+
+	log := courier.NewChannelLog("Message Send Error", knChannel, courier.NilMsgID, "POST", "/null/value", 400,
+		"request with null \x00", "response with null \x00", time.Millisecond, nil)
+
+	err := writeChannelLog(ts.b, log)
+	ts.NoError(err)
+}
+
+func (ts *BackendTestSuite) TestWriteAttachment() {
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 
@@ -492,7 +502,7 @@ func (ts *MsgTestSuite) TestWriteAttachment() {
 	ts.True(strings.HasSuffix(m.Attachments()[0], ".png"))
 }
 
-func (ts *MsgTestSuite) TestWriteMsg() {
+func (ts *BackendTestSuite) TestWriteMsg() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
 	// have to round to microseconds because postgres can't store nanos
@@ -552,10 +562,15 @@ func (ts *MsgTestSuite) TestWriteMsg() {
 	time.Sleep(5 * time.Second)
 	msg3 := ts.b.NewIncomingMsg(knChannel, urn, "test123").(*DBMsg)
 	ts.NotEqual(msg3.UUID(), msg.UUID())
+
+	// msg with null bytes in it, that's fine for a request body
+	msg = ts.b.NewIncomingMsg(knChannel, urn, "test456\x00456").WithExternalID("ext456").(*DBMsg)
+	err = ts.b.WriteMsg(msg)
+	ts.NoError(err)
 }
 
 func TestMsgSuite(t *testing.T) {
-	suite.Run(t, new(MsgTestSuite))
+	suite.Run(t, new(BackendTestSuite))
 }
 
 var invalidConfigTestCases = []struct {

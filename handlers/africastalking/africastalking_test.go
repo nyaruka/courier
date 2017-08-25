@@ -76,7 +76,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text: "Error Message", URN: "tel:+250788383383",
 		Status:       "E",
 		ResponseBody: `{ "error": "failed" }`, ResponseStatus: 401,
-		Error:      "received non 200 status: 401",
 		PostParams: map[string]string{"message": `Error Message`},
 		SendPrep:   setSendURL},
 }

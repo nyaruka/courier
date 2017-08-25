@@ -182,11 +182,9 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	rr, err := utils.MakeInsecureHTTPRequest(req)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr, err))
-	if err != nil {
-		return status, err
+	status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
+	if err == nil {
+		status.SetStatus(courier.MsgWired)
 	}
-
-	status.SetStatus(courier.MsgWired)
 	return status, nil
 }
