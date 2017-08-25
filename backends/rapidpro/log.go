@@ -22,11 +22,8 @@ func writeChannelLog(b *backend, log *courier.ChannelLog) error {
 		return fmt.Errorf("unable to write non-rapidpro channel logs")
 	}
 
-	description := "Success"
+	// if we have an error, append to to our response
 	if log.Error != "" {
-		description = "Error"
-
-		// we append our error to our response as it can be long
 		log.Response += "\n\nError: " + log.Error
 	}
 
@@ -34,7 +31,7 @@ func writeChannelLog(b *backend, log *courier.ChannelLog) error {
 	log.Request = strings.Trim(log.Request, "\x00")
 	log.Response = strings.Trim(log.Request, "\x00")
 
-	_, err := b.db.Exec(insertLogSQL, dbChan.ID(), log.MsgID, description, log.Error != "", log.Method, log.URL,
+	_, err := b.db.Exec(insertLogSQL, dbChan.ID(), log.MsgID, log.Description, log.Error != "", log.Method, log.URL,
 		log.Request, log.Response, log.StatusCode, log.CreatedOn, log.Elapsed/time.Millisecond)
 
 	return err
