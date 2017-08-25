@@ -63,5 +63,22 @@ var invalidChars = regexp.MustCompile("([\u0000-\u0008]|[\u000B-\u000C]|[\u000E-
 
 // CleanString removes any control characters from the passed in string
 func CleanString(s string) string {
-	return invalidChars.ReplaceAllString(s, "")
+	cleaned := invalidChars.ReplaceAllString(s, "")
+
+	// check whether this is valid UTF8
+	if !utf8.ValidString(cleaned) {
+		v := make([]rune, 0, len(cleaned))
+		for i, r := range s {
+			if r == utf8.RuneError {
+				_, size := utf8.DecodeRuneInString(s[i:])
+				if size == 1 {
+					continue
+				}
+			}
+			v = append(v, r)
+		}
+		cleaned = string(v)
+	}
+
+	return cleaned
 }

@@ -88,7 +88,7 @@ func (f *Foreman) Assign() {
 
 				// add our sender back to our queue and sleep a bit
 				if !lastSleep {
-					log.Info("sleeping, no messages")
+					log.Debug("sleeping, no messages")
 					lastSleep = true
 				}
 				f.availableSenders <- sender

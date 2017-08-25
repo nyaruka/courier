@@ -429,7 +429,7 @@ func (ts *BackendTestSuite) TestChanneLog() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
 	log := courier.NewChannelLog("Message Send Error", knChannel, courier.NilMsgID, "POST", "/null/value", 400,
-		"request with null \x00", "response with null \x00", time.Millisecond, nil)
+		"request with null \x00 content", "response with null \x00 content", time.Millisecond, nil)
 
 	err := writeChannelLog(ts.b, log)
 	ts.NoError(err)

@@ -25,4 +25,6 @@ func TestStringArrayContains(t *testing.T) {
 func TestCleanString(t *testing.T) {
 	assert.Equal(t, "\x41hello", CleanString("\x02\x41hello"))
 	assert.Equal(t, "😅 happy!", CleanString("😅 happy!"))
+	assert.Equal(t, "Hello  There", CleanString("Hello \x00 There"))
+	assert.Equal(t, "Hello z There", CleanString("Hello \xc5z There"))
 }
