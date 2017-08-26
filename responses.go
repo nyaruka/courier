@@ -22,11 +22,6 @@ func WriteError(w http.ResponseWriter, r *http.Request, err error) error {
 		for i := range vErrs {
 			errors = append(errors, fmt.Sprintf("field '%s' %s", strings.ToLower(vErrs[i].Field()), vErrs[i].Tag()))
 		}
-	} else {
-		logrus.WithFields(logrus.Fields{
-			"url":        r.Context().Value(contextRequestURL),
-			"elapsed_ms": getElapsedMS(r),
-		}).WithError(err).Error()
 	}
 	return writeJSONResponse(w, http.StatusBadRequest, &errorResponse{errors})
 }

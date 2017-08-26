@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -565,7 +566,13 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 
 	// msg with null bytes in it, that's fine for a request body
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "test456\x00456").WithExternalID("ext456").(*DBMsg)
-	err = ts.b.WriteMsg(msg)
+	err = writeMsgToDB(ts.b, msg)
+	ts.NoError(err)
+
+	// more null bytes
+	text, _ := url.PathUnescape("%1C%00%00%00%00%00%07%E0%00")
+	msg = ts.b.NewIncomingMsg(knChannel, urn, text).(*DBMsg)
+	err = writeMsgToDB(ts.b, msg)
 	ts.NoError(err)
 }
 

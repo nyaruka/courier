@@ -290,7 +290,7 @@ func (s *server) channelUpdateStatusWrapper(handler ChannelHandler, handlerFunc 
 
 		// we received an error, write it out and report it
 		if err != nil {
-			logrus.WithError(err).Error("error receiving status")
+			logrus.WithError(err).WithField("url", url).WithField("request", request).Error("error receiving status")
 			WriteError(ww, r, err)
 		}
 
@@ -339,7 +339,7 @@ func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc Ch
 
 		// if we received an error, write it out and report it
 		if err != nil {
-			logrus.WithError(err).Error("error receiving message")
+			logrus.WithError(err).WithField("url", url).WithField("request", request).Error("error receiving message")
 			WriteError(ww, r, err)
 		}
 

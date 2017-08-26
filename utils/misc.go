@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"regexp"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -66,7 +67,7 @@ func CleanString(s string) string {
 	cleaned := invalidChars.ReplaceAllString(s, "")
 
 	// check whether this is valid UTF8
-	if !utf8.ValidString(cleaned) {
+	if !utf8.ValidString(cleaned) || strings.Contains(cleaned, "\x00") {
 		v := make([]rune, 0, len(cleaned))
 		for i, r := range s {
 			if r == utf8.RuneError {
@@ -75,7 +76,10 @@ func CleanString(s string) string {
 					continue
 				}
 			}
-			v = append(v, r)
+
+			if r != 0 {
+				v = append(v, r)
+			}
 		}
 		cleaned = string(v)
 	}
