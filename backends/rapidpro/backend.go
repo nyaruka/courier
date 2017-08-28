@@ -213,21 +213,28 @@ func (b *backend) Status() string {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	// get all our active queues
-	values, err := redis.Values(rc.Do("zrevrangebyscore", fmt.Sprintf("%s:active", msgQueueName), "+inf", "-inf", "withscores"))
-	if err != nil {
-		return fmt.Sprintf("unable to read active queue: %v", err)
-	}
-
 	status := bytes.Buffer{}
 	status.WriteString("------------------------------------------------------------------------------------\n")
 	status.WriteString("     Size | Bulk Size | Workers | TPS | Type | Channel              \n")
 	status.WriteString("------------------------------------------------------------------------------------\n")
+
 	var queue string
 	var workers float64
-	var uuid string
-	var tps string
-	var channelType = ""
+
+	// get all our queues
+	rc.Send("zrevrangebyscore", fmt.Sprintf("%s:active", msgQueueName), "+inf", "-inf", "withscores")
+	rc.Send("zrevrangebyscore", fmt.Sprintf("%s:throttled", msgQueueName), "+inf", "-inf", "withscores")
+	rc.Flush()
+
+	active, err := redis.Values(rc.Receive())
+	if err != nil {
+		return fmt.Sprintf("unable to read active queues: %v", err)
+	}
+	throttled, err := redis.Values(rc.Receive())
+	if err != nil {
+		return fmt.Sprintf("unable to read throttled queues: %v", err)
+	}
+	values := append(active, throttled...)
 
 	for len(values) > 0 {
 		values, err = redis.Scan(values, &queue, &workers)
@@ -241,15 +248,14 @@ func (b *backend) Status() string {
 		if len(parts) != 2 {
 			return fmt.Sprintf("error parsing queue name '%s'", queue)
 		}
-		uuid = parts[0]
-		tps = parts[1]
+		uuid := parts[0]
+		tps := parts[1]
 
 		// try to look up our channel
 		channelUUID, _ := courier.NewChannelUUID(uuid)
 		channel, err := getChannel(b, courier.AnyChannelType, channelUUID)
-		if err != nil {
-			channelType = "!!"
-		} else {
+		channelType := "!!"
+		if err == nil {
 			channelType = channel.ChannelType().String()
 		}
 
