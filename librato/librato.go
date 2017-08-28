@@ -42,7 +42,7 @@ func (c *Sender) AddGauge(name string, value float64) {
 		return
 	}
 
-	c.buffer <- gauge{Name: strings.ToLower(name), Value: value}
+	c.buffer <- gauge{Name: strings.ToLower(name), Value: value, MeasureTime: time.Now().Unix()}
 }
 
 // Start starts our librato sender, callers can use Stop to stop it
@@ -81,8 +81,9 @@ func (c *Sender) flush(count int) {
 
 	// build our payload
 	reqPayload := &payload{
-		Source: c.source,
-		Gauges: make([]gauge, 0, len(c.buffer)),
+		MeasureTime: time.Now().Unix(),
+		Source:      c.source,
+		Gauges:      make([]gauge, 0, len(c.buffer)),
 	}
 
 	// read up to our count of gauges
@@ -116,7 +117,7 @@ func (c *Sender) flush(count int) {
 		return
 	}
 
-	logrus.WithField("comp", "librato").WithField("count", len(reqPayload.Gauges)).Debug("flushed to librato")
+	logrus.WithField("comp", "librato").WithField("count", len(reqPayload.Gauges)).Info("flushed to librato")
 }
 
 // Stop stops our sender, callers can use the WaitGroup used during initialization to block for stop
@@ -128,13 +129,15 @@ func (c *Sender) Stop() {
 }
 
 type gauge struct {
-	Name  string  `json:"name"`
-	Value float64 `json:"value"`
+	Name        string  `json:"name"`
+	Value       float64 `json:"value"`
+	MeasureTime int64   `json:"measure_time"`
 }
 
 type payload struct {
-	Source string  `json:"source"`
-	Gauges []gauge `json:"gauges"`
+	MeasureTime int64   `json:"measure_time"`
+	Source      string  `json:"source"`
+	Gauges      []gauge `json:"gauges"`
 }
 
 // Sender is responsible for collecting gauges and sending them in batches to our librato server
