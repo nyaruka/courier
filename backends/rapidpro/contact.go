@@ -8,6 +8,7 @@ import (
 	"database/sql"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	uuid "github.com/satori/go.uuid"
 )
@@ -27,8 +28,8 @@ RETURNING id
 `
 
 // insertContact inserts the passed in contact, the id field will be populated with the result on success
-func insertContact(db *sqlx.DB, contact *DBContact) error {
-	rows, err := db.NamedQuery(insertContactSQL, contact)
+func insertContact(tx *sqlx.Tx, contact *DBContact) error {
+	rows, err := tx.NamedQuery(insertContactSQL, contact)
 	if err != nil {
 		return err
 	}
@@ -75,23 +76,43 @@ func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn cour
 	contact.CreatedBy = 1
 	contact.ModifiedBy = 1
 
-	// Insert it
-	err = insertContact(db, contact)
+	// insert it
+	tx, err := db.Beginx()
 	if err != nil {
+		return nil, err
+	}
+
+	err = insertContact(tx, contact)
+	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
 	// associate our URN
-	contactURN, err := contactURNForURN(db, org, channelID, contact.ID, urn)
+	// If we've inserted a duplicate URN then we'll get a uniqueness violation.
+	// That means this contact URN was written by someone else after we tried to look it up.
+	contactURN, err := contactURNForURN(tx, org, channelID, contact.ID, urn)
+	if err != nil {
+		tx.Rollback()
+		if pqErr, ok := err.(*pq.Error); ok {
+			// if this was a duplicate URN, start over with a contact lookup
+			if pqErr.Code.Name() == "unique_violation" {
+				return contactForURN(db, org, channelID, urn, name)
+			}
+		}
+		return nil, err
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return nil, err
 	}
 
-	// save this URN on our contact
+	// store this URN on our contact
 	contact.URNID = contactURN.ID
 
 	// and return it
-	return contact, err
+	return contact, nil
 }
 
 // DBContact is our struct for a contact in the database

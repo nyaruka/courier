@@ -49,7 +49,8 @@ CREATE TABLE contacts_contacturn (
     channel_id integer references channels_channel(id) on delete cascade,
     contact_id integer references contacts_contact(id) on delete cascade,
     org_id integer references orgs_org(id) on delete cascade,
-    auth text
+    auth text,
+    UNIQUE (org_id, identity)
 );
 
 DROP TABLE IF EXISTS msgs_msg CASCADE;
@@ -94,3 +95,6 @@ CREATE TABLE channels_channellog (
     msg_id integer references msgs_msg(id) on delete cascade,
     session_id integer references channels_channel(id) on delete cascade
 );
+
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO courier;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO courier;

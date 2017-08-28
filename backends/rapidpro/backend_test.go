@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -223,6 +224,28 @@ func (ts *BackendTestSuite) TestContactURN() {
 	tgContactURN, err := contactURNForURN(ts.b.db, tgChannel.OrgID_, tgChannel.ID_, tgContact.ID, tgURNDisplay)
 	ts.Equal(tgContact.URNID, tgContactURN.ID)
 	ts.Equal("jane", tgContactURN.Display.String)
+
+	// try to create two contacts at the same time in goroutines, this tests our transaction rollbacks
+	urn2 := courier.NewTelURNForCountry("12065551616", "US")
+	var wait sync.WaitGroup
+	var contact2, contact3 *DBContact
+	wait.Add(2)
+	go func() {
+		var err2 error
+		contact2, err2 = contactForURN(ts.b.db, knChannel.OrgID(), knChannel.ID(), urn2, "")
+		ts.NoError(err2)
+		wait.Done()
+	}()
+	go func() {
+		var err3 error
+		contact3, err3 = contactForURN(ts.b.db, knChannel.OrgID(), knChannel.ID(), urn2, "")
+		ts.NoError(err3)
+		wait.Done()
+	}()
+	wait.Wait()
+
+	ts.Equal(contact2.ID.Int64, contact3.ID.Int64)
+	ts.Equal(contact2.URNID.Int64, contact3.URNID.Int64)
 }
 
 func (ts *BackendTestSuite) TestContactURNPriority() {
