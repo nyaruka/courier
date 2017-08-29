@@ -134,6 +134,16 @@ func (b *backend) StopMsgContact(m courier.Msg) {
 	b.notifier.addStopContactNotification(dbMsg.ContactID_)
 }
 
+func (b *backend) TriggerNewConversationForURN(c courier.Channel, urn courier.URN, name string) error {
+	dbChannel := c.(*DBChannel)
+	contact, err := contactForURN(b.db, dbChannel.OrgID(), dbChannel.ID(), urn, name)
+	if err != nil {
+		return err
+	}
+	b.notifier.addNewConversationNotification(contact.ID, dbChannel.ID())
+	return err
+}
+
 // WriteMsg writes the passed in message to our store
 func (b *backend) WriteMsg(m courier.Msg) error {
 	return writeMsg(b, m)

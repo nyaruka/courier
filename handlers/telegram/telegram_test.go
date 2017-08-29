@@ -37,6 +37,27 @@ var helloMsg = `{
   }
 }`
 
+var startCommand = `{
+  "update_id": 174114370,
+  "message": {
+	"message_id": 41,
+	"from": {
+		"id": 3527065,
+		"first_name": "Nic",
+		"last_name": "Pottier",
+		"username": "nicpottier"
+	},
+	"chat": {
+		"id": 3527065,
+		"first_name": "Nic",
+		"last_name": "Pottier",
+		"type": "private"
+	},
+	"date": 1454119029,
+	"text": "/start"
+  }
+}`
+
 var emptyMsg = `{
  	"update_id": 174114370
 }`
@@ -462,6 +483,9 @@ var testCases = []ChannelHandleTestCase{
 		Name: Sp("Nic Pottier"), Text: Sp("Adolf Taxi (0788531373)"), URN: Sp("telegram:3527065#nicpottier"), External: Sp("96"), Date: Tp(time.Date(2017, 5, 3, 21, 9, 15, 0, time.UTC))},
 
 	{Label: "Receive Empty", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, Status: 200, Response: "Ignoring"},
+
+	{Label: "Receive /start command", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: startCommand, Status: 200, Response: "Conversation started",
+		TriggeredNewConversatiionForUrn: true, URN: Sp("telegram:3527065#nicpottier")},
 
 	{Label: "Receive Invalid FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: invalidFileID, Status: 400, Response: "error retrieving media"},
 
