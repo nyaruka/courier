@@ -67,7 +67,7 @@ func checkMsgExists(b *backend, status courier.MsgStatus) (err error) {
 // the craziness below lets us update our status to 'F' and schedule retries without knowing anything about the message
 const updateMsgID = `
 UPDATE msgs_msg SET 
-	status = CASE WHEN :status = 'E' THEN CASE WHEN error_count = 2 THEN 'F' ELSE 'E' END ELSE :status END,
+	status = CASE WHEN :status = 'E' THEN CASE WHEN error_count >= 2 THEN 'F' ELSE 'E' END ELSE :status END,
 	error_count = CASE WHEN :status = 'E' THEN error_count + 1 ELSE error_count END,
 	next_attempt = CASE WHEN :status = 'E' THEN NOW() + (5 * (error_count+1) * interval '1 minutes') ELSE next_attempt END,
 	modified_on = :modified_on	
@@ -81,7 +81,7 @@ UPDATE msgs_msg SET
 
 const updateMsgExternalID = `
 UPDATE msgs_msg SET 
-	status = CASE WHEN :status = 'E' THEN CASE WHEN error_count = 2 THEN 'F' ELSE 'E' END ELSE :status END,
+	status = CASE WHEN :status = 'E' THEN CASE WHEN error_count >= 2 THEN 'F' ELSE 'E' END ELSE :status END,
 	error_count = CASE WHEN :status = 'E' THEN error_count + 1 ELSE error_count END,
 	next_attempt = CASE WHEN :status = 'E' THEN NOW() + (5 * (error_count+1) * interval '1 minutes') ELSE next_attempt END,
 	modified_on = :modified_on 
