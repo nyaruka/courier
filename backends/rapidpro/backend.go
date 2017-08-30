@@ -130,8 +130,11 @@ func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg, status courier.MsgSta
 
 // StopMsgContact marks the contact for the passed in msg as stopped, that is they no longer want to receive messages
 func (b *backend) StopMsgContact(m courier.Msg) {
+	rc := b.redisPool.Get()
+	defer rc.Close()
+
 	dbMsg := m.(*DBMsg)
-	b.notifier.addStopContactNotification(dbMsg.ContactID_)
+	queueStopContact(rc, dbMsg.OrgID_, dbMsg.ContactID_)
 }
 
 // WriteMsg writes the passed in message to our store
@@ -167,7 +170,7 @@ func (b *backend) WriteMsgStatus(status courier.MsgStatus) error {
 		// we pipeline the removals because we don't care about the return value
 		rc.Send("srem", dateKey, status.ID().String())
 		rc.Send("srem", prevDateKey, status.ID().String())
-		err := rc.Flush()
+		_, err := rc.Do("")
 		if err != nil {
 			logrus.WithError(err).WithField("msg", status.ID().String()).Error("error clearing sent flags")
 		}
@@ -341,8 +344,10 @@ func (b *backend) Start() error {
 		log.Info("redis ok")
 	}
 
-	// start our dethrottler
-	queue.StartDethrottler(redisPool, b.stopChan, b.waitGroup, msgQueueName)
+	// start our dethrottler if we are going to be doing some sending
+	if b.config.MaxWorkers > 0 {
+		queue.StartDethrottler(redisPool, b.stopChan, b.waitGroup, msgQueueName)
+	}
 
 	// create our s3 client
 	s3Session, err := session.NewSession(&aws.Config{
@@ -372,10 +377,6 @@ func (b *backend) Start() error {
 	} else {
 		log.Info("spool directories ok")
 	}
-
-	// start our rapidpro notifier
-	b.notifier = newNotifier(b.config)
-	b.notifier.start(b)
 
 	// register and start our msg spool flushers
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "msgs"), b.flushMsgFile)
@@ -426,8 +427,6 @@ type backend struct {
 	awsCreds  *credentials.Credentials
 
 	popScript *redis.Script
-
-	notifier *notifier
 
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup

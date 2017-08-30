@@ -144,9 +144,17 @@ func writeMsgToDB(b *backend, m *DBMsg) error {
 	}
 
 	// queue this up to be handled by RapidPro
-	b.notifier.addHandleMsgNotification(m.ID_)
+	rc := b.redisPool.Get()
+	defer rc.Close()
+	err = queueMsgHandling(rc, m.OrgID_, m.ContactID_, m.ID_, contact.IsNew)
 
-		return err
+	// if we had a problem queueing the handling, log it, but our message is written, it'll
+	// get picked up by our rapidpro catch-all after a period
+	if err != nil {
+		logrus.WithError(err).WithField("msg_id", m.ID_.Int64).Error("error queueing msg handling")
+	}
+
+	return nil
 }
 
 const selectMsgSQL = `

@@ -66,6 +66,7 @@ func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn cour
 	contact.UUID = uuid.NewV4().String()
 	contact.CreatedOn = time.Now()
 	contact.ModifiedOn = time.Now()
+	contact.IsNew = true
 
 	// TODO: don't set name for anonymous orgs
 	if name != "" {
@@ -129,4 +130,6 @@ type DBContact struct {
 
 	CreatedBy  int `db:"created_by_id"`
 	ModifiedBy int `db:"modified_by_id"`
+
+	IsNew bool
 }

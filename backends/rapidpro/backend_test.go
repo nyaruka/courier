@@ -243,7 +243,8 @@ func (ts *BackendTestSuite) TestContactURN() {
 		wait.Done()
 	}()
 	wait.Wait()
-
+	ts.NotNil(contact2)
+	ts.NotNil(contact3)
 	ts.Equal(contact2.ID.Int64, contact3.ID.Int64)
 	ts.Equal(contact2.URNID.Int64, contact3.URNID.Int64)
 }
