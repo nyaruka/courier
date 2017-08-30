@@ -104,6 +104,13 @@ func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn cour
 		return nil, err
 	}
 
+	// if the returned URN is for a different contact, then we were in a race as well, rollback and start over
+	if contactURN.ContactID.Int64 != contact.ID.Int64 {
+		tx.Rollback()
+		return contactForURN(db, org, channelID, urn, name)
+	}
+
+	// all is well, we created the new contact, commit and move forward
 	err = tx.Commit()
 	if err != nil {
 		return nil, err
