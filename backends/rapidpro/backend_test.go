@@ -307,6 +307,10 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	err = ts.b.WriteMsgStatus(status)
 	ts.Error(err)
 
+	// reset our status to sent
+	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgSent)
+	err = ts.b.WriteMsgStatus(status)
+
 	// error our msg
 	now = time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)

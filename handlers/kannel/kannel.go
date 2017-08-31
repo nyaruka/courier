@@ -210,6 +210,11 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		status.SetStatus(courier.MsgWired)
 	}
 
+	// kannel will respond with a 403 for non-routable numbers, fail permanently in these cases
+	if rr.StatusCode == 403 {
+		status.SetStatus(courier.MsgFailed)
+	}
+
 	return status, nil
 }
 
