@@ -36,8 +36,26 @@ func WriteIgnored(w http.ResponseWriter, r *http.Request, details string) error 
 	return writeData(w, http.StatusOK, details, struct{}{})
 }
 
-// WriteReceiveSuccess writes a JSON response for the passed in msg indicating we handled it
-func WriteReceiveSuccess(w http.ResponseWriter, r *http.Request, msg Msg) error {
+// WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it
+func WriteChannelEventSuccess(w http.ResponseWriter, r *http.Request, event ChannelEvent) error {
+	logrus.WithFields(logrus.Fields{
+		"url":          r.Context().Value(contextRequestURL),
+		"elapsed_ms":   getElapsedMS(r),
+		"channel_uuid": event.ChannelUUID(),
+		"event_type":   event.EventType(),
+		"event_urn":    event.URN().Identity(),
+	}).Info("evt received")
+	return writeData(w, http.StatusOK, "Event Accepted",
+		&eventReceiveData{
+			event.ChannelUUID(),
+			event.EventType(),
+			event.URN(),
+			event.CreatedOn(),
+		})
+}
+
+// WriteMsgSuccess writes a JSON response for the passed in msg indicating we handled it
+func WriteMsgSuccess(w http.ResponseWriter, r *http.Request, msg Msg) error {
 	logrus.WithFields(logrus.Fields{
 		"url":             r.Context().Value(contextRequestURL),
 		"elapsed_ms":      getElapsedMS(r),
@@ -49,7 +67,7 @@ func WriteReceiveSuccess(w http.ResponseWriter, r *http.Request, msg Msg) error 
 		"msg_attachments": msg.Attachments(),
 	}).Info("msg received")
 	return writeData(w, http.StatusOK, "Message Accepted",
-		&receiveData{
+		&msgReceiveData{
 			msg.Channel().UUID(),
 			msg.UUID(),
 			msg.Text(),
@@ -105,7 +123,7 @@ type successResponse struct {
 	Data    interface{} `json:"data"`
 }
 
-type receiveData struct {
+type msgReceiveData struct {
 	ChannelUUID ChannelUUID `json:"channel_uuid"`
 	MsgUUID     MsgUUID     `json:"msg_uuid"`
 	Text        string      `json:"text"`
@@ -113,6 +131,13 @@ type receiveData struct {
 	Attachments []string    `json:"attachments,omitempty"`
 	ExternalID  string      `json:"external_id,omitempty"`
 	ReceivedOn  *time.Time  `json:"received_on,omitempty"`
+}
+
+type eventReceiveData struct {
+	ChannelUUID ChannelUUID      `json:"channel_uuid"`
+	EventType   ChannelEventType `json:"event_type"`
+	URN         URN              `json:"urn"`
+	ReceivedOn  time.Time        `json:"received_on"`
 }
 
 type statusData struct {

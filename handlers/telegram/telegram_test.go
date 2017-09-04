@@ -37,6 +37,27 @@ var helloMsg = `{
   }
 }`
 
+var startMsg = `{
+    "update_id": 174114370,
+    "message": {
+      "message_id": 41,
+      "from": {
+          "id": 3527065,
+          "first_name": "Nic",
+          "last_name": "Pottier",
+          "username": "nicpottier"
+      },
+      "chat": {
+          "id": 3527065,
+          "first_name": "Nic",
+          "last_name": "Pottier",
+          "type": "private"
+      },
+      "date": 1454119029,
+      "text": "/start"
+    }
+  }`
+
 var emptyMsg = `{
  	"update_id": 174114370
 }`
@@ -432,6 +453,9 @@ var contactMsg = `
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: helloMsg, Status: 200, Response: "Accepted",
 		Name: Sp("Nic Pottier"), Text: Sp("Hello World"), URN: Sp("telegram:3527065#nicpottier"), External: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+
+	{Label: "Receive Start Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: startMsg, Status: 200, Response: "Accepted",
+		Name: Sp("Nic Pottier"), ChannelEvent: Sp(string(courier.NewConversation)), URN: Sp("telegram:3527065#nicpottier"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 
 	{Label: "Receive No Params", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, Status: 200, Response: "Ignoring"},
 

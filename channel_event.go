@@ -1,0 +1,34 @@
+package courier
+
+import "time"
+
+// ChannelEventType is the type of channel event this is
+type ChannelEventType string
+
+// Possible values for MsgStatus
+const (
+	NewConversation ChannelEventType = "new_conversation"
+	Referral        ChannelEventType = "referral"
+)
+
+//-----------------------------------------------------------------------------
+// ChannelEvent Interface
+//-----------------------------------------------------------------------------
+
+// ChannelEvent represents an event on a channel, such as a follow, new conversation or referral
+type ChannelEvent interface {
+	ChannelUUID() ChannelUUID
+	URN() URN
+	EventType() ChannelEventType
+	CreatedOn() time.Time
+	OccurredOn() time.Time
+
+	Logs() []*ChannelLog
+	AddLog(log *ChannelLog)
+
+	WithContactName(name string) ChannelEvent
+	WithExtra(extra map[string]interface{}) ChannelEvent
+	WithOccurredOn(time.Time) ChannelEvent
+
+	ReceiveID() int64
+}

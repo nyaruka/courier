@@ -6,6 +6,11 @@ import (
 	"errors"
 )
 
+// NewNullMap creates a new null map with the passed in map
+func NewNullMap(validMap map[string]interface{}) NullMap {
+	return NullMap{Map: validMap, Valid: true}
+}
+
 // NullMap is a one level deep dictionary that is represented as JSON in the database
 type NullMap struct {
 	Map   map[string]interface{}
@@ -40,7 +45,15 @@ func (n *NullMap) Scan(src interface{}) error {
 
 // Value implements the driver Valuer interface
 func (n *NullMap) Value() (driver.Value, error) {
+	if n == nil {
+		return nil, nil
+	}
+
 	if !n.Valid {
+		return nil, nil
+	}
+
+	if len(n.Map) == 0 {
 		return nil, nil
 	}
 	return json.Marshal(n.Map)
@@ -49,7 +62,7 @@ func (n *NullMap) Value() (driver.Value, error) {
 // MarshalJSON decodes our dictionary from the passed in bytes
 func (n *NullMap) MarshalJSON() ([]byte, error) {
 	if !n.Valid {
-		return nil, nil
+		return json.Marshal(nil)
 	}
 	return json.Marshal(n.Map)
 }

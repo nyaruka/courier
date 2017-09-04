@@ -85,7 +85,7 @@ var twStatusMapping = map[string]courier.MsgStatusValue{
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.Msg{msg}, h.writeReceiveSuccess(w)
+	return []courier.ReceiveEvent{msg}, h.writeReceiveSuccess(w)
 }
 
 // StatusMessage is our HTTP handler function for status updates

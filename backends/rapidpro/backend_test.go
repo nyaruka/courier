@@ -19,7 +19,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/queue"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -49,7 +48,7 @@ func testConfig() *config.Courier {
 
 func (ts *BackendTestSuite) SetupSuite() {
 	// turn off logging
-	logrus.SetOutput(ioutil.Discard)
+	//logrus.SetOutput(ioutil.Discard)
 
 	b, err := courier.NewBackend(testConfig())
 	if err != nil {
@@ -602,6 +601,26 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	msg = ts.b.NewIncomingMsg(knChannel, urn, text).(*DBMsg)
 	err = writeMsgToDB(ts.b, msg)
 	ts.NoError(err)
+}
+
+func (ts *BackendTestSuite) TestChannelEvent() {
+	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	urn := courier.NewTelURNForChannel("12065551616", channel)
+	event := ts.b.NewChannelEvent(channel, courier.Referral, urn).WithExtra(map[string]interface{}{"ref_id": "12345"}).WithContactName("kermit frog")
+	err := ts.b.WriteChannelEvent(event)
+	ts.NoError(err)
+
+	contact, err := contactForURN(ts.b.db, channel.OrgID_, channel.ID_, urn, "")
+	ts.NoError(err)
+	ts.Equal("kermit frog", contact.Name.String)
+
+	dbE := event.(*DBChannelEvent)
+	dbE, err = readChannelEventFromDB(ts.b, dbE.ID_)
+	ts.NoError(err)
+	ts.Equal(dbE.EventType_, courier.Referral)
+	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra_.Map)
+	ts.Equal(contact.ID, dbE.ContactID_)
+	ts.Equal(contact.URNID, dbE.ContactURNID_)
 }
 
 func TestMsgSuite(t *testing.T) {

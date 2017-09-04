@@ -39,6 +39,12 @@ type Backend interface {
 	// WriteMsgStatus writes the passed in status update to our backend
 	WriteMsgStatus(MsgStatus) error
 
+	// NewChannelEvent creates a new channel event for the given channel and event type
+	NewChannelEvent(Channel, ChannelEventType, URN) ChannelEvent
+
+	// WriteChannelEvent writes the passed in channel even returning any error
+	WriteChannelEvent(ChannelEvent) error
+
 	// WriteChannelLogs writes the passed in channel logs to our backend
 	WriteChannelLogs([]*ChannelLog) error
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
+	"github.com/sirupsen/logrus"
 )
 
 // ContactURNID represents a contact urn's id
@@ -70,6 +71,7 @@ func setDefaultURN(db dbTx, channelID courier.ChannelID, contact *DBContact, urn
 	scheme := urn.Scheme()
 	urns, err := contactURNsForContact(db, contact.ID)
 	if err != nil {
+		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("channel_id", channelID.Int64).Error("error looking up contact urns")
 		return err
 	}
 
@@ -161,6 +163,7 @@ RETURNING id
 func insertContactURN(db dbTx, urn *DBContactURN) error {
 	rows, err := db.NamedQuery(insertURN, urn)
 	if err != nil {
+		logrus.WithError(err).WithField("urn", urn.Identity).Error("error inserting contact urn")
 		return err
 	}
 	defer rows.Close()
@@ -181,12 +184,13 @@ WHERE id = :id
 func updateContactURN(db dbTx, urn *DBContactURN) error {
 	rows, err := db.NamedQuery(updateURN, urn)
 	if err != nil {
+		logrus.WithError(err).WithField("urn_id", urn.ID.Int64).Error("error updating contact urn")
 		return err
 	}
 	defer rows.Close()
 
 	if rows.Next() {
-		rows.Scan(&urn.ID)
+		err = rows.Scan(&urn.ID)
 	}
 	return err
 }

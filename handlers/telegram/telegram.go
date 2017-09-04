@@ -35,7 +35,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
 	te := &telegramEnvelope{}
 	err := handlers.DecodeAndValidateJSON(te, r)
 	if err != nil {
@@ -58,6 +58,18 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 
 	// our text is either "text" or "caption" (or empty)
 	text := te.Message.Text
+
+	// this is a start command, trigger a new conversation
+	if text == "/start" {
+		event := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn).WithContactName(name).WithOccurredOn(date)
+		err = h.Backend().WriteChannelEvent(event)
+		if err != nil {
+			return nil, err
+		}
+		return []courier.ReceiveEvent{event}, courier.WriteChannelEventSuccess(w, r, event)
+	}
+
+	// normal message of some kind
 	if text == "" && te.Message.Caption != "" {
 		text = te.Message.Caption
 	}
@@ -114,7 +126,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
+	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, msg)
 }
 
 func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values) (string, *courier.ChannelLog, error) {

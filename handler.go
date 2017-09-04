@@ -4,9 +4,15 @@ import (
 	"net/http"
 )
 
+// ReceiveEvent is our interface for the types of things a ChannelReceiveMsgFunc can return. Currently
+// Msgs and ChannelEvent both satisfy this
+type ReceiveEvent interface {
+	ReceiveID() int64
+}
+
 // ChannelReceiveMsgFunc is the interface ChannelHandler functions must satisfy to handle incoming msgs
 // The Server will take care of looking up the channel by UUID before passing it to this function.
-type ChannelReceiveMsgFunc func(Channel, http.ResponseWriter, *http.Request) ([]Msg, error)
+type ChannelReceiveMsgFunc func(Channel, http.ResponseWriter, *http.Request) ([]ReceiveEvent, error)
 
 // ChannelUpdateStatusFunc is the interface ChannelHandler functions must satisfy to handle incoming
 // status requests. The Server will take care of looking up the channel by UUID before passing it to this function.

@@ -179,6 +179,16 @@ func (b *backend) WriteMsgStatus(status courier.MsgStatus) error {
 	return nil
 }
 
+// NewChannelEvent creates a new channel event with the passed in parameters
+func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn courier.URN) courier.ChannelEvent {
+	return newChannelEvent(channel, eventType, urn)
+}
+
+// WriteChannelEvent writes the passed in channel even returning any error
+func (b *backend) WriteChannelEvent(event courier.ChannelEvent) error {
+	return writeChannelEvent(b, event)
+}
+
 // WriteChannelLogs persists the passed in logs to our database, for rapidpro we swallow all errors, logging isn't critical
 func (b *backend) WriteChannelLogs(logs []*courier.ChannelLog) error {
 	for _, l := range logs {

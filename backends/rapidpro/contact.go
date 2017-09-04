@@ -11,6 +11,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	uuid "github.com/satori/go.uuid"
+	"github.com/sirupsen/logrus"
 )
 
 // ContactID is our representation of our database contact id
@@ -52,6 +53,7 @@ func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn cour
 	contact := &DBContact{}
 	err := db.Get(contact, lookupContactFromURNSQL, urn.Identity(), org)
 	if err != nil && err != sql.ErrNoRows {
+		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
 		return nil, err
 	}
 

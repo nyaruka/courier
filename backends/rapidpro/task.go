@@ -10,7 +10,7 @@ import (
 	"github.com/nyaruka/courier/celery"
 )
 
-func queueTask(rc redis.Conn, queueName string, taskName string, orgID OrgID, contactID ContactID, body map[string]interface{}) (err error) {
+func queueTask(rc redis.Conn, queueName string, taskName string, orgID OrgID, subQueue string, body map[string]interface{}) (err error) {
 	// encode our body
 	bodyJSON, err := json.Marshal(body)
 	if err != nil {
@@ -22,7 +22,9 @@ func queueTask(rc redis.Conn, queueName string, taskName string, orgID OrgID, co
 
 	// we do all our queueing in a transaction
 	rc.Send("multi")
-	rc.Send("zadd", fmt.Sprintf("ch:%d", contactID.Int64), fmt.Sprintf("%.5f", epochFraction), bodyJSON)
+	if subQueue != "" {
+		rc.Send("zadd", subQueue, fmt.Sprintf("%.5f", epochFraction), bodyJSON)
+	}
 	rc.Send("zadd", fmt.Sprintf("%s:%d", taskName, orgID.Int64), fmt.Sprintf("%.5f", epochFraction-10000000), bodyJSON)
 	rc.Send("zincrby", fmt.Sprintf("%s:active", taskName), 0, orgID.Int64)
 	celery.QueueEmptyTask(rc, queueName, taskName)
@@ -40,7 +42,7 @@ func queueMsgHandling(rc redis.Conn, orgID OrgID, contactID ContactID, msgID cou
 		"new_contact": newContact,
 	}
 
-	return queueTask(rc, "handler", "handle_event_task", orgID, contactID, body)
+	return queueTask(rc, "handler", "handle_event_task", orgID, fmt.Sprintf("ch:%d", contactID.Int64), body)
 }
 
 func queueStopContact(rc redis.Conn, orgID OrgID, contactID ContactID) error {
@@ -49,5 +51,15 @@ func queueStopContact(rc redis.Conn, orgID OrgID, contactID ContactID) error {
 		"contact_id": contactID.Int64,
 	}
 
-	return queueTask(rc, "handler", "handle_event_task", orgID, contactID, body)
+	return queueTask(rc, "handler", "handle_event_task", orgID, "", body)
+}
+
+func queueChannelEvent(rc redis.Conn, orgID OrgID, contactID ContactID, eventID ChannelEventID) error {
+	body := map[string]interface{}{
+		"type":       "channel_event",
+		"contact_id": contactID.Int64,
+		"event_id":   eventID.Int64,
+	}
+
+	return queueTask(rc, "handler", "handle_event_task", orgID, "", body)
 }

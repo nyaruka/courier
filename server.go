@@ -333,7 +333,7 @@ func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc Ch
 
 		logs := make([]*ChannelLog, 0, 1)
 
-		msgs, err := handlerFunc(channel, ww, r)
+		events, err := handlerFunc(channel, ww, r)
 		duration := time.Now().Sub(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
@@ -343,16 +343,22 @@ func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc Ch
 			WriteError(ww, r, err)
 		}
 
-		// if no messages were created we still want to log this to the channel, do so
-		if len(msgs) == 0 {
+		// if no events were created we still want to log this to the channel, do so
+		if len(events) == 0 {
 			logs = append(logs, NewChannelLog("Receive Error", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-			librato.Default.AddGauge(fmt.Sprintf("courier.msg_receive_error_%s", channel.ChannelType()), secondDuration)
+			librato.Default.AddGauge(fmt.Sprintf("courier.receive_error_%s", channel.ChannelType()), secondDuration)
 		}
 
 		// otherwise, log the request for each message
-		for _, msg := range msgs {
-			logs = append(logs, NewChannelLog("Message Received", channel, msg.ID(), r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-			librato.Default.AddGauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
+		for _, event := range events {
+			switch e := event.(type) {
+			case Msg:
+				logs = append(logs, NewChannelLog("Message Received", channel, e.ID(), r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
+				librato.Default.AddGauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
+			case ChannelEvent:
+				logs = append(logs, NewChannelLog("Event Received", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
+				librato.Default.AddGauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
+			}
 		}
 
 		// and write these out

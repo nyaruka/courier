@@ -30,13 +30,14 @@ type ChannelHandleTestCase struct {
 	Status   int
 	Response string
 
-	Name        *string
-	Text        *string
-	URN         *string
-	External    *string
-	Attachment  *string
-	Attachments []string
-	Date        *time.Time
+	Name         *string
+	Text         *string
+	URN          *string
+	External     *string
+	Attachment   *string
+	Attachments  []string
+	Date         *time.Time
+	ChannelEvent *string
 
 	PrepRequest RequestPrepFunc
 }
@@ -246,19 +247,28 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 			testHandlerRequest(t, s, testCase.URL, testCase.Data, testCase.Status, &testCase.Response, testCase.PrepRequest)
 
 			// pop our message off and test against it
-			msg, err := mb.GetLastQueueMsg()
+			contactName := mb.GetLastContactName()
+			msg, _ := mb.GetLastQueueMsg()
+			event, _ := mb.GetLastChannelEvent()
 
-			if testCase.Status == 200 && testCase.Text != nil {
-				require.Nil(err)
-
+			if testCase.Status == 200 {
 				if testCase.Name != nil {
-					require.Equal(*testCase.Name, msg.ContactName())
+					require.Equal(*testCase.Name, contactName)
 				}
 				if testCase.Text != nil {
 					require.Equal(*testCase.Text, msg.Text())
 				}
+				if testCase.ChannelEvent != nil {
+					require.Equal(*testCase.ChannelEvent, string(event.EventType()))
+				}
 				if testCase.URN != nil {
-					require.Equal(*testCase.URN, string(msg.URN()))
+					if msg != nil {
+						require.Equal(*testCase.URN, string(msg.URN()))
+					} else if event != nil {
+						require.Equal(*testCase.URN, string(event.URN()))
+					} else {
+						require.Equal(*testCase.URN, "")
+					}
 				}
 				if testCase.External != nil {
 					require.Equal(*testCase.External, msg.ExternalID())
@@ -270,10 +280,14 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 					require.Equal(testCase.Attachments, msg.Attachments())
 				}
 				if testCase.Date != nil {
-					require.Equal(*testCase.Date, *msg.ReceivedOn())
+					if msg != nil {
+						require.Equal(*testCase.Date, *msg.ReceivedOn())
+					} else if event != nil {
+						require.Equal(*testCase.Date, event.OccurredOn())
+					} else {
+						require.Equal(*testCase.Date, nil)
+					}
 				}
-			} else if err != courier.ErrMsgNotFound {
-				t.Fatalf("unexpected msg inserted: %v", err)
 			}
 		})
 	}
