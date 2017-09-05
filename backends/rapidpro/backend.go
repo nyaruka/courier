@@ -382,6 +382,9 @@ func (b *backend) Start() error {
 	if err == nil {
 		err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "statuses")
 	}
+	if err == nil {
+		err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "events")
+	}
 	if err != nil {
 		log.WithError(err).Error("spool directories not writable")
 	} else {
@@ -391,6 +394,7 @@ func (b *backend) Start() error {
 	// register and start our msg spool flushers
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "msgs"), b.flushMsgFile)
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "statuses"), b.flushStatusFile)
+	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "events"), b.flushChannelEventFile)
 
 	logrus.WithFields(logrus.Fields{
 		"comp":  "backend",

@@ -5,7 +5,7 @@ import "time"
 // ChannelEventType is the type of channel event this is
 type ChannelEventType string
 
-// Possible values for MsgStatus
+// Possible values for ChannelEventTypes
 const (
 	NewConversation ChannelEventType = "new_conversation"
 	Referral        ChannelEventType = "referral"

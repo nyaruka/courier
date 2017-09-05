@@ -101,7 +101,7 @@ func writeChannelEventToDB(b *backend, e *DBChannelEvent) error {
 	return nil
 }
 
-func (b *backend) flushEventFile(filename string, contents []byte) error {
+func (b *backend) flushChannelEventFile(filename string, contents []byte) error {
 	event := &DBChannelEvent{}
 	err := json.Unmarshal(contents, event)
 	if err != nil {

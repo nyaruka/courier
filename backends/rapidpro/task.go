@@ -18,14 +18,14 @@ func queueTask(rc redis.Conn, queueName string, taskName string, orgID OrgID, su
 	}
 
 	now := time.Now().UTC()
-	epochFraction := float64(now.UnixNano()) / float64(time.Second)
+	epochFloat := float64(now.UnixNano()) / float64(time.Second)
 
 	// we do all our queueing in a transaction
 	rc.Send("multi")
 	if subQueue != "" {
-		rc.Send("zadd", subQueue, fmt.Sprintf("%.5f", epochFraction), bodyJSON)
+		rc.Send("zadd", subQueue, fmt.Sprintf("%.5f", epochFloat), bodyJSON)
 	}
-	rc.Send("zadd", fmt.Sprintf("%s:%d", taskName, orgID.Int64), fmt.Sprintf("%.5f", epochFraction-10000000), bodyJSON)
+	rc.Send("zadd", fmt.Sprintf("%s:%d", taskName, orgID.Int64), fmt.Sprintf("%.5f", epochFloat-10000000), bodyJSON)
 	rc.Send("zincrby", fmt.Sprintf("%s:active", taskName), 0, orgID.Int64)
 	celery.QueueEmptyTask(rc, queueName, taskName)
 	_, err = rc.Do("exec")
