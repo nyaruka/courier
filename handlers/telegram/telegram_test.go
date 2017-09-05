@@ -557,3 +557,58 @@ func BenchmarkHandler(b *testing.B) {
 
 	RunChannelBenchmarks(b, testChannels, NewHandler(), testCases)
 }
+
+// setSendURL takes care of setting the send_url to our test server host
+func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Msg) {
+	telegramAPIURL = server.URL
+}
+
+var defaultSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "telegram:12345",
+		Status: "W", ExternalID: "133",
+		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
+		PostParams: map[string]string{"text": "Simple Message", "chat_id": "12345"},
+		SendPrep:   setSendURL},
+	{Label: "Unicode Send",
+		Text: "☺", URN: "telegram:12345",
+		Status: "W", ExternalID: "133",
+		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
+		PostParams: map[string]string{"text": "☺", "chat_id": "12345"},
+		SendPrep:   setSendURL},
+	{Label: "Error",
+		Text: "Error", URN: "telegram:12345",
+		Status:       "E",
+		ResponseBody: `{ "ok": false }`, ResponseStatus: 403,
+		PostParams: map[string]string{"text": `Error`, "chat_id": "12345"},
+		SendPrep:   setSendURL},
+	{Label: "Send Photo",
+		Text: "My pic!", URN: "telegram:12345", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Status:       "W",
+		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
+		PostParams: map[string]string{"caption": "My pic!", "chat_id": "12345", "photo": "https://foo.bar/image.jpg"},
+		SendPrep:   setSendURL},
+	{Label: "Send Video",
+		Text: "My vid!", URN: "telegram:12345", Attachments: []string{"video/mpeg:https://foo.bar/video.mpeg"},
+		Status:       "W",
+		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
+		PostParams: map[string]string{"caption": "My vid!", "chat_id": "12345", "video": "https://foo.bar/video.mpeg"},
+		SendPrep:   setSendURL},
+	{Label: "Send Audio",
+		Text: "My audio!", URN: "telegram:12345", Attachments: []string{"audio/mp3:https://foo.bar/audio.mp3"},
+		Status:       "W",
+		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
+		PostParams: map[string]string{"caption": "My audio!", "chat_id": "12345", "audio": "https://foo.bar/audio.mp3"},
+		SendPrep:   setSendURL},
+	{Label: "Unknown Attachment",
+		Text: "My pic!", URN: "telegram:12345", Attachments: []string{"unknown/foo:https://foo.bar/unknown.foo"},
+		Status:   "E",
+		SendPrep: setSendURL},
+}
+
+func TestSending(t *testing.T) {
+	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US",
+		map[string]interface{}{courier.ConfigAuthToken: "auth_token"})
+
+	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
+}

@@ -184,9 +184,8 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				t.Errorf("unexpected error: %s", err.Error())
 			}
 
-			require.NotNil(testRequest)
-
 			if testCase.URLParams != nil {
+				require.NotNil(testRequest)
 				for k, v := range testCase.URLParams {
 					value := testRequest.URL.Query().Get(k)
 					require.Equal(v, value, fmt.Sprintf("%s not equal", k))
@@ -194,6 +193,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if testCase.PostParams != nil {
+				require.NotNil(testRequest)
 				for k, v := range testCase.PostParams {
 					value := testRequest.PostFormValue(k)
 					require.Equal(v, value)
@@ -201,11 +201,13 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if testCase.RequestBody != "" {
+				require.NotNil(testRequest)
 				value, _ := ioutil.ReadAll(testRequest.Body)
 				require.Equal(testCase.RequestBody, string(value))
 			}
 
 			if testCase.Headers != nil {
+				require.NotNil(testRequest)
 				for k, v := range testCase.Headers {
 					value := testRequest.Header.Get(k)
 					require.Equal(v, value)
