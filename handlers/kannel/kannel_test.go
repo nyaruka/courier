@@ -102,7 +102,7 @@ var nationalSendTestCases = []ChannelSendTestCase{
 		Text: "success", URN: "tel:+250788383383",
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		URLParams: map[string]string{"text": "success", "to": "0788383383", "coding": "", "priority": "1"},
+		URLParams: map[string]string{"text": "success", "to": "788383383", "coding": "", "priority": "1"},
 		SendPrep:  setSendURL},
 }
 

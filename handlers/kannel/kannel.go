@@ -155,7 +155,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	if useNational {
 		parsed, err := phonenumbers.Parse(msg.URN().Path(), encodingDefault)
 		if err == nil {
-			form["to"] = []string{strings.Replace(phonenumbers.Format(parsed, phonenumbers.NATIONAL), " ", "", -1)}
+			form["to"] = []string{fmt.Sprintf("%d", parsed.GetNationalNumber())}
 		}
 	}
 
