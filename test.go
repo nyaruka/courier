@@ -20,9 +20,11 @@ type MockBackend struct {
 	queueMsgs    []Msg
 	errorOnQueue bool
 
-	mutex        sync.RWMutex
-	outgoingMsgs []Msg
-	msgStatuses  []MsgStatus
+	mutex           sync.RWMutex
+	outgoingMsgs    []Msg
+	msgStatuses     []MsgStatus
+	channelEvents   []ChannelEvent
+	lastContactName string
 
 	stoppedMsgContacts []Msg
 	sentMsgs           map[MsgID]bool
@@ -42,6 +44,19 @@ func (mb *MockBackend) GetLastQueueMsg() (Msg, error) {
 		return nil, ErrMsgNotFound
 	}
 	return mb.queueMsgs[len(mb.queueMsgs)-1], nil
+}
+
+// GetLastChannelEvent returns the last event written to the server
+func (mb *MockBackend) GetLastChannelEvent() (ChannelEvent, error) {
+	if len(mb.channelEvents) == 0 {
+		return nil, errors.New("no channel events")
+	}
+	return mb.channelEvents[len(mb.channelEvents)-1], nil
+}
+
+// GetLastContactName returns the contact name set on the last msg or channel event written
+func (mb *MockBackend) GetLastContactName() string {
+	return mb.lastContactName
 }
 
 // NewIncomingMsg creates a new message from the given params
@@ -122,6 +137,7 @@ func (mb *MockBackend) WriteMsg(m Msg) error {
 	}
 
 	mb.queueMsgs = append(mb.queueMsgs, m)
+	mb.lastContactName = m.(*mockMsg).contactName
 	return nil
 }
 
@@ -151,6 +167,25 @@ func (mb *MockBackend) WriteMsgStatus(status MsgStatus) error {
 	defer mb.mutex.Unlock()
 
 	mb.msgStatuses = append(mb.msgStatuses, status)
+	return nil
+}
+
+// NewChannelEvent creates a new channel event with the passed in parameters
+func (mb *MockBackend) NewChannelEvent(channel Channel, eventType ChannelEventType, urn URN) ChannelEvent {
+	return &mockChannelEvent{
+		channel:   channel,
+		eventType: eventType,
+		urn:       urn,
+	}
+}
+
+// WriteChannelEvent writes the channel event passed in
+func (mb *MockBackend) WriteChannelEvent(event ChannelEvent) error {
+	mb.mutex.Lock()
+	defer mb.mutex.Unlock()
+
+	mb.channelEvents = append(mb.channelEvents, event)
+	mb.lastContactName = event.(*mockChannelEvent).contactName
 	return nil
 }
 
@@ -295,6 +330,7 @@ type mockMsg struct {
 
 func (m *mockMsg) Channel() Channel      { return m.channel }
 func (m *mockMsg) ID() MsgID             { return m.id }
+func (m *mockMsg) ReceiveID() int64      { return m.id.Int64 }
 func (m *mockMsg) UUID() MsgUUID         { return m.uuid }
 func (m *mockMsg) Text() string          { return m.text }
 func (m *mockMsg) Attachments() []string { return m.attachments }
@@ -339,3 +375,45 @@ func (m *mockMsgStatus) SetStatus(status MsgStatusValue) { m.status = status }
 
 func (m *mockMsgStatus) Logs() []*ChannelLog    { return m.logs }
 func (m *mockMsgStatus) AddLog(log *ChannelLog) { m.logs = append(m.logs, log) }
+
+//-----------------------------------------------------------------------------
+// Mock channel event implementation
+//-----------------------------------------------------------------------------
+
+type mockChannelEvent struct {
+	channel    Channel
+	eventType  ChannelEventType
+	urn        URN
+	createdOn  time.Time
+	occurredOn time.Time
+
+	contactName string
+	extra       map[string]interface{}
+
+	logs []*ChannelLog
+}
+
+func (e *mockChannelEvent) ReceiveID() int64              { return 0 }
+func (e *mockChannelEvent) ChannelUUID() ChannelUUID      { return e.channel.UUID() }
+func (e *mockChannelEvent) EventType() ChannelEventType   { return e.eventType }
+func (e *mockChannelEvent) CreatedOn() time.Time          { return e.createdOn }
+func (e *mockChannelEvent) OccurredOn() time.Time         { return e.occurredOn }
+func (e *mockChannelEvent) Extra() map[string]interface{} { return e.extra }
+func (e *mockChannelEvent) ContactName() string           { return e.contactName }
+func (e *mockChannelEvent) URN() URN                      { return e.urn }
+
+func (e *mockChannelEvent) WithExtra(extra map[string]interface{}) ChannelEvent {
+	e.extra = extra
+	return e
+}
+func (e *mockChannelEvent) WithContactName(name string) ChannelEvent {
+	e.contactName = name
+	return e
+}
+func (e *mockChannelEvent) WithOccurredOn(time time.Time) ChannelEvent {
+	e.occurredOn = time
+	return e
+}
+
+func (e *mockChannelEvent) Logs() []*ChannelLog    { return e.logs }
+func (e *mockChannelEvent) AddLog(log *ChannelLog) { e.logs = append(e.logs, log) }

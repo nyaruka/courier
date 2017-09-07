@@ -15,6 +15,9 @@ import (
 // Default is our default librato collector
 var Default *Sender
 
+// The endpoint we post librato to
+var libratoEndpoint = "https://metrics-api.librato.com/v1/metrics"
+
 // NewSender creates a new librato Sender with the passed in parameters
 func NewSender(waitGroup *sync.WaitGroup, username string, token string, source string, timeout time.Duration) *Sender {
 	return &Sender{
@@ -103,7 +106,7 @@ func (c *Sender) flush(count int) {
 		return
 	}
 
-	req, err := http.NewRequest("POST", "https://metrics-api.librato.com/v1/metrics", bytes.NewReader(encoded))
+	req, err := http.NewRequest("POST", libratoEndpoint, bytes.NewReader(encoded))
 	if err != nil {
 		logrus.WithField("comp", "librato").WithError(err).Error("error sending librato metrics")
 		return

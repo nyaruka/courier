@@ -366,6 +366,7 @@ type DBMsg struct {
 
 func (m *DBMsg) Channel() courier.Channel      { return m.Channel_ }
 func (m *DBMsg) ID() courier.MsgID             { return m.ID_ }
+func (m *DBMsg) ReceiveID() int64              { return m.ID_.Int64 }
 func (m *DBMsg) UUID() courier.MsgUUID         { return m.UUID_ }
 func (m *DBMsg) Text() string                  { return m.Text_ }
 func (m *DBMsg) Attachments() []string         { return []string(m.Attachments_) }

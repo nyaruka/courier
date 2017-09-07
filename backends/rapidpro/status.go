@@ -25,7 +25,6 @@ func newMsgStatus(channel courier.Channel, id courier.MsgID, externalID string, 
 
 // writeMsgStatus writes the passed in status to the database, queueing it to our spool in case the database is down
 func writeMsgStatus(b *backend, status courier.MsgStatus) error {
-	// create our msg status object
 	dbStatus := status.(*DBMsgStatus)
 
 	err := writeMsgStatusToDB(b, dbStatus)
@@ -129,7 +128,7 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 		return nil
 	}
 
-	// try to flush to redis
+	// try to flush to our db
 	return writeMsgStatusToDB(b, status)
 }
 

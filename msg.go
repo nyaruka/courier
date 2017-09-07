@@ -95,6 +95,8 @@ type Msg interface {
 	WithID(id MsgID) Msg
 	WithUUID(uuid MsgUUID) Msg
 	WithAttachment(url string) Msg
+
+	ReceiveID() int64
 }
 
 // GetTextAndAttachments returns both the text of our message as well as any attachments, newline delimited
