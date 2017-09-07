@@ -19,6 +19,7 @@ func TestLibrato(t *testing.T) {
 		body, _ := ioutil.ReadAll(r.Body)
 		testRequest = httptest.NewRequest(r.Method, r.URL.String(), bytes.NewBuffer(body))
 		testRequest.Header = r.Header
+		w.WriteHeader(200)
 		w.Write([]byte("ok"))
 	}))
 	defer server.Close()
@@ -29,7 +30,11 @@ func TestLibrato(t *testing.T) {
 	wg := sync.WaitGroup{}
 	sender := NewSender(&wg, "username", "password", "host", 10*time.Millisecond)
 	sender.Start()
-	defer sender.Stop()
+
+	defer func() {
+		sender.Stop()
+		wg.Wait()
+	}()
 
 	// queue up some events
 	sender.AddGauge("event10", 10)
@@ -56,6 +61,4 @@ func TestLibrato(t *testing.T) {
 	gauge12, err := jsonparser.GetInt(body, "gauges", "[2]", "value")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(12), gauge12)
-
-	wg.Wait()
 }
