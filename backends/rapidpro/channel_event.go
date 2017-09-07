@@ -15,7 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ChannelEventID is the type of our channel ids
+// ChannelEventID is the type of our channel event ids
 type ChannelEventID struct {
 	null.Int
 }
