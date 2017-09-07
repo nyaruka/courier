@@ -29,6 +29,7 @@ func TestLibrato(t *testing.T) {
 	wg := sync.WaitGroup{}
 	sender := NewSender(&wg, "username", "password", "host", 10*time.Millisecond)
 	sender.Start()
+	defer sender.Stop()
 
 	// queue up some events
 	sender.AddGauge("event10", 10)
@@ -36,7 +37,7 @@ func TestLibrato(t *testing.T) {
 	sender.AddGauge("event12", 12)
 
 	// sleep a bit
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	// our server should have been called, check the parameters
 	assert.NotNil(t, testRequest)
@@ -56,6 +57,5 @@ func TestLibrato(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(12), gauge12)
 
-	sender.Stop()
 	wg.Wait()
 }
