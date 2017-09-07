@@ -3,6 +3,7 @@ package courier
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/utils"
@@ -19,6 +20,9 @@ func TestServer(t *testing.T) {
 	server := NewServerWithLogger(config, NewMockBackend(), logger)
 	server.Start()
 	defer server.Stop()
+
+	// wait for server to come up
+	time.Sleep(100 * time.Millisecond)
 
 	// hit our main pages, this is admitedly mostly in the name of coverage
 	req, _ := http.NewRequest("GET", "http://localhost:8080/", nil)
