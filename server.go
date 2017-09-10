@@ -157,7 +157,7 @@ func (s *server) Stop() error {
 	s.foreman.Stop()
 
 	// shut down our HTTP server
-	if err := s.httpServer.Shutdown(nil); err != nil {
+	if err := s.httpServer.Shutdown(context.Background()); err != nil {
 		log.WithField("state", "stopping").WithError(err).Error("error shutting down server")
 	}
 
