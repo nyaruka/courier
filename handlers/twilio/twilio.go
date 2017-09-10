@@ -41,7 +41,7 @@ type handler struct {
 
 // NewHandler returns a new TwilioHandler ready to be registered
 func NewHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("TW"), "Twilio")}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("T"), "Twilio")}
 }
 
 func init() {
