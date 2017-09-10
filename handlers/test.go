@@ -57,6 +57,7 @@ type ChannelSendTestCase struct {
 	ResponseStatus int
 	ResponseBody   string
 
+	Path        string
 	URLParams   map[string]string
 	PostParams  map[string]string
 	RequestBody string
@@ -182,6 +183,11 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				}
 			} else if err != nil {
 				t.Errorf("unexpected error: %s", err.Error())
+			}
+
+			if testCase.Path != "" {
+				require.NotNil(testRequest)
+				require.Equal(testCase.Path, testRequest.URL.Path)
 			}
 
 			if testCase.URLParams != nil {

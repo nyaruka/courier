@@ -70,7 +70,7 @@ func BenchmarkHandler(b *testing.B) {
 
 // setSendURL takes care of setting the send_url to our test server host
 func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Msg) {
-	sendURL = server.URL
+	sendURL = server.URL + "/Account/"
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
@@ -79,6 +79,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Status: "W", ExternalID: "1002",
 		ResponseBody: `{ "sid": "1002" }`, ResponseStatus: 200,
 		PostParams: map[string]string{"Body": "Simple Message ☺", "To": "+250788383383"},
+		Path:       "/Account/accountSID/Messages.json",
 		SendPrep:   setSendURL},
 	{Label: "Error Sending",
 		Text: "Error Message", URN: "tel:+250788383383",
