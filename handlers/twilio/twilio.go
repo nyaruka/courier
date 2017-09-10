@@ -155,7 +155,7 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	// build our callback URL
-	callbackURL := fmt.Sprintf("%s/c/kn/%s/status", h.Server().Config().BaseURL, msg.Channel().UUID())
+	callbackURL := fmt.Sprintf("%s/c/t/%s/status", h.Server().Config().BaseURL, msg.Channel().UUID())
 
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	if accountSID == "" {
