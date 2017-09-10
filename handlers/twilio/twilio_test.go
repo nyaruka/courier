@@ -80,6 +80,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ResponseBody: `{ "sid": "1002" }`, ResponseStatus: 200,
 		PostParams: map[string]string{"Body": "Simple Message ☺", "To": "+250788383383"},
 		Path:       "/Account/accountSID/Messages.json",
+		Headers:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		SendPrep:   setSendURL},
 	{Label: "Error Sending",
 		Text: "Error Message", URN: "tel:+250788383383",
