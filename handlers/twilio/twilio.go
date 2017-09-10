@@ -24,7 +24,7 @@ import (
 )
 
 // TODO: agree on case!
-const configAccountSID = "ACCOUNT_SID"
+const configAccountSID = "account_sid"
 const configMessagingServiceSID = "messaging_service_sid"
 const configSendURL = "send_url"
 
