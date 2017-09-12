@@ -284,13 +284,25 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	now := time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)
 
-	// update by id
+	// update by id with external id
 	status := ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10001), courier.MsgSent)
+	status.SetExternalID("ext0")
 	err := ts.b.WriteMsgStatus(status)
 	ts.NoError(err)
 	m, err := readMsgFromDB(ts.b, courier.NewMsgID(10001))
 	ts.NoError(err)
 	ts.Equal(m.Status_, courier.MsgSent)
+	ts.Equal(m.ExternalID_.String, "ext0")
+	ts.True(m.ModifiedOn_.After(now))
+
+	// update by id, no external id, shouldn't overwrite it
+	status = ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10001), courier.MsgSent)
+	err = ts.b.WriteMsgStatus(status)
+	ts.NoError(err)
+	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10001))
+	ts.NoError(err)
+	ts.Equal(m.Status_, courier.MsgSent)
+	ts.Equal(m.ExternalID_.String, "ext0")
 	ts.True(m.ModifiedOn_.After(now))
 
 	// update by external id
