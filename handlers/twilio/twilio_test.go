@@ -16,8 +16,10 @@ var testChannels = []courier.Channel{
 }
 
 var (
-	receiveURL = "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-	statusURL  = "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
+	receiveURL         = "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
+	statusURL          = "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"
+	statusIDURL        = "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=12345"
+	statusInvalidIDURL = "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=asdf"
 
 	receiveValid  = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=0&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&Body=Msg&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
 	receiveMedia  = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=2&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&Body=Msg&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01&MediaUrl0=cat.jpg&MediaUrl1=dog.jpg"
@@ -29,7 +31,7 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: receiveValid, Status: 200, Response: "<Response/>",
-		Text: Sp("Msg"), URN: Sp("tel:+14133881111"), External: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
+		Text: Sp("Msg"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Invalid Signature", URL: receiveURL, Data: receiveValid, Status: 400, Response: "invalid request signature",
 		PrepRequest: addInvalidSignature},
@@ -37,16 +39,20 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive No Params", URL: receiveURL, Data: " ", Status: 400, Response: "field 'messagesid' required",
 		PrepRequest: addValidSignature},
 	{Label: "Receive Media", URL: receiveURL, Data: receiveMedia, Status: 200, Response: "<Response/>",
-		Text: Sp("Msg"), URN: Sp("tel:+14133881111"), External: Sp("SMe287d7109a5a925f182f0e07fe5b223b"), Attachments: []string{"cat.jpg", "dog.jpg"},
+		Text: Sp("Msg"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"), Attachments: []string{"cat.jpg", "dog.jpg"},
 		PrepRequest: addValidSignature},
 	{Label: "Receive Base64", URL: receiveURL, Data: receiveBase64, Status: 200, Response: "<Response/>",
-		Text: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), URN: Sp("tel:+14133881111"), External: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
+		Text: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
 		PrepRequest: addValidSignature},
 	{Label: "Status No Params", URL: statusURL, Data: " ", Status: 400, Response: "field 'messagestatus' required",
 		PrepRequest: addValidSignature},
 	{Label: "Status Invalid Status", URL: statusURL, Data: statusInvalid, Status: 400, Response: "unknown status 'huh'",
 		PrepRequest: addValidSignature},
-	{Label: "Status Valid", URL: statusURL, Data: statusValid, Status: 200, Response: `"status":"D"`,
+	{Label: "Status Valid", URL: statusURL, Data: statusValid, Status: 200, Response: `"status":"D"`, ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
+		PrepRequest: addValidSignature},
+	{Label: "Status ID Valid", URL: statusIDURL, Data: statusValid, Status: 200, Response: `"status":"D"`, ID: 12345,
+		PrepRequest: addValidSignature},
+	{Label: "Status ID Invalid", URL: statusInvalidIDURL, Data: statusValid, Status: 200, Response: `"status":"D"`, ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
 		PrepRequest: addValidSignature},
 }
 

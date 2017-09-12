@@ -13,9 +13,11 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/buger/jsonparser"
+	"github.com/sirupsen/logrus"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
@@ -142,8 +144,24 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 		return nil, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", twStatus.MessageStatus)
 	}
 
+	// if the message id was passed explicitely, use that
+	var status courier.MsgStatus
+	idString := r.URL.Query().Get("id")
+	if idString != "" {
+		msgID, err := strconv.ParseInt(idString, 10, 64)
+		if err != nil {
+			logrus.WithError(err).WithField("id", idString).Error("error converting twilio callback id to integer")
+		} else {
+			status = h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus)
+		}
+	}
+
+	// if we have no status, then build it from the external (twilio) id
+	if status == nil {
+		status = h.Backend().NewMsgStatusForExternalID(channel, twStatus.MessageSID, msgStatus)
+	}
+
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, twStatus.MessageSID, msgStatus)
 	err = h.Backend().WriteMsgStatus(status)
 	if err != nil {
 		return nil, err

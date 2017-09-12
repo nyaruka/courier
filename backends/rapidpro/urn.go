@@ -163,7 +163,6 @@ RETURNING id
 func insertContactURN(db dbTx, urn *DBContactURN) error {
 	rows, err := db.NamedQuery(insertURN, urn)
 	if err != nil {
-		logrus.WithError(err).WithField("urn", urn.Identity).Error("error inserting contact urn")
 		return err
 	}
 	defer rows.Close()

@@ -33,11 +33,13 @@ type ChannelHandleTestCase struct {
 	Name         *string
 	Text         *string
 	URN          *string
-	External     *string
 	Attachment   *string
 	Attachments  []string
 	Date         *time.Time
 	ChannelEvent *string
+
+	ExternalID *string
+	ID         int64
 
 	PrepRequest RequestPrepFunc
 }
@@ -258,6 +260,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 			contactName := mb.GetLastContactName()
 			msg, _ := mb.GetLastQueueMsg()
 			event, _ := mb.GetLastChannelEvent()
+			status, _ := mb.GetLastMsgStatus()
 
 			if testCase.Status == 200 {
 				if testCase.Name != nil {
@@ -278,8 +281,21 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 						require.Equal(*testCase.URN, "")
 					}
 				}
-				if testCase.External != nil {
-					require.Equal(*testCase.External, msg.ExternalID())
+				if testCase.ExternalID != nil {
+					if msg != nil {
+						require.Equal(*testCase.ExternalID, msg.ExternalID())
+					} else if status != nil {
+						require.Equal(*testCase.ExternalID, status.ExternalID())
+					} else {
+						require.Equal(*testCase.ExternalID, "")
+					}
+				}
+				if testCase.ID != 0 {
+					if status != nil {
+						require.Equal(testCase.ID, status.ID().Int64)
+					} else {
+						require.Equal(testCase.ID, -1)
+					}
 				}
 				if testCase.Attachment != nil {
 					require.Equal([]string{*testCase.Attachment}, msg.Attachments())

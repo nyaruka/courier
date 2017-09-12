@@ -54,6 +54,14 @@ func (mb *MockBackend) GetLastChannelEvent() (ChannelEvent, error) {
 	return mb.channelEvents[len(mb.channelEvents)-1], nil
 }
 
+// GetLastMsgStatus returns the last status written to the server
+func (mb *MockBackend) GetLastMsgStatus() (MsgStatus, error) {
+	if len(mb.msgStatuses) == 0 {
+		return nil, errors.New("no msg statuses")
+	}
+	return mb.msgStatuses[len(mb.msgStatuses)-1], nil
+}
+
 // GetLastContactName returns the contact name set on the last msg or channel event written
 func (mb *MockBackend) GetLastContactName() string {
 	return mb.lastContactName
