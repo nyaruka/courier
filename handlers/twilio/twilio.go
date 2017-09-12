@@ -122,7 +122,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.ReceiveEvent{msg}, h.writeReceiveSuccess(w)
+	return []courier.ReceiveEvent{msg}, h.writeReceiveSuccess(w, r, msg)
 }
 
 // StatusMessage is our HTTP handler function for status updates
@@ -253,7 +253,8 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 }
 
 // Twilio expects Twiml from a message receive request
-func (h *handler) writeReceiveSuccess(w http.ResponseWriter) error {
+func (h *handler) writeReceiveSuccess(w http.ResponseWriter, r *http.Request, msg courier.Msg) error {
+	courier.LogMsgReceived(r, msg)
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "<Response/>")

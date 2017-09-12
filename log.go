@@ -1,84 +1,70 @@
 package courier
 
 import (
-	"fmt"
+	"net/http"
 	"time"
 
-	"github.com/nyaruka/courier/utils"
+	"github.com/sirupsen/logrus"
 )
 
-// NilStatusCode is used when we have an error before even sending anything
-const NilStatusCode int = 417
+// LogMsgStatusReceived logs our that we received a new MsgStatus
+func LogMsgStatusReceived(r *http.Request, status MsgStatus) {
+	log := logrus.WithFields(logrus.Fields{
+		"url":          r.Context().Value(contextRequestURL),
+		"elapsed_ms":   getElapsedMS(r),
+		"channel_uuid": status.ChannelUUID(),
+	})
 
-// NewChannelLog creates a new channel log for the passed in channel, id, and request and response info
-func NewChannelLog(description string, channel Channel, msgID MsgID, method string, url string, statusCode int,
-	request string, response string, elapsed time.Duration, err error) *ChannelLog {
-
-	errString := ""
-	if err != nil {
-		errString = err.Error()
+	if status.ID() != NilMsgID {
+		log = log.WithField("msg_id", status.ID().Int64)
+	} else {
+		log = log.WithField("msg_external_id", status.ExternalID())
 	}
-
-	return &ChannelLog{
-		Description: description,
-		Channel:     channel,
-		MsgID:       msgID,
-		Method:      method,
-		URL:         url,
-		StatusCode:  statusCode,
-		Error:       errString,
-		Request:     request,
-		Response:    response,
-		CreatedOn:   time.Now(),
-		Elapsed:     elapsed,
-	}
+	log.Info("status updated")
 }
 
-// NewChannelLogFromRR creates a new channel log for the passed in channel, id, and request/response log
-func NewChannelLogFromRR(description string, channel Channel, msgID MsgID, rr *utils.RequestResponse) *ChannelLog {
-	log := &ChannelLog{
-		Description: description,
-		Channel:     channel,
-		MsgID:       msgID,
-		Method:      rr.Method,
-		URL:         rr.URL,
-		StatusCode:  rr.StatusCode,
-		Request:     rr.Request,
-		Response:    rr.Response,
-		CreatedOn:   time.Now(),
-		Elapsed:     rr.Elapsed,
+// LogMsgReceived logs that we received the passed in message
+func LogMsgReceived(r *http.Request, msg Msg) {
+	logrus.WithFields(logrus.Fields{
+		"url":             r.Context().Value(contextRequestURL),
+		"elapsed_ms":      getElapsedMS(r),
+		"channel_uuid":    msg.Channel().UUID(),
+		"msg_uuid":        msg.UUID(),
+		"msg_id":          msg.ID().Int64,
+		"msg_urn":         msg.URN().Identity(),
+		"msg_text":        msg.Text(),
+		"msg_attachments": msg.Attachments(),
+	}).Info("msg received")
+}
+
+// LogChannelEventReceived logs that we received the passed in channel event
+func LogChannelEventReceived(r *http.Request, event ChannelEvent) {
+	logrus.WithFields(logrus.Fields{
+		"url":          r.Context().Value(contextRequestURL),
+		"elapsed_ms":   getElapsedMS(r),
+		"channel_uuid": event.ChannelUUID(),
+		"event_type":   event.EventType(),
+		"event_urn":    event.URN().Identity(),
+	}).Info("evt received")
+}
+
+// LogRequestIgnored logs that we ignored the passed in request
+func LogRequestIgnored(r *http.Request, details string) {
+	logrus.WithFields(logrus.Fields{
+		"url":        r.Context().Value(contextRequestURL),
+		"elapsed_ms": getElapsedMS(r),
+		"details":    details,
+	}).Info("msg ignored")
+}
+
+func getElapsedMS(r *http.Request) float64 {
+	start := r.Context().Value(contextRequestStart)
+	if start == nil {
+		return -1
 	}
-
-	return log
-}
-
-// WithError augments the passed in ChannelLog with the passed in description and error if error is not nil
-func (l *ChannelLog) WithError(description string, err error) *ChannelLog {
-	if err != nil {
-		l.Error = err.Error()
-		l.Description = description
+	startTime, isTime := start.(time.Time)
+	if !isTime {
+		return -1
 	}
-
-	return l
-}
-
-func (l *ChannelLog) String() string {
-	return fmt.Sprintf("%s: %d %s %d\n%s\n%s\n%s", l.Description, l.StatusCode, l.URL, l.Elapsed, l.Error, l.Request, l.Response)
-}
-
-// ChannelLog represents the log for a msg being received, sent or having its status updated. It includes the HTTP request
-// and response for the action as well as the channel it was performed on and an option ID of the msg (for some error
-// cases we may log without a msg id)
-type ChannelLog struct {
-	Description string
-	Channel     Channel
-	MsgID       MsgID
-	Method      string
-	URL         string
-	StatusCode  int
-	Error       string
-	Request     string
-	Response    string
-	Elapsed     time.Duration
-	CreatedOn   time.Time
+	return float64(time.Now().Sub(startTime)) / float64(time.Millisecond)
 }

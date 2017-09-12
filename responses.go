@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
@@ -28,23 +26,13 @@ func WriteError(w http.ResponseWriter, r *http.Request, err error) error {
 
 // WriteIgnored writes a JSON response for the passed in message
 func WriteIgnored(w http.ResponseWriter, r *http.Request, details string) error {
-	logrus.WithFields(logrus.Fields{
-		"url":        r.Context().Value(contextRequestURL),
-		"elapsed_ms": getElapsedMS(r),
-		"details":    details,
-	}).Info("msg ignored")
+	LogRequestIgnored(r, details)
 	return writeData(w, http.StatusOK, details, struct{}{})
 }
 
 // WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it
 func WriteChannelEventSuccess(w http.ResponseWriter, r *http.Request, event ChannelEvent) error {
-	logrus.WithFields(logrus.Fields{
-		"url":          r.Context().Value(contextRequestURL),
-		"elapsed_ms":   getElapsedMS(r),
-		"channel_uuid": event.ChannelUUID(),
-		"event_type":   event.EventType(),
-		"event_urn":    event.URN().Identity(),
-	}).Info("evt received")
+	LogChannelEventReceived(r, event)
 	return writeData(w, http.StatusOK, "Event Accepted",
 		&eventReceiveData{
 			event.ChannelUUID(),
@@ -56,16 +44,7 @@ func WriteChannelEventSuccess(w http.ResponseWriter, r *http.Request, event Chan
 
 // WriteMsgSuccess writes a JSON response for the passed in msg indicating we handled it
 func WriteMsgSuccess(w http.ResponseWriter, r *http.Request, msg Msg) error {
-	logrus.WithFields(logrus.Fields{
-		"url":             r.Context().Value(contextRequestURL),
-		"elapsed_ms":      getElapsedMS(r),
-		"channel_uuid":    msg.Channel().UUID(),
-		"msg_uuid":        msg.UUID(),
-		"msg_id":          msg.ID().Int64,
-		"msg_urn":         msg.URN().Identity(),
-		"msg_text":        msg.Text(),
-		"msg_attachments": msg.Attachments(),
-	}).Info("msg received")
+	LogMsgReceived(r, msg)
 	return writeData(w, http.StatusOK, "Message Accepted",
 		&msgReceiveData{
 			msg.Channel().UUID(),
@@ -80,19 +59,7 @@ func WriteMsgSuccess(w http.ResponseWriter, r *http.Request, msg Msg) error {
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
 func WriteStatusSuccess(w http.ResponseWriter, r *http.Request, status MsgStatus) error {
-	log := logrus.WithFields(logrus.Fields{
-		"url":          r.Context().Value(contextRequestURL),
-		"elapsed_ms":   getElapsedMS(r),
-		"channel_uuid": status.ChannelUUID(),
-	})
-
-	if status.ID() != NilMsgID {
-		log = log.WithField("msg_id", status.ID().Int64)
-	} else {
-		log = log.WithField("msg_external_id", status.ExternalID())
-	}
-	log.Info("status updated")
-
+	LogMsgStatusReceived(r, status)
 	return writeData(w, http.StatusOK, "Status Update Accepted",
 		&statusData{
 			status.ChannelUUID(),
@@ -100,18 +67,6 @@ func WriteStatusSuccess(w http.ResponseWriter, r *http.Request, status MsgStatus
 			status.ID(),
 			status.ExternalID(),
 		})
-}
-
-func getElapsedMS(r *http.Request) float64 {
-	start := r.Context().Value(contextRequestStart)
-	if start == nil {
-		return -1
-	}
-	startTime, isTime := start.(time.Time)
-	if !isTime {
-		return -1
-	}
-	return float64(time.Now().Sub(startTime)) / float64(time.Millisecond)
 }
 
 type errorResponse struct {
