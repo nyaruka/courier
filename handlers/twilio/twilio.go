@@ -67,7 +67,7 @@ type twMessage struct {
 	FromCountry string
 	To          string `validate:"required"`
 	ToCountry   string
-	Body        string `validate:"required"`
+	Body        string
 	NumMedia    int
 }
 

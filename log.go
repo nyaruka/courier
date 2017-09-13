@@ -13,6 +13,7 @@ func LogMsgStatusReceived(r *http.Request, status MsgStatus) {
 		"url":          r.Context().Value(contextRequestURL),
 		"elapsed_ms":   getElapsedMS(r),
 		"channel_uuid": status.ChannelUUID(),
+		"status":       status.Status(),
 	})
 
 	if status.ID() != NilMsgID {
