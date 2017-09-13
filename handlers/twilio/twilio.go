@@ -195,7 +195,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	// add any media URL
 	if len(msg.Attachments()) > 0 {
 		_, mediaURL := courier.SplitAttachment(msg.Attachments()[0])
-		form["MediaURL"] = []string{mediaURL}
+		form["MediaUrl"] = []string{mediaURL}
 	}
 
 	// set our from, either as a messaging service or from our address

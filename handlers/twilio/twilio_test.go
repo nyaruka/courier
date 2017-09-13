@@ -121,7 +121,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status:       "W",
 		ResponseBody: `{ "sid": "1002" }`, ResponseStatus: 200,
-		PostParams: map[string]string{"Body": "My pic!", "To": "+250788383383", "MediaURL": "https://foo.bar/image.jpg"},
+		PostParams: map[string]string{"Body": "My pic!", "To": "+250788383383", "MediaUrl": "https://foo.bar/image.jpg"},
 		SendPrep:   setSendURL},
 }
 
