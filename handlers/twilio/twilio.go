@@ -257,7 +257,7 @@ func (h *handler) writeReceiveSuccess(w http.ResponseWriter, r *http.Request, ms
 	courier.LogMsgReceived(r, msg)
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
-	_, err := fmt.Fprint(w, "<Response/>")
+	_, err := fmt.Fprint(w, `<?xml version="1.0" encoding="UTF-8"?><Response/>`)
 	return err
 }
 
