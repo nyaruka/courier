@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -188,4 +189,27 @@ func DecodePossibleBase64(original string) string {
 	}
 
 	return decoded
+}
+
+// SplitMsg splits the passed in string into segments that are at most max length
+func SplitMsg(text string, max int) []string {
+	// smaller than our max, just return it
+	if len(text) <= max {
+		return []string{text}
+	}
+
+	parts := make([]string, 0, 2)
+	part := bytes.Buffer{}
+	for _, r := range text {
+		part.WriteRune(r)
+		if part.Len() == max || (part.Len() > max-6 && r == ' ') {
+			parts = append(parts, strings.TrimSpace(part.String()))
+			part.Reset()
+		}
+	}
+	if part.Len() > 0 {
+		parts = append(parts, strings.TrimSpace(part.String()))
+	}
+
+	return parts
 }

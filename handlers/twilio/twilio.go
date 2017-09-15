@@ -31,6 +31,7 @@ const configSendURL = "send_url"
 
 const twSignatureHeader = "X-Twilio-Signature"
 
+var maxMsgLength = 1600
 var sendURL = "https://api.twilio.com/2010-04-01/Accounts"
 
 // error code twilio returns when a contact has sent "stop"
@@ -185,69 +186,76 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		return nil, fmt.Errorf("missing account auth token for twilio channel")
 	}
 
-	// build our request
-	form := url.Values{
-		"To":             []string{msg.URN().Path()},
-		"Body":           []string{msg.Text()},
-		"StatusCallback": []string{callbackURL},
-	}
-
-	// add any media URL
-	if len(msg.Attachments()) > 0 {
-		_, mediaURL := courier.SplitAttachment(msg.Attachments()[0])
-		form["MediaUrl"] = []string{mediaURL}
-	}
-
-	// set our from, either as a messaging service or from our address
-	serviceSID := msg.Channel().StringConfigForKey(configMessagingServiceSID, "")
-	if serviceSID != "" {
-		form["MessagingServiceSID"] = []string{serviceSID}
-	} else {
-		form["From"] = []string{msg.Channel().Address()}
-	}
-
-	baseSendURL := msg.Channel().StringConfigForKey(configSendURL, sendURL)
-	sendURL, err := utils.AddURLPath(baseSendURL, accountSID, "Messages.json")
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
-	req.SetBasicAuth(accountSID, accountToken)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "application/json")
-	rr, err := utils.MakeHTTPRequest(req)
-
-	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-	status.AddLog(log)
-
-	// fail if we received an error
-	if err != nil {
-		return status, nil
-	}
-
-	// was this request successful?
-	errorCode, _ := jsonparser.GetInt([]byte(rr.Body), "error_code")
-	if errorCode != 0 {
-		if errorCode == errorStopped {
-			status.SetStatus(courier.MsgFailed)
-			h.Backend().StopMsgContact(msg)
+	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
+	for i, part := range parts {
+		// build our request
+		form := url.Values{
+			"To":             []string{msg.URN().Path()},
+			"Body":           []string{part},
+			"StatusCallback": []string{callbackURL},
 		}
-		log.WithError("Message Send Error", errors.Errorf("received error code from twilio '%d'", errorCode))
-		return status, nil
-	}
 
-	// grab the external id
-	externalID, err := jsonparser.GetString([]byte(rr.Body), "sid")
-	if err != nil {
-		log.WithError("Message Send Error", errors.Errorf("unable to get sid from body"))
-		return status, nil
-	}
+		// add any media URL to the first part
+		if len(msg.Attachments()) > 0 && i == 0 {
+			_, mediaURL := courier.SplitAttachment(msg.Attachments()[0])
+			form["MediaUrl"] = []string{mediaURL}
+		}
 
-	status.SetStatus(courier.MsgWired)
-	status.SetExternalID(externalID)
+		// set our from, either as a messaging service or from our address
+		serviceSID := msg.Channel().StringConfigForKey(configMessagingServiceSID, "")
+		if serviceSID != "" {
+			form["MessagingServiceSID"] = []string{serviceSID}
+		} else {
+			form["From"] = []string{msg.Channel().Address()}
+		}
+
+		baseSendURL := msg.Channel().StringConfigForKey(configSendURL, sendURL)
+		sendURL, err := utils.AddURLPath(baseSendURL, accountSID, "Messages.json")
+		if err != nil {
+			return nil, err
+		}
+
+		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+		req.SetBasicAuth(accountSID, accountToken)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Accept", "application/json")
+		rr, err := utils.MakeHTTPRequest(req)
+
+		// record our status and log
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
+
+		// fail if we received an error
+		if err != nil {
+			return status, nil
+		}
+
+		// was this request successful?
+		errorCode, _ := jsonparser.GetInt([]byte(rr.Body), "error_code")
+		if errorCode != 0 {
+			if errorCode == errorStopped {
+				status.SetStatus(courier.MsgFailed)
+				h.Backend().StopMsgContact(msg)
+			}
+			log.WithError("Message Send Error", errors.Errorf("received error code from twilio '%d'", errorCode))
+			return status, nil
+		}
+
+		// grab the external id
+		externalID, err := jsonparser.GetString([]byte(rr.Body), "sid")
+		if err != nil {
+			log.WithError("Message Send Error", errors.Errorf("unable to get sid from body"))
+			return status, nil
+		}
+
+		status.SetStatus(courier.MsgWired)
+
+		// only save the first external id
+		if i == 0 {
+			status.SetExternalID(externalID)
+		}
+	}
 
 	return status, nil
 }

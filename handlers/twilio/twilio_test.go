@@ -92,6 +92,15 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Path:       "/Account/accountSID/Messages.json",
 		Headers:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		SendPrep:   setSendURL},
+	{Label: "Long Send",
+		Text:   "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		URN:    "tel:+250788383383",
+		Status: "W", ExternalID: "1002",
+		ResponseBody: `{ "sid": "1002" }`, ResponseStatus: 200,
+		PostParams: map[string]string{"Body": "I need to keep adding more things to make it work", "To": "+250788383383"},
+		Path:       "/Account/accountSID/Messages.json",
+		Headers:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		SendPrep:   setSendURL},
 	{Label: "Error Sending",
 		Text: "Error Message", URN: "tel:+250788383383",
 		Status:       "E",
@@ -126,6 +135,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
+	maxMsgLength = 160
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US",
 		map[string]interface{}{
 			configAccountSID:        "accountSID",

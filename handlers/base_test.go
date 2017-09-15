@@ -34,3 +34,12 @@ func TestDecodePossibleBase64(t *testing.T) {
 	assert.Contains(DecodePossibleBase64("Tm93IGlzDQp0aGUgdGltZQ0KZm9yIGFsbCBnb29kDQpwZW9wbGUgdG8NCnJlc2lzdC4NCg0KSG93IGFib3V0IGhhaWt1cz8NCkkgZmluZCB0aGVtIHRvIGJlIGZyaWVuZGx5Lg0KcmVmcmlnZXJhdG9yDQoNCjAxMjM0NTY3ODkNCiFAIyQlXiYqKCkgW117fS09Xys7JzoiLC4vPD4/fFx+YA0KQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg=="), "I find them to be friendly")
 	assert.Contains(DecodePossibleBase64(test6), "I received your letter today")
 }
+
+func TestSplitMsg(t *testing.T) {
+	assert := assert.New(t)
+	assert.Equal([]string{""}, SplitMsg("", 160))
+	assert.Equal([]string{"Simple message"}, SplitMsg("Simple message", 160))
+	assert.Equal([]string{"This is a message", "longer than 10"}, SplitMsg("This is a message longer than 10", 20))
+	assert.Equal([]string{" "}, SplitMsg(" ", 20))
+	assert.Equal([]string{"This is a message", "longer than 10"}, SplitMsg("This is a message   longer than 10", 20))
+}
