@@ -70,6 +70,7 @@ UPDATE msgs_msg SET
 	error_count = CASE WHEN :status = 'E' THEN error_count + 1 ELSE error_count END,
 	next_attempt = CASE WHEN :status = 'E' THEN NOW() + (5 * (error_count+1) * interval '1 minutes') ELSE next_attempt END,
 	external_id = CASE WHEN :external_id != '' THEN :external_id ELSE external_id END,
+	sent_on = CASE WHEN :status = 'W' THEN NOW() ELSE sent_on END,
 	modified_on = :modified_on
 
 	WHERE msgs_msg.id IN
@@ -84,6 +85,7 @@ UPDATE msgs_msg SET
 	status = CASE WHEN :status = 'E' THEN CASE WHEN error_count >= 2 OR status = 'F' THEN 'F' ELSE 'E' END ELSE :status END,
 	error_count = CASE WHEN :status = 'E' THEN error_count + 1 ELSE error_count END,
 	next_attempt = CASE WHEN :status = 'E' THEN NOW() + (5 * (error_count+1) * interval '1 minutes') ELSE next_attempt END,
+	sent_on = CASE WHEN :status = 'W' THEN NOW() ELSE sent_on END,
 	modified_on = :modified_on
 
 WHERE msgs_msg.id IN
