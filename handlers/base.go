@@ -159,7 +159,7 @@ DecodePossibleBase64 detects and decodes a possibly base64 encoded messages by d
  * check the decoded string contains at least 50% ascii
 */
 func DecodePossibleBase64(original string) string {
-	stripped := strings.TrimSpace(strings.Replace(strings.Replace(original, "\r", "", -1), "\r", "", -1))
+	stripped := strings.TrimSpace(strings.Replace(strings.Replace(original, "\r", "", -1), "\n", "", -1))
 	length := len([]rune(stripped))
 
 	if length < 60 || length%4 != 0 {
