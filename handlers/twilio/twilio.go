@@ -132,6 +132,11 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 		return nil, err
 	}
 
+	// check if we should ignore twilio status updates
+	if h.Server().Config().IgnoreTwilioStatus {
+		return nil, nil
+	}
+
 	// get our params
 	twStatus := &twStatus{}
 	err = handlers.DecodeAndValidateForm(twStatus, r)

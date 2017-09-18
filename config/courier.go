@@ -39,6 +39,8 @@ type Courier struct {
 	IncludeChannels []string
 	ExcludeChannels []string
 
+	IgnoreTwilioStatus bool `default:"false"`
+
 	Version string `default:"Dev"`
 }
 
