@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -96,10 +97,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// create our URN
-	urn, err := courier.NewURNFromParts(channel.Schemes()[0], sender, "")
-	if err != nil {
-		return nil, err
-	}
+	urn := urns.NewURNFromParts(channel.Schemes()[0], sender, "").Normalize("")
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, externalMessage.Text).WithReceivedOn(date)

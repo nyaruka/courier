@@ -12,6 +12,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,7 +30,7 @@ func (i ChannelEventID) String() string {
 }
 
 // newChannelEvent creates a new channel event
-func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn courier.URN) *DBChannelEvent {
+func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN) *DBChannelEvent {
 	dbChannel := channel.(*DBChannel)
 	now := time.Now().In(time.UTC)
 
@@ -138,7 +139,7 @@ type DBChannelEvent struct {
 	OrgID_       OrgID                    `json:"org_id"                  db:"org_id"`
 	ChannelUUID_ courier.ChannelUUID      `json:"channel_uuid"            db:"channel_uuid"`
 	ChannelID_   courier.ChannelID        `json:"channel_id"              db:"channel_id"`
-	URN_         courier.URN              `json:"urn"                     db:"urn"`
+	URN_         urns.URN                 `json:"urn"                     db:"urn"`
 	EventType_   courier.ChannelEventType `json:"event_type"              db:"event_type"`
 	Extra_       *utils.NullMap           `json:"extra"                   db:"extra"`
 	OccurredOn_  time.Time                `json:"occurred_on"             db:"occurred_on"`
@@ -155,7 +156,7 @@ func (e *DBChannelEvent) ReceiveID() int64                    { return e.ID_.Int
 func (e *DBChannelEvent) ChannelID() courier.ChannelID        { return e.ChannelID_ }
 func (e *DBChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.ChannelUUID_ }
 func (e *DBChannelEvent) ContactName() string                 { return e.ContactName_ }
-func (e *DBChannelEvent) URN() courier.URN                    { return e.URN_ }
+func (e *DBChannelEvent) URN() urns.URN                       { return e.URN_ }
 func (e *DBChannelEvent) EventType() courier.ChannelEventType { return e.EventType_ }
 func (e *DBChannelEvent) OccurredOn() time.Time               { return e.OccurredOn_ }
 func (e *DBChannelEvent) CreatedOn() time.Time                { return e.CreatedOn_ }

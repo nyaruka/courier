@@ -8,6 +8,7 @@ import (
 
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier/config"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 //-----------------------------------------------------------------------------
@@ -68,12 +69,12 @@ func (mb *MockBackend) GetLastContactName() string {
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (mb *MockBackend) NewIncomingMsg(channel Channel, urn URN, text string) Msg {
+func (mb *MockBackend) NewIncomingMsg(channel Channel, urn urns.URN, text string) Msg {
 	return &mockMsg{channel: channel, urn: urn, text: text, priority: DefaultPriority}
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn URN, text string, priority MsgPriority) Msg {
+func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, priority MsgPriority) Msg {
 	return &mockMsg{channel: channel, id: id, urn: urn, text: text, priority: priority}
 }
 
@@ -179,7 +180,7 @@ func (mb *MockBackend) WriteMsgStatus(status MsgStatus) error {
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
-func (mb *MockBackend) NewChannelEvent(channel Channel, eventType ChannelEventType, urn URN) ChannelEvent {
+func (mb *MockBackend) NewChannelEvent(channel Channel, eventType ChannelEventType, urn urns.URN) ChannelEvent {
 	return &mockChannelEvent{
 		channel:   channel,
 		eventType: eventType,
@@ -308,7 +309,7 @@ func NewMockChannel(uuid string, channelType string, address string, country str
 	channel := &MockChannel{
 		uuid:        cUUID,
 		channelType: ChannelType(channelType),
-		schemes:     []string{TelScheme},
+		schemes:     []string{urns.TelScheme},
 		address:     address,
 		country:     country,
 		config:      config,
@@ -327,7 +328,7 @@ type mockMsg struct {
 	text        string
 	attachments []string
 	externalID  string
-	urn         URN
+	urn         urns.URN
 	contactName string
 	priority    MsgPriority
 
@@ -343,7 +344,7 @@ func (m *mockMsg) UUID() MsgUUID         { return m.uuid }
 func (m *mockMsg) Text() string          { return m.text }
 func (m *mockMsg) Attachments() []string { return m.attachments }
 func (m *mockMsg) ExternalID() string    { return m.externalID }
-func (m *mockMsg) URN() URN              { return m.urn }
+func (m *mockMsg) URN() urns.URN         { return m.urn }
 func (m *mockMsg) ContactName() string   { return m.contactName }
 func (m *mockMsg) Priority() MsgPriority { return m.priority }
 
@@ -391,7 +392,7 @@ func (m *mockMsgStatus) AddLog(log *ChannelLog) { m.logs = append(m.logs, log) }
 type mockChannelEvent struct {
 	channel    Channel
 	eventType  ChannelEventType
-	urn        URN
+	urn        urns.URN
 	createdOn  time.Time
 	occurredOn time.Time
 
@@ -408,7 +409,7 @@ func (e *mockChannelEvent) CreatedOn() time.Time          { return e.createdOn }
 func (e *mockChannelEvent) OccurredOn() time.Time         { return e.occurredOn }
 func (e *mockChannelEvent) Extra() map[string]interface{} { return e.extra }
 func (e *mockChannelEvent) ContactName() string           { return e.contactName }
-func (e *mockChannelEvent) URN() URN                      { return e.urn }
+func (e *mockChannelEvent) URN() urns.URN                 { return e.urn }
 
 func (e *mockChannelEvent) WithExtra(extra map[string]interface{}) ChannelEvent {
 	e.extra = extra

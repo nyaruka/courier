@@ -12,6 +12,7 @@ import (
 	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/phonenumbers"
 )
 
@@ -60,7 +61,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	date := time.Unix(kannelMsg.Timestamp, 0).UTC()
 
 	// create our URN
-	urn := courier.NewTelURNForChannel(kannelMsg.Sender, channel)
+	urn := urns.NewTelURNForCountry(kannelMsg.Sender, channel.Country())
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, kannelMsg.Message).WithExternalID(kannelMsg.ID).WithReceivedOn(date)

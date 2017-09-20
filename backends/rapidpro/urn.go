@@ -8,6 +8,8 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,7 +22,7 @@ type ContactURNID struct {
 var NilContactURNID = ContactURNID{null.NewInt(0, false)}
 
 // NewDBContactURN returns a new ContactURN object for the passed in org, contact and string urn, this is not saved to the DB yet
-func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID, urn courier.URN) *DBContactURN {
+func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN) *DBContactURN {
 	return &DBContactURN{
 		OrgID:     org,
 		ChannelID: channelID,
@@ -28,7 +30,7 @@ func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID
 		Identity:  urn.Identity(),
 		Scheme:    urn.Scheme(),
 		Path:      urn.Path(),
-		Display:   urn.Display(),
+		Display:   utils.NullStringIfEmpty(urn.Display()),
 	}
 }
 
@@ -67,26 +69,28 @@ func contactURNsForContact(db dbTx, contactID ContactID) ([]*DBContactURN, error
 // that the passed in channel is the default one for that URN
 //
 // Note that the URN must be one of the contact's URN before calling this method
-func setDefaultURN(db dbTx, channelID courier.ChannelID, contact *DBContact, urn courier.URN) error {
+func setDefaultURN(db dbTx, channelID courier.ChannelID, contact *DBContact, urn urns.URN) error {
 	scheme := urn.Scheme()
-	urns, err := contactURNsForContact(db, contact.ID)
+	contactURNs, err := contactURNsForContact(db, contact.ID)
 	if err != nil {
 		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("channel_id", channelID.Int64).Error("error looking up contact urns")
 		return err
 	}
 
 	// no URNs? that's an error
-	if len(urns) == 0 {
+	if len(contactURNs) == 0 {
 		return fmt.Errorf("URN '%s' not present for contact %d", urn.Identity(), contact.ID.Int64)
 	}
 
 	// only a single URN and it is ours
-	if urns[0].Identity == urn.Identity() {
+	if contactURNs[0].Identity == urn.Identity() {
+		display := utils.NullStringIfEmpty(urn.Display())
+
 		// if display or channel ids changed, update them
-		if urns[0].Display != urn.Display() || urns[0].ChannelID != channelID {
-			urns[0].Display = urn.Display()
-			urns[0].ChannelID = channelID
-			return updateContactURN(db, urns[0])
+		if contactURNs[0].Display != display || contactURNs[0].ChannelID != channelID {
+			contactURNs[0].Display = display
+			contactURNs[0].ChannelID = channelID
+			return updateContactURN(db, contactURNs[0])
 		}
 		return nil
 	}
@@ -96,7 +100,7 @@ func setDefaultURN(db dbTx, channelID courier.ChannelID, contact *DBContact, urn
 	// the preferred channel changes (rare as well)
 	topPriority := 99
 	currPriority := 50
-	for _, existing := range urns {
+	for _, existing := range contactURNs {
 		if existing.Identity == urn.Identity() {
 			existing.Priority = topPriority
 			existing.ChannelID = channelID
@@ -104,7 +108,7 @@ func setDefaultURN(db dbTx, channelID courier.ChannelID, contact *DBContact, urn
 			existing.Priority = currPriority
 
 			// if this is a phone number and we just received a message on a tel scheme, set that as our new preferred channel
-			if existing.Scheme == courier.TelScheme && scheme == courier.TelScheme {
+			if existing.Scheme == urns.TelScheme && scheme == urns.TelScheme {
 				existing.ChannelID = channelID
 			}
 			currPriority--
@@ -127,7 +131,7 @@ ORDER BY priority desc LIMIT 1
 
 // contactURNForURN returns the ContactURN for the passed in org and URN, creating and associating
 // it with the passed in contact if necessary
-func contactURNForURN(db dbTx, org OrgID, channelID courier.ChannelID, contactID ContactID, urn courier.URN) (*DBContactURN, error) {
+func contactURNForURN(db dbTx, org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN) (*DBContactURN, error) {
 	contactURN := newDBContactURN(org, channelID, contactID, urn)
 	err := db.Get(contactURN, selectOrgURN, org, urn.Identity())
 	if err != nil && err != sql.ErrNoRows {
@@ -142,11 +146,13 @@ func contactURNForURN(db dbTx, org OrgID, channelID courier.ChannelID, contactID
 		}
 	}
 
+	display := utils.NullStringIfEmpty(urn.Display())
+
 	// make sure our contact URN is up to date
-	if contactURN.ChannelID != channelID || contactURN.ContactID != contactID || contactURN.Display != urn.Display() {
+	if contactURN.ChannelID != channelID || contactURN.ContactID != contactID || contactURN.Display != display {
 		contactURN.ChannelID = channelID
 		contactURN.ContactID = contactID
-		contactURN.Display = urn.Display()
+		contactURN.Display = display
 		err = updateContactURN(db, contactURN)
 	}
 

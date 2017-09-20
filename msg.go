@@ -9,6 +9,7 @@ import (
 
 	null "gopkg.in/guregu/null.v3"
 
+	"github.com/nyaruka/gocommon/urns"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -81,7 +82,7 @@ type Msg interface {
 	Text() string
 	Attachments() []string
 	ExternalID() string
-	URN() URN
+	URN() urns.URN
 	ContactName() string
 
 	ReceivedOn() *time.Time
