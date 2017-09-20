@@ -13,7 +13,6 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/phonenumbers"
 )
 
 const configUseNational = "use_national"
@@ -154,10 +153,8 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	// if we are meant to use national formatting (no country code) pull that out
 	if useNational {
-		parsed, err := phonenumbers.Parse(msg.URN().Path(), encodingDefault)
-		if err == nil {
-			form["to"] = []string{fmt.Sprintf("%d", parsed.GetNationalNumber())}
-		}
+		nationalTo := msg.URN().Localize(msg.Channel().Country())
+		form["to"] = []string{nationalTo.Path()}
 	}
 
 	// figure out what encoding to tell kannel to send as
