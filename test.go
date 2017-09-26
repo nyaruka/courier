@@ -69,12 +69,12 @@ func (mb *MockBackend) GetLastContactName() string {
 
 // NewIncomingMsg creates a new message from the given params
 func (mb *MockBackend) NewIncomingMsg(channel Channel, urn URN, text string) Msg {
-	return &mockMsg{channel: channel, urn: urn, text: text, priority: DefaultPriority}
+	return &mockMsg{channel: channel, urn: urn, text: text}
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn URN, text string, priority MsgPriority) Msg {
-	return &mockMsg{channel: channel, id: id, urn: urn, text: text, priority: priority}
+func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn URN, text string, highPriority bool) Msg {
+	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority}
 }
 
 // PushOutgoingMsg is a test method to add a message to our queue of messages to send
@@ -321,15 +321,15 @@ func NewMockChannel(uuid string, channelType string, address string, country str
 //-----------------------------------------------------------------------------
 
 type mockMsg struct {
-	channel     Channel
-	id          MsgID
-	uuid        MsgUUID
-	text        string
-	attachments []string
-	externalID  string
-	urn         URN
-	contactName string
-	priority    MsgPriority
+	channel      Channel
+	id           MsgID
+	uuid         MsgUUID
+	text         string
+	attachments  []string
+	externalID   string
+	urn          URN
+	contactName  string
+	highPriority bool
 
 	receivedOn *time.Time
 	sentOn     *time.Time
@@ -345,7 +345,7 @@ func (m *mockMsg) Attachments() []string { return m.attachments }
 func (m *mockMsg) ExternalID() string    { return m.externalID }
 func (m *mockMsg) URN() URN              { return m.urn }
 func (m *mockMsg) ContactName() string   { return m.contactName }
-func (m *mockMsg) Priority() MsgPriority { return m.priority }
+func (m *mockMsg) HighPriority() bool    { return m.highPriority }
 
 func (m *mockMsg) ReceivedOn() *time.Time { return m.receivedOn }
 func (m *mockMsg) SentOn() *time.Time     { return m.sentOn }

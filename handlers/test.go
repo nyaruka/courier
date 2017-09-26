@@ -51,10 +51,10 @@ type SendPrepFunc func(*httptest.Server, courier.Channel, courier.Msg)
 type ChannelSendTestCase struct {
 	Label string
 
-	Text        string
-	URN         string
-	Attachments []string
-	Priority    courier.MsgPriority
+	Text         string
+	URN          string
+	Attachments  []string
+	HighPriority bool
 
 	ResponseStatus int
 	ResponseBody   string
@@ -151,11 +151,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 		t.Run(testCase.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			priority := courier.DefaultPriority
-			if testCase.Priority != 0 {
-				priority = testCase.Priority
-			}
-			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), courier.URN(testCase.URN), testCase.Text, priority)
+			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), courier.URN(testCase.URN), testCase.Text, testCase.HighPriority)
 			for _, a := range testCase.Attachments {
 				msg.WithAttachment(a)
 			}

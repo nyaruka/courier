@@ -51,7 +51,7 @@ func TestLua(t *testing.T) {
 
 	rate := 10
 	for i := 0; i < 20; i++ {
-		err := PushOntoQueue(conn, "msgs", "chan1", rate, fmt.Sprintf("msg:%d", i), BulkPriority)
+		err := PushOntoQueue(conn, "msgs", "chan1", rate, fmt.Sprintf("msg:%d", i), LowPriority)
 		assert.NoError(err)
 	}
 
@@ -87,7 +87,7 @@ func TestLua(t *testing.T) {
 	if value != "" && queue != EmptyQueue {
 		t.Fatal("Should be throttled")
 	}
-	err = PushOntoQueue(conn, "msgs", "chan1", rate, "msg:30", BulkPriority)
+	err = PushOntoQueue(conn, "msgs", "chan1", rate, "msg:30", LowPriority)
 	assert.NoError(err)
 
 	count, err = redis.Int(conn.Do("zcard", "msgs:throttled"))
@@ -100,7 +100,7 @@ func TestLua(t *testing.T) {
 
 	// but if we wait, our next msg should be our highest priority
 	time.Sleep(time.Second)
-	err = PushOntoQueue(conn, "msgs", "chan1", rate, "msg:31", DefaultPriority)
+	err = PushOntoQueue(conn, "msgs", "chan1", rate, "msg:31", HighPriority)
 	assert.NoError(err)
 
 	queue, value, err = PopFromQueue(conn, "msgs")
@@ -117,7 +117,7 @@ func TestLua(t *testing.T) {
 	}
 
 	// push on a compound message
-	err = PushOntoQueue(conn, "msgs", "chan1", rate, `[{"id":"msg:32"}, {"id":"msg:33"}]`, DefaultPriority)
+	err = PushOntoQueue(conn, "msgs", "chan1", rate, `[{"id":"msg:32"}, {"id":"msg:33"}]`, HighPriority)
 
 	queue, value, err = PopFromQueue(conn, "msgs")
 	assert.NoError(err)
@@ -184,7 +184,7 @@ func nTestThrottle(t *testing.T) {
 
 	// insert items with our set limit
 	for i := 0; i < insertCount; i++ {
-		err := PushOntoQueue(conn, "msgs", "chan1", rate, fmt.Sprintf("msg:%d", i), DefaultPriority)
+		err := PushOntoQueue(conn, "msgs", "chan1", rate, fmt.Sprintf("msg:%d", i), HighPriority)
 		assert.NoError(err)
 		time.Sleep(1 * time.Microsecond)
 	}
@@ -236,7 +236,7 @@ func BenchmarkQueue(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		insertValue := fmt.Sprintf("msg:%d", i)
-		err := PushOntoQueue(conn, "msgs", "chan1", 0, insertValue, DefaultPriority)
+		err := PushOntoQueue(conn, "msgs", "chan1", 0, insertValue, HighPriority)
 		assert.NoError(err)
 
 		queue, value, err := PopFromQueue(conn, "msgs")

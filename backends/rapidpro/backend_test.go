@@ -104,7 +104,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"contact_urn_id": 14, 
 		"error_count": 0, 
 		"modified_on": "2017-07-21T19:22:23.254133Z", 
-		"id": 204, 
+		"id": 204,
 		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba", 
 		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f", 
 		"next_attempt": "2017-07-21T19:22:23.254182Z", 
@@ -112,7 +112,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"org_id": 1, 
 		"created_on": "2017-07-21T19:22:23.242757Z", 
 		"sent_on": null, 
-		"priority": 1000, 
+		"high_priority": true,
 		"channel_id": 11, 
 		"response_to_id": 15, 
 		"external_id": null
@@ -125,6 +125,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal(msg.ChannelID_, courier.NewChannelID(11))
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	ts.Equal(msg.ExternalID(), "")
+	ts.True(msg.HighPriority())
 }
 
 func (ts *BackendTestSuite) TestCheckMsgExists() {
@@ -378,7 +379,7 @@ func (ts *BackendTestSuite) TestStatus() {
 	msgJSON, err := json.Marshal(dbMsg)
 	ts.NoError(err)
 
-	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.DefaultPriority)
+	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
 	ts.NoError(err)
 
 	// status should now contain that channel
@@ -399,7 +400,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	msgJSON, err := json.Marshal(dbMsg)
 	ts.NoError(err)
 
-	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.DefaultPriority)
+	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
 	ts.NoError(err)
 
 	// pop a message off our queue
@@ -581,7 +582,8 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.Equal(contactURN.ID, m.ContactURNID_)
 	ts.Equal(MsgIncoming, m.Direction_)
 	ts.Equal(courier.MsgPending, m.Status_)
-	ts.Equal(courier.DefaultPriority, m.Priority_)
+	ts.False(m.HighPriority_.Bool)
+	ts.False(m.HighPriority_.Valid)
 	ts.Equal("ext123", m.ExternalID())
 	ts.Equal("test123", m.Text_)
 	ts.Equal(0, len(m.Attachments()))
