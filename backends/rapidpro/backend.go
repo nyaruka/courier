@@ -77,7 +77,7 @@ func (b *backend) PopNextOutgoingMsg() (courier.Msg, error) {
 		dbMsg := &DBMsg{}
 		err = json.Unmarshal([]byte(msgJSON), dbMsg)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to unmarshal message '%s': %s", msgJSON, err)
 		}
 
 		// populate the channel on our db msg
