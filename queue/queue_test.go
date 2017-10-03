@@ -51,7 +51,7 @@ func TestLua(t *testing.T) {
 
 	rate := 10
 	for i := 0; i < 20; i++ {
-		err := PushOntoQueue(conn, "msgs", "chan1", rate, fmt.Sprintf("msg:%d", i), BulkPriority)
+		err := PushOntoQueue(conn, "msgs", "chan1", rate, fmt.Sprintf(`[{"id":%d}]`, i), BulkPriority)
 		assert.NoError(err)
 	}
 
@@ -63,7 +63,7 @@ func TestLua(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		queue, value, err := PopFromQueue(conn, "msgs")
 		assert.NotEqual(queue, EmptyQueue)
-		assert.Equal(fmt.Sprintf("msg:%d", i), value)
+		assert.Equal(fmt.Sprintf(`{"id":%d}`, i), value)
 		assert.NoError(err)
 	}
 
@@ -87,7 +87,7 @@ func TestLua(t *testing.T) {
 	if value != "" && queue != EmptyQueue {
 		t.Fatal("Should be throttled")
 	}
-	err = PushOntoQueue(conn, "msgs", "chan1", rate, "msg:30", BulkPriority)
+	err = PushOntoQueue(conn, "msgs", "chan1", rate, `[{"id":30}]`, BulkPriority)
 	assert.NoError(err)
 
 	count, err = redis.Int(conn.Do("zcard", "msgs:throttled"))
@@ -100,29 +100,29 @@ func TestLua(t *testing.T) {
 
 	// but if we wait, our next msg should be our highest priority
 	time.Sleep(time.Second)
-	err = PushOntoQueue(conn, "msgs", "chan1", rate, "msg:31", DefaultPriority)
+	err = PushOntoQueue(conn, "msgs", "chan1", rate, `[{"id":31}]`, DefaultPriority)
 	assert.NoError(err)
 
 	queue, value, err = PopFromQueue(conn, "msgs")
 	assert.NoError(err)
 	assert.Equal(WorkerToken("msgs:chan1|10"), queue)
-	assert.Equal(`msg:31`, value)
+	assert.Equal(`{"id":31}`, value)
 
 	// should get next five bulk msgs fine
 	for i := 10; i < 15; i++ {
 		queue, value, err := PopFromQueue(conn, "msgs")
 		assert.NotEqual(queue, EmptyQueue)
-		assert.Equal(fmt.Sprintf("msg:%d", i), value)
+		assert.Equal(fmt.Sprintf(`{"id":%d}`, i), value)
 		assert.NoError(err)
 	}
 
 	// push on a compound message
-	err = PushOntoQueue(conn, "msgs", "chan1", rate, `[{"id":"msg:32"}, {"id":"msg:33"}]`, DefaultPriority)
+	err = PushOntoQueue(conn, "msgs", "chan1", rate, `[{"id":32}, {"id":33}]`, DefaultPriority)
 
 	queue, value, err = PopFromQueue(conn, "msgs")
 	assert.NoError(err)
 	assert.Equal(WorkerToken("msgs:chan1|10"), queue)
-	assert.Equal(`{"id":"msg:32"}`, value)
+	assert.Equal(`{"id":32}`, value)
 
 	// sleep a few seconds
 	time.Sleep(2 * time.Second)
@@ -131,14 +131,14 @@ func TestLua(t *testing.T) {
 	for i := 15; i < 20; i++ {
 		queue, value, err := PopFromQueue(conn, "msgs")
 		assert.NotEqual(queue, EmptyQueue)
-		assert.Equal(fmt.Sprintf("msg:%d", i), value)
+		assert.Equal(fmt.Sprintf(`{"id":%d}`, i), value)
 		assert.NoError(err)
 	}
 
 	// next should be 30
 	queue, value, err = PopFromQueue(conn, "msgs")
 	assert.NotEqual(queue, EmptyQueue)
-	assert.Equal("msg:30", value)
+	assert.Equal(`{"id":30}`, value)
 	assert.NoError(err)
 
 	// popping again should give us nothing since it is too soon to send 33
@@ -156,7 +156,7 @@ func TestLua(t *testing.T) {
 	queue, value, err = PopFromQueue(conn, "msgs")
 	assert.NoError(err)
 	assert.Equal(WorkerToken("msgs:chan1|10"), queue)
-	assert.Equal(`{"id":"msg:33"}`, value)
+	assert.Equal(`{"id":33}`, value)
 
 	// nothing should be left
 	queue = Retry
@@ -184,7 +184,7 @@ func nTestThrottle(t *testing.T) {
 
 	// insert items with our set limit
 	for i := 0; i < insertCount; i++ {
-		err := PushOntoQueue(conn, "msgs", "chan1", rate, fmt.Sprintf("msg:%d", i), DefaultPriority)
+		err := PushOntoQueue(conn, "msgs", "chan1", rate, fmt.Sprintf(`[{"id":%d}]`, i), DefaultPriority)
 		assert.NoError(err)
 		time.Sleep(1 * time.Microsecond)
 	}
@@ -201,7 +201,7 @@ func nTestThrottle(t *testing.T) {
 
 		// if this wasn't throttled
 		if value != "" {
-			expected := fmt.Sprintf("msg:%d", curr)
+			expected := fmt.Sprintf(`{"id":%d}`, curr)
 			assert.Equal(expected, value, "Out of order msg")
 			curr++
 
@@ -235,8 +235,8 @@ func BenchmarkQueue(b *testing.B) {
 	defer conn.Close()
 
 	for i := 0; i < b.N; i++ {
-		insertValue := fmt.Sprintf("msg:%d", i)
-		err := PushOntoQueue(conn, "msgs", "chan1", 0, insertValue, DefaultPriority)
+		insertValue := fmt.Sprintf(`{"id":%d}`, i)
+		err := PushOntoQueue(conn, "msgs", "chan1", 0, "["+insertValue+"]", DefaultPriority)
 		assert.NoError(err)
 
 		queue, value, err := PopFromQueue(conn, "msgs")

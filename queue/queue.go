@@ -133,37 +133,27 @@ var luaPop = redis.NewScript(2, `-- KEYS: [EpochMS QueueType]
 		-- then remove it from the queue
 		redis.call('zremrangebyrank', resultQueue, 0, 0)
 
-		-- increment our tps for this second if we have a limit
-		if tps > 0 then 
-		    redis.call("incr", tpsKey)
-		    redis.call("expire", tpsKey, 10)
-		end 
-
 		-- and add a worker to this queue
 		redis.call("zincrby", KEYS[2] .. ":active", 1, queue)
 
-		-- is this a compound message? (a JSON array, if so, we return the first element but schedule the others
-		-- for 5 seconds from now
-		local popValue = result[1]
-		if string.sub(popValue, 1, 1) == "[" then
-		    -- parse it as JSON to get the first element out
-		    local valueList = cjson.decode(popValue)
-		    popValue = cjson.encode(valueList[1])
-		    table.remove(valueList, 1)
+		-- parse it as JSON to get the first element out
+		local valueList = cjson.decode(result[1])
+		local popValue = cjson.encode(valueList[1])
+		table.remove(valueList, 1)
 
-		    -- encode it back if there is anything left
-		    if table.getn(valueList) > 0 then
-				local remaining = ""
-				if table.getn(valueList) == 1 then
-				    remaining = cjson.encode(valueList[1])
-				else 
-				    remaining = cjson.encode(valueList)
-				end
+		-- increment our tps for this second if we have a limit
+		if tps > 0 then 
+		    redis.call("incrby", tpsKey, popValue["tps_cost"] or 1)
+		    redis.call("expire", tpsKey, 10)
+		end 
 
-			    -- schedule it in the future 5 seconds on our main queue
-			    redis.call("zadd", queue .. "/1", tonumber(KEYS[1]) + 5, remaining)
-			    redis.call("zincrby", KEYS[2] .. ":future", 0, queue)
-			end
+		-- encode it back if there is anything left
+		if table.getn(valueList) > 0 then
+			local remaining = cjson.encode(valueList)
+	
+			-- schedule it in the future 5 seconds on our main queue
+			redis.call("zadd", queue .. "/1", tonumber(KEYS[1]) + 5, remaining)
+			redis.call("zincrby", KEYS[2] .. ":future", 0, queue)
 		end
 
 		return {queue, popValue}
