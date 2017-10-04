@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nyaruka/gocommon/urns"
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
@@ -82,7 +83,7 @@ type msgReceiveData struct {
 	ChannelUUID ChannelUUID `json:"channel_uuid"`
 	MsgUUID     MsgUUID     `json:"msg_uuid"`
 	Text        string      `json:"text"`
-	URN         URN         `json:"urn"`
+	URN         urns.URN    `json:"urn"`
 	Attachments []string    `json:"attachments,omitempty"`
 	ExternalID  string      `json:"external_id,omitempty"`
 	ReceivedOn  *time.Time  `json:"received_on,omitempty"`
@@ -91,7 +92,7 @@ type msgReceiveData struct {
 type eventReceiveData struct {
 	ChannelUUID ChannelUUID      `json:"channel_uuid"`
 	EventType   ChannelEventType `json:"event_type"`
-	URN         URN              `json:"urn"`
+	URN         urns.URN         `json:"urn"`
 	ReceivedOn  time.Time        `json:"received_on"`
 }
 

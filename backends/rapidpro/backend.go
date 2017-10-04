@@ -21,6 +21,7 @@ import (
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,7 +41,7 @@ func (b *backend) GetChannel(ct courier.ChannelType, uuid courier.ChannelUUID) (
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (b *backend) NewIncomingMsg(channel courier.Channel, urn courier.URN, text string) courier.Msg {
+func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
 	// remove any control characters
 	text = utils.CleanString(text)
 
@@ -58,7 +59,7 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn courier.URN, text 
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (b *backend) NewOutgoingMsg(channel courier.Channel, urn courier.URN, text string) courier.Msg {
+func (b *backend) NewOutgoingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
 	return newMsg(MsgOutgoing, channel, urn, text)
 }
 
@@ -180,7 +181,7 @@ func (b *backend) WriteMsgStatus(status courier.MsgStatus) error {
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
-func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn courier.URN) courier.ChannelEvent {
+func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN) courier.ChannelEvent {
 	return newChannelEvent(channel, eventType, urn)
 }
 

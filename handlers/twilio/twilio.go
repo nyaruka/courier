@@ -22,6 +22,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -101,7 +102,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// create our URN
-	urn := courier.NewTelURNForCountry(twMsg.From, twMsg.FromCountry)
+	urn := urns.NewTelURNForCountry(twMsg.From, twMsg.FromCountry)
 
 	if twMsg.Body != "" {
 		// Twilio sometimes sends concatenated sms as base64 encoded MMS

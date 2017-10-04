@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"gopkg.in/guregu/null.v3"
 )
 
 // NewNullMap creates a new null map with the passed in map
@@ -76,4 +77,8 @@ func (n *NullMap) UnmarshalJSON(data []byte) error {
 	n.Map = make(map[string]interface{})
 	n.Valid = true
 	return json.Unmarshal(data, &n.Map)
+}
+
+func NullStringIfEmpty(s string) null.String {
+	return null.NewString(s, len(s) > 0)
 }
