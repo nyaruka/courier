@@ -143,8 +143,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		"dlr-mask": []string{"31"},
 	}
 
-	// any message that isn't bulk priority should get prioritized
-	if msg.Priority() > courier.BulkPriority {
+	if msg.HighPriority() {
 		form["priority"] = []string{"1"}
 	}
 

@@ -57,7 +57,7 @@ DROP TABLE IF EXISTS msgs_msg CASCADE;
 CREATE TABLE msgs_msg (
     id serial primary key,
     text text NOT NULL,
-    priority integer NOT NULL,
+    high_priority boolean NULL,
     created_on timestamp with time zone NOT NULL,
     modified_on timestamp with time zone,
     sent_on timestamp with time zone,

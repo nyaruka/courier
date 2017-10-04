@@ -86,13 +86,13 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 	dbChannel := channel.(*DBChannel)
 
 	return &DBMsg{
-		OrgID_:      dbChannel.OrgID(),
-		UUID_:       courier.NewMsgUUID(),
-		Direction_:  direction,
-		Status_:     courier.MsgPending,
-		Visibility_: MsgVisible,
-		Priority_:   courier.DefaultPriority,
-		Text_:       text,
+		OrgID_:        dbChannel.OrgID(),
+		UUID_:         courier.NewMsgUUID(),
+		Direction_:    direction,
+		Status_:       courier.MsgPending,
+		Visibility_:   MsgVisible,
+		HighPriority_: null.NewBool(false, false),
+		Text_:         text,
 
 		ChannelID_:   dbChannel.ID(),
 		ChannelUUID_: dbChannel.UUID(),
@@ -112,9 +112,9 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 }
 
 const insertMsgSQL = `
-INSERT INTO msgs_msg(org_id, direction, has_template_error, text, attachments, msg_count, error_count, priority, status, 
+INSERT INTO msgs_msg(org_id, direction, has_template_error, text, attachments, msg_count, error_count, high_priority, status, 
                      visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on)
-              VALUES(:org_id, :direction, FALSE, :text, :attachments, :msg_count, :error_count, :priority, :status, 
+              VALUES(:org_id, :direction, FALSE, :text, :attachments, :msg_count, :error_count, :high_priority, :status, 
                      :visibility, :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :next_attempt, :queued_on, :sent_on)
 RETURNING id
 `
@@ -159,7 +159,7 @@ func writeMsgToDB(b *backend, m *DBMsg) error {
 }
 
 const selectMsgSQL = `
-SELECT org_id, direction, text, attachments, msg_count, error_count, priority, status, 
+SELECT org_id, direction, text, attachments, msg_count, error_count, high_priority, status, 
        visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on
 FROM msgs_msg
 WHERE id = $1
@@ -332,17 +332,17 @@ func writeMsgSeen(b *backend, msg *DBMsg) {
 
 // DBMsg is our base struct to represent msgs both in our JSON and db representations
 type DBMsg struct {
-	OrgID_       OrgID                  `json:"org_id"       db:"org_id"`
-	ID_          courier.MsgID          `json:"id"           db:"id"`
-	UUID_        courier.MsgUUID        `json:"uuid"`
-	Direction_   MsgDirection           `json:"direction"    db:"direction"`
-	Status_      courier.MsgStatusValue `json:"status"       db:"status"`
-	Visibility_  MsgVisibility          `json:"visibility"   db:"visibility"`
-	Priority_    courier.MsgPriority    `json:"priority"     db:"priority"`
-	URN_         urns.URN               `json:"urn"`
-	Text_        string                 `json:"text"         db:"text"`
-	Attachments_ pq.StringArray         `json:"attachments"  db:"attachments"`
-	ExternalID_  null.String            `json:"external_id"  db:"external_id"`
+	OrgID_        OrgID                  `json:"org_id"        db:"org_id"`
+	ID_           courier.MsgID          `json:"id"            db:"id"`
+	UUID_         courier.MsgUUID        `json:"uuid"`
+	Direction_    MsgDirection           `json:"direction"     db:"direction"`
+	Status_       courier.MsgStatusValue `json:"status"        db:"status"`
+	Visibility_   MsgVisibility          `json:"visibility"    db:"visibility"`
+	HighPriority_ null.Bool              `json:"high_priority" db:"high_priority"`
+	URN_          urns.URN               `json:"urn"`
+	Text_         string                 `json:"text"          db:"text"`
+	Attachments_  pq.StringArray         `json:"attachments"   db:"attachments"`
+	ExternalID_   null.String            `json:"external_id"   db:"external_id"`
 
 	ChannelID_    courier.ChannelID `json:"channel_id"      db:"channel_id"`
 	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
@@ -365,16 +365,16 @@ type DBMsg struct {
 	AlreadyWritten_ bool              `json:"-"`
 }
 
-func (m *DBMsg) Channel() courier.Channel      { return m.Channel_ }
-func (m *DBMsg) ID() courier.MsgID             { return m.ID_ }
-func (m *DBMsg) ReceiveID() int64              { return m.ID_.Int64 }
-func (m *DBMsg) UUID() courier.MsgUUID         { return m.UUID_ }
-func (m *DBMsg) Text() string                  { return m.Text_ }
-func (m *DBMsg) Attachments() []string         { return []string(m.Attachments_) }
-func (m *DBMsg) ExternalID() string            { return m.ExternalID_.String }
-func (m *DBMsg) URN() urns.URN                 { return m.URN_ }
-func (m *DBMsg) ContactName() string           { return m.ContactName_ }
-func (m *DBMsg) Priority() courier.MsgPriority { return m.Priority_ }
+func (m *DBMsg) Channel() courier.Channel { return m.Channel_ }
+func (m *DBMsg) ID() courier.MsgID        { return m.ID_ }
+func (m *DBMsg) ReceiveID() int64         { return m.ID_.Int64 }
+func (m *DBMsg) UUID() courier.MsgUUID    { return m.UUID_ }
+func (m *DBMsg) Text() string             { return m.Text_ }
+func (m *DBMsg) Attachments() []string    { return []string(m.Attachments_) }
+func (m *DBMsg) ExternalID() string       { return m.ExternalID_.String }
+func (m *DBMsg) URN() urns.URN            { return m.URN_ }
+func (m *DBMsg) ContactName() string      { return m.ContactName_ }
+func (m *DBMsg) HighPriority() bool       { return m.HighPriority_.Valid && m.HighPriority_.Bool }
 
 func (m *DBMsg) ReceivedOn() *time.Time { return &m.SentOn_ }
 func (m *DBMsg) SentOn() *time.Time     { return &m.SentOn_ }

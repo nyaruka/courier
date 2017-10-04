@@ -16,12 +16,12 @@ type Priority int64
 type WorkerToken string
 
 const (
-	// DefaultPriority is the normal priority for msgs, messages are sent first in first out
-	DefaultPriority = 1
+	// HighPriority is typically used for replies to ensure they sent as soon as possible.
+	HighPriority = 1
 
-	// BulkPriority is our priority for bulk messages (sent in batches) These will only be
-	// processed after all default priority messages are deault with
-	BulkPriority = 0
+	// LowPriority is typically used for bulk messages (sent in batches). These will only be
+	// processed after all high priority messages are dealt with.
+	LowPriority = 0
 )
 
 const (
