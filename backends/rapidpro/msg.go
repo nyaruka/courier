@@ -20,6 +20,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 	null "gopkg.in/guregu/null.v3"
 	filetype "gopkg.in/h2non/filetype.v1"
@@ -80,7 +81,7 @@ func writeMsg(b *backend, msg courier.Msg) error {
 }
 
 // newMsg creates a new DBMsg object with the passed in parameters
-func newMsg(direction MsgDirection, channel courier.Channel, urn courier.URN, text string) *DBMsg {
+func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text string) *DBMsg {
 	now := time.Now()
 	dbChannel := channel.(*DBChannel)
 
@@ -338,7 +339,7 @@ type DBMsg struct {
 	Status_       courier.MsgStatusValue `json:"status"        db:"status"`
 	Visibility_   MsgVisibility          `json:"visibility"    db:"visibility"`
 	HighPriority_ null.Bool              `json:"high_priority" db:"high_priority"`
-	URN_          courier.URN            `json:"urn"`
+	URN_          urns.URN               `json:"urn"`
 	Text_         string                 `json:"text"          db:"text"`
 	Attachments_  pq.StringArray         `json:"attachments"   db:"attachments"`
 	ExternalID_   null.String            `json:"external_id"   db:"external_id"`
@@ -371,7 +372,7 @@ func (m *DBMsg) UUID() courier.MsgUUID    { return m.UUID_ }
 func (m *DBMsg) Text() string             { return m.Text_ }
 func (m *DBMsg) Attachments() []string    { return []string(m.Attachments_) }
 func (m *DBMsg) ExternalID() string       { return m.ExternalID_.String }
-func (m *DBMsg) URN() courier.URN         { return m.URN_ }
+func (m *DBMsg) URN() urns.URN            { return m.URN_ }
 func (m *DBMsg) ContactName() string      { return m.ContactName_ }
 func (m *DBMsg) HighPriority() bool       { return m.HighPriority_.Valid && m.HighPriority_.Bool }
 

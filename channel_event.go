@@ -1,6 +1,9 @@
 package courier
 
-import "time"
+import (
+	"github.com/nyaruka/gocommon/urns"
+	"time"
+)
 
 // ChannelEventType is the type of channel event this is
 type ChannelEventType string
@@ -18,7 +21,7 @@ const (
 // ChannelEvent represents an event on a channel, such as a follow, new conversation or referral
 type ChannelEvent interface {
 	ChannelUUID() ChannelUUID
-	URN() URN
+	URN() urns.URN
 	EventType() ChannelEventType
 	CreatedOn() time.Time
 	OccurredOn() time.Time

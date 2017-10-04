@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -49,7 +50,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// create our URN
-	urn := courier.NewTelURNForChannel(bmMsg.From, channel)
+	urn := urns.NewTelURNForCountry(bmMsg.From, channel.Country())
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, bmMsg.Text)

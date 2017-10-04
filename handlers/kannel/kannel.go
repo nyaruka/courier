@@ -12,7 +12,7 @@ import (
 	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/phonenumbers"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 const configUseNational = "use_national"
@@ -60,7 +60,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	date := time.Unix(kannelMsg.Timestamp, 0).UTC()
 
 	// create our URN
-	urn := courier.NewTelURNForChannel(kannelMsg.Sender, channel)
+	urn := urns.NewTelURNForCountry(kannelMsg.Sender, channel.Country())
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, kannelMsg.Message).WithExternalID(kannelMsg.ID).WithReceivedOn(date)
@@ -152,10 +152,8 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	// if we are meant to use national formatting (no country code) pull that out
 	if useNational {
-		parsed, err := phonenumbers.Parse(msg.URN().Path(), encodingDefault)
-		if err == nil {
-			form["to"] = []string{fmt.Sprintf("%d", parsed.GetNationalNumber())}
-		}
+		nationalTo := msg.URN().Localize(msg.Channel().Country())
+		form["to"] = []string{nationalTo.Path()}
 	}
 
 	// figure out what encoding to tell kannel to send as
