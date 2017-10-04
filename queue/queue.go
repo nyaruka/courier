@@ -149,11 +149,11 @@ var luaPop = redis.NewScript(2, `-- KEYS: [EpochMS QueueType]
 
 		-- encode it back if there is anything left
 		if table.getn(valueList) > 0 then
-			local remaining = cjson.encode(valueList)
-	
-			-- schedule it in the future 5 seconds on our main queue
-			redis.call("zadd", queue .. "/1", tonumber(KEYS[1]) + 5, remaining)
-			redis.call("zincrby", KEYS[2] .. ":future", 0, queue)
+		    local remaining = cjson.encode(valueList)
+	        
+            -- schedule it in the future 5 seconds on our main queue
+            redis.call("zadd", queue .. "/1", tonumber(KEYS[1]) + 5, remaining)
+            redis.call("zincrby", KEYS[2] .. ":future", 0, queue)
 		end
 
 		return {queue, popValue}
