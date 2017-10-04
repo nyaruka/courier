@@ -376,7 +376,7 @@ func (ts *BackendTestSuite) TestStatus() {
 	ts.NotNil(dbMsg)
 
 	// serialize our message
-	msgJSON, err := json.Marshal(dbMsg)
+	msgJSON, err := json.Marshal([]interface{}{dbMsg})
 	ts.NoError(err)
 
 	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.DefaultPriority)
@@ -397,7 +397,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.NotNil(dbMsg)
 
 	// serialize our message
-	msgJSON, err := json.Marshal(dbMsg)
+	msgJSON, err := json.Marshal([]interface{}{dbMsg})
 	ts.NoError(err)
 
 	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.DefaultPriority)
