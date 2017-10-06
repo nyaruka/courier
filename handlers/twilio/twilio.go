@@ -232,9 +232,9 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 		status.AddLog(log)
 
-		// parse the response if we had one
-		if rr.Body != nil {
-			errorCode, _ := jsonparser.GetInt([]byte(rr.Body), "error_code")
+		// see if we can parse the error if we have one
+		if err != nil && rr.Body != nil {
+			errorCode, _ := jsonparser.GetInt([]byte(rr.Body), "code")
 			if errorCode != 0 {
 				if errorCode == errorStopped {
 					status.SetStatus(courier.MsgFailed)
