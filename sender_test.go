@@ -27,8 +27,8 @@ func TestSending(t *testing.T) {
 	defer s.Stop()
 
 	// create and add a new outgoing message
-	xxChannel := NewMockChannel("53e5aafa-8155-449d-9009-fcb30d54bd26", "XX", "2020", "US", map[string]interface{}{})
-	dmChannel := NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "DM", "2020", "US", map[string]interface{}{})
+	xxChannel := NewMockChannel("53e5aafa-8155-449d-9009-fcb30d54bd26", "XX", "2020", "US", map[string]interface{}{}, map[string]interface{}{})
+	dmChannel := NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "DM", "2020", "US", map[string]interface{}{}, map[string]interface{}{})
 	msg := &mockMsg{
 		channel: xxChannel,
 		id:      NewMsgID(101),

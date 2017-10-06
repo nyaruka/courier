@@ -88,7 +88,7 @@ func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *DBChannel {
 	ts.NoError(err, "error building channel uuid")
 
 	channel, err := ts.b.GetChannel(courier.ChannelType(cType), channelUUID)
-	ts.NoError(err, "error building channel uuid")
+	ts.NoError(err, "error getting channel")
 	ts.NotNil(channel)
 
 	return channel.(*DBChannel)
@@ -458,14 +458,18 @@ func (ts *BackendTestSuite) TestChannel() {
 	ts.True(boolVal)
 
 	val = knChannel.ConfigForKey("encoding", "default")
-	stringVal, isString := val.(string)
-	ts.True(isString)
-	ts.Equal("smart", stringVal)
+	ts.Equal("smart", val)
 
 	// missing value
 	val = knChannel.ConfigForKey("missing", "missingValue")
-	stringVal, isString = val.(string)
-	ts.True(isString)
+	ts.Equal("missingValue", val)
+
+	// try an org config
+	val = knChannel.OrgConfigForKey("CHATBASE_API_KEY", nil)
+	ts.Equal("cak", val)
+
+	// and a missing value
+	val = knChannel.OrgConfigForKey("missing", "missingValue")
 	ts.Equal("missingValue", val)
 }
 

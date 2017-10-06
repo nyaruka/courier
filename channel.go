@@ -97,4 +97,6 @@ type Channel interface {
 	Address() string
 	ConfigForKey(key string, defaultValue interface{}) interface{}
 	StringConfigForKey(key string, defaultValue string) string
+
+	OrgConfigForKey(key string, defaultValue interface{}) interface{}
 }

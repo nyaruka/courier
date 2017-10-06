@@ -261,6 +261,7 @@ type MockChannel struct {
 	address     string
 	country     string
 	config      map[string]interface{}
+	orgConfig   map[string]interface{}
 }
 
 // UUID returns the uuid for this channel
@@ -302,8 +303,17 @@ func (c *MockChannel) StringConfigForKey(key string, defaultValue string) string
 	return str
 }
 
+// OrgConfigForKey returns the org config value for the passed in key
+func (c *MockChannel) OrgConfigForKey(key string, defaultValue interface{}) interface{} {
+	value, found := c.orgConfig[key]
+	if !found {
+		return defaultValue
+	}
+	return value
+}
+
 // NewMockChannel creates a new mock channel for the passed in type, address, country and config
-func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}) Channel {
+func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}, orgConfig map[string]interface{}) Channel {
 	cUUID, _ := NewChannelUUID(uuid)
 
 	channel := &MockChannel{
@@ -313,6 +323,7 @@ func NewMockChannel(uuid string, channelType string, address string, country str
 		address:     address,
 		country:     country,
 		config:      config,
+		orgConfig:   orgConfig,
 	}
 	return channel
 }
