@@ -102,8 +102,7 @@ func getCachedChannel(channelType courier.ChannelType, uuid courier.ChannelUUID)
 }
 
 func cacheChannel(channel *DBChannel) {
-	// set our expiration
-	channel.expiration = time.Now().Add(localTTL * time.Second)
+	channel.expiration = time.Now().Add(localTTL)
 
 	cacheMutex.Lock()
 	channelCache[channel.UUID()] = channel
@@ -116,7 +115,8 @@ func clearLocalChannel(uuid courier.ChannelUUID) {
 	cacheMutex.Unlock()
 }
 
-const localTTL = 60
+// channels stay cached in memory for a minute at a time
+const localTTL = 60 * time.Second
 
 var cacheMutex sync.RWMutex
 var channelCache = make(map[courier.ChannelUUID]*DBChannel)

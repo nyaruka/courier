@@ -203,11 +203,5 @@ func (w *Sender) Send() {
 
 		// mark our send task as complete
 		backend.MarkOutgoingMsgComplete(msg, status)
-
-		// notify chatbase if this org has that config
-		chatbaseKey := msg.Channel().OrgConfigForKey("CHATBASE_API_KEY", nil)
-		if chatbaseKey != nil {
-			chatbase.SendChatbaseEvent()
-		}
 	}
 }
