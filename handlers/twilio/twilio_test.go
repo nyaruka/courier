@@ -116,7 +116,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Stopped Contact Code",
 		Text: "Stopped Contact", URN: "tel:+250788383383",
 		Status:       "F",
-		ResponseBody: `{ "error_code": 21610 }`, ResponseStatus: 200,
+		ResponseBody: `{ "error_code": 21610 }`, ResponseStatus: 400,
 		PostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383"},
 		SendPrep:   setSendURL,
 		Stopped:    true},

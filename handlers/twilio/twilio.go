@@ -232,19 +232,21 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 		status.AddLog(log)
 
-		// fail if we received an error
-		if err != nil {
-			return status, nil
+		// parse the response if we had one
+		if rr.Body != nil {
+			errorCode, _ := jsonparser.GetInt([]byte(rr.Body), "error_code")
+			if errorCode != 0 {
+				if errorCode == errorStopped {
+					status.SetStatus(courier.MsgFailed)
+					h.Backend().StopMsgContact(msg)
+				}
+				log.WithError("Message Send Error", errors.Errorf("received error code from twilio '%d'", errorCode))
+				return status, nil
+			}
 		}
 
-		// was this request successful?
-		errorCode, _ := jsonparser.GetInt([]byte(rr.Body), "error_code")
-		if errorCode != 0 {
-			if errorCode == errorStopped {
-				status.SetStatus(courier.MsgFailed)
-				h.Backend().StopMsgContact(msg)
-			}
-			log.WithError("Message Send Error", errors.Errorf("received error code from twilio '%d'", errorCode))
+		// fail if we received an error
+		if err != nil {
 			return status, nil
 		}
 
