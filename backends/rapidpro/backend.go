@@ -138,7 +138,7 @@ func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg, status courier.MsgSta
 	chatKey, _ := msg.Channel().OrgConfigForKey(chatbaseAPIKey, "").(string)
 	if chatKey != "" {
 		chatVersion, _ := msg.Channel().OrgConfigForKey(chatbaseVersion, "").(string)
-		err := chatbase.SendChatbaseMessage(chatKey, chatVersion, chatbaseMessageType, dbMsg.ContactID_.String(), msg.Channel().Name(), msg.Text(), time.UTCNow())
+		err := chatbase.SendChatbaseMessage(chatKey, chatVersion, chatbaseMessageType, dbMsg.ContactID_.String(), msg.Channel().Name(), msg.Text(), time.Now().UTC())
 		if err != nil {
 			logrus.WithError(err).WithField("chatbase_api_key", chatKey).WithField("chatbase_version", chatVersion).WithField("msg_id", dbMsg.ID().String()).Error("unable to write chatbase message")
 		}

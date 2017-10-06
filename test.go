@@ -2,6 +2,7 @@ package courier
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"time"
@@ -267,6 +268,9 @@ type MockChannel struct {
 // UUID returns the uuid for this channel
 func (c *MockChannel) UUID() ChannelUUID { return c.uuid }
 
+// Name returns the name of this channel, we just return our UUID for our mock instances
+func (c *MockChannel) Name() string { return fmt.Sprintf("Channel: %s", c.uuid.String()) }
+
 // ChannelType returns the type of this channel
 func (c *MockChannel) ChannelType() ChannelType { return c.channelType }
 
@@ -313,7 +317,7 @@ func (c *MockChannel) OrgConfigForKey(key string, defaultValue interface{}) inte
 }
 
 // NewMockChannel creates a new mock channel for the passed in type, address, country and config
-func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}, orgConfig map[string]interface{}) Channel {
+func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}) Channel {
 	cUUID, _ := NewChannelUUID(uuid)
 
 	channel := &MockChannel{
@@ -323,7 +327,7 @@ func NewMockChannel(uuid string, channelType string, address string, country str
 		address:     address,
 		country:     country,
 		config:      config,
-		orgConfig:   orgConfig,
+		orgConfig:   map[string]interface{}{},
 	}
 	return channel
 }

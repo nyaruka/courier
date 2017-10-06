@@ -42,7 +42,7 @@ func SendChatbaseMessage(apiKey string, apiVersion string, messageType string, u
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, chatbaseAPIURL, bytes.NewReader(jsonBody))
+	req, err := http.NewRequest(http.MethodPost, ChatbaseAPIURL, bytes.NewReader(jsonBody))
 	if err != nil {
 		return err
 	}

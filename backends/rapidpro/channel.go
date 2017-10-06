@@ -47,7 +47,7 @@ func getChannel(b *backend, channelType courier.ChannelType, channelUUID courier
 }
 
 const lookupChannelFromUUIDSQL = `
-SELECT org_id, ch.id as id, ch.uuid as uuid, channel_type, schemes, address, ch.country as country, ch.config as config, org.config as org_config
+SELECT org_id, ch.id as id, ch.uuid as uuid, ch.name as name, channel_type, schemes, address, ch.country as country, ch.config as config, org.config as org_config
 FROM channels_channel ch, orgs_org org
 WHERE ch.uuid = $1 AND ch.is_active = true AND ch.org_id IS NOT NULL and ch.org_id = org.id`
 
@@ -132,6 +132,7 @@ type DBChannel struct {
 	ChannelType_ courier.ChannelType `db:"channel_type"`
 	Schemes_     pq.StringArray      `db:"schemes"`
 	UUID_        courier.ChannelUUID `db:"uuid"`
+	Name_        sql.NullString      `db:"name"`
 	Address_     sql.NullString      `db:"address"`
 	Country_     sql.NullString      `db:"country"`
 	Config_      utils.NullMap       `db:"config"`
@@ -146,6 +147,9 @@ func (c *DBChannel) OrgID() OrgID { return c.OrgID_ }
 
 // ChannelType returns the type of this channel
 func (c *DBChannel) ChannelType() courier.ChannelType { return c.ChannelType_ }
+
+// Name returns the name of this channel
+func (c *DBChannel) Name() string { return c.Name_.String }
 
 // Schemes returns the schemes this channels supports
 func (c *DBChannel) Schemes() []string { return []string(c.Schemes_) }
