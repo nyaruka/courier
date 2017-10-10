@@ -10,7 +10,7 @@ import (
 )
 
 // ChatbaseAPIURL is the URL chatbase API messages will be sent to
-var ChatbaseAPIURL = "https://chatbase.com/api/message"
+var chatbaseAPIURL = "https://chatbase.com/api/message"
 
 // chatbaseLog is the payload for a chatbase request
 type chatbaseLog struct {
@@ -42,7 +42,7 @@ func SendChatbaseMessage(apiKey string, apiVersion string, messageType string, u
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, ChatbaseAPIURL, bytes.NewReader(jsonBody))
+	req, err := http.NewRequest(http.MethodPost, chatbaseAPIURL, bytes.NewReader(jsonBody))
 	if err != nil {
 		return err
 	}
