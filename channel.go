@@ -91,10 +91,13 @@ var ErrChannelWrongType = errors.New("channel type wrong")
 // Channel defines the general interface backend Channel implementations must adhere to
 type Channel interface {
 	UUID() ChannelUUID
+	Name() string
 	ChannelType() ChannelType
 	Schemes() []string
 	Country() string
 	Address() string
 	ConfigForKey(key string, defaultValue interface{}) interface{}
 	StringConfigForKey(key string, defaultValue string) string
+
+	OrgConfigForKey(key string, defaultValue interface{}) interface{}
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/chatbase"
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
@@ -30,6 +31,11 @@ const msgQueueName = "msgs"
 
 // the name of our set for tracking sends
 const sentSetName = "msgs_sent_%s"
+
+// constants used in org configs for chatbase
+const chatbaseAPIKey = "CHATBASE_API_KEY"
+const chatbaseVersion = "CHATBASE_VERSION"
+const chatbaseMessageType = "msg"
 
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
@@ -126,6 +132,16 @@ func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg, status courier.MsgSta
 	if status != nil && (status.Status() == courier.MsgSent || status.Status() == courier.MsgWired) {
 		dateKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
 		rc.Do("sadd", dateKey, msg.ID().String())
+	}
+
+	// if this org has chatbase connected, notify chatbase
+	chatKey, _ := msg.Channel().OrgConfigForKey(chatbaseAPIKey, "").(string)
+	if chatKey != "" {
+		chatVersion, _ := msg.Channel().OrgConfigForKey(chatbaseVersion, "").(string)
+		err := chatbase.SendChatbaseMessage(chatKey, chatVersion, chatbaseMessageType, dbMsg.ContactID_.String(), msg.Channel().Name(), msg.Text(), time.Now().UTC())
+		if err != nil {
+			logrus.WithError(err).WithField("chatbase_api_key", chatKey).WithField("chatbase_version", chatVersion).WithField("msg_id", dbMsg.ID().String()).Error("unable to write chatbase message")
+		}
 	}
 }
 

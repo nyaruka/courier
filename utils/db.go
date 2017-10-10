@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+
 	"gopkg.in/guregu/null.v3"
 )
 

@@ -1,6 +1,7 @@
 package rapidpro
 
 import (
+	"strconv"
 	"time"
 
 	null "gopkg.in/guregu/null.v3"
@@ -22,6 +23,14 @@ type ContactID struct {
 
 // NilContactID represents our nil value for ContactID
 var NilContactID = ContactID{null.NewInt(0, false)}
+
+// String returns a string representation of this ContactID
+func (c *ContactID) String() string {
+	if c.Valid {
+		strconv.FormatInt(c.Int64, 10)
+	}
+	return "null"
+}
 
 const insertContactSQL = `
 INSERT INTO contacts_contact(org_id, is_active, is_blocked, is_test, is_stopped, uuid, created_on, modified_on, created_by_id, modified_by_id, name) 

@@ -2,7 +2,8 @@ DROP TABLE IF EXISTS orgs_org CASCADE;
 CREATE TABLE orgs_org (
     id serial primary key,
     name character varying(255) NOT NULL,
-    language character varying(64)
+    language character varying(64),
+    config text NULL
 );
 
 DROP TABLE IF EXISTS channels_channel CASCADE;
