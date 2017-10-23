@@ -57,7 +57,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// create our date from the timestamp
-	date := time.Unix(kannelMsg.Timestamp, 0).UTC()
+	date := time.Unix(kannelMsg.TS, 0).UTC()
 
 	// create our URN
 	urn := urns.NewTelURNForCountry(kannelMsg.Sender, channel.Country())
@@ -75,10 +75,10 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 }
 
 type kannelMessage struct {
-	ID        string `validate:"required" name:"id"`
-	Timestamp int64  `validate:"required" name:"ts"`
-	Message   string `name:"message"`
-	Sender    string `validate:"required" name:"sender"`
+	ID      string `validate:"required" name:"id"`
+	TS      int64  `validate:"required" name:"ts"`
+	Message string `name:"message"`
+	Sender  string `validate:"required" name:"sender"`
 }
 
 var kannelStatusMapping = map[int]courier.MsgStatusValue{

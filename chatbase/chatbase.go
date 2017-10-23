@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/nyaruka/goflow/utils"
+	"github.com/nyaruka/courier/utils"
 )
 
 // ChatbaseAPIURL is the URL chatbase API messages will be sent to
