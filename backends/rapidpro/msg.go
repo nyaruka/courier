@@ -297,8 +297,8 @@ func checkMsgSeen(b *backend, msg *DBMsg) courier.MsgUUID {
 
 	now := time.Now().In(time.UTC)
 	prev := now.Add(time.Second * -2)
-	windowKey := fmt.Sprintf("seen:msgs:%s:%02d", now.Format("2006-01-02-15:05"), now.Second()/2*2)
-	prevWindowKey := fmt.Sprintf("seen:msgs:%s:%02d", prev.Format("2006-01-02-15:05"), prev.Second()/2*2)
+	windowKey := fmt.Sprintf("seen:msgs:%s:%02d", now.Format("2006-01-02-15:04"), now.Second()/2*2)
+	prevWindowKey := fmt.Sprintf("seen:msgs:%s:%02d", prev.Format("2006-01-02-15:04"), prev.Second()/2*2)
 
 	// try to look up our UUID from either window or prev window
 	foundUUID, _ := redis.String(luaMsgSeen.Do(r, windowKey, prevWindowKey, fingerprint))
@@ -321,7 +321,7 @@ func writeMsgSeen(b *backend, msg *DBMsg) {
 
 	fingerprint := msg.fingerprint()
 	now := time.Now().In(time.UTC)
-	windowKey := fmt.Sprintf("seen:msgs:%s:%02d", now.Format("2006-01-02-15:05"), now.Second()/2*2)
+	windowKey := fmt.Sprintf("seen:msgs:%s:%02d", now.Format("2006-01-02-15:04"), now.Second()/2*2)
 
 	luaWriteMsgSeen.Do(r, windowKey, fingerprint, msg.UUID().String())
 }
