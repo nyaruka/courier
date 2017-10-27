@@ -201,6 +201,12 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", contentType)
+
+	authorization := msg.Channel().StringConfigForKey(courier.ConfigSendAuthorization, "")
+	if authorization != "" {
+		req.Header.Set("Authorization", authorization)
+	}
+
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log
