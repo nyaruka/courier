@@ -279,6 +279,11 @@ func (h *handler) writeReceiveSuccess(w http.ResponseWriter, r *http.Request, ms
 
 // see https://www.twilio.com/docs/api/security
 func (h *handler) validateSignature(channel courier.Channel, r *http.Request) error {
+	actual := r.Header.Get(twSignatureHeader)
+	if actual == "" {
+		return fmt.Errorf("missing request signature")
+	}
+
 	if err := r.ParseForm(); err != nil {
 		return err
 	}
@@ -293,11 +298,6 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 	expected, err := twCalculateSignature(url, r.PostForm, authToken)
 	if err != nil {
 		return err
-	}
-
-	actual := r.Header.Get(twSignatureHeader)
-	if actual == "" {
-		return fmt.Errorf("missing request signature")
 	}
 
 	// compare signatures in way that isn't sensitive to a timing attack
