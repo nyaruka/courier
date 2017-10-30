@@ -13,7 +13,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var sendURL = "https://smsapi1.dmarkmobile.com/sms"
+var sendURL = "https://smsapi1.dmarkmobile.com/sms/"
 
 // DMark supports up to 3 segment messages
 const maxMsgLength = 453
