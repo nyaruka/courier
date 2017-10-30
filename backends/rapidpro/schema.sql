@@ -66,7 +66,6 @@ CREATE TABLE msgs_msg (
     direction character varying(1) NOT NULL,
     status character varying(1) NOT NULL,
     visibility character varying(1) NOT NULL,
-    has_template_error boolean NOT NULL,
     msg_type character varying(1),
     msg_count integer NOT NULL,
     error_count integer NOT NULL,
