@@ -7,10 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/pkg/errors"
 )
 
 var sendURL = "https://smsapi1.dmarkmobile.com/sms/"
@@ -127,7 +129,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
-	for _, part := range parts {
+	for i, part := range parts {
 		form := url.Values{
 			"sender":   []string{strings.TrimLeft(msg.Channel().Address(), "+")},
 			"receiver": []string{strings.TrimLeft(msg.URN().Path(), "+")},
@@ -142,9 +144,22 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log
-		status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
 		if err != nil {
 			return status, nil
+		}
+
+		// grab the external id
+		externalID, err := jsonparser.GetString([]byte(rr.Body), "sms_id")
+		if err != nil {
+			log.WithError("Message Send Error", errors.Errorf("unable to get sms_id from body"))
+			return status, nil
+		}
+
+		// if this is our first message, record the external id
+		if i == 0 {
+			status.SetExternalID(externalID)
 		}
 
 		// this was wired successfully
