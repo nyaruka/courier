@@ -72,8 +72,8 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	// create our date from the timestamp "2017-10-26T15:51:32.906335Z"
-	date, err := time.Parse("2006-01-02T15:04:05.999999Z", dkMsg.TStamp)
+	// create our date from the timestamp "2017-10-26T15:51:32.906335+00:00"
+	date, err := time.Parse("2006-01-02T15:04:05.999999-07:00", dkMsg.TStamp)
 	if err != nil {
 		return nil, fmt.Errorf("invalid tstamp: %s", dkMsg.TStamp)
 	}

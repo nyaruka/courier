@@ -18,8 +18,8 @@ var (
 	statusURL  = "/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 
 	emptyReceive = "empty"
-	validReceive = "text=Msg&short_code=2020&tstamp=2017-10-26T15:51:32.906335Z&msisdn=254791541111"
-	missingText  = "short_code=2020&tstamp=2017-10-26T15:51:32.906335Z&msisdn=254791541111"
+	validReceive = "text=Msg&short_code=2020&tstamp=2017-10-26T15:51:32.906335%2B00:00&msisdn=254791541111"
+	missingText  = "short_code=2020&tstamp=2017-10-26T15:51:32.906335%2B00:00&msisdn=254791541111"
 	invalidTS    = "text=Msg&short_code=2020&tstamp=2017-10-26&msisdn=254791541111"
 
 	missingStatus = "id=12345"

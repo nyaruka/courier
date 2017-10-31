@@ -302,7 +302,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 				}
 				if testCase.Date != nil {
 					if msg != nil {
-						require.Equal(*testCase.Date, *msg.ReceivedOn())
+						require.Equal((*testCase.Date).Local(), (*msg.ReceivedOn()).Local())
 					} else if event != nil {
 						require.Equal(*testCase.Date, event.OccurredOn())
 					} else {
