@@ -29,10 +29,10 @@ const (
 	ConfigSendAuthorization = "send_authorization"
 
 	// ConfigSendBody is a constant key for channel configs
-	ConfigSendBody = "send_body"
+	ConfigSendBody = "body"
 
 	// ConfigSendMethod is a constant key for channel configs
-	ConfigSendMethod = "send_method"
+	ConfigSendMethod = "method"
 
 	// ConfigContentType is a constant key for channel configs
 	ConfigContentType = "content_type"
