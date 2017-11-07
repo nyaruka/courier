@@ -48,7 +48,7 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Failed Valid", URL: failedValid, Status: 200, Response: `"status":"F"`},
 	{Label: "Invalid Status", URL: invalidStatus, Status: 404, Response: `page not found`},
 	{Label: "Sent Valid", URL: sentValid, Status: 200, Response: `"status":"S"`},
-	{Label: "Delivered Valid", URL: deliveredValid, Status: 200, Response: `"status":"D"`},
+	{Label: "Delivered Valid", URL: deliveredValid, Status: 200, Data: "nothing", Response: `"status":"D"`},
 	{Label: "Delivered Valid Post", URL: deliveredValidPost, Data: "id=12345", Status: 200, Response: `"status":"D"`},
 }
 
