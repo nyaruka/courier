@@ -26,6 +26,10 @@ type handler struct {
 	handlers.BaseHandler
 }
 
+const (
+	maxLength = 640 // Facebook API says 640 is max for the body
+)
+
 // NewHandler returns a new TelegramHandler ready to be registered
 func NewHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("TG"), "Telegram")}
@@ -173,6 +177,15 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	// the status that will be written for this message
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	parts := handlers.SplitMsg(courier.Text, maxLength)
+	for _, part := range parts {
+		envelope := facebookEnvelope{
+			Message{
+				Text: 
+			}
+		}
+
+	}
 
 	// whether we encountered any errors sending any parts
 	hasError := true
@@ -263,17 +276,15 @@ type facebookResponse struct {
 //      }
 //    }
 // }
-type facebookEnvelope struct {
-	Recipient interface{} `json:"recipient"`
-	Message   struct {
-		Text       string `json:"text"`
-		Attachment *struct {
-			Type    string `json:"type"`
-			Payload struct {
-				URL string `json:"url"`
-			} `json:"payload"`
-		} `json:"attachment"`
-	} `json:"message"`
+
+type facebookMessage   struct {
+	Text       string `json:"text"`
+	Attachment *struct {
+		Type    string `json:"type"`
+		Payload struct {
+			URL string `json:"url"`
+		} `json:"payload"`
+	} `json:"attachment"`
 }
 
 type plainRecipient struct {
@@ -283,3 +294,9 @@ type plainRecipient struct {
 type referralRecipient struct {
 	UserReferral string `json:"user_ref"`
 }
+
+type facebookEnvelope struct {
+	Recipient interface{} `json:"recipient"`
+	Message facebookMessage `json:"message"`	
+}
+
