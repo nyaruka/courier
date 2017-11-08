@@ -24,7 +24,7 @@ func NewSender(waitGroup *sync.WaitGroup, username string, token string, source 
 		waitGroup: waitGroup,
 		stop:      make(chan bool),
 
-		buffer:   make(chan gauge, 1000),
+		buffer:   make(chan gauge, 10000),
 		username: username,
 		token:    token,
 		source:   source,

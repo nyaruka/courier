@@ -31,9 +31,6 @@ type Courier struct {
 	StatusUsername string `default:""`
 	StatusPassword string `default:""`
 
-	RapidproHandleURL string `default:"https://app.rapidpro.io/handlers/mage/handle_message"`
-	RapidproToken     string `default:"missing_rapidpro_token"`
-
 	LogLevel string `default:"error"`
 
 	IncludeChannels []string
