@@ -62,7 +62,7 @@ var testCases = []ChannelHandleTestCase{
 
 func addValidSignature(r *http.Request) {
 	r.ParseForm()
-	sig, _ := twCalculateSignature(fmt.Sprintf("%s%s", "http://courier.test", r.URL.RequestURI()), r.PostForm, "6789")
+	sig, _ := twCalculateSignature(fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI()), r.PostForm, "6789")
 	r.Header.Set(twSignatureHeader, string(sig))
 }
 
