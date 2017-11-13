@@ -295,8 +295,7 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 		return fmt.Errorf("invalid or missing auth token in config")
 	}
 
-	url := fmt.Sprintf("%s://%s%s", r.URL.Scheme, r.Host, r.URL.RequestURI())
-	fmt.Printf("URL: %s", url)
+	url := fmt.Sprintf("%s://%s%s", h.Server().Config().Scheme, r.Host, r.URL.RequestURI())
 	expected, err := twCalculateSignature(url, r.PostForm, authToken)
 	if err != nil {
 		return err
