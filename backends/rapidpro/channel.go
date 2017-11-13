@@ -194,6 +194,16 @@ func (c *DBChannel) OrgConfigForKey(key string, defaultValue interface{}) interf
 	return value
 }
 
+// CallbackDomain returns the callback domain to use for this channel
+func (c *DBChannel) CallbackDomain(fallbackDomain string) string {
+	value, found := c.Config_.Map[courier.ConfigCallbackDomain]
+	strValue, isStr := value.(string)
+	if !found || !isStr {
+		return fallbackDomain
+	}
+	return strValue
+}
+
 // StringConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
 func (c *DBChannel) StringConfigForKey(key string, defaultValue string) string {
 	val := c.ConfigForKey(key, defaultValue)

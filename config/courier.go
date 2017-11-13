@@ -10,7 +10,8 @@ type Courier struct {
 
 	SentryDSN string `default:""`
 
-	BaseURL  string `default:"https://localhost:8080"`
+	Scheme   string `default:"https"`
+	Domain   string `default:"localhost"`
 	Port     int    `default:"8080"`
 	DB       string `default:"postgres://courier@localhost/courier?sslmode=disable"`
 	Redis    string `default:"redis://localhost:6379/0"`

@@ -180,7 +180,8 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	// build our callback URL
-	callbackURL := fmt.Sprintf("%s/c/t/%s/status?id=%d&action=callback", h.Server().Config().BaseURL, msg.Channel().UUID(), msg.ID().Int64)
+	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+	callbackURL := fmt.Sprintf("%s://%s/c/t/%s/status?id=%d&action=callback", h.Server().Config().Scheme, callbackDomain, msg.Channel().UUID(), msg.ID().Int64)
 
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	if accountSID == "" {
@@ -294,7 +295,8 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 		return fmt.Errorf("invalid or missing auth token in config")
 	}
 
-	url := fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI())
+	url := fmt.Sprintf("%s://%s%s", r.URL.Scheme, r.Host, r.URL.RequestURI())
+	fmt.Printf("URL: %s", url)
 	expected, err := twCalculateSignature(url, r.PostForm, authToken)
 	if err != nil {
 		return err

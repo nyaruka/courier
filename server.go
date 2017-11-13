@@ -278,7 +278,7 @@ func (s *server) channelUpdateStatusWrapper(handler ChannelHandler, handlerFunc 
 		if err != nil {
 			return err
 		}
-		url := fmt.Sprintf("%s%s", s.config.BaseURL, r.URL.RequestURI())
+		url := fmt.Sprintf("%s%s%s", r.URL.Scheme, r.URL.Host, r.URL.RequestURI())
 
 		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 		ww.Tee(response)
@@ -326,7 +326,7 @@ func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc Ch
 		if err != nil {
 			return err
 		}
-		url := fmt.Sprintf("%s%s", s.config.BaseURL, r.URL.RequestURI())
+		url := fmt.Sprintf("%s%s%s", r.URL.Scheme, r.URL.Host, r.URL.RequestURI())
 		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
 		ww.Tee(response)

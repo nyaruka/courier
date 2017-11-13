@@ -125,7 +125,8 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		return nil, fmt.Errorf("no authorization token set for DK channel")
 	}
 
-	dlrURL := fmt.Sprintf("%s%s%s/status?id=%s&status=%%s", h.Server().Config().BaseURL, "/c/dk/", msg.Channel().UUID(), msg.ID().String())
+	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+	dlrURL := fmt.Sprintf("%s://%s%s%s/status?id=%s&status=%%s", h.Server().Config().Scheme, callbackDomain, "/c/dk/", msg.Channel().UUID(), msg.ID().String())
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)

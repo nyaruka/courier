@@ -13,6 +13,5 @@ func NewTest() *Courier {
 	loader.Load(config)
 
 	// hardcode our test base URL
-	config.BaseURL = "http://courier.test"
 	return config
 }
