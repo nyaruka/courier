@@ -96,7 +96,7 @@ func ensureTestServerUp(host string) {
 func testHandlerRequest(tb testing.TB, s courier.Server, path string, data string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
 	var req *http.Request
 	var err error
-	url := fmt.Sprintf("%s://%s%s", s.Config().Scheme, s.Config().Domain, path)
+	url := fmt.Sprintf("https://%s%s", s.Config().Domain, path)
 
 	if data != "" {
 		req, err = http.NewRequest("POST", url, strings.NewReader(data))

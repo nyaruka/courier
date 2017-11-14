@@ -134,11 +134,6 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 		return nil, err
 	}
 
-	// check if we should ignore twilio status updates
-	if h.Server().Config().IgnoreTwilioStatus {
-		return nil, nil
-	}
-
 	// get our params
 	twStatus := &twStatus{}
 	err = handlers.DecodeAndValidateForm(twStatus, r)
@@ -181,7 +176,7 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	// build our callback URL
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
-	callbackURL := fmt.Sprintf("%s://%s/c/t/%s/status?id=%d&action=callback", h.Server().Config().Scheme, callbackDomain, msg.Channel().UUID(), msg.ID().Int64)
+	callbackURL := fmt.Sprintf("https://%s/c/t/%s/status?id=%d&action=callback", callbackDomain, msg.Channel().UUID(), msg.ID().Int64)
 
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	if accountSID == "" {
@@ -295,7 +290,7 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 		return fmt.Errorf("invalid or missing auth token in config")
 	}
 
-	url := fmt.Sprintf("%s://%s%s", h.Server().Config().Scheme, r.Host, r.URL.RequestURI())
+	url := fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI())
 	expected, err := twCalculateSignature(url, r.PostForm, authToken)
 	if err != nil {
 		return err

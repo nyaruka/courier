@@ -126,7 +126,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	}
 
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
-	dlrURL := fmt.Sprintf("%s://%s%s%s/status?id=%s&status=%%s", h.Server().Config().Scheme, callbackDomain, "/c/dk/", msg.Channel().UUID(), msg.ID().String())
+	dlrURL := fmt.Sprintf("https://%s%s%s/status?id=%s&status=%%s", callbackDomain, "/c/dk/", msg.Channel().UUID(), msg.ID().String())
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
