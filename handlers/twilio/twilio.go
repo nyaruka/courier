@@ -134,11 +134,6 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 		return nil, err
 	}
 
-	// check if we should ignore twilio status updates
-	if h.Server().Config().IgnoreTwilioStatus {
-		return nil, nil
-	}
-
 	// get our params
 	twStatus := &twStatus{}
 	err = handlers.DecodeAndValidateForm(twStatus, r)
@@ -180,7 +175,8 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	// build our callback URL
-	callbackURL := fmt.Sprintf("%s/c/t/%s/status?id=%d&action=callback", h.Server().Config().BaseURL, msg.Channel().UUID(), msg.ID().Int64)
+	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+	callbackURL := fmt.Sprintf("https://%s/c/t/%s/status?id=%d&action=callback", callbackDomain, msg.Channel().UUID(), msg.ID().Int64)
 
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	if accountSID == "" {

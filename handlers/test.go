@@ -93,9 +93,10 @@ func ensureTestServerUp(host string) {
 }
 
 // utility method to make a request to a handler URL
-func testHandlerRequest(tb testing.TB, s courier.Server, url string, data string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
+func testHandlerRequest(tb testing.TB, s courier.Server, path string, data string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
 	var req *http.Request
 	var err error
+	url := fmt.Sprintf("https://%s%s", s.Config().Domain, path)
 
 	if data != "" {
 		req, err = http.NewRequest("POST", url, strings.NewReader(data))

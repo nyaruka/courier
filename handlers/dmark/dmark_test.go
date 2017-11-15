@@ -59,7 +59,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Status: "W", ExternalID: "6b1c15d3-cba2-46f7-9a25-78265e58057d",
 		ResponseBody: `{ "type": "MT", "sms_id": "6b1c15d3-cba2-46f7-9a25-78265e58057d" }`, ResponseStatus: 200,
 		Headers:    map[string]string{"Authorization": "Token Authy"},
-		PostParams: map[string]string{"text": "Simple Message ☺", "receiver": "250788383383", "sender": "2020", "dlr_url": "http://courier.test/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%s"},
+		PostParams: map[string]string{"text": "Simple Message ☺", "receiver": "250788383383", "sender": "2020", "dlr_url": "https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%s"},
 		SendPrep:   setSendURL},
 	{Label: "Invalid Body",
 		Text: "Error Message", URN: "tel:+250788383383",

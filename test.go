@@ -288,6 +288,15 @@ func (c *MockChannel) SetConfig(key string, value interface{}) {
 	c.config[key] = value
 }
 
+// CallbackDomain returns the callback domain to use for this channel
+func (c *MockChannel) CallbackDomain(fallbackDomain string) string {
+	value, found := c.config[ConfigCallbackDomain]
+	if !found {
+		return fallbackDomain
+	}
+	return value.(string)
+}
+
 // ConfigForKey returns the config value for the passed in key
 func (c *MockChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
 	value, found := c.config[key]
