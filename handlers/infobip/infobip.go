@@ -126,7 +126,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, courier.WriteError(w, r, errors.New("no message found"))
 	}
 
-	return []courier.ReceiveEvent{msgs[0]}, courier.WriteMsgSuccess(w, r, []courier.Msg{msgs})
+	return []courier.ReceiveEvent{msgs[0]}, courier.WriteMsgSuccess(w, r, msgs)
 }
 
 type infobipMessage struct {
