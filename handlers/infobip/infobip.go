@@ -1,7 +1,6 @@
 package infobip
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -123,7 +122,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	if len(msgs) == 0 {
-		return nil, courier.WriteError(w, r, errors.New("no message found"))
+		return nil, courier.WriteIgnored(w, r, "ignoring request, no message")
 	}
 
 	return []courier.ReceiveEvent{msgs[0]}, courier.WriteMsgSuccess(w, r, msgs)

@@ -164,7 +164,7 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: helloMsg, Status: 200, Response: "Accepted",
 		Text: Sp("QUIZ Correct answer is Paris"), URN: Sp("tel:+385916242493"), ExternalID: Sp("817790313235066447"), Date: Tp(time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.FixedZone("", 0)))},
 	{Label: "Receive missing results key", URL: receiveURL, Data: missingResults, Status: 400, Response: "validation for 'Results' failed"},
-	{Label: "Receive missing text key", URL: receiveURL, Data: missingText, Status: 400, Response: "no message found"},
+	{Label: "Receive missing text key", URL: receiveURL, Data: missingText, Status: 200, Response: "ignoring request, no message"},
 	{Label: "Status report invalid JSON", URL: statusURL, Data: invalidJSONStatus, Status: 400, Response: "unable to parse request JSON"},
 	{Label: "Status report missing results key", URL: statusURL, Data: statusMissingResultsKey, Status: 400, Response: "Field validation for 'Results' failed"},
 	{Label: "Status delivered", URL: statusURL, Data: validStatusDelivered, Status: 200, Response: `"status":"D"`},
