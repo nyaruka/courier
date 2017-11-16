@@ -77,7 +77,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, msg)
+	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
 
 }
 

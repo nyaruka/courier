@@ -53,10 +53,10 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(ibStatusEnvelop.Results[0].MessageID), msgStatus)
 	err = h.Backend().WriteMsgStatus(status)
 	if err != nil {
-		return nil, courier.WriteError(w, r, err)
+		return nil, err
 	}
 
-	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, status)
+	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
 }
 
 var infobipStatusMapping = map[string]courier.MsgStatusValue{
@@ -116,7 +116,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		// and write it
 		err = h.Backend().WriteMsg(msg)
 		if err != nil {
-			return nil, courier.WriteError(w, r, err)
+			return nil, err
 		}
 		msgs = append(msgs, msg)
 
@@ -126,7 +126,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, courier.WriteError(w, r, errors.New("no message found"))
 	}
 
-	return []courier.ReceiveEvent{msgs[0]}, courier.WriteMsgSuccess(w, r, msgs[0])
+	return []courier.ReceiveEvent{msgs[0]}, courier.WriteMsgSuccess(w, r, msgs)
 }
 
 type infobipMessage struct {
