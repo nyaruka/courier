@@ -53,7 +53,7 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(ibStatusEnvelop.Results[0].MessageID), msgStatus)
 	err = h.Backend().WriteMsgStatus(status)
 	if err != nil {
-		return nil, courier.WriteError(w, r, err)
+		return nil, err
 	}
 
 	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, status)
@@ -116,7 +116,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		// and write it
 		err = h.Backend().WriteMsg(msg)
 		if err != nil {
-			return nil, courier.WriteError(w, r, err)
+			return nil, err
 		}
 		msgs = append(msgs, msg)
 
