@@ -14,7 +14,7 @@ import (
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/config"
-	"github.com/pressly/lg"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
@@ -31,13 +31,16 @@ type ChannelHandleTestCase struct {
 	Status   int
 	Response string
 
-	Name        *string
-	Text        *string
-	URN         *string
-	External    *string
-	Attachment  *string
-	Attachments []string
-	Date        *time.Time
+	Name         *string
+	Text         *string
+	URN          *string
+	Attachment   *string
+	Attachments  []string
+	Date         *time.Time
+	ChannelEvent *string
+
+	ExternalID *string
+	ID         int64
 
 	PrepRequest RequestPrepFunc
 }
@@ -49,14 +52,15 @@ type SendPrepFunc func(*httptest.Server, courier.Channel, courier.Msg)
 type ChannelSendTestCase struct {
 	Label string
 
-	Text        string
-	URN         string
-	Attachments []string
-	Priority    courier.MsgPriority
+	Text         string
+	URN          string
+	Attachments  []string
+	HighPriority bool
 
 	ResponseStatus int
 	ResponseBody   string
 
+	Path        string
 	URLParams   map[string]string
 	PostParams  map[string]string
 	RequestBody string
@@ -89,9 +93,10 @@ func ensureTestServerUp(host string) {
 }
 
 // utility method to make a request to a handler URL
-func testHandlerRequest(tb testing.TB, s courier.Server, url string, data string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
+func testHandlerRequest(tb testing.TB, s courier.Server, path string, data string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
 	var req *http.Request
 	var err error
+	url := fmt.Sprintf("https://%s%s", s.Config().Domain, path)
 
 	if data != "" {
 		req, err = http.NewRequest("POST", url, strings.NewReader(data))
@@ -132,8 +137,6 @@ func newServer(backend courier.Backend) courier.Server {
 	// for benchmarks, log to null
 	logger := logrus.New()
 	logger.Out = ioutil.Discard
-	lg.RedirectStdlogOutput(logger)
-	lg.DefaultLogger = logger
 	logrus.SetOutput(ioutil.Discard)
 
 	return courier.NewServerWithLogger(config.NewTest(), backend, logger)
@@ -150,11 +153,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 		t.Run(testCase.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			priority := courier.DefaultPriority
-			if testCase.Priority != 0 {
-				priority = testCase.Priority
-			}
-			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), courier.URN(testCase.URN), testCase.Text, priority)
+			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(testCase.URN), testCase.Text, testCase.HighPriority)
 			for _, a := range testCase.Attachments {
 				msg.WithAttachment(a)
 			}
@@ -186,9 +185,13 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				t.Errorf("unexpected error: %s", err.Error())
 			}
 
-			require.NotNil(testRequest)
+			if testCase.Path != "" {
+				require.NotNil(testRequest)
+				require.Equal(testCase.Path, testRequest.URL.Path)
+			}
 
 			if testCase.URLParams != nil {
+				require.NotNil(testRequest)
 				for k, v := range testCase.URLParams {
 					value := testRequest.URL.Query().Get(k)
 					require.Equal(v, value, fmt.Sprintf("%s not equal", k))
@@ -196,6 +199,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if testCase.PostParams != nil {
+				require.NotNil(testRequest)
 				for k, v := range testCase.PostParams {
 					value := testRequest.PostFormValue(k)
 					require.Equal(v, value)
@@ -203,11 +207,13 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if testCase.RequestBody != "" {
+				require.NotNil(testRequest)
 				value, _ := ioutil.ReadAll(testRequest.Body)
 				require.Equal(testCase.RequestBody, string(value))
 			}
 
 			if testCase.Headers != nil {
+				require.NotNil(testRequest)
 				for k, v := range testCase.Headers {
 					value := testRequest.Header.Get(k)
 					require.Equal(v, value)
@@ -249,22 +255,45 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 			testHandlerRequest(t, s, testCase.URL, testCase.Data, testCase.Status, &testCase.Response, testCase.PrepRequest)
 
 			// pop our message off and test against it
-			msg, err := mb.GetLastQueueMsg()
+			contactName := mb.GetLastContactName()
+			msg, _ := mb.GetLastQueueMsg()
+			event, _ := mb.GetLastChannelEvent()
+			status, _ := mb.GetLastMsgStatus()
 
-			if testCase.Status == 200 && testCase.Text != nil {
-				require.Nil(err)
-
+			if testCase.Status == 200 {
 				if testCase.Name != nil {
-					require.Equal(*testCase.Name, msg.ContactName())
+					require.Equal(*testCase.Name, contactName)
 				}
 				if testCase.Text != nil {
 					require.Equal(*testCase.Text, msg.Text())
 				}
-				if testCase.URN != nil {
-					require.Equal(*testCase.URN, string(msg.URN()))
+				if testCase.ChannelEvent != nil {
+					require.Equal(*testCase.ChannelEvent, string(event.EventType()))
 				}
-				if testCase.External != nil {
-					require.Equal(*testCase.External, msg.ExternalID())
+				if testCase.URN != nil {
+					if msg != nil {
+						require.Equal(*testCase.URN, string(msg.URN()))
+					} else if event != nil {
+						require.Equal(*testCase.URN, string(event.URN()))
+					} else {
+						require.Equal(*testCase.URN, "")
+					}
+				}
+				if testCase.ExternalID != nil {
+					if msg != nil {
+						require.Equal(*testCase.ExternalID, msg.ExternalID())
+					} else if status != nil {
+						require.Equal(*testCase.ExternalID, status.ExternalID())
+					} else {
+						require.Equal(*testCase.ExternalID, "")
+					}
+				}
+				if testCase.ID != 0 {
+					if status != nil {
+						require.Equal(testCase.ID, status.ID().Int64)
+					} else {
+						require.Equal(testCase.ID, -1)
+					}
 				}
 				if testCase.Attachment != nil {
 					require.Equal([]string{*testCase.Attachment}, msg.Attachments())
@@ -273,10 +302,14 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 					require.Equal(testCase.Attachments, msg.Attachments())
 				}
 				if testCase.Date != nil {
-					require.Equal(*testCase.Date, *msg.ReceivedOn())
+					if msg != nil {
+						require.Equal((*testCase.Date).Local(), (*msg.ReceivedOn()).Local())
+					} else if event != nil {
+						require.Equal(*testCase.Date, event.OccurredOn())
+					} else {
+						require.Equal(*testCase.Date, nil)
+					}
 				}
-			} else if err != courier.ErrMsgNotFound {
-				t.Fatalf("unexpected msg inserted: %v", err)
 			}
 		})
 	}

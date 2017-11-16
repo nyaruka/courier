@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/utils"
 )
 
 const insertLogSQL = `
@@ -21,12 +22,16 @@ func writeChannelLog(b *backend, log *courier.ChannelLog) error {
 		return fmt.Errorf("unable to write non-rapidpro channel logs")
 	}
 
-	description := "Success"
+	// if we have an error, append to to our response
 	if log.Error != "" {
-		description = fmt.Sprintf("Error: %s", log.Error)
+		log.Response += "\n\nError: " + log.Error
 	}
 
-	_, err := b.db.Exec(insertLogSQL, dbChan.ID(), log.MsgID, description, log.Error != "", log.Method, log.URL,
+	// strip null chars from request and response, postgres doesn't like that
+	log.Request = utils.CleanString(log.Request)
+	log.Response = utils.CleanString(log.Response)
+
+	_, err := b.db.Exec(insertLogSQL, dbChan.ID(), log.MsgID, log.Description, log.Error != "", log.Method, log.URL,
 		log.Request, log.Response, log.StatusCode, log.CreatedOn, log.Elapsed/time.Millisecond)
 
 	return err

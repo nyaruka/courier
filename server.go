@@ -2,6 +2,7 @@ package courier
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -18,7 +19,6 @@ import (
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/librato"
 	"github.com/nyaruka/courier/utils"
-	"github.com/pressly/lg"
 	"github.com/sirupsen/logrus"
 )
 
@@ -50,9 +50,6 @@ type Server interface {
 func NewServer(config *config.Courier, backend Backend) Server {
 	// create our top level router
 	logger := logrus.New()
-	lg.RedirectStdlogOutput(logger)
-	lg.DefaultLogger = logger
-
 	return NewServerWithLogger(config, backend, logger)
 }
 
@@ -64,7 +61,6 @@ func NewServerWithLogger(config *config.Courier, backend Backend, logger *logrus
 	router.Use(middleware.StripSlashes)
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
-	router.Use(lg.RequestLogger(logger))
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Timeout(15 * time.Second))
 
@@ -108,6 +104,8 @@ func (s *server) Start() error {
 	startSpoolFlushers(s)
 
 	// wire up our main pages
+	s.router.NotFound(s.handle404)
+	s.router.MethodNotAllowed(s.handle405)
 	s.router.Get("/", s.handleIndex)
 	s.router.Get("/status", s.handleStatus)
 
@@ -159,7 +157,7 @@ func (s *server) Stop() error {
 	s.foreman.Stop()
 
 	// shut down our HTTP server
-	if err := s.httpServer.Shutdown(nil); err != nil {
+	if err := s.httpServer.Shutdown(context.Background()); err != nil {
 		log.WithField("state", "stopping").WithError(err).Error("error shutting down server")
 	}
 
@@ -259,7 +257,11 @@ func (s *server) channelFunctionWrapper(handler ChannelHandler, handlerFunc Chan
 			return
 		}
 
-		err = handlerFunc(channel, w, r)
+		// stuff a few things in our context that help with logging
+		ctx := context.WithValue(r.Context(), contextRequestURL, r.URL.String())
+		ctx = context.WithValue(ctx, contextRequestStart, time.Now())
+
+		err = handlerFunc(channel, w, r.WithContext(ctx))
 		if err != nil {
 			WriteError(w, r, err)
 		}
@@ -276,7 +278,7 @@ func (s *server) channelUpdateStatusWrapper(handler ChannelHandler, handlerFunc 
 		if err != nil {
 			return err
 		}
-		url := fmt.Sprintf("%s%s", s.config.BaseURL, r.URL.RequestURI())
+		url := fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI())
 
 		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 		ww.Tee(response)
@@ -286,14 +288,19 @@ func (s *server) channelUpdateStatusWrapper(handler ChannelHandler, handlerFunc 
 		duration := time.Now().Sub(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
-		// create channel logs for each of our msgs or errors
+		// we received an error, write it out and report it
 		if err != nil {
+			logrus.WithError(err).WithField("url", url).WithField("request", string(request)).Error("error receiving status")
 			WriteError(ww, r, err)
-			logs = append(logs, NewChannelLog(channel, NilMsgID, r.Method, url, ww.Status(), err, string(request), response.String(), duration, start))
+		}
+
+		// if we don't have any statuses we still want a channel log, create one
+		if len(statuses) == 0 {
+			logs = append(logs, NewChannelLog("Status Error", channel, NilMsgID, r.Method, url, ww.Status(), string(request), response.String(), duration, err))
 			librato.Default.AddGauge(fmt.Sprintf("courier.msg_status_error_%s", channel.ChannelType()), secondDuration)
 		}
 		for _, status := range statuses {
-			logs = append(logs, NewChannelLog(channel, status.ID(), r.Method, url, ww.Status(), err, string(request), response.String(), duration, start))
+			logs = append(logs, NewChannelLog("Status Updated", channel, status.ID(), r.Method, url, ww.Status(), string(request), response.String(), duration, err))
 			librato.Default.AddGauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
 		}
 
@@ -319,25 +326,39 @@ func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc Ch
 		if err != nil {
 			return err
 		}
-		url := fmt.Sprintf("%s%s", s.config.BaseURL, r.URL.RequestURI())
+		url := fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI())
 		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
 		ww.Tee(response)
 
 		logs := make([]*ChannelLog, 0, 1)
-		msgs, err := handlerFunc(channel, ww, r)
+
+		events, err := handlerFunc(channel, ww, r)
 		duration := time.Now().Sub(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
-		// create channel logs for each of our msgs or errors
+		// if we received an error, write it out and report it
 		if err != nil {
+			logrus.WithError(err).WithField("url", url).WithField("request", string(request)).Error("error receiving message")
 			WriteError(ww, r, err)
-			logs = append(logs, NewChannelLog(channel, NilMsgID, r.Method, url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), duration, start))
-			librato.Default.AddGauge(fmt.Sprintf("courier.msg_receive_error_%s", channel.ChannelType()), secondDuration)
 		}
-		for _, msg := range msgs {
-			logs = append(logs, NewChannelLog(channel, msg.ID(), r.Method, url, ww.Status(), err, string(request), prependHeaders(response.String(), ww.Status(), w), duration, start))
-			librato.Default.AddGauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
+
+		// if no events were created we still want to log this to the channel, do so
+		if len(events) == 0 {
+			logs = append(logs, NewChannelLog("Receive Error", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
+			librato.Default.AddGauge(fmt.Sprintf("courier.receive_error_%s", channel.ChannelType()), secondDuration)
+		}
+
+		// otherwise, log the request for each message
+		for _, event := range events {
+			switch e := event.(type) {
+			case Msg:
+				logs = append(logs, NewChannelLog("Message Received", channel, e.ID(), r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
+				librato.Default.AddGauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
+			case ChannelEvent:
+				logs = append(logs, NewChannelLog("Event Received", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
+				librato.Default.AddGauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
+			}
 		}
 
 		// and write these out
@@ -398,6 +419,24 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf.Bytes())
 }
 
+func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
+	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "404").Error("not found")
+	errors := []string{fmt.Sprintf("not found: %s", r.URL.String())}
+	err := writeJSONResponse(w, http.StatusNotFound, errorResponse{errors})
+	if err != nil {
+		logrus.WithError(err).Error()
+	}
+}
+
+func (s *server) handle405(w http.ResponseWriter, r *http.Request) {
+	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "405").Error("invalid method")
+	errors := []string{fmt.Sprintf("method not allowed: %s", r.Method)}
+	err := writeJSONResponse(w, http.StatusMethodNotAllowed, errorResponse{errors})
+	if err != nil {
+		logrus.WithError(err).Error()
+	}
+}
+
 func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	if s.config.StatusUsername != "" {
 		user, pass, ok := r.BasicAuth()
@@ -420,6 +459,14 @@ func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	buf.WriteString("</pre></body>")
 	w.Write(buf.Bytes())
 }
+
+// for use in request.Context
+type contextKey int
+
+const (
+	contextRequestURL contextKey = iota
+	contextRequestStart
+)
 
 var splash = `
  ____________                   _____             

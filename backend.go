@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier/config"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 // BackendConstructorFunc defines a function to create a particular backend type
@@ -25,7 +26,7 @@ type Backend interface {
 	GetChannel(ChannelType, ChannelUUID) (Channel, error)
 
 	// NewIncomingMsg creates a new message from the given params
-	NewIncomingMsg(channel Channel, urn URN, text string) Msg
+	NewIncomingMsg(channel Channel, urn urns.URN, text string) Msg
 
 	// WriteMsg writes the passed in message to our backend
 	WriteMsg(Msg) error
@@ -38,6 +39,12 @@ type Backend interface {
 
 	// WriteMsgStatus writes the passed in status update to our backend
 	WriteMsgStatus(MsgStatus) error
+
+	// NewChannelEvent creates a new channel event for the given channel and event type
+	NewChannelEvent(Channel, ChannelEventType, urns.URN) ChannelEvent
+
+	// WriteChannelEvent writes the passed in channel even returning any error
+	WriteChannelEvent(ChannelEvent) error
 
 	// WriteChannelLogs writes the passed in channel logs to our backend
 	WriteChannelLogs([]*ChannelLog) error

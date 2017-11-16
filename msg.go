@@ -9,6 +9,7 @@ import (
 
 	null "gopkg.in/guregu/null.v3"
 
+	"github.com/nyaruka/gocommon/urns"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -55,20 +56,6 @@ func NewMsgUUIDFromString(uuidString string) MsgUUID {
 	return MsgUUID{uuid}
 }
 
-// MsgPriority is our type for the priority of a message
-type MsgPriority int
-
-const (
-	// BulkPriority is the priority used for bulk messages
-	BulkPriority = MsgPriority(100)
-
-	// DefaultPriority is used for normal responses and single messages
-	DefaultPriority = MsgPriority(500)
-
-	// HighPriority is used for messages that should come before any others
-	HighPriority = MsgPriority(1000)
-)
-
 //-----------------------------------------------------------------------------
 // Msg interface
 //-----------------------------------------------------------------------------
@@ -81,13 +68,13 @@ type Msg interface {
 	Text() string
 	Attachments() []string
 	ExternalID() string
-	URN() URN
+	URN() urns.URN
 	ContactName() string
 
 	ReceivedOn() *time.Time
 	SentOn() *time.Time
 
-	Priority() MsgPriority
+	HighPriority() bool
 
 	WithContactName(name string) Msg
 	WithReceivedOn(date time.Time) Msg
@@ -95,6 +82,8 @@ type Msg interface {
 	WithID(id MsgID) Msg
 	WithUUID(uuid MsgUUID) Msg
 	WithAttachment(url string) Msg
+
+	ReceiveID() int64
 }
 
 // GetTextAndAttachments returns both the text of our message as well as any attachments, newline delimited

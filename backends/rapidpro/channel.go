@@ -2,6 +2,7 @@ package rapidpro
 
 import (
 	"database/sql"
+	"fmt"
 	"sync"
 	"time"
 
@@ -14,25 +15,25 @@ import (
 // It will return an error if the channel does not exist or is not active.
 func getChannel(b *backend, channelType courier.ChannelType, channelUUID courier.ChannelUUID) (courier.Channel, error) {
 	// look for the channel locally
-	channel, localErr := getLocalChannel(channelType, channelUUID)
+	cachedChannel, localErr := getCachedChannel(channelType, channelUUID)
 
 	// found it? return it
 	if localErr == nil {
-		return channel, nil
+		return cachedChannel, nil
 	}
 
 	// look in our database instead
-	dbErr := loadChannelFromDB(b, channel, channelType, channelUUID)
+	channel, dbErr := loadChannelFromDB(b, channelType, channelUUID)
 
 	// if it wasn't found in the DB, clear our cache and return that it wasn't found
 	if dbErr == courier.ErrChannelNotFound {
 		clearLocalChannel(channelUUID)
-		return channel, dbErr
+		return cachedChannel, fmt.Errorf("unable to find channel with type: %s and uuid: %s", channelType.String(), channelUUID.String())
 	}
 
 	// if we had some other db error, return it if our cached channel was only just expired
 	if dbErr != nil && localErr == courier.ErrChannelExpired {
-		return channel, nil
+		return cachedChannel, nil
 	}
 
 	// no cached channel, oh well, we fail
@@ -41,41 +42,43 @@ func getChannel(b *backend, channelType courier.ChannelType, channelUUID courier
 	}
 
 	// we found it in the db, cache it locally
-	cacheLocalChannel(channel)
+	cacheChannel(channel)
 	return channel, nil
 }
 
 const lookupChannelFromUUIDSQL = `
-SELECT org_id, id, uuid, channel_type, schemes, address, country, config 
-FROM channels_channel 
-WHERE uuid = $1 AND is_active = true AND org_id IS NOT NULL`
+SELECT org_id, ch.id as id, ch.uuid as uuid, ch.name as name, channel_type, schemes, address, ch.country as country, ch.config as config, org.config as org_config
+FROM channels_channel ch, orgs_org org
+WHERE ch.uuid = $1 AND ch.is_active = true AND ch.org_id IS NOT NULL and ch.org_id = org.id`
 
 // ChannelForUUID attempts to look up the channel with the passed in UUID, returning it
-func loadChannelFromDB(b *backend, channel *DBChannel, channelType courier.ChannelType, uuid courier.ChannelUUID) error {
+func loadChannelFromDB(b *backend, channelType courier.ChannelType, uuid courier.ChannelUUID) (*DBChannel, error) {
+	channel := &DBChannel{UUID_: uuid}
+
 	// select just the fields we need
 	err := b.db.Get(channel, lookupChannelFromUUIDSQL, uuid)
 
 	// we didn't find a match
 	if err == sql.ErrNoRows {
-		return courier.ErrChannelNotFound
+		return nil, courier.ErrChannelNotFound
 	}
 
 	// other error
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// is it the right type?
 	if channelType != courier.AnyChannelType && channelType != channel.ChannelType() {
-		return courier.ErrChannelWrongType
+		return nil, courier.ErrChannelWrongType
 	}
 
 	// found it, return it
-	return nil
+	return channel, nil
 }
 
-// getLocalChannel returns a Channel object for the passed in type and UUID.
-func getLocalChannel(channelType courier.ChannelType, uuid courier.ChannelUUID) (*DBChannel, error) {
+// getCachedChannel returns a Channel object for the passed in type and UUID.
+func getCachedChannel(channelType courier.ChannelType, uuid courier.ChannelUUID) (*DBChannel, error) {
 	// first see if the channel exists in our local cache
 	cacheMutex.RLock()
 	channel, found := channelCache[uuid]
@@ -84,10 +87,10 @@ func getLocalChannel(channelType courier.ChannelType, uuid courier.ChannelUUID) 
 	if found {
 		// if it was found but the type is wrong, that's an error
 		if channelType != courier.AnyChannelType && channel.ChannelType() != channelType {
-			return &DBChannel{ChannelType_: channelType, UUID_: uuid}, courier.ErrChannelWrongType
+			return nil, courier.ErrChannelWrongType
 		}
 
-		// if we've expired, clear our cache and return it
+		// if we've expired, we return it with an error
 		if channel.expiration.Before(time.Now()) {
 			return channel, courier.ErrChannelExpired
 		}
@@ -95,14 +98,12 @@ func getLocalChannel(channelType courier.ChannelType, uuid courier.ChannelUUID) 
 		return channel, nil
 	}
 
-	return &DBChannel{ChannelType_: channelType, UUID_: uuid}, courier.ErrChannelNotFound
+	return nil, courier.ErrChannelNotFound
 }
 
-func cacheLocalChannel(channel *DBChannel) {
-	// set our expiration
-	channel.expiration = time.Now().Add(localTTL * time.Second)
+func cacheChannel(channel *DBChannel) {
+	channel.expiration = time.Now().Add(localTTL)
 
-	// first write to our local cache
 	cacheMutex.Lock()
 	channelCache[channel.UUID()] = channel
 	cacheMutex.Unlock()
@@ -114,7 +115,8 @@ func clearLocalChannel(uuid courier.ChannelUUID) {
 	cacheMutex.Unlock()
 }
 
-const localTTL = 60
+// channels stay cached in memory for a minute at a time
+const localTTL = 60 * time.Second
 
 var cacheMutex sync.RWMutex
 var channelCache = make(map[courier.ChannelUUID]*DBChannel)
@@ -130,9 +132,12 @@ type DBChannel struct {
 	ChannelType_ courier.ChannelType `db:"channel_type"`
 	Schemes_     pq.StringArray      `db:"schemes"`
 	UUID_        courier.ChannelUUID `db:"uuid"`
+	Name_        sql.NullString      `db:"name"`
 	Address_     sql.NullString      `db:"address"`
 	Country_     sql.NullString      `db:"country"`
 	Config_      utils.NullMap       `db:"config"`
+
+	OrgConfig_ utils.NullMap `db:"org_config"`
 
 	expiration time.Time
 }
@@ -142,6 +147,9 @@ func (c *DBChannel) OrgID() OrgID { return c.OrgID_ }
 
 // ChannelType returns the type of this channel
 func (c *DBChannel) ChannelType() courier.ChannelType { return c.ChannelType_ }
+
+// Name returns the name of this channel
+func (c *DBChannel) Name() string { return c.Name_.String }
 
 // Schemes returns the schemes this channels supports
 func (c *DBChannel) Schemes() []string { return []string(c.Schemes_) }
@@ -170,6 +178,30 @@ func (c *DBChannel) ConfigForKey(key string, defaultValue interface{}) interface
 		return defaultValue
 	}
 	return value
+}
+
+// OrgConfigForKey returns the org config value for the passed in key, or defaultValue if it isn't found
+func (c *DBChannel) OrgConfigForKey(key string, defaultValue interface{}) interface{} {
+	// no value, return our default value
+	if !c.OrgConfig_.Valid {
+		return defaultValue
+	}
+
+	value, found := c.OrgConfig_.Map[key]
+	if !found {
+		return defaultValue
+	}
+	return value
+}
+
+// CallbackDomain returns the callback domain to use for this channel
+func (c *DBChannel) CallbackDomain(fallbackDomain string) string {
+	value, found := c.Config_.Map[courier.ConfigCallbackDomain]
+	strValue, isStr := value.(string)
+	if !found || !isStr {
+		return fallbackDomain
+	}
+	return strValue
 }
 
 // StringConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found

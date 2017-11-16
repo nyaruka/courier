@@ -14,6 +14,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -46,7 +47,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
 	yoMessage := &yoMessage{}
 	handlers.DecodeAndValidateQueryParams(yoMessage, r)
 
@@ -85,7 +86,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// create our URN
-	urn := courier.NewTelURNForChannel(sender, channel)
+	urn := urns.NewTelURNForCountry(sender, channel.Country())
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, yoMessage.Text).WithReceivedOn(date)
@@ -96,7 +97,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
+	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, msg)
 }
 
 type yoMessage struct {
@@ -146,9 +147,11 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		}
 		// record our status and log
 		status = h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-		status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr, err))
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
+
 		if err != nil {
-			return status, err
+			return status, nil
 		}
 
 		responseQS, err := url.ParseQuery(string(rr.Body))

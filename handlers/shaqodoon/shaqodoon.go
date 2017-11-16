@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -39,7 +40,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
 	shaqodoonMessage := &shaqodoonMessage{}
 	handlers.DecodeAndValidateQueryParams(shaqodoonMessage, r)
 
@@ -51,13 +52,13 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	// validate whether our required fields are present
 	err := handlers.Validate(shaqodoonMessage)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteError(w, r, err)
 	}
 
 	// must have one of from or sender set, error if neither
 	sender := shaqodoonMessage.From
 	if sender == "" {
-		return nil, errors.New("must have one of 'sender' or 'from' set")
+		return nil, courier.WriteError(w, r, errors.New("must have one of 'sender' or 'from' set"))
 	}
 
 	// if we have a date, parse it
@@ -70,14 +71,14 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	if dateString != "" {
 		date, err = time.Parse(time.RFC3339Nano, dateString)
 		if err != nil {
-			return nil, errors.New("invalid date format, must be RFC 3339")
+			return nil, courier.WriteError(w, r, errors.New("invalid date format, must be RFC 3339"))
 		}
 	}
 
 	// create our URN
-	urn := courier.NewTelURNForChannel(sender, channel)
+	urn := urns.NewTelURNForCountry(sender, channel.Country())
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteError(w, r, err)
 	}
 
 	// build our msg
@@ -89,12 +90,12 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
+	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, msg)
 }
 
 type shaqodoonMessage struct {
 	From string `name:"from"`
-	Text string `validate:"required" name:"text"`
+	Text string `name:"text"`
 	Date string `name:"date"`
 	Time string `name:"time"`
 }
@@ -119,13 +120,13 @@ func (h *handler) StatusMessage(statusString string, channel courier.Channel, w 
 	// validate whether our required fields are present
 	err := handlers.Validate(statusForm)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteError(w, r, err)
 	}
 
 	// get our id
 	msgStatus, found := statusMappings[strings.ToLower(statusString)]
 	if !found {
-		return nil, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString)
+		return nil, courier.WriteError(w, r, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString))
 	}
 
 	// write our status
@@ -182,11 +183,9 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	rr, err := utils.MakeInsecureHTTPRequest(req)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr, err))
-	if err != nil {
-		return status, err
+	status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
+	if err == nil {
+		status.SetStatus(courier.MsgWired)
 	}
-
-	status.SetStatus(courier.MsgWired)
 	return status, nil
 }

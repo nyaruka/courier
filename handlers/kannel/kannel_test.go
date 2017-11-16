@@ -11,7 +11,8 @@ import (
 
 var (
 	receiveNoParams     = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-	receiveValidMessage = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B2349067554729&message=Join&ts=1493735509&id=12345&to=24453"
+	receiveValidMessage = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B2349067554729&message=Join&ts=1493735509&id=asdf-asdf&to=24453"
+	receiveEmptyMessage = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B2349067554729&message=&ts=1493735509&id=asdf-asdf&to=24453"
 	statusNoParams      = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 	statusInvalidStatus = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=66"
 	statusValid         = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=4"
@@ -23,11 +24,13 @@ var testChannels = []courier.Channel{
 
 var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), External: Sp("12345"), Date: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
-	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", Status: 400, Response: "field 'message' required"},
+		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), ExternalID: Sp("asdf-asdf"), Date: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
+	{Label: "Receive Empty Message", URL: receiveEmptyMessage, Data: "empty", Status: 200, Response: "Accepted",
+		Text: Sp(""), URN: Sp("tel:+2349067554729"), ExternalID: Sp("asdf-asdf"), Date: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
+	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", Status: 400, Response: "field 'sender' required"},
 	{Label: "Status No Params", URL: statusNoParams, Status: 400, Response: "field 'status' required"},
 	{Label: "Status Invalid Status", URL: statusInvalidStatus, Status: 400, Response: "unknown status '66', must be one of 1,2,4,8,16"},
-	{Label: "Status Valid", URL: statusValid, Status: 200, Response: "Status Update Accepted"},
+	{Label: "Status Valid", URL: statusValid, Status: 200, Response: `"status":"S"`},
 }
 
 func TestHandler(t *testing.T) {
@@ -50,39 +53,44 @@ func setSendURLWithQuery(server *httptest.Server, channel courier.Channel, msg c
 
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383", Priority: courier.BulkPriority,
+		Text: "Simple Message", URN: "tel:+250788383383", HighPriority: false,
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		URLParams: map[string]string{"text": "Simple Message", "to": "+250788383383", "coding": "", "priority": "",
-			"dlr-url": "http://courier.test/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/?id=10&status=%d"},
+			"dlr-url": "https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%d"},
 		SendPrep: setSendURL},
 	{Label: "Unicode Send",
-		Text: "☺", URN: "tel:+250788383383", Priority: courier.BulkPriority,
+		Text: "☺", URN: "tel:+250788383383", HighPriority: false,
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		URLParams: map[string]string{"text": "☺", "to": "+250788383383", "coding": "2", "charset": "utf8", "priority": ""},
 		SendPrep:  setSendURL},
 	{Label: "Smart Encoding",
-		Text: "Fancy “Smart” Quotes", URN: "tel:+250788383383", Priority: courier.BulkPriority,
+		Text: "Fancy “Smart” Quotes", URN: "tel:+250788383383", HighPriority: false,
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		URLParams: map[string]string{"text": `Fancy "Smart" Quotes`, "to": "+250788383383", "coding": "", "priority": ""},
 		SendPrep:  setSendURL},
+	{Label: "Not Routable",
+		Text: "Not Routable", URN: "tel:+250788383383", HighPriority: false,
+		Status:       "F",
+		ResponseBody: "Not routable. Do not try again.", ResponseStatus: 403,
+		URLParams: map[string]string{"text": `Not Routable`, "to": "+250788383383", "coding": "", "priority": ""},
+		SendPrep:  setSendURL},
 	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383", Priority: courier.BulkPriority,
+		Text: "Error Message", URN: "tel:+250788383383", HighPriority: false,
 		Status:       "E",
 		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
-		Error:     "received error sending message",
 		URLParams: map[string]string{"text": `Error Message`, "to": "+250788383383", "coding": "", "priority": ""},
 		SendPrep:  setSendURL},
 	{Label: "Custom Params",
-		Text: "Custom Params", URN: "tel:+250788383383",
+		Text: "Custom Params", URN: "tel:+250788383383", HighPriority: true,
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 201,
 		URLParams: map[string]string{"text": `Custom Params`, "to": "+250788383383", "coding": "", "priority": "1", "auth": "foo"},
 		SendPrep:  setSendURLWithQuery},
 	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Text: "My pic!", URN: "tel:+250788383383", HighPriority: true, Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status:       "W",
 		ResponseBody: `0: Accepted for delivery`, ResponseStatus: 200,
 		URLParams: map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "+250788383383", "from": "2020"},
@@ -91,10 +99,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 
 var nationalSendTestCases = []ChannelSendTestCase{
 	{Label: "National Send",
-		Text: "success", URN: "tel:+250788383383",
+		Text: "success", URN: "tel:+250788383383", HighPriority: true,
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		URLParams: map[string]string{"text": "success", "to": "0788383383", "coding": "", "priority": "1"},
+		URLParams: map[string]string{"text": "success", "to": "788383383", "coding": "", "priority": "1"},
 		SendPrep:  setSendURL},
 }
 

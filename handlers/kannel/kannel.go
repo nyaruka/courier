@@ -12,8 +12,7 @@ import (
 	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/phonenumbers"
-	"github.com/pkg/errors"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 const configUseNational = "use_national"
@@ -49,22 +48,22 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
 	// get our params
 	kannelMsg := &kannelMessage{}
 	err := handlers.DecodeAndValidateQueryParams(kannelMsg, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteError(w, r, err)
 	}
 
 	// create our date from the timestamp
-	date := time.Unix(kannelMsg.Timestamp, 0).UTC()
+	date := time.Unix(kannelMsg.TS, 0).UTC()
 
 	// create our URN
-	urn := courier.NewTelURNForChannel(kannelMsg.Sender, channel)
+	urn := urns.NewTelURNForCountry(kannelMsg.Sender, channel.Country())
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, kannelMsg.Message).WithExternalID(fmt.Sprintf("%d", kannelMsg.ID)).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, kannelMsg.Message).WithExternalID(kannelMsg.ID).WithReceivedOn(date)
 
 	// and finally queue our message
 	err = h.Backend().WriteMsg(msg)
@@ -72,22 +71,22 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
+	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, msg)
 }
 
 type kannelMessage struct {
-	ID        int64  `validate:"required" name:"id"`
-	Timestamp int64  `validate:"required" name:"ts"`
-	Message   string `validate:"required" name:"message"`
-	Sender    string `validate:"required" name:"sender"`
+	ID      string `validate:"required" name:"id"`
+	TS      int64  `validate:"required" name:"ts"`
+	Message string `name:"message"`
+	Sender  string `validate:"required" name:"sender"`
 }
 
 var kannelStatusMapping = map[int]courier.MsgStatusValue{
 	1:  courier.MsgDelivered,
-	2:  courier.MsgFailed,
+	2:  courier.MsgErrored,
 	4:  courier.MsgSent,
 	8:  courier.MsgSent,
-	16: courier.MsgFailed,
+	16: courier.MsgErrored,
 }
 
 // StatusMessage is our HTTP handler function for status updates
@@ -131,7 +130,8 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		return nil, fmt.Errorf("no send url set for KN channel")
 	}
 
-	dlrURL := fmt.Sprintf("%s%s%s/?id=%s&status=%%d", h.Server().Config().BaseURL, "/c/kn/", msg.Channel().UUID(), msg.ID().String())
+	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+	dlrURL := fmt.Sprintf("https://%s%s%s/status?id=%s&status=%%d", callbackDomain, "/c/kn/", msg.Channel().UUID(), msg.ID().String())
 
 	// build our request
 	form := url.Values{
@@ -144,8 +144,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		"dlr-mask": []string{"31"},
 	}
 
-	// any message that isn't bulk priority should get prioritized
-	if msg.Priority() > courier.BulkPriority {
+	if msg.HighPriority() {
 		form["priority"] = []string{"1"}
 	}
 
@@ -154,10 +153,8 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	// if we are meant to use national formatting (no country code) pull that out
 	if useNational {
-		parsed, err := phonenumbers.Parse(msg.URN().Path(), encodingDefault)
-		if err == nil {
-			form["to"] = []string{strings.Replace(phonenumbers.Format(parsed, phonenumbers.NATIONAL), " ", "", -1)}
-		}
+		nationalTo := msg.URN().Localize(msg.Channel().Country())
+		form["to"] = []string{nationalTo.Path()}
 	}
 
 	// figure out what encoding to tell kannel to send as
@@ -192,6 +189,10 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	verifySSL, _ := verifySSLStr.(bool)
 
 	req, err := http.NewRequest(http.MethodGet, sendURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	var rr *utils.RequestResponse
 
 	if verifySSL {
@@ -202,12 +203,16 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr, err))
-	if err != nil {
-		return status, errors.Errorf("received error sending message")
+	status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
+	if err == nil {
+		status.SetStatus(courier.MsgWired)
 	}
 
-	status.SetStatus(courier.MsgWired)
+	// kannel will respond with a 403 for non-routable numbers, fail permanently in these cases
+	if rr.StatusCode == 403 {
+		status.SetStatus(courier.MsgFailed)
+	}
+
 	return status, nil
 }
 

@@ -28,7 +28,7 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Msg"), URN: Sp("tel:+254791541111"), External: Sp("ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3"),
+		Text: Sp("Msg"), URN: Sp("tel:+254791541111"), ExternalID: Sp("ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3"),
 		Date: Tp(time.Date(2017, 5, 3, 06, 04, 45, 0, time.UTC))},
 	{Label: "Receive Empty", URL: receiveURL, Data: emptyReceive, Status: 400, Response: "field 'id' required"},
 	{Label: "Receive Missing Text", URL: receiveURL, Data: missingText, Status: 400, Response: "field 'text' required"},
@@ -76,7 +76,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text: "Error Message", URN: "tel:+250788383383",
 		Status:       "E",
 		ResponseBody: `{ "error": "failed" }`, ResponseStatus: 401,
-		Error:      "received non 200 status: 401",
 		PostParams: map[string]string{"message": `Error Message`},
 		SendPrep:   setSendURL},
 }

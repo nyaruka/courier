@@ -1,7 +1,7 @@
 /* Org with id 1 */
 DELETE FROM orgs_org;
-INSERT INTO orgs_org("id", "name", "language")
-              VALUES(1, 'Test Org', 'eng');
+INSERT INTO orgs_org("id", "name", "language", "config")
+              VALUES(1, 'Test Org', 'eng', '{ "CHATBASE_API_KEY": "cak" }');
 
 /* Channel with id 10, 11, 12 */
 DELETE FROM channels_channel;
@@ -29,12 +29,12 @@ INSERT INTO contacts_contacturn("id", "identity", "path", "scheme", "priority", 
 
 /** Msg with id 10,000 */
 DELETE from msgs_msg;
-INSERT INTO msgs_msg("id", "text", "priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility",
-                        "has_template_error", "msg_count", "error_count", "next_attempt", "external_id", "channel_id", "contact_id", "contact_urn_id", "org_id")
-              VALUES(10000, 'test message', 500, now(), now(), now(), now(), 'O', 'W', 'V',
-                     False, 1, 0, now(), 'ext1', 10, 100, 1000, 1);
+INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility",
+                        "msg_count", "error_count", "next_attempt", "external_id", "channel_id", "contact_id", "contact_urn_id", "org_id")
+              VALUES(10000, 'test message', True, now(), now(), now(), now(), 'O', 'W', 'V',
+                     1, 0, now(), 'ext1', 10, 100, 1000, 1);
 
-INSERT INTO msgs_msg("id", "text", "priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility",
-                        "has_template_error", "msg_count", "error_count", "next_attempt", "external_id", "channel_id", "contact_id", "contact_urn_id", "org_id")
-              VALUES(10001, 'test message without external', 500, now(), now(), now(), now(), 'O', 'W', 'V',
-                     False, 1, 0, now(), 'ext1', 10, 100, 1000, 1);                     
+INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility",
+                        "msg_count", "error_count", "next_attempt", "external_id", "channel_id", "contact_id", "contact_urn_id", "org_id")
+              VALUES(10001, 'test message without external', True, now(), now(), now(), now(), 'O', 'W', 'V',
+                     1, 0, now(), 'ext1', 10, 100, 1000, 1);                     

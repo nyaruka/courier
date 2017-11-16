@@ -10,7 +10,9 @@ func AddURLPath(urlStr string, paths ...string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	p, err := url.Parse(path.Join(paths...))
+	allPaths := []string{u.Path}
+	allPaths = append(allPaths, paths...)
+	p, err := url.Parse(path.Join(allPaths...))
 	if err != nil {
 		return "", err
 	}

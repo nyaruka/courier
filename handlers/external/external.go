@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"strings"
@@ -15,6 +16,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -57,7 +59,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
 	externalMessage := &externalMessage{}
 	handlers.DecodeAndValidateQueryParams(externalMessage, r)
 
@@ -96,10 +98,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// create our URN
-	urn, err := courier.NewURNFromParts(channel.Schemes()[0], sender, "")
-	if err != nil {
-		return nil, err
-	}
+	urn := urns.NewURNFromParts(channel.Schemes()[0], sender, "").Normalize("")
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, externalMessage.Text).WithReceivedOn(date)
@@ -110,7 +109,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
+	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, msg)
 }
 
 type externalMessage struct {
@@ -181,38 +180,54 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
 	contentType := msg.Channel().StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
 
-	// build our request
-	form := map[string]string{
-		"id":           msg.ID().String(),
-		"text":         courier.GetTextAndAttachments(msg),
-		"to":           msg.URN().Path(),
-		"to_no_plus":   strings.TrimPrefix(msg.URN().Path(), "+"),
-		"from":         msg.Channel().Address(),
-		"from_no_plus": strings.TrimPrefix(msg.Channel().Address(), "+"),
-		"channel":      msg.Channel().UUID().String(),
-	}
-
-	url := replaceVariables(sendURL, form, contentURLEncoded)
-	var body io.Reader
-	if sendMethod == http.MethodPost || sendMethod == http.MethodPut {
-		body = strings.NewReader(replaceVariables(sendBody, form, contentType))
-	}
-
-	req, err := http.NewRequest(sendMethod, url, body)
+	maxLengthStr := msg.Channel().StringConfigForKey(courier.ConfigMaxLength, "160")
+	maxLength, err := strconv.Atoi(maxLengthStr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid value for max length on EX channel %s: %s", msg.Channel().UUID(), maxLengthStr)
 	}
-	req.Header.Set("Content-Type", contentType)
-	rr, err := utils.MakeHTTPRequest(req)
 
-	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr, err))
-	if err != nil {
-		return status, err
+	parts := handlers.SplitMsg(courier.GetTextAndAttachments(msg), maxLength)
+	for _, part := range parts {
+		// build our request
+		form := map[string]string{
+			"id":           msg.ID().String(),
+			"text":         part,
+			"to":           msg.URN().Path(),
+			"to_no_plus":   strings.TrimPrefix(msg.URN().Path(), "+"),
+			"from":         msg.Channel().Address(),
+			"from_no_plus": strings.TrimPrefix(msg.Channel().Address(), "+"),
+			"channel":      msg.Channel().UUID().String(),
+		}
+
+		url := replaceVariables(sendURL, form, contentURLEncoded)
+		var body io.Reader
+		if sendMethod == http.MethodPost || sendMethod == http.MethodPut {
+			body = strings.NewReader(replaceVariables(sendBody, form, contentType))
+		}
+
+		req, err := http.NewRequest(sendMethod, url, body)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", contentType)
+
+		authorization := msg.Channel().StringConfigForKey(courier.ConfigSendAuthorization, "")
+		if authorization != "" {
+			req.Header.Set("Authorization", authorization)
+		}
+
+		rr, err := utils.MakeHTTPRequest(req)
+
+		// record our status and log
+		status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
+		if err != nil {
+			return status, nil
+		}
+
+		status.SetStatus(courier.MsgWired)
 	}
 
-	status.SetStatus(courier.MsgWired)
 	return status, nil
 }
 

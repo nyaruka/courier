@@ -2,12 +2,14 @@ package courier
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"time"
 
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier/config"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 //-----------------------------------------------------------------------------
@@ -20,9 +22,11 @@ type MockBackend struct {
 	queueMsgs    []Msg
 	errorOnQueue bool
 
-	mutex        sync.RWMutex
-	outgoingMsgs []Msg
-	msgStatuses  []MsgStatus
+	mutex           sync.RWMutex
+	outgoingMsgs    []Msg
+	msgStatuses     []MsgStatus
+	channelEvents   []ChannelEvent
+	lastContactName string
 
 	stoppedMsgContacts []Msg
 	sentMsgs           map[MsgID]bool
@@ -44,14 +48,35 @@ func (mb *MockBackend) GetLastQueueMsg() (Msg, error) {
 	return mb.queueMsgs[len(mb.queueMsgs)-1], nil
 }
 
+// GetLastChannelEvent returns the last event written to the server
+func (mb *MockBackend) GetLastChannelEvent() (ChannelEvent, error) {
+	if len(mb.channelEvents) == 0 {
+		return nil, errors.New("no channel events")
+	}
+	return mb.channelEvents[len(mb.channelEvents)-1], nil
+}
+
+// GetLastMsgStatus returns the last status written to the server
+func (mb *MockBackend) GetLastMsgStatus() (MsgStatus, error) {
+	if len(mb.msgStatuses) == 0 {
+		return nil, errors.New("no msg statuses")
+	}
+	return mb.msgStatuses[len(mb.msgStatuses)-1], nil
+}
+
+// GetLastContactName returns the contact name set on the last msg or channel event written
+func (mb *MockBackend) GetLastContactName() string {
+	return mb.lastContactName
+}
+
 // NewIncomingMsg creates a new message from the given params
-func (mb *MockBackend) NewIncomingMsg(channel Channel, urn URN, text string) Msg {
-	return &mockMsg{channel: channel, urn: urn, text: text, priority: DefaultPriority}
+func (mb *MockBackend) NewIncomingMsg(channel Channel, urn urns.URN, text string) Msg {
+	return &mockMsg{channel: channel, urn: urn, text: text}
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn URN, text string, priority MsgPriority) Msg {
-	return &mockMsg{channel: channel, id: id, urn: urn, text: text, priority: priority}
+func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool) Msg {
+	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority}
 }
 
 // PushOutgoingMsg is a test method to add a message to our queue of messages to send
@@ -122,6 +147,7 @@ func (mb *MockBackend) WriteMsg(m Msg) error {
 	}
 
 	mb.queueMsgs = append(mb.queueMsgs, m)
+	mb.lastContactName = m.(*mockMsg).contactName
 	return nil
 }
 
@@ -151,6 +177,25 @@ func (mb *MockBackend) WriteMsgStatus(status MsgStatus) error {
 	defer mb.mutex.Unlock()
 
 	mb.msgStatuses = append(mb.msgStatuses, status)
+	return nil
+}
+
+// NewChannelEvent creates a new channel event with the passed in parameters
+func (mb *MockBackend) NewChannelEvent(channel Channel, eventType ChannelEventType, urn urns.URN) ChannelEvent {
+	return &mockChannelEvent{
+		channel:   channel,
+		eventType: eventType,
+		urn:       urn,
+	}
+}
+
+// WriteChannelEvent writes the channel event passed in
+func (mb *MockBackend) WriteChannelEvent(event ChannelEvent) error {
+	mb.mutex.Lock()
+	defer mb.mutex.Unlock()
+
+	mb.channelEvents = append(mb.channelEvents, event)
+	mb.lastContactName = event.(*mockChannelEvent).contactName
 	return nil
 }
 
@@ -217,10 +262,14 @@ type MockChannel struct {
 	address     string
 	country     string
 	config      map[string]interface{}
+	orgConfig   map[string]interface{}
 }
 
 // UUID returns the uuid for this channel
 func (c *MockChannel) UUID() ChannelUUID { return c.uuid }
+
+// Name returns the name of this channel, we just return our UUID for our mock instances
+func (c *MockChannel) Name() string { return fmt.Sprintf("Channel: %s", c.uuid.String()) }
 
 // ChannelType returns the type of this channel
 func (c *MockChannel) ChannelType() ChannelType { return c.channelType }
@@ -237,6 +286,15 @@ func (c *MockChannel) Country() string { return c.country }
 // SetConfig sets the passed in config parameter
 func (c *MockChannel) SetConfig(key string, value interface{}) {
 	c.config[key] = value
+}
+
+// CallbackDomain returns the callback domain to use for this channel
+func (c *MockChannel) CallbackDomain(fallbackDomain string) string {
+	value, found := c.config[ConfigCallbackDomain]
+	if !found {
+		return fallbackDomain
+	}
+	return value.(string)
 }
 
 // ConfigForKey returns the config value for the passed in key
@@ -258,6 +316,15 @@ func (c *MockChannel) StringConfigForKey(key string, defaultValue string) string
 	return str
 }
 
+// OrgConfigForKey returns the org config value for the passed in key
+func (c *MockChannel) OrgConfigForKey(key string, defaultValue interface{}) interface{} {
+	value, found := c.orgConfig[key]
+	if !found {
+		return defaultValue
+	}
+	return value
+}
+
 // NewMockChannel creates a new mock channel for the passed in type, address, country and config
 func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}) Channel {
 	cUUID, _ := NewChannelUUID(uuid)
@@ -265,10 +332,11 @@ func NewMockChannel(uuid string, channelType string, address string, country str
 	channel := &MockChannel{
 		uuid:        cUUID,
 		channelType: ChannelType(channelType),
-		schemes:     []string{TelScheme},
+		schemes:     []string{urns.TelScheme},
 		address:     address,
 		country:     country,
 		config:      config,
+		orgConfig:   map[string]interface{}{},
 	}
 	return channel
 }
@@ -278,15 +346,15 @@ func NewMockChannel(uuid string, channelType string, address string, country str
 //-----------------------------------------------------------------------------
 
 type mockMsg struct {
-	channel     Channel
-	id          MsgID
-	uuid        MsgUUID
-	text        string
-	attachments []string
-	externalID  string
-	urn         URN
-	contactName string
-	priority    MsgPriority
+	channel      Channel
+	id           MsgID
+	uuid         MsgUUID
+	text         string
+	attachments  []string
+	externalID   string
+	urn          urns.URN
+	contactName  string
+	highPriority bool
 
 	receivedOn *time.Time
 	sentOn     *time.Time
@@ -295,13 +363,14 @@ type mockMsg struct {
 
 func (m *mockMsg) Channel() Channel      { return m.channel }
 func (m *mockMsg) ID() MsgID             { return m.id }
+func (m *mockMsg) ReceiveID() int64      { return m.id.Int64 }
 func (m *mockMsg) UUID() MsgUUID         { return m.uuid }
 func (m *mockMsg) Text() string          { return m.text }
 func (m *mockMsg) Attachments() []string { return m.attachments }
 func (m *mockMsg) ExternalID() string    { return m.externalID }
-func (m *mockMsg) URN() URN              { return m.urn }
+func (m *mockMsg) URN() urns.URN         { return m.urn }
 func (m *mockMsg) ContactName() string   { return m.contactName }
-func (m *mockMsg) Priority() MsgPriority { return m.priority }
+func (m *mockMsg) HighPriority() bool    { return m.highPriority }
 
 func (m *mockMsg) ReceivedOn() *time.Time { return m.receivedOn }
 func (m *mockMsg) SentOn() *time.Time     { return m.sentOn }
@@ -339,3 +408,45 @@ func (m *mockMsgStatus) SetStatus(status MsgStatusValue) { m.status = status }
 
 func (m *mockMsgStatus) Logs() []*ChannelLog    { return m.logs }
 func (m *mockMsgStatus) AddLog(log *ChannelLog) { m.logs = append(m.logs, log) }
+
+//-----------------------------------------------------------------------------
+// Mock channel event implementation
+//-----------------------------------------------------------------------------
+
+type mockChannelEvent struct {
+	channel    Channel
+	eventType  ChannelEventType
+	urn        urns.URN
+	createdOn  time.Time
+	occurredOn time.Time
+
+	contactName string
+	extra       map[string]interface{}
+
+	logs []*ChannelLog
+}
+
+func (e *mockChannelEvent) ReceiveID() int64              { return 0 }
+func (e *mockChannelEvent) ChannelUUID() ChannelUUID      { return e.channel.UUID() }
+func (e *mockChannelEvent) EventType() ChannelEventType   { return e.eventType }
+func (e *mockChannelEvent) CreatedOn() time.Time          { return e.createdOn }
+func (e *mockChannelEvent) OccurredOn() time.Time         { return e.occurredOn }
+func (e *mockChannelEvent) Extra() map[string]interface{} { return e.extra }
+func (e *mockChannelEvent) ContactName() string           { return e.contactName }
+func (e *mockChannelEvent) URN() urns.URN                 { return e.urn }
+
+func (e *mockChannelEvent) WithExtra(extra map[string]interface{}) ChannelEvent {
+	e.extra = extra
+	return e
+}
+func (e *mockChannelEvent) WithContactName(name string) ChannelEvent {
+	e.contactName = name
+	return e
+}
+func (e *mockChannelEvent) WithOccurredOn(time time.Time) ChannelEvent {
+	e.occurredOn = time
+	return e
+}
+
+func (e *mockChannelEvent) Logs() []*ChannelLog    { return e.logs }
+func (e *mockChannelEvent) AddLog(log *ChannelLog) { e.logs = append(e.logs, log) }
