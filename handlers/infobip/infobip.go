@@ -7,6 +7,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 /* no logs */
@@ -32,7 +33,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
 	ie := &infobipEnvelope{}
 	err := handlers.DecodeAndValidateJSON(ie, r)
 	if err != nil {
@@ -62,7 +63,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		}
 
 		// create our URN
-		urn := courier.NewTelURNForChannel(infobipMessage.From, channel)
+		urn := urns.NewTelURNForCountry(infobipMessage.From, channel.Country())
 
 		// build our infobipMessage
 		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(messageID)
@@ -80,7 +81,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, courier.WriteError(w, r, errors.New("no message found"))
 	}
 
-	return msgs, courier.WriteReceiveSuccess(w, r, msgs[0])
+	return []courier.ReceiveEvent{msgs[0]}, courier.WriteMsgSuccess(w, r, msgs[0])
 }
 
 type infobipMessage struct {
