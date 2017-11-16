@@ -44,30 +44,43 @@ func WriteChannelEventSuccess(w http.ResponseWriter, r *http.Request, event Chan
 }
 
 // WriteMsgSuccess writes a JSON response for the passed in msg indicating we handled it
-func WriteMsgSuccess(w http.ResponseWriter, r *http.Request, msg Msg) error {
-	LogMsgReceived(r, msg)
-	return writeData(w, http.StatusOK, "Message Accepted",
-		&msgReceiveData{
-			msg.Channel().UUID(),
-			msg.UUID(),
-			msg.Text(),
-			msg.URN(),
-			msg.Attachments(),
-			msg.ExternalID(),
-			msg.ReceivedOn(),
-		})
+func WriteMsgSuccess(w http.ResponseWriter, r *http.Request, msgs []Msg) error {
+
+	data := []msgReceiveData{}
+	for _, msg := range msgs {
+		LogMsgReceived(r, msg)
+		data = append(
+			data,
+			msgReceiveData{
+				msg.Channel().UUID(),
+				msg.UUID(),
+				msg.Text(),
+				msg.URN(),
+				msg.Attachments(),
+				msg.ExternalID(),
+				msg.ReceivedOn(),
+			})
+	}
+	return writeData(w, http.StatusOK, "Message Accepted", data)
 }
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
-func WriteStatusSuccess(w http.ResponseWriter, r *http.Request, status MsgStatus) error {
-	LogMsgStatusReceived(r, status)
-	return writeData(w, http.StatusOK, "Status Update Accepted",
-		&statusData{
-			status.ChannelUUID(),
-			status.Status(),
-			status.ID(),
-			status.ExternalID(),
-		})
+func WriteStatusSuccess(w http.ResponseWriter, r *http.Request, statuses []MsgStatus) error {
+
+	data := []statusData{}
+	for _, status := range statuses {
+		LogMsgStatusReceived(r, status)
+		data = append(
+			data,
+			statusData{
+				status.ChannelUUID(),
+				status.Status(),
+				status.ID(),
+				status.ExternalID(),
+			})
+	}
+
+	return writeData(w, http.StatusOK, "Status Update Accepted", data)
 }
 
 type errorResponse struct {

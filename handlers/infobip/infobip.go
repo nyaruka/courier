@@ -56,7 +56,7 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 		return nil, err
 	}
 
-	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, status)
+	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
 }
 
 var infobipStatusMapping = map[string]courier.MsgStatusValue{
@@ -126,7 +126,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, courier.WriteError(w, r, errors.New("no message found"))
 	}
 
-	return []courier.ReceiveEvent{msgs[0]}, courier.WriteMsgSuccess(w, r, msgs[0])
+	return []courier.ReceiveEvent{msgs[0]}, courier.WriteMsgSuccess(w, r, []courier.Msg{msgs})
 }
 
 type infobipMessage struct {
