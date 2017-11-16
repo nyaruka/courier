@@ -61,7 +61,8 @@ func WriteMsgSuccess(w http.ResponseWriter, r *http.Request, msgs []Msg) error {
 				msg.ReceivedOn(),
 			})
 	}
-	return writeData(w, http.StatusOK, "Message Accepted", data)
+
+	return writeData(w, http.StatusOK, "Message Accepted", msgsReceivedResponse{data})
 }
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
@@ -80,7 +81,7 @@ func WriteStatusSuccess(w http.ResponseWriter, r *http.Request, statuses []MsgSt
 			})
 	}
 
-	return writeData(w, http.StatusOK, "Status Update Accepted", data)
+	return writeData(w, http.StatusOK, "Status Update Accepted", statusesData{data})
 }
 
 type errorResponse struct {
@@ -102,6 +103,10 @@ type msgReceiveData struct {
 	ReceivedOn  *time.Time  `json:"received_on,omitempty"`
 }
 
+type msgsReceivedResponse struct {
+	Msgs []msgReceiveData `json:"msgs"`
+}
+
 type eventReceiveData struct {
 	ChannelUUID ChannelUUID      `json:"channel_uuid"`
 	EventType   ChannelEventType `json:"event_type"`
@@ -114,6 +119,10 @@ type statusData struct {
 	Status      MsgStatusValue `json:"status"`
 	MsgID       MsgID          `json:"msg_id,omitempty"`
 	ExternalID  string         `json:"external_id,omitempty"`
+}
+
+type statusesData struct {
+	Statuses []statusData `json:"statuses"`
 }
 
 func writeJSONResponse(w http.ResponseWriter, statusCode int, response interface{}) error {
