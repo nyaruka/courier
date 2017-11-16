@@ -2,7 +2,6 @@ package infobip
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -37,57 +36,57 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	ie := &infobipEnvelope{}
 	err := handlers.DecodeAndValidateJSON(ie, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteError(w, r, err)
 	}
 
 	if ie.MessageCount == 0 {
-		return nil, courier.WriteIgnored(w, r, "Ignoring request, no message")
+		return nil, courier.WriteIgnored(w, r, "ignoring request, no message")
 	}
 
 	msgs := []courier.Msg{}
-	if len(ie.Results) > 0 {
-		for index, infobipMessage := range ie.Results {
-			fmt.Println(index)
-			messageID := infobipMessage.MessageID
-			text := infobipMessage.Text
-			//receiver := infobipMessage.To
-			sender := infobipMessage.From
-			dateString := infobipMessage.ReceivedAt
+	for _, infobipMessage := range ie.Results {
+		messageID := infobipMessage.MessageID
+		text := infobipMessage.Text
+		dateString := infobipMessage.ReceivedAt
 
-			date := time.Now()
-			if dateString != "" {
-				date, err = time.Parse("2006-01-02T15:04:05.999999999-0700", dateString)
-				if err != nil {
-					date = time.Now()
-				}
-			}
-			date = date.UTC()
-
-			// create our URN
-			urn := courier.NewTelURNForChannel(sender, channel)
-
-			// build our infobipMessage
-			msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(messageID)
-
-			// and write it
-			h.Backend().WriteMsg(msg)
-			msgs = append(msgs, msg)
-			courier.WriteReceiveSuccess(w, r, msg)
+		if text == "" {
+			continue
 		}
+
+		date := time.Now()
+		if dateString != "" {
+			date, err = time.Parse("2006-01-02T15:04:05.999999999-0700", dateString)
+			if err != nil {
+				return nil, courier.WriteError(w, r, err)
+			}
+		}
+
+		// create our URN
+		urn := courier.NewTelURNForChannel(infobipMessage.From, channel)
+
+		// build our infobipMessage
+		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(messageID)
+
+		// and write it
+		err = h.Backend().WriteMsg(msg)
+		if err != nil {
+			return nil, courier.WriteError(w, r, err)
+		}
+		msgs = append(msgs, msg)
+
 	}
 
 	if len(msgs) == 0 {
-		return nil, errors.New("No message found")
+		return nil, courier.WriteError(w, r, errors.New("no message found"))
 	}
 
-	return msgs, nil
+	return msgs, courier.WriteReceiveSuccess(w, r, msgs[0])
 }
 
 type infobipMessage struct {
 	MessageID  string `json:"messageId"`
 	From       string `json:"from" validate:"required"`
-	To         string `json:"to" validate:"required"`
-	Text       string `json:"text" validate:"required"`
+	Text       string `json:"text"`
 	ReceivedAt string `json:"receivedAt"`
 }
 
@@ -113,8 +112,8 @@ type infobipMessage struct {
 // 	"pendingMessageCount": 0
 // }
 type infobipEnvelope struct {
-	PendingMessageCount int64            `json:"pendingMessageCount"`
-	MessageCount        int64            `json:"messageCount"`
+	PendingMessageCount int              `json:"pendingMessageCount"`
+	MessageCount        int              `json:"messageCount"`
 	Results             []infobipMessage `validate:"required" json:"results"`
 }
 

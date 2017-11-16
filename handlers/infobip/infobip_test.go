@@ -82,9 +82,9 @@ var missingText = `{
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: helloMsg, Status: 200, Response: "Accepted",
-		Text: Sp("QUIZ Correct answer is Paris"), URN: Sp("tel:+385916242493"), External: Sp("817790313235066447"), Date: Tp(time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.UTC))},
+		Text: Sp("QUIZ Correct answer is Paris"), URN: Sp("tel:+385916242493"), External: Sp("817790313235066447"), Date: Tp(time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.FixedZone("", 0)))},
 	{Label: "Receive missing results key", URL: receiveURL, Data: missingResults, Status: 400, Response: "validation for 'Results' failed"},
-	{Label: "Receive missing text key", URL: receiveURL, Data: missingText, Status: 400, Response: "validation for 'Text' failed"},
+	{Label: "Receive missing text key", URL: receiveURL, Data: missingText, Status: 400, Response: "no message found"},
 }
 
 func TestHandler(t *testing.T) {
