@@ -2,6 +2,7 @@ package infobip
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -181,20 +182,22 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		return nil, fmt.Errorf("no password set for IB channel")
 	}
 
-	encodedCreds := utils.EncodeBase64([]string{username, ":", password})
+	encodedCreds := base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{username, ":", password}, "")))
 	authHeader := "Basic " + encodedCreds
 
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	statusURL := fmt.Sprintf("https://%s%s%s/delivered", callbackDomain, "/c/ib/", msg.Channel().UUID())
 
-	ibMsg := ibOutgoingEnvelop{
+	ibMsg := ibOutgoingEnvelope{
 		Messages: []ibOutgoingMessage{
 			ibOutgoingMessage{
 				From: msg.Channel().Address(),
-				Destinations: []ibDestination{ibDestination{
-					To:        strings.TrimLeft(msg.URN().Path(), "+"),
-					MessageID: msg.ID().String(),
-				}},
+				Destinations: []ibDestination{
+					ibDestination{
+						To:        strings.TrimLeft(msg.URN().Path(), "+"),
+						MessageID: msg.ID().String(),
+					},
+				},
 				Text:               courier.GetTextAndAttachments(msg),
 				NotifyContentType:  "application/json",
 				IntermediateReport: true,
@@ -203,8 +206,11 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		},
 	}
 
-	requestBody := new(bytes.Buffer)
-	json.NewEncoder(requestBody).Encode(ibMsg)
+	requestBody := &bytes.Buffer{}
+	err := json.NewEncoder(requestBody).Encode(ibMsg)
+	if err != nil {
+		return nil, err
+	}
 
 	// build our request
 	req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
@@ -229,6 +235,41 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	return status, nil
 }
 
+// {
+// 	"bulkId":"BULK-ID-123-xyz",
+// 	"messages":[
+// 	  {
+// 		"from":"InfoSMS",
+// 		"destinations":[
+// 		  {
+// 			"to":"41793026727",
+// 			"messageId":"MESSAGE-ID-123-xyz"
+// 		  },
+// 		  {
+// 			"to":"41793026731"
+// 		  }
+// 		],
+// 		"text":"Artık Ulusal Dil Tanımlayıcısı ile Türkçe karakterli smslerinizi rahatlıkla iletebilirsiniz.",
+// 		"flash":false,
+// 		"language":{
+// 		  "languageCode":"TR"
+// 		},
+// 		"transliteration":"TURKISH",
+// 		"intermediateReport":true,
+// 		"notifyUrl":"http://www.example.com/sms/advanced",
+// 		"notifyContentType":"application/json",
+// 		"callbackData":"DLR callback data",
+// 		"validityPeriod": 720
+// 	  }
+// 	]
+// }
+//
+// API docs from https://dev.infobip.com/docs/fully-featured-textual-message
+
+type ibOutgoingEnvelope struct {
+	Messages []ibOutgoingMessage `json:"messages"`
+}
+
 type ibOutgoingMessage struct {
 	From               string          `json:"from"`
 	Destinations       []ibDestination `json:"destinations"`
@@ -241,8 +282,4 @@ type ibOutgoingMessage struct {
 type ibDestination struct {
 	To        string `json:"to"`
 	MessageID string `json:"messageId"`
-}
-
-type ibOutgoingEnvelop struct {
-	Messages []ibOutgoingMessage `json:"messages"`
 }
