@@ -2,6 +2,7 @@ package zenvia
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -188,7 +189,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		return nil, fmt.Errorf("no password set for Zenvia channel")
 	}
 
-	encodedCreds := utils.EncodeBase64([]string{username, ":", password})
+	encodedCreds := base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{username, ":", password}, "")))
 	authHeader := "Basic " + encodedCreds
 
 	zvMsg := zvOutgoingMsg{
