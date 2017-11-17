@@ -1,6 +1,7 @@
 package infobip
 
 import (
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -181,4 +182,79 @@ func TestHandler(t *testing.T) {
 
 func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, NewHandler(), testCases)
+}
+
+// setSend takes care of setting the sendURL to call
+func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Msg) {
+	sendURL = server.URL
+}
+
+var defaultSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "tel:+250788383383",
+		Status:       "S",
+		ResponseBody: `{"messages":[{"status":{"groupId": 1}}}`, ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+		},
+		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		SendPrep:    setSendURL},
+	{Label: "Unicode Send",
+		Text: "☺", URN: "tel:+250788383383",
+		Status:       "S",
+		ResponseBody: `{"messages":[{"status":{"groupId": 1}}}`, ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+		},
+		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"☺","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		SendPrep:    setSendURL},
+	{Label: "Send Attachment",
+		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Status:       "S",
+		ResponseBody: `{"messages":[{"status":{"groupId": 1}}}`, ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+		},
+		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"My pic!\nhttps://foo.bar/image.jpg","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		SendPrep:    setSendURL},
+	{Label: "Error Sending",
+		Text: "Error Message", URN: "tel:+250788383383",
+		Status:       "E",
+		ResponseBody: `{ "error": "failed" }`, ResponseStatus: 401,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+		},
+		Error:       "received non 200 status: 401",
+		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Error Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		SendPrep:    setSendURL},
+	{Label: "Error groupId",
+		Text: "Simple Message", URN: "tel:+250788383383",
+		Status:       "E",
+		ResponseBody: `{"messages":[{"status":{"groupId": 2}}}`, ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+		},
+		Error:       `received error status: '2'`,
+		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		SendPrep:    setSendURL},
+}
+
+func TestSending(t *testing.T) {
+	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
+		map[string]interface{}{
+			courier.ConfigPassword: "Password",
+			courier.ConfigUsername: "Username",
+		})
+
+	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
 }

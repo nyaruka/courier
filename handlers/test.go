@@ -209,7 +209,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			if testCase.RequestBody != "" {
 				require.NotNil(testRequest)
 				value, _ := ioutil.ReadAll(testRequest.Body)
-				require.Equal(testCase.RequestBody, string(value))
+				require.Equal(testCase.RequestBody, strings.Trim(string(value), "\n"))
 			}
 
 			if testCase.Headers != nil {

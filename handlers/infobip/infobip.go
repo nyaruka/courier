@@ -1,16 +1,22 @@
 package infobip
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/pkg/errors"
 )
 
-/* no logs */
+var sendURL = "https://api.infobip.com/sms/1/text/advanced"
 
 func init() {
 	courier.RegisterHandler(NewHandler())
@@ -164,5 +170,79 @@ type infobipEnvelope struct {
 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
-	return nil, nil
+
+	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
+	if username == "" {
+		return nil, fmt.Errorf("no username set for IB channel")
+	}
+
+	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	if password == "" {
+		return nil, fmt.Errorf("no password set for IB channel")
+	}
+
+	encodedCreds := utils.EncodeBase64([]string{username, ":", password})
+	authHeader := "Basic " + encodedCreds
+
+	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+	statusURL := fmt.Sprintf("https://%s%s%s/delivered", callbackDomain, "/c/ib/", msg.Channel().UUID())
+
+	ibMsg := ibOutgoingEnvelop{
+		Messages: []ibOutgoingMessage{
+			ibOutgoingMessage{
+				From: msg.Channel().Address(),
+				Destinations: []ibDestination{ibDestination{
+					To:        strings.TrimLeft(msg.URN().Path(), "+"),
+					MessageID: msg.ID().String(),
+				}},
+				Text:               courier.GetTextAndAttachments(msg),
+				NotifyContentType:  "application/json",
+				IntermediateReport: true,
+				NotifyURL:          statusURL,
+			},
+		},
+	}
+
+	requestBody := new(bytes.Buffer)
+	json.NewEncoder(requestBody).Encode(ibMsg)
+
+	// build our request
+	req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", authHeader)
+	rr, err := utils.MakeHTTPRequest(req)
+
+	// record our status and log
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
+	if err != nil {
+		return status, err
+	}
+
+	groupID, err := jsonparser.GetInt([]byte(rr.Body), "messages", "[0]", "status", "groupId")
+	if err != nil || (groupID != 1 && groupID != 3) {
+		return status, errors.Errorf("received error status: '%d'", groupID)
+	}
+
+	status.SetStatus(courier.MsgSent)
+	return status, nil
+}
+
+type ibOutgoingMessage struct {
+	From               string          `json:"from"`
+	Destinations       []ibDestination `json:"destinations"`
+	Text               string          `json:"text"`
+	NotifyContentType  string          `json:"notifyContentType"`
+	IntermediateReport bool            `json:"intermediateReport"`
+	NotifyURL          string          `json:"notifyUrl"`
+}
+
+type ibDestination struct {
+	To        string `json:"to"`
+	MessageID string `json:"messageId"`
+}
+
+type ibOutgoingEnvelop struct {
+	Messages []ibOutgoingMessage `json:"messages"`
 }
