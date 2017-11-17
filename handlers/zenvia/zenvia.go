@@ -2,7 +2,6 @@ package zenvia
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -189,9 +188,6 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		return nil, fmt.Errorf("no password set for Zenvia channel")
 	}
 
-	encodedCreds := base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{username, ":", password}, "")))
-	authHeader := "Basic " + encodedCreds
-
 	zvMsg := zvOutgoingMsg{
 		SendSMSRequest: zvSendSMSRequest{
 			From:           "Sender",
@@ -211,7 +207,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", authHeader)
+	req.SetBasicAuth(username, password)
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log
