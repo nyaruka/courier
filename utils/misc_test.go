@@ -33,3 +33,7 @@ func TestCleanString(t *testing.T) {
 	text, _ := url.PathUnescape("hi%1C%00%00%00%00%00%07%E0%00")
 	assert.Equal(t, "hi\x1c\a", CleanString(text))
 }
+
+func TestEncodeBase64(t *testing.T) {
+	assert.Equal(t, "enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=", EncodeBase64([]string{"zv-username", ":", "zv-password"}))
+}

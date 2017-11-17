@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"regexp"
 	"strings"
@@ -85,4 +86,13 @@ func CleanString(s string) string {
 	}
 
 	return cleaned
+}
+
+// EncodeBase64 encodes the list of strings with Linux base64
+func EncodeBase64(strList []string) string {
+	var strBuffer bytes.Buffer
+	for _, l := range strList {
+		strBuffer.WriteString(l)
+	}
+	return base64.StdEncoding.EncodeToString([]byte(strBuffer.String()))
 }
