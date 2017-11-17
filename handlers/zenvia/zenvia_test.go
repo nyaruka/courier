@@ -113,9 +113,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":        "application/json",
 			"Authorization": "Basic enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 		},
-		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"Simple Message ☺","callbackOption":"1","id":"null","aggregateId":""}}
-`,
-		SendPrep: setSendURL},
+		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"Simple Message ☺","callbackOption":"1","id":"10","aggregateId":""}}`,
+		SendPrep:    setSendURL},
 	{Label: "Send Attachment",
 		Text:           "My pic!",
 		URN:            "tel:+250788383383",
@@ -129,9 +128,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":        "application/json",
 			"Authorization": "Basic enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 		},
-		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"My pic!\nhttps://foo.bar/image.jpg","callbackOption":"1","id":"null","aggregateId":""}}
-`,
-		SendPrep: setSendURL},
+		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"My pic!\nhttps://foo.bar/image.jpg","callbackOption":"1","id":"10","aggregateId":""}}`,
+		SendPrep:    setSendURL},
 	{Label: "No External Id",
 		Text:           "No External ID",
 		URN:            "tel:+250788383383",
@@ -144,9 +142,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":        "application/json",
 			"Authorization": "Basic enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 		},
-		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"No External ID","callbackOption":"1","id":"null","aggregateId":""}}
-`,
-		SendPrep: setSendURL},
+		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"No External ID","callbackOption":"1","id":"10","aggregateId":""}}`,
+		SendPrep:    setSendURL},
 	{Label: "Error Sending",
 		Text:           "Error Message",
 		URN:            "tel:+250788383383",
@@ -154,9 +151,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ResponseBody:   `{ "error": "failed" }`,
 		ResponseStatus: 401,
 		Error:          "received non 200 status: 401",
-		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"Error Message","callbackOption":"1","id":"null","aggregateId":""}}
-`,
-		SendPrep: setSendURL},
+		RequestBody:    `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"Error Message","callbackOption":"1","id":"10","aggregateId":""}}`,
+		SendPrep:       setSendURL},
 }
 
 func TestSending(t *testing.T) {
