@@ -44,19 +44,19 @@ func (h *handler) Initialize(s courier.Server) error {
 
 // StatusMessage is our HTTP handler function for status updates
 func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
-	ibStatusEnvelop := &ibStatusEnvelop{}
-	err := handlers.DecodeAndValidateJSON(ibStatusEnvelop, r)
+	ibStatusEnvelope := &ibStatusEnvelope{}
+	err := handlers.DecodeAndValidateJSON(ibStatusEnvelope, r)
 	if err != nil {
 		return nil, courier.WriteError(w, r, err)
 	}
 
-	msgStatus, found := infobipStatusMapping[ibStatusEnvelop.Results[0].Status.GroupName]
+	msgStatus, found := infobipStatusMapping[ibStatusEnvelope.Results[0].Status.GroupName]
 	if !found {
-		return nil, courier.WriteError(w, r, fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", ibStatusEnvelop.Results[0].Status.GroupName))
+		return nil, courier.WriteError(w, r, fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", ibStatusEnvelope.Results[0].Status.GroupName))
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(ibStatusEnvelop.Results[0].MessageID), msgStatus)
+	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(ibStatusEnvelope.Results[0].MessageID), msgStatus)
 	err = h.Backend().WriteMsgStatus(status)
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ var infobipStatusMapping = map[string]courier.MsgStatusValue{
 	"UNDELIVERABLE": courier.MsgFailed,
 }
 
-type ibStatusEnvelop struct {
+type ibStatusEnvelope struct {
 	Results []ibStatus `validate:"required" json:"results"`
 }
 type ibStatus struct {
