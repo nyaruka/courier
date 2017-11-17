@@ -9,6 +9,7 @@ import (
 
 	null "gopkg.in/guregu/null.v3"
 
+	"github.com/nyaruka/gocommon/urns"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -67,11 +68,13 @@ type Msg interface {
 	Text() string
 	Attachments() []string
 	ExternalID() string
-	URN() URN
+	URN() urns.URN
 	ContactName() string
 
 	ReceivedOn() *time.Time
 	SentOn() *time.Time
+
+	HighPriority() bool
 
 	WithContactName(name string) Msg
 	WithReceivedOn(date time.Time) Msg
@@ -79,6 +82,8 @@ type Msg interface {
 	WithID(id MsgID) Msg
 	WithUUID(uuid MsgUUID) Msg
 	WithAttachment(url string) Msg
+
+	ReceiveID() int64
 }
 
 // GetTextAndAttachments returns both the text of our message as well as any attachments, newline delimited

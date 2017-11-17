@@ -15,13 +15,16 @@ import (
 // Default is our default librato collector
 var Default *Sender
 
+// The endpoint we post librato to
+var libratoEndpoint = "https://metrics-api.librato.com/v1/metrics"
+
 // NewSender creates a new librato Sender with the passed in parameters
 func NewSender(waitGroup *sync.WaitGroup, username string, token string, source string, timeout time.Duration) *Sender {
 	return &Sender{
 		waitGroup: waitGroup,
 		stop:      make(chan bool),
 
-		buffer:   make(chan gauge, 1000),
+		buffer:   make(chan gauge, 10000),
 		username: username,
 		token:    token,
 		source:   source,
@@ -103,7 +106,7 @@ func (c *Sender) flush(count int) {
 		return
 	}
 
-	req, err := http.NewRequest("POST", "https://metrics-api.librato.com/v1/metrics", bytes.NewReader(encoded))
+	req, err := http.NewRequest("POST", libratoEndpoint, bytes.NewReader(encoded))
 	if err != nil {
 		logrus.WithField("comp", "librato").WithError(err).Error("error sending librato metrics")
 		return
@@ -117,7 +120,7 @@ func (c *Sender) flush(count int) {
 		return
 	}
 
-	logrus.WithField("comp", "librato").WithField("count", len(reqPayload.Gauges)).Info("flushed to librato")
+	logrus.WithField("comp", "librato").WithField("count", len(reqPayload.Gauges)).Debug("flushed to librato")
 }
 
 // Stop stops our sender, callers can use the WaitGroup used during initialization to block for stop

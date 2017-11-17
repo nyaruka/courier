@@ -45,11 +45,11 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive No Sender", URL: receiveNoSender, Data: "empty", Status: 400, Response: "must have one of 'sender' or 'from' set"},
 	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "empty", Status: 400, Response: "invalid date format, must be RFC 3339"},
 	{Label: "Failed No Params", URL: failedNoParams, Status: 400, Response: "field 'id' required"},
-	{Label: "Failed Valid", URL: failedValid, Status: 200, Response: `{"status":"F"}`},
+	{Label: "Failed Valid", URL: failedValid, Status: 200, Response: `"status":"F"`},
 	{Label: "Invalid Status", URL: invalidStatus, Status: 404, Response: `page not found`},
-	{Label: "Sent Valid", URL: sentValid, Status: 200, Response: `{"status":"S"}`},
-	{Label: "Delivered Valid", URL: deliveredValid, Status: 200, Response: `{"status":"D"}`},
-	{Label: "Delivered Valid Post", URL: deliveredValidPost, Data: "id=12345", Status: 200, Response: `{"status":"D"}`},
+	{Label: "Sent Valid", URL: sentValid, Status: 200, Response: `"status":"S"`},
+	{Label: "Delivered Valid", URL: deliveredValid, Status: 200, Data: "nothing", Response: `"status":"D"`},
+	{Label: "Delivered Valid Post", URL: deliveredValidPost, Data: "id=12345", Status: 200, Response: `"status":"D"`},
 }
 
 func TestHandler(t *testing.T) {
@@ -85,7 +85,6 @@ var getSendTestCases = []ChannelSendTestCase{
 		Text: "Error Message", URN: "tel:+250788383383",
 		Status:       "E",
 		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
-		Error:     "received non 200 status: 401",
 		URLParams: map[string]string{"text": `Error Message`, "to": "+250788383383"},
 		SendPrep:  setSendURL},
 	{Label: "Send Attachment",
@@ -113,7 +112,6 @@ var postSendTestCases = []ChannelSendTestCase{
 		Text: "Error Message", URN: "tel:+250788383383",
 		Status:       "E",
 		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
-		Error:      "received non 200 status: 401",
 		PostParams: map[string]string{"text": `Error Message`, "to": "+250788383383"},
 		SendPrep:   setSendURL},
 	{Label: "Send Attachment",
@@ -130,25 +128,28 @@ var jsonSendTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		RequestBody: `{ "to":"+250788383383", "text":"Simple Message", "from":"2020" }`,
+		Headers:     map[string]string{"Authorization": "Token ABCDEF"},
 		SendPrep:    setSendURL},
 	{Label: "Unicode Send",
 		Text: `☺ "hi!"`, URN: "tel:+250788383383",
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		RequestBody: `{ "to":"+250788383383", "text":"☺ \"hi!\"", "from":"2020" }`,
+		Headers:     map[string]string{"Authorization": "Token ABCDEF"},
 		SendPrep:    setSendURL},
 	{Label: "Error Sending",
 		Text: "Error Message", URN: "tel:+250788383383",
 		Status:       "E",
 		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
-		Error:       "received non 200 status: 401",
 		RequestBody: `{ "to":"+250788383383", "text":"Error Message", "from":"2020" }`,
+		Headers:     map[string]string{"Authorization": "Token ABCDEF"},
 		SendPrep:    setSendURL},
 	{Label: "Send Attachment",
 		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status:       "W",
 		ResponseBody: `0: Accepted for delivery`, ResponseStatus: 200,
 		RequestBody: `{ "to":"+250788383383", "text":"My pic!\nhttps://foo.bar/image.jpg", "from":"2020" }`,
+		Headers:     map[string]string{"Authorization": "Token ABCDEF"},
 		SendPrep:    setSendURL},
 }
 
@@ -169,7 +170,6 @@ var xmlSendTestCases = []ChannelSendTestCase{
 		Text: "Error Message", URN: "tel:+250788383383",
 		Status:       "E",
 		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
-		Error:       "received non 200 status: 401",
 		RequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from></msg>`,
 		SendPrep:    setSendURL},
 	{Label: "Send Attachment",
@@ -194,17 +194,20 @@ func TestSending(t *testing.T) {
 
 	var jsonChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		map[string]interface{}{
-			"send_path":               "",
-			courier.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}} }`,
-			courier.ConfigContentType: contentJSON,
-			courier.ConfigSendMethod:  http.MethodPost})
+			"send_path":                     "",
+			courier.ConfigSendBody:          `{ "to":{{to}}, "text":{{text}}, "from":{{from}} }`,
+			courier.ConfigContentType:       contentJSON,
+			courier.ConfigSendMethod:        http.MethodPost,
+			courier.ConfigSendAuthorization: "Token ABCDEF",
+		})
 
 	var xmlChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		map[string]interface{}{
 			"send_path":               "",
 			courier.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from></msg>`,
 			courier.ConfigContentType: contentXML,
-			courier.ConfigSendMethod:  http.MethodPut})
+			courier.ConfigSendMethod:  http.MethodPut,
+		})
 
 	RunChannelSendTestCases(t, getChannel, NewHandler(), getSendTestCases)
 	RunChannelSendTestCases(t, postChannel, NewHandler(), postSendTestCases)

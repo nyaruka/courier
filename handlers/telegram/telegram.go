@@ -13,6 +13,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 func init() {
@@ -35,11 +36,11 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
 	te := &telegramEnvelope{}
 	err := handlers.DecodeAndValidateJSON(te, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteError(w, r, err)
 	}
 
 	// no message? ignore this
@@ -51,13 +52,25 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	date := time.Unix(te.Message.Date, 0).UTC()
 
 	// create our URN
-	urn := courier.NewTelegramURN(te.Message.From.ContactID, te.Message.From.Username)
+	urn := urns.NewTelegramURN(te.Message.From.ContactID, te.Message.From.Username)
 
 	// build our name from first and last
 	name := handlers.NameFromFirstLastUsername(te.Message.From.FirstName, te.Message.From.LastName, te.Message.From.Username)
 
 	// our text is either "text" or "caption" (or empty)
 	text := te.Message.Text
+
+	// this is a start command, trigger a new conversation
+	if text == "/start" {
+		event := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn).WithContactName(name).WithOccurredOn(date)
+		err = h.Backend().WriteChannelEvent(event)
+		if err != nil {
+			return nil, err
+		}
+		return []courier.ReceiveEvent{event}, courier.WriteChannelEventSuccess(w, r, event)
+	}
+
+	// normal message of some kind
 	if text == "" && te.Message.Caption != "" {
 		text = te.Message.Caption
 	}
@@ -98,7 +111,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 
 	// we had an error downloading media
 	if err != nil {
-		return nil, errors.WrapPrefix(err, "error retrieving media", 0)
+		return nil, courier.WriteError(w, r, errors.WrapPrefix(err, "error retrieving media", 0))
 	}
 
 	// build our msg
@@ -114,7 +127,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
+	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, msg)
 }
 
 func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values) (string, *courier.ChannelLog, error) {
@@ -125,7 +138,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// build our channel log
-	log := courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr)
+	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 
 	// was this request successful?
 	ok, err := jsonparser.GetBoolean([]byte(rr.Body), "ok")
@@ -212,8 +225,8 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 			status.AddLog(log)
 
 		default:
-			status.AddLog(courier.NewChannelLog(msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
-				fmt.Errorf("unknown media type: %s", mediaType), "", "", time.Duration(0), time.Now()))
+			status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
+				"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
 			hasError = true
 		}
 	}

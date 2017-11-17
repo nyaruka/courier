@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier/config"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 // BackendConstructorFunc defines a function to create a particular backend type
@@ -15,17 +16,17 @@ type Backend interface {
 	// Start starts the backend and opens any db connections it needs
 	Start() error
 
-	// Stop stops the backend closing any db connections it has open
+	// Stop stops any backend processes
 	Stop() error
+
+	// Cleanup closes any active connections to databases
+	Cleanup() error
 
 	// GetChannel returns the channel with the passed in type and UUID
 	GetChannel(ChannelType, ChannelUUID) (Channel, error)
 
 	// NewIncomingMsg creates a new message from the given params
-	NewIncomingMsg(channel Channel, urn URN, text string) Msg
-
-	// NewOutgoingMsg creates a new outgoing message from the given params
-	NewOutgoingMsg(channel Channel, urn URN, text string) Msg
+	NewIncomingMsg(channel Channel, urn urns.URN, text string) Msg
 
 	// WriteMsg writes the passed in message to our backend
 	WriteMsg(Msg) error
@@ -38,6 +39,12 @@ type Backend interface {
 
 	// WriteMsgStatus writes the passed in status update to our backend
 	WriteMsgStatus(MsgStatus) error
+
+	// NewChannelEvent creates a new channel event for the given channel and event type
+	NewChannelEvent(Channel, ChannelEventType, urns.URN) ChannelEvent
+
+	// WriteChannelEvent writes the passed in channel even returning any error
+	WriteChannelEvent(ChannelEvent) error
 
 	// WriteChannelLogs writes the passed in channel logs to our backend
 	WriteChannelLogs([]*ChannelLog) error
@@ -60,6 +67,9 @@ type Backend interface {
 
 	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string
+
+	// Status returns a string describing the current status, this can detail queue sizes or other attributes
+	Status() string
 }
 
 // NewBackend creates the type of backend passed in

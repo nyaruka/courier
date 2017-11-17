@@ -150,21 +150,17 @@ func newRRFromResponse(method string, requestTrace string, r *http.Response) (*R
 	return &rr, err
 }
 
-var (
-	transport *http.Transport
-	client    *http.Client
-	once      sync.Once
-)
-
 // GetHTTPClient returns the shared HTTP client used by all Courier threads
 func GetHTTPClient() *http.Client {
 	once.Do(func() {
-		timeout := time.Duration(30 * time.Second)
 		transport = &http.Transport{
 			MaxIdleConns:    10,
 			IdleConnTimeout: 30 * time.Second,
 		}
-		client = &http.Client{Transport: transport, Timeout: timeout}
+		client = &http.Client{
+			Transport: transport,
+			Timeout:   30 * time.Second,
+		}
 	})
 
 	return client
@@ -172,17 +168,29 @@ func GetHTTPClient() *http.Client {
 
 // GetInsecureHTTPClient returns the shared HTTP client used by all Courier threads
 func GetInsecureHTTPClient() *http.Client {
-	once.Do(func() {
-		timeout := time.Duration(30 * time.Second)
-		transport = &http.Transport{
+	insecureOnce.Do(func() {
+		insecureTransport = &http.Transport{
 			MaxIdleConns:    10,
 			IdleConnTimeout: 30 * time.Second,
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
-		client = &http.Client{Transport: transport, Timeout: timeout}
+		insecureClient = &http.Client{
+			Transport: insecureTransport,
+			Timeout:   30 * time.Second,
+		}
 	})
 
-	return client
+	return insecureClient
 }
 
-var HTTPUserAgent = "Courier/vDev"
+var (
+	transport *http.Transport
+	client    *http.Client
+	once      sync.Once
+
+	insecureTransport *http.Transport
+	insecureClient    *http.Client
+	insecureOnce      sync.Once
+
+	HTTPUserAgent = "Courier/vDev"
+)

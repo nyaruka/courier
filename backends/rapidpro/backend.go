@@ -18,9 +18,11 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/chatbase"
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,6 +31,11 @@ const msgQueueName = "msgs"
 
 // the name of our set for tracking sends
 const sentSetName = "msgs_sent_%s"
+
+// constants used in org configs for chatbase
+const chatbaseAPIKey = "CHATBASE_API_KEY"
+const chatbaseVersion = "CHATBASE_VERSION"
+const chatbaseMessageType = "msg"
 
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
@@ -40,7 +47,7 @@ func (b *backend) GetChannel(ct courier.ChannelType, uuid courier.ChannelUUID) (
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (b *backend) NewIncomingMsg(channel courier.Channel, urn courier.URN, text string) courier.Msg {
+func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
 	// remove any control characters
 	text = utils.CleanString(text)
 
@@ -58,7 +65,7 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn courier.URN, text 
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (b *backend) NewOutgoingMsg(channel courier.Channel, urn courier.URN, text string) courier.Msg {
+func (b *backend) NewOutgoingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
 	return newMsg(MsgOutgoing, channel, urn, text)
 }
 
@@ -77,7 +84,7 @@ func (b *backend) PopNextOutgoingMsg() (courier.Msg, error) {
 		dbMsg := &DBMsg{}
 		err = json.Unmarshal([]byte(msgJSON), dbMsg)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to unmarshal message '%s': %s", msgJSON, err)
 		}
 
 		// populate the channel on our db msg
@@ -93,23 +100,24 @@ func (b *backend) PopNextOutgoingMsg() (courier.Msg, error) {
 	return nil, nil
 }
 
+var luaSent = redis.NewScript(3,
+	`-- KEYS: [TodayKey, YesterdayKey, MsgId]
+     local found = redis.call("sismember", KEYS[1], KEYS[3])
+     if found == 1 then
+	   return 1
+     end
+
+     return redis.call("sismember", KEYS[2], KEYS[3])
+`)
+
 // WasMsgSent returns whether the passed in message has already been sent
 func (b *backend) WasMsgSent(msg courier.Msg) (bool, error) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	dateKey := fmt.Sprintf(sentSetName, time.Now().In(time.UTC).Format("2006_01_02"))
-	found, err := redis.Bool(rc.Do("sismember", dateKey, msg.ID().String()))
-	if err != nil {
-		return false, err
-	}
-	if found {
-		return true, nil
-	}
-
-	dateKey = fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).In(time.UTC).Format("2006_01_02"))
-	found, err = redis.Bool(rc.Do("sismember", dateKey, msg.ID().String()))
-	return found, err
+	todayKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
+	yesterdayKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).UTC().Format("2006_01_02"))
+	return redis.Bool(luaSent.Do(rc, todayKey, yesterdayKey, msg.ID().String()))
 }
 
 // MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel
@@ -122,15 +130,28 @@ func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg, status courier.MsgSta
 
 	// mark as sent in redis as well if this was actually wired or sent
 	if status != nil && (status.Status() == courier.MsgSent || status.Status() == courier.MsgWired) {
-		dateKey := fmt.Sprintf(sentSetName, time.Now().In(time.UTC).Format("2006_01_02"))
+		dateKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
 		rc.Do("sadd", dateKey, msg.ID().String())
+	}
+
+	// if this org has chatbase connected, notify chatbase
+	chatKey, _ := msg.Channel().OrgConfigForKey(chatbaseAPIKey, "").(string)
+	if chatKey != "" {
+		chatVersion, _ := msg.Channel().OrgConfigForKey(chatbaseVersion, "").(string)
+		err := chatbase.SendChatbaseMessage(chatKey, chatVersion, chatbaseMessageType, dbMsg.ContactID_.String(), msg.Channel().Name(), msg.Text(), time.Now().UTC())
+		if err != nil {
+			logrus.WithError(err).WithField("chatbase_api_key", chatKey).WithField("chatbase_version", chatVersion).WithField("msg_id", dbMsg.ID().String()).Error("unable to write chatbase message")
+		}
 	}
 }
 
 // StopMsgContact marks the contact for the passed in msg as stopped, that is they no longer want to receive messages
 func (b *backend) StopMsgContact(m courier.Msg) {
+	rc := b.redisPool.Get()
+	defer rc.Close()
+
 	dbMsg := m.(*DBMsg)
-	b.notifier.addStopContactNotification(dbMsg.ContactID_)
+	queueStopContact(rc, dbMsg.OrgID_, dbMsg.ContactID_)
 }
 
 // WriteMsg writes the passed in message to our store
@@ -150,7 +171,39 @@ func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID 
 
 // WriteMsgStatus writes the passed in MsgStatus to our store
 func (b *backend) WriteMsgStatus(status courier.MsgStatus) error {
-	return writeMsgStatus(b, status)
+	err := writeMsgStatus(b, status)
+	if err != nil {
+		return err
+	}
+
+	// if we have an id and are marking an outgoing msg as errored, then clear our sent flag
+	if status.ID() != courier.NilMsgID && status.Status() == courier.MsgErrored {
+		rc := b.redisPool.Get()
+		defer rc.Close()
+
+		dateKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
+		prevDateKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).UTC().Format("2006_01_02"))
+
+		// we pipeline the removals because we don't care about the return value
+		rc.Send("srem", dateKey, status.ID().String())
+		rc.Send("srem", prevDateKey, status.ID().String())
+		_, err := rc.Do("")
+		if err != nil {
+			logrus.WithError(err).WithField("msg", status.ID().String()).Error("error clearing sent flags")
+		}
+	}
+
+	return nil
+}
+
+// NewChannelEvent creates a new channel event with the passed in parameters
+func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN) courier.ChannelEvent {
+	return newChannelEvent(channel, eventType, urn)
+}
+
+// WriteChannelEvent writes the passed in channel even returning any error
+func (b *backend) WriteChannelEvent(event courier.ChannelEvent) error {
+	return writeChannelEvent(b, event)
 }
 
 // WriteChannelLogs persists the passed in logs to our database, for rapidpro we swallow all errors, logging isn't critical
@@ -168,12 +221,11 @@ func (b *backend) WriteChannelLogs(logs []*courier.ChannelLog) error {
 func (b *backend) Health() string {
 	// test redis
 	rc := b.redisPool.Get()
-	_, redisErr := rc.Do("PING")
 	defer rc.Close()
+	_, redisErr := rc.Do("PING")
 
 	// test our db
 	_, dbErr := b.db.Exec("SELECT 1")
-
 	health := bytes.Buffer{}
 
 	if redisErr != nil {
@@ -184,6 +236,75 @@ func (b *backend) Health() string {
 	}
 
 	return health.String()
+}
+
+// Status returns information on our queue sizes, number of workers etc..
+func (b *backend) Status() string {
+	rc := b.redisPool.Get()
+	defer rc.Close()
+
+	status := bytes.Buffer{}
+	status.WriteString("------------------------------------------------------------------------------------\n")
+	status.WriteString("     Size | Bulk Size | Workers | TPS | Type | Channel              \n")
+	status.WriteString("------------------------------------------------------------------------------------\n")
+
+	var queue string
+	var workers float64
+
+	// get all our queues
+	rc.Send("zrevrangebyscore", fmt.Sprintf("%s:active", msgQueueName), "+inf", "-inf", "withscores")
+	rc.Send("zrevrangebyscore", fmt.Sprintf("%s:throttled", msgQueueName), "+inf", "-inf", "withscores")
+	rc.Flush()
+
+	active, err := redis.Values(rc.Receive())
+	if err != nil {
+		return fmt.Sprintf("unable to read active queues: %v", err)
+	}
+	throttled, err := redis.Values(rc.Receive())
+	if err != nil {
+		return fmt.Sprintf("unable to read throttled queues: %v", err)
+	}
+	values := append(active, throttled...)
+
+	for len(values) > 0 {
+		values, err = redis.Scan(values, &queue, &workers)
+		if err != nil {
+			return fmt.Sprintf("error reading active queues: %v", err)
+		}
+
+		// our queue name is in the format msgs:uuid|tps, break it apart
+		queue = strings.TrimPrefix(queue, "msgs:")
+		parts := strings.Split(queue, "|")
+		if len(parts) != 2 {
+			return fmt.Sprintf("error parsing queue name '%s'", queue)
+		}
+		uuid := parts[0]
+		tps := parts[1]
+
+		// try to look up our channel
+		channelUUID, _ := courier.NewChannelUUID(uuid)
+		channel, err := getChannel(b, courier.AnyChannelType, channelUUID)
+		channelType := "!!"
+		if err == nil {
+			channelType = channel.ChannelType().String()
+		}
+
+		// get # of items in our normal queue
+		size, err := redis.Int64(rc.Do("zcard", fmt.Sprintf("%s:%s/1", msgQueueName, queue)))
+		if err != nil {
+			return fmt.Sprintf("error reading queue size: %v", err)
+		}
+
+		// get # of items in the bulk queue
+		bulkSize, err := redis.Int64(rc.Do("zcard", fmt.Sprintf("%s:%s/0", msgQueueName, queue)))
+		if err != nil {
+			return fmt.Sprintf("error reading bulk queue size: %v", err)
+		}
+
+		status.WriteString(fmt.Sprintf("% 9d   % 9d   % 7d   % 3s   % 4s   %s\n", size, bulkSize, int(workers), tps, channelType, uuid))
+	}
+
+	return status.String()
 }
 
 // Start starts our RapidPro backend, this tests our various connections and starts our spool flushers
@@ -212,6 +333,8 @@ func (b *backend) Start() error {
 		log.Info("db ok")
 	}
 	b.db = db
+	b.db.SetMaxIdleConns(4)
+	b.db.SetMaxOpenConns(16)
 
 	// parse and test our redis config
 	redisURL, err := url.Parse(b.config.Redis)
@@ -222,8 +345,8 @@ func (b *backend) Start() error {
 	// create our pool
 	redisPool := &redis.Pool{
 		Wait:        true,              // makes callers wait for a connection
-		MaxActive:   5,                 // only open this many concurrent connections at once
-		MaxIdle:     2,                 // only keep up to 2 idle
+		MaxActive:   8,                 // only open this many concurrent connections at once
+		MaxIdle:     4,                 // only keep up to this many idle
 		IdleTimeout: 240 * time.Second, // how long to wait before reaping a connection
 		Dial: func() (redis.Conn, error) {
 			conn, err := redis.Dial("tcp", fmt.Sprintf("%s", redisURL.Host))
@@ -248,8 +371,10 @@ func (b *backend) Start() error {
 		log.Info("redis ok")
 	}
 
-	// start our dethrottler
-	queue.StartDethrottler(redisPool, b.stopChan, b.waitGroup, msgQueueName)
+	// start our dethrottler if we are going to be doing some sending
+	if b.config.MaxWorkers > 0 {
+		queue.StartDethrottler(redisPool, b.stopChan, b.waitGroup, msgQueueName)
+	}
 
 	// create our s3 client
 	s3Session, err := session.NewSession(&aws.Config{
@@ -274,19 +399,19 @@ func (b *backend) Start() error {
 	if err == nil {
 		err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "statuses")
 	}
+	if err == nil {
+		err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "events")
+	}
 	if err != nil {
 		log.WithError(err).Error("spool directories not writable")
 	} else {
 		log.Info("spool directories ok")
 	}
 
-	// start our rapidpro notifier
-	b.notifier = newNotifier(b.config)
-	b.notifier.start(b)
-
 	// register and start our msg spool flushers
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "msgs"), b.flushMsgFile)
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "statuses"), b.flushStatusFile)
+	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "events"), b.flushChannelEventFile)
 
 	logrus.WithFields(logrus.Fields{
 		"comp":  "backend",
@@ -298,19 +423,20 @@ func (b *backend) Start() error {
 
 // Stop stops our RapidPro backend, closing our db and redis connections
 func (b *backend) Stop() error {
-	if b.db != nil {
-		b.db.Close()
-	}
-
-	b.redisPool.Close()
-
 	// close our stop channel
 	close(b.stopChan)
 
 	// wait for our threads to exit
 	b.waitGroup.Wait()
-
 	return nil
+}
+
+func (b *backend) Cleanup() error {
+	// close our db and redis pool
+	if b.db != nil {
+		b.db.Close()
+	}
+	return b.redisPool.Close()
 }
 
 // NewBackend creates a new RapidPro backend
@@ -333,10 +459,6 @@ type backend struct {
 
 	popScript *redis.Script
 
-	notifier *notifier
-
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
 }
-
-

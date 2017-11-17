@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,6 +26,12 @@ func TestStringArrayContains(t *testing.T) {
 func TestCleanString(t *testing.T) {
 	assert.Equal(t, "\x41hello", CleanString("\x02\x41hello"))
 	assert.Equal(t, "😅 happy!", CleanString("😅 happy!"))
+	assert.Equal(t, "Hello  There", CleanString("Hello \x00 There"))
+	assert.Equal(t, "Hello There", CleanString("Hello There\u0000"))
+	assert.Equal(t, "Hello z There", CleanString("Hello \xc5z There"))
+
+	text, _ := url.PathUnescape("hi%1C%00%00%00%00%00%07%E0%00")
+	assert.Equal(t, "hi\x1c\a", CleanString(text))
 }
 
 func TestEncodeBase64(t *testing.T) {

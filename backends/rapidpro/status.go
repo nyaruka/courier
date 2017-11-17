@@ -25,7 +25,6 @@ func newMsgStatus(channel courier.Channel, id courier.MsgID, externalID string, 
 
 // writeMsgStatus writes the passed in status to the database, queueing it to our spool in case the database is down
 func writeMsgStatus(b *backend, status courier.MsgStatus) error {
-	// create our msg status object
 	dbStatus := status.(*DBMsgStatus)
 
 	err := writeMsgStatusToDB(b, dbStatus)
@@ -67,10 +66,12 @@ func checkMsgExists(b *backend, status courier.MsgStatus) (err error) {
 // the craziness below lets us update our status to 'F' and schedule retries without knowing anything about the message
 const updateMsgID = `
 UPDATE msgs_msg SET 
-	status = CASE WHEN :status = 'E' THEN CASE WHEN error_count = 2 THEN 'F' ELSE 'E' END ELSE :status END,
+	status = CASE WHEN :status = 'E' THEN CASE WHEN error_count >= 2 OR status = 'F' THEN 'F' ELSE 'E' END ELSE :status END,
 	error_count = CASE WHEN :status = 'E' THEN error_count + 1 ELSE error_count END,
 	next_attempt = CASE WHEN :status = 'E' THEN NOW() + (5 * (error_count+1) * interval '1 minutes') ELSE next_attempt END,
-	modified_on = :modified_on	
+	external_id = CASE WHEN :external_id != '' THEN :external_id ELSE external_id END,
+	sent_on = CASE WHEN :status = 'W' THEN NOW() ELSE sent_on END,
+	modified_on = :modified_on
 
 	WHERE msgs_msg.id IN
 		(SELECT msgs_msg.id 
@@ -81,10 +82,11 @@ UPDATE msgs_msg SET
 
 const updateMsgExternalID = `
 UPDATE msgs_msg SET 
-	status = CASE WHEN :status = 'E' THEN CASE WHEN error_count = 2 THEN 'F' ELSE 'E' END ELSE :status END,
+	status = CASE WHEN :status = 'E' THEN CASE WHEN error_count >= 2 OR status = 'F' THEN 'F' ELSE 'E' END ELSE :status END,
 	error_count = CASE WHEN :status = 'E' THEN error_count + 1 ELSE error_count END,
 	next_attempt = CASE WHEN :status = 'E' THEN NOW() + (5 * (error_count+1) * interval '1 minutes') ELSE next_attempt END,
-	modified_on = :modified_on 
+	sent_on = CASE WHEN :status = 'W' THEN NOW() ELSE sent_on END,
+	modified_on = :modified_on
 
 WHERE msgs_msg.id IN
 	(SELECT msgs_msg.id 
@@ -98,7 +100,7 @@ func writeMsgStatusToDB(b *backend, status *DBMsgStatus) error {
 	var rows *sqlx.Rows
 	var err error
 
-  if status.ID() != courier.NilMsgID {
+	if status.ID() != courier.NilMsgID {
 		rows, err = b.db.NamedQuery(updateMsgID, status)
 	} else if status.ExternalID() != "" {
 		rows, err = b.db.NamedQuery(updateMsgExternalID, status)
@@ -108,6 +110,7 @@ func writeMsgStatusToDB(b *backend, status *DBMsgStatus) error {
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 
 	// scan and read the id of the msg that was updated
 	if rows.Next() {
@@ -128,7 +131,7 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 		return nil
 	}
 
-	// try to flush to redis
+	// try to flush to our db
 	return writeMsgStatusToDB(b, status)
 }
 

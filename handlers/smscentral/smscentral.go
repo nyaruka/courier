@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -49,7 +50,7 @@ type smsCentralMessage struct {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Msg, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
 	smsCentralMessage := &smsCentralMessage{}
 	handlers.DecodeAndValidateQueryParams(smsCentralMessage, r)
 
@@ -65,7 +66,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// create our URN
-	urn := courier.NewTelURNForChannel(smsCentralMessage.Mobile, channel)
+	urn := urns.NewTelURNForCountry(smsCentralMessage.Mobile, channel.Country())
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, smsCentralMessage.Message)
@@ -76,7 +77,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.Msg{msg}, courier.WriteReceiveSuccess(w, r, msg)
+	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, msg)
 
 }
 
@@ -106,13 +107,13 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR(msg.Channel(), msg.ID(), rr))
+	status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
 	if err != nil {
 		return status, err
 	}
 
 	if rr.StatusCode/100 != 2 {
-		return status, errors.Errorf("Got non-200 response [%d] from API")
+		return status, errors.Errorf("Got non-200 response [%d] from API", rr.StatusCode)
 	}
 
 	status.SetStatus(courier.MsgWired)

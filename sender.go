@@ -72,10 +72,7 @@ func (f *Foreman) Assign() {
 			return
 
 		// otherwise, grab the next msg and assign it to a sender
-		default:
-			// get the next sender that is ready
-			sender := <-f.availableSenders
-
+		case sender := <-f.availableSenders:
 			// see if we have a message to work on
 			msg, err := backend.PopNextOutgoingMsg()
 
@@ -91,7 +88,7 @@ func (f *Foreman) Assign() {
 
 				// add our sender back to our queue and sleep a bit
 				if !lastSleep {
-					log.Info("sleeping, no messages")
+					log.Debug("sleeping, no messages")
 					lastSleep = true
 				}
 				f.availableSenders <- sender
@@ -134,7 +131,7 @@ func (w *Sender) Send() {
 	w.foreman.server.WaitGroup().Add(1)
 	defer w.foreman.server.WaitGroup().Done()
 
-	log := logrus.WithField("comp", "sender").WithField("senderID", w.id)
+	log := logrus.WithField("comp", "sender").WithField("sender_id", w.id)
 	log.Debug("started")
 
 	server := w.foreman.server
@@ -155,7 +152,7 @@ func (w *Sender) Send() {
 			return
 		}
 
-		msgLog := log.WithField("msgID", msg.ID().String()).WithField("text", msg.Text()).WithField("urn", msg.URN().Identity())
+		msgLog := log.WithField("msg_id", msg.ID().String()).WithField("msg_text", msg.Text()).WithField("msg_urn", msg.URN().Identity())
 		start := time.Now()
 
 		// was this msg already sent? (from a double queue?)
@@ -177,8 +174,15 @@ func (w *Sender) Send() {
 			secondDuration := float64(duration) / float64(time.Second)
 
 			if err != nil {
-				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
-				msgLog.WithError(err).WithField("elapsed", duration).Error("msg errored")
+				msgLog.WithError(err).WithField("elapsed", duration).Error("error sending message")
+				if status == nil {
+					status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
+				}
+			}
+
+			// report to librato and log locally
+			if status.Status() == MsgErrored || status.Status() == MsgFailed {
+				msgLog.WithField("elapsed", duration).Warning("msg errored")
 				librato.Default.AddGauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
 			} else {
 				msgLog.WithField("elapsed", duration).Info("msg sent")
