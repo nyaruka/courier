@@ -169,7 +169,7 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 		return nil, err
 	}
 
-	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, status)
+	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
 }
 
 // SendMsg sends the passed in message, returning any error
