@@ -232,7 +232,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":        "application/json",
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
-		Error:       "received non 200 status: 401",
 		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Error Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		SendPrep:    setSendURL},
 	{Label: "Error groupId",

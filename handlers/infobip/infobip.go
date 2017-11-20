@@ -217,10 +217,11 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
 	status.AddLog(log)
 	if err != nil {
-		return status, err
+		log.WithError("Message Send Error", err)
+		return status, nil
 	}
 
 	groupID, err := jsonparser.GetInt([]byte(rr.Body), "messages", "[0]", "status", "groupId")
