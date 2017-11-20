@@ -230,7 +230,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		return status, nil
 	}
 
-	status.SetStatus(courier.MsgSent)
+	status.SetStatus(courier.MsgWired)
 	return status, nil
 }
 

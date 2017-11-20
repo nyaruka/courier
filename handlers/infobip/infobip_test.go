@@ -192,7 +192,7 @@ func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Ms
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "S",
+		Status:       "W",
 		ResponseBody: `{"messages":[{"status":{"groupId": 1}}}`, ResponseStatus: 200,
 		Headers: map[string]string{
 			"Content-Type":  "application/json",
@@ -203,7 +203,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:    setSendURL},
 	{Label: "Unicode Send",
 		Text: "☺", URN: "tel:+250788383383",
-		Status:       "S",
+		Status:       "W",
 		ResponseBody: `{"messages":[{"status":{"groupId": 1}}}`, ResponseStatus: 200,
 		Headers: map[string]string{
 			"Content-Type":  "application/json",
@@ -214,7 +214,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:    setSendURL},
 	{Label: "Send Attachment",
 		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "S",
+		Status:       "W",
 		ResponseBody: `{"messages":[{"status":{"groupId": 1}}}`, ResponseStatus: 200,
 		Headers: map[string]string{
 			"Content-Type":  "application/json",
