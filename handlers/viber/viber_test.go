@@ -1,6 +1,7 @@
 package viber
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -91,4 +92,220 @@ func TestSending(t *testing.T) {
 	)
 	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
 	RunChannelSendTestCases(t, invalidTokenChannel, NewHandler(), invalidTokenSendTestCases)
+}
+
+var testChannels = []courier.Channel{
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{"auth_token": "Token"}),
+}
+
+var (
+	receiveURL = "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
+
+	validMsg = `{
+		"event": "message",
+		"timestamp": 1481142112807,
+		"message_token": 4987381189870374000,
+		"sender": {
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
+			"name": "ET3"
+		},
+		"message": {
+			"text": "incoming msg",
+			"type": "text",
+			"tracking_data": "3055"
+		}
+	}`
+
+	webhookCheck = `{
+		"event": "webhook",
+		"timestamp": 4987034606158369000,
+		"message_token": 1481059480858
+	}`
+
+	unexpectedEvent = `{
+		"event": "unexpected",
+		"timestamp": 4987034606158369000,
+		"message_token": 1481059480858
+	}`
+
+	validSubscribed = `{
+		"event": "subscribed",
+		"timestamp": 1457764197627,
+		"user": {
+			"id": "01234567890A=",
+			"name": "yarden",
+			"avatar": "http://avatar_url",
+			"country": "IL",
+			"language": "en",
+			"api_version": 1
+		},
+		"message_token": 4912661846655238145
+	}`
+
+	validUnsubscribed = `{
+		"event": "unsubscribed",
+		"timestamp": 1457764197627,
+		"user_id": "01234567890A=",
+		"message_token": 4912661846655238145
+	}`
+
+	validConversationStarted = `{
+		"event": "conversation_started",
+		"timestamp": 1457764197627,
+		"message_token": 4912661846655238145,
+		"type": "open",
+		"context": "context information",
+		"user": {
+			"id": "01234567890A=",
+			"name": "yarden",
+			"avatar": "http://avatar_url",
+			"country": "IL",
+			"language": "en",
+			"api_version": 1
+		}
+	}`
+
+	rejectedMessage = `{
+		"event": "message",
+		"timestamp": 1481142112807,
+		"message_token": 4987381189870374000,
+		"sender": {
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
+			"name": "ET3"
+		},
+		"message": {
+			"type": "text",
+			"tracking_data": "3055"
+		}
+	}`
+
+	rejectedPicture = `{
+		"event": "message",
+		"timestamp": 1481142112807,
+		"message_token": 4987381189870374000,
+		"sender": {
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
+			"name": "ET3"
+		},
+		"message": {
+			"type": "picture",
+			"tracking_data": "3055"
+		}
+	}`
+
+	rejectedVideo = `{
+		"event": "message",
+		"timestamp": 1481142112807,
+		"message_token": 4987381189870374000,
+		"sender": {
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
+			"name": "ET3"
+		},
+		"message": {
+			"type": "video",
+			"tracking_data": "3055"
+		}
+	}`
+
+	validReceiveContact = `{
+		"event": "message",
+		"timestamp": 1481142112807,
+		"message_token": 4987381189870374000,
+		"sender": {
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
+			"name": "ET3"
+		},
+		"message": {
+			"text": "incoming msg",
+			"type": "contact",
+			"contact": {
+				"name": "Alex",
+				"phone_number": "+12067799191"
+			},
+			"tracking_data": "3055"
+		}
+	}`
+
+	validReceiveURL = `{
+		"event": "message",
+		"timestamp": 1481142112807,
+		"message_token": 4987381189870374000,
+		"sender": {
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
+			"name": "ET3"
+		},
+		"message": {
+			"text": "incoming msg",
+			"type": "url",
+			"media": "http://foo.com/",
+			"tracking_data": "3055"
+		}
+	}`
+
+	validReceiveLocation = `{
+		"event": "message",
+		"timestamp": 1481142112807,
+		"message_token": 4987381189870374000,
+		"sender": {
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
+			"name": "ET3"
+		},
+		"message": {
+			"text": "incoming msg",
+			"type": "location",
+			"location": {
+				"lat": 1.2,
+				"lon": -1.3
+			},
+			"tracking_data": "3055"
+		}
+	}`
+)
+
+var testCases = []ChannelHandleTestCase{
+	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, Status: 200, Response: "Accepted",
+		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+		PrepRequest: addValidSignature},
+	//{Label: "Receive invalid signature", URL: receiveURL, Data: validMsg, Status: 400, Response: "invalid request signature",
+	//	PrepRequest: addInvalidSignature},
+	{Label: "Webhook validation", URL: receiveURL, Data: webhookCheck, Status: 200, Response: "webhook valid.", PrepRequest: addValidSignature},
+	{Label: "Subcribe", URL: receiveURL, Data: validSubscribed, Status: 200, Response: "Accepted", PrepRequest: addValidSignature},
+	{Label: "Unsubcribe", URL: receiveURL, Data: validUnsubscribed, Status: 200, Response: "Accepted", ChannelEvent: Sp(string(courier.StopContact)), PrepRequest: addValidSignature},
+	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, Status: 200, Response: "ignored conversation start", PrepRequest: addValidSignature},
+	{Label: "Unexpected event", URL: receiveURL, Data: unexpectedEvent, Status: 400,
+		Response: "not handled, unknown event: unexpected", PrepRequest: addValidSignature},
+	{Label: "Message missing text", URL: receiveURL, Data: rejectedMessage, Status: 400, Response: "missing text or media in message in request body", PrepRequest: addValidSignature},
+	{Label: "Picture missing media", URL: receiveURL, Data: rejectedPicture, Status: 400, Response: "missing text or media in message in request body", PrepRequest: addValidSignature},
+	{Label: "Video missing media", URL: receiveURL, Data: rejectedVideo, Status: 400, Response: "missing text or media in message in request body", PrepRequest: addValidSignature},
+
+	{Label: "Valid Contact receive", URL: receiveURL, Data: validReceiveContact, Status: 200, Response: "Accepted",
+		Text: Sp("Alex: +12067799191"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+		PrepRequest: addValidSignature},
+	{Label: "Valid URL receive", URL: receiveURL, Data: validReceiveURL, Status: 200, Response: "Accepted",
+		Text: Sp("http://foo.com/"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+		PrepRequest: addValidSignature},
+
+	{Label: "Valid Location receive", URL: receiveURL, Data: validReceiveLocation, Status: 200, Response: "Accepted",
+		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+		Attachment: Sp("geo:1.200000,-1.300000"), PrepRequest: addValidSignature},
+}
+
+func addValidSignature(r *http.Request) {
+	/*
+		body, _ := ioutil.ReadAll(r.Body)
+		sig, _ := viberCalculateSignature("Token", body)
+		r.Header.Set(viberSignatureHeader, string(sig))
+	*/
+}
+
+func addInvalidSignature(r *http.Request) {
+	r.Header.Set(viberSignatureHeader, "invalidsig")
+}
+
+func TestHandler(t *testing.T) {
+	RunChannelTestCases(t, testChannels, NewHandler(), testCases)
+}
+
+func BenchmarkHandler(b *testing.B) {
+	RunChannelBenchmarks(b, testChannels, NewHandler(), testCases)
 }

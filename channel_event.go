@@ -1,8 +1,9 @@
 package courier
 
 import (
-	"github.com/nyaruka/gocommon/urns"
 	"time"
+
+	"github.com/nyaruka/gocommon/urns"
 )
 
 // ChannelEventType is the type of channel event this is
@@ -12,6 +13,7 @@ type ChannelEventType string
 const (
 	NewConversation ChannelEventType = "new_conversation"
 	Referral        ChannelEventType = "referral"
+	StopContact     ChannelEventType = "stop_contact"
 )
 
 //-----------------------------------------------------------------------------
