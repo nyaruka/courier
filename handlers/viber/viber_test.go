@@ -1,6 +1,8 @@
 package viber
 
 import (
+	"bytes"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -266,8 +268,8 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, Status: 200, Response: "Accepted",
 		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
 		PrepRequest: addValidSignature},
-	//{Label: "Receive invalid signature", URL: receiveURL, Data: validMsg, Status: 400, Response: "invalid request signature",
-	//	PrepRequest: addInvalidSignature},
+	{Label: "Receive invalid signature", URL: receiveURL, Data: validMsg, Status: 400, Response: "invalid request signature",
+		PrepRequest: addInvalidSignature},
 	{Label: "Webhook validation", URL: receiveURL, Data: webhookCheck, Status: 200, Response: "webhook valid.", PrepRequest: addValidSignature},
 	{Label: "Subcribe", URL: receiveURL, Data: validSubscribed, Status: 200, Response: "Accepted", PrepRequest: addValidSignature},
 	{Label: "Unsubcribe", URL: receiveURL, Data: validUnsubscribed, Status: 200, Response: "Accepted", ChannelEvent: Sp(string(courier.StopContact)), PrepRequest: addValidSignature},
@@ -291,11 +293,10 @@ var testCases = []ChannelHandleTestCase{
 }
 
 func addValidSignature(r *http.Request) {
-	/*
-		body, _ := ioutil.ReadAll(r.Body)
-		sig, _ := viberCalculateSignature("Token", body)
-		r.Header.Set(viberSignatureHeader, string(sig))
-	*/
+	body, _ := ioutil.ReadAll(r.Body)
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	sig, _ := viberCalculateSignature("Token", body)
+	r.Header.Set(viberSignatureHeader, string(sig))
 }
 
 func addInvalidSignature(r *http.Request) {

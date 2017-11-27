@@ -52,15 +52,15 @@ func (h *handler) Initialize(s courier.Server) error {
 
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
-	/*
-		err := h.validateSignature(channel, r)
-		if err != nil {
-			return nil, err
-		}
-	*/
+
+	err := h.validateSignature(channel, r)
+	if err != nil {
+		return nil, err
+	}
+
 	viberMsg := &viberMessage{}
 
-	err := handlers.DecodeAndValidateJSON(viberMsg, r)
+	err = handlers.DecodeAndValidateJSON(viberMsg, r)
 	if err != nil {
 		return nil, courier.WriteError(w, r, err)
 	}
@@ -217,8 +217,7 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 
 	// read our body
 	body, err := ioutil.ReadAll(r.Body)
-	defer r.Body.Close()
-
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	expected, err := viberCalculateSignature(authToken, body)
 	if err != nil {
 		return err
