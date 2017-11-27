@@ -103,6 +103,8 @@ var testChannels = []courier.Channel{
 var (
 	receiveURL = "/c/vp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 
+	invalidJSON = "invalid"
+
 	validMsg = `{
 		"event": "message",
 		"timestamp": 1481142112807,
@@ -262,6 +264,37 @@ var (
 			"tracking_data": "3055"
 		}
 	}`
+
+	receiveInvalidMessageType = `{
+		"event": "message",
+		"timestamp": 1481142112807,
+		"message_token": 4987381189870374000,
+		"sender": {
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
+			"name": "ET3"
+		},
+		"message": {
+			"text": "incoming msg",
+			"type": "unknown",
+			"tracking_data": "3055"
+		}
+	}`
+
+	failedStatusReport = `{
+		"event": "failed",
+		"timestamp": 1457764197627,
+		"message_token": 4912661846655238145,
+		"user_id": "01234567890A=",
+		"desc": "failure description"
+	}`
+
+	deliveredStatusReport = `{
+		"event": "delivered",
+		"timestamp": 1457764197627,
+		"message_token": 4912661846655238145,
+		"user_id": "01234567890A=",
+		"desc": "failure description"
+	}`
 )
 
 var testCases = []ChannelHandleTestCase{
@@ -270,7 +303,13 @@ var testCases = []ChannelHandleTestCase{
 		PrepRequest: addValidSignature},
 	{Label: "Receive invalid signature", URL: receiveURL, Data: validMsg, Status: 400, Response: "invalid request signature",
 		PrepRequest: addInvalidSignature},
+	{Label: "Receive invalid JSON", URL: receiveURL, Data: invalidJSON, Status: 400, Response: "unable to parse request JSON",
+		PrepRequest: addValidSignature},
+	{Label: "Receive invalid Message Type", URL: receiveURL, Data: receiveInvalidMessageType, Status: 400, Response: "unknown message type",
+		PrepRequest: addValidSignature},
 	{Label: "Webhook validation", URL: receiveURL, Data: webhookCheck, Status: 200, Response: "webhook valid.", PrepRequest: addValidSignature},
+	{Label: "Failed Status Report", URL: receiveURL, Data: failedStatusReport, Status: 200, Response: `"status":"F"`, PrepRequest: addValidSignature},
+	{Label: "Delivered Status Report", URL: receiveURL, Data: deliveredStatusReport, Status: 200, Response: `"status":"D"`, PrepRequest: addValidSignature},
 	{Label: "Subcribe", URL: receiveURL, Data: validSubscribed, Status: 200, Response: "Accepted", PrepRequest: addValidSignature},
 	{Label: "Unsubcribe", URL: receiveURL, Data: validUnsubscribed, Status: 200, Response: "Accepted", ChannelEvent: Sp(string(courier.StopContact)), PrepRequest: addValidSignature},
 	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, Status: 200, Response: "ignored conversation start", PrepRequest: addValidSignature},
