@@ -40,11 +40,12 @@ const errorStopped = 21610
 
 type handler struct {
 	handlers.BaseHandler
+	ignoreDeliveryReports bool
 }
 
 // NewHandler returns a new TwilioHandler ready to be registered
 func NewHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("T"), "Twilio")}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("T"), "Twilio"), false}
 }
 
 func init() {
@@ -54,6 +55,10 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
+
+	// save whether we should ignore delivery reports
+	h.ignoreDeliveryReports = s.Config().IgnoreDeliveryReports
+
 	err := s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
@@ -144,6 +149,11 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 	msgStatus, found := twStatusMapping[twStatus.MessageStatus]
 	if !found {
 		return nil, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", twStatus.MessageStatus)
+	}
+
+	// if we are ignoring delivery reports and this isn't failed then move on
+	if h.ignoreDeliveryReports && msgStatus != courier.MsgFailed {
+		return nil, courier.WriteIgnored(w, r, "ignoring non error delivery report")
 	}
 
 	// if the message id was passed explicitely, use that
