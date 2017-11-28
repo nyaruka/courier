@@ -292,12 +292,12 @@ func (s *server) channelUpdateStatusWrapper(handler ChannelHandler, handlerFunc 
 		if err != nil {
 			logrus.WithError(err).WithField("url", url).WithField("request", string(request)).Error("error receiving status")
 			WriteError(ww, r, err)
-		}
 
-		// if we don't have any statuses we still want a channel log, create one
-		if len(statuses) == 0 {
-			logs = append(logs, NewChannelLog("Status Error", channel, NilMsgID, r.Method, url, ww.Status(), string(request), response.String(), duration, err))
-			librato.Default.AddGauge(fmt.Sprintf("courier.msg_status_error_%s", channel.ChannelType()), secondDuration)
+			// if we don't have any statuses, we still want a channel log, create one
+			if len(statuses) == 0 {
+				logs = append(logs, NewChannelLog("Status Error", channel, NilMsgID, r.Method, url, ww.Status(), string(request), response.String(), duration, err))
+				librato.Default.AddGauge(fmt.Sprintf("courier.msg_status_error_%s", channel.ChannelType()), secondDuration)
+			}
 		}
 		for _, status := range statuses {
 			logs = append(logs, NewChannelLog("Status Updated", channel, status.ID(), r.Method, url, ww.Status(), string(request), response.String(), duration, err))
