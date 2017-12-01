@@ -5,12 +5,18 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 /*
 GET /handlers/nexmo/status/uuid/?msisdn=4527631111&to=Tak&network-code=23820&messageId=0C0000002EEBDA56&price=0.01820000&status=delivered&scts=1705021324&err-code=0&message-timestamp=2017-05-02+11%3A24%3A03
 GET /handlers/nexmo/receive/uuid/?msisdn=15862151111&to=12812581111&messageId=0B0000004B65F62F&text=Msg&type=text&keyword=Keyword&message-timestamp=2017-05-01+21%3A52%3A49
 */
+
+const configNexmoAPIKey = "nexmo_api_key"
+const configNexmoAPISecret = "nexmo_api_secret"
+const configNexmoAppID = "nexmo_app_id"
+const configNexmoAppPrivateKey = "nexmo_app_private_key"
 
 func init() {
 	courier.RegisterHandler(NewHandler())
@@ -28,13 +34,17 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
+	err := s.AddReceiveMsgRoute(h, "GET", "receive", h.ReceiveMessage)
+	if err != nil {
+		return err
+	}
 	return s.AddUpdateStatusRoute(h, "GET", "status", h.StatusMessage)
 }
 
 type nexmoDeliveryReport struct {
-	To        string `name:"to" validate:"required"`
-	MessageID string
-	Status    string
+	To        string `name:"to"`
+	MessageID string `name:"messageID"`
+	Status    string `name:"status"`
 }
 
 var statusMappings = map[string]courier.MsgStatusValue{
@@ -49,7 +59,68 @@ var statusMappings = map[string]courier.MsgStatusValue{
 
 // StatusMessage is our HTTP handler function for status updates
 func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
-	return nil, nil
+	nexmoDeliveryReport := &nexmoDeliveryReport{}
+	handlers.DecodeAndValidateQueryParams(nexmoDeliveryReport, r)
+
+	// if this is a post, also try to parse the form body
+	if r.Method == http.MethodPost {
+		handlers.DecodeAndValidateForm(nexmoDeliveryReport, r)
+	}
+
+	if nexmoDeliveryReport.MessageID == "" {
+		return nil, courier.WriteIgnored(w, r, "no messageId parameter, ignored")
+	}
+
+	msgStatus, found := statusMappings[nexmoDeliveryReport.Status]
+	if !found {
+		return nil, courier.WriteIgnored(w, r, "ignoring unknown status report")
+	}
+
+	status := h.Backend().NewMsgStatusForExternalID(channel, nexmoDeliveryReport.MessageID, msgStatus)
+
+	// write our status
+	err := h.Backend().WriteMsgStatus(status)
+	if err != nil {
+		return nil, err
+	}
+
+	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
+}
+
+type nexmoIncomingMessage struct {
+	To        string `name:"to"`
+	From      string `name:"msisdn"`
+	Text      string `name:"text"`
+	MessageID string `name:"messageId"`
+}
+
+// ReceiveMessage is our HTTP handler function for incoming messages
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+	nexmoIncomingMessage := &nexmoIncomingMessage{}
+	handlers.DecodeAndValidateQueryParams(nexmoIncomingMessage, r)
+
+	// if this is a post, also try to parse the form body
+	if r.Method == http.MethodPost {
+		handlers.DecodeAndValidateForm(nexmoIncomingMessage, r)
+	}
+
+	if nexmoIncomingMessage.To == "" {
+		return nil, courier.WriteIgnored(w, r, "no to parameter, ignored")
+	}
+
+	// create our URN
+	urn := urns.NewTelURNForCountry(nexmoIncomingMessage.From, channel.Country())
+
+	// build our msg
+	msg := h.Backend().NewIncomingMsg(channel, urn, nexmoIncomingMessage.Text)
+
+	// and write it
+	err := h.Backend().WriteMsg(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
 }
 
 // SendMsg sends the passed in message, returning any error
