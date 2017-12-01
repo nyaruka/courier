@@ -1,11 +1,17 @@
 package nexmo
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
+	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/pkg/errors"
 )
 
 /*
@@ -17,6 +23,8 @@ const configNexmoAPIKey = "nexmo_api_key"
 const configNexmoAPISecret = "nexmo_api_secret"
 const configNexmoAppID = "nexmo_app_id"
 const configNexmoAppPrivateKey = "nexmo_app_private_key"
+
+var sendURL = "https://rest.nexmo.com/sms/json"
 
 func init() {
 	courier.RegisterHandler(NewHandler())
@@ -125,5 +133,58 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
-	return nil, nil
+	nexmoAPIKey := msg.Channel().StringConfigForKey(configNexmoAPIKey, "")
+	if nexmoAPIKey == "" {
+		return nil, fmt.Errorf("no nexmo API key set for NX channel")
+	}
+	nexmoAPISecret := msg.Channel().StringConfigForKey(configNexmoAPISecret, "")
+	if nexmoAPISecret == "" {
+		return nil, fmt.Errorf("no nexmo API secret set for NX channel")
+	}
+
+	// build our callback URL
+	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+	callbackURL := fmt.Sprintf("https://%s/c/nx/%s/status", callbackDomain, msg.Channel().UUID())
+
+	form := url.Values{
+		"api_key":           []string{nexmoAPIKey},
+		"api_secret":        []string{nexmoAPISecret},
+		"from":              []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
+		"to":                []string{strings.TrimPrefix(msg.URN().Path(), "+")},
+		"text":              []string{courier.GetTextAndAttachments(msg)},
+		"status-report-req": []string{"1"},
+		"callback":          []string{callbackURL},
+		"type":              []string{"text"},
+	}
+
+	encodedForm := form.Encode()
+	sendURL = fmt.Sprintf("%s?%s", sendURL, encodedForm)
+
+	req, err := http.NewRequest(http.MethodGet, sendURL, nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rr, err := utils.MakeHTTPRequest(req)
+
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+
+	// record our status and log
+	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
+	status.AddLog(log)
+	if err != nil {
+		log.WithError("Message Send Error", err)
+		return status, nil
+	}
+
+	nexmoStatus, err := jsonparser.GetString([]byte(rr.Body), "messages", "[0]", "status")
+	if err != nil || nexmoStatus != "0" {
+		log.WithError("Message Send Error", errors.Errorf("failed to send message, received error status [%s]", nexmoStatus))
+		return status, nil
+	}
+
+	externalID, err := jsonparser.GetString([]byte(rr.Body), "messages", "[0]", "message-id")
+	if err == nil {
+		status.SetExternalID(externalID)
+	}
+
+	status.SetStatus(courier.MsgWired)
+	return status, nil
 }

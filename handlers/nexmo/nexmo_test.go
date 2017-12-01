@@ -1,6 +1,7 @@
 package nexmo
 
 import (
+	"net/http/httptest"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -45,4 +46,30 @@ func TestHandler(t *testing.T) {
 
 func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, NewHandler(), testCases)
+}
+
+// setSendURL takes care of setting the sendURL to call
+func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Msg) {
+	sendURL = server.URL
+}
+
+var defaultSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "tel:+250788383383",
+		Status: "W", ExternalID: "1002",
+		URLParams:    map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		ResponseBody: `{"messages":[{"status":"0","message-id":"1002"}]}`, ResponseStatus: 200,
+		SendPrep: setSendURL},
+}
+
+func TestSending(t *testing.T) {
+	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NX", "2020", "US",
+		map[string]interface{}{
+			configNexmoAPIKey:        "nexmo-api-key",
+			configNexmoAPISecret:     "nexmo-api-secret",
+			configNexmoAppID:         "nexmo-app-id",
+			configNexmoAppPrivateKey: "nexmo-app-private-key",
+		})
+
+	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
 }
