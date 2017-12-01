@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/nyaruka/courier/gsm7"
+
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
@@ -146,15 +148,22 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	callbackURL := fmt.Sprintf("https://%s/c/nx/%s/status", callbackDomain, msg.Channel().UUID())
 
+	text := courier.GetTextAndAttachments(msg)
+
+	textType := "text"
+	if !gsm7.IsGSM7(text) {
+		textType = "unicode"
+	}
+
 	form := url.Values{
 		"api_key":           []string{nexmoAPIKey},
 		"api_secret":        []string{nexmoAPISecret},
 		"from":              []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
 		"to":                []string{strings.TrimPrefix(msg.URN().Path(), "+")},
-		"text":              []string{courier.GetTextAndAttachments(msg)},
+		"text":              []string{text},
 		"status-report-req": []string{"1"},
 		"callback":          []string{callbackURL},
-		"type":              []string{"text"},
+		"type":              []string{textType},
 	}
 
 	encodedForm := form.Encode()
