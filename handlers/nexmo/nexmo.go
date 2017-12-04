@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/nyaruka/courier/gsm7"
 
@@ -171,15 +174,28 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 	req, err := http.NewRequest(http.MethodGet, sendURL, nil)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	rr, err := utils.MakeHTTPRequest(req)
+	re := regexp.MustCompile(`.*Throughput Rate Exceeded - please wait \[ (\d+) \] and retry.*`)
+
+	rr := &utils.RequestResponse{}
+	var requestErr error
+	for i := 0; i < 3; i++ {
+		rr, requestErr = utils.MakeHTTPRequest(req)
+		matched := re.FindAllStringSubmatch(string([]byte(rr.Body)), -1)
+		if len(matched) > 0 && len(matched[0]) > 0 {
+			sleepTime, _ := strconv.Atoi(matched[0][1])
+			time.Sleep(time.Duration(sleepTime) * time.Millisecond)
+		} else {
+			break
+		}
+	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
 	// record our status and log
 	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
 	status.AddLog(log)
-	if err != nil {
-		log.WithError("Message Send Error", err)
+	if requestErr != nil {
+		log.WithError("Message Send Error", requestErr)
 		return status, nil
 	}
 

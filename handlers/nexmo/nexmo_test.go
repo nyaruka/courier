@@ -84,6 +84,12 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		URLParams:    map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ResponseBody: "Invalid API token", ResponseStatus: 401,
 		SendPrep: setSendURL},
+	{Label: "Throttled by Nexmo",
+		Text: "Simple Message", URN: "tel:+250788383383",
+		Status:       "E",
+		URLParams:    map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		ResponseBody: `{"messages":[{"status":"1","error-text":"Throughput Rate Exceeded - please wait [ 250 ] and retry"}]}`, ResponseStatus: 200,
+		SendPrep: setSendURL},
 }
 
 func TestSending(t *testing.T) {
