@@ -29,6 +29,7 @@ const configNexmoAPISecret = "nexmo_api_secret"
 const configNexmoAppID = "nexmo_app_id"
 const configNexmoAppPrivateKey = "nexmo_app_private_key"
 
+var maxMsgLength = 1600
 var sendURL = "https://rest.nexmo.com/sms/json"
 
 func init() {
@@ -158,58 +159,60 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		textType = "unicode"
 	}
 
-	form := url.Values{
-		"api_key":           []string{nexmoAPIKey},
-		"api_secret":        []string{nexmoAPISecret},
-		"from":              []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
-		"to":                []string{strings.TrimPrefix(msg.URN().Path(), "+")},
-		"text":              []string{text},
-		"status-report-req": []string{"1"},
-		"callback":          []string{callbackURL},
-		"type":              []string{textType},
-	}
-
-	encodedForm := form.Encode()
-	sendURL = fmt.Sprintf("%s?%s", sendURL, encodedForm)
-
-	req, err := http.NewRequest(http.MethodGet, sendURL, nil)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	re := regexp.MustCompile(`.*Throughput Rate Exceeded - please wait \[ (\d+) \] and retry.*`)
-
-	rr := &utils.RequestResponse{}
-	var requestErr error
-	for i := 0; i < 3; i++ {
-		rr, requestErr = utils.MakeHTTPRequest(req)
-		matched := re.FindAllStringSubmatch(string([]byte(rr.Body)), -1)
-		if len(matched) > 0 && len(matched[0]) > 0 {
-			sleepTime, _ := strconv.Atoi(matched[0][1])
-			time.Sleep(time.Duration(sleepTime) * time.Millisecond)
-		} else {
-			break
-		}
-	}
-
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	parts := handlers.SplitMsg(courier.GetTextAndAttachments(msg), maxMsgLength)
+	for _, part := range parts {
+		form := url.Values{
+			"api_key":           []string{nexmoAPIKey},
+			"api_secret":        []string{nexmoAPISecret},
+			"from":              []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
+			"to":                []string{strings.TrimPrefix(msg.URN().Path(), "+")},
+			"text":              []string{part},
+			"status-report-req": []string{"1"},
+			"callback":          []string{callbackURL},
+			"type":              []string{fmt.Sprintf(textType)},
+		}
 
-	// record our status and log
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
-	status.AddLog(log)
-	if requestErr != nil {
-		log.WithError("Message Send Error", requestErr)
-		return status, nil
+		encodedForm := form.Encode()
+		sendURL = fmt.Sprintf("%s?%s", sendURL, encodedForm)
+
+		req, err := http.NewRequest(http.MethodGet, sendURL, nil)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		re := regexp.MustCompile(`.*Throughput Rate Exceeded - please wait \[ (\d+) \] and retry.*`)
+
+		rr := &utils.RequestResponse{}
+		var requestErr error
+		for i := 0; i < 3; i++ {
+			rr, requestErr = utils.MakeHTTPRequest(req)
+			matched := re.FindAllStringSubmatch(string([]byte(rr.Body)), -1)
+			if len(matched) > 0 && len(matched[0]) > 0 {
+				sleepTime, _ := strconv.Atoi(matched[0][1])
+				time.Sleep(time.Duration(sleepTime) * time.Millisecond)
+			} else {
+				break
+			}
+		}
+
+		// record our status and log
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
+		status.AddLog(log)
+		if requestErr != nil {
+			log.WithError("Message Send Error", requestErr)
+			return status, nil
+		}
+
+		nexmoStatus, err := jsonparser.GetString([]byte(rr.Body), "messages", "[0]", "status")
+		if err != nil || nexmoStatus != "0" {
+			log.WithError("Message Send Error", errors.Errorf("failed to send message, received error status [%s]", nexmoStatus))
+			return status, nil
+		}
+
+		externalID, err := jsonparser.GetString([]byte(rr.Body), "messages", "[0]", "message-id")
+		if err == nil {
+			status.SetExternalID(externalID)
+		}
+
 	}
-
-	nexmoStatus, err := jsonparser.GetString([]byte(rr.Body), "messages", "[0]", "status")
-	if err != nil || nexmoStatus != "0" {
-		log.WithError("Message Send Error", errors.Errorf("failed to send message, received error status [%s]", nexmoStatus))
-		return status, nil
-	}
-
-	externalID, err := jsonparser.GetString([]byte(rr.Body), "messages", "[0]", "message-id")
-	if err == nil {
-		status.SetExternalID(externalID)
-	}
-
 	status.SetStatus(courier.MsgWired)
 	return status, nil
 }
