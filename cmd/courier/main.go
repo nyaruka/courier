@@ -22,6 +22,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/shaqodoon"
 	_ "github.com/nyaruka/courier/handlers/telegram"
 	_ "github.com/nyaruka/courier/handlers/twilio"
+	_ "github.com/nyaruka/courier/handlers/whatsapp"
 
 	// load available backends
 	_ "github.com/nyaruka/courier/backends/rapidpro"
