@@ -19,6 +19,9 @@ const (
 	// ConfigPassword is a constant key for channel configs
 	ConfigPassword = "password"
 
+	// ConfigAPIID is a constant key for channel configs
+	ConfigAPIID = "api_id"
+
 	// ConfigAPIKey is a constant key for channel configs
 	ConfigAPIKey = "api_key"
 
