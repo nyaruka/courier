@@ -30,6 +30,7 @@ POST /handlers/viber_public/uuid?sig=sig
 
 var viberSignatureHeader = "X-Viber-Content-Signature"
 var sendURL = "https://chatapi.viber.com/pa/send_message"
+var maxMsgLength = 7000
 
 func init() {
 	courier.RegisterHandler(NewHandler())
@@ -252,48 +253,51 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		return nil, fmt.Errorf("invalid auth token config")
 	}
 
-	viberMsg := viberOutgoingMessage{
-		AuthToken:    authToken,
-		Receiver:     msg.URN().Path(),
-		Text:         courier.GetTextAndAttachments(msg),
-		Type:         "text",
-		TrackingData: msg.ID().String(),
-	}
-
-	requestBody := &bytes.Buffer{}
-	err := json.NewEncoder(requestBody).Encode(viberMsg)
-	if err != nil {
-		return nil, err
-	}
-
-	// build our request
-	req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	rr, err := utils.MakeHTTPRequest(req)
-
-	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
-	status.AddLog(log)
-	if err != nil {
-		log.WithError("Message Send Error", err)
-		return status, nil
-	}
+	parts := handlers.SplitMsg(courier.GetTextAndAttachments(msg), maxMsgLength)
+	for _, part := range parts {
+		viberMsg := viberOutgoingMessage{
+			AuthToken:    authToken,
+			Receiver:     msg.URN().Path(),
+			Text:         part,
+			Type:         "text",
+			TrackingData: msg.ID().String(),
+		}
 
-	responseStatus, err := jsonparser.GetInt([]byte(rr.Body), "status")
-	if err != nil {
-		log.WithError("Message Send Error", errors.Errorf("received invalid JSON response"))
-		status.SetStatus(courier.MsgFailed)
-		return status, nil
-	}
-	if responseStatus != 0 {
-		log.WithError("Message Send Error", errors.Errorf("received non-0 status: '%d'", responseStatus))
-		status.SetStatus(courier.MsgFailed)
-		return status, nil
-	}
+		requestBody := &bytes.Buffer{}
+		err := json.NewEncoder(requestBody).Encode(viberMsg)
+		if err != nil {
+			return nil, err
+		}
 
-	status.SetStatus(courier.MsgWired)
+		// build our request
+		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		rr, err := utils.MakeHTTPRequest(req)
+
+		// record log
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
+		status.AddLog(log)
+		if err != nil {
+			log.WithError("Message Send Error", err)
+			return status, nil
+		}
+
+		responseStatus, err := jsonparser.GetInt([]byte(rr.Body), "status")
+		if err != nil {
+			log.WithError("Message Send Error", errors.Errorf("received invalid JSON response"))
+			status.SetStatus(courier.MsgFailed)
+			return status, nil
+		}
+		if responseStatus != 0 {
+			log.WithError("Message Send Error", errors.Errorf("received non-0 status: '%d'", responseStatus))
+			status.SetStatus(courier.MsgFailed)
+			return status, nil
+		}
+
+		status.SetStatus(courier.MsgWired)
+	}
 	return status, nil
 }
 

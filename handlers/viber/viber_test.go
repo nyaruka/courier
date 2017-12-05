@@ -27,6 +27,17 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
 		SendPrep:    setSendURL},
+	{Label: "Long Send",
+		Text:   "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		URN:    "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		Status: "W", ResponseStatus: 200,
+		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+			"Accept":       "application/json",
+		},
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"I need to keep adding more things to make it work","type":"text","tracking_data":"10"}`,
+		SendPrep:    setSendURL},
 	{Label: "Unicode Send",
 		Text: "☺", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==",
 		Status: "W", ResponseStatus: 200,
@@ -85,6 +96,7 @@ var invalidTokenSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
+	maxMsgLength = 160
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		map[string]interface{}{
 			courier.ConfigAuthToken: "Token",
