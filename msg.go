@@ -70,6 +70,7 @@ type Msg interface {
 	ExternalID() string
 	URN() urns.URN
 	ContactName() string
+	QuickReplies() []string
 
 	ReceivedOn() *time.Time
 	SentOn() *time.Time
