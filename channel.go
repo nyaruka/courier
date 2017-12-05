@@ -25,6 +25,9 @@ const (
 	// ConfigSendURL is a constant key for channel configs
 	ConfigSendURL = "send_url"
 
+	// ConfigBaseURL is a constant key for channel configs
+	ConfigBaseURL = "base_url"
+
 	// ConfigSendAuthorization is a constant key for channel configs
 	ConfigSendAuthorization = "send_authorization"
 

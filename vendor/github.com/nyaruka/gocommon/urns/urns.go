@@ -10,52 +10,59 @@ import (
 )
 
 const (
-	// TelScheme is the scheme used for telephone numbers
-	TelScheme string = "tel"
+	// EmailScheme is the scheme used for email addresses
+	EmailScheme string = "mailto"
+
+	// ExternalScheme is the scheme used for externally defined identifiers
+	ExternalScheme string = "ext"
 
 	// FacebookScheme is the scheme used for Facebook identifiers
 	FacebookScheme string = "facebook"
 
-	// TelegramScheme is the scheme used for Telegram identifiers
-	TelegramScheme string = "telegram"
-
-	// TwitterScheme is the scheme used for Twitter handles
-	TwitterScheme string = "twitter"
-
-	// TwitterIDScheme is the scheme used for Twitter user ids
-	TwitterIDScheme string = "twitterid"
-
-	// ViberScheme is the scheme used for Viber identifiers
-	ViberScheme string = "viber"
-
-	// LineScheme is the scheme used for LINE identifiers
-	LineScheme string = "line"
+	// FCMScheme is the scheme used for Firebase Cloud Messaging identifiers
+	FCMScheme string = "fcm"
 
 	// JiochatScheme is the scheme used for Jiochat identifiers
 	JiochatScheme string = "jiochat"
 
-	// EmailScheme is the scheme used for email addresses
-	EmailScheme string = "mailto"
+	// LineScheme is the scheme used for LINE identifiers
+	LineScheme string = "line"
 
-	// FCMScheme is the scheme used for Firebase Cloud Messaging identifiers
-	FCMScheme string = "fcm"
+	// TelegramScheme is the scheme used for Telegram identifiers
+	TelegramScheme string = "telegram"
 
-	// ExternalScheme is the scheme used for externally defined identifiers
-	ExternalScheme string = "ext"
+	// TelScheme is the scheme used for telephone numbers
+	TelScheme string = "tel"
+
+	// TwitterIDScheme is the scheme used for Twitter user ids
+	TwitterIDScheme string = "twitterid"
+
+	// TwitterScheme is the scheme used for Twitter handles
+	TwitterScheme string = "twitter"
+
+	// ViberScheme is the scheme used for Viber identifiers
+	ViberScheme string = "viber"
+
+	// WhatsAppScheme is the scheme used for WhatsApp identifiers
+	WhatsAppScheme string = "whatsapp"
+
+	// FacebookRefPrefix is the path prefix used for facebook referral URNs
+	FacebookRefPrefix string = "ref:"
 )
 
 var validSchemes = map[string]bool{
-	TelScheme:       true,
-	FacebookScheme:  true,
-	TelegramScheme:  true,
-	TwitterScheme:   true,
-	TwitterIDScheme: true,
-	ViberScheme:     true,
-	LineScheme:      true,
-	JiochatScheme:   true,
 	EmailScheme:     true,
-	FCMScheme:       true,
 	ExternalScheme:  true,
+	FacebookScheme:  true,
+	FCMScheme:       true,
+	JiochatScheme:   true,
+	LineScheme:      true,
+	TelegramScheme:  true,
+	TelScheme:       true,
+	TwitterIDScheme: true,
+	TwitterScheme:   true,
+	ViberScheme:     true,
+	WhatsAppScheme:  true,
 }
 
 // IsValidScheme checks whether the provided scheme is valid
@@ -81,6 +88,16 @@ func NewTelURNForCountry(number string, country string) URN {
 // NewTelegramURN returns a URN for the passed in telegram identifier
 func NewTelegramURN(identifier int64, display string) URN {
 	return NewURNFromParts(TelegramScheme, strconv.FormatInt(identifier, 10), display)
+}
+
+// NewWhatsAppURN returns a URN for the passed in whatsapp identifier
+func NewWhatsAppURN(identifier string) (URN, error) {
+	// validate identifier
+	urn := NewURNFromParts(WhatsAppScheme, identifier, "")
+	if !urn.Validate() {
+		return urn, fmt.Errorf("invalid whatsapp identifier: %s", identifier)
+	}
+	return urn, nil
 }
 
 // NewURNFromParts returns a new URN for the given scheme, path and display
@@ -179,7 +196,7 @@ func (u URN) Validate() bool {
 
 	case FacebookScheme:
 		// we don't validate facebook refs since they come from the outside
-		if strings.HasPrefix(path, "ref:") {
+		if u.IsFacebookRef() {
 			return true
 		}
 
@@ -191,6 +208,9 @@ func (u URN) Validate() bool {
 
 	case ViberScheme:
 		return viberRegex.MatchString(path)
+
+	case WhatsAppScheme:
+		return allDigitsRegex.MatchString(path)
 	}
 
 	return true // anything goes for external schemes
@@ -237,9 +257,24 @@ func (u URN) Localize(country string) URN {
 	return NewURNFromParts(scheme, path, display)
 }
 
+// IsFacebookRef returns whether this URN is a facebook referral
+func (u URN) IsFacebookRef() bool {
+	return u.Scheme() == FacebookScheme && strings.HasPrefix(u.Path(), FacebookRefPrefix)
+}
+
+// FacebookRef returns the facebook referral portion of our path, this return empty string in the case where we aren't a Facebook scheme
+func (u URN) FacebookRef() string {
+	if u.IsFacebookRef() {
+		return strings.TrimPrefix(u.Path(), FacebookRefPrefix)
+	}
+	return ""
+}
+
 // Resolve is called when a URN is part of an excellent expression
 func (u URN) Resolve(key string) interface{} {
 	switch key {
+	case "display":
+		return u.Display()
 	case "path":
 		return u.Path()
 	case "scheme":
@@ -254,7 +289,7 @@ func (u URN) Resolve(key string) interface{} {
 func (u URN) Default() interface{} { return u }
 
 // String returns the string representation of this URN
-func (u URN) String() string { return string(u.Path()) }
+func (u URN) String() string { return string(u) }
 
 // NilURN is our constant for nil URNs
 var NilURN = URN("")
