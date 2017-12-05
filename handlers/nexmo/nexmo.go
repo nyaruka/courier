@@ -160,7 +160,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(courier.GetTextAndAttachments(msg), maxMsgLength)
+	parts := handlers.SplitMsg(text, maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
 			"api_key":           []string{nexmoAPIKey},
@@ -170,13 +170,13 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 			"text":              []string{part},
 			"status-report-req": []string{"1"},
 			"callback":          []string{callbackURL},
-			"type":              []string{fmt.Sprintf(textType)},
+			"type":              []string{textType},
 		}
 
 		encodedForm := form.Encode()
-		sendURL = fmt.Sprintf("%s?%s", sendURL, encodedForm)
+		partSendURL := fmt.Sprintf("%s?%s", sendURL, encodedForm)
 
-		req, err := http.NewRequest(http.MethodGet, sendURL, nil)
+		req, err := http.NewRequest(http.MethodGet, partSendURL, nil)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		re := regexp.MustCompile(`.*Throughput Rate Exceeded - please wait \[ (\d+) \] and retry.*`)
 
