@@ -34,15 +34,15 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
-	return s.AddUpdateStatusRoute(h, "POST", "delivered", h.StatusMessage)
+	return s.AddHandlerRoute(h, "POST", "delivered", h.StatusMessage)
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
+func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	ibStatusEnvelope := &ibStatusEnvelope{}
 	err := handlers.DecodeAndValidateJSON(ibStatusEnvelope, r)
 	if err != nil {
@@ -61,7 +61,7 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 		return nil, err
 	}
 
-	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
+	return []courier.Event{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
 }
 
 var infobipStatusMapping = map[string]courier.MsgStatusValue{
@@ -83,7 +83,7 @@ type ibStatus struct {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	ie := &infobipEnvelope{}
 	err := handlers.DecodeAndValidateJSON(ie, r)
 	if err != nil {
@@ -131,7 +131,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, courier.WriteIgnored(w, r, "ignoring request, no message")
 	}
 
-	return []courier.ReceiveEvent{msgs[0]}, courier.WriteMsgSuccess(w, r, msgs)
+	return []courier.Event{msgs[0]}, courier.WriteMsgSuccess(w, r, msgs)
 }
 
 type infobipMessage struct {

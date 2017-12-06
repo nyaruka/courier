@@ -39,16 +39,16 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
 
-	return s.AddUpdateStatusRoute(h, "GET", "status", h.StatusMessage)
+	return s.AddHandlerRoute(h, "GET", "status", h.StatusMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
 	kannelMsg := &kannelMessage{}
 	err := handlers.DecodeAndValidateQueryParams(kannelMsg, r)
@@ -71,7 +71,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
+	return []courier.Event{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
 }
 
 type kannelMessage struct {
@@ -90,7 +90,7 @@ var kannelStatusMapping = map[int]courier.MsgStatusValue{
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
+func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
 	kannelStatus := &kannelStatus{}
 	err := handlers.DecodeAndValidateQueryParams(kannelStatus, r)
@@ -110,7 +110,7 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 		return nil, err
 	}
 
-	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
+	return []courier.Event{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
 }
 
 // SendMsg sends the passed in message, returning any error

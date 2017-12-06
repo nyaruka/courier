@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
+
 	"mime"
 
 	"github.com/garyburd/redigo/redis"
@@ -343,6 +345,7 @@ type DBMsg struct {
 	Text_         string                 `json:"text"          db:"text"`
 	Attachments_  pq.StringArray         `json:"attachments"   db:"attachments"`
 	ExternalID_   null.String            `json:"external_id"   db:"external_id"`
+	Metadata_     null.String            `json:"metadata"      db:"metadata"`
 
 	ChannelID_    courier.ChannelID `json:"channel_id"      db:"channel_id"`
 	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
@@ -367,7 +370,7 @@ type DBMsg struct {
 
 func (m *DBMsg) Channel() courier.Channel { return m.Channel_ }
 func (m *DBMsg) ID() courier.MsgID        { return m.ID_ }
-func (m *DBMsg) ReceiveID() int64         { return m.ID_.Int64 }
+func (m *DBMsg) EventID() int64           { return m.ID_.Int64 }
 func (m *DBMsg) UUID() courier.MsgUUID    { return m.UUID_ }
 func (m *DBMsg) Text() string             { return m.Text_ }
 func (m *DBMsg) Attachments() []string    { return []string(m.Attachments_) }
@@ -375,9 +378,22 @@ func (m *DBMsg) ExternalID() string       { return m.ExternalID_.String }
 func (m *DBMsg) URN() urns.URN            { return m.URN_ }
 func (m *DBMsg) ContactName() string      { return m.ContactName_ }
 func (m *DBMsg) HighPriority() bool       { return m.HighPriority_.Valid && m.HighPriority_.Bool }
+func (m *DBMsg) ReceivedOn() *time.Time   { return &m.SentOn_ }
+func (m *DBMsg) SentOn() *time.Time       { return &m.SentOn_ }
 
-func (m *DBMsg) ReceivedOn() *time.Time { return &m.SentOn_ }
-func (m *DBMsg) SentOn() *time.Time     { return &m.SentOn_ }
+func (m *DBMsg) QuickReplies() []string {
+	if m.Metadata_.String == "" {
+		return nil
+	}
+	replies := []string{}
+	jsonparser.ArrayEach(
+		[]byte(m.Metadata_.String),
+		func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+			replies = append(replies, string(value))
+		},
+		"quick_replies")
+	return replies
+}
 
 // fingerprint returns a fingerprint for this msg, suitable for figuring out if this is a dupe
 func (m *DBMsg) fingerprint() string {
