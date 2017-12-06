@@ -150,6 +150,8 @@ type DBMsgStatus struct {
 	logs []*courier.ChannelLog
 }
 
+func (s *DBMsgStatus) EventID() int64 { return s.ID_.Int64 }
+
 func (s *DBMsgStatus) ChannelUUID() courier.ChannelUUID { return s.ChannelUUID_ }
 func (s *DBMsgStatus) ID() courier.MsgID                { return s.ID_ }
 
