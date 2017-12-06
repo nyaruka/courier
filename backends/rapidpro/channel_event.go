@@ -152,7 +152,7 @@ type DBChannelEvent struct {
 	logs []*courier.ChannelLog
 }
 
-func (e *DBChannelEvent) ReceiveID() int64                    { return e.ID_.Int64 }
+func (e *DBChannelEvent) EventID() int64                      { return e.ID_.Int64 }
 func (e *DBChannelEvent) ChannelID() courier.ChannelID        { return e.ChannelID_ }
 func (e *DBChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.ChannelUUID_ }
 func (e *DBChannelEvent) ContactName() string                 { return e.ContactName_ }

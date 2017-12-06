@@ -364,7 +364,7 @@ type mockMsg struct {
 
 func (m *mockMsg) Channel() Channel       { return m.channel }
 func (m *mockMsg) ID() MsgID              { return m.id }
-func (m *mockMsg) ReceiveID() int64       { return m.id.Int64 }
+func (m *mockMsg) EventID() int64         { return m.id.Int64 }
 func (m *mockMsg) UUID() MsgUUID          { return m.uuid }
 func (m *mockMsg) Text() string           { return m.text }
 func (m *mockMsg) Attachments() []string  { return m.attachments }
@@ -401,6 +401,7 @@ type mockMsgStatus struct {
 
 func (m *mockMsgStatus) ChannelUUID() ChannelUUID { return m.channel.UUID() }
 func (m *mockMsgStatus) ID() MsgID                { return m.id }
+func (m *mockMsgStatus) EventID() int64           { return m.id.Int64 }
 
 func (m *mockMsgStatus) ExternalID() string      { return m.externalID }
 func (m *mockMsgStatus) SetExternalID(id string) { m.externalID = id }
@@ -428,7 +429,7 @@ type mockChannelEvent struct {
 	logs []*ChannelLog
 }
 
-func (e *mockChannelEvent) ReceiveID() int64              { return 0 }
+func (e *mockChannelEvent) EventID() int64                { return 0 }
 func (e *mockChannelEvent) ChannelUUID() ChannelUUID      { return e.channel.UUID() }
 func (e *mockChannelEvent) EventType() ChannelEventType   { return e.eventType }
 func (e *mockChannelEvent) CreatedOn() time.Time          { return e.createdOn }

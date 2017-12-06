@@ -59,12 +59,12 @@ func (h *handler) Initialize(s courier.Server) error {
 	// save whether we should ignore delivery reports
 	h.ignoreDeliveryReports = s.Config().IgnoreDeliveryReports
 
-	err := s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
 
-	return s.AddUpdateStatusRoute(h, "POST", "status", h.StatusMessage)
+	return s.AddHandlerRoute(h, "POST", "status", h.StatusMessage)
 }
 
 type twMessage struct {
@@ -93,7 +93,7 @@ var twStatusMapping = map[string]courier.MsgStatusValue{
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -129,11 +129,11 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.ReceiveEvent{msg}, h.writeReceiveSuccess(w, r, msg)
+	return []courier.Event{msg}, h.writeReceiveSuccess(w, r, msg)
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
+func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -179,7 +179,7 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 		return nil, err
 	}
 
-	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
+	return []courier.Event{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
 }
 
 // SendMsg sends the passed in message, returning any error
