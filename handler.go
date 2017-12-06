@@ -4,8 +4,7 @@ import (
 	"net/http"
 )
 
-// Event is our interface for the types of things a ChannelReceiveMsgFunc can return. Currently
-// Msgs and ChannelEvent both satisfy this
+// Event is our interface for the types of things a ChannelHandleFunc can return.
 type Event interface {
 	EventID() int64
 }
