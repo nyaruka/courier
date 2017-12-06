@@ -153,6 +153,13 @@ func (w *Sender) Send() {
 		}
 
 		msgLog := log.WithField("msg_id", msg.ID().String()).WithField("msg_text", msg.Text()).WithField("msg_urn", msg.URN().Identity())
+		if msg.Attachments() != nil {
+			msgLog = log.WithField("attachments", msg.Attachments())
+		}
+		if msg.QuickReplies() != nil {
+			msgLog = log.WithField("quick_replies", msg.QuickReplies())
+		}
+
 		start := time.Now()
 
 		// was this msg already sent? (from a double queue?)

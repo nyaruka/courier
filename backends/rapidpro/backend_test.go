@@ -599,7 +599,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	time.Sleep(1 * time.Second)
 	msg2 := ts.b.NewIncomingMsg(knChannel, urn, "test123").(*DBMsg)
 	ts.Equal(msg2.UUID(), msg.UUID())
-	ts.True(msg2.AlreadyWritten_)
+	ts.True(msg2.alreadyWritten)
 
 	// check we had an id set
 	ts.NotZero(msg.ID)

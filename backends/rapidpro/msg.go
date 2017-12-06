@@ -53,7 +53,7 @@ func writeMsg(b *backend, msg courier.Msg) error {
 	m := msg.(*DBMsg)
 
 	// this msg has already been written (we received it twice), we are a no op
-	if m.AlreadyWritten_ {
+	if m.alreadyWritten {
 		return nil
 	}
 
@@ -107,9 +107,9 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 		ModifiedOn_:  now,
 		QueuedOn_:    now,
 
-		Channel_:        channel,
-		WorkerToken_:    "",
-		AlreadyWritten_: false,
+		channel:        channel,
+		workerToken:    "",
+		alreadyWritten: false,
 	}
 }
 
@@ -363,12 +363,13 @@ type DBMsg struct {
 	QueuedOn_    time.Time `json:"queued_on"     db:"queued_on"`
 	SentOn_      time.Time `json:"sent_on"       db:"sent_on"`
 
-	Channel_        courier.Channel   `json:"-"`
-	WorkerToken_    queue.WorkerToken `json:"-"`
-	AlreadyWritten_ bool              `json:"-"`
+	channel        courier.Channel
+	workerToken    queue.WorkerToken
+	alreadyWritten bool
+	quickReplies   []string
 }
 
-func (m *DBMsg) Channel() courier.Channel { return m.Channel_ }
+func (m *DBMsg) Channel() courier.Channel { return m.channel }
 func (m *DBMsg) ID() courier.MsgID        { return m.ID_ }
 func (m *DBMsg) EventID() int64           { return m.ID_.Int64 }
 func (m *DBMsg) UUID() courier.MsgUUID    { return m.UUID_ }
@@ -382,22 +383,26 @@ func (m *DBMsg) ReceivedOn() *time.Time   { return &m.SentOn_ }
 func (m *DBMsg) SentOn() *time.Time       { return &m.SentOn_ }
 
 func (m *DBMsg) QuickReplies() []string {
+	if m.quickReplies != nil {
+		return m.quickReplies
+	}
+
 	if m.Metadata_.String == "" {
 		return nil
 	}
-	replies := []string{}
+	m.quickReplies = []string{}
 	jsonparser.ArrayEach(
 		[]byte(m.Metadata_.String),
 		func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-			replies = append(replies, string(value))
+			m.quickReplies = append(m.quickReplies, string(value))
 		},
 		"quick_replies")
-	return replies
+	return m.quickReplies
 }
 
 // fingerprint returns a fingerprint for this msg, suitable for figuring out if this is a dupe
 func (m *DBMsg) fingerprint() string {
-	return fmt.Sprintf("%s:%s:%s", m.Channel_.UUID(), m.URN_, m.Text_)
+	return fmt.Sprintf("%s:%s:%s", m.channel.UUID(), m.URN_, m.Text_)
 }
 
 // WithContactName can be used to set the contact name on a msg
