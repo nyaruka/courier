@@ -31,6 +31,7 @@ const configNexmoAppPrivateKey = "nexmo_app_private_key"
 
 var maxMsgLength = 1600
 var sendURL = "https://rest.nexmo.com/sms/json"
+var throttledRE = regexp.MustCompile(`.*Throughput Rate Exceeded - please wait \[ (\d+) \] and retry.*`)
 
 func init() {
 	courier.RegisterHandler(NewHandler())
@@ -49,6 +50,10 @@ func NewHandler() courier.ChannelHandler {
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	err := s.AddHandlerRoute(h, "GET", "receive", h.ReceiveMessage)
+	if err != nil {
+		return err
+	}
+	err = s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
@@ -75,11 +80,6 @@ var statusMappings = map[string]courier.MsgStatusValue{
 func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	nexmoDeliveryReport := &nexmoDeliveryReport{}
 	handlers.DecodeAndValidateQueryParams(nexmoDeliveryReport, r)
-
-	// if this is a post, also try to parse the form body
-	if r.Method == http.MethodPost {
-		handlers.DecodeAndValidateForm(nexmoDeliveryReport, r)
-	}
 
 	if nexmoDeliveryReport.MessageID == "" {
 		return nil, courier.WriteIgnored(w, r, "no messageId parameter, ignored")
@@ -173,18 +173,14 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 			"type":              []string{textType},
 		}
 
-		encodedForm := form.Encode()
-		partSendURL := fmt.Sprintf("%s?%s", sendURL, encodedForm)
-
-		req, err := http.NewRequest(http.MethodGet, partSendURL, nil)
+		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		re := regexp.MustCompile(`.*Throughput Rate Exceeded - please wait \[ (\d+) \] and retry.*`)
 
 		rr := &utils.RequestResponse{}
 		var requestErr error
 		for i := 0; i < 3; i++ {
 			rr, requestErr = utils.MakeHTTPRequest(req)
-			matched := re.FindAllStringSubmatch(string([]byte(rr.Body)), -1)
+			matched := throttledRE.FindAllStringSubmatch(string([]byte(rr.Body)), -1)
 			if len(matched) > 0 && len(matched[0]) > 0 {
 				sleepTime, _ := strconv.Atoi(matched[0][1])
 				time.Sleep(time.Duration(sleepTime) * time.Millisecond)

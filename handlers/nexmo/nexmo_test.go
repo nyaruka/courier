@@ -16,7 +16,8 @@ var (
 	statusURL  = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"
 	receiveURL = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 
-	receiveValidMessage = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=2349067554729&text=Join&messageId=external1"
+	receiveValidMessage     = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=2349067554729&text=Join&messageId=external1"
+	receiveValidMessageBody = "to=2020&msisdn=2349067554729&text=Join&messageId=external1"
 
 	statusDelivered  = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=delivered"
 	statusExpired    = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=expired"
@@ -28,6 +29,8 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Valid Receive", URL: receiveValidMessage, Status: 200, Response: "Accepted",
+		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
+	{Label: "Valid Receive Post", URL: receiveURL, Status: 200, Response: "Accepted", Data: receiveValidMessageBody,
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
 	{Label: "Receive URL check", URL: receiveURL, Status: 200, Response: "no to parameter, ignored"},
 	{Label: "Status URL check", URL: statusURL, Status: 200, Response: "no messageId parameter, ignored"},
@@ -57,44 +60,50 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "tel:+250788383383",
 		Status: "W", ExternalID: "1002",
-		URLParams:    map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		PostParams:   map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ResponseBody: `{"messages":[{"status":"0","message-id":"1002"}]}`, ResponseStatus: 200,
 		SendPrep: setSendURL},
 	{Label: "Unicode Send",
 		Text: "Unicode ☺", URN: "tel:+250788383383",
 		Status: "W", ExternalID: "1002",
-		URLParams:    map[string]string{"text": "Unicode ☺", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "unicode"},
+		PostParams:   map[string]string{"text": "Unicode ☺", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "unicode"},
 		ResponseBody: `{"messages":[{"status":"0","message-id":"1002"}]}`, ResponseStatus: 200,
 		SendPrep: setSendURL},
 	{Label: "Long Send",
 		Text:   "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
 		URN:    "tel:+250788383383",
 		Status: "W", ExternalID: "1002",
-		URLParams:    map[string]string{"text": "I need to keep adding more things to make it work", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		PostParams:   map[string]string{"text": "I need to keep adding more things to make it work", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ResponseBody: `{"messages":[{"status":"0","message-id":"1002"}]}`, ResponseStatus: 200,
 		SendPrep: setSendURL},
 	{Label: "Send Attachment",
 		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status: "W", ExternalID: "1002",
-		URLParams:    map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		PostParams:   map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ResponseBody: `{"messages":[{"status":"0","message-id":"1002"}]}`, ResponseStatus: 200,
+		SendPrep: setSendURL},
+	{Label: "Error Status",
+		Text: "Error status", URN: "tel:+250788383383",
+		Status:       "E",
+		PostParams:   map[string]string{"text": "Error status", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		ResponseBody: `{"messages":[{"status":"10"}]}`, ResponseStatus: 200,
 		SendPrep: setSendURL},
 	{Label: "Error Sending",
 		Text: "Error Message", URN: "tel:+250788383383",
 		Status:       "E",
-		URLParams:    map[string]string{"text": "Error Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		PostParams:   map[string]string{"text": "Error Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ResponseBody: `Error`, ResponseStatus: 400,
 		SendPrep: setSendURL},
 	{Label: "Invalid Token",
 		Text: "Simple Message", URN: "tel:+250788383383",
 		Status:       "E",
-		URLParams:    map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		PostParams:   map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ResponseBody: "Invalid API token", ResponseStatus: 401,
 		SendPrep: setSendURL},
 	{Label: "Throttled by Nexmo",
 		Text: "Simple Message", URN: "tel:+250788383383",
 		Status:       "E",
-		URLParams:    map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		PostParams:   map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ResponseBody: `{"messages":[{"status":"1","error-text":"Throughput Rate Exceeded - please wait [ 250 ] and retry"}]}`, ResponseStatus: 200,
 		SendPrep: setSendURL},
 }
