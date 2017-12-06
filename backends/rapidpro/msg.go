@@ -345,7 +345,7 @@ type DBMsg struct {
 	Text_         string                 `json:"text"          db:"text"`
 	Attachments_  pq.StringArray         `json:"attachments"   db:"attachments"`
 	ExternalID_   null.String            `json:"external_id"   db:"external_id"`
-	Metadata_     null.String            `json:"metadata"      db:"metadata"`
+	Metadata_     json.RawMessage        `json:"metadata"      db:"metadata"`
 
 	ChannelID_    courier.ChannelID `json:"channel_id"      db:"channel_id"`
 	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
@@ -387,12 +387,13 @@ func (m *DBMsg) QuickReplies() []string {
 		return m.quickReplies
 	}
 
-	if m.Metadata_.String == "" {
+	if m.Metadata_ == nil {
 		return nil
 	}
+
 	m.quickReplies = []string{}
 	jsonparser.ArrayEach(
-		[]byte(m.Metadata_.String),
+		m.Metadata_,
 		func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 			m.quickReplies = append(m.quickReplies, string(value))
 		},

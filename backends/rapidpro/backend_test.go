@@ -117,7 +117,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"channel_id": 11, 
 		"response_to_id": 15, 
 		"external_id": null,
-		"metadata": "{ \"quick_replies\": [\"One\", \"Two\"] }"
+		"metadata": {"quick_replies": ["Yes", "No"]}
 	}`
 
 	msg := DBMsg{}
@@ -127,7 +127,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal(msg.ChannelID_, courier.NewChannelID(11))
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	ts.Equal(msg.ExternalID(), "")
-	ts.Equal([]string{"One", "Two"}, msg.QuickReplies())
+	ts.Equal([]string{"Yes", "No"}, msg.QuickReplies())
 	ts.True(msg.HighPriority())
 
 	msgJSONNoQR := `{
@@ -151,13 +151,14 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"high_priority": true,
 		"channel_id": 11, 
 		"response_to_id": 15, 
-		"external_id": null
+		"external_id": null,
+		"metadata": null
 	}`
 
 	msg = DBMsg{}
 	err = json.Unmarshal([]byte(msgJSONNoQR), &msg)
 	ts.NoError(err)
-	ts.Equal([]string(nil), msg.QuickReplies())
+	ts.Equal([]string{}, msg.QuickReplies())
 }
 
 func (ts *BackendTestSuite) TestCheckMsgExists() {
