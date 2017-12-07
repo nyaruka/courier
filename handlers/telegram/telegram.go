@@ -132,7 +132,10 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 }
 
 func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, replies string) (string, *courier.ChannelLog, error) {
-	if replies != "" {
+	// either include or remove our keyboard depending on whether we have quick replies
+	if replies == "" {
+		form.Add("reply_markup", `{"remove_keyboard":true}`)
+	} else {
 		form.Add("reply_markup", replies)
 	}
 
