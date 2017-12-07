@@ -153,11 +153,11 @@ func (w *Sender) Send() {
 		}
 
 		msgLog := log.WithField("msg_id", msg.ID().String()).WithField("msg_text", msg.Text()).WithField("msg_urn", msg.URN().Identity())
-		if msg.Attachments() != nil {
-			msgLog = log.WithField("attachments", msg.Attachments())
+		if len(msg.Attachments()) > 0 {
+			msgLog = msgLog.WithField("attachments", msg.Attachments())
 		}
-		if msg.QuickReplies() != nil {
-			msgLog = log.WithField("quick_replies", msg.QuickReplies())
+		if len(msg.QuickReplies()) > 0 {
+			msgLog = msgLog.WithField("quick_replies", msg.QuickReplies())
 		}
 
 		start := time.Now()
