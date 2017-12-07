@@ -184,8 +184,13 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	qrs := msg.QuickReplies()
 	replies := ""
 
-	if qrs != nil {
-		tk := telegramKeyboard{true, true, qrs}
+	if len(qrs) > 0 {
+		keys := make([]telegramKey, len(qrs))
+		for i, qr := range qrs {
+			keys[i].Text = qr
+		}
+
+		tk := telegramKeyboard{true, true, [][]telegramKey{keys}}
 		replyBytes, err := json.Marshal(tk)
 		if err != nil {
 			return nil, err
@@ -311,9 +316,13 @@ func resolveFileID(channel courier.Channel, fileID string) (string, error) {
 }
 
 type telegramKeyboard struct {
-	ResizeKeyboard  bool     `json:"resize_keyboard"`
-	OneTimeKeyboard bool     `json:"one_time_keyboard"`
-	Keyboard        []string `json:"keyboard"`
+	ResizeKeyboard  bool            `json:"resize_keyboard"`
+	OneTimeKeyboard bool            `json:"one_time_keyboard"`
+	Keyboard        [][]telegramKey `json:"keyboard"`
+}
+
+type telegramKey struct {
+	Text string `json:"text"`
 }
 
 type telegramFile struct {
