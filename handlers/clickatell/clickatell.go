@@ -1,16 +1,21 @@
 package clickatell
 
 import (
+	"bytes"
 	"fmt"
+	"mime"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	"unicode/utf16"
+	"unicode/utf8"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -36,7 +41,85 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
+	err := s.AddReceiveMsgRoute(h, "GET", "receive", h.ReceiveMessage)
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+type clickatellIncomingMsg struct {
+	From      string `name:"from"`
+	Text      string `name:"text"`
+	SmsID     string `name:"moMsgId"`
+	Timestamp string `name:"timestamp"`
+	APIID     string `name:"api_id"`
+	Charset   string `name:"charset"`
+}
+
+// ReceiveMessage is our HTTP handler function for incoming messages
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+	ctIncomingMessage := &clickatellIncomingMsg{}
+	handlers.DecodeAndValidateQueryParams(ctIncomingMessage, r)
+
+	// if this is a post, also try to parse the form body
+	if r.Method == http.MethodPost {
+		handlers.DecodeAndValidateForm(ctIncomingMessage, r)
+	}
+
+	if ctIncomingMessage.APIID != "" && ctIncomingMessage.APIID != channel.StringConfigForKey(courier.ConfigAPIID, "") {
+		return nil, courier.WriteError(w, r, fmt.Errorf("invalid API id for message delivery: %s", ctIncomingMessage.APIID))
+	}
+
+	if ctIncomingMessage.From == "" || ctIncomingMessage.SmsID == "" || ctIncomingMessage.Text == "" || ctIncomingMessage.Timestamp == "" {
+		return nil, courier.WriteIgnored(w, r, "missing one of 'from', 'text', 'moMsgId' or 'timestamp' in request parameters.")
+	}
+
+	// create our URN
+	urn := urns.NewTelURNForCountry(ctIncomingMessage.From, channel.Country())
+
+	text := ctIncomingMessage.Text
+	if ctIncomingMessage.Charset == "UTF-16BE" {
+		textBytes := []byte{}
+		for _, textByte := range text {
+			textBytes = append(textBytes, byte(textByte))
+		}
+		text, _ = decodeUTF16BE(textBytes)
+	}
+
+	if ctIncomingMessage.Charset == "ISO-8859-1" {
+		text = mime.BEncoding.Encode("ISO-8859-1", text)
+		text, _ = new(mime.WordDecoder).DecodeHeader(text)
+	}
+
+	// build our msg
+	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text)).WithExternalID(ctIncomingMessage.SmsID)
+
+	// and write it
+	err := h.Backend().WriteMsg(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
+}
+
+func decodeUTF16BE(b []byte) (string, error) {
+	if len(b)%2 != 0 {
+		return "", fmt.Errorf("Must have even length byte slice")
+	}
+	u16s := make([]uint16, 1)
+	ret := &bytes.Buffer{}
+	b8buf := make([]byte, 4)
+
+	lb := len(b)
+	for i := 0; i < lb; i += 2 {
+		u16s[0] = uint16(b[i+1]) + (uint16(b[i]) << 8)
+		r := utf16.Decode(u16s)
+		n := utf8.EncodeRune(b8buf, r[0])
+		ret.Write(b8buf[:n])
+	}
+	return ret.String(), nil
 }
 
 // SendMsg sends the passed in message, returning any error

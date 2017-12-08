@@ -64,3 +64,63 @@ func TestSending(t *testing.T) {
 
 	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
 }
+
+var testChannels = []courier.Channel{
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NX", "2020", "US",
+		map[string]interface{}{
+			courier.ConfigUsername: "Username",
+			courier.ConfigPassword: "Password",
+			courier.ConfigAPIID:    "12345",
+		}),
+}
+
+var (
+	statusURL  = "/c/ct/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"
+	receiveURL = "/c/ct/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
+
+	receiveValidMessage = "/c/ct/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=%2B250788123123&moMsgId=id1234&from=250788383383&timestamp=2012-10-10+10%3A10%3A10&text=Hello+World"
+
+	receiveValidMessageISO8859_1_1 = `/c/ct/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=%2B250788123123&moMsgId=id1234&from=250788383383&timestamp=2012-10-10+10%3A10%3A10&text=%05%EF%BF%BD%EF%BF%BD%034%02%41i+mapfumbamwe+vana+4+kuwacha+handingapedze+izvozvo+ndozvikukonzera+kt+varoorwe+varipwere+ngapaonekwe+ipapo+ndatenda.&charset=ISO-8859-1`
+
+	receiveValidMessageISO8859_1_2 = `/c/ct/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=%2B250788123123&moMsgId=id1234&from=250788383383&timestamp=2012-10-10+10%3A10%3A10&text=Artwell+S%ECbbnda&charset=ISO-8859-1`
+
+	receiveValidMessageISO8859_1_3 = `/c/ct/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=%2B250788123123&moMsgId=id1234&from=250788383383&timestamp=2012-10-10+10%3A10%3A10&text=a%3F+%A3irvine+stinta%3F%A5.++&charset=ISO-8859-1`
+
+	receiveValidMessageISO8859_1_4 = `/c/ct/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=%2B250788123123&text=when%3F+or+What%3F+is+this+&moMsgId=id1234&from=250788383383&timestamp=2012-10-10+10%3A10%3A10&charset=ISO-8859-1`
+
+	receiveValidMessageUTF16BE = `/c/ct/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=%2B250788123123&moMsgId=id1234&from=250788383383&timestamp=2012-10-10+10%3A10%3A10&text=%00m%00e%00x%00i%00c%00o%00+%00k%00+%00m%00i%00s%00+%00p%00a%00p%00a%00s%00+%00n%00o%00+%00t%00e%00n%00%ED%00a%00+%00d%00i%00n%00e%00r%00o%00+%00p%00a%00r%00a%00+%00c%00o%00m%00p%00r%00a%00r%00n%00o%00s%00+%00l%00o%00+%00q%00+%00q%00u%00e%00r%00%ED%00a%00m%00o%00s%00.%00.&charset=UTF-16BE`
+
+	statusFailed    = "/c/ct/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?apiMsgId=id1234&status=001"
+	statusDelivered = "/c/ct/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?apiMsgId=id1234&status=004"
+
+	statusDeliveredValidAPIID   = "/c/ct/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?api_id=12345&apiMsgId=id1234&status=004"
+	statusDeliveredInvalidAPIID = "/c/ct/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?api_id=123&apiMsgId=id1234&status=004"
+)
+
+var testCases = []ChannelHandleTestCase{
+	{Label: "Valid Receive", URL: receiveValidMessage, Status: 200, Response: "Accepted",
+		Text: Sp("Hello World"), URN: Sp("tel:+250788383383"), ExternalID: Sp("id1234")},
+	{Label: "Valid Receive ISO-8859-1 (1)", URL: receiveValidMessageISO8859_1_1, Status: 200, Response: "Accepted",
+		Text: Sp(`ï¿½ï¿½4Ai mapfumbamwe vana 4 kuwacha handingapedze izvozvo ndozvikukonzera kt varoorwe varipwere ngapaonekwe ipapo ndatenda.`),
+		URN:  Sp("tel:+250788383383"), ExternalID: Sp("id1234")},
+
+	{Label: "Valid Receive ISO-8859-1 (2)", URL: receiveValidMessageISO8859_1_2, Status: 200, Response: "Accepted",
+		Text: Sp(`Artwell Sìbbnda`), URN: Sp("tel:+250788383383"), ExternalID: Sp("id1234")},
+
+	{Label: "Valid Receive ISO-8859-1 (3)", URL: receiveValidMessageISO8859_1_3, Status: 200, Response: "Accepted",
+		Text: Sp(`a? £irvine stinta?¥.  `), URN: Sp("tel:+250788383383"), ExternalID: Sp("id1234")},
+
+	{Label: "Valid Receive ISO-8859-1 (4)", URL: receiveValidMessageISO8859_1_4, Status: 200, Response: "Accepted",
+		Text: Sp(`when? or What? is this `), URN: Sp("tel:+250788383383"), ExternalID: Sp("id1234")},
+
+	{Label: "Valid Receive UTF-16BE", URL: receiveValidMessageUTF16BE, Status: 200, Response: "Accepted",
+		Text: Sp("mexico k mis papas no tenýa dinero para comprarnos lo q querýamos.."), URN: Sp("tel:+250788383383"), ExternalID: Sp("id1234")},
+}
+
+func TestHandler(t *testing.T) {
+	RunChannelTestCases(t, testChannels, NewHandler(), testCases)
+}
+
+func BenchmarkHandler(b *testing.B) {
+	RunChannelBenchmarks(b, testChannels, NewHandler(), testCases)
+}
