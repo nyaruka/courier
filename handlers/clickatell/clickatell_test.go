@@ -3,6 +3,7 @@ package clickatell
 import (
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
@@ -99,22 +100,26 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Valid Receive", URL: receiveValidMessage, Status: 200, Response: "Accepted",
-		Text: Sp("Hello World"), URN: Sp("tel:+250788383383"), ExternalID: Sp("id1234")},
+		Text: Sp("Hello World"), URN: Sp("tel:+250788383383"), ExternalID: Sp("id1234"), Date: Tp(time.Date(2012, 10, 10, 8, 10, 10, 0, time.UTC))},
 	{Label: "Valid Receive ISO-8859-1 (1)", URL: receiveValidMessageISO8859_1_1, Status: 200, Response: "Accepted",
 		Text: Sp(`ï¿½ï¿½4Ai mapfumbamwe vana 4 kuwacha handingapedze izvozvo ndozvikukonzera kt varoorwe varipwere ngapaonekwe ipapo ndatenda.`),
-		URN:  Sp("tel:+250788383383"), ExternalID: Sp("id1234")},
+		URN:  Sp("tel:+250788383383"), ExternalID: Sp("id1234"), Date: Tp(time.Date(2012, 10, 10, 8, 10, 10, 0, time.UTC))},
 
 	{Label: "Valid Receive ISO-8859-1 (2)", URL: receiveValidMessageISO8859_1_2, Status: 200, Response: "Accepted",
-		Text: Sp(`Artwell Sìbbnda`), URN: Sp("tel:+250788383383"), ExternalID: Sp("id1234")},
+		Text: Sp(`Artwell Sìbbnda`), URN: Sp("tel:+250788383383"),
+		ExternalID: Sp("id1234"), Date: Tp(time.Date(2012, 10, 10, 8, 10, 10, 0, time.UTC))},
 
 	{Label: "Valid Receive ISO-8859-1 (3)", URL: receiveValidMessageISO8859_1_3, Status: 200, Response: "Accepted",
-		Text: Sp(`a? £irvine stinta?¥.  `), URN: Sp("tel:+250788383383"), ExternalID: Sp("id1234")},
+		Text: Sp(`a? £irvine stinta?¥.  `), URN: Sp("tel:+250788383383"),
+		ExternalID: Sp("id1234"), Date: Tp(time.Date(2012, 10, 10, 8, 10, 10, 0, time.UTC))},
 
 	{Label: "Valid Receive ISO-8859-1 (4)", URL: receiveValidMessageISO8859_1_4, Status: 200, Response: "Accepted",
-		Text: Sp(`when? or What? is this `), URN: Sp("tel:+250788383383"), ExternalID: Sp("id1234")},
+		Text: Sp(`when? or What? is this `), URN: Sp("tel:+250788383383"),
+		ExternalID: Sp("id1234"), Date: Tp(time.Date(2012, 10, 10, 8, 10, 10, 0, time.UTC))},
 
 	{Label: "Valid Receive UTF-16BE", URL: receiveValidMessageUTF16BE, Status: 200, Response: "Accepted",
-		Text: Sp("mexico k mis papas no tenýa dinero para comprarnos lo q querýamos.."), URN: Sp("tel:+250788383383"), ExternalID: Sp("id1234")},
+		Text: Sp("mexico k mis papas no tenýa dinero para comprarnos lo q querýamos.."), URN: Sp("tel:+250788383383"),
+		ExternalID: Sp("id1234"), Date: Tp(time.Date(2012, 10, 10, 8, 10, 10, 0, time.UTC))},
 }
 
 func TestHandler(t *testing.T) {
