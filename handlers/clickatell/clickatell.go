@@ -46,7 +46,62 @@ func (h *handler) Initialize(s courier.Server) error {
 	if err != nil {
 		return err
 	}
-	return nil
+	return s.AddHandlerRoute(h, "GET", "status", h.StatusMessage)
+}
+
+type statusReport struct {
+	SmsID      string `name:"apiMsgId"`
+	APIID      string `name:"api_id"`
+	StatusCode string `name:"status"`
+}
+
+var statusMapping = map[string]courier.MsgStatusValue{
+	"001": courier.MsgFailed,    // incorrect msg id
+	"002": courier.MsgWired,     // queued
+	"003": courier.MsgSent,      // delivered to upstream gateway
+	"004": courier.MsgDelivered, // received by handset
+	"005": courier.MsgFailed,    // error in message
+	"006": courier.MsgFailed,    // terminated by user
+	"007": courier.MsgFailed,    // error delivering
+	"008": courier.MsgWired,     // msg received
+	"009": courier.MsgFailed,    // error routing
+	"010": courier.MsgFailed,    // expired
+	"011": courier.MsgWired,     // delayed but queued
+	"012": courier.MsgFailed,    // out of credit
+	"014": courier.MsgFailed,    // too long
+}
+
+// StatusMessage is our HTTP handler function for status updates
+func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	statusReport := &statusReport{}
+	err := handlers.DecodeAndValidateQueryParams(statusReport, r)
+
+	// if this is a post, also try to parse the form body
+	if r.Method == http.MethodPost {
+		err = handlers.DecodeAndValidateForm(statusReport, r)
+	}
+
+	if statusReport.APIID != "" && statusReport.APIID != channel.StringConfigForKey(courier.ConfigAPIID, "") {
+		return nil, courier.WriteError(w, r, fmt.Errorf("invalid API ID for status report: %s", statusReport.APIID))
+	}
+
+	if statusReport.SmsID == "" || statusReport.StatusCode == "" {
+		return nil, courier.WriteIgnored(w, r, "missing one of 'apiMsgId' or 'status' in request parameters.")
+	}
+
+	msgStatus, found := statusMapping[statusReport.StatusCode]
+	if !found {
+		return nil, fmt.Errorf("unknown status '%s', must be one of 001, 002, 003, 004, 005, 006, 007, 008, 009, 010, 011, 012, 014", statusReport.StatusCode)
+	}
+
+	// write our status
+	status := h.Backend().NewMsgStatusForExternalID(channel, statusReport.SmsID, msgStatus)
+	err = h.Backend().WriteMsgStatus(status)
+	if err != nil {
+		return nil, err
+	}
+
+	return []courier.Event{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
 }
 
 type clickatellIncomingMsg struct {
@@ -69,7 +124,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	if ctIncomingMessage.APIID != "" && ctIncomingMessage.APIID != channel.StringConfigForKey(courier.ConfigAPIID, "") {
-		return nil, courier.WriteError(w, r, fmt.Errorf("invalid API id for message delivery: %s", ctIncomingMessage.APIID))
+		return nil, courier.WriteError(w, r, fmt.Errorf("invalid API ID for message delivery: %s", ctIncomingMessage.APIID))
 	}
 
 	if ctIncomingMessage.From == "" || ctIncomingMessage.SmsID == "" || ctIncomingMessage.Text == "" || ctIncomingMessage.Timestamp == "" {
