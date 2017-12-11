@@ -82,7 +82,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	var err error
 	if dateString != "" {
 		loc, _ := time.LoadLocation("Europe/Berlin")
-		date, err = time.ParseInLocation("2006-01-02 15:04:05", dateString, loc).UTC()
+		date, err = time.ParseInLocation("2006-01-02 15:04:05", dateString, loc)
 		if err != nil {
 			return nil, courier.WriteError(w, r, errors.New("invalid date format, must be YYYY-MM-DD HH:MM:SS"))
 		}
@@ -106,7 +106,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text)).WithReceivedOn(date).WithExternalID(ctIncomingMessage.SmsID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text)).WithReceivedOn(date.UTC()).WithExternalID(ctIncomingMessage.SmsID)
 
 	// and write it
 	err = h.Backend().WriteMsg(msg)
