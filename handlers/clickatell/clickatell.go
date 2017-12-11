@@ -42,7 +42,7 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddReceiveMsgRoute(h, "GET", "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, "GET", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ type clickatellIncomingMsg struct {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	ctIncomingMessage := &clickatellIncomingMsg{}
 	handlers.DecodeAndValidateQueryParams(ctIncomingMessage, r)
 
@@ -114,7 +114,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
+	return []courier.Event{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
 }
 
 func decodeUTF16BE(b []byte) (string, error) {
