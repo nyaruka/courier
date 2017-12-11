@@ -75,8 +75,8 @@ func (mb *MockBackend) NewIncomingMsg(channel Channel, urn urns.URN, text string
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool) Msg {
-	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority}
+func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool, replies []string) Msg {
+	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority, quickReplies: replies}
 }
 
 // PushOutgoingMsg is a test method to add a message to our queue of messages to send
@@ -355,22 +355,24 @@ type mockMsg struct {
 	urn          urns.URN
 	contactName  string
 	highPriority bool
+	quickReplies []string
 
 	receivedOn *time.Time
 	sentOn     *time.Time
 	wiredOn    *time.Time
 }
 
-func (m *mockMsg) Channel() Channel      { return m.channel }
-func (m *mockMsg) ID() MsgID             { return m.id }
-func (m *mockMsg) ReceiveID() int64      { return m.id.Int64 }
-func (m *mockMsg) UUID() MsgUUID         { return m.uuid }
-func (m *mockMsg) Text() string          { return m.text }
-func (m *mockMsg) Attachments() []string { return m.attachments }
-func (m *mockMsg) ExternalID() string    { return m.externalID }
-func (m *mockMsg) URN() urns.URN         { return m.urn }
-func (m *mockMsg) ContactName() string   { return m.contactName }
-func (m *mockMsg) HighPriority() bool    { return m.highPriority }
+func (m *mockMsg) Channel() Channel       { return m.channel }
+func (m *mockMsg) ID() MsgID              { return m.id }
+func (m *mockMsg) EventID() int64         { return m.id.Int64 }
+func (m *mockMsg) UUID() MsgUUID          { return m.uuid }
+func (m *mockMsg) Text() string           { return m.text }
+func (m *mockMsg) Attachments() []string  { return m.attachments }
+func (m *mockMsg) ExternalID() string     { return m.externalID }
+func (m *mockMsg) URN() urns.URN          { return m.urn }
+func (m *mockMsg) ContactName() string    { return m.contactName }
+func (m *mockMsg) HighPriority() bool     { return m.highPriority }
+func (m *mockMsg) QuickReplies() []string { return m.quickReplies }
 
 func (m *mockMsg) ReceivedOn() *time.Time { return m.receivedOn }
 func (m *mockMsg) SentOn() *time.Time     { return m.sentOn }
@@ -399,6 +401,7 @@ type mockMsgStatus struct {
 
 func (m *mockMsgStatus) ChannelUUID() ChannelUUID { return m.channel.UUID() }
 func (m *mockMsgStatus) ID() MsgID                { return m.id }
+func (m *mockMsgStatus) EventID() int64           { return m.id.Int64 }
 
 func (m *mockMsgStatus) ExternalID() string      { return m.externalID }
 func (m *mockMsgStatus) SetExternalID(id string) { m.externalID = id }
@@ -426,7 +429,7 @@ type mockChannelEvent struct {
 	logs []*ChannelLog
 }
 
-func (e *mockChannelEvent) ReceiveID() int64              { return 0 }
+func (e *mockChannelEvent) EventID() int64                { return 0 }
 func (e *mockChannelEvent) ChannelUUID() ChannelUUID      { return e.channel.UUID() }
 func (e *mockChannelEvent) EventType() ChannelEventType   { return e.eventType }
 func (e *mockChannelEvent) CreatedOn() time.Time          { return e.createdOn }

@@ -59,7 +59,7 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text str
 	if prevUUID != courier.NilMsgUUID {
 		// if so, use its UUID and that we've been written
 		msg.UUID_ = prevUUID
-		msg.AlreadyWritten_ = true
+		msg.alreadyWritten = true
 	}
 	return msg
 }
@@ -92,8 +92,8 @@ func (b *backend) PopNextOutgoingMsg() (courier.Msg, error) {
 		if err != nil {
 			return nil, err
 		}
-		dbMsg.Channel_ = channel
-		dbMsg.WorkerToken_ = token
+		dbMsg.channel = channel
+		dbMsg.workerToken = token
 		return dbMsg, nil
 	}
 
@@ -126,7 +126,7 @@ func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg, status courier.MsgSta
 	defer rc.Close()
 
 	dbMsg := msg.(*DBMsg)
-	queue.MarkComplete(rc, msgQueueName, dbMsg.WorkerToken_)
+	queue.MarkComplete(rc, msgQueueName, dbMsg.workerToken)
 
 	// mark as sent in redis as well if this was actually wired or sent
 	if status != nil && (status.Status() == courier.MsgSent || status.Status() == courier.MsgWired) {
