@@ -48,11 +48,11 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
+	return s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 
 	err := h.validateSignature(channel, r)
 	if err != nil {
@@ -87,7 +87,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 			return nil, err
 		}
 
-		return []courier.ReceiveEvent{channelEvent}, courier.WriteChannelEventSuccess(w, r, channelEvent)
+		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, r, channelEvent)
 	case "unsubscribed":
 		viberID := viberMsg.User.ID
 
@@ -102,7 +102,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 			return nil, err
 		}
 
-		return []courier.ReceiveEvent{channelEvent}, courier.WriteChannelEventSuccess(w, r, channelEvent)
+		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, r, channelEvent)
 	case "failed":
 		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, string(viberMsg.MessageToken), courier.MsgFailed)
 
@@ -169,7 +169,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 			return nil, err
 		}
 
-		return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
+		return []courier.Event{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
 	}
 
 	return nil, courier.WriteError(w, r, fmt.Errorf("not handled, unknown event: %s", event))
