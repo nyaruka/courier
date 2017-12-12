@@ -55,6 +55,7 @@ type ChannelSendTestCase struct {
 	Text         string
 	URN          string
 	Attachments  []string
+	QuickReplies []string
 	HighPriority bool
 
 	ResponseStatus int
@@ -153,7 +154,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 		t.Run(testCase.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(testCase.URN), testCase.Text, testCase.HighPriority)
+			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(testCase.URN), testCase.Text, testCase.HighPriority, testCase.QuickReplies)
 			for _, a := range testCase.Attachments {
 				msg.WithAttachment(a)
 			}

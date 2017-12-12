@@ -18,9 +18,11 @@ import (
 	_ "github.com/nyaruka/courier/handlers/external"
 	_ "github.com/nyaruka/courier/handlers/infobip"
 	_ "github.com/nyaruka/courier/handlers/kannel"
+	_ "github.com/nyaruka/courier/handlers/nexmo"
 	_ "github.com/nyaruka/courier/handlers/shaqodoon"
 	_ "github.com/nyaruka/courier/handlers/telegram"
 	_ "github.com/nyaruka/courier/handlers/twilio"
+	_ "github.com/nyaruka/courier/handlers/whatsapp"
 	_ "github.com/nyaruka/courier/handlers/zenvia"
 
 	// load available backends

@@ -27,9 +27,7 @@ import (
 type Server interface {
 	Config() *config.Courier
 
-	AddChannelRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelActionHandlerFunc) error
-	AddReceiveMsgRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelReceiveMsgFunc) error
-	AddUpdateStatusRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelUpdateStatusFunc) error
+	AddHandlerRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelHandleFunc) error
 
 	SendMsg(Msg) (MsgStatus, error)
 
@@ -243,8 +241,10 @@ func (s *server) initializeChannelHandlers() {
 	sort.Strings(s.routes)
 }
 
-func (s *server) channelFunctionWrapper(handler ChannelHandler, handlerFunc ChannelActionHandlerFunc) http.HandlerFunc {
+func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
 		uuid, err := NewChannelUUID(chi.URLParam(r, "uuid"))
 		if err != nil {
 			WriteError(w, r, err)
@@ -260,71 +260,14 @@ func (s *server) channelFunctionWrapper(handler ChannelHandler, handlerFunc Chan
 		// stuff a few things in our context that help with logging
 		ctx := context.WithValue(r.Context(), contextRequestURL, r.URL.String())
 		ctx = context.WithValue(ctx, contextRequestStart, time.Now())
+		r = r.WithContext(ctx)
 
-		err = handlerFunc(channel, w, r.WithContext(ctx))
+		// read the bytes from our body so we can create a channel log for this request
+		response := &bytes.Buffer{}
+		request, err := httputil.DumpRequest(r, true)
 		if err != nil {
 			WriteError(w, r, err)
-		}
-	}
-}
-
-func (s *server) channelUpdateStatusWrapper(handler ChannelHandler, handlerFunc ChannelUpdateStatusFunc) http.HandlerFunc {
-	return s.channelFunctionWrapper(handler, func(channel Channel, w http.ResponseWriter, r *http.Request) error {
-		start := time.Now()
-
-		// read the bytes from our body so we can create a channel log for this request
-		response := &bytes.Buffer{}
-		request, err := httputil.DumpRequest(r, true)
-		if err != nil {
-			return err
-		}
-		url := fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI())
-
-		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
-		ww.Tee(response)
-
-		logs := make([]*ChannelLog, 0, 1)
-		statuses, err := handlerFunc(channel, ww, r)
-		duration := time.Now().Sub(start)
-		secondDuration := float64(duration) / float64(time.Second)
-
-		// we received an error, write it out and report it
-		if err != nil {
-			logrus.WithError(err).WithField("url", url).WithField("request", string(request)).Error("error receiving status")
-			WriteError(ww, r, err)
-		}
-
-		// if we don't have any statuses we still want a channel log, create one
-		if len(statuses) == 0 {
-			logs = append(logs, NewChannelLog("Status Error", channel, NilMsgID, r.Method, url, ww.Status(), string(request), response.String(), duration, err))
-			librato.Default.AddGauge(fmt.Sprintf("courier.msg_status_error_%s", channel.ChannelType()), secondDuration)
-		}
-		for _, status := range statuses {
-			logs = append(logs, NewChannelLog("Status Updated", channel, status.ID(), r.Method, url, ww.Status(), string(request), response.String(), duration, err))
-			librato.Default.AddGauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
-		}
-
-		// and write these out
-		err = s.backend.WriteChannelLogs(logs)
-
-		// log any error writing our channel log but don't break the request
-		if err != nil {
-			logrus.WithError(err).Error("error writing channel log")
-		}
-
-		return nil
-	})
-}
-
-func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc ChannelReceiveMsgFunc) http.HandlerFunc {
-	return s.channelFunctionWrapper(handler, func(channel Channel, w http.ResponseWriter, r *http.Request) error {
-		start := time.Now()
-
-		// read the bytes from our body so we can create a channel log for this request
-		response := &bytes.Buffer{}
-		request, err := httputil.DumpRequest(r, true)
-		if err != nil {
-			return err
+			return
 		}
 		url := fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI())
 		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
@@ -341,12 +284,12 @@ func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc Ch
 		if err != nil {
 			logrus.WithError(err).WithField("url", url).WithField("request", string(request)).Error("error receiving message")
 			WriteError(ww, r, err)
-		}
 
-		// if no events were created we still want to log this to the channel, do so
-		if len(events) == 0 {
-			logs = append(logs, NewChannelLog("Receive Error", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-			librato.Default.AddGauge(fmt.Sprintf("courier.receive_error_%s", channel.ChannelType()), secondDuration)
+			// if no events were created we still want to log this to the channel, do so
+			if len(events) == 0 {
+				logs = append(logs, NewChannelLog("Channel Error", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
+				librato.Default.AddGauge(fmt.Sprintf("courier.channel_error_%s", channel.ChannelType()), secondDuration)
+			}
 		}
 
 		// otherwise, log the request for each message
@@ -358,6 +301,9 @@ func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc Ch
 			case ChannelEvent:
 				logs = append(logs, NewChannelLog("Event Received", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
 				librato.Default.AddGauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
+			case MsgStatus:
+				logs = append(logs, NewChannelLog("Status Updated", channel, e.ID(), r.Method, url, ww.Status(), string(request), response.String(), duration, err))
+				librato.Default.AddGauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
 			}
 		}
 
@@ -368,29 +314,15 @@ func (s *server) channelReceiveMsgWrapper(handler ChannelHandler, handlerFunc Ch
 		if err != nil {
 			logrus.WithError(err).Error("error writing channel log")
 		}
-
-		return nil
-	})
+	}
 }
 
-func (s *server) AddReceiveMsgRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelReceiveMsgFunc) error {
-	return s.addRoute(handler, method, action, s.channelReceiveMsgWrapper(handler, handlerFunc))
-}
-
-func (s *server) AddUpdateStatusRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelUpdateStatusFunc) error {
-	return s.addRoute(handler, method, action, s.channelUpdateStatusWrapper(handler, handlerFunc))
-}
-
-func (s *server) AddChannelRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelActionHandlerFunc) error {
-	return s.addRoute(handler, method, action, s.channelFunctionWrapper(handler, handlerFunc))
-}
-
-func (s *server) addRoute(handler ChannelHandler, method string, action string, handlerFunc http.HandlerFunc) error {
+func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelHandleFunc) error {
 	method = strings.ToLower(method)
 	channelType := strings.ToLower(string(handler.ChannelType()))
 
 	path := fmt.Sprintf("/%s/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/%s", channelType, action)
-	s.chanRouter.Method(method, path, handlerFunc)
+	s.chanRouter.Method(method, path, s.channelHandleWrapper(handler, handlerFunc))
 	s.routes = append(s.routes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
 	return nil
 }

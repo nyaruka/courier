@@ -35,12 +35,12 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
+	s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
 	return nil
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	shaqodoonMessage := &shaqodoonMessage{}
 	handlers.DecodeAndValidateQueryParams(shaqodoonMessage, r)
 
@@ -90,7 +90,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
+	return []courier.Event{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
 }
 
 type shaqodoonMessage struct {
@@ -101,14 +101,14 @@ type shaqodoonMessage struct {
 }
 
 // buildStatusHandler deals with building a handler that takes what status is received in the URL
-func (h *handler) buildStatusHandler(status string) courier.ChannelUpdateStatusFunc {
-	return func(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
+func (h *handler) buildStatusHandler(status string) courier.ChannelHandleFunc {
+	return func(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 		return h.StatusMessage(status, channel, w, r)
 	}
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(statusString string, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
+func (h *handler) StatusMessage(statusString string, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	statusForm := &statusForm{}
 	handlers.DecodeAndValidateQueryParams(statusForm, r)
 
@@ -136,7 +136,7 @@ func (h *handler) StatusMessage(statusString string, channel courier.Channel, w 
 		return nil, err
 	}
 
-	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
+	return []courier.Event{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
 }
 
 type statusForm struct {

@@ -192,7 +192,7 @@ func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Ms
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "S",
+		Status:       "W",
 		ResponseBody: `{"messages":[{"status":{"groupId": 1}}}`, ResponseStatus: 200,
 		Headers: map[string]string{
 			"Content-Type":  "application/json",
@@ -203,7 +203,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:    setSendURL},
 	{Label: "Unicode Send",
 		Text: "☺", URN: "tel:+250788383383",
-		Status:       "S",
+		Status:       "W",
 		ResponseBody: `{"messages":[{"status":{"groupId": 1}}}`, ResponseStatus: 200,
 		Headers: map[string]string{
 			"Content-Type":  "application/json",
@@ -214,7 +214,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:    setSendURL},
 	{Label: "Send Attachment",
 		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "S",
+		Status:       "W",
 		ResponseBody: `{"messages":[{"status":{"groupId": 1}}}`, ResponseStatus: 200,
 		Headers: map[string]string{
 			"Content-Type":  "application/json",
@@ -232,7 +232,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":        "application/json",
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
-		Error:       "received non 200 status: 401",
 		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Error Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		SendPrep:    setSendURL},
 	{Label: "Error groupId",
@@ -244,7 +243,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":        "application/json",
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
-		Error:       `received error status: '2'`,
 		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		SendPrep:    setSendURL},
 }

@@ -40,11 +40,12 @@ const errorStopped = 21610
 
 type handler struct {
 	handlers.BaseHandler
+	ignoreDeliveryReports bool
 }
 
 // NewHandler returns a new TwilioHandler ready to be registered
 func NewHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("T"), "Twilio")}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("T"), "Twilio"), false}
 }
 
 func init() {
@@ -54,12 +55,16 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
+
+	// save whether we should ignore delivery reports
+	h.ignoreDeliveryReports = s.Config().IgnoreDeliveryReports
+
+	err := s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
 
-	return s.AddUpdateStatusRoute(h, "POST", "status", h.StatusMessage)
+	return s.AddHandlerRoute(h, "POST", "status", h.StatusMessage)
 }
 
 type twMessage struct {
@@ -88,7 +93,7 @@ var twStatusMapping = map[string]courier.MsgStatusValue{
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -124,11 +129,11 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		return nil, err
 	}
 
-	return []courier.ReceiveEvent{msg}, h.writeReceiveSuccess(w, r, msg)
+	return []courier.Event{msg}, h.writeReceiveSuccess(w, r, msg)
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
+func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -144,6 +149,11 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 	msgStatus, found := twStatusMapping[twStatus.MessageStatus]
 	if !found {
 		return nil, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", twStatus.MessageStatus)
+	}
+
+	// if we are ignoring delivery reports and this isn't failed then move on
+	if h.ignoreDeliveryReports && msgStatus != courier.MsgFailed {
+		return nil, courier.WriteIgnored(w, r, "ignoring non error delivery report")
 	}
 
 	// if the message id was passed explicitely, use that
@@ -169,7 +179,7 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 		return nil, err
 	}
 
-	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
+	return []courier.Event{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
 }
 
 // SendMsg sends the passed in message, returning any error

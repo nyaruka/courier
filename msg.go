@@ -70,6 +70,7 @@ type Msg interface {
 	ExternalID() string
 	URN() urns.URN
 	ContactName() string
+	QuickReplies() []string
 
 	ReceivedOn() *time.Time
 	SentOn() *time.Time
@@ -83,7 +84,7 @@ type Msg interface {
 	WithUUID(uuid MsgUUID) Msg
 	WithAttachment(url string) Msg
 
-	ReceiveID() int64
+	EventID() int64
 }
 
 // GetTextAndAttachments returns both the text of our message as well as any attachments, newline delimited

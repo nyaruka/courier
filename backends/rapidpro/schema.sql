@@ -76,6 +76,7 @@ CREATE TABLE msgs_msg (
     contact_id integer NOT NULL references contacts_contact(id) on delete cascade,
     contact_urn_id integer NOT NULL references contacts_contacturn(id) on delete cascade,
     org_id integer NOT NULL references orgs_org(id) on delete cascade,
+    metadata text,
     topup_id integer
 );
 

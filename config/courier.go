@@ -60,6 +60,9 @@ type Courier struct {
 	// LogLevel controls the logging level courier uses
 	LogLevel string `default:"error"`
 
+	// IgnoreDeliveryReports controls whether we ignore delivered status reports (errors will still be handled)
+	IgnoreDeliveryReports bool `default:"false"`
+
 	// IncludeChannels is the list of channels to enable, empty means include all
 	IncludeChannels []string
 
