@@ -35,5 +35,5 @@ type ChannelEvent interface {
 	WithExtra(extra map[string]interface{}) ChannelEvent
 	WithOccurredOn(time.Time) ChannelEvent
 
-	ReceiveID() int64
+	EventID() int64
 }

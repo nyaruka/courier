@@ -4,26 +4,16 @@ import (
 	"net/http"
 )
 
-// ReceiveEvent is our interface for the types of things a ChannelReceiveMsgFunc can return. Currently
-// Msgs and ChannelEvent both satisfy this
-type ReceiveEvent interface {
-	ReceiveID() int64
+// Event is our interface for the types of things a ChannelHandleFunc can return.
+type Event interface {
+	EventID() int64
 }
 
-// ChannelReceiveMsgFunc is the interface ChannelHandler functions must satisfy to handle incoming msgs
+// ChannelHandleFunc is the interface ChannelHandlers must satisfy to handle incoming requests.
 // The Server will take care of looking up the channel by UUID before passing it to this function.
-type ChannelReceiveMsgFunc func(Channel, http.ResponseWriter, *http.Request) ([]ReceiveEvent, error)
-
-// ChannelUpdateStatusFunc is the interface ChannelHandler functions must satisfy to handle incoming
-// status requests. The Server will take care of looking up the channel by UUID before passing it to this function.
-type ChannelUpdateStatusFunc func(Channel, http.ResponseWriter, *http.Request) ([]MsgStatus, error)
-
-// ChannelActionHandlerFunc is the interface ChannelHandler functions must satisfy to handle other types
-// of requests. These generic handlers should only be used if they are not dealing with receiving messages
-// or status updates.
-//
-// The Server will take care of looking up the channel by UUID before passing it to this function.
-type ChannelActionHandlerFunc func(Channel, http.ResponseWriter, *http.Request) error
+// Errors in format of the request or by the caller should be handled and logged internally. Errors in
+// execution or in courier itself should be passed back.
+type ChannelHandleFunc func(Channel, http.ResponseWriter, *http.Request) ([]Event, error)
 
 // ChannelHandler is the interface all handlers must satisfy
 type ChannelHandler interface {
