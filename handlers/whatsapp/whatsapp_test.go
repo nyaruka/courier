@@ -1,4 +1,4 @@
-package telegram
+package whatsapp
 
 import (
 	"net/http/httptest"
