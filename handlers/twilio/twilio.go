@@ -188,7 +188,7 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	// build our callback URL
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
-	callbackURL := fmt.Sprintf("https://%s/c/t/%s/status?id=%d&action=callback", callbackDomain, msg.Channel().UUID(), msg.ID().Int64)
+	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?id=%d&action=callback", callbackDomain, strings.ToLower(msg.Channel().ChannelType().String()), msg.Channel().UUID(), msg.ID().Int64)
 
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	if accountSID == "" {
