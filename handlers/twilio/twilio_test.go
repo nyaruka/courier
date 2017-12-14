@@ -37,6 +37,9 @@ var (
 
 	statusInvalid = "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=huh"
 	statusValid   = "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=delivered"
+
+	tmsStatusExtra  = "SmsStatus=sent&MessageStatus=sent&To=2021&MessagingServiceSid=MGdb23ec0f89ee2632e46e91d8128f5e2b&MessageSid=SM0b6e2697aae04182a9f5b5c7a8994c7f&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
+	tmsReceiveExtra = "ToCountry=US&ToState=&SmsMessageSid=SMbbf29aeb9d380ce2a1c0ae4635ff9dab&NumMedia=0&ToCity=&FromZip=27609&SmsSid=SMbbf29aeb9d380ce2a1c0ae4635ff9dab&FromState=NC&SmsStatus=received&FromCity=RALEIGH&Body=John+Cruz&FromCountry=US&To=384387&ToZip=&NumSegments=1&MessageSid=SMbbf29aeb9d380ce2a1c0ae4635ff9dab&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
 )
 
 var testCases = []ChannelHandleTestCase{
@@ -73,6 +76,9 @@ var tmsTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: tmsReceiveURL, Data: receiveValid, Status: 200, Response: "<Response/>",
 		Text: Sp("Msg"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
 		PrepRequest: addValidSignature},
+	{Label: "Receive TMS extra", URL: tmsReceiveURL, Data: tmsReceiveExtra, Status: 200, Response: "<Response/>",
+		Text: Sp("John Cruz"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMbbf29aeb9d380ce2a1c0ae4635ff9dab"),
+		PrepRequest: addValidSignature},
 	{Label: "Receive Invalid Signature", URL: tmsReceiveURL, Data: receiveValid, Status: 400, Response: "invalid request signature",
 		PrepRequest: addInvalidSignature},
 	{Label: "Receive Missing Signature", URL: tmsReceiveURL, Data: receiveValid, Status: 400, Response: "missing request signature"},
@@ -87,6 +93,8 @@ var tmsTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Base64", URL: tmsReceiveURL, Data: receiveBase64, Status: 200, Response: "<Response/>",
 		Text: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
 		PrepRequest: addValidSignature},
+	{Label: "Status TMS extra", URL: tmsStatusURL, Data: tmsStatusExtra, Status: 200, Response: `"status":"S"`,
+		ExternalID: Sp("SM0b6e2697aae04182a9f5b5c7a8994c7f"), PrepRequest: addValidSignature},
 	{Label: "Status No Params", URL: tmsStatusURL, Data: " ", Status: 400, Response: "field 'messagestatus' required",
 		PrepRequest: addValidSignature},
 	{Label: "Status Invalid Status", URL: tmsStatusURL, Data: statusInvalid, Status: 400, Response: "unknown status 'huh'",
