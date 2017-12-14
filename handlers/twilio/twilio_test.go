@@ -116,7 +116,7 @@ func TestHandler(t *testing.T) {
 
 func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, NewHandler("T", "Twilio"), testCases)
-	RunChannelBenchmarks(b, testChannels, NewHandler("TMS", "Twilio Messaging Service"), testCases)
+	RunChannelBenchmarks(b, tmsTestChannels, NewHandler("TMS", "Twilio Messaging Service"), tmsTestCases)
 }
 
 // setSendURL takes care of setting the send_url to our test server host
