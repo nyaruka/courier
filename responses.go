@@ -68,7 +68,6 @@ func WriteMsgSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
 func WriteStatusSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []MsgStatus) error {
-	fmt.Printf("writing success\n")
 	data := []statusData{}
 	for _, status := range statuses {
 		LogMsgStatusReceived(r, status)
