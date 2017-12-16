@@ -1,6 +1,7 @@
 package courier
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -74,7 +75,9 @@ func (f *Foreman) Assign() {
 		// otherwise, grab the next msg and assign it to a sender
 		case sender := <-f.availableSenders:
 			// see if we have a message to work on
-			msg, err := backend.PopNextOutgoingMsg()
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+			msg, err := backend.PopNextOutgoingMsg(ctx)
+			cancel()
 
 			if err == nil && msg != nil {
 				// if so, assign it to our sender
@@ -103,6 +106,7 @@ type Sender struct {
 	id      int
 	foreman *Foreman
 	job     chan Msg
+	log     *logrus.Entry
 }
 
 // NewSender creates a new sender responsible for sending messages
@@ -117,7 +121,29 @@ func NewSender(foreman *Foreman, id int) *Sender {
 
 // Start starts our Sender's goroutine and has it start waiting for tasks from the foreman
 func (w *Sender) Start() {
-	go w.Send()
+	go func() {
+		w.foreman.server.WaitGroup().Add(1)
+		defer w.foreman.server.WaitGroup().Done()
+
+		log := logrus.WithField("comp", "sender").WithField("sender_id", w.id)
+		log.Debug("started")
+
+		for true {
+			// list ourselves as available for work
+			w.foreman.availableSenders <- w
+
+			// grab our next piece of work
+			msg := <-w.job
+
+			// exit if we were stopped
+			if msg == nil {
+				log.Debug("stopped")
+				return
+			}
+
+			w.sendMessage(msg)
+		}
+	}()
 }
 
 // Stop stops our senders, callers can use the server's wait group to track progress
@@ -125,90 +151,73 @@ func (w *Sender) Stop() {
 	close(w.job)
 }
 
-// Send is our main work loop for our worker. The Worker marks itself as available for work
-// to the foreman, then waits for the next job
-func (w *Sender) Send() {
-	w.foreman.server.WaitGroup().Add(1)
-	defer w.foreman.server.WaitGroup().Done()
-
+func (w *Sender) sendMessage(msg Msg) {
 	log := logrus.WithField("comp", "sender").WithField("sender_id", w.id)
-	log.Debug("started")
 
+	var status MsgStatus
 	server := w.foreman.server
 	backend := server.Backend()
 
-	var status MsgStatus
+	// build a timeout context (30s max for sends)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
 
-	for true {
-		// list ourselves as available for work
-		w.foreman.availableSenders <- w
-
-		// grab our next piece of work
-		msg := <-w.job
-
-		// exit if we were stopped
-		if msg == nil {
-			log.Debug("stopped")
-			return
-		}
-
-		msgLog := log.WithField("msg_id", msg.ID().String()).WithField("msg_text", msg.Text()).WithField("msg_urn", msg.URN().Identity())
-		if len(msg.Attachments()) > 0 {
-			msgLog = msgLog.WithField("attachments", msg.Attachments())
-		}
-		if len(msg.QuickReplies()) > 0 {
-			msgLog = msgLog.WithField("quick_replies", msg.QuickReplies())
-		}
-
-		start := time.Now()
-
-		// was this msg already sent? (from a double queue?)
-		sent, err := backend.WasMsgSent(msg)
-
-		// failing on a lookup isn't a halting problem but we should log it
-		if err != nil {
-			msgLog.WithError(err).Warning("error looking up msg was sent")
-		}
-
-		if sent {
-			// if this message was already sent, create a wired status for it
-			status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired)
-			msgLog.Warning("duplicate send, marking as wired")
-		} else {
-			// send our message
-			status, err = server.SendMsg(msg)
-			duration := time.Now().Sub(start)
-			secondDuration := float64(duration) / float64(time.Second)
-
-			if err != nil {
-				msgLog.WithError(err).WithField("elapsed", duration).Error("error sending message")
-				if status == nil {
-					status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
-				}
-			}
-
-			// report to librato and log locally
-			if status.Status() == MsgErrored || status.Status() == MsgFailed {
-				msgLog.WithField("elapsed", duration).Warning("msg errored")
-				librato.Default.AddGauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
-			} else {
-				msgLog.WithField("elapsed", duration).Info("msg sent")
-				librato.Default.AddGauge(fmt.Sprintf("courier.msg_send_%s", msg.Channel().ChannelType()), secondDuration)
-			}
-		}
-
-		err = backend.WriteMsgStatus(status)
-		if err != nil {
-			msgLog.WithError(err).Info("error writing msg status")
-		}
-
-		// write our logs as well
-		err = backend.WriteChannelLogs(status.Logs())
-		if err != nil {
-			msgLog.WithError(err).Info("error writing msg logs")
-		}
-
-		// mark our send task as complete
-		backend.MarkOutgoingMsgComplete(msg, status)
+	msgLog := log.WithField("msg_id", msg.ID().String()).WithField("msg_text", msg.Text()).WithField("msg_urn", msg.URN().Identity())
+	if len(msg.Attachments()) > 0 {
+		msgLog = msgLog.WithField("attachments", msg.Attachments())
 	}
+	if len(msg.QuickReplies()) > 0 {
+		msgLog = msgLog.WithField("quick_replies", msg.QuickReplies())
+	}
+
+	start := time.Now()
+
+	// was this msg already sent? (from a double queue?)
+	sent, err := backend.WasMsgSent(ctx, msg)
+
+	// failing on a lookup isn't a halting problem but we should log it
+	if err != nil {
+		msgLog.WithError(err).Warning("error looking up msg was sent")
+	}
+
+	if sent {
+		// if this message was already sent, create a wired status for it
+		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired)
+		msgLog.Warning("duplicate send, marking as wired")
+	} else {
+		// send our message
+		status, err = server.SendMsg(ctx, msg)
+		duration := time.Now().Sub(start)
+		secondDuration := float64(duration) / float64(time.Second)
+
+		if err != nil {
+			msgLog.WithError(err).WithField("elapsed", duration).Error("error sending message")
+			if status == nil {
+				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
+			}
+		}
+
+		// report to librato and log locally
+		if status.Status() == MsgErrored || status.Status() == MsgFailed {
+			msgLog.WithField("elapsed", duration).Warning("msg errored")
+			librato.Default.AddGauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
+		} else {
+			msgLog.WithField("elapsed", duration).Info("msg sent")
+			librato.Default.AddGauge(fmt.Sprintf("courier.msg_send_%s", msg.Channel().ChannelType()), secondDuration)
+		}
+	}
+
+	err = backend.WriteMsgStatus(ctx, status)
+	if err != nil {
+		msgLog.WithError(err).Info("error writing msg status")
+	}
+
+	// write our logs as well
+	err = backend.WriteChannelLogs(ctx, status.Logs())
+	if err != nil {
+		msgLog.WithError(err).Info("error writing msg logs")
+	}
+
+	// mark our send task as complete
+	backend.MarkOutgoingMsgComplete(ctx, msg, status)
 }
