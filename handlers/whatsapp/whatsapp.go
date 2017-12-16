@@ -2,6 +2,7 @@ package whatsapp
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -75,34 +76,34 @@ type waReceive struct {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	waReceive := &waReceive{}
 	err := handlers.DecodeAndValidateJSON(waReceive, r)
 	if err != nil {
-		return nil, courier.WriteError(w, r, err)
+		return nil, courier.WriteError(ctx, w, r, err)
 	}
 
 	// if this is an error, that's an erro
 	if waReceive.Error {
-		return nil, courier.WriteError(w, r, fmt.Errorf("received errored message"))
+		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("received errored message"))
 	}
 
 	// create our date from the timestamp
 	ts, err := strconv.ParseInt(waReceive.Payload.Timestamp, 10, 64)
 	if err != nil {
-		return nil, courier.WriteError(w, r, fmt.Errorf("invalid timestamp: %s", waReceive.Payload.Timestamp))
+		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("invalid timestamp: %s", waReceive.Payload.Timestamp))
 	}
 	date := time.Unix(ts, 0).UTC()
 
 	// create our URN
 	urn, err := urns.NewWhatsAppURN(waReceive.Payload.From)
 	if err != nil {
-		return nil, courier.WriteError(w, r, err)
+		return nil, courier.WriteError(ctx, w, r, err)
 	}
 
 	// ignore this if there's no message
 	if waReceive.Payload.Message.Text == "" {
-		return nil, courier.WriteIgnored(w, r, "ignoring, empty message")
+		return nil, courier.WriteIgnored(ctx, w, r, "ignoring, empty message")
 	}
 
 	// TODO: should we be hitting the API to look up contact information?
@@ -113,12 +114,12 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	msg := h.Backend().NewIncomingMsg(channel, urn, waReceive.Payload.Message.Text).WithReceivedOn(date).WithExternalID(waReceive.Payload.MessageID)
 
 	// queue our message
-	err = h.Backend().WriteMsg(msg)
+	err = h.Backend().WriteMsg(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.Event{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
+	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
 // {
@@ -149,18 +150,18 @@ var waStatusMapping = map[string]courier.MsgStatusValue{
 }
 
 // UpdateStatus is our HTTP handler function for status updates
-func (h *handler) UpdateStatus(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) UpdateStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
 	waStatus := &waStatus{}
 	err := handlers.DecodeAndValidateJSON(waStatus, r)
 	if err != nil {
-		return nil, courier.WriteError(w, r, err)
+		return nil, courier.WriteError(ctx, w, r, err)
 	}
 
 	msgStatus, found := waStatusMapping[waStatus.Payload.MessageStatus]
 	if !found {
 		return nil, courier.WriteError(
-			w, r,
+			ctx, w, r,
 			fmt.Errorf("unknown status '%s', must be one of 'sending', 'sent', 'delivered', 'read' or 'failed'", waStatus.Payload.MessageStatus))
 	}
 
@@ -168,12 +169,12 @@ func (h *handler) UpdateStatus(channel courier.Channel, w http.ResponseWriter, r
 	status := h.Backend().NewMsgStatusForExternalID(channel, waStatus.Payload.MessageID, msgStatus)
 
 	// write our status
-	err = h.Backend().WriteMsgStatus(status)
+	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.Event{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
+	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
 }
 
 // {
@@ -204,7 +205,7 @@ type waSendResponse struct {
 const maxMsgLength = 4096
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	// get our username and password
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {

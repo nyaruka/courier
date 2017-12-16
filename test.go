@@ -1,6 +1,7 @@
 package courier
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -88,7 +89,7 @@ func (mb *MockBackend) PushOutgoingMsg(msg Msg) {
 }
 
 // PopNextOutgoingMsg returns the next message that should be sent, or nil if there are none to send
-func (mb *MockBackend) PopNextOutgoingMsg() (Msg, error) {
+func (mb *MockBackend) PopNextOutgoingMsg(ctx context.Context) (Msg, error) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -102,7 +103,7 @@ func (mb *MockBackend) PopNextOutgoingMsg() (Msg, error) {
 }
 
 // WasMsgSent returns whether the passed in msg was already sent
-func (mb *MockBackend) WasMsgSent(msg Msg) (bool, error) {
+func (mb *MockBackend) WasMsgSent(ctx context.Context, msg Msg) (bool, error) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -110,7 +111,7 @@ func (mb *MockBackend) WasMsgSent(msg Msg) (bool, error) {
 }
 
 // StopMsgContact stops the contact for the passed in msg
-func (mb *MockBackend) StopMsgContact(msg Msg) {
+func (mb *MockBackend) StopMsgContact(ctx context.Context, msg Msg) {
 	mb.stoppedMsgContacts = append(mb.stoppedMsgContacts, msg)
 }
 
@@ -123,7 +124,7 @@ func (mb *MockBackend) GetLastStoppedMsgContact() Msg {
 }
 
 // MarkOutgoingMsgComplete marks the passed msg as having been dealt with
-func (mb *MockBackend) MarkOutgoingMsgComplete(msg Msg, s MsgStatus) {
+func (mb *MockBackend) MarkOutgoingMsgComplete(ctx context.Context, msg Msg, s MsgStatus) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -131,7 +132,7 @@ func (mb *MockBackend) MarkOutgoingMsgComplete(msg Msg, s MsgStatus) {
 }
 
 // WriteChannelLogs writes the passed in channel logs to the DB
-func (mb *MockBackend) WriteChannelLogs(logs []*ChannelLog) error {
+func (mb *MockBackend) WriteChannelLogs(ctx context.Context, logs []*ChannelLog) error {
 	return nil
 }
 
@@ -141,7 +142,7 @@ func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 }
 
 // WriteMsg queues the passed in message internally
-func (mb *MockBackend) WriteMsg(m Msg) error {
+func (mb *MockBackend) WriteMsg(ctx context.Context, m Msg) error {
 	if mb.errorOnQueue {
 		return errors.New("unable to queue message")
 	}
@@ -172,7 +173,7 @@ func (mb *MockBackend) NewMsgStatusForExternalID(channel Channel, externalID str
 }
 
 // WriteMsgStatus writes the status update to our queue
-func (mb *MockBackend) WriteMsgStatus(status MsgStatus) error {
+func (mb *MockBackend) WriteMsgStatus(ctx context.Context, status MsgStatus) error {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -190,7 +191,7 @@ func (mb *MockBackend) NewChannelEvent(channel Channel, eventType ChannelEventTy
 }
 
 // WriteChannelEvent writes the channel event passed in
-func (mb *MockBackend) WriteChannelEvent(event ChannelEvent) error {
+func (mb *MockBackend) WriteChannelEvent(ctx context.Context, event ChannelEvent) error {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -200,7 +201,7 @@ func (mb *MockBackend) WriteChannelEvent(event ChannelEvent) error {
 }
 
 // GetChannel returns the channel with the passed in type and channel uuid
-func (mb *MockBackend) GetChannel(cType ChannelType, uuid ChannelUUID) (Channel, error) {
+func (mb *MockBackend) GetChannel(ctx context.Context, cType ChannelType, uuid ChannelUUID) (Channel, error) {
 	channel, found := mb.channels[uuid]
 	if !found {
 		return nil, ErrChannelNotFound

@@ -42,7 +42,7 @@ ORDER BY priority desc
 `
 
 // selectContactURNs returns all the ContactURNs for the passed in contact, sorted by priority
-func contactURNsForContact(db dbTx, contactID ContactID) ([]*DBContactURN, error) {
+func contactURNsForContact(db *sqlx.Tx, contactID ContactID) ([]*DBContactURN, error) {
 	// select all the URNs for this contact
 	rows, err := db.Queryx(selectContactURNs, contactID)
 	if err != nil {
@@ -69,7 +69,7 @@ func contactURNsForContact(db dbTx, contactID ContactID) ([]*DBContactURN, error
 // that the passed in channel is the default one for that URN
 //
 // Note that the URN must be one of the contact's URN before calling this method
-func setDefaultURN(db dbTx, channelID courier.ChannelID, contact *DBContact, urn urns.URN) error {
+func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact, urn urns.URN) error {
 	scheme := urn.Scheme()
 	contactURNs, err := contactURNsForContact(db, contact.ID)
 	if err != nil {
@@ -131,7 +131,7 @@ ORDER BY priority desc LIMIT 1
 
 // contactURNForURN returns the ContactURN for the passed in org and URN, creating and associating
 // it with the passed in contact if necessary
-func contactURNForURN(db dbTx, org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN) (*DBContactURN, error) {
+func contactURNForURN(db *sqlx.Tx, org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN) (*DBContactURN, error) {
 	contactURN := newDBContactURN(org, channelID, contactID, urn)
 	err := db.Get(contactURN, selectOrgURN, org, urn.Identity())
 	if err != nil && err != sql.ErrNoRows {
@@ -166,7 +166,7 @@ RETURNING id
 `
 
 // InsertContactURN inserts the passed in urn, the id field will be populated with the result on success
-func insertContactURN(db dbTx, urn *DBContactURN) error {
+func insertContactURN(db *sqlx.Tx, urn *DBContactURN) error {
 	rows, err := db.NamedQuery(insertURN, urn)
 	if err != nil {
 		return err
@@ -186,7 +186,7 @@ WHERE id = :id
 `
 
 // UpdateContactURN updates the Channel and Contact on an existing URN
-func updateContactURN(db dbTx, urn *DBContactURN) error {
+func updateContactURN(db *sqlx.Tx, urn *DBContactURN) error {
 	rows, err := db.NamedQuery(updateURN, urn)
 	if err != nil {
 		logrus.WithError(err).WithField("urn_id", urn.ID.Int64).Error("error updating contact urn")
@@ -211,11 +211,4 @@ type DBContactURN struct {
 	Priority  int               `db:"priority"`
 	ChannelID courier.ChannelID `db:"channel_id"`
 	ContactID ContactID         `db:"contact_id"`
-}
-
-// dbTx is our own interface that abstracts out whether we are using a transaction or a database
-type dbTx interface {
-	sqlx.Ext
-	NamedQuery(query string, arg interface{}) (*sqlx.Rows, error)
-	Get(dest interface{}, query string, args ...interface{}) error
 }

@@ -1,6 +1,7 @@
 package rapidpro
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -46,10 +47,10 @@ func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType
 }
 
 // writeChannelEvent writes the passed in event to the database, queueing it to our spool in case the database is down
-func writeChannelEvent(b *backend, event courier.ChannelEvent) error {
+func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEvent) error {
 	dbEvent := event.(*DBChannelEvent)
 
-	err := writeChannelEventToDB(b, dbEvent)
+	err := writeChannelEventToDB(ctx, b, dbEvent)
 
 	// failed writing, write to our spool instead
 	if err != nil {
@@ -67,9 +68,9 @@ RETURNING id
 `
 
 // writeChannelEventToDB writes the passed in msg status to our db
-func writeChannelEventToDB(b *backend, e *DBChannelEvent) error {
+func writeChannelEventToDB(ctx context.Context, b *backend, e *DBChannelEvent) error {
 	// grab the contact for this event
-	contact, err := contactForURN(b.db, e.OrgID_, e.ChannelID_, e.URN_, e.ContactName_)
+	contact, err := contactForURN(ctx, b.db, e.OrgID_, e.ChannelID_, e.URN_, e.ContactName_)
 	if err != nil {
 		return err
 	}
@@ -77,7 +78,7 @@ func writeChannelEventToDB(b *backend, e *DBChannelEvent) error {
 	e.ContactID_ = contact.ID
 	e.ContactURNID_ = contact.URNID
 
-	rows, err := b.db.NamedQuery(insertChannelEventSQL, e)
+	rows, err := b.db.NamedQueryContext(ctx, insertChannelEventSQL, e)
 	if err != nil {
 		return err
 	}
@@ -112,7 +113,7 @@ func (b *backend) flushChannelEventFile(filename string, contents []byte) error 
 	}
 
 	// try to flush to our database
-	return writeChannelEventToDB(b, event)
+	return writeChannelEventToDB(context.Background(), b, event)
 }
 
 const selectEventSQL = `

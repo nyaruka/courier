@@ -1,6 +1,7 @@
 package courier
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 )
 
 // WriteError writes a JSON response for the passed in error
-func WriteError(w http.ResponseWriter, r *http.Request, err error) error {
+func WriteError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error {
 	errors := []string{err.Error()}
 
 	vErrs, isValidation := err.(validator.ValidationErrors)
@@ -22,19 +23,19 @@ func WriteError(w http.ResponseWriter, r *http.Request, err error) error {
 			errors = append(errors, fmt.Sprintf("field '%s' %s", strings.ToLower(vErrs[i].Field()), vErrs[i].Tag()))
 		}
 	}
-	return writeJSONResponse(w, http.StatusBadRequest, &errorResponse{errors})
+	return writeJSONResponse(ctx, w, http.StatusBadRequest, &errorResponse{errors})
 }
 
 // WriteIgnored writes a JSON response for the passed in message
-func WriteIgnored(w http.ResponseWriter, r *http.Request, details string) error {
+func WriteIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, details string) error {
 	LogRequestIgnored(r, details)
-	return writeData(w, http.StatusOK, details, struct{}{})
+	return writeData(ctx, w, http.StatusOK, details, struct{}{})
 }
 
 // WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it
-func WriteChannelEventSuccess(w http.ResponseWriter, r *http.Request, event ChannelEvent) error {
+func WriteChannelEventSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, event ChannelEvent) error {
 	LogChannelEventReceived(r, event)
-	return writeData(w, http.StatusOK, "Event Accepted",
+	return writeData(ctx, w, http.StatusOK, "Event Accepted",
 		&eventReceiveData{
 			event.ChannelUUID(),
 			event.EventType(),
@@ -44,7 +45,7 @@ func WriteChannelEventSuccess(w http.ResponseWriter, r *http.Request, event Chan
 }
 
 // WriteMsgSuccess writes a JSON response for the passed in msg indicating we handled it
-func WriteMsgSuccess(w http.ResponseWriter, r *http.Request, msgs []Msg) error {
+func WriteMsgSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []Msg) error {
 
 	data := []msgReceiveData{}
 	for _, msg := range msgs {
@@ -62,12 +63,12 @@ func WriteMsgSuccess(w http.ResponseWriter, r *http.Request, msgs []Msg) error {
 			})
 	}
 
-	return writeData(w, http.StatusOK, "Message Accepted", msgsReceivedResponse{data})
+	return writeData(ctx, w, http.StatusOK, "Message Accepted", msgsReceivedResponse{data})
 }
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
-func WriteStatusSuccess(w http.ResponseWriter, r *http.Request, statuses []MsgStatus) error {
-
+func WriteStatusSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []MsgStatus) error {
+	fmt.Printf("writing success\n")
 	data := []statusData{}
 	for _, status := range statuses {
 		LogMsgStatusReceived(r, status)
@@ -81,7 +82,7 @@ func WriteStatusSuccess(w http.ResponseWriter, r *http.Request, statuses []MsgSt
 			})
 	}
 
-	return writeData(w, http.StatusOK, "Status Update Accepted", statusesData{data})
+	return writeData(ctx, w, http.StatusOK, "Status Update Accepted", statusesData{data})
 }
 
 type errorResponse struct {
@@ -125,12 +126,12 @@ type statusesData struct {
 	Statuses []statusData `json:"statuses"`
 }
 
-func writeJSONResponse(w http.ResponseWriter, statusCode int, response interface{}) error {
+func writeJSONResponse(ctx context.Context, w http.ResponseWriter, statusCode int, response interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	return json.NewEncoder(w).Encode(response)
 }
 
-func writeData(w http.ResponseWriter, statusCode int, message string, response interface{}) error {
-	return writeJSONResponse(w, statusCode, &successResponse{message, response})
+func writeData(ctx context.Context, w http.ResponseWriter, statusCode int, message string, response interface{}) error {
+	return writeJSONResponse(ctx, w, statusCode, &successResponse{message, response})
 }
