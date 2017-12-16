@@ -57,7 +57,7 @@ func loadChannelFromDB(ctx context.Context, b *backend, channelType courier.Chan
 	channel := &DBChannel{UUID_: uuid}
 
 	// select just the fields we need
-	err := b.db.Get(channel, lookupChannelFromUUIDSQL, uuid)
+	err := b.db.GetContext(ctx, channel, lookupChannelFromUUIDSQL, uuid)
 
 	// we didn't find a match
 	if err == sql.ErrNoRows {

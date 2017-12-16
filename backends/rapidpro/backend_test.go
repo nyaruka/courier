@@ -341,6 +341,7 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 }
 
 func (ts *BackendTestSuite) TestMsgStatus() {
+	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	now := time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)
@@ -348,7 +349,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update by id with external id
 	status := ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10001), courier.MsgWired)
 	status.SetExternalID("ext0")
-	err := ts.b.WriteMsgStatus(context.Background(), status)
+	err := ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
 	m, err := readMsgFromDB(ts.b, courier.NewMsgID(10001))
 	ts.NoError(err)
@@ -359,7 +360,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	// update by id, no external id, shouldn't overwrite it
 	status = ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10001), courier.MsgSent)
-	err = ts.b.WriteMsgStatus(context.Background(), status)
+	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
 	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10001))
 	ts.NoError(err)
@@ -369,7 +370,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	// update by external id
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgFailed)
-	err = ts.b.WriteMsgStatus(context.Background(), status)
+	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
 	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10000))
 	ts.NoError(err)
@@ -378,18 +379,18 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	// no such external id
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext2", courier.MsgSent)
-	err = ts.b.WriteMsgStatus(context.Background(), status)
+	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.Error(err)
 
 	// reset our status to sent
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgSent)
-	err = ts.b.WriteMsgStatus(context.Background(), status)
+	err = ts.b.WriteMsgStatus(ctx, status)
 
 	// error our msg
 	now = time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgErrored)
-	err = ts.b.WriteMsgStatus(context.Background(), status)
+	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
 	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10000))
 	ts.NoError(err)
@@ -400,7 +401,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	// second go
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgErrored)
-	err = ts.b.WriteMsgStatus(context.Background(), status)
+	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
 	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10000))
 	ts.NoError(err)
@@ -409,7 +410,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	// third go
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgErrored)
-	err = ts.b.WriteMsgStatus(context.Background(), status)
+	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
 	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10000))
 	ts.NoError(err)
@@ -448,6 +449,7 @@ func (ts *BackendTestSuite) TestStatus() {
 
 func (ts *BackendTestSuite) TestOutgoingQueue() {
 	// add one of our outgoing messages to the queue
+	ctx := context.Background()
 	r := ts.b.redisPool.Get()
 	defer r.Close()
 
@@ -464,7 +466,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.NoError(err)
 
 	// pop a message off our queue
-	msg, err := ts.b.PopNextOutgoingMsg(context.Background())
+	msg, err := ts.b.PopNextOutgoingMsg(ctx)
 	ts.NoError(err)
 	ts.NotNil(msg)
 
@@ -475,31 +477,31 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.Equal(msg.Text(), "test message")
 
 	// mark this message as dealt with
-	ts.b.MarkOutgoingMsgComplete(context.Background(), msg, ts.b.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgWired))
+	ts.b.MarkOutgoingMsgComplete(ctx, msg, ts.b.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgWired))
 
 	// this message should now be marked as sent
-	sent, err := ts.b.WasMsgSent(context.Background(), msg)
+	sent, err := ts.b.WasMsgSent(ctx, msg)
 	ts.NoError(err)
 	ts.True(sent)
 
 	// pop another message off, shouldn't get anything
-	msg2, err := ts.b.PopNextOutgoingMsg(context.Background())
+	msg2, err := ts.b.PopNextOutgoingMsg(ctx)
 	ts.Nil(msg2)
 	ts.Nil(err)
 
 	// checking another message should show unsent
 	msg3, err := readMsgFromDB(ts.b, courier.NewMsgID(10001))
 	ts.NoError(err)
-	sent, err = ts.b.WasMsgSent(context.Background(), msg3)
+	sent, err = ts.b.WasMsgSent(ctx, msg3)
 	ts.NoError(err)
 	ts.False(sent)
 
 	// write an error for our original message
-	err = ts.b.WriteMsgStatus(context.Background(), ts.b.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored))
+	err = ts.b.WriteMsgStatus(ctx, ts.b.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored))
 	ts.NoError(err)
 
 	// message should no longer be considered sent
-	sent, err = ts.b.WasMsgSent(context.Background(), msg)
+	sent, err = ts.b.WasMsgSent(ctx, msg)
 	ts.NoError(err)
 	ts.False(sent)
 }
@@ -630,7 +632,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	msg := ts.b.NewIncomingMsg(knChannel, urn, "test123").WithExternalID("ext123").WithReceivedOn(now).WithContactName("test contact").(*DBMsg)
 
 	// try to write it to our db
-	err := ts.b.WriteMsg(context.Background(), msg)
+	err := ts.b.WriteMsg(ctx, msg)
 	ts.NoError(err)
 
 	// creating the incoming msg again should give us the same UUID and have the msg set as not to write
@@ -701,8 +703,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 }
 
 func (ts *BackendTestSuite) TestChannelEvent() {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
+	ctx := context.Background()
 
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	urn := urns.NewTelURNForCountry("12065551616", channel.Country())

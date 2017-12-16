@@ -72,7 +72,6 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *DBChannelEvent) e
 	// grab the contact for this event
 	contact, err := contactForURN(ctx, b.db, e.OrgID_, e.ChannelID_, e.URN_, e.ContactName_)
 	if err != nil {
-		fmt.Printf("ERROR LOOKING UP CONTACT\n: %s", err)
 		return err
 	}
 

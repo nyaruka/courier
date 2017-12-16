@@ -38,6 +38,9 @@ const chatbaseAPIKey = "CHATBASE_API_KEY"
 const chatbaseVersion = "CHATBASE_VERSION"
 const chatbaseMessageType = "msg"
 
+// our timeout for db operations
+const dbTimeout = time.Second * 2
+
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
 }
@@ -45,7 +48,7 @@ func init() {
 // GetChannel returns the channel for the passed in type and UUID
 func (b *backend) GetChannel(ctx context.Context, ct courier.ChannelType, uuid courier.ChannelUUID) (courier.Channel, error) {
 	// max 1 second to get a channel
-	timeout, cancel := context.WithTimeout(ctx, time.Second)
+	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
 	defer cancel()
 
 	return getChannel(timeout, b, ct, uuid)
@@ -161,7 +164,7 @@ func (b *backend) StopMsgContact(ctx context.Context, m courier.Msg) {
 
 // WriteMsg writes the passed in message to our store
 func (b *backend) WriteMsg(ctx context.Context, m courier.Msg) error {
-	timeout, cancel := context.WithTimeout(ctx, time.Second)
+	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
 	defer cancel()
 
 	return writeMsg(timeout, b, m)
@@ -179,7 +182,7 @@ func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID 
 
 // WriteMsgStatus writes the passed in MsgStatus to our store
 func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) error {
-	timeout, cancel := context.WithTimeout(ctx, time.Second)
+	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
 	defer cancel()
 
 	err := writeMsgStatus(timeout, b, status)
@@ -214,7 +217,7 @@ func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.Cha
 
 // WriteChannelEvent writes the passed in channel even returning any error
 func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent) error {
-	timeout, cancel := context.WithTimeout(ctx, time.Second)
+	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
 	defer cancel()
 
 	return writeChannelEvent(timeout, b, event)
@@ -222,7 +225,7 @@ func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEv
 
 // WriteChannelLogs persists the passed in logs to our database, for rapidpro we swallow all errors, logging isn't critical
 func (b *backend) WriteChannelLogs(ctx context.Context, logs []*courier.ChannelLog) error {
-	timeout, cancel := context.WithTimeout(ctx, time.Second)
+	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
 	defer cancel()
 
 	for _, l := range logs {

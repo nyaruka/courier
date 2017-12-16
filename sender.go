@@ -158,8 +158,8 @@ func (w *Sender) sendMessage(msg Msg) {
 	server := w.foreman.server
 	backend := server.Backend()
 
-	// build a timeout context (30s max for sends)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	// we don't want any individual send taking more than 35s
+	sendCTX, cancel := context.WithTimeout(context.Background(), time.Second*35)
 	defer cancel()
 
 	msgLog := log.WithField("msg_id", msg.ID().String()).WithField("msg_text", msg.Text()).WithField("msg_urn", msg.URN().Identity())
@@ -173,7 +173,7 @@ func (w *Sender) sendMessage(msg Msg) {
 	start := time.Now()
 
 	// was this msg already sent? (from a double queue?)
-	sent, err := backend.WasMsgSent(ctx, msg)
+	sent, err := backend.WasMsgSent(sendCTX, msg)
 
 	// failing on a lookup isn't a halting problem but we should log it
 	if err != nil {
@@ -186,7 +186,7 @@ func (w *Sender) sendMessage(msg Msg) {
 		msgLog.Warning("duplicate send, marking as wired")
 	} else {
 		// send our message
-		status, err = server.SendMsg(ctx, msg)
+		status, err = server.SendMsg(sendCTX, msg)
 		duration := time.Now().Sub(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
@@ -207,17 +207,21 @@ func (w *Sender) sendMessage(msg Msg) {
 		}
 	}
 
-	err = backend.WriteMsgStatus(ctx, status)
+	// we allot 5 seconds to write our status to the db
+	writeCTX, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	err = backend.WriteMsgStatus(writeCTX, status)
 	if err != nil {
 		msgLog.WithError(err).Info("error writing msg status")
 	}
 
 	// write our logs as well
-	err = backend.WriteChannelLogs(ctx, status.Logs())
+	err = backend.WriteChannelLogs(writeCTX, status.Logs())
 	if err != nil {
 		msgLog.WithError(err).Info("error writing msg logs")
 	}
 
 	// mark our send task as complete
-	backend.MarkOutgoingMsgComplete(ctx, msg, status)
+	backend.MarkOutgoingMsgComplete(writeCTX, msg, status)
 }
