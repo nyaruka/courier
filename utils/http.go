@@ -16,14 +16,15 @@ type RequestResponseStatus string
 
 // RequestResponse represents both the outgoing request and response for a particular URL/method/body
 type RequestResponse struct {
-	Method     string
-	URL        string
-	Status     RequestResponseStatus
-	StatusCode int
-	Request    string
-	Response   string
-	Body       []byte
-	Elapsed    time.Duration
+	Method        string
+	URL           string
+	Status        RequestResponseStatus
+	StatusCode    int
+	Request       string
+	Response      string
+	Body          []byte
+	ContentLength string
+	Elapsed       time.Duration
 }
 
 const (
@@ -105,6 +106,7 @@ func newRRFromResponse(method string, requestTrace string, r *http.Response) (*R
 	rr.Method = method
 	rr.URL = r.Request.URL.String()
 	rr.StatusCode = r.StatusCode
+	rr.ContentLength = r.Header.Get("Content-Length")
 
 	// set our status based on our status code
 	if rr.StatusCode/100 == 2 {

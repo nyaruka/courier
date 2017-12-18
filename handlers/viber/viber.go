@@ -8,6 +8,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
@@ -31,6 +34,7 @@ POST /handlers/viber_public/uuid?sig=sig
 var viberSignatureHeader = "X-Viber-Content-Signature"
 var sendURL = "https://chatapi.viber.com/pa/send_message"
 var maxMsgLength = 7000
+var quickReplyTextSize = 36
 
 func init() {
 	courier.RegisterHandler(NewHandler())
@@ -254,14 +258,96 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(courier.GetTextAndAttachments(msg), maxMsgLength)
-	for _, part := range parts {
+
+	// figure out whether we have a keyboard to send as well
+	qrs := msg.QuickReplies()
+	replies := ""
+
+	if len(qrs) > 0 {
+
+		buttons := make([]viberButton, len(qrs))
+		for i, qr := range qrs {
+			buttons[i].ActionType = "reply"
+			buttons[i].TextSize = "regular"
+			buttons[i].ActionBody = string(qr[:quickReplyTextSize])
+			buttons[i].Text = string(qr[:quickReplyTextSize])
+		}
+
+		viberKeyboard := viberKeyboard{"keyboard", true, buttons}
+		replyBytes, err := json.Marshal(viberKeyboard)
+		if err != nil {
+			return nil, err
+		}
+		replies = string(replyBytes)
+	}
+
+	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
+	for i, part := range parts {
+		viberMessageType := "text"
+		viberMsgSize := ""
+		filename := ""
+		viberMediaURL := ""
+
+		// add any media URL to the first part
+		if len(msg.Attachments()) > 0 && i == 0 {
+			mediaType, mediaURL := courier.SplitAttachment(msg.Attachments()[0])
+			switch strings.Split(mediaType, "/")[0] {
+			case "image":
+				viberMessageType = "picture"
+				viberMediaURL = mediaURL
+
+			case "video":
+				viberMessageType = "video"
+				viberMediaURL = mediaURL
+				req, err := http.NewRequest(http.MethodHead, mediaURL, strings.NewReader(""))
+				if err != nil {
+					return nil, err
+				}
+				rr, err := utils.MakeHTTPRequest(req)
+				if err != nil {
+					return nil, err
+				}
+
+				viberMsgSize = rr.ContentLength
+
+			case "audio":
+				viberMessageType = "file"
+				viberMediaURL = mediaURL
+				req, err := http.NewRequest(http.MethodHead, mediaURL, strings.NewReader(""))
+				if err != nil {
+					return nil, err
+				}
+				rr, err := utils.MakeHTTPRequest(req)
+				if err != nil {
+					return nil, err
+				}
+				viberMsgSize = rr.ContentLength
+				filename = "Audio"
+
+			default:
+				status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
+					"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
+
+			}
+		}
+
 		viberMsg := viberOutgoingMessage{
 			AuthToken:    authToken,
 			Receiver:     msg.URN().Path(),
 			Text:         part,
-			Type:         "text",
+			Type:         viberMessageType,
 			TrackingData: msg.ID().String(),
+			Media:        viberMediaURL,
+			FileName:     filename,
+			Keyboard:     replies,
+		}
+
+		if viberMsgSize != "" {
+			viberMsgSizeInt, err := strconv.Atoi(viberMsgSize)
+			if err != nil {
+				return nil, err
+			}
+			viberMsg.Size = viberMsgSizeInt
 		}
 
 		requestBody := &bytes.Buffer{}
@@ -297,14 +383,33 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		}
 
 		status.SetStatus(courier.MsgWired)
+		replies = ""
 	}
 	return status, nil
 }
 
 type viberOutgoingMessage struct {
-	AuthToken    string `json:"auth_token"`
-	Receiver     string `json:"receiver"`
-	Text         string `json:"text"`
-	Type         string `json:"type"`
-	TrackingData string `json:"tracking_data"`
+	AuthToken    string            `json:"auth_token"`
+	Receiver     string            `json:"receiver"`
+	Text         string            `json:"text"`
+	Type         string            `json:"type"`
+	TrackingData string            `json:"tracking_data"`
+	Sender       map[string]string `json:"sender,omitempty"`
+	Media        string            `json:"media,omitempty"`
+	Size         int               `json:"size,omitempty"`
+	FileName     string            `json:"file_name,omitempty"`
+	Keyboard     string            `json:"keyboard,omitempty"`
+}
+
+type viberKeyboard struct {
+	Type          string        `json:"type"`
+	DefaultHeight bool          `json:"DefaultHeight"`
+	Buttons       []viberButton `json:"Buttons"`
+}
+
+type viberButton struct {
+	ActionType string `json:"ActionType"`
+	ActionBody string `json:"ActionBody"`
+	Text       string `json:"Text"`
+	TextSize   string `json:"TextSize"`
 }

@@ -16,6 +16,18 @@ func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Ms
 	sendURL = server.URL
 }
 
+func buildMockAttachmentService(testCases []ChannelSendTestCase) *httptest.Server {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		headers := w.Header()
+		if r.Method == http.MethodHead {
+			headers["Content-Length"] = []string{"123445"}
+		}
+		w.Write([]byte(""))
+	}))
+
+	return server
+}
+
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==",
@@ -49,14 +61,24 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"☺","type":"text","tracking_data":"10"}`,
 		SendPrep:    setSendURL},
 	{Label: "Send Attachment",
-		Text: "My pic!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Text: "My pic!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"image/jpeg:https://localhost/image.jpg"},
 		Status: "W", ResponseStatus: 200,
 		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
 		Headers: map[string]string{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My pic!\nhttps://foo.bar/image.jpg","type":"text","tracking_data":"10"}`,
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My pic!","type":"picture","tracking_data":"10","media":"https://localhost/image.jpg"}`,
+		SendPrep:    setSendURL},
+	{Label: "Send Attachment Video",
+		Text: "My video!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"video/mp4:https://localhost/video.mp4"},
+		Status: "W", ResponseStatus: 200,
+		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+			"Accept":       "application/json",
+		},
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My video!","type":"video","tracking_data":"10","media":"https://localhost/video.mp4","size":10}`,
 		SendPrep:    setSendURL},
 	{Label: "Got non-0 response",
 		Text: "Simple Message", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==",
@@ -96,6 +118,9 @@ var invalidTokenSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
+	attachmentService := buildMockAttachmentService(defaultSendTestCases)
+	defer attachmentService.Close()
+
 	maxMsgLength = 160
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		map[string]interface{}{
