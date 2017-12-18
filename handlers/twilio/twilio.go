@@ -45,12 +45,14 @@ type handler struct {
 }
 
 // NewHandler returns a new TwilioHandler ready to be registered
-func NewHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("T"), "Twilio"), false}
+func NewHandler(channelType string, name string) courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandler(courier.ChannelType(channelType), name), false}
 }
 
 func init() {
-	courier.RegisterHandler(NewHandler())
+	courier.RegisterHandler(NewHandler("T", "Twilio"))
+	courier.RegisterHandler(NewHandler("TMS", "Twilio Messaging Service"))
+
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -187,7 +189,7 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	// build our callback URL
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
-	callbackURL := fmt.Sprintf("https://%s/c/t/%s/status?id=%d&action=callback", callbackDomain, msg.Channel().UUID(), msg.ID().Int64)
+	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?id=%d&action=callback", callbackDomain, strings.ToLower(msg.Channel().ChannelType().String()), msg.Channel().UUID(), msg.ID().Int64)
 
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	if accountSID == "" {
