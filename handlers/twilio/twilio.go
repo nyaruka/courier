@@ -219,7 +219,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		// set our from, either as a messaging service or from our address
 		serviceSID := msg.Channel().StringConfigForKey(configMessagingServiceSID, "")
 		if serviceSID != "" {
-			form["MessagingServiceSID"] = []string{serviceSID}
+			form["MessagingServiceSid"] = []string{serviceSID}
 		} else {
 			form["From"] = []string{msg.Channel().Address()}
 		}
