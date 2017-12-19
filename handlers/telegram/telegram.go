@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -37,16 +38,16 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	te := &telegramEnvelope{}
 	err := handlers.DecodeAndValidateJSON(te, r)
 	if err != nil {
-		return nil, courier.WriteError(w, r, err)
+		return nil, courier.WriteError(ctx, w, r, err)
 	}
 
 	// no message? ignore this
 	if te.Message.MessageID == 0 {
-		return nil, courier.WriteIgnored(w, r, "Ignoring request, no message")
+		return nil, courier.WriteIgnored(ctx, w, r, "Ignoring request, no message")
 	}
 
 	// create our date from the timestamp
@@ -64,11 +65,11 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	// this is a start command, trigger a new conversation
 	if text == "/start" {
 		event := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn).WithContactName(name).WithOccurredOn(date)
-		err = h.Backend().WriteChannelEvent(event)
+		err = h.Backend().WriteChannelEvent(ctx, event)
 		if err != nil {
 			return nil, err
 		}
-		return []courier.Event{event}, courier.WriteChannelEventSuccess(w, r, event)
+		return []courier.Event{event}, courier.WriteChannelEventSuccess(ctx, w, r, event)
 	}
 
 	// normal message of some kind
@@ -112,7 +113,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 
 	// we had an error downloading media
 	if err != nil {
-		return nil, courier.WriteError(w, r, errors.WrapPrefix(err, "error retrieving media", 0))
+		return nil, courier.WriteError(ctx, w, r, errors.WrapPrefix(err, "error retrieving media", 0))
 	}
 
 	// build our msg
@@ -123,12 +124,12 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// queue our message
-	err = h.Backend().WriteMsg(msg)
+	err = h.Backend().WriteMsg(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.Event{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
+	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
 func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, replies string) (string, *courier.ChannelLog, error) {
@@ -164,7 +165,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	confAuth := msg.Channel().ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {

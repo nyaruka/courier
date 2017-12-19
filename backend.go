@@ -1,6 +1,7 @@
 package courier
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -23,13 +24,13 @@ type Backend interface {
 	Cleanup() error
 
 	// GetChannel returns the channel with the passed in type and UUID
-	GetChannel(ChannelType, ChannelUUID) (Channel, error)
+	GetChannel(context.Context, ChannelType, ChannelUUID) (Channel, error)
 
 	// NewIncomingMsg creates a new message from the given params
 	NewIncomingMsg(channel Channel, urn urns.URN, text string) Msg
 
 	// WriteMsg writes the passed in message to our backend
-	WriteMsg(Msg) error
+	WriteMsg(context.Context, Msg) error
 
 	// NewMsgStatusForID creates a new Status object for the given message id
 	NewMsgStatusForID(Channel, MsgID, MsgStatusValue) MsgStatus
@@ -38,32 +39,32 @@ type Backend interface {
 	NewMsgStatusForExternalID(Channel, string, MsgStatusValue) MsgStatus
 
 	// WriteMsgStatus writes the passed in status update to our backend
-	WriteMsgStatus(MsgStatus) error
+	WriteMsgStatus(context.Context, MsgStatus) error
 
 	// NewChannelEvent creates a new channel event for the given channel and event type
 	NewChannelEvent(Channel, ChannelEventType, urns.URN) ChannelEvent
 
 	// WriteChannelEvent writes the passed in channel even returning any error
-	WriteChannelEvent(ChannelEvent) error
+	WriteChannelEvent(context.Context, ChannelEvent) error
 
 	// WriteChannelLogs writes the passed in channel logs to our backend
-	WriteChannelLogs([]*ChannelLog) error
+	WriteChannelLogs(context.Context, []*ChannelLog) error
 
 	// PopNextOutgoingMsg returns the next message that needs to be sent, callers should call MarkOutgoingMsgComplete with the
 	// returned message when they have dealt with the message (regardless of whether it was sent or not)
-	PopNextOutgoingMsg() (Msg, error)
+	PopNextOutgoingMsg(context.Context) (Msg, error)
 
 	// WasMsgSent returns whether the backend thinks the passed in message was already sent. This can be used in cases where
 	// a backend wants to implement a failsafe against double sending messages (say if they were double queued)
-	WasMsgSent(msg Msg) (bool, error)
+	WasMsgSent(context.Context, Msg) (bool, error)
 
 	// MarkOutgoingMsgComplete marks the passed in message as having been processed. Note this should be called even in the case
 	// of errors during sending as it will manage the number of active workers per channel. The optional status parameter can be
 	// used to determine any sort of deduping of msg sends
-	MarkOutgoingMsgComplete(Msg, MsgStatus)
+	MarkOutgoingMsgComplete(context.Context, Msg, MsgStatus)
 
 	// StopMsgContact marks the contact for the passed in msg as stopped
-	StopMsgContact(Msg)
+	StopMsgContact(context.Context, Msg)
 
 	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string

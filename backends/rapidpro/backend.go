@@ -2,6 +2,7 @@ package rapidpro
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -37,13 +38,20 @@ const chatbaseAPIKey = "CHATBASE_API_KEY"
 const chatbaseVersion = "CHATBASE_VERSION"
 const chatbaseMessageType = "msg"
 
+// our timeout for db operations
+const dbTimeout = time.Second * 5
+
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
 }
 
 // GetChannel returns the channel for the passed in type and UUID
-func (b *backend) GetChannel(ct courier.ChannelType, uuid courier.ChannelUUID) (courier.Channel, error) {
-	return getChannel(b, ct, uuid)
+func (b *backend) GetChannel(ctx context.Context, ct courier.ChannelType, uuid courier.ChannelUUID) (courier.Channel, error) {
+	// max 1 second to get a channel
+	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
+	defer cancel()
+
+	return getChannel(timeout, b, ct, uuid)
 }
 
 // NewIncomingMsg creates a new message from the given params
@@ -70,7 +78,7 @@ func (b *backend) NewOutgoingMsg(channel courier.Channel, urn urns.URN, text str
 }
 
 // PopNextOutgoingMsg pops the next message that needs to be sent
-func (b *backend) PopNextOutgoingMsg() (courier.Msg, error) {
+func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
 	// pop the next message off our queue
 	rc := b.redisPool.Get()
 	defer rc.Close()
@@ -88,7 +96,7 @@ func (b *backend) PopNextOutgoingMsg() (courier.Msg, error) {
 		}
 
 		// populate the channel on our db msg
-		channel, err := b.GetChannel(courier.AnyChannelType, dbMsg.ChannelUUID_)
+		channel, err := b.GetChannel(ctx, courier.AnyChannelType, dbMsg.ChannelUUID_)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +119,7 @@ var luaSent = redis.NewScript(3,
 `)
 
 // WasMsgSent returns whether the passed in message has already been sent
-func (b *backend) WasMsgSent(msg courier.Msg) (bool, error) {
+func (b *backend) WasMsgSent(ctx context.Context, msg courier.Msg) (bool, error) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
@@ -121,7 +129,7 @@ func (b *backend) WasMsgSent(msg courier.Msg) (bool, error) {
 }
 
 // MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel
-func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg, status courier.MsgStatus) {
+func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, status courier.MsgStatus) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
@@ -146,7 +154,7 @@ func (b *backend) MarkOutgoingMsgComplete(msg courier.Msg, status courier.MsgSta
 }
 
 // StopMsgContact marks the contact for the passed in msg as stopped, that is they no longer want to receive messages
-func (b *backend) StopMsgContact(m courier.Msg) {
+func (b *backend) StopMsgContact(ctx context.Context, m courier.Msg) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
@@ -155,8 +163,11 @@ func (b *backend) StopMsgContact(m courier.Msg) {
 }
 
 // WriteMsg writes the passed in message to our store
-func (b *backend) WriteMsg(m courier.Msg) error {
-	return writeMsg(b, m)
+func (b *backend) WriteMsg(ctx context.Context, m courier.Msg) error {
+	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
+	defer cancel()
+
+	return writeMsg(timeout, b, m)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
@@ -170,8 +181,11 @@ func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID 
 }
 
 // WriteMsgStatus writes the passed in MsgStatus to our store
-func (b *backend) WriteMsgStatus(status courier.MsgStatus) error {
-	err := writeMsgStatus(b, status)
+func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) error {
+	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
+	defer cancel()
+
+	err := writeMsgStatus(timeout, b, status)
 	if err != nil {
 		return err
 	}
@@ -202,14 +216,20 @@ func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.Cha
 }
 
 // WriteChannelEvent writes the passed in channel even returning any error
-func (b *backend) WriteChannelEvent(event courier.ChannelEvent) error {
-	return writeChannelEvent(b, event)
+func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent) error {
+	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
+	defer cancel()
+
+	return writeChannelEvent(timeout, b, event)
 }
 
 // WriteChannelLogs persists the passed in logs to our database, for rapidpro we swallow all errors, logging isn't critical
-func (b *backend) WriteChannelLogs(logs []*courier.ChannelLog) error {
+func (b *backend) WriteChannelLogs(ctx context.Context, logs []*courier.ChannelLog) error {
+	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
+	defer cancel()
+
 	for _, l := range logs {
-		err := writeChannelLog(b, l)
+		err := writeChannelLog(timeout, b, l)
 		if err != nil {
 			logrus.WithError(err).Error("error writing channel log")
 		}
@@ -225,9 +245,11 @@ func (b *backend) Health() string {
 	_, redisErr := rc.Do("PING")
 
 	// test our db
-	_, dbErr := b.db.Exec("SELECT 1")
-	health := bytes.Buffer{}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	dbErr := b.db.PingContext(ctx)
+	cancel()
 
+	health := bytes.Buffer{}
 	if redisErr != nil {
 		health.WriteString(fmt.Sprintf("\n% 16s: %v", "redis err", redisErr))
 	}
@@ -283,7 +305,7 @@ func (b *backend) Status() string {
 
 		// try to look up our channel
 		channelUUID, _ := courier.NewChannelUUID(uuid)
-		channel, err := getChannel(b, courier.AnyChannelType, channelUUID)
+		channel, err := getChannel(context.Background(), b, courier.AnyChannelType, channelUUID)
 		channelType := "!!"
 		if err == nil {
 			channelType = channel.ChannelType().String()
@@ -309,6 +331,7 @@ func (b *backend) Status() string {
 
 // Start starts our RapidPro backend, this tests our various connections and starts our spool flushers
 func (b *backend) Start() error {
+	// parse and test our redis config
 	log := logrus.WithFields(logrus.Fields{
 		"comp":  "backend",
 		"state": "starting",
@@ -325,16 +348,26 @@ func (b *backend) Start() error {
 		return fmt.Errorf("invalid DB URL: '%s', only postgres is supported", b.config.DB)
 	}
 
-	// test our db connection
-	db, err := sqlx.Connect("postgres", b.config.DB)
+	// build our db
+	db, err := sqlx.Open("postgres", b.config.DB)
+	if err != nil {
+		return fmt.Errorf("unable to open DB with config: '%s': %s", b.config.DB, err)
+	}
+
+	// configure our pool
+	b.db = db
+	b.db.SetMaxIdleConns(4)
+	b.db.SetMaxOpenConns(16)
+
+	// try connecting
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	err = b.db.PingContext(ctx)
+	cancel()
 	if err != nil {
 		log.Error("db not reachable")
 	} else {
 		log.Info("db ok")
 	}
-	b.db = db
-	b.db.SetMaxIdleConns(4)
-	b.db.SetMaxOpenConns(16)
 
 	// parse and test our redis config
 	redisURL, err := url.Parse(b.config.Redis)
@@ -408,7 +441,7 @@ func (b *backend) Start() error {
 		log.Info("spool directories ok")
 	}
 
-	// register and start our msg spool flushers
+	// register and start our spool flushers
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "msgs"), b.flushMsgFile)
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "statuses"), b.flushStatusFile)
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "events"), b.flushChannelEventFile)

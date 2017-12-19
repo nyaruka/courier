@@ -1,6 +1,7 @@
 package rapidpro
 
 import (
+	"context"
 	"strconv"
 	"time"
 
@@ -58,10 +59,10 @@ WHERE u.identity = $1 AND u.contact_id = c.id AND u.org_id = $2 AND c.is_active 
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
-func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn urns.URN, name string) (*DBContact, error) {
+func contactForURN(ctx context.Context, db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn urns.URN, name string) (*DBContact, error) {
 	// try to look up our contact by URN
 	contact := &DBContact{}
-	err := db.Get(contact, lookupContactFromURNSQL, urn.Identity(), org)
+	err := db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
 	if err != nil && err != sql.ErrNoRows {
 		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
 		return nil, err
@@ -69,8 +70,20 @@ func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn urns
 
 	// we found it, return it
 	if err != sql.ErrNoRows {
-		err := setDefaultURN(db, channelID, contact, urn)
-		return contact, err
+		// insert it
+		tx, err := db.BeginTxx(ctx, nil)
+		if err != nil {
+			logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
+			return nil, err
+		}
+
+		err = setDefaultURN(tx, channelID, contact, urn)
+		if err != nil {
+			logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
+			tx.Rollback()
+			return nil, err
+		}
+		return contact, tx.Commit()
 	}
 
 	// didn't find it, we need to create it instead
@@ -90,7 +103,7 @@ func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn urns
 	contact.ModifiedBy = 1
 
 	// insert it
-	tx, err := db.Beginx()
+	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +123,7 @@ func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn urns
 		if pqErr, ok := err.(*pq.Error); ok {
 			// if this was a duplicate URN, start over with a contact lookup
 			if pqErr.Code.Name() == "unique_violation" {
-				return contactForURN(db, org, channelID, urn, name)
+				return contactForURN(ctx, db, org, channelID, urn, name)
 			}
 		}
 		return nil, err
@@ -119,7 +132,7 @@ func contactForURN(db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn urns
 	// if the returned URN is for a different contact, then we were in a race as well, rollback and start over
 	if contactURN.ContactID.Int64 != contact.ID.Int64 {
 		tx.Rollback()
-		return contactForURN(db, org, channelID, urn, name)
+		return contactForURN(ctx, db, org, channelID, urn, name)
 	}
 
 	// all is well, we created the new contact, commit and move forward

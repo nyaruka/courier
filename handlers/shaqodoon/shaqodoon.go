@@ -1,6 +1,7 @@
 package shaqodoon
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -40,7 +41,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	shaqodoonMessage := &shaqodoonMessage{}
 	handlers.DecodeAndValidateQueryParams(shaqodoonMessage, r)
 
@@ -52,13 +53,13 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	// validate whether our required fields are present
 	err := handlers.Validate(shaqodoonMessage)
 	if err != nil {
-		return nil, courier.WriteError(w, r, err)
+		return nil, courier.WriteError(ctx, w, r, err)
 	}
 
 	// must have one of from or sender set, error if neither
 	sender := shaqodoonMessage.From
 	if sender == "" {
-		return nil, courier.WriteError(w, r, errors.New("must have one of 'sender' or 'from' set"))
+		return nil, courier.WriteError(ctx, w, r, errors.New("must have one of 'sender' or 'from' set"))
 	}
 
 	// if we have a date, parse it
@@ -71,26 +72,26 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	if dateString != "" {
 		date, err = time.Parse(time.RFC3339Nano, dateString)
 		if err != nil {
-			return nil, courier.WriteError(w, r, errors.New("invalid date format, must be RFC 3339"))
+			return nil, courier.WriteError(ctx, w, r, errors.New("invalid date format, must be RFC 3339"))
 		}
 	}
 
 	// create our URN
 	urn := urns.NewTelURNForCountry(sender, channel.Country())
 	if err != nil {
-		return nil, courier.WriteError(w, r, err)
+		return nil, courier.WriteError(ctx, w, r, err)
 	}
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, shaqodoonMessage.Text).WithReceivedOn(date)
 
 	// and write it
-	err = h.Backend().WriteMsg(msg)
+	err = h.Backend().WriteMsg(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.Event{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
+	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
 type shaqodoonMessage struct {
@@ -102,13 +103,13 @@ type shaqodoonMessage struct {
 
 // buildStatusHandler deals with building a handler that takes what status is received in the URL
 func (h *handler) buildStatusHandler(status string) courier.ChannelHandleFunc {
-	return func(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-		return h.StatusMessage(status, channel, w, r)
+	return func(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+		return h.StatusMessage(ctx, status, channel, w, r)
 	}
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(statusString string, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) StatusMessage(ctx context.Context, statusString string, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	statusForm := &statusForm{}
 	handlers.DecodeAndValidateQueryParams(statusForm, r)
 
@@ -120,23 +121,23 @@ func (h *handler) StatusMessage(statusString string, channel courier.Channel, w 
 	// validate whether our required fields are present
 	err := handlers.Validate(statusForm)
 	if err != nil {
-		return nil, courier.WriteError(w, r, err)
+		return nil, courier.WriteError(ctx, w, r, err)
 	}
 
 	// get our id
 	msgStatus, found := statusMappings[strings.ToLower(statusString)]
 	if !found {
-		return nil, courier.WriteError(w, r, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString))
+		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString))
 	}
 
 	// write our status
 	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(statusForm.ID), msgStatus)
-	err = h.Backend().WriteMsgStatus(status)
+	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.Event{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
+	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
 }
 
 type statusForm struct {
@@ -150,7 +151,7 @@ var statusMappings = map[string]courier.MsgStatusValue{
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
 		return nil, fmt.Errorf("no send url set for SQ channel")
