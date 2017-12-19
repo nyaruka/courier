@@ -2,6 +2,7 @@ package viber
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
@@ -56,7 +57,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 
 	err := h.validateSignature(channel, r)
 	if err != nil {
@@ -67,15 +68,15 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 
 	err = handlers.DecodeAndValidateJSON(viberMsg, r)
 	if err != nil {
-		return nil, courier.WriteError(w, r, err)
+		return nil, courier.WriteError(ctx, w, r, err)
 	}
 
 	event := viberMsg.Event
 	switch event {
 	case "webhook":
-		return nil, courier.WriteIgnored(w, r, "webhook valid.")
+		return nil, courier.WriteIgnored(ctx, w, r, "webhook valid.")
 	case "conversation_started":
-		return nil, courier.WriteIgnored(w, r, "ignored conversation start")
+		return nil, courier.WriteIgnored(ctx, w, r, "ignored conversation start")
 	case "subscribed":
 		viberID := viberMsg.User.ID
 		ContactName := viberMsg.User.Name
@@ -86,12 +87,12 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn).WithContactName(ContactName)
 
-		err := h.Backend().WriteChannelEvent(channelEvent)
+		err := h.Backend().WriteChannelEvent(ctx, channelEvent)
 		if err != nil {
 			return nil, err
 		}
 
-		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, r, channelEvent)
+		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
 	case "unsubscribed":
 		viberID := viberMsg.User.ID
 
@@ -101,31 +102,31 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
 
-		err := h.Backend().WriteChannelEvent(channelEvent)
+		err := h.Backend().WriteChannelEvent(ctx, channelEvent)
 		if err != nil {
 			return nil, err
 		}
 
-		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, r, channelEvent)
+		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
 	case "failed":
 		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, string(viberMsg.MessageToken), courier.MsgFailed)
 
-		err = h.Backend().WriteMsgStatus(msgStatus)
+		err = h.Backend().WriteMsgStatus(ctx, msgStatus)
 		if err != nil {
 			return nil, err
 		}
 
-		return nil, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{msgStatus})
+		return nil, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{msgStatus})
 
 	case "delivered":
 		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, fmt.Sprintf("%d", viberMsg.MessageToken), courier.MsgDelivered)
 
-		err = h.Backend().WriteMsgStatus(msgStatus)
+		err = h.Backend().WriteMsgStatus(ctx, msgStatus)
 		if err != nil {
 			return nil, err
 		}
 
-		return nil, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{msgStatus})
+		return nil, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{msgStatus})
 
 	case "message":
 		sender := viberMsg.Sender.ID
@@ -153,11 +154,11 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		case "text":
 			text = viberMsg.Message.Text
 		default:
-			return nil, courier.WriteError(w, r, fmt.Errorf("unknown message type: %s", messageType))
+			return nil, courier.WriteError(ctx, w, r, fmt.Errorf("unknown message type: %s", messageType))
 		}
 
 		if text == "" && mediaURL == "" {
-			return nil, courier.WriteError(w, r, fmt.Errorf("missing text or media in message in request body"))
+			return nil, courier.WriteError(ctx, w, r, fmt.Errorf("missing text or media in message in request body"))
 		}
 
 		// build our msg
@@ -168,15 +169,15 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		}
 
 		// and finally queue our message
-		err = h.Backend().WriteMsg(msg)
+		err = h.Backend().WriteMsg(ctx, msg)
 		if err != nil {
 			return nil, err
 		}
 
-		return []courier.Event{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
+		return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 	}
 
-	return nil, courier.WriteError(w, r, fmt.Errorf("not handled, unknown event: %s", event))
+	return nil, courier.WriteError(ctx, w, r, fmt.Errorf("not handled, unknown event: %s", event))
 }
 
 type viberMessage struct {
@@ -250,7 +251,7 @@ func viberCalculateSignature(authToken string, contents []byte) ([]byte, error) 
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	confAuth := msg.Channel().ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
