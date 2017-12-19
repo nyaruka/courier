@@ -2,9 +2,11 @@ package viber
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -20,10 +22,22 @@ func buildMockAttachmentService(testCases []ChannelSendTestCase) *httptest.Serve
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		headers := w.Header()
 		if r.Method == http.MethodHead {
-			headers["Content-Length"] = []string{"123445"}
+			headers["Content-Length"] = []string{"123456"}
 		}
 		w.Write([]byte(""))
 	}))
+
+	// update our tests media urls
+	for c := range testCases {
+		if len(testCases[c].Attachments) > 0 {
+			for i, a := range testCases[c].Attachments {
+				mediaType, mediaURL := courier.SplitAttachment(a)
+				parts := strings.Split(mediaURL, "/")
+				testCases[c].Attachments[i] = fmt.Sprintf("%s:%s/%s", mediaType, server.URL, parts[len(parts)-1])
+			}
+		}
+		testCases[c].RequestBody = strings.Replace(testCases[c].RequestBody, "{{ SERVER_URL }}", server.URL, -1)
+	}
 
 	return server
 }
@@ -68,7 +82,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My pic!","type":"picture","tracking_data":"10","media":"https://localhost/image.jpg"}`,
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My pic!","type":"picture","tracking_data":"10","media":"{{ SERVER_URL }}/image.jpg"}`,
 		SendPrep:    setSendURL},
 	{Label: "Send Attachment Video",
 		Text: "My video!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"video/mp4:https://localhost/video.mp4"},
@@ -78,7 +92,17 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My video!","type":"video","tracking_data":"10","media":"https://localhost/video.mp4","size":10}`,
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My video!","type":"video","tracking_data":"10","media":"{{ SERVER_URL }}/video.mp4","size":123456}`,
+		SendPrep:    setSendURL},
+	{Label: "Send Attachment Audio",
+		Text: "My audio!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"audio/mp3:https://localhost/audio.mp3"},
+		Status: "W", ResponseStatus: 200,
+		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+			"Accept":       "application/json",
+		},
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My audio!","type":"file","tracking_data":"10","media":"{{ SERVER_URL }}/audio.mp3","size":123456,"file_name":"Audio"}`,
 		SendPrep:    setSendURL},
 	{Label: "Got non-0 response",
 		Text: "Simple Message", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==",
