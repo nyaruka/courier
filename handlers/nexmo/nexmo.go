@@ -1,6 +1,7 @@
 package nexmo
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -77,28 +78,28 @@ var statusMappings = map[string]courier.MsgStatusValue{
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	nexmoDeliveryReport := &nexmoDeliveryReport{}
 	handlers.DecodeAndValidateQueryParams(nexmoDeliveryReport, r)
 
 	if nexmoDeliveryReport.MessageID == "" {
-		return nil, courier.WriteIgnored(w, r, "no messageId parameter, ignored")
+		return nil, courier.WriteIgnored(ctx, w, r, "no messageId parameter, ignored")
 	}
 
 	msgStatus, found := statusMappings[nexmoDeliveryReport.Status]
 	if !found {
-		return nil, courier.WriteIgnored(w, r, "ignoring unknown status report")
+		return nil, courier.WriteIgnored(ctx, w, r, "ignoring unknown status report")
 	}
 
 	status := h.Backend().NewMsgStatusForExternalID(channel, nexmoDeliveryReport.MessageID, msgStatus)
 
 	// write our status
-	err := h.Backend().WriteMsgStatus(status)
+	err := h.Backend().WriteMsgStatus(ctx, status)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.Event{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
+	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
 }
 
 type nexmoIncomingMessage struct {
@@ -109,7 +110,7 @@ type nexmoIncomingMessage struct {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	nexmoIncomingMessage := &nexmoIncomingMessage{}
 	handlers.DecodeAndValidateQueryParams(nexmoIncomingMessage, r)
 
@@ -119,7 +120,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	if nexmoIncomingMessage.To == "" {
-		return nil, courier.WriteIgnored(w, r, "no to parameter, ignored")
+		return nil, courier.WriteIgnored(ctx, w, r, "no to parameter, ignored")
 	}
 
 	// create our URN
@@ -129,16 +130,16 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	msg := h.Backend().NewIncomingMsg(channel, urn, nexmoIncomingMessage.Text)
 
 	// and write it
-	err := h.Backend().WriteMsg(msg)
+	err := h.Backend().WriteMsg(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.Event{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
+	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	nexmoAPIKey := msg.Channel().StringConfigForKey(configNexmoAPIKey, "")
 	if nexmoAPIKey == "" {
 		return nil, fmt.Errorf("no nexmo API key set for NX channel")

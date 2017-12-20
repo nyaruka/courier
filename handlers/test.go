@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -174,7 +175,9 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				testCase.SendPrep(server, channel, msg)
 			}
 
-			status, err := handler.SendMsg(msg)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+			status, err := handler.SendMsg(ctx, msg)
+			cancel()
 
 			if testCase.Error != "" {
 				if err == nil {
