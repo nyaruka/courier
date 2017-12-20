@@ -29,7 +29,7 @@ type Server interface {
 
 	AddHandlerRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelHandleFunc) error
 
-	SendMsg(Msg) (MsgStatus, error)
+	SendMsg(context.Context, Msg) (MsgStatus, error)
 
 	Backend() Backend
 
@@ -182,7 +182,7 @@ func (s *server) Stop() error {
 	return nil
 }
 
-func (s *server) SendMsg(msg Msg) (MsgStatus, error) {
+func (s *server) SendMsg(ctx context.Context, msg Msg) (MsgStatus, error) {
 	// find the handler for this message type
 	handler, found := activeHandlers[msg.Channel().ChannelType()]
 	if !found {
@@ -190,7 +190,7 @@ func (s *server) SendMsg(msg Msg) (MsgStatus, error) {
 	}
 
 	// have the handler send it
-	return handler.SendMsg(msg)
+	return handler.SendMsg(ctx, msg)
 }
 
 func (s *server) WaitGroup() *sync.WaitGroup { return s.waitGroup }
@@ -245,28 +245,33 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
+		// stuff a few things in our context that help with logging
+		baseCtx := context.WithValue(r.Context(), contextRequestURL, r.URL.String())
+		baseCtx = context.WithValue(baseCtx, contextRequestStart, time.Now())
+
+		// add a 10 second timeout
+		ctx, cancel := context.WithTimeout(baseCtx, time.Second*10)
+		defer cancel()
+
 		uuid, err := NewChannelUUID(chi.URLParam(r, "uuid"))
 		if err != nil {
-			WriteError(w, r, err)
+			WriteError(ctx, w, r, err)
 			return
 		}
 
-		channel, err := s.backend.GetChannel(handler.ChannelType(), uuid)
+		channel, err := s.backend.GetChannel(ctx, handler.ChannelType(), uuid)
 		if err != nil {
-			WriteError(w, r, err)
+			WriteError(ctx, w, r, err)
 			return
 		}
 
-		// stuff a few things in our context that help with logging
-		ctx := context.WithValue(r.Context(), contextRequestURL, r.URL.String())
-		ctx = context.WithValue(ctx, contextRequestStart, time.Now())
 		r = r.WithContext(ctx)
 
 		// read the bytes from our body so we can create a channel log for this request
 		response := &bytes.Buffer{}
 		request, err := httputil.DumpRequest(r, true)
 		if err != nil {
-			WriteError(w, r, err)
+			WriteError(ctx, w, r, err)
 			return
 		}
 		url := fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI())
@@ -276,14 +281,14 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 
 		logs := make([]*ChannelLog, 0, 1)
 
-		events, err := handlerFunc(channel, ww, r)
+		events, err := handlerFunc(ctx, channel, ww, r)
 		duration := time.Now().Sub(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
 		// if we received an error, write it out and report it
 		if err != nil {
 			logrus.WithError(err).WithField("url", url).WithField("request", string(request)).Error("error receiving message")
-			WriteError(ww, r, err)
+			WriteError(ctx, ww, r, err)
 
 			// if no events were created we still want to log this to the channel, do so
 			if len(events) == 0 {
@@ -308,7 +313,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		}
 
 		// and write these out
-		err = s.backend.WriteChannelLogs(logs)
+		err = s.backend.WriteChannelLogs(ctx, logs)
 
 		// log any error writing our channel log but don't break the request
 		if err != nil {
@@ -354,7 +359,7 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
 	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "404").Error("not found")
 	errors := []string{fmt.Sprintf("not found: %s", r.URL.String())}
-	err := writeJSONResponse(w, http.StatusNotFound, errorResponse{errors})
+	err := writeJSONResponse(context.Background(), w, http.StatusNotFound, errorResponse{errors})
 	if err != nil {
 		logrus.WithError(err).Error()
 	}
@@ -363,7 +368,7 @@ func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
 func (s *server) handle405(w http.ResponseWriter, r *http.Request) {
 	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "405").Error("invalid method")
 	errors := []string{fmt.Sprintf("method not allowed: %s", r.Method)}
-	err := writeJSONResponse(w, http.StatusMethodNotAllowed, errorResponse{errors})
+	err := writeJSONResponse(context.Background(), w, http.StatusMethodNotAllowed, errorResponse{errors})
 	if err != nil {
 		logrus.WithError(err).Error()
 	}

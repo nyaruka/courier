@@ -1,6 +1,7 @@
 package rapidpro
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -49,7 +50,7 @@ const (
 )
 
 // WriteMsg creates a message given the passed in arguments
-func writeMsg(b *backend, msg courier.Msg) error {
+func writeMsg(ctx context.Context, b *backend, msg courier.Msg) error {
 	m := msg.(*DBMsg)
 
 	// this msg has already been written (we received it twice), we are a no op
@@ -69,7 +70,7 @@ func writeMsg(b *backend, msg courier.Msg) error {
 	}
 
 	// try to write it our db
-	err := writeMsgToDB(b, m)
+	err := writeMsgToDB(ctx, b, m)
 
 	// fail? spool for later
 	if err != nil {
@@ -121,9 +122,9 @@ INSERT INTO msgs_msg(org_id, direction, text, attachments, msg_count, error_coun
 RETURNING id
 `
 
-func writeMsgToDB(b *backend, m *DBMsg) error {
+func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 	// grab the contact for this msg
-	contact, err := contactForURN(b.db, m.OrgID_, m.ChannelID_, m.URN_, m.ContactName_)
+	contact, err := contactForURN(ctx, b.db, m.OrgID_, m.ChannelID_, m.URN_, m.ContactName_)
 
 	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {
@@ -134,7 +135,7 @@ func writeMsgToDB(b *backend, m *DBMsg) error {
 	m.ContactID_ = contact.ID
 	m.ContactURNID_ = contact.URNID
 
-	rows, err := b.db.NamedQuery(insertMsgSQL, m)
+	rows, err := b.db.NamedQueryContext(ctx, insertMsgSQL, m)
 	if err != nil {
 		return err
 	}
@@ -266,7 +267,7 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 	}
 
 	// try to write it our db
-	err = writeMsgToDB(b, msg)
+	err = writeMsgToDB(context.Background(), b, msg)
 
 	// fail? oh well, we'll try again later
 	return err

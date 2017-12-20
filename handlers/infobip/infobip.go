@@ -2,6 +2,7 @@ package infobip
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -42,26 +43,26 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	ibStatusEnvelope := &ibStatusEnvelope{}
 	err := handlers.DecodeAndValidateJSON(ibStatusEnvelope, r)
 	if err != nil {
-		return nil, courier.WriteError(w, r, err)
+		return nil, courier.WriteError(ctx, w, r, err)
 	}
 
 	msgStatus, found := infobipStatusMapping[ibStatusEnvelope.Results[0].Status.GroupName]
 	if !found {
-		return nil, courier.WriteError(w, r, fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", ibStatusEnvelope.Results[0].Status.GroupName))
+		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", ibStatusEnvelope.Results[0].Status.GroupName))
 	}
 
 	// write our status
 	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(ibStatusEnvelope.Results[0].MessageID), msgStatus)
-	err = h.Backend().WriteMsgStatus(status)
+	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.Event{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
+	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
 }
 
 var infobipStatusMapping = map[string]courier.MsgStatusValue{
@@ -83,15 +84,15 @@ type ibStatus struct {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	ie := &infobipEnvelope{}
 	err := handlers.DecodeAndValidateJSON(ie, r)
 	if err != nil {
-		return nil, courier.WriteError(w, r, err)
+		return nil, courier.WriteError(ctx, w, r, err)
 	}
 
 	if ie.MessageCount == 0 {
-		return nil, courier.WriteIgnored(w, r, "ignoring request, no message")
+		return nil, courier.WriteIgnored(ctx, w, r, "ignoring request, no message")
 	}
 
 	msgs := []courier.Msg{}
@@ -108,7 +109,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		if dateString != "" {
 			date, err = time.Parse("2006-01-02T15:04:05.999999999-0700", dateString)
 			if err != nil {
-				return nil, courier.WriteError(w, r, err)
+				return nil, courier.WriteError(ctx, w, r, err)
 			}
 		}
 
@@ -119,7 +120,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(messageID)
 
 		// and write it
-		err = h.Backend().WriteMsg(msg)
+		err = h.Backend().WriteMsg(ctx, msg)
 		if err != nil {
 			return nil, err
 		}
@@ -128,10 +129,10 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	if len(msgs) == 0 {
-		return nil, courier.WriteIgnored(w, r, "ignoring request, no message")
+		return nil, courier.WriteIgnored(ctx, w, r, "ignoring request, no message")
 	}
 
-	return []courier.Event{msgs[0]}, courier.WriteMsgSuccess(w, r, msgs)
+	return []courier.Event{msgs[0]}, courier.WriteMsgSuccess(ctx, w, r, msgs)
 }
 
 type infobipMessage struct {
@@ -169,7 +170,7 @@ type infobipEnvelope struct {
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {

@@ -1,5 +1,7 @@
 package courier
 
+import "context"
+
 func init() {
 	RegisterHandler(NewHandler())
 }
@@ -25,6 +27,6 @@ func (h *dummyHandler) Initialize(s Server) error {
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *dummyHandler) SendMsg(msg Msg) (MsgStatus, error) {
+func (h *dummyHandler) SendMsg(ctx context.Context, msg Msg) (MsgStatus, error) {
 	return h.backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgSent), nil
 }

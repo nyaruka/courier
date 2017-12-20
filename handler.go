@@ -1,6 +1,7 @@
 package courier
 
 import (
+	"context"
 	"net/http"
 )
 
@@ -13,14 +14,14 @@ type Event interface {
 // The Server will take care of looking up the channel by UUID before passing it to this function.
 // Errors in format of the request or by the caller should be handled and logged internally. Errors in
 // execution or in courier itself should be passed back.
-type ChannelHandleFunc func(Channel, http.ResponseWriter, *http.Request) ([]Event, error)
+type ChannelHandleFunc func(context.Context, Channel, http.ResponseWriter, *http.Request) ([]Event, error)
 
 // ChannelHandler is the interface all handlers must satisfy
 type ChannelHandler interface {
 	Initialize(Server) error
 	ChannelType() ChannelType
 	ChannelName() string
-	SendMsg(Msg) (MsgStatus, error)
+	SendMsg(context.Context, Msg) (MsgStatus, error)
 }
 
 // RegisterHandler adds a new handler for a channel type, this is called by individual handlers when they are initialized
