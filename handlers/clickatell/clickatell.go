@@ -2,6 +2,7 @@ package clickatell
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"mime"
 	"net/http"
@@ -72,7 +73,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	statusReport := &statusReport{}
 	err := handlers.DecodeAndValidateQueryParams(statusReport, r)
 
@@ -82,11 +83,11 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 	}
 
 	if statusReport.APIID != "" && statusReport.APIID != channel.StringConfigForKey(courier.ConfigAPIID, "") {
-		return nil, courier.WriteError(w, r, fmt.Errorf("invalid API ID for status report: %s", statusReport.APIID))
+		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("invalid API ID for status report: %s", statusReport.APIID))
 	}
 
 	if statusReport.SmsID == "" || statusReport.StatusCode == "" {
-		return nil, courier.WriteIgnored(w, r, "missing one of 'apiMsgId' or 'status' in request parameters.")
+		return nil, courier.WriteIgnored(ctx, w, r, "missing one of 'apiMsgId' or 'status' in request parameters.")
 	}
 
 	msgStatus, found := statusMapping[statusReport.StatusCode]
@@ -96,12 +97,12 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 
 	// write our status
 	status := h.Backend().NewMsgStatusForExternalID(channel, statusReport.SmsID, msgStatus)
-	err = h.Backend().WriteMsgStatus(status)
+	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.Event{status}, courier.WriteStatusSuccess(w, r, []courier.MsgStatus{status})
+	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
 }
 
 type clickatellIncomingMsg struct {
@@ -114,7 +115,7 @@ type clickatellIncomingMsg struct {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	ctIncomingMessage := &clickatellIncomingMsg{}
 	handlers.DecodeAndValidateQueryParams(ctIncomingMessage, r)
 
@@ -124,11 +125,11 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	if ctIncomingMessage.APIID != "" && ctIncomingMessage.APIID != channel.StringConfigForKey(courier.ConfigAPIID, "") {
-		return nil, courier.WriteError(w, r, fmt.Errorf("invalid API ID for message delivery: %s", ctIncomingMessage.APIID))
+		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("invalid API ID for message delivery: %s", ctIncomingMessage.APIID))
 	}
 
 	if ctIncomingMessage.From == "" || ctIncomingMessage.SmsID == "" || ctIncomingMessage.Text == "" || ctIncomingMessage.Timestamp == "" {
-		return nil, courier.WriteIgnored(w, r, "missing one of 'from', 'text', 'moMsgId' or 'timestamp' in request parameters.")
+		return nil, courier.WriteIgnored(ctx, w, r, "missing one of 'from', 'text', 'moMsgId' or 'timestamp' in request parameters.")
 	}
 
 	dateString := ctIncomingMessage.Timestamp
@@ -139,7 +140,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		loc, _ := time.LoadLocation("Europe/Berlin")
 		date, err = time.ParseInLocation("2006-01-02 15:04:05", dateString, loc)
 		if err != nil {
-			return nil, courier.WriteError(w, r, errors.New("invalid date format, must be YYYY-MM-DD HH:MM:SS"))
+			return nil, courier.WriteError(ctx, w, r, errors.New("invalid date format, must be YYYY-MM-DD HH:MM:SS"))
 		}
 	}
 
@@ -164,12 +165,12 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text)).WithReceivedOn(date.UTC()).WithExternalID(ctIncomingMessage.SmsID)
 
 	// and write it
-	err = h.Backend().WriteMsg(msg)
+	err = h.Backend().WriteMsg(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.Event{msg}, courier.WriteMsgSuccess(w, r, []courier.Msg{msg})
+	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
 func decodeUTF16BE(b []byte) (string, error) {
@@ -191,7 +192,7 @@ func decodeUTF16BE(b []byte) (string, error) {
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for CT channel")
