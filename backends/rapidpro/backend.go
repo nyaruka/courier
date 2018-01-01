@@ -388,8 +388,8 @@ func (b *backend) Start() error {
 			}
 
 			// send auth if required
-			pass, auth_required := redisURL.User.Password()
-			if auth_required {
+			pass, authRequired := redisURL.User.Password()
+			if authRequired {
 				if _, err := conn.Do("AUTH", pass); err != nil {
 			      conn.Close()
 			      return nil, err
