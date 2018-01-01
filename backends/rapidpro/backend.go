@@ -370,16 +370,10 @@ func (b *backend) Start() error {
 	}
 
 	// parse and test our redis config
-	log.Info("redis config")
 	redisURL, err := url.Parse(b.config.Redis)
 	if err != nil {
 		return fmt.Errorf("unable to parse Redis URL '%s': %s", b.config.Redis, err)
 	}
-
-	logrus.WithFields(logrus.Fields{
-		"host":  redisURL.Host,
-		"auth":  redisURL.User,
-	}).Info("parsed redis config")
 
 	// create our pool
 	redisPool := &redis.Pool{
