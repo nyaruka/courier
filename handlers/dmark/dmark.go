@@ -1,6 +1,7 @@
 package dmark
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -56,15 +57,15 @@ var statusMapping = map[string]courier.MsgStatusValue{
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
-	return s.AddUpdateStatusRoute(h, "POST", "status", h.StatusMessage)
+	return s.AddHandlerRoute(h, "POST", "status", h.StatusMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
 	dkMsg := &receiveRequest{}
 	err := handlers.DecodeAndValidateForm(dkMsg, r)
@@ -85,16 +86,16 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	msg := h.Backend().NewIncomingMsg(channel, urn, dkMsg.Text).WithReceivedOn(date)
 
 	// and finally queue our message
-	err = h.Backend().WriteMsg(msg)
+	err = h.Backend().WriteMsg(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, msg)
+	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
+func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
 	dkStatus := &statusRequest{}
 	err := handlers.DecodeAndValidateForm(dkStatus, r)
@@ -109,23 +110,24 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 
 	// write our status
 	status := h.Backend().NewMsgStatusForExternalID(channel, dkStatus.ID, msgStatus)
-	err = h.Backend().WriteMsgStatus(status)
+	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, status)
+	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	// get our authentication token
 	auth := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if auth == "" {
 		return nil, fmt.Errorf("no authorization token set for DK channel")
 	}
 
-	dlrURL := fmt.Sprintf("%s%s%s/status?id=%s&status=%%s", h.Server().Config().BaseURL, "/c/dk/", msg.Channel().UUID(), msg.ID().String())
+	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+	dlrURL := fmt.Sprintf("https://%s%s%s/status?id=%s&status=%%s", callbackDomain, "/c/dk/", msg.Channel().UUID(), msg.ID().String())
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)

@@ -2,6 +2,7 @@ package external
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -40,26 +41,26 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
-	s.AddReceiveMsgRoute(h, "GET", "receive", h.ReceiveMessage)
+	s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
+	s.AddHandlerRoute(h, "GET", "receive", h.ReceiveMessage)
 
 	sentHandler := h.buildStatusHandler("sent")
-	s.AddUpdateStatusRoute(h, "GET", "sent", sentHandler)
-	s.AddUpdateStatusRoute(h, "POST", "sent", sentHandler)
+	s.AddHandlerRoute(h, "GET", "sent", sentHandler)
+	s.AddHandlerRoute(h, "POST", "sent", sentHandler)
 
 	deliveredHandler := h.buildStatusHandler("delivered")
-	s.AddUpdateStatusRoute(h, "GET", "delivered", deliveredHandler)
-	s.AddUpdateStatusRoute(h, "POST", "delivered", deliveredHandler)
+	s.AddHandlerRoute(h, "GET", "delivered", deliveredHandler)
+	s.AddHandlerRoute(h, "POST", "delivered", deliveredHandler)
 
 	failedHandler := h.buildStatusHandler("failed")
-	s.AddUpdateStatusRoute(h, "GET", "failed", failedHandler)
-	s.AddUpdateStatusRoute(h, "POST", "failed", failedHandler)
+	s.AddHandlerRoute(h, "GET", "failed", failedHandler)
+	s.AddHandlerRoute(h, "POST", "failed", failedHandler)
 
 	return nil
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	externalMessage := &externalMessage{}
 	handlers.DecodeAndValidateQueryParams(externalMessage, r)
 
@@ -104,12 +105,12 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	msg := h.Backend().NewIncomingMsg(channel, urn, externalMessage.Text).WithReceivedOn(date)
 
 	// and write it
-	err = h.Backend().WriteMsg(msg)
+	err = h.Backend().WriteMsg(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, msg)
+	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
 type externalMessage struct {
@@ -121,14 +122,14 @@ type externalMessage struct {
 }
 
 // buildStatusHandler deals with building a handler that takes what status is received in the URL
-func (h *handler) buildStatusHandler(status string) courier.ChannelUpdateStatusFunc {
-	return func(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
-		return h.StatusMessage(status, channel, w, r)
+func (h *handler) buildStatusHandler(status string) courier.ChannelHandleFunc {
+	return func(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+		return h.StatusMessage(ctx, status, channel, w, r)
 	}
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(statusString string, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
+func (h *handler) StatusMessage(ctx context.Context, statusString string, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	statusForm := &statusForm{}
 	handlers.DecodeAndValidateQueryParams(statusForm, r)
 
@@ -151,12 +152,12 @@ func (h *handler) StatusMessage(statusString string, channel courier.Channel, w 
 
 	// write our status
 	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(statusForm.ID), msgStatus)
-	err = h.Backend().WriteMsgStatus(status)
+	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, status)
+	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
 }
 
 type statusForm struct {
@@ -170,7 +171,7 @@ var statusMappings = map[string]courier.MsgStatusValue{
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
 		return nil, fmt.Errorf("no send url set for EX channel")

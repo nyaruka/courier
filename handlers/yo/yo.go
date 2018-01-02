@@ -5,6 +5,7 @@ GET /handlers/yo/received/uuid?account=12345&dest=8500&message=Msg&sender=256778
 */
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -38,7 +39,7 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddReceiveMsgRoute(h, "GET", "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, "GET", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
@@ -47,7 +48,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	yoMessage := &yoMessage{}
 	handlers.DecodeAndValidateQueryParams(yoMessage, r)
 
@@ -68,7 +69,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 		sender = yoMessage.From
 	}
 	if sender == "" {
-		return nil, errors.New("must have one of 'sender' or 'from' set")
+		return nil, courier.WriteError(ctx, w, r, errors.New("must have one of 'sender' or 'from' set"))
 	}
 
 	// if we have a date, parse it
@@ -81,7 +82,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	if dateString != "" {
 		date, err = time.Parse(time.RFC3339Nano, dateString)
 		if err != nil {
-			return nil, errors.New("invalid date format, must be RFC 3339")
+			return nil, courier.WriteError(ctx, w, r, errors.New("invalid date format, must be RFC 3339"))
 		}
 	}
 
@@ -92,12 +93,12 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	msg := h.Backend().NewIncomingMsg(channel, urn, yoMessage.Text).WithReceivedOn(date)
 
 	// and write it
-	err = h.Backend().WriteMsg(msg)
+	err = h.Backend().WriteMsg(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, msg)
+	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
 type yoMessage struct {
@@ -109,7 +110,7 @@ type yoMessage struct {
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
@@ -181,7 +182,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 
 		if failed && strings.Contains(ybsAutocreateMessage[0], "BLACKLISTED") {
 			status.SetStatus(courier.MsgFailed)
-			h.Backend().StopMsgContact(msg)
+			h.Backend().StopMsgContact(ctx, msg)
 			return status, nil
 		}
 

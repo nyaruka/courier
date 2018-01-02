@@ -1,6 +1,8 @@
 package telegram
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -32,20 +34,20 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddReceiveMsgRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	te := &telegramEnvelope{}
 	err := handlers.DecodeAndValidateJSON(te, r)
 	if err != nil {
-		return nil, courier.WriteError(w, r, err)
+		return nil, courier.WriteError(ctx, w, r, err)
 	}
 
 	// no message? ignore this
 	if te.Message.MessageID == 0 {
-		return nil, courier.WriteIgnored(w, r, "Ignoring request, no message")
+		return nil, courier.WriteIgnored(ctx, w, r, "Ignoring request, no message")
 	}
 
 	// create our date from the timestamp
@@ -63,11 +65,11 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	// this is a start command, trigger a new conversation
 	if text == "/start" {
 		event := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn).WithContactName(name).WithOccurredOn(date)
-		err = h.Backend().WriteChannelEvent(event)
+		err = h.Backend().WriteChannelEvent(ctx, event)
 		if err != nil {
 			return nil, err
 		}
-		return []courier.ReceiveEvent{event}, courier.WriteChannelEventSuccess(w, r, event)
+		return []courier.Event{event}, courier.WriteChannelEventSuccess(ctx, w, r, event)
 	}
 
 	// normal message of some kind
@@ -111,7 +113,7 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 
 	// we had an error downloading media
 	if err != nil {
-		return nil, courier.WriteError(w, r, errors.WrapPrefix(err, "error retrieving media", 0))
+		return nil, courier.WriteError(ctx, w, r, errors.WrapPrefix(err, "error retrieving media", 0))
 	}
 
 	// build our msg
@@ -122,15 +124,22 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// queue our message
-	err = h.Backend().WriteMsg(msg)
+	err = h.Backend().WriteMsg(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, msg)
+	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
-func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values) (string, *courier.ChannelLog, error) {
+func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, replies string) (string, *courier.ChannelLog, error) {
+	// either include or remove our keyboard depending on whether we have quick replies
+	if replies == "" {
+		form.Add("reply_markup", `{"remove_keyboard":true}`)
+	} else {
+		form.Add("reply_markup", replies)
+	}
+
 	sendURL := fmt.Sprintf("%s/bot%s/%s", telegramAPIURL, token, path)
 	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -156,7 +165,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	confAuth := msg.Channel().ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
@@ -175,16 +184,38 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 	// whether we encountered any errors sending any parts
 	hasError := true
 
+	// figure out whether we have a keyboard to send as well
+	qrs := msg.QuickReplies()
+	replies := ""
+
+	if len(qrs) > 0 {
+		keys := make([]telegramKey, len(qrs))
+		for i, qr := range qrs {
+			keys[i].Text = qr
+		}
+
+		tk := telegramKeyboard{true, true, [][]telegramKey{keys}}
+		replyBytes, err := json.Marshal(tk)
+		if err != nil {
+			return nil, err
+		}
+		replies = string(replyBytes)
+	}
+
 	// if we have text, send that if we aren't sending it as a caption
 	if msg.Text() != "" && caption == "" {
 		form := url.Values{
 			"chat_id": []string{msg.URN().Path()},
 			"text":    []string{msg.Text()},
 		}
-		externalID, log, err := h.sendMsgPart(msg, authToken, "sendMessage", form)
+
+		externalID, log, err := h.sendMsgPart(msg, authToken, "sendMessage", form, replies)
 		status.SetExternalID(externalID)
 		hasError = err != nil
 		status.AddLog(log)
+
+		// clear our replies, they've been sent
+		replies = ""
 	}
 
 	// send each attachment
@@ -197,7 +228,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 				"photo":   []string{mediaURL},
 				"caption": []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendPhoto", form)
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, replies)
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
@@ -208,7 +239,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 				"video":   []string{mediaURL},
 				"caption": []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendVideo", form)
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendVideo", form, replies)
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
@@ -219,7 +250,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 				"audio":   []string{mediaURL},
 				"caption": []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendAudio", form)
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendAudio", form, replies)
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
@@ -228,7 +259,11 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 			status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
 				"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
 			hasError = true
+
 		}
+
+		// clear our replies, we only send it on the first message
+		replies = ""
 	}
 
 	if !hasError {
@@ -282,6 +317,16 @@ func resolveFileID(channel courier.Channel, fileID string) (string, error) {
 
 	// return the URL
 	return fmt.Sprintf("%s/file/bot%s/%s", telegramAPIURL, authToken, filePath), nil
+}
+
+type telegramKeyboard struct {
+	ResizeKeyboard  bool            `json:"resize_keyboard"`
+	OneTimeKeyboard bool            `json:"one_time_keyboard"`
+	Keyboard        [][]telegramKey `json:"keyboard"`
+}
+
+type telegramKey struct {
+	Text string `json:"text"`
 }
 
 type telegramFile struct {

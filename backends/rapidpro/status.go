@@ -1,6 +1,7 @@
 package rapidpro
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -24,10 +25,10 @@ func newMsgStatus(channel courier.Channel, id courier.MsgID, externalID string, 
 }
 
 // writeMsgStatus writes the passed in status to the database, queueing it to our spool in case the database is down
-func writeMsgStatus(b *backend, status courier.MsgStatus) error {
+func writeMsgStatus(ctx context.Context, b *backend, status courier.MsgStatus) error {
 	dbStatus := status.(*DBMsgStatus)
 
-	err := writeMsgStatusToDB(b, dbStatus)
+	err := writeMsgStatusToDB(ctx, b, dbStatus)
 	if err == courier.ErrMsgNotFound {
 		return err
 	}
@@ -96,14 +97,14 @@ WHERE msgs_msg.id IN
 `
 
 // writeMsgStatusToDB writes the passed in msg status to our db
-func writeMsgStatusToDB(b *backend, status *DBMsgStatus) error {
+func writeMsgStatusToDB(ctx context.Context, b *backend, status *DBMsgStatus) error {
 	var rows *sqlx.Rows
 	var err error
 
 	if status.ID() != courier.NilMsgID {
-		rows, err = b.db.NamedQuery(updateMsgID, status)
+		rows, err = b.db.NamedQueryContext(ctx, updateMsgID, status)
 	} else if status.ExternalID() != "" {
-		rows, err = b.db.NamedQuery(updateMsgExternalID, status)
+		rows, err = b.db.NamedQueryContext(ctx, updateMsgExternalID, status)
 	} else {
 		return fmt.Errorf("attempt to update msg status without id or external id")
 	}
@@ -132,7 +133,7 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 	}
 
 	// try to flush to our db
-	return writeMsgStatusToDB(b, status)
+	return writeMsgStatusToDB(context.Background(), b, status)
 }
 
 //-----------------------------------------------------------------------------
@@ -149,6 +150,8 @@ type DBMsgStatus struct {
 
 	logs []*courier.ChannelLog
 }
+
+func (s *DBMsgStatus) EventID() int64 { return s.ID_.Int64 }
 
 func (s *DBMsgStatus) ChannelUUID() courier.ChannelUUID { return s.ChannelUUID_ }
 func (s *DBMsgStatus) ID() courier.MsgID                { return s.ID_ }

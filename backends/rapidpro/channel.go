@@ -1,6 +1,7 @@
 package rapidpro
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"sync"
@@ -13,7 +14,7 @@ import (
 
 // getChannelFromUUID will look up the channel with the passed in UUID and channel type.
 // It will return an error if the channel does not exist or is not active.
-func getChannel(b *backend, channelType courier.ChannelType, channelUUID courier.ChannelUUID) (courier.Channel, error) {
+func getChannel(ctx context.Context, b *backend, channelType courier.ChannelType, channelUUID courier.ChannelUUID) (courier.Channel, error) {
 	// look for the channel locally
 	cachedChannel, localErr := getCachedChannel(channelType, channelUUID)
 
@@ -23,7 +24,7 @@ func getChannel(b *backend, channelType courier.ChannelType, channelUUID courier
 	}
 
 	// look in our database instead
-	channel, dbErr := loadChannelFromDB(b, channelType, channelUUID)
+	channel, dbErr := loadChannelFromDB(ctx, b, channelType, channelUUID)
 
 	// if it wasn't found in the DB, clear our cache and return that it wasn't found
 	if dbErr == courier.ErrChannelNotFound {
@@ -52,11 +53,11 @@ FROM channels_channel ch, orgs_org org
 WHERE ch.uuid = $1 AND ch.is_active = true AND ch.org_id IS NOT NULL and ch.org_id = org.id`
 
 // ChannelForUUID attempts to look up the channel with the passed in UUID, returning it
-func loadChannelFromDB(b *backend, channelType courier.ChannelType, uuid courier.ChannelUUID) (*DBChannel, error) {
+func loadChannelFromDB(ctx context.Context, b *backend, channelType courier.ChannelType, uuid courier.ChannelUUID) (*DBChannel, error) {
 	channel := &DBChannel{UUID_: uuid}
 
 	// select just the fields we need
-	err := b.db.Get(channel, lookupChannelFromUUIDSQL, uuid)
+	err := b.db.GetContext(ctx, channel, lookupChannelFromUUIDSQL, uuid)
 
 	// we didn't find a match
 	if err == sql.ErrNoRows {
@@ -192,6 +193,16 @@ func (c *DBChannel) OrgConfigForKey(key string, defaultValue interface{}) interf
 		return defaultValue
 	}
 	return value
+}
+
+// CallbackDomain returns the callback domain to use for this channel
+func (c *DBChannel) CallbackDomain(fallbackDomain string) string {
+	value, found := c.Config_.Map[courier.ConfigCallbackDomain]
+	strValue, isStr := value.(string)
+	if !found || !isStr {
+		return fallbackDomain
+	}
+	return strValue
 }
 
 // StringConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found

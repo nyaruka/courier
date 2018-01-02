@@ -1,6 +1,7 @@
 package courier
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -75,8 +76,8 @@ func (mb *MockBackend) NewIncomingMsg(channel Channel, urn urns.URN, text string
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool) Msg {
-	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority}
+func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool, replies []string) Msg {
+	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority, quickReplies: replies}
 }
 
 // PushOutgoingMsg is a test method to add a message to our queue of messages to send
@@ -88,7 +89,7 @@ func (mb *MockBackend) PushOutgoingMsg(msg Msg) {
 }
 
 // PopNextOutgoingMsg returns the next message that should be sent, or nil if there are none to send
-func (mb *MockBackend) PopNextOutgoingMsg() (Msg, error) {
+func (mb *MockBackend) PopNextOutgoingMsg(ctx context.Context) (Msg, error) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -102,7 +103,7 @@ func (mb *MockBackend) PopNextOutgoingMsg() (Msg, error) {
 }
 
 // WasMsgSent returns whether the passed in msg was already sent
-func (mb *MockBackend) WasMsgSent(msg Msg) (bool, error) {
+func (mb *MockBackend) WasMsgSent(ctx context.Context, msg Msg) (bool, error) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -110,7 +111,7 @@ func (mb *MockBackend) WasMsgSent(msg Msg) (bool, error) {
 }
 
 // StopMsgContact stops the contact for the passed in msg
-func (mb *MockBackend) StopMsgContact(msg Msg) {
+func (mb *MockBackend) StopMsgContact(ctx context.Context, msg Msg) {
 	mb.stoppedMsgContacts = append(mb.stoppedMsgContacts, msg)
 }
 
@@ -123,7 +124,7 @@ func (mb *MockBackend) GetLastStoppedMsgContact() Msg {
 }
 
 // MarkOutgoingMsgComplete marks the passed msg as having been dealt with
-func (mb *MockBackend) MarkOutgoingMsgComplete(msg Msg, s MsgStatus) {
+func (mb *MockBackend) MarkOutgoingMsgComplete(ctx context.Context, msg Msg, s MsgStatus) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -131,7 +132,7 @@ func (mb *MockBackend) MarkOutgoingMsgComplete(msg Msg, s MsgStatus) {
 }
 
 // WriteChannelLogs writes the passed in channel logs to the DB
-func (mb *MockBackend) WriteChannelLogs(logs []*ChannelLog) error {
+func (mb *MockBackend) WriteChannelLogs(ctx context.Context, logs []*ChannelLog) error {
 	return nil
 }
 
@@ -141,7 +142,7 @@ func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 }
 
 // WriteMsg queues the passed in message internally
-func (mb *MockBackend) WriteMsg(m Msg) error {
+func (mb *MockBackend) WriteMsg(ctx context.Context, m Msg) error {
 	if mb.errorOnQueue {
 		return errors.New("unable to queue message")
 	}
@@ -172,7 +173,7 @@ func (mb *MockBackend) NewMsgStatusForExternalID(channel Channel, externalID str
 }
 
 // WriteMsgStatus writes the status update to our queue
-func (mb *MockBackend) WriteMsgStatus(status MsgStatus) error {
+func (mb *MockBackend) WriteMsgStatus(ctx context.Context, status MsgStatus) error {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -190,7 +191,7 @@ func (mb *MockBackend) NewChannelEvent(channel Channel, eventType ChannelEventTy
 }
 
 // WriteChannelEvent writes the channel event passed in
-func (mb *MockBackend) WriteChannelEvent(event ChannelEvent) error {
+func (mb *MockBackend) WriteChannelEvent(ctx context.Context, event ChannelEvent) error {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -200,7 +201,7 @@ func (mb *MockBackend) WriteChannelEvent(event ChannelEvent) error {
 }
 
 // GetChannel returns the channel with the passed in type and channel uuid
-func (mb *MockBackend) GetChannel(cType ChannelType, uuid ChannelUUID) (Channel, error) {
+func (mb *MockBackend) GetChannel(ctx context.Context, cType ChannelType, uuid ChannelUUID) (Channel, error) {
 	channel, found := mb.channels[uuid]
 	if !found {
 		return nil, ErrChannelNotFound
@@ -288,6 +289,15 @@ func (c *MockChannel) SetConfig(key string, value interface{}) {
 	c.config[key] = value
 }
 
+// CallbackDomain returns the callback domain to use for this channel
+func (c *MockChannel) CallbackDomain(fallbackDomain string) string {
+	value, found := c.config[ConfigCallbackDomain]
+	if !found {
+		return fallbackDomain
+	}
+	return value.(string)
+}
+
 // ConfigForKey returns the config value for the passed in key
 func (c *MockChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
 	value, found := c.config[key]
@@ -346,22 +356,24 @@ type mockMsg struct {
 	urn          urns.URN
 	contactName  string
 	highPriority bool
+	quickReplies []string
 
 	receivedOn *time.Time
 	sentOn     *time.Time
 	wiredOn    *time.Time
 }
 
-func (m *mockMsg) Channel() Channel      { return m.channel }
-func (m *mockMsg) ID() MsgID             { return m.id }
-func (m *mockMsg) ReceiveID() int64      { return m.id.Int64 }
-func (m *mockMsg) UUID() MsgUUID         { return m.uuid }
-func (m *mockMsg) Text() string          { return m.text }
-func (m *mockMsg) Attachments() []string { return m.attachments }
-func (m *mockMsg) ExternalID() string    { return m.externalID }
-func (m *mockMsg) URN() urns.URN         { return m.urn }
-func (m *mockMsg) ContactName() string   { return m.contactName }
-func (m *mockMsg) HighPriority() bool    { return m.highPriority }
+func (m *mockMsg) Channel() Channel       { return m.channel }
+func (m *mockMsg) ID() MsgID              { return m.id }
+func (m *mockMsg) EventID() int64         { return m.id.Int64 }
+func (m *mockMsg) UUID() MsgUUID          { return m.uuid }
+func (m *mockMsg) Text() string           { return m.text }
+func (m *mockMsg) Attachments() []string  { return m.attachments }
+func (m *mockMsg) ExternalID() string     { return m.externalID }
+func (m *mockMsg) URN() urns.URN          { return m.urn }
+func (m *mockMsg) ContactName() string    { return m.contactName }
+func (m *mockMsg) HighPriority() bool     { return m.highPriority }
+func (m *mockMsg) QuickReplies() []string { return m.quickReplies }
 
 func (m *mockMsg) ReceivedOn() *time.Time { return m.receivedOn }
 func (m *mockMsg) SentOn() *time.Time     { return m.sentOn }
@@ -390,6 +402,7 @@ type mockMsgStatus struct {
 
 func (m *mockMsgStatus) ChannelUUID() ChannelUUID { return m.channel.UUID() }
 func (m *mockMsgStatus) ID() MsgID                { return m.id }
+func (m *mockMsgStatus) EventID() int64           { return m.id.Int64 }
 
 func (m *mockMsgStatus) ExternalID() string      { return m.externalID }
 func (m *mockMsgStatus) SetExternalID(id string) { m.externalID = id }
@@ -417,7 +430,7 @@ type mockChannelEvent struct {
 	logs []*ChannelLog
 }
 
-func (e *mockChannelEvent) ReceiveID() int64              { return 0 }
+func (e *mockChannelEvent) EventID() int64                { return 0 }
 func (e *mockChannelEvent) ChannelUUID() ChannelUUID      { return e.channel.UUID() }
 func (e *mockChannelEvent) EventType() ChannelEventType   { return e.eventType }
 func (e *mockChannelEvent) CreatedOn() time.Time          { return e.createdOn }

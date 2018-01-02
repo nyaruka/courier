@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -55,6 +56,7 @@ type ChannelSendTestCase struct {
 	Text         string
 	URN          string
 	Attachments  []string
+	QuickReplies []string
 	HighPriority bool
 
 	ResponseStatus int
@@ -93,9 +95,10 @@ func ensureTestServerUp(host string) {
 }
 
 // utility method to make a request to a handler URL
-func testHandlerRequest(tb testing.TB, s courier.Server, url string, data string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
+func testHandlerRequest(tb testing.TB, s courier.Server, path string, data string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
 	var req *http.Request
 	var err error
+	url := fmt.Sprintf("https://%s%s", s.Config().Domain, path)
 
 	if data != "" {
 		req, err = http.NewRequest("POST", url, strings.NewReader(data))
@@ -152,7 +155,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 		t.Run(testCase.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(testCase.URN), testCase.Text, testCase.HighPriority)
+			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(testCase.URN), testCase.Text, testCase.HighPriority, testCase.QuickReplies)
 			for _, a := range testCase.Attachments {
 				msg.WithAttachment(a)
 			}
@@ -172,7 +175,9 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				testCase.SendPrep(server, channel, msg)
 			}
 
-			status, err := handler.SendMsg(msg)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+			status, err := handler.SendMsg(ctx, msg)
+			cancel()
 
 			if testCase.Error != "" {
 				if err == nil {
@@ -208,7 +213,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			if testCase.RequestBody != "" {
 				require.NotNil(testRequest)
 				value, _ := ioutil.ReadAll(testRequest.Body)
-				require.Equal(testCase.RequestBody, string(value))
+				require.Equal(testCase.RequestBody, strings.Trim(string(value), "\n"))
 			}
 
 			if testCase.Headers != nil {

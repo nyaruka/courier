@@ -6,6 +6,7 @@ package twilio
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
@@ -40,26 +41,33 @@ const errorStopped = 21610
 
 type handler struct {
 	handlers.BaseHandler
+	ignoreDeliveryReports bool
 }
 
 // NewHandler returns a new TwilioHandler ready to be registered
-func NewHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("T"), "Twilio")}
+func NewHandler(channelType string, name string) courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandler(courier.ChannelType(channelType), name), false}
 }
 
 func init() {
-	courier.RegisterHandler(NewHandler())
+	courier.RegisterHandler(NewHandler("T", "Twilio"))
+	courier.RegisterHandler(NewHandler("TMS", "Twilio Messaging Service"))
+
 }
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddReceiveMsgRoute(h, "POST", "receive", h.ReceiveMessage)
+
+	// save whether we should ignore delivery reports
+	h.ignoreDeliveryReports = s.Config().IgnoreDeliveryReports
+
+	err := s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
 
-	return s.AddUpdateStatusRoute(h, "POST", "status", h.StatusMessage)
+	return s.AddHandlerRoute(h, "POST", "status", h.StatusMessage)
 }
 
 type twMessage struct {
@@ -88,7 +96,7 @@ var twStatusMapping = map[string]courier.MsgStatusValue{
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -119,24 +127,19 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	}
 
 	// and finally queue our message
-	err = h.Backend().WriteMsg(msg)
+	err = h.Backend().WriteMsg(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.ReceiveEvent{msg}, h.writeReceiveSuccess(w, r, msg)
+	return []courier.Event{msg}, h.writeReceiveSuccess(ctx, w, r, msg)
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
+func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
-	}
-
-	// check if we should ignore twilio status updates
-	if h.Server().Config().IgnoreTwilioStatus {
-		return nil, nil
 	}
 
 	// get our params
@@ -149,6 +152,11 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 	msgStatus, found := twStatusMapping[twStatus.MessageStatus]
 	if !found {
 		return nil, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", twStatus.MessageStatus)
+	}
+
+	// if we are ignoring delivery reports and this isn't failed then move on
+	if h.ignoreDeliveryReports && msgStatus != courier.MsgFailed {
+		return nil, courier.WriteIgnored(ctx, w, r, "ignoring non error delivery report")
 	}
 
 	// if the message id was passed explicitely, use that
@@ -169,18 +177,19 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 	}
 
 	// write our status
-	err = h.Backend().WriteMsgStatus(status)
+	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, status)
+	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	// build our callback URL
-	callbackURL := fmt.Sprintf("%s/c/t/%s/status?id=%d&action=callback", h.Server().Config().BaseURL, msg.Channel().UUID(), msg.ID().Int64)
+	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?id=%d&action=callback", callbackDomain, strings.ToLower(msg.Channel().ChannelType().String()), msg.Channel().UUID(), msg.ID().Int64)
 
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	if accountSID == "" {
@@ -211,7 +220,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 		// set our from, either as a messaging service or from our address
 		serviceSID := msg.Channel().StringConfigForKey(configMessagingServiceSID, "")
 		if serviceSID != "" {
-			form["MessagingServiceSID"] = []string{serviceSID}
+			form["MessagingServiceSid"] = []string{serviceSID}
 		} else {
 			form["From"] = []string{msg.Channel().Address()}
 		}
@@ -238,7 +247,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 			if errorCode != 0 {
 				if errorCode == errorStopped {
 					status.SetStatus(courier.MsgFailed)
-					h.Backend().StopMsgContact(msg)
+					h.Backend().StopMsgContact(ctx, msg)
 				}
 				log.WithError("Message Send Error", errors.Errorf("received error code from twilio '%d'", errorCode))
 				return status, nil
@@ -269,7 +278,7 @@ func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
 }
 
 // Twilio expects Twiml from a message receive request
-func (h *handler) writeReceiveSuccess(w http.ResponseWriter, r *http.Request, msg courier.Msg) error {
+func (h *handler) writeReceiveSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, msg courier.Msg) error {
 	courier.LogMsgReceived(r, msg)
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
@@ -288,13 +297,13 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 		return err
 	}
 
-	url := fmt.Sprintf("%s%s", h.Server().Config().BaseURL, r.URL.RequestURI())
 	confAuth := channel.ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
 		return fmt.Errorf("invalid or missing auth token in config")
 	}
 
+	url := fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI())
 	expected, err := twCalculateSignature(url, r.PostForm, authToken)
 	if err != nil {
 		return err
@@ -304,6 +313,7 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 	if !hmac.Equal(expected, []byte(actual)) {
 		return fmt.Errorf("invalid request signature")
 	}
+
 	return nil
 }
 

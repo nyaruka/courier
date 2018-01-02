@@ -1,6 +1,7 @@
 package rapidpro
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -12,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/buger/jsonparser"
 
 	"mime"
 
@@ -47,11 +50,11 @@ const (
 )
 
 // WriteMsg creates a message given the passed in arguments
-func writeMsg(b *backend, msg courier.Msg) error {
+func writeMsg(ctx context.Context, b *backend, msg courier.Msg) error {
 	m := msg.(*DBMsg)
 
 	// this msg has already been written (we received it twice), we are a no op
-	if m.AlreadyWritten_ {
+	if m.alreadyWritten {
 		return nil
 	}
 
@@ -67,7 +70,7 @@ func writeMsg(b *backend, msg courier.Msg) error {
 	}
 
 	// try to write it our db
-	err := writeMsgToDB(b, m)
+	err := writeMsgToDB(ctx, b, m)
 
 	// fail? spool for later
 	if err != nil {
@@ -105,9 +108,9 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 		ModifiedOn_:  now,
 		QueuedOn_:    now,
 
-		Channel_:        channel,
-		WorkerToken_:    "",
-		AlreadyWritten_: false,
+		channel:        channel,
+		workerToken:    "",
+		alreadyWritten: false,
 	}
 }
 
@@ -119,9 +122,9 @@ INSERT INTO msgs_msg(org_id, direction, text, attachments, msg_count, error_coun
 RETURNING id
 `
 
-func writeMsgToDB(b *backend, m *DBMsg) error {
+func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 	// grab the contact for this msg
-	contact, err := contactForURN(b.db, m.OrgID_, m.ChannelID_, m.URN_, m.ContactName_)
+	contact, err := contactForURN(ctx, b.db, m.OrgID_, m.ChannelID_, m.URN_, m.ContactName_)
 
 	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {
@@ -132,7 +135,7 @@ func writeMsgToDB(b *backend, m *DBMsg) error {
 	m.ContactID_ = contact.ID
 	m.ContactURNID_ = contact.URNID
 
-	rows, err := b.db.NamedQuery(insertMsgSQL, m)
+	rows, err := b.db.NamedQueryContext(ctx, insertMsgSQL, m)
 	if err != nil {
 		return err
 	}
@@ -264,7 +267,7 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 	}
 
 	// try to write it our db
-	err = writeMsgToDB(b, msg)
+	err = writeMsgToDB(context.Background(), b, msg)
 
 	// fail? oh well, we'll try again later
 	return err
@@ -343,6 +346,7 @@ type DBMsg struct {
 	Text_         string                 `json:"text"          db:"text"`
 	Attachments_  pq.StringArray         `json:"attachments"   db:"attachments"`
 	ExternalID_   null.String            `json:"external_id"   db:"external_id"`
+	Metadata_     json.RawMessage        `json:"metadata"      db:"metadata"`
 
 	ChannelID_    courier.ChannelID `json:"channel_id"      db:"channel_id"`
 	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
@@ -360,14 +364,15 @@ type DBMsg struct {
 	QueuedOn_    time.Time `json:"queued_on"     db:"queued_on"`
 	SentOn_      time.Time `json:"sent_on"       db:"sent_on"`
 
-	Channel_        courier.Channel   `json:"-"`
-	WorkerToken_    queue.WorkerToken `json:"-"`
-	AlreadyWritten_ bool              `json:"-"`
+	channel        courier.Channel
+	workerToken    queue.WorkerToken
+	alreadyWritten bool
+	quickReplies   []string
 }
 
-func (m *DBMsg) Channel() courier.Channel { return m.Channel_ }
+func (m *DBMsg) Channel() courier.Channel { return m.channel }
 func (m *DBMsg) ID() courier.MsgID        { return m.ID_ }
-func (m *DBMsg) ReceiveID() int64         { return m.ID_.Int64 }
+func (m *DBMsg) EventID() int64           { return m.ID_.Int64 }
 func (m *DBMsg) UUID() courier.MsgUUID    { return m.UUID_ }
 func (m *DBMsg) Text() string             { return m.Text_ }
 func (m *DBMsg) Attachments() []string    { return []string(m.Attachments_) }
@@ -375,13 +380,31 @@ func (m *DBMsg) ExternalID() string       { return m.ExternalID_.String }
 func (m *DBMsg) URN() urns.URN            { return m.URN_ }
 func (m *DBMsg) ContactName() string      { return m.ContactName_ }
 func (m *DBMsg) HighPriority() bool       { return m.HighPriority_.Valid && m.HighPriority_.Bool }
+func (m *DBMsg) ReceivedOn() *time.Time   { return &m.SentOn_ }
+func (m *DBMsg) SentOn() *time.Time       { return &m.SentOn_ }
 
-func (m *DBMsg) ReceivedOn() *time.Time { return &m.SentOn_ }
-func (m *DBMsg) SentOn() *time.Time     { return &m.SentOn_ }
+func (m *DBMsg) QuickReplies() []string {
+	if m.quickReplies != nil {
+		return m.quickReplies
+	}
+
+	if m.Metadata_ == nil {
+		return nil
+	}
+
+	m.quickReplies = []string{}
+	jsonparser.ArrayEach(
+		m.Metadata_,
+		func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+			m.quickReplies = append(m.quickReplies, string(value))
+		},
+		"quick_replies")
+	return m.quickReplies
+}
 
 // fingerprint returns a fingerprint for this msg, suitable for figuring out if this is a dupe
 func (m *DBMsg) fingerprint() string {
-	return fmt.Sprintf("%s:%s:%s", m.Channel_.UUID(), m.URN_, m.Text_)
+	return fmt.Sprintf("%s:%s:%s", m.channel.UUID(), m.URN_, m.Text_)
 }
 
 // WithContactName can be used to set the contact name on a msg

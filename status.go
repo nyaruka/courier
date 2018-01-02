@@ -21,6 +21,8 @@ const (
 
 // MsgStatus represents a status update on a message
 type MsgStatus interface {
+	EventID() int64
+
 	ChannelUUID() ChannelUUID
 	ID() MsgID
 

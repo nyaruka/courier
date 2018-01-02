@@ -25,6 +25,9 @@ const (
 	// ConfigSendURL is a constant key for channel configs
 	ConfigSendURL = "send_url"
 
+	// ConfigBaseURL is a constant key for channel configs
+	ConfigBaseURL = "base_url"
+
 	// ConfigSendAuthorization is a constant key for channel configs
 	ConfigSendAuthorization = "send_authorization"
 
@@ -39,6 +42,9 @@ const (
 
 	// ConfigMaxLength is the maximum size of a message in characters
 	ConfigMaxLength = "max_length"
+
+	// ConfigCallbackDomain is the domain that should be used for this channel when registering callbacks
+	ConfigCallbackDomain = "callback_domain"
 )
 
 // ChannelType is our typing of the two char channel types
@@ -102,8 +108,11 @@ type Channel interface {
 	Schemes() []string
 	Country() string
 	Address() string
+
+	// CallbackDomain returns the domain that should be used for any callbacks the channel registers
+	CallbackDomain(fallbackDomain string) string
+
 	ConfigForKey(key string, defaultValue interface{}) interface{}
 	StringConfigForKey(key string, defaultValue string) string
-
 	OrgConfigForKey(key string, defaultValue interface{}) interface{}
 }

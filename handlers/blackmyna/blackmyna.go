@@ -1,6 +1,7 @@
 package blackmyna
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -32,16 +33,16 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddReceiveMsgRoute(h, "GET", "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, "GET", "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
 
-	return s.AddUpdateStatusRoute(h, "GET", "status", h.StatusMessage)
+	return s.AddHandlerRoute(h, "GET", "status", h.StatusMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
+func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
 	bmMsg := &bmMessage{}
 	err := handlers.DecodeAndValidateForm(bmMsg, r)
@@ -56,12 +57,12 @@ func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter,
 	msg := h.Backend().NewIncomingMsg(channel, urn, bmMsg.Text)
 
 	// and finally queue our message
-	err = h.Backend().WriteMsg(msg)
+	err = h.Backend().WriteMsg(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, msg)
+	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
 type bmMessage struct {
@@ -78,7 +79,7 @@ var bmStatusMapping = map[int]courier.MsgStatusValue{
 }
 
 // StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.MsgStatus, error) {
+func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
 	bmStatus := &bmStatus{}
 	err := handlers.DecodeAndValidateForm(bmStatus, r)
@@ -93,16 +94,16 @@ func (h *handler) StatusMessage(channel courier.Channel, w http.ResponseWriter, 
 
 	// write our status
 	status := h.Backend().NewMsgStatusForExternalID(channel, bmStatus.ID, msgStatus)
-	err = h.Backend().WriteMsgStatus(status)
+	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.MsgStatus{status}, courier.WriteStatusSuccess(w, r, status)
+	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
 }
 
 // SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for BM channel")
