@@ -388,12 +388,14 @@ func (b *backend) Start() error {
 			}
 
 			// send auth if required
-			pass, authRequired := redisURL.User.Password()
-			if authRequired {
-				if _, err := conn.Do("AUTH", pass); err != nil {
-			      conn.Close()
-			      return nil, err
-			    }
+			if redisURL.User != nil {
+				pass, authRequired := redisURL.User.Password()
+				if authRequired {
+					if _, err := conn.Do("AUTH", pass); err != nil {
+				      conn.Close()
+				      return nil, err
+				    }
+				}
 			}
 
 			// switch to the right DB
