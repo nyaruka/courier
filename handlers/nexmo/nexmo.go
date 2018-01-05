@@ -83,12 +83,12 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 	handlers.DecodeAndValidateQueryParams(nexmoDeliveryReport, r)
 
 	if nexmoDeliveryReport.MessageID == "" {
-		return nil, courier.WriteIgnored(ctx, w, r, "no messageId parameter, ignored")
+		return nil, courier.WriteRequestIgnored(ctx, w, r, channel, "no messageId parameter, ignored")
 	}
 
 	msgStatus, found := statusMappings[nexmoDeliveryReport.Status]
 	if !found {
-		return nil, courier.WriteIgnored(ctx, w, r, "ignoring unknown status report")
+		return nil, courier.WriteRequestIgnored(ctx, w, r, channel, "ignoring unknown status report")
 	}
 
 	status := h.Backend().NewMsgStatusForExternalID(channel, nexmoDeliveryReport.MessageID, msgStatus)
@@ -120,7 +120,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	if nexmoIncomingMessage.To == "" {
-		return nil, courier.WriteIgnored(ctx, w, r, "no to parameter, ignored")
+		return nil, courier.WriteRequestIgnored(ctx, w, r, channel, "no to parameter, ignored")
 	}
 
 	// create our URN

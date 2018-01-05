@@ -1,22 +1,35 @@
 package facebook
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/go-errors/errors"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/sirupsen/logrus"
 )
 
-var facebookAPIURL = "https://graph.facebook.com/v2.6/me/messages"
+var facebookMessageURL = "https://graph.facebook.com/v2.6/me/messages"
+var facebookSubscribeURL = "https://graph.facebook.com/v2.6/me/subscribed_apps"
+var facebookGraphURL = "https://graph.facebook.com/v2.6/"
+var facebookSubscribeTimeout = time.Second * 5
+
+// keys for extra in channel events
+const (
+	referrerIDKey = "referrer_id"
+	sourceKey     = "source"
+	adIDKey       = "ad_id"
+	typeKey       = "type"
+	titleKey      = "title"
+	payloadKey    = "payload"
+)
 
 func init() {
 	courier.RegisterHandler(NewHandler())
@@ -30,273 +43,310 @@ const (
 	maxLength = 640 // Facebook API says 640 is max for the body
 )
 
-// NewHandler returns a new TelegramHandler ready to be registered
+// NewHandler returns a new FacebookHandler ready to be registered
 func NewHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("TG"), "Telegram")}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("FB"), "Facebook")}
 }
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddReceiveMsgRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
-}
-
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.ReceiveEvent, error) {
-	te := &telegramEnvelope{}
-	err := handlers.DecodeAndValidateJSON(te, r)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.Receive)
 	if err != nil {
-		return nil, courier.WriteError(w, r, err)
+		return err
 	}
-
-	// no message? ignore this
-	if te.Message.MessageID == 0 {
-		return nil, courier.WriteIgnored(w, r, "Ignoring request, no message")
-	}
-
-	// create our date from the timestamp
-	date := time.Unix(te.Message.Date, 0).UTC()
-
-	// create our URN
-	urn := urns.NewTelegramURN(te.Message.From.ContactID, te.Message.From.Username)
-
-	// build our name from first and last
-	name := handlers.NameFromFirstLastUsername(te.Message.From.FirstName, te.Message.From.LastName, te.Message.From.Username)
-
-	// our text is either "text" or "caption" (or empty)
-	text := te.Message.Text
-
-	// this is a start command, trigger a new conversation
-	if text == "/start" {
-		event := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn).WithContactName(name).WithOccurredOn(date)
-		err = h.Backend().WriteChannelEvent(event)
-		if err != nil {
-			return nil, err
-		}
-		return []courier.ReceiveEvent{event}, courier.WriteChannelEventSuccess(w, r, event)
-	}
-
-	// normal message of some kind
-	if text == "" && te.Message.Caption != "" {
-		text = te.Message.Caption
-	}
-
-	// deal with attachments
-	mediaURL := ""
-	if len(te.Message.Photo) > 0 {
-		// grab the largest photo less than 100k
-		photo := te.Message.Photo[0]
-		for i := 1; i < len(te.Message.Photo); i++ {
-			if te.Message.Photo[i].FileSize > 100000 {
-				break
-			}
-			photo = te.Message.Photo[i]
-		}
-		mediaURL, err = resolveFileID(channel, photo.FileID)
-	} else if te.Message.Video != nil {
-		mediaURL, err = resolveFileID(channel, te.Message.Video.FileID)
-	} else if te.Message.Voice != nil {
-		mediaURL, err = resolveFileID(channel, te.Message.Voice.FileID)
-	} else if te.Message.Sticker != nil {
-		mediaURL, err = resolveFileID(channel, te.Message.Sticker.Thumb.FileID)
-	} else if te.Message.Document != nil {
-		mediaURL, err = resolveFileID(channel, te.Message.Document.FileID)
-	} else if te.Message.Venue != nil {
-		text = utils.JoinNonEmpty(", ", te.Message.Venue.Title, te.Message.Venue.Address)
-		mediaURL = fmt.Sprintf("geo:%f,%f", te.Message.Location.Latitude, te.Message.Location.Longitude)
-	} else if te.Message.Location != nil {
-		text = fmt.Sprintf("%f,%f", te.Message.Location.Latitude, te.Message.Location.Longitude)
-		mediaURL = fmt.Sprintf("geo:%f,%f", te.Message.Location.Latitude, te.Message.Location.Longitude)
-	} else if te.Message.Contact != nil {
-		phone := ""
-		if te.Message.Contact.PhoneNumber != "" {
-			phone = fmt.Sprintf("(%s)", te.Message.Contact.PhoneNumber)
-		}
-		text = utils.JoinNonEmpty(" ", te.Message.Contact.FirstName, te.Message.Contact.LastName, phone)
-	}
-
-	// we had an error downloading media
-	if err != nil {
-		return nil, courier.WriteError(w, r, errors.WrapPrefix(err, "error retrieving media", 0))
-	}
-
-	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(fmt.Sprintf("%d", te.Message.MessageID)).WithContactName(name)
-
-	if mediaURL != "" {
-		msg.WithAttachment(mediaURL)
-	}
-
-	// queue our message
-	err = h.Backend().WriteMsg(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.ReceiveEvent{msg}, courier.WriteMsgSuccess(w, r, msg)
+	return s.AddHandlerRoute(h, http.MethodGet, "receive", h.ReceiveVerify)
 }
 
-func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values) (string, *courier.ChannelLog, error) {
-	sendURL := fmt.Sprintf("%s/bot%s/%s", telegramAPIURL, token, path)
-	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+// ReceiveVerify handles Facebook's webhook verification callback
+func (h *handler) ReceiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	mode := r.URL.Query().Get("hub.mode")
 
-	rr, err := utils.MakeHTTPRequest(req)
-
-	// build our channel log
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-
-	// was this request successful?
-	ok, err := jsonparser.GetBoolean([]byte(rr.Body), "ok")
-	if err != nil || !ok {
-		return "", log, errors.Errorf("response not 'ok'")
+	// this isn't a subscribe verification, that's an error
+	if mode != "subscribe" {
+		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("unknown request"))
 	}
 
-	// grab our message id
-	externalID, err := jsonparser.GetInt([]byte(rr.Body), "result", "message_id")
-	if err != nil {
-		return "", log, errors.Errorf("no 'result.message_id' in response")
+	// verify the token against our secret, if the same return the challenge FB sent us
+	secret := r.URL.Query().Get("hub.verify_token")
+	if secret != channel.StringConfigForKey(courier.ConfigSecret, "") {
+		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("token does not match secret"))
 	}
 
-	return strconv.FormatInt(externalID, 10), log, nil
-}
-
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(msg courier.Msg) (courier.MsgStatus, error) {
-	confAuth := msg.Channel().ConfigForKey(courier.ConfigAuthToken, "")
-	authToken, isStr := confAuth.(string)
-	if !isStr || authToken == "" {
-		return nil, fmt.Errorf("invalid auth token config")
+	// make sure we have an auth token
+	authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	if authToken == "" {
+		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("missing auth token for FB channel"))
 	}
 
-	// we only caption if there is only a single attachment
-	caption := ""
-	if len(msg.Attachments()) == 1 {
-		caption = msg.Text()
-	}
+	// everything looks good, we will subscribe to this page's messages asynchronously
+	go func() {
+		// wait a bit for Facebook to handle this response
+		time.Sleep(facebookSubscribeTimeout)
 
-	// the status that will be written for this message
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(courier.Text, maxLength)
-	for _, part := range parts {
-		envelope := facebookEnvelope{
-			Message{
-				Text: 
-			}
+		// subscribe to messaging events for this page
+		form := url.Values{}
+		form.Set("access_token", authToken)
+		req, _ := http.NewRequest(http.MethodPost, facebookSubscribeURL, strings.NewReader(form.Encode()))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		rr, err := utils.MakeHTTPRequest(req)
+
+		// log if we get any kind of error
+		success, _ := jsonparser.GetBoolean([]byte(rr.Body), "success")
+		if err != nil || !success {
+			logrus.WithField("channel_uuid", channel.UUID()).WithField("response", rr.Response).Error("error subscribing to Facebook page events")
 		}
+	}()
 
-	}
-
-	// whether we encountered any errors sending any parts
-	hasError := true
-
-	// if we have text, send that if we aren't sending it as a caption
-	if msg.Text() != "" && caption == "" {
-		form := url.Values{
-			"chat_id": []string{msg.URN().Path()},
-			"text":    []string{msg.Text()},
-		}
-		externalID, log, err := h.sendMsgPart(msg, authToken, "sendMessage", form)
-		status.SetExternalID(externalID)
-		hasError = err != nil
-		status.AddLog(log)
-	}
-
-	// send each attachment
-	for _, attachment := range msg.Attachments() {
-		mediaType, mediaURL := courier.SplitAttachment(attachment)
-		switch strings.Split(mediaType, "/")[0] {
-		case "image":
-			form := url.Values{
-				"chat_id": []string{msg.URN().Path()},
-				"photo":   []string{mediaURL},
-				"caption": []string{caption},
-			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendPhoto", form)
-			status.SetExternalID(externalID)
-			hasError = err != nil
-			status.AddLog(log)
-
-		case "video":
-			form := url.Values{
-				"chat_id": []string{msg.URN().Path()},
-				"video":   []string{mediaURL},
-				"caption": []string{caption},
-			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendVideo", form)
-			status.SetExternalID(externalID)
-			hasError = err != nil
-			status.AddLog(log)
-
-		case "audio":
-			form := url.Values{
-				"chat_id": []string{msg.URN().Path()},
-				"audio":   []string{mediaURL},
-				"caption": []string{caption},
-			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendAudio", form)
-			status.SetExternalID(externalID)
-			hasError = err != nil
-			status.AddLog(log)
-
-		default:
-			status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
-				"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
-			hasError = true
-		}
-	}
-
-	if !hasError {
-		status.SetStatus(courier.MsgWired)
-	}
-
-	return status, nil
+	// and respond with the challenge token
+	_, err := fmt.Fprint(w, r.URL.Query().Get("hub.challenge"))
+	return nil, err
 }
 
-// {
-//    "recipient_id": "1008372609250235",
-//    "message_id": "mid.1456970487936:c34767dfe57ee6e339"
-// }
-type facebookResponse struct {
-	RecipientID string `json:"recipient_id"`
-	MessageID   string `json:"message_id"`
-}
-
-// {
-//    "recipient": {
-// 	    "id": "10041885"
-//    }
-// 	  "message": {
-//      "text": "Hello World",
-//      "attachment": {
-// 	      "type": "video",
-//        "payload": {
-//          "url": "https://foo.bar/video.mpeg"
-//        }
-//      }
-//    }
-// }
-
-type facebookMessage   struct {
-	Text       string `json:"text"`
-	Attachment *struct {
-		Type    string `json:"type"`
-		Payload struct {
-			URL string `json:"url"`
-		} `json:"payload"`
-	} `json:"attachment"`
-}
-
-type plainRecipient struct {
+type fbUser struct {
 	ID string `json:"id"`
 }
 
-type referralRecipient struct {
-	UserReferral string `json:"user_ref"`
+// {
+//   "object":"page",
+//   "entry":[{
+//     "id":"180005062406476",
+//     "time":1514924367082,
+//     "messaging":[{
+//       "sender":  {"id":"1630934236957797"},
+//       "recipient":{"id":"180005062406476"},
+//       "timestamp":1514924366807,
+//       "message":{
+//         "mid":"mid.$cAAD5QiNHkz1m6cyj11guxokwkhi2",
+//         "seq":33116,
+//         "text":"65863634"
+//       }
+//     }]
+//   }]
+// }
+type moEnvelope struct {
+	Object string `json:"object"`
+	Entry  []struct {
+		ID        string `json:"id"`
+		Time      int64  `json:"time"`
+		Messaging []struct {
+			Sender    fbUser `json:"sender"`
+			Recipient fbUser `json:"recipient"`
+			Timestamp int64  `json:"timestamp"`
+
+			OptIn *struct {
+				Ref     string `json:"ref"`
+				UserRef string `json:"user_ref"`
+			} `json:"optin"`
+
+			Referral *struct {
+				Ref    string `json:"ref"`
+				Source string `json:"source"`
+				Type   string `json:"type"`
+				AdID   string `json:"ad_id"`
+			} `json:"referral"`
+
+			Postback *struct {
+				Title    string `json:"title"`
+				Payload  string `json:"payload"`
+				Referral struct {
+					Ref    string `json:"ref"`
+					Source string `json:"source"`
+					Type   string `json:"type"`
+				} `json:"referral"`
+			} `json:"postback"`
+
+			Message *struct {
+				IsEcho      bool   `json:"is_echo"`
+				MID         string `json:"mid"`
+				Text        string `json:"text"`
+				Attachments []struct {
+					Type    string `json:"type"`
+					Payload *struct {
+						URL string `json:"url"`
+					}
+				} `json:"attachments"`
+			} `json:"message"`
+
+			Delivery *struct {
+				MIDs      []string `json:"mids"`
+				Watermark int64    `json:"watermark"`
+				Seq       int      `json:"seq"`
+			} `json:"delivery"`
+		} `json:"messaging"`
+	} `json:"entry"`
 }
 
-type facebookEnvelope struct {
-	Recipient interface{} `json:"recipient"`
-	Message facebookMessage `json:"message"`	
+// Receive is our HTTP handler function for incoming messages and status updates
+func (h *handler) Receive(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	mo := &moEnvelope{}
+	err := handlers.DecodeAndValidateJSON(mo, r)
+	if err != nil {
+		return nil, courier.WriteError(ctx, w, r, err)
+	}
+
+	// not a page object? ignore
+	if mo.Object != "page" {
+		return nil, courier.WriteRequestIgnored(ctx, w, r, channel, "ignoring non-page request")
+	}
+
+	// no entries? ignore this request
+	if len(mo.Entry) == 0 {
+		return nil, courier.WriteRequestIgnored(ctx, w, r, channel, "ignoring request, no entries")
+	}
+
+	// the list of events we deal with
+	events := make([]courier.Event, 0, 2)
+
+	// the list of data we will return in our response
+	data := make([]interface{}, 0, 2)
+
+	// for each entry
+	for _, entry := range mo.Entry {
+		// no entry, ignore
+		if len(entry.Messaging) == 0 {
+			continue
+		}
+
+		// grab our message, there is always a single one
+		msg := entry.Messaging[0]
+
+		// ignore this entry if it is to another page
+		if channel.Address() != msg.Recipient.ID {
+			continue
+		}
+
+		// create our date from the timestamp (they give us millis, arg is nanos)
+		date := time.Unix(0, msg.Timestamp*1000000).UTC()
+
+		// create our URN
+		urn := urns.NewURNFromParts(urns.FacebookScheme, msg.Sender.ID, "")
+
+		if msg.OptIn != nil {
+			// this is an opt in, if we have a user_ref, use that as our URN
+			if msg.OptIn.UserRef != "" {
+				urn = urns.NewURNFromParts(urns.FacebookScheme, urns.FacebookRefPrefix+msg.OptIn.UserRef, "")
+			}
+
+			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn).WithOccurredOn(date)
+
+			// build our extra
+			extra := map[string]interface{}{
+				referrerIDKey: msg.OptIn.Ref,
+			}
+			event = event.WithExtra(extra)
+
+			err := h.Backend().WriteChannelEvent(ctx, event)
+			if err != nil {
+				return nil, err
+			}
+
+			events = append(events, event)
+			data = append(data, courier.NewEventReceiveData(event))
+
+		} else if msg.Postback != nil {
+			// this is a postback
+			eventType := courier.Referral
+			if msg.Postback.Payload == "get_started" {
+				eventType = courier.NewConversation
+			}
+			event := h.Backend().NewChannelEvent(channel, eventType, urn).WithOccurredOn(date)
+
+			// build our extra
+			extra := map[string]interface{}{
+				titleKey:      msg.Postback.Title,
+				payloadKey:    msg.Postback.Payload,
+				referrerIDKey: msg.Postback.Referral.Ref,
+				sourceKey:     msg.Postback.Referral.Source,
+				typeKey:       msg.Postback.Referral.Type,
+			}
+			event = event.WithExtra(extra)
+
+			err := h.Backend().WriteChannelEvent(ctx, event)
+			if err != nil {
+				return nil, err
+			}
+
+			events = append(events, event)
+			data = append(data, courier.NewEventReceiveData(event))
+
+		} else if msg.Referral != nil {
+			// this is an incoming referral
+			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn).WithOccurredOn(date)
+
+			// build our extra
+			extra := map[string]interface{}{
+				sourceKey: msg.Referral.Source,
+				typeKey:   msg.Referral.Type,
+			}
+
+			// add referrer id if present
+			if msg.Referral.Ref != "" {
+				extra[referrerIDKey] = msg.Referral.Ref
+			}
+
+			// add ad id if present
+			if msg.Referral.AdID != "" {
+				extra[adIDKey] = msg.Referral.AdID
+			}
+			event = event.WithExtra(extra)
+
+			err := h.Backend().WriteChannelEvent(ctx, event)
+			if err != nil {
+				return nil, err
+			}
+
+			events = append(events, event)
+			data = append(data, courier.NewEventReceiveData(event))
+
+		} else if msg.Message != nil {
+			// this is an incoming message
+
+			// ignore echos
+			if msg.Message.IsEcho {
+				data = append(data, courier.NewInfoData("ignoring echo"))
+				continue
+			}
+
+			// create our message
+			event := h.Backend().NewIncomingMsg(channel, urn, msg.Message.Text).WithExternalID(msg.Message.MID).WithReceivedOn(date)
+
+			// add any attachments
+			for _, att := range msg.Message.Attachments {
+				if att.Payload != nil && att.Payload.URL != "" {
+					event.WithAttachment(att.Payload.URL)
+				}
+			}
+
+			err := h.Backend().WriteMsg(ctx, event)
+			if err != nil {
+				return nil, err
+			}
+
+			events = append(events, event)
+			data = append(data, courier.NewMsgReceiveData(event))
+
+		} else if msg.Delivery != nil {
+			// this is a delivery report
+			for _, mid := range msg.Delivery.MIDs {
+				event := h.Backend().NewMsgStatusForExternalID(channel, mid, courier.MsgDelivered)
+				err := h.Backend().WriteMsgStatus(ctx, event)
+				if err != nil {
+					return nil, err
+				}
+
+				events = append(events, event)
+				data = append(data, courier.NewStatusData(event))
+			}
+
+		} else {
+			data = append(data, courier.NewInfoData("ignoring unknown entry type"))
+		}
+	}
+
+	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
 }
 
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+	return nil, fmt.Errorf("FB sending via Courier not yet implemented")
+}

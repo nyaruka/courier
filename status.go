@@ -29,8 +29,6 @@ type MsgStatus interface {
 	ExternalID() string
 	SetExternalID(string)
 
-	SetNewURN(URN)
-
 	Status() MsgStatusValue
 	SetStatus(MsgStatusValue)
 
