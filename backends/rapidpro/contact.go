@@ -11,7 +11,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/urns"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
@@ -59,7 +58,7 @@ WHERE u.identity = $1 AND u.contact_id = c.id AND u.org_id = $2 AND c.is_active 
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
-func contactForURN(ctx context.Context, db *sqlx.DB, org OrgID, channelID courier.ChannelID, urn urns.URN, name string) (*DBContact, error) {
+func contactForURN(ctx context.Context, db *sqlx.DB, org OrgID, channel *DBChannel, urn urns.URN, name string) (*DBContact, error) {
 	// try to look up our contact by URN
 	contact := &DBContact{}
 	err := db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
@@ -77,7 +76,7 @@ func contactForURN(ctx context.Context, db *sqlx.DB, org OrgID, channelID courie
 			return nil, err
 		}
 
-		err = setDefaultURN(tx, channelID, contact, urn)
+		err = setDefaultURN(tx, channel.ID(), contact, urn)
 		if err != nil {
 			logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
 			tx.Rollback()
@@ -93,8 +92,8 @@ func contactForURN(ctx context.Context, db *sqlx.DB, org OrgID, channelID courie
 	contact.ModifiedOn = time.Now()
 	contact.IsNew = true
 
-	// TODO: don't set name for anonymous orgs
-	if name != "" {
+	// if we have a name and we aren't anonymous, set it
+	if name != "" && !channel.OrgIsAnon() {
 		contact.Name = null.StringFrom(name)
 	}
 
@@ -117,13 +116,13 @@ func contactForURN(ctx context.Context, db *sqlx.DB, org OrgID, channelID courie
 	// associate our URN
 	// If we've inserted a duplicate URN then we'll get a uniqueness violation.
 	// That means this contact URN was written by someone else after we tried to look it up.
-	contactURN, err := contactURNForURN(tx, org, channelID, contact.ID, urn)
+	contactURN, err := contactURNForURN(tx, org, channel.ID(), contact.ID, urn)
 	if err != nil {
 		tx.Rollback()
 		if pqErr, ok := err.(*pq.Error); ok {
 			// if this was a duplicate URN, start over with a contact lookup
 			if pqErr.Code.Name() == "unique_violation" {
-				return contactForURN(ctx, db, org, channelID, urn, name)
+				return contactForURN(ctx, db, org, channel, urn, name)
 			}
 		}
 		return nil, err
@@ -132,7 +131,7 @@ func contactForURN(ctx context.Context, db *sqlx.DB, org OrgID, channelID courie
 	// if the returned URN is for a different contact, then we were in a race as well, rollback and start over
 	if contactURN.ContactID.Int64 != contact.ID.Int64 {
 		tx.Rollback()
-		return contactForURN(ctx, db, org, channelID, urn, name)
+		return contactForURN(ctx, db, org, channel, urn, name)
 	}
 
 	// all is well, we created the new contact, commit and move forward

@@ -47,11 +47,10 @@ func init() {
 
 // GetChannel returns the channel for the passed in type and UUID
 func (b *backend) GetChannel(ctx context.Context, ct courier.ChannelType, uuid courier.ChannelUUID) (courier.Channel, error) {
-	// max 1 second to get a channel
 	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
 	defer cancel()
 
-	return getChannel(timeout, b, ct, uuid)
+	return getChannel(timeout, b.db, ct, uuid)
 }
 
 // NewIncomingMsg creates a new message from the given params
@@ -94,13 +93,12 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
 		if err != nil {
 			return nil, fmt.Errorf("unable to unmarshal message '%s': %s", msgJSON, err)
 		}
-
 		// populate the channel on our db msg
 		channel, err := b.GetChannel(ctx, courier.AnyChannelType, dbMsg.ChannelUUID_)
 		if err != nil {
 			return nil, err
 		}
-		dbMsg.channel = channel
+		dbMsg.channel = channel.(*DBChannel)
 		dbMsg.workerToken = token
 		return dbMsg, nil
 	}
@@ -305,7 +303,7 @@ func (b *backend) Status() string {
 
 		// try to look up our channel
 		channelUUID, _ := courier.NewChannelUUID(uuid)
-		channel, err := getChannel(context.Background(), b, courier.AnyChannelType, channelUUID)
+		channel, err := getChannel(context.Background(), b.db, courier.AnyChannelType, channelUUID)
 		channelType := "!!"
 		if err == nil {
 			channelType = channel.ChannelType().String()

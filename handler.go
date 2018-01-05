@@ -3,6 +3,8 @@ package courier
 import (
 	"context"
 	"net/http"
+
+	"github.com/nyaruka/gocommon/urns"
 )
 
 // Event is our interface for the types of things a ChannelHandleFunc can return.
@@ -22,6 +24,11 @@ type ChannelHandler interface {
 	ChannelType() ChannelType
 	ChannelName() string
 	SendMsg(context.Context, Msg) (MsgStatus, error)
+}
+
+// URNDescriber is the interface handlers which can look up URN metadata should satisfy
+type URNDescriber interface {
+	DescribeURN(Channel, urns.URN) map[string]string
 }
 
 // RegisterHandler adds a new handler for a channel type, this is called by individual handlers when they are initialized
