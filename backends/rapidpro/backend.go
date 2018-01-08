@@ -392,9 +392,9 @@ func (b *backend) Start() error {
 				pass, authRequired := redisURL.User.Password()
 				if authRequired {
 					if _, err := conn.Do("AUTH", pass); err != nil {
-				      conn.Close()
-				      return nil, err
-				    }
+						conn.Close()
+						return nil, err
+					}
 				}
 			}
 
