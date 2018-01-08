@@ -124,7 +124,7 @@ RETURNING id
 
 func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 	// grab the contact for this msg
-	contact, err := contactForURN(ctx, b.db, m.OrgID_, m.channel, m.URN_, m.ContactName_)
+	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.ContactName_)
 
 	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {

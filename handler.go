@@ -26,14 +26,19 @@ type ChannelHandler interface {
 	SendMsg(context.Context, Msg) (MsgStatus, error)
 }
 
-// URNDescriber is the interface handlers which can look up URN metadata should satisfy
+// URNDescriber is the interface handlers which can look up URN metadata for new contacts should satisfy
 type URNDescriber interface {
-	DescribeURN(Channel, urns.URN) map[string]string
+	DescribeURN(context.Context, Channel, urns.URN) (map[string]string, error)
 }
 
 // RegisterHandler adds a new handler for a channel type, this is called by individual handlers when they are initialized
 func RegisterHandler(handler ChannelHandler) {
 	registeredHandlers[handler.ChannelType()] = handler
+}
+
+// GetHandler returns the handler for the passed in channel type, or nil if not found
+func GetHandler(ct ChannelType) ChannelHandler {
+	return registeredHandlers[ct]
 }
 
 var registeredHandlers = make(map[ChannelType]ChannelHandler)

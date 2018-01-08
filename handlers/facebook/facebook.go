@@ -355,7 +355,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
 	// can't do anything with facebook refs, ignore them
 	if urn.IsFacebookRef() {
-		return nil, nil
+		return map[string]string{}, nil
 	}
 
 	accessToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
@@ -364,9 +364,14 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	}
 
 	// build a request to lookup the stats for this contact
-	u, _ := url.Parse(fmt.Sprintf("%s%s", facebookGraphURL, urn.Path()))
-	u.Query().Set("fields", "first_name,last_name")
-	u.Query().Set("access_token", accessToken)
+	base, _ := url.Parse(facebookGraphURL)
+	path, _ := url.Parse(fmt.Sprintf("/%s", urn.Path()))
+	u := base.ResolveReference(path)
+
+	query := url.Values{}
+	query.Set("fields", "first_name,last_name")
+	query.Set("access_token", accessToken)
+	u.RawQuery = query.Encode()
 	req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
 	rr, err := utils.MakeHTTPRequest(req)
 	if err != nil {
@@ -377,5 +382,5 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	firstName, _ := jsonparser.GetString(rr.Body, "first_name")
 	lastName, _ := jsonparser.GetString(rr.Body, "last_name")
 
-	return map[string]string{"name": utils.JoinNonEmpty(firstName, lastName)}, nil
+	return map[string]string{"name": utils.JoinNonEmpty(" ", firstName, lastName)}, nil
 }

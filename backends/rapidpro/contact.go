@@ -11,6 +11,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/urns"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
@@ -58,10 +59,10 @@ WHERE u.identity = $1 AND u.contact_id = c.id AND u.org_id = $2 AND c.is_active 
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
-func contactForURN(ctx context.Context, db *sqlx.DB, org OrgID, channel *DBChannel, urn urns.URN, name string) (*DBContact, error) {
+func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChannel, urn urns.URN, name string) (*DBContact, error) {
 	// try to look up our contact by URN
 	contact := &DBContact{}
-	err := db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
+	err := b.db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
 	if err != nil && err != sql.ErrNoRows {
 		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
 		return nil, err
@@ -70,7 +71,7 @@ func contactForURN(ctx context.Context, db *sqlx.DB, org OrgID, channel *DBChann
 	// we found it, return it
 	if err != sql.ErrNoRows {
 		// insert it
-		tx, err := db.BeginTxx(ctx, nil)
+		tx, err := b.db.BeginTxx(ctx, nil)
 		if err != nil {
 			logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
 			return nil, err
@@ -92,9 +93,29 @@ func contactForURN(ctx context.Context, db *sqlx.DB, org OrgID, channel *DBChann
 	contact.ModifiedOn = time.Now()
 	contact.IsNew = true
 
-	// if we have a name and we aren't anonymous, set it
-	if name != "" && !channel.OrgIsAnon() {
-		contact.Name = null.StringFrom(name)
+	// if we aren't an anonymous org, we want to look up a name if possible and set it
+	if !channel.OrgIsAnon() {
+		// no name was passed in, see if our handler can look up information for this URN
+		if name == "" {
+			handler := courier.GetHandler(channel.ChannelType())
+			if handler != nil {
+				describer, isDescriber := handler.(courier.URNDescriber)
+				if isDescriber {
+					atts, err := describer.DescribeURN(ctx, channel, urn)
+
+					// in the case of errors, we log the error but move onwards anyways
+					if err != nil {
+						logrus.WithField("channel_uuid", channel.UUID()).WithField("channel_type", channel.ChannelType()).WithField("urn", urn).WithError(err).Error("unable to describe URN")
+					} else {
+						name = atts["name"]
+					}
+				}
+			}
+		}
+
+		if name != "" {
+			contact.Name = null.StringFrom(name)
+		}
 	}
 
 	// TODO: Set these to a system user
@@ -102,7 +123,7 @@ func contactForURN(ctx context.Context, db *sqlx.DB, org OrgID, channel *DBChann
 	contact.ModifiedBy = 1
 
 	// insert it
-	tx, err := db.BeginTxx(ctx, nil)
+	tx, err := b.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +143,7 @@ func contactForURN(ctx context.Context, db *sqlx.DB, org OrgID, channel *DBChann
 		if pqErr, ok := err.(*pq.Error); ok {
 			// if this was a duplicate URN, start over with a contact lookup
 			if pqErr.Code.Name() == "unique_violation" {
-				return contactForURN(ctx, db, org, channel, urn, name)
+				return contactForURN(ctx, b, org, channel, urn, name)
 			}
 		}
 		return nil, err
@@ -131,7 +152,7 @@ func contactForURN(ctx context.Context, db *sqlx.DB, org OrgID, channel *DBChann
 	// if the returned URN is for a different contact, then we were in a race as well, rollback and start over
 	if contactURN.ContactID.Int64 != contact.ID.Int64 {
 		tx.Rollback()
-		return contactForURN(ctx, db, org, channel, urn, name)
+		return contactForURN(ctx, b, org, channel, urn, name)
 	}
 
 	// all is well, we created the new contact, commit and move forward

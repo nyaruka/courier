@@ -1,6 +1,7 @@
 package facebook
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -8,8 +9,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var testChannels = []courier.Channel{
@@ -320,13 +324,14 @@ func buildMockFBGraph(testCases []ChannelHandleTestCase) *httptest.Server {
 		defer r.Body.Close()
 
 		// invalid auth token
-		if accessToken != "auth_token" {
+		if accessToken != "a123" {
 			http.Error(w, "invalid auth token", 403)
 		}
 
 		// user has a name
-		if strings.HasSuffix(r.URL.String(), "1337") {
+		if strings.HasSuffix(r.URL.Path, "1337") {
 			w.Write([]byte(`{ "first_name": "John", "last_name": "Doe"}`))
+			return
 		}
 
 		// no name
@@ -337,10 +342,25 @@ func buildMockFBGraph(testCases []ChannelHandleTestCase) *httptest.Server {
 	return server
 }
 
-func TestHandler(t *testing.T) {
-	fbService := buildMockFBGraph(testCases)
-	defer fbService.Close()
+func TestDescribe(t *testing.T) {
+	fbGraph := buildMockFBGraph(testCases)
+	defer fbGraph.Close()
 
+	handler := NewHandler().(courier.URNDescriber)
+	tcs := []struct {
+		urn      urns.URN
+		metadata map[string]string
+	}{{"facebook:1337", map[string]string{"name": "John Doe"}},
+		{"facebook:4567", map[string]string{"name": ""}},
+		{"facebook:ref:1337", map[string]string{}}}
+
+	for _, tc := range tcs {
+		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn)
+		assert.Equal(t, metadata, tc.metadata)
+	}
+}
+
+func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, testChannels, NewHandler(), testCases)
 }
 
