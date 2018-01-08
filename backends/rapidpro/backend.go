@@ -387,6 +387,17 @@ func (b *backend) Start() error {
 				return nil, err
 			}
 
+			// send auth if required
+			if redisURL.User != nil {
+				pass, authRequired := redisURL.User.Password()
+				if authRequired {
+					if _, err := conn.Do("AUTH", pass); err != nil {
+						conn.Close()
+						return nil, err
+					}
+				}
+			}
+
 			// switch to the right DB
 			_, err = conn.Do("SELECT", strings.TrimLeft(redisURL.Path, "/"))
 			return conn, err
