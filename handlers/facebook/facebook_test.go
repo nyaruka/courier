@@ -402,7 +402,7 @@ func TestVerify(t *testing.T) {
 	})
 
 	// wait for our subscribe to be called
-	time.Sleep(5 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	if !subscribeCalled {
 		t.Error("subscribe endpoint should have been called")
