@@ -31,6 +31,9 @@ const (
 	payloadKey    = "payload"
 )
 
+// Facebook API says 640 is max for the body
+const maxLength = 640
+
 func init() {
 	courier.RegisterHandler(NewHandler())
 }
@@ -38,10 +41,6 @@ func init() {
 type handler struct {
 	handlers.BaseHandler
 }
-
-const (
-	maxLength = 640 // Facebook API says 640 is max for the body
-)
 
 // NewHandler returns a new FacebookHandler ready to be registered
 func NewHandler() courier.ChannelHandler {
