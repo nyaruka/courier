@@ -259,7 +259,7 @@ func downloadMediaToS3(b *backend, orgID OrgID, msgUUID courier.MsgUUID, mediaUR
 //-----------------------------------------------------------------------------
 
 func (b *backend) flushMsgFile(filename string, contents []byte) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
 	msg := &DBMsg{}

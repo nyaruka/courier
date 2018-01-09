@@ -25,30 +25,27 @@ func WriteError(ctx context.Context, w http.ResponseWriter, r *http.Request, err
 	return WriteDataResponse(ctx, w, http.StatusBadRequest, "Error", errors)
 }
 
-// WriteRequestError writes a JSON response for the passed in message and logs an info messages
-func WriteRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
+// WriteAndLogRequestError writes a JSON response for the passed in message and logs an info messages
+func WriteAndLogRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
 	LogRequestError(r, c, err)
 	return WriteError(ctx, w, r, err)
 }
 
-// WriteRequestIgnored writes a JSON response for the passed in message and logs an info message
-func WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, details string) error {
+// WriteAndLogRequestIgnored writes a JSON response for the passed in message and logs an info message
+func WriteAndLogRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, details string) error {
 	LogRequestIgnored(r, c, details)
 	return WriteDataResponse(ctx, w, http.StatusOK, "Ignored", []interface{}{NewInfoData(details)})
 }
 
 // WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it
 func WriteChannelEventSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, event ChannelEvent) error {
-	LogChannelEventReceived(r, event)
 	return WriteDataResponse(ctx, w, http.StatusOK, "Event Accepted", []interface{}{NewEventReceiveData(event)})
 }
 
 // WriteMsgSuccess writes a JSON response for the passed in msg indicating we handled it
 func WriteMsgSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []Msg) error {
-
 	data := []interface{}{}
 	for _, msg := range msgs {
-		LogMsgReceived(r, msg)
 		data = append(data, NewMsgReceiveData(msg))
 	}
 
@@ -59,7 +56,6 @@ func WriteMsgSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request
 func WriteStatusSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []MsgStatus) error {
 	data := []interface{}{}
 	for _, status := range statuses {
-		LogMsgStatusReceived(r, status)
 		data = append(data, NewStatusData(status))
 	}
 

@@ -42,12 +42,12 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	te := &telegramEnvelope{}
 	err := handlers.DecodeAndValidateJSON(te, r)
 	if err != nil {
-		return nil, courier.WriteRequestError(ctx, w, r, channel, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// no message? ignore this
 	if te.Message.MessageID == 0 {
-		return nil, courier.WriteRequestIgnored(ctx, w, r, channel, "Ignoring request, no message")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "Ignoring request, no message")
 	}
 
 	// create our date from the timestamp

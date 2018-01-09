@@ -19,7 +19,7 @@ import (
 var facebookMessageURL = "https://graph.facebook.com/v2.6/me/messages"
 var facebookSubscribeURL = "https://graph.facebook.com/v2.6/me/subscribed_apps"
 var facebookGraphURL = "https://graph.facebook.com/v2.6/"
-var facebookSubscribeTimeout = time.Second * 5
+var facebookSubscribeTimeout = time.Second * 2
 
 // keys for extra in channel events
 const (
@@ -186,12 +186,12 @@ func (h *handler) Receive(ctx context.Context, channel courier.Channel, w http.R
 
 	// not a page object? ignore
 	if mo.Object != "page" {
-		return nil, courier.WriteRequestIgnored(ctx, w, r, channel, "ignoring non-page request")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring non-page request")
 	}
 
 	// no entries? ignore this request
 	if len(mo.Entry) == 0 {
-		return nil, courier.WriteRequestIgnored(ctx, w, r, channel, "ignoring request, no entries")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring request, no entries")
 	}
 
 	// the list of events we deal with
@@ -330,6 +330,13 @@ func (h *handler) Receive(ctx context.Context, channel courier.Channel, w http.R
 			for _, mid := range msg.Delivery.MIDs {
 				event := h.Backend().NewMsgStatusForExternalID(channel, mid, courier.MsgDelivered)
 				err := h.Backend().WriteMsgStatus(ctx, event)
+
+				// we don't know about this message, just tell them we ignored it
+				if err == courier.ErrMsgNotFound {
+					data = append(data, courier.NewInfoData("unknown message, ignoring"))
+					continue
+				}
+
 				if err != nil {
 					return nil, err
 				}

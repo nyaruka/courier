@@ -60,7 +60,7 @@ func NewServerWithLogger(config *config.Courier, backend Backend, logger *logrus
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
 	router.Use(middleware.Recoverer)
-	router.Use(middleware.Timeout(15 * time.Second))
+	router.Use(middleware.Timeout(30 * time.Second))
 
 	chanRouter := chi.NewRouter()
 	router.Mount("/c/", chanRouter)
@@ -114,8 +114,8 @@ func (s *server) Start() error {
 	s.httpServer = &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.config.Port),
 		Handler:      s.router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
 	}
 
 	// and start serving HTTP
@@ -303,12 +303,15 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			case Msg:
 				logs = append(logs, NewChannelLog("Message Received", channel, e.ID(), r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
 				librato.Default.AddGauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
+				LogMsgReceived(r, e)
 			case ChannelEvent:
 				logs = append(logs, NewChannelLog("Event Received", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
 				librato.Default.AddGauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
+				LogChannelEventReceived(r, e)
 			case MsgStatus:
 				logs = append(logs, NewChannelLog("Status Updated", channel, e.ID(), r.Method, url, ww.Status(), string(request), response.String(), duration, err))
 				librato.Default.AddGauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
+				LogMsgStatusReceived(r, e)
 			}
 		}
 
