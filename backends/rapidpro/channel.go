@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils"
@@ -14,7 +15,7 @@ import (
 
 // getChannelFromUUID will look up the channel with the passed in UUID and channel type.
 // It will return an error if the channel does not exist or is not active.
-func getChannel(ctx context.Context, b *backend, channelType courier.ChannelType, channelUUID courier.ChannelUUID) (courier.Channel, error) {
+func getChannel(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, channelUUID courier.ChannelUUID) (*DBChannel, error) {
 	// look for the channel locally
 	cachedChannel, localErr := getCachedChannel(channelType, channelUUID)
 
@@ -24,7 +25,7 @@ func getChannel(ctx context.Context, b *backend, channelType courier.ChannelType
 	}
 
 	// look in our database instead
-	channel, dbErr := loadChannelFromDB(ctx, b, channelType, channelUUID)
+	channel, dbErr := loadChannelFromDB(ctx, db, channelType, channelUUID)
 
 	// if it wasn't found in the DB, clear our cache and return that it wasn't found
 	if dbErr == courier.ErrChannelNotFound {
@@ -48,16 +49,16 @@ func getChannel(ctx context.Context, b *backend, channelType courier.ChannelType
 }
 
 const lookupChannelFromUUIDSQL = `
-SELECT org_id, ch.id as id, ch.uuid as uuid, ch.name as name, channel_type, schemes, address, ch.country as country, ch.config as config, org.config as org_config
+SELECT org_id, ch.id as id, ch.uuid as uuid, ch.name as name, channel_type, schemes, address, ch.country as country, ch.config as config, org.config as org_config, org.is_anon as org_is_anon
 FROM channels_channel ch, orgs_org org
 WHERE ch.uuid = $1 AND ch.is_active = true AND ch.org_id IS NOT NULL and ch.org_id = org.id`
 
 // ChannelForUUID attempts to look up the channel with the passed in UUID, returning it
-func loadChannelFromDB(ctx context.Context, b *backend, channelType courier.ChannelType, uuid courier.ChannelUUID) (*DBChannel, error) {
+func loadChannelFromDB(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, uuid courier.ChannelUUID) (*DBChannel, error) {
 	channel := &DBChannel{UUID_: uuid}
 
 	// select just the fields we need
-	err := b.db.GetContext(ctx, channel, lookupChannelFromUUIDSQL, uuid)
+	err := db.GetContext(ctx, channel, lookupChannelFromUUIDSQL, uuid)
 
 	// we didn't find a match
 	if err == sql.ErrNoRows {
@@ -139,12 +140,16 @@ type DBChannel struct {
 	Config_      utils.NullMap       `db:"config"`
 
 	OrgConfig_ utils.NullMap `db:"org_config"`
+	OrgIsAnon_ bool          `db:"org_is_anon"`
 
 	expiration time.Time
 }
 
 // OrgID returns the id of the org this channel is for
 func (c *DBChannel) OrgID() OrgID { return c.OrgID_ }
+
+// OrgIsAnon returns the org for this channel is anonymous
+func (c *DBChannel) OrgIsAnon() bool { return c.OrgIsAnon_ }
 
 // ChannelType returns the type of this channel
 func (c *DBChannel) ChannelType() courier.ChannelType { return c.ChannelType_ }

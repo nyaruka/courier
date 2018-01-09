@@ -1,7 +1,7 @@
 /* Org with id 1 */
 DELETE FROM orgs_org;
-INSERT INTO orgs_org("id", "name", "language", "config")
-              VALUES(1, 'Test Org', 'eng', '{ "CHATBASE_API_KEY": "cak" }');
+INSERT INTO orgs_org("id", "name", "language", "is_anon", "config")
+              VALUES(1, 'Test Org', 'eng', FALSE, '{ "CHATBASE_API_KEY": "cak" }');
 
 /* Channel with id 10, 11, 12 */
 DELETE FROM channels_channel;

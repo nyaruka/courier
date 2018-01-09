@@ -103,7 +103,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// ignore this if there's no message
 	if waReceive.Payload.Message.Text == "" {
-		return nil, courier.WriteIgnored(ctx, w, r, "ignoring, empty message")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring, empty message")
 	}
 
 	// TODO: should we be hitting the API to look up contact information?
