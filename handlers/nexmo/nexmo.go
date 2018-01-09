@@ -131,6 +131,12 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// and write it
 	err := h.Backend().WriteMsg(ctx, msg)
+
+	// nexmo can return more than one message id when doing multipart, so ignore status updates which might be for one of those parts
+	if err == courier.ErrMsgNotFound {
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "message not found, ignored")
+	}
+
 	if err != nil {
 		return nil, err
 	}
