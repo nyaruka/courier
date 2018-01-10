@@ -171,7 +171,7 @@ func DecodeAndValidateXML(envelope interface{}, r *http.Request) error {
 	// check our input is valid
 	err = validate.Struct(envelope)
 	if err != nil {
-		return fmt.Errorf("request JSON doesn't match required schema: %s", err)
+		return fmt.Errorf("request XML doesn't match required schema: %s", err)
 	}
 
 	return nil
