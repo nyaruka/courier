@@ -63,7 +63,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	// validate whether our required fields are present
 	err := handlers.Validate(smsCentralMessage)
 	if err != nil {
-		return nil, courier.WriteError(ctx, w, r, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// create our URN

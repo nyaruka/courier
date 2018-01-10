@@ -271,7 +271,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		response := &bytes.Buffer{}
 		request, err := httputil.DumpRequest(r, true)
 		if err != nil {
-			WriteError(ctx, w, r, err)
+			WriteAndLogRequestError(ctx, w, r, channel, err)
 			return
 		}
 		url := fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI())
@@ -288,7 +288,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		// if we received an error, write it out and report it
 		if err != nil {
 			logrus.WithError(err).WithField("channel_uuid", channel.UUID()).WithField("url", url).WithField("request", string(request)).Error("error handling request")
-			WriteError(ctx, ww, r, err)
+			WriteAndLogRequestError(ctx, ww, r, channel, err)
 
 			// if no events were created we still want to log this to the channel, do so
 			if len(events) == 0 {
