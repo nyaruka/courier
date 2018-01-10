@@ -1,8 +1,9 @@
 package courier
 
 import (
-	"github.com/nyaruka/gocommon/urns"
 	"time"
+
+	"github.com/nyaruka/gocommon/urns"
 )
 
 // ChannelEventType is the type of channel event this is
@@ -23,6 +24,7 @@ type ChannelEvent interface {
 	ChannelUUID() ChannelUUID
 	URN() urns.URN
 	EventType() ChannelEventType
+	Extra() map[string]interface{}
 	CreatedOn() time.Time
 	OccurredOn() time.Time
 

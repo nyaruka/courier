@@ -92,7 +92,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	if ie.MessageCount == 0 {
-		return nil, courier.WriteIgnored(ctx, w, r, "ignoring request, no message")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring request, no message")
 	}
 
 	msgs := []courier.Msg{}
@@ -129,7 +129,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	if len(msgs) == 0 {
-		return nil, courier.WriteIgnored(ctx, w, r, "ignoring request, no message")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring request, no message")
 	}
 
 	return []courier.Event{msgs[0]}, courier.WriteMsgSuccess(ctx, w, r, msgs)

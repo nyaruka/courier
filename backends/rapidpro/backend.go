@@ -38,8 +38,8 @@ const chatbaseAPIKey = "CHATBASE_API_KEY"
 const chatbaseVersion = "CHATBASE_VERSION"
 const chatbaseMessageType = "msg"
 
-// our timeout for db operations
-const dbTimeout = time.Second * 5
+// our timeout for backend operations
+const backendTimeout = time.Second * 30
 
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
@@ -47,11 +47,10 @@ func init() {
 
 // GetChannel returns the channel for the passed in type and UUID
 func (b *backend) GetChannel(ctx context.Context, ct courier.ChannelType, uuid courier.ChannelUUID) (courier.Channel, error) {
-	// max 1 second to get a channel
-	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
+	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	return getChannel(timeout, b, ct, uuid)
+	return getChannel(timeout, b.db, ct, uuid)
 }
 
 // NewIncomingMsg creates a new message from the given params
@@ -94,13 +93,12 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
 		if err != nil {
 			return nil, fmt.Errorf("unable to unmarshal message '%s': %s", msgJSON, err)
 		}
-
 		// populate the channel on our db msg
 		channel, err := b.GetChannel(ctx, courier.AnyChannelType, dbMsg.ChannelUUID_)
 		if err != nil {
 			return nil, err
 		}
-		dbMsg.channel = channel
+		dbMsg.channel = channel.(*DBChannel)
 		dbMsg.workerToken = token
 		return dbMsg, nil
 	}
@@ -164,7 +162,7 @@ func (b *backend) StopMsgContact(ctx context.Context, m courier.Msg) {
 
 // WriteMsg writes the passed in message to our store
 func (b *backend) WriteMsg(ctx context.Context, m courier.Msg) error {
-	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
+	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
 	return writeMsg(timeout, b, m)
@@ -182,7 +180,7 @@ func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID 
 
 // WriteMsgStatus writes the passed in MsgStatus to our store
 func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) error {
-	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
+	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
 	err := writeMsgStatus(timeout, b, status)
@@ -217,7 +215,7 @@ func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.Cha
 
 // WriteChannelEvent writes the passed in channel even returning any error
 func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent) error {
-	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
+	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
 	return writeChannelEvent(timeout, b, event)
@@ -225,7 +223,7 @@ func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEv
 
 // WriteChannelLogs persists the passed in logs to our database, for rapidpro we swallow all errors, logging isn't critical
 func (b *backend) WriteChannelLogs(ctx context.Context, logs []*courier.ChannelLog) error {
-	timeout, cancel := context.WithTimeout(ctx, dbTimeout)
+	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
 	for _, l := range logs {
@@ -305,7 +303,7 @@ func (b *backend) Status() string {
 
 		// try to look up our channel
 		channelUUID, _ := courier.NewChannelUUID(uuid)
-		channel, err := getChannel(context.Background(), b, courier.AnyChannelType, channelUUID)
+		channel, err := getChannel(context.Background(), b.db, courier.AnyChannelType, channelUUID)
 		channelType := "!!"
 		if err == nil {
 			channelType = channel.ChannelType().String()
@@ -385,6 +383,17 @@ func (b *backend) Start() error {
 			conn, err := redis.Dial("tcp", fmt.Sprintf("%s", redisURL.Host))
 			if err != nil {
 				return nil, err
+			}
+
+			// send auth if required
+			if redisURL.User != nil {
+				pass, authRequired := redisURL.User.Password()
+				if authRequired {
+					if _, err := conn.Do("AUTH", pass); err != nil {
+						conn.Close()
+						return nil, err
+					}
+				}
 			}
 
 			// switch to the right DB

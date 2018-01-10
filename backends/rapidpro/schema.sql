@@ -3,6 +3,7 @@ CREATE TABLE orgs_org (
     id serial primary key,
     name character varying(255) NOT NULL,
     language character varying(64),
+    is_anon boolean NOT NULL,
     config text NULL
 );
 

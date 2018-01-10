@@ -108,7 +108,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 		ModifiedOn_:  now,
 		QueuedOn_:    now,
 
-		channel:        channel,
+		channel:        dbChannel,
 		workerToken:    "",
 		alreadyWritten: false,
 	}
@@ -124,7 +124,7 @@ RETURNING id
 
 func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 	// grab the contact for this msg
-	contact, err := contactForURN(ctx, b.db, m.OrgID_, m.ChannelID_, m.URN_, m.ContactName_)
+	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.ContactName_)
 
 	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {
@@ -168,6 +168,7 @@ FROM msgs_msg
 WHERE id = $1
 `
 
+// for testing only, returned DBMsg object is not fully populated
 func readMsgFromDB(b *backend, id courier.MsgID) (*DBMsg, error) {
 	m := &DBMsg{
 		ID_: id,
@@ -258,6 +259,9 @@ func downloadMediaToS3(b *backend, orgID OrgID, msgUUID courier.MsgUUID, mediaUR
 //-----------------------------------------------------------------------------
 
 func (b *backend) flushMsgFile(filename string, contents []byte) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
 	msg := &DBMsg{}
 	err := json.Unmarshal(contents, msg)
 	if err != nil {
@@ -266,8 +270,15 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 		return nil
 	}
 
+	// look up our channel
+	channel, err := b.GetChannel(ctx, courier.AnyChannelType, msg.ChannelUUID_)
+	if err != nil {
+		return err
+	}
+	msg.channel = channel.(*DBChannel)
+
 	// try to write it our db
-	err = writeMsgToDB(context.Background(), b, msg)
+	err = writeMsgToDB(ctx, b, msg)
 
 	// fail? oh well, we'll try again later
 	return err
@@ -364,24 +375,25 @@ type DBMsg struct {
 	QueuedOn_    time.Time `json:"queued_on"     db:"queued_on"`
 	SentOn_      time.Time `json:"sent_on"       db:"sent_on"`
 
-	channel        courier.Channel
+	channel        *DBChannel
 	workerToken    queue.WorkerToken
 	alreadyWritten bool
 	quickReplies   []string
 }
 
+func (m *DBMsg) ID() courier.MsgID      { return m.ID_ }
+func (m *DBMsg) EventID() int64         { return m.ID_.Int64 }
+func (m *DBMsg) UUID() courier.MsgUUID  { return m.UUID_ }
+func (m *DBMsg) Text() string           { return m.Text_ }
+func (m *DBMsg) Attachments() []string  { return []string(m.Attachments_) }
+func (m *DBMsg) ExternalID() string     { return m.ExternalID_.String }
+func (m *DBMsg) URN() urns.URN          { return m.URN_ }
+func (m *DBMsg) ContactName() string    { return m.ContactName_ }
+func (m *DBMsg) HighPriority() bool     { return m.HighPriority_.Valid && m.HighPriority_.Bool }
+func (m *DBMsg) ReceivedOn() *time.Time { return &m.SentOn_ }
+func (m *DBMsg) SentOn() *time.Time     { return &m.SentOn_ }
+
 func (m *DBMsg) Channel() courier.Channel { return m.channel }
-func (m *DBMsg) ID() courier.MsgID        { return m.ID_ }
-func (m *DBMsg) EventID() int64           { return m.ID_.Int64 }
-func (m *DBMsg) UUID() courier.MsgUUID    { return m.UUID_ }
-func (m *DBMsg) Text() string             { return m.Text_ }
-func (m *DBMsg) Attachments() []string    { return []string(m.Attachments_) }
-func (m *DBMsg) ExternalID() string       { return m.ExternalID_.String }
-func (m *DBMsg) URN() urns.URN            { return m.URN_ }
-func (m *DBMsg) ContactName() string      { return m.ContactName_ }
-func (m *DBMsg) HighPriority() bool       { return m.HighPriority_.Valid && m.HighPriority_.Bool }
-func (m *DBMsg) ReceivedOn() *time.Time   { return &m.SentOn_ }
-func (m *DBMsg) SentOn() *time.Time       { return &m.SentOn_ }
 
 func (m *DBMsg) QuickReplies() []string {
 	if m.quickReplies != nil {
@@ -404,7 +416,7 @@ func (m *DBMsg) QuickReplies() []string {
 
 // fingerprint returns a fingerprint for this msg, suitable for figuring out if this is a dupe
 func (m *DBMsg) fingerprint() string {
-	return fmt.Sprintf("%s:%s:%s", m.channel.UUID(), m.URN_, m.Text_)
+	return fmt.Sprintf("%s:%s:%s", m.ChannelUUID_, m.URN_, m.Text_)
 }
 
 // WithContactName can be used to set the contact name on a msg

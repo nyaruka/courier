@@ -10,26 +10,32 @@ import (
 )
 
 const (
-	// ConfigAuthToken is a constant key for channel configs
-	ConfigAuthToken = "auth_token"
-
-	// ConfigUsername is a constant key for channel configs
-	ConfigUsername = "username"
-
-	// ConfigPassword is a constant key for channel configs
-	ConfigPassword = "password"
-
 	// ConfigAPIID is a constant key for channel configs
 	ConfigAPIID = "api_id"
 
 	// ConfigAPIKey is a constant key for channel configs
 	ConfigAPIKey = "api_key"
 
-	// ConfigSendURL is a constant key for channel configs
-	ConfigSendURL = "send_url"
+	// ConfigAuthToken is a constant key for channel configs
+	ConfigAuthToken = "auth_token"
 
 	// ConfigBaseURL is a constant key for channel configs
 	ConfigBaseURL = "base_url"
+
+	// ConfigCallbackDomain is the domain that should be used for this channel when registering callbacks
+	ConfigCallbackDomain = "callback_domain"
+
+	// ConfigContentType is a constant key for channel configs
+	ConfigContentType = "content_type"
+
+	// ConfigMaxLength is the maximum size of a message in characters
+	ConfigMaxLength = "max_length"
+
+	// ConfigPassword is a constant key for channel configs
+	ConfigPassword = "password"
+
+	// ConfigSecret is the secret used for signing commands by the channel
+	ConfigSecret = "secret"
 
 	// ConfigSendAuthorization is a constant key for channel configs
 	ConfigSendAuthorization = "send_authorization"
@@ -40,14 +46,11 @@ const (
 	// ConfigSendMethod is a constant key for channel configs
 	ConfigSendMethod = "method"
 
-	// ConfigContentType is a constant key for channel configs
-	ConfigContentType = "content_type"
+	// ConfigSendURL is a constant key for channel configs
+	ConfigSendURL = "send_url"
 
-	// ConfigMaxLength is the maximum size of a message in characters
-	ConfigMaxLength = "max_length"
-
-	// ConfigCallbackDomain is the domain that should be used for this channel when registering callbacks
-	ConfigCallbackDomain = "callback_domain"
+	// ConfigUsername is a constant key for channel configs
+	ConfigUsername = "username"
 )
 
 // ChannelType is our typing of the two char channel types
