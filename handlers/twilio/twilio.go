@@ -151,12 +151,12 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 
 	msgStatus, found := twStatusMapping[twStatus.MessageStatus]
 	if !found {
-		return nil, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", twStatus.MessageStatus)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", twStatus.MessageStatus))
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on
 	if h.ignoreDeliveryReports && msgStatus != courier.MsgFailed {
-		return nil, courier.WriteIgnored(ctx, w, r, "ignoring non error delivery report")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring non error delivery report")
 	}
 
 	// if the message id was passed explicitely, use that

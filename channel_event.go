@@ -25,6 +25,7 @@ type ChannelEvent interface {
 	ChannelUUID() ChannelUUID
 	URN() urns.URN
 	EventType() ChannelEventType
+	Extra() map[string]interface{}
 	CreatedOn() time.Time
 	OccurredOn() time.Time
 

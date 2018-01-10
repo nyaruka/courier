@@ -83,18 +83,24 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 	handlers.DecodeAndValidateQueryParams(nexmoDeliveryReport, r)
 
 	if nexmoDeliveryReport.MessageID == "" {
-		return nil, courier.WriteIgnored(ctx, w, r, "no messageId parameter, ignored")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "no messageId parameter, ignored")
 	}
 
 	msgStatus, found := statusMappings[nexmoDeliveryReport.Status]
 	if !found {
-		return nil, courier.WriteIgnored(ctx, w, r, "ignoring unknown status report")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring unknown status report")
 	}
 
 	status := h.Backend().NewMsgStatusForExternalID(channel, nexmoDeliveryReport.MessageID, msgStatus)
 
 	// write our status
 	err := h.Backend().WriteMsgStatus(ctx, status)
+
+	// nexmo can return more than one message id when doing multipart, so ignore status updates which might be for one of those parts
+	if err == courier.ErrMsgNotFound {
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "message not found, ignored")
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +126,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	if nexmoIncomingMessage.To == "" {
-		return nil, courier.WriteIgnored(ctx, w, r, "no to parameter, ignored")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "no to parameter, ignored")
 	}
 
 	// create our URN

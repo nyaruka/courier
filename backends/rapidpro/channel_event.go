@@ -43,6 +43,8 @@ func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType
 		EventType_:   eventType,
 		OccurredOn_:  now,
 		CreatedOn_:   now,
+
+		channel: dbChannel,
 	}
 }
 
@@ -70,7 +72,7 @@ RETURNING id
 // writeChannelEventToDB writes the passed in msg status to our db
 func writeChannelEventToDB(ctx context.Context, b *backend, e *DBChannelEvent) error {
 	// grab the contact for this event
-	contact, err := contactForURN(ctx, b.db, e.OrgID_, e.ChannelID_, e.URN_, e.ContactName_)
+	contact, err := contactForURN(ctx, b, e.OrgID_, e.channel, e.URN_, e.ContactName_)
 	if err != nil {
 		return err
 	}
@@ -104,6 +106,9 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *DBChannelEvent) e
 }
 
 func (b *backend) flushChannelEventFile(filename string, contents []byte) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
 	event := &DBChannelEvent{}
 	err := json.Unmarshal(contents, event)
 	if err != nil {
@@ -112,8 +117,15 @@ func (b *backend) flushChannelEventFile(filename string, contents []byte) error 
 		return nil
 	}
 
+	// look up our channel
+	channel, err := b.GetChannel(ctx, courier.AnyChannelType, event.ChannelUUID_)
+	if err != nil {
+		return err
+	}
+	event.channel = channel.(*DBChannel)
+
 	// try to flush to our database
-	return writeChannelEventToDB(context.Background(), b, event)
+	return writeChannelEventToDB(ctx, b, event)
 }
 
 const selectEventSQL = `
@@ -150,7 +162,8 @@ type DBChannelEvent struct {
 	ContactID_    ContactID    `json:"-"               db:"contact_id"`
 	ContactURNID_ ContactURNID `json:"-"               db:"contact_urn_id"`
 
-	logs []*courier.ChannelLog
+	channel *DBChannel
+	logs    []*courier.ChannelLog
 }
 
 func (e *DBChannelEvent) EventID() int64                      { return e.ID_.Int64 }
@@ -158,6 +171,7 @@ func (e *DBChannelEvent) ChannelID() courier.ChannelID        { return e.Channel
 func (e *DBChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.ChannelUUID_ }
 func (e *DBChannelEvent) ContactName() string                 { return e.ContactName_ }
 func (e *DBChannelEvent) URN() urns.URN                       { return e.URN_ }
+func (e *DBChannelEvent) Extra() map[string]interface{}       { return e.Extra_.Map }
 func (e *DBChannelEvent) EventType() courier.ChannelEventType { return e.EventType_ }
 func (e *DBChannelEvent) OccurredOn() time.Time               { return e.OccurredOn_ }
 func (e *DBChannelEvent) CreatedOn() time.Time                { return e.CreatedOn_ }
