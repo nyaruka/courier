@@ -6,6 +6,8 @@ POST /handlers/start/receive/uuid/
 */
 
 import (
+	"bytes"
+	"github.com/nyaruka/courier/utils"
 	"strconv"
 	"time"
 	"context"
@@ -17,6 +19,8 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 )
+
+var sendURL = "http://bulk.startmobile.com.ua/clients.php"
 
 func init() {
 	courier.RegisterHandler(NewHandler())
@@ -89,6 +93,83 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
+type body struct {
+	ContentType string `xml:"content-type,attr"`
+	Encoding string `xml:"encoding,attr"`
+	Text        string `xml:",chardata"`
+}
+
+type service struct {
+	ID string `xml:"id,attr"`
+	Source string `xml:"source,attr"`
+	Validity string `xml:"validity,attr"`
+}
+
+type mtMessage struct {
+	XMLName xml.Name `xml:"message"`
+	Service service `xml:"service"`
+	To string `xml:"to"`
+	Body body `xml:"body"`
+}
+
+type stResponse struct {
+	XMLName xml.Name `xml:"status"`
+	ID string `xml:"id"`
+	State string `xml:"state"`
+}
+
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	return nil, fmt.Errorf("ST sending via Courier not yet implemented")
+	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
+	if username == "" {
+		return nil, fmt.Errorf("no username set for IB channel")
+	}
+
+	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	if password == "" {
+		return nil, fmt.Errorf("no password set for IB channel")
+	}
+
+	stMsg := mtMessage{
+		Service: service{
+			ID: "single",
+			Source: msg.Channel().Address(),
+			Validity: "+12 hours",
+		},
+		To: msg.URN().Path(),
+		Body : body{
+			ContentType: "plain/text",
+			Encoding: "plain",
+			Text: courier.GetTextAndAttachments(msg),
+		},
+	}
+
+	requestBody := &bytes.Buffer{}
+	err := xml.NewEncoder(requestBody).Encode(stMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	// build our request
+	req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+	req.Header.Set("Content-Type", "application/xml; charset=utf8")
+	req.SetBasicAuth(username, password)
+	rr, err := utils.MakeHTTPRequest(req)
+
+	// record our status and log
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
+	status.AddLog(log)
+	if err != nil {
+		log.WithError("Message Send Error", err)
+		return status, nil
+	}
+
+	stResponse := &stResponse{}
+	err = xml.Unmarshal([]byte(rr.Body), stResponse)
+	if err == nil {
+		status.SetStatus(courier.MsgWired)
+		status.SetExternalID(stResponse.ID)
+	}
+
+	return status, nil
 }

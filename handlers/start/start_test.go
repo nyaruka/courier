@@ -1,6 +1,7 @@
 package start
 
 import (
+	"net/http/httptest"
 	"time"
 	"testing"
 	
@@ -45,11 +46,6 @@ var (
 	<body content-type="content-type" encoding="utf8">Hello World</body>
 	</message>`
 
-
-
-		
-
-
 )
 
 var testCases = []ChannelHandleTestCase{
@@ -70,5 +66,70 @@ func TestHandler(t *testing.T) {
 
 func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, NewHandler(), testCases)
+}
+
+ // setSendURL takes care of setting the sendURL to call
+func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Msg) {
+	sendURL = server.URL
+}
+
+var defaultSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text:           "Simple Message ☺",
+		URN:            "tel:+250788383383",
+		Status:         "W",
+		ExternalID:     "380502535130309161501",
+		ResponseBody:   `<status date='Wed, 25 May 2016 17:29:56 +0300'><id>380502535130309161501</id><state>Accepted</state></status>`,
+		ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/xml; charset=utf8",
+			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+		},
+		RequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">Simple Message ☺</body></message>`,
+		SendPrep:    setSendURL},
+	{Label: "Send Attachment",
+		Text:           "My pic!",
+		Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		URN:            "tel:+250788383383",
+		Status:         "W",
+		ExternalID:     "380502535130309161501",
+		ResponseBody:   `<status date='Wed, 25 May 2016 17:29:56 +0300'><id>380502535130309161501</id><state>Accepted</state></status>`,
+		ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/xml; charset=utf8",
+			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+		},
+		RequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">My pic!&#xA;https://foo.bar/image.jpg</body></message>`,
+		SendPrep:    setSendURL},
+	{Label: "Error Response",
+		Text:           "Simple Message ☺",
+		URN:            "tel:+250788383383",
+		Status:         "E",
+		ExternalID:     "",
+		ResponseBody:   `<error>This is an error</error>`,
+		ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/xml; charset=utf8",
+			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+		},
+		RequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">Simple Message ☺</body></message>`,
+		SendPrep:    setSendURL},
+	{Label: "Error Sending",
+		Text: "Error Message", URN: "tel:+250788383383",
+		Status:       "E",
+		ResponseBody: `Error`, ResponseStatus: 401,
+		Headers: map[string]string{
+			"Content-Type":  "application/xml; charset=utf8",
+			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+		},
+		RequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">Error Message</body></message>`,
+		SendPrep:   setSendURL},
+
+
+	}
+
+func TestSending(t *testing.T) {
+	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ST", "2020", "UA", map[string]interface{}{"username": "Username", "password": "Password"})
+	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
 }
 
