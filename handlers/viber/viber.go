@@ -74,9 +74,9 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	event := viberMsg.Event
 	switch event {
 	case "webhook":
-		return nil, courier.WriteIgnored(ctx, w, r, "webhook valid.")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "webhook valid.")
 	case "conversation_started":
-		return nil, courier.WriteIgnored(ctx, w, r, "ignored conversation start")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignored conversation start")
 	case "subscribed":
 		viberID := viberMsg.User.ID
 		ContactName := viberMsg.User.Name
