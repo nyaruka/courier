@@ -333,7 +333,7 @@ func (h *handler) Receive(ctx context.Context, channel courier.Channel, w http.R
 
 				// we don't know about this message, just tell them we ignored it
 				if err == courier.ErrMsgNotFound {
-					data = append(data, courier.NewInfoData("unknown message, ignoring"))
+					data = append(data, courier.NewInfoData("message not found, ignored"))
 					continue
 				}
 
