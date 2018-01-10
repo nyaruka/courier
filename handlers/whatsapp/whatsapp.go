@@ -170,6 +170,12 @@ func (h *handler) UpdateStatus(ctx context.Context, channel courier.Channel, w h
 
 	// write our status
 	err = h.Backend().WriteMsgStatus(ctx, status)
+
+	// we can receive read statuses for msgs we didn't trigger
+	if err == courier.ErrMsgNotFound {
+		return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
+	}
+
 	if err != nil {
 		return nil, err
 	}
