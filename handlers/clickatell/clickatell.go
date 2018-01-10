@@ -83,11 +83,11 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 	}
 
 	if statusReport.APIID != "" && statusReport.APIID != channel.StringConfigForKey(courier.ConfigAPIID, "") {
-		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("invalid API ID for status report: %s", statusReport.APIID))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid API ID for status report: %s", statusReport.APIID))
 	}
 
 	if statusReport.SmsID == "" || statusReport.StatusCode == "" {
-		return nil, courier.WriteIgnored(ctx, w, r, "missing one of 'apiMsgId' or 'status' in request parameters.")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "missing one of 'apiMsgId' or 'status' in request parameters.")
 	}
 
 	msgStatus, found := statusMapping[statusReport.StatusCode]
@@ -125,11 +125,11 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	if ctIncomingMessage.APIID != "" && ctIncomingMessage.APIID != channel.StringConfigForKey(courier.ConfigAPIID, "") {
-		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("invalid API ID for message delivery: %s", ctIncomingMessage.APIID))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid API ID for message delivery: %s", ctIncomingMessage.APIID))
 	}
 
 	if ctIncomingMessage.From == "" || ctIncomingMessage.SmsID == "" || ctIncomingMessage.Text == "" || ctIncomingMessage.Timestamp == "" {
-		return nil, courier.WriteIgnored(ctx, w, r, "missing one of 'from', 'text', 'moMsgId' or 'timestamp' in request parameters.")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "missing one of 'from', 'text', 'moMsgId' or 'timestamp' in request parameters.")
 	}
 
 	dateString := ctIncomingMessage.Timestamp
@@ -140,7 +140,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		loc, _ := time.LoadLocation("Europe/Berlin")
 		date, err = time.ParseInLocation("2006-01-02 15:04:05", dateString, loc)
 		if err != nil {
-			return nil, courier.WriteError(ctx, w, r, errors.New("invalid date format, must be YYYY-MM-DD HH:MM:SS"))
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, errors.New("invalid date format, must be YYYY-MM-DD HH:MM:SS"))
 		}
 	}
 
