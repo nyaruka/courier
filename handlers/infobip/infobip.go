@@ -47,12 +47,12 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 	ibStatusEnvelope := &ibStatusEnvelope{}
 	err := handlers.DecodeAndValidateJSON(ibStatusEnvelope, r)
 	if err != nil {
-		return nil, courier.WriteError(ctx, w, r, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	msgStatus, found := infobipStatusMapping[ibStatusEnvelope.Results[0].Status.GroupName]
 	if !found {
-		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", ibStatusEnvelope.Results[0].Status.GroupName))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", ibStatusEnvelope.Results[0].Status.GroupName))
 	}
 
 	// write our status
@@ -88,7 +88,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	ie := &infobipEnvelope{}
 	err := handlers.DecodeAndValidateJSON(ie, r)
 	if err != nil {
-		return nil, courier.WriteError(ctx, w, r, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	if ie.MessageCount == 0 {
@@ -109,7 +109,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		if dateString != "" {
 			date, err = time.Parse("2006-01-02T15:04:05.999999999-0700", dateString)
 			if err != nil {
-				return nil, courier.WriteError(ctx, w, r, err)
+				return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 			}
 		}
 

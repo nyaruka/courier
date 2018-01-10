@@ -54,7 +54,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	kannelMsg := &kannelMessage{}
 	err := handlers.DecodeAndValidateQueryParams(kannelMsg, r)
 	if err != nil {
-		return nil, courier.WriteError(ctx, w, r, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// create our date from the timestamp

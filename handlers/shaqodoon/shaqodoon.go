@@ -53,13 +53,13 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	// validate whether our required fields are present
 	err := handlers.Validate(shaqodoonMessage)
 	if err != nil {
-		return nil, courier.WriteError(ctx, w, r, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// must have one of from or sender set, error if neither
 	sender := shaqodoonMessage.From
 	if sender == "" {
-		return nil, courier.WriteError(ctx, w, r, errors.New("must have one of 'sender' or 'from' set"))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, errors.New("must have one of 'sender' or 'from' set"))
 	}
 
 	// if we have a date, parse it
@@ -72,14 +72,14 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	if dateString != "" {
 		date, err = time.Parse(time.RFC3339Nano, dateString)
 		if err != nil {
-			return nil, courier.WriteError(ctx, w, r, errors.New("invalid date format, must be RFC 3339"))
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, errors.New("invalid date format, must be RFC 3339"))
 		}
 	}
 
 	// create our URN
 	urn := urns.NewTelURNForCountry(sender, channel.Country())
 	if err != nil {
-		return nil, courier.WriteError(ctx, w, r, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// build our msg
@@ -121,13 +121,13 @@ func (h *handler) StatusMessage(ctx context.Context, statusString string, channe
 	// validate whether our required fields are present
 	err := handlers.Validate(statusForm)
 	if err != nil {
-		return nil, courier.WriteError(ctx, w, r, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// get our id
 	msgStatus, found := statusMappings[strings.ToLower(statusString)]
 	if !found {
-		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString))
 	}
 
 	// write our status

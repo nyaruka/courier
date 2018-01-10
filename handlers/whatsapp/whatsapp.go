@@ -80,25 +80,25 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	waReceive := &waReceive{}
 	err := handlers.DecodeAndValidateJSON(waReceive, r)
 	if err != nil {
-		return nil, courier.WriteError(ctx, w, r, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// if this is an error, that's an erro
 	if waReceive.Error {
-		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("received errored message"))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("received errored message"))
 	}
 
 	// create our date from the timestamp
 	ts, err := strconv.ParseInt(waReceive.Payload.Timestamp, 10, 64)
 	if err != nil {
-		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("invalid timestamp: %s", waReceive.Payload.Timestamp))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid timestamp: %s", waReceive.Payload.Timestamp))
 	}
 	date := time.Unix(ts, 0).UTC()
 
 	// create our URN
 	urn, err := urns.NewWhatsAppURN(waReceive.Payload.From)
 	if err != nil {
-		return nil, courier.WriteError(ctx, w, r, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// ignore this if there's no message
@@ -155,13 +155,13 @@ func (h *handler) UpdateStatus(ctx context.Context, channel courier.Channel, w h
 	waStatus := &waStatus{}
 	err := handlers.DecodeAndValidateJSON(waStatus, r)
 	if err != nil {
-		return nil, courier.WriteError(ctx, w, r, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	msgStatus, found := waStatusMapping[waStatus.Payload.MessageStatus]
 	if !found {
-		return nil, courier.WriteError(
-			ctx, w, r,
+		return nil, courier.WriteAndLogRequestError(
+			ctx, w, r, channel,
 			fmt.Errorf("unknown status '%s', must be one of 'sending', 'sent', 'delivered', 'read' or 'failed'", waStatus.Payload.MessageStatus))
 	}
 
