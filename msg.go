@@ -70,6 +70,7 @@ type Msg interface {
 	URN() urns.URN
 	ContactName() string
 	QuickReplies() []string
+	ResponseToID() MsgID
 
 	Channel() Channel
 

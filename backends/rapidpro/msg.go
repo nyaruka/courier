@@ -346,18 +346,19 @@ func writeMsgSeen(b *backend, msg *DBMsg) {
 
 // DBMsg is our base struct to represent msgs both in our JSON and db representations
 type DBMsg struct {
-	OrgID_        OrgID                  `json:"org_id"        db:"org_id"`
-	ID_           courier.MsgID          `json:"id"            db:"id"`
+	OrgID_        OrgID                  `json:"org_id"          db:"org_id"`
+	ID_           courier.MsgID          `json:"id"              db:"id"`
 	UUID_         courier.MsgUUID        `json:"uuid"`
-	Direction_    MsgDirection           `json:"direction"     db:"direction"`
-	Status_       courier.MsgStatusValue `json:"status"        db:"status"`
-	Visibility_   MsgVisibility          `json:"visibility"    db:"visibility"`
-	HighPriority_ null.Bool              `json:"high_priority" db:"high_priority"`
+	Direction_    MsgDirection           `json:"direction"       db:"direction"`
+	Status_       courier.MsgStatusValue `json:"status"          db:"status"`
+	Visibility_   MsgVisibility          `json:"visibility"      db:"visibility"`
+	HighPriority_ null.Bool              `json:"high_priority"   db:"high_priority"`
 	URN_          urns.URN               `json:"urn"`
-	Text_         string                 `json:"text"          db:"text"`
-	Attachments_  pq.StringArray         `json:"attachments"   db:"attachments"`
-	ExternalID_   null.String            `json:"external_id"   db:"external_id"`
-	Metadata_     json.RawMessage        `json:"metadata"      db:"metadata"`
+	Text_         string                 `json:"text"            db:"text"`
+	Attachments_  pq.StringArray         `json:"attachments"     db:"attachments"`
+	ExternalID_   null.String            `json:"external_id"     db:"external_id"`
+	ResponseToID_ courier.MsgID          `json:"response_to_id"  db:"response_to_id"`
+	Metadata_     json.RawMessage        `json:"metadata"        db:"metadata"`
 
 	ChannelID_    courier.ChannelID `json:"channel_id"      db:"channel_id"`
 	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
@@ -381,17 +382,18 @@ type DBMsg struct {
 	quickReplies   []string
 }
 
-func (m *DBMsg) ID() courier.MsgID      { return m.ID_ }
-func (m *DBMsg) EventID() int64         { return m.ID_.Int64 }
-func (m *DBMsg) UUID() courier.MsgUUID  { return m.UUID_ }
-func (m *DBMsg) Text() string           { return m.Text_ }
-func (m *DBMsg) Attachments() []string  { return []string(m.Attachments_) }
-func (m *DBMsg) ExternalID() string     { return m.ExternalID_.String }
-func (m *DBMsg) URN() urns.URN          { return m.URN_ }
-func (m *DBMsg) ContactName() string    { return m.ContactName_ }
-func (m *DBMsg) HighPriority() bool     { return m.HighPriority_.Valid && m.HighPriority_.Bool }
-func (m *DBMsg) ReceivedOn() *time.Time { return &m.SentOn_ }
-func (m *DBMsg) SentOn() *time.Time     { return &m.SentOn_ }
+func (m *DBMsg) ID() courier.MsgID           { return m.ID_ }
+func (m *DBMsg) EventID() int64              { return m.ID_.Int64 }
+func (m *DBMsg) UUID() courier.MsgUUID       { return m.UUID_ }
+func (m *DBMsg) Text() string                { return m.Text_ }
+func (m *DBMsg) Attachments() []string       { return []string(m.Attachments_) }
+func (m *DBMsg) ExternalID() string          { return m.ExternalID_.String }
+func (m *DBMsg) URN() urns.URN               { return m.URN_ }
+func (m *DBMsg) ContactName() string         { return m.ContactName_ }
+func (m *DBMsg) HighPriority() bool          { return m.HighPriority_.Valid && m.HighPriority_.Bool }
+func (m *DBMsg) ReceivedOn() *time.Time      { return &m.SentOn_ }
+func (m *DBMsg) SentOn() *time.Time          { return &m.SentOn_ }
+func (m *DBMsg) ResponseToID() courier.MsgID { return m.ResponseToID_ }
 
 func (m *DBMsg) Channel() courier.Channel { return m.channel }
 

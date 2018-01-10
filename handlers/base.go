@@ -193,6 +193,11 @@ func DecodePossibleBase64(original string) string {
 
 // SplitMsg splits the passed in string into segments that are at most max length
 func SplitMsg(text string, max int) []string {
+	// zero length? return an empty array
+	if len(text) == 0 {
+		return []string{}
+	}
+
 	// smaller than our max, just return it
 	if len(text) <= max {
 		return []string{text}
