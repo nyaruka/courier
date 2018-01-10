@@ -68,7 +68,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 
 	err = handlers.DecodeAndValidateJSON(viberMsg, r)
 	if err != nil {
-		return nil, courier.WriteError(ctx, w, r, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	event := viberMsg.Event
@@ -154,11 +154,11 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		case "text":
 			text = viberMsg.Message.Text
 		default:
-			return nil, courier.WriteError(ctx, w, r, fmt.Errorf("unknown message type: %s", messageType))
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown message type: %s", messageType))
 		}
 
 		if text == "" && mediaURL == "" {
-			return nil, courier.WriteError(ctx, w, r, fmt.Errorf("missing text or media in message in request body"))
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing text or media in message in request body"))
 		}
 
 		// build our msg
