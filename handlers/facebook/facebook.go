@@ -437,7 +437,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
-	msgParts := handlers.SplitMsg(msg.Text(), maxMsgLength)
+	msgParts := make([]string, 0)
+	if msg.Text() != "" {
+		msgParts = handlers.SplitMsg(msg.Text(), maxMsgLength)
+	}
 
 	// send each part and each attachment separately
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
