@@ -62,7 +62,6 @@ func NewMsgUUIDFromString(uuidString string) MsgUUID {
 
 // Msg is our interface to represent an incoming or outgoing message
 type Msg interface {
-	Channel() Channel
 	ID() MsgID
 	UUID() MsgUUID
 	Text() string
@@ -71,6 +70,8 @@ type Msg interface {
 	URN() urns.URN
 	ContactName() string
 	QuickReplies() []string
+
+	Channel() Channel
 
 	ReceivedOn() *time.Time
 	SentOn() *time.Time

@@ -16,6 +16,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/blackmyna"
 	_ "github.com/nyaruka/courier/handlers/dmark"
 	_ "github.com/nyaruka/courier/handlers/external"
+	_ "github.com/nyaruka/courier/handlers/facebook"
 	_ "github.com/nyaruka/courier/handlers/infobip"
 	_ "github.com/nyaruka/courier/handlers/kannel"
 	_ "github.com/nyaruka/courier/handlers/nexmo"

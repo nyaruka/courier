@@ -32,13 +32,17 @@ type ChannelHandleTestCase struct {
 	Status   int
 	Response string
 
-	Name         *string
-	Text         *string
-	URN          *string
-	Attachment   *string
-	Attachments  []string
-	Date         *time.Time
-	ChannelEvent *string
+	Name        *string
+	Text        *string
+	URN         *string
+	Attachment  *string
+	Attachments []string
+	Date        *time.Time
+
+	MsgStatus *string
+
+	ChannelEvent      *string
+	ChannelEventExtra map[string]interface{}
 
 	ExternalID *string
 	ID         int64
@@ -78,7 +82,7 @@ type ChannelSendTestCase struct {
 }
 
 // Sp is a utility method to get the pointer to the passed in string
-func Sp(str string) *string { return &str }
+func Sp(str interface{}) *string { asStr := fmt.Sprintf("%s", str); return &asStr }
 
 // Tp is utility method to get the pointer to the passed in time
 func Tp(tm time.Time) *time.Time { return &tm }
@@ -269,10 +273,14 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 					require.Equal(*testCase.Name, contactName)
 				}
 				if testCase.Text != nil {
+					require.NotNil(msg)
 					require.Equal(*testCase.Text, msg.Text())
 				}
 				if testCase.ChannelEvent != nil {
 					require.Equal(*testCase.ChannelEvent, string(event.EventType()))
+				}
+				if testCase.ChannelEventExtra != nil {
+					require.Equal(testCase.ChannelEventExtra, event.Extra())
 				}
 				if testCase.URN != nil {
 					if msg != nil {
@@ -291,6 +299,10 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 					} else {
 						require.Equal(*testCase.ExternalID, "")
 					}
+				}
+				if testCase.MsgStatus != nil {
+					require.NotNil(status)
+					require.Equal(*testCase.MsgStatus, string(status.Status()))
 				}
 				if testCase.ID != 0 {
 					if status != nil {
