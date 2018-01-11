@@ -418,7 +418,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// set our message type
 	if msg.ResponseToID().IsZero() {
-		payload.MessagingType = "MESSAGE_TAG"
+		payload.MessagingType = "NON_PROMOTIONAL_SUBSCRIPTION"
 	} else {
 		payload.MessagingType = "RESPONSE"
 	}
