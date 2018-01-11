@@ -394,7 +394,7 @@ type mtEnvelope struct {
 }
 
 type mtAttachment struct {
-	Type    string `json:"string"`
+	Type    string `json:"type"`
 	Payload struct {
 		URL        string `json:"url"`
 		IsReusable bool   `json:"is_reusable"`

@@ -438,7 +438,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		URN: "facebook:12345", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status: "W", ExternalID: "mid.133",
 		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
-		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"string":"image/jpeg","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
+		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"image/jpeg","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
 		SendPrep:    setSendURL},
 	{Label: "ID Error",
 		Text: "ID Error", URN: "facebook:12345",
