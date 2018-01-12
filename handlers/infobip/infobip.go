@@ -56,7 +56,7 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(ibStatusEnvelope.Results[0].MessageID), msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, ibStatusEnvelope.Results[0].MessageID, msgStatus)
 	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ type ibStatusEnvelope struct {
 	Results []ibStatus `validate:"required" json:"results"`
 }
 type ibStatus struct {
-	MessageID int64 `validate:"required" json:"messageId"`
+	MessageID string `validate:"required" json:"messageId"`
 	Status    struct {
 		GroupName string `validate:"required" json:"groupName"`
 	} `validate:"required" json:"status"`
@@ -225,10 +225,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return status, nil
 	}
 
-	groupID, err := jsonparser.GetInt([]byte(rr.Body), "messages", "[0]", "status", "groupId")
+	groupID, err := jsonparser.GetInt(rr.Body, "messages", "[0]", "status", "groupId")
 	if err != nil || (groupID != 1 && groupID != 3) {
 		log.WithError("Message Send Error", errors.Errorf("received error status: '%d'", groupID))
 		return status, nil
+	}
+
+	externalID, err := jsonparser.GetString(rr.Body, "messages", "[0]", "messageId")
+	if externalID != "" {
+		status.SetExternalID(externalID)
 	}
 
 	status.SetStatus(courier.MsgWired)
