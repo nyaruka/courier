@@ -26,6 +26,7 @@ GET /api/v1/clickatell/receive/uuid?api_id=12345&from=263778181111&timestamp=201
 */
 var maxMsgLength = 420
 var sendURL = "https://api.clickatell.com/http/sendmsg"
+var IDRegex = regexp.MustCompile(`^ID: (.*)`)
 
 func init() {
 	courier.RegisterHandler(NewHandler())
@@ -43,11 +44,21 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, "GET", "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodGet, "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, "GET", "status", h.StatusMessage)
+
+	err = s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	if err != nil {
+		return err
+	}
+
+	err = s.AddHandlerRoute(h, http.MethodGet, "status", h.StatusMessage)
+	if err != nil {
+		return err
+	}
+	return s.AddHandlerRoute(h, http.MethodPost, "status", h.StatusMessage)
 }
 
 type statusReport struct {
@@ -80,6 +91,10 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 	// if this is a post, also try to parse the form body
 	if r.Method == http.MethodPost {
 		err = handlers.DecodeAndValidateForm(statusReport, r)
+	}
+
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	if statusReport.APIID != "" && statusReport.APIID != channel.StringConfigForKey(courier.ConfigAPIID, "") {
@@ -117,11 +132,15 @@ type clickatellIncomingMsg struct {
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	ctIncomingMessage := &clickatellIncomingMsg{}
-	handlers.DecodeAndValidateQueryParams(ctIncomingMessage, r)
+	err := handlers.DecodeAndValidateQueryParams(ctIncomingMessage, r)
 
 	// if this is a post, also try to parse the form body
 	if r.Method == http.MethodPost {
-		handlers.DecodeAndValidateForm(ctIncomingMessage, r)
+		err = handlers.DecodeAndValidateForm(ctIncomingMessage, r)
+	}
+
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	if ctIncomingMessage.APIID != "" && ctIncomingMessage.APIID != channel.StringConfigForKey(courier.ConfigAPIID, "") {
@@ -135,7 +154,6 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	dateString := ctIncomingMessage.Timestamp
 
 	date := time.Now()
-	var err error
 	if dateString != "" {
 		loc, _ := time.LoadLocation("Europe/Berlin")
 		date, err = time.ParseInLocation("2006-01-02 15:04:05", dateString, loc)
@@ -219,8 +237,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 	}
 
-	re := regexp.MustCompile(`^ID: (.*)`)
-
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(text, maxMsgLength)
 	for _, part := range parts {
@@ -252,14 +268,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return status, nil
 		}
 
-		if rr.StatusCode != 200 && rr.StatusCode != 201 && rr.StatusCode != 202 {
-			return status, errors.Errorf("Got non-200 response [%d] from API", rr.StatusCode)
-		}
-
 		status.SetStatus(courier.MsgWired)
 
-		matched := re.FindAllStringSubmatch(string([]byte(rr.Body)), -1)
-		if len(matched) > 0 && len(matched[0]) > 0 {
+		matched := IDRegex.FindAllStringSubmatch(string([]byte(rr.Body)), -1)
+		if len(matched) > 0 && len(matched[0]) > 0 && matched[0][1] != "" {
 			status.SetExternalID(matched[0][1])
 		}
 
