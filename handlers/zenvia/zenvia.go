@@ -18,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+var maxMsgLength = 150
 var sendURL = "https://api-rest.zenvia360.com.br/services"
 
 func init() {
@@ -31,6 +32,16 @@ type handler struct {
 // NewHandler returns a new Zenvia handler
 func NewHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("ZV"), "Zenvia")}
+}
+
+// Initialize is called by the engine once everything is loaded
+func (h *handler) Initialize(s courier.Server) error {
+	h.SetServer(s)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	if err != nil {
+		return err
+	}
+	return s.AddHandlerRoute(h, http.MethodPost, "status", h.StatusMessage)
 }
 
 // {
@@ -111,30 +122,20 @@ var statusMapping = map[string]courier.MsgStatusValue{
 	"10": courier.MsgErrored,
 }
 
-// Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(s courier.Server) error {
-	h.SetServer(s)
-	err := s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, "POST", "status", h.StatusMessage)
-}
-
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
 	zvMsg := &messageRequest{}
 	err := handlers.DecodeAndValidateJSON(zvMsg, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// create our date from the timestamp
 	// 2017-05-03T06:04:45.345-03:00
 	date, err := time.Parse("2006-01-02T15:04:05.000-07:00", zvMsg.CallbackMORequest.Date)
 	if err != nil {
-		return nil, fmt.Errorf("invalid date format: %s", zvMsg.CallbackMORequest.Date)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid date format: %s", zvMsg.CallbackMORequest.Date))
 	}
 
 	// create our URN
@@ -158,7 +159,7 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 	zvStatus := &statusRequest{}
 	err := handlers.DecodeAndValidateJSON(zvStatus, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	msgStatus, found := statusMapping[zvStatus.CallbackMTRequest.StatusCode]
@@ -189,43 +190,48 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no password set for Zenvia channel")
 	}
 
-	zvMsg := zvOutgoingMsg{
-		SendSMSRequest: zvSendSMSRequest{
-			From:           "Sender",
-			To:             strings.TrimLeft(msg.URN().Path(), "+"),
-			Schedule:       "",
-			Msg:            courier.GetTextAndAttachments(msg),
-			ID:             msg.ID().String(),
-			CallbackOption: strconv.Itoa(1),
-			AggregateID:    "",
-		},
-	}
-
-	requestBody := new(bytes.Buffer)
-	json.NewEncoder(requestBody).Encode(zvMsg)
-
-	// build our request
-	req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	req.SetBasicAuth(username, password)
-	rr, err := utils.MakeHTTPRequest(req)
-
-	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
-	if err != nil {
-		return status, err
-	}
+	parts := handlers.SplitMsg(courier.GetTextAndAttachments(msg), maxMsgLength)
+	for _, part := range parts {
+		zvMsg := zvOutgoingMsg{
+			SendSMSRequest: zvSendSMSRequest{
+				From:           "Sender",
+				To:             strings.TrimLeft(msg.URN().Path(), "+"),
+				Schedule:       "",
+				Msg:            part,
+				ID:             msg.ID().String(),
+				CallbackOption: strconv.Itoa(1),
+				AggregateID:    "",
+			},
+		}
 
-	// was this request successful?
-	responseMsgStatus, _ := jsonparser.GetString([]byte(rr.Body), "sendSmsResponse", "statusCode")
-	msgStatus, found := statusMapping[responseMsgStatus]
-	if msgStatus == courier.MsgErrored || !found {
-		return status, errors.Errorf("received non-success response from Zenvia '%s'", responseMsgStatus)
-	}
-	status.SetStatus(courier.MsgWired)
+		requestBody := new(bytes.Buffer)
+		json.NewEncoder(requestBody).Encode(zvMsg)
 
+		// build our request
+		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		req.SetBasicAuth(username, password)
+		rr, err := utils.MakeHTTPRequest(req)
+
+		// record our status and log
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
+
+		if err != nil {
+			return status, err
+		}
+
+		// was this request successful?
+		responseMsgStatus, _ := jsonparser.GetString([]byte(rr.Body), "sendSmsResponse", "statusCode")
+		msgStatus, found := statusMapping[responseMsgStatus]
+		if msgStatus == courier.MsgErrored || !found {
+			return status, errors.Errorf("received non-success response from Zenvia '%s'", responseMsgStatus)
+		}
+
+		status.SetStatus(courier.MsgWired)
+	}
 	return status, nil
 
 }

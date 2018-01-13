@@ -115,6 +115,20 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"Simple Message ☺","callbackOption":"1","id":"10","aggregateId":""}}`,
 		SendPrep:    setSendURL},
+	{Label: "Long Send",
+		Text:           "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		URN:            "tel:+250788383383",
+		Status:         "W",
+		ExternalID:     "",
+		ResponseBody:   `{"sendSmsResponse":{"statusCode":"00","statusDescription":"Ok","detailCode":"000","detailDescription":"Message Sent"}}`,
+		ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Basic enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
+		},
+		RequestBody: `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"I need to keep adding more things to make it work","callbackOption":"1","id":"10","aggregateId":""}}`,
+		SendPrep:    setSendURL},
 	{Label: "Send Attachment",
 		Text:           "My pic!",
 		URN:            "tel:+250788383383",
@@ -156,6 +170,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
+	maxMsgLength = 160
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZV", "2020", "BR", map[string]interface{}{"username": "zv-username", "password": "zv-password"})
 	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
 }
