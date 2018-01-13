@@ -52,6 +52,12 @@ var (
 	<body content-type="content-type" encoding="utf8">Hello World</body>
 	</message>`
 
+	validMissingBody = `<message>
+	<service type="sms" timestamp="1450450974" auth="asdfasdf" request_id="msg1"/>
+	<from>+250788123123</from>
+	<to>1515</to>
+	</message>`
+
 )
 
 var testCases = []ChannelHandleTestCase{
@@ -59,7 +65,8 @@ var testCases = []ChannelHandleTestCase{
 		Text: Sp("Hello World"), URN: Sp("tel:+250788123123"), Date: Tp(time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC))},
 	{Label: "Receive Valid with empty Text", URL: receiveURL, Data: validReceiveEmptyText, Status: 200, Response: "Message Accepted",
 		Text: Sp(""), URN: Sp("tel:+250788123123")},
-
+	{Label: "Receive Valid missing body", URL: receiveURL, Data: validMissingBody, Status: 200, Response: "Message Accepted",
+		Text: Sp(""), URN: Sp("tel:+250788123123")},
 	{Label: "Receive missing Request ID", URL: receiveURL, Data: missingRequestID, Status: 400, Response: "Error"},
 	{Label: "Receive missing From", URL: receiveURL, Data: missingFrom, Status: 400, Response: "Error"},
 	{Label: "Receive missing To", URL: receiveURL, Data: missingTo, Status: 400, Response: "Error"},
