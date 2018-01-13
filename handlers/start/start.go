@@ -20,6 +20,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
+var maxMsgLength = 1600
 var sendURL = "http://bulk.startmobile.com.ua/clients.php"
 
 func init() {
@@ -38,7 +39,7 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
 	return nil
 }
 
@@ -64,7 +65,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	if mo.Service.RequestID == "" || mo.From == "" {
+	if mo.Service.RequestID == "" || mo.From == "" || mo.To == "" {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing parameters, must have 'request_id', 'to' and 'body'"))
 	}
 
@@ -129,46 +130,53 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no password set for IB channel")
 	}
 
-	stMsg := mtMessage{
-		Service: service{
-			ID: "single",
-			Source: msg.Channel().Address(),
-			Validity: "+12 hours",
-		},
-		To: msg.URN().Path(),
-		Body : body{
-			ContentType: "plain/text",
-			Encoding: "plain",
-			Text: courier.GetTextAndAttachments(msg),
-		},
-	}
-
-	requestBody := &bytes.Buffer{}
-	err := xml.NewEncoder(requestBody).Encode(stMsg)
-	if err != nil {
-		return nil, err
-	}
-
-	// build our request
-	req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
-	req.Header.Set("Content-Type", "application/xml; charset=utf8")
-	req.SetBasicAuth(username, password)
-	rr, err := utils.MakeHTTPRequest(req)
-
-	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
-	status.AddLog(log)
-	if err != nil {
-		log.WithError("Message Send Error", err)
-		return status, nil
-	}
+	parts := handlers.SplitMsg(courier.GetTextAndAttachments(msg), maxMsgLength)
+	for i, part := range parts {
 
-	stResponse := &stResponse{}
-	err = xml.Unmarshal([]byte(rr.Body), stResponse)
-	if err == nil {
-		status.SetStatus(courier.MsgWired)
-		status.SetExternalID(stResponse.ID)
+		stMsg := mtMessage{
+			Service: service{
+				ID: "single",
+				Source: msg.Channel().Address(),
+				Validity: "+12 hours",
+			},
+			To: msg.URN().Path(),
+			Body : body{
+				ContentType: "plain/text",
+				Encoding: "plain",
+				Text: part,
+			},
+		}
+
+		requestBody := &bytes.Buffer{}
+		err := xml.NewEncoder(requestBody).Encode(stMsg)
+		if err != nil {
+			return nil, err
+		}
+
+		// build our request
+		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+		req.Header.Set("Content-Type", "application/xml; charset=utf8")
+		req.SetBasicAuth(username, password)
+		rr, err := utils.MakeHTTPRequest(req)
+
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
+		status.AddLog(log)
+		if err != nil {
+			log.WithError("Message Send Error", err)
+			return status, nil
+		}
+
+		stResponse := &stResponse{}
+		err = xml.Unmarshal([]byte(rr.Body), stResponse)
+		if err == nil {
+			status.SetStatus(courier.MsgWired)
+		}
+
+		if i == 0 {
+			status.SetExternalID(stResponse.ID)
+		}
+
 	}
 
 	return status, nil
