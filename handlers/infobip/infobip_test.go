@@ -135,7 +135,13 @@ var validStatusPending = `{
 			"status": {
 				"groupName": "PENDING"
 			}
-		}
+		},
+		{
+			"messageId": "12347",
+			"status": {
+				"groupName": "PENDING"
+			}
+		}		
 	]
 }`
 

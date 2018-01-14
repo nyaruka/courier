@@ -50,19 +50,30 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	msgStatus, found := infobipStatusMapping[ibStatusEnvelope.Results[0].Status.GroupName]
-	if !found {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", ibStatusEnvelope.Results[0].Status.GroupName))
+	data := make([]interface{}, len(ibStatusEnvelope.Results))
+	statuses := make([]courier.Event, len(ibStatusEnvelope.Results))
+	for _, s := range ibStatusEnvelope.Results {
+		msgStatus, found := infobipStatusMapping[s.Status.GroupName]
+		if !found {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", s.Status.GroupName))
+		}
+
+		// write our status
+		status := h.Backend().NewMsgStatusForExternalID(channel, s.MessageID, msgStatus)
+		err = h.Backend().WriteMsgStatus(ctx, status)
+		if err == courier.ErrMsgNotFound {
+			data = append(data, courier.NewInfoData(fmt.Sprintf("ignoring status update message id: %s, not found", s.MessageID)))
+			continue
+		}
+
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, courier.NewStatusData(status))
+		statuses = append(statuses, status)
 	}
 
-	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, ibStatusEnvelope.Results[0].MessageID, msgStatus)
-	err = h.Backend().WriteMsgStatus(ctx, status)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+	return statuses, courier.WriteDataResponse(ctx, w, http.StatusOK, "statuses handled", data)
 }
 
 var infobipStatusMapping = map[string]courier.MsgStatusValue{
