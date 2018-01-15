@@ -53,7 +53,7 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
@@ -61,7 +61,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 
 	err := h.validateSignature(channel, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	viberMsg := &viberMessage{}
@@ -224,7 +224,7 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 	// read our body
 	body, err := ioutil.ReadAll(r.Body)
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-	expected, err := viberCalculateSignature(authToken, body)
+	expected, err := calculateSignature(authToken, body)
 	if err != nil {
 		return err
 	}
@@ -237,14 +237,11 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 	return nil
 }
 
-func viberCalculateSignature(authToken string, contents []byte) ([]byte, error) {
-
-	var buffer bytes.Buffer
-	buffer.Write(contents)
+func calculateSignature(authToken string, contents []byte) ([]byte, error) {
 
 	// hash with SHA256
 	mac := hmac.New(sha256.New, []byte(authToken))
-	mac.Write(buffer.Bytes())
+	mac.Write(contents)
 	hash := mac.Sum(nil)
 
 	return hash, nil

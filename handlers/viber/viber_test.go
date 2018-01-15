@@ -395,7 +395,7 @@ var testCases = []ChannelHandleTestCase{
 func addValidSignature(r *http.Request) {
 	body, _ := ioutil.ReadAll(r.Body)
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-	sig, _ := viberCalculateSignature("Token", body)
+	sig, _ := calculateSignature("Token", body)
 	r.Header.Set(viberSignatureHeader, string(sig))
 }
 
