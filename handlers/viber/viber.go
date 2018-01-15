@@ -215,9 +215,8 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 		return fmt.Errorf("missing request signature")
 	}
 
-	confAuth := channel.ConfigForKey(courier.ConfigAuthToken, "")
-	authToken, isStr := confAuth.(string)
-	if !isStr || authToken == "" {
+	authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	if authToken == "" {
 		return fmt.Errorf("invalid or missing auth token in config")
 	}
 
