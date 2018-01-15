@@ -7,13 +7,14 @@ POST /handlers/start/receive/uuid/
 
 import (
 	"bytes"
-	"github.com/nyaruka/courier/utils"
-	"strconv"
-	"time"
 	"context"
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/nyaruka/courier/utils"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
@@ -49,13 +50,12 @@ type moMessage struct {
 		Timestamp string `xml:"timestamp,attr"`
 		RequestID string `xml:"request_id,attr"`
 	} `xml:"service"`
-	From  string `xml:"from"`
-	To string `xml:"to"`
+	From string `xml:"from"`
+	To   string `xml:"to"`
 	Body struct {
-		Text        string `xml:",chardata"`
+		Text string `xml:",chardata"`
 	} `xml:"body"`
 }
-
 
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
@@ -96,38 +96,38 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 
 type body struct {
 	ContentType string `xml:"content-type,attr"`
-	Encoding string `xml:"encoding,attr"`
+	Encoding    string `xml:"encoding,attr"`
 	Text        string `xml:",chardata"`
 }
 
 type service struct {
-	ID string `xml:"id,attr"`
-	Source string `xml:"source,attr"`
+	ID       string `xml:"id,attr"`
+	Source   string `xml:"source,attr"`
 	Validity string `xml:"validity,attr"`
 }
 
 type mtMessage struct {
 	XMLName xml.Name `xml:"message"`
-	Service service `xml:"service"`
-	To string `xml:"to"`
-	Body body `xml:"body"`
+	Service service  `xml:"service"`
+	To      string   `xml:"to"`
+	Body    body     `xml:"body"`
 }
 
 type stResponse struct {
 	XMLName xml.Name `xml:"status"`
-	ID string `xml:"id"`
-	State string `xml:"state"`
+	ID      string   `xml:"id"`
+	State   string   `xml:"state"`
 }
 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
-		return nil, fmt.Errorf("no username set for IB channel")
+		return nil, fmt.Errorf("no username set for ST channel: %s", msg.Channel().UUID())
 	}
 
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	if password == "" {
-		return nil, fmt.Errorf("no password set for IB channel")
+		return nil, fmt.Errorf("no password set for ST channel: %s", msg.Channel().UUID())
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
@@ -136,15 +136,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		stMsg := mtMessage{
 			Service: service{
-				ID: "single",
-				Source: msg.Channel().Address(),
+				ID:       "single",
+				Source:   msg.Channel().Address(),
 				Validity: "+12 hours",
 			},
 			To: msg.URN().Path(),
-			Body : body{
+			Body: body{
 				ContentType: "plain/text",
-				Encoding: "plain",
-				Text: part,
+				Encoding:    "plain",
+				Text:        part,
 			},
 		}
 
@@ -168,15 +168,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		stResponse := &stResponse{}
-		err = xml.Unmarshal([]byte(rr.Body), stResponse)
+		err = xml.Unmarshal(rr.Body, stResponse)
 		if err == nil {
 			status.SetStatus(courier.MsgWired)
+			if i == 0 {
+				status.SetExternalID(stResponse.ID)
+			}
 		}
-
-		if i == 0 {
-			status.SetExternalID(stResponse.ID)
-		}
-
 	}
 
 	return status, nil
