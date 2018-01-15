@@ -14,6 +14,7 @@ import (
 	// load channel handler packages
 	_ "github.com/nyaruka/courier/handlers/africastalking"
 	_ "github.com/nyaruka/courier/handlers/blackmyna"
+	_ "github.com/nyaruka/courier/handlers/clickatell"
 	_ "github.com/nyaruka/courier/handlers/dmark"
 	_ "github.com/nyaruka/courier/handlers/external"
 	_ "github.com/nyaruka/courier/handlers/facebook"
