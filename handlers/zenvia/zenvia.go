@@ -182,12 +182,12 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
-		return nil, fmt.Errorf("no username set for Zenvia channel")
+		return nil, fmt.Errorf("no username set for ZV channel")
 	}
 
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	if password == "" {
-		return nil, fmt.Errorf("no password set for Zenvia channel")
+		return nil, fmt.Errorf("no password set for ZV channel")
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
