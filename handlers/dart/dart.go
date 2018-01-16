@@ -5,14 +5,27 @@ GET /handlers/dartmedia/received/uuid?userid=username&password=xxxxxxxx&original
 */
 
 import (
-	"strconv"
-	"github.com/nyaruka/gocommon/urns"
-	"fmt"
 	"context"
+	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
+
+)
+
+var (
+
+	dartmediaSendURL = "http://202.43.169.11/APIhttpU/receive2waysms.php"
+	dartmediaMaxMsgLength = 160
+
+	hub9SendURL = "http://175.103.48.29:28078/testing/smsmt.php"
+	hub9MaxMsgLength = 1600
 )
 
 type handler struct {
@@ -139,5 +152,68 @@ func (h *handler) writeStasusSuccess(ctx context.Context, w http.ResponseWriter,
 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	return nil, fmt.Errorf("DA sending via Courier not yet implemented")
+	sendURL := dartmediaSendURL
+	maxMsgLength := dartmediaMaxMsgLength
+	channelType := msg.Channel().ChannelType().String()
+
+	if channelType == "H9" {
+		sendURL = hub9SendURL
+		maxMsgLength = hub9MaxMsgLength
+	}
+
+	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
+	if username == "" {
+		return nil, fmt.Errorf("no username set for %s channel", channelType)
+	}
+
+	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	if password == "" {
+		return nil, fmt.Errorf("no password set for %s channel", channelType)
+	}
+
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	parts := handlers.SplitMsg(courier.GetTextAndAttachments(msg), maxMsgLength)
+	for _, part := range parts {
+		form := url.Values{
+			"userid":     []string{username},
+			"password": []string{password},
+			"sendto":       []string{strings.TrimPrefix(msg.URN().Path(), "+")},
+			"original":     []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
+			"messageid": []string{msg.ID().String()},
+			"udhl":   []string{"0"},
+			"dcs":   []string{"0"},
+			"message":  []string{part},
+		}
+
+		encodedForm := form.Encode()
+
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s?%s", sendURL, encodedForm), nil)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		rr, err := utils.MakeHTTPRequest(req)
+
+		// record our status and log
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
+		status.AddLog(log)
+		if err != nil {
+			log.WithError("Message Send Error", err)
+			return status, nil
+		}
+
+		responseText := fmt.Sprintf("%s", rr.Body)
+		if responseText != "000" {
+			errorMessage := "Unknown error"
+			if responseText == "001" {
+				errorMessage = "Error 001: Authentication Error"
+			}
+			if responseText == "101" {
+				errorMessage = "Error 101: Account expired or invalid parameters"
+			}
+			log.WithError("Message Send Error", fmt.Errorf(errorMessage))
+			return status, nil
+		}
+
+		status.SetStatus(courier.MsgWired)
+
+	}
+	return status, nil
 }

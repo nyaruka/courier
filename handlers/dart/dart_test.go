@@ -1,6 +1,7 @@
 package dart
 
 import (
+	"net/http/httptest"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -71,4 +72,69 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, h9TestChannels, NewHandler("H9", "Hub9"), h9TestCases)
 }
 
+// setSendURL takes care of setting the sendURL to call
+func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Msg) {
+	dartmediaSendURL = server.URL
+	hub9SendURL = server.URL
+}
 
+var defaultSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "tel:+250788383383",
+		Status: "W",
+		URLParams:    map[string]string{"message": "Simple Message", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
+		ResponseBody: "000", ResponseStatus: 200,
+		SendPrep: setSendURL},
+	{Label: "Long Send",
+		Text:   "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		URN:    "tel:+250788383383",
+		Status: "W",
+		URLParams:    map[string]string{"message": "I need to keep adding more things to make it work", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
+		ResponseBody: "000", ResponseStatus: 200,
+		SendPrep: setSendURL},
+	{Label: "Send Attachment",
+		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Status: "W",
+		URLParams:    map[string]string{"message": "My pic!\nhttps://foo.bar/image.jpg", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
+		ResponseBody: "000", ResponseStatus: 200,
+		SendPrep: setSendURL},
+	{Label: "Error Sending",
+		Text: "Error Message", URN: "tel:+250788383383",
+		Status:       "E",
+		URLParams:   map[string]string{"message": "Error Message", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
+		ResponseBody: `Error`, ResponseStatus: 400,
+		SendPrep: setSendURL},
+	{Label: "Authentication Error",
+		Text: "Simple Message", URN: "tel:+250788383383",
+		Status: "E",
+		URLParams:    map[string]string{"message": "Simple Message", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
+		ResponseBody: "001", ResponseStatus: 200,
+		SendPrep: setSendURL},
+	{Label: "Account Expired",
+		Text: "Simple Message", URN: "tel:+250788383383",
+		Status: "E",
+		URLParams:    map[string]string{"message": "Simple Message", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
+		ResponseBody: "101", ResponseStatus: 200,
+		SendPrep: setSendURL},
+}
+
+func TestSending(t *testing.T) {
+	dartmediaMaxMsgLength = 160
+	hub9MaxMsgLength = 160
+	var defaultDAChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DA", "2020", "US",
+		map[string]interface{}{
+			courier.ConfigUsername: "Username",
+			courier.ConfigPassword: "Password",
+			courier.ConfigAPIID:    "API-ID",
+		})
+
+	var defaultH9Channel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "H9", "2020", "US",
+		map[string]interface{}{
+			courier.ConfigUsername: "Username",
+			courier.ConfigPassword: "Password",
+			courier.ConfigAPIID:    "API-ID",
+		})
+
+	RunChannelSendTestCases(t, defaultDAChannel, NewHandler("DA", "Dartmedia"), defaultSendTestCases)
+	RunChannelSendTestCases(t, defaultH9Channel, NewHandler("H9", "Hub9"), defaultSendTestCases)
+}
