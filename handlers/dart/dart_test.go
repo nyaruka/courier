@@ -121,18 +121,16 @@ var defaultSendTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	dartmediaMaxMsgLength = 160
 	hub9MaxMsgLength = 160
-	var defaultDAChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DA", "2020", "US",
+	var defaultDAChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DA", "2020", "ID",
 		map[string]interface{}{
 			courier.ConfigUsername: "Username",
 			courier.ConfigPassword: "Password",
-			courier.ConfigAPIID:    "API-ID",
 		})
 
-	var defaultH9Channel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "H9", "2020", "US",
+	var defaultH9Channel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "H9", "2020", "ID",
 		map[string]interface{}{
 			courier.ConfigUsername: "Username",
 			courier.ConfigPassword: "Password",
-			courier.ConfigAPIID:    "API-ID",
 		})
 
 	RunChannelSendTestCases(t, defaultDAChannel, NewHandler("DA", "Dartmedia"), defaultSendTestCases)
