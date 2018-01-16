@@ -42,7 +42,7 @@ func (h *handler) Initialize(s courier.Server) error {
 		return err
 	}
 
-	return s.AddHandlerRoute(h, http.MethodGet, "delivered", h.ReceiveMessage)
+	return s.AddHandlerRoute(h, http.MethodGet, "delivered", h.StatusMessage)
 }
 
 type dartStatus struct {
@@ -88,13 +88,13 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	if daStatus.Status == "" {
-		return nil, h.writeStasusSuccess(ctx, w, r, nil)
+	if daStatus.Status == "" || daStatus.MessageID == "" {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("parameters messageid and status should not be null"))
 	}
 
 	statusInt, err := strconv.Atoi(daStatus.Status)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("parsing failed: status '%s' is not an integer", daStatus.Status))
 	}
 
 	msgStatus := courier.MsgSent
@@ -108,7 +108,7 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 
 	msgID, err := strconv.ParseInt(daStatus.MessageID, 10, 64)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("parsing failed: messageid '%s' is not an integer", daStatus.MessageID))
 	}
 
 	// write our status
