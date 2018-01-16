@@ -394,7 +394,7 @@ type mtEnvelope struct {
 }
 
 type mtAttachment struct {
-	Type    string `json:"string"`
+	Type    string `json:"type"`
 	Payload struct {
 		URL        string `json:"url"`
 		IsReusable bool   `json:"is_reusable"`
@@ -418,7 +418,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// set our message type
 	if msg.ResponseToID().IsZero() {
-		payload.MessagingType = "MESSAGE_TAG"
+		payload.MessagingType = "NON_PROMOTIONAL_SUBSCRIPTION"
 	} else {
 		payload.MessagingType = "RESPONSE"
 	}
@@ -452,6 +452,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			// this is an attachment
 			payload.Message.Attachment = &mtAttachment{}
 			attType, attURL := courier.SplitAttachment(msg.Attachments()[i-len(msgParts)])
+			attType = strings.Split(attType, "/")[0]
 			payload.Message.Attachment.Type = attType
 			payload.Message.Attachment.Payload.URL = attURL
 			payload.Message.Attachment.Payload.IsReusable = true

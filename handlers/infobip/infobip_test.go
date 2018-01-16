@@ -87,7 +87,7 @@ var invalidJSONStatus = "Invalid"
 var statusMissingResultsKey = `{
 	"deliveryReport": [
 		{
-			"messageId": 12345,
+			"messageId": "12345",
 			"status": {
 				"groupName": "DELIVERED"
 			}
@@ -98,7 +98,7 @@ var statusMissingResultsKey = `{
 var validStatusDelivered = `{
 	"results": [
 		{
-			"messageId": 12345,
+			"messageId": "12345",
 			"status": {
 				"groupName": "DELIVERED"
 			}
@@ -109,7 +109,7 @@ var validStatusDelivered = `{
 var validStatusRejected = `{
 	"results": [
 		{
-			"messageId": 12345,
+			"messageId": "12345",
 			"status": {
 				"groupName": "REJECTED"
 			}
@@ -120,7 +120,7 @@ var validStatusRejected = `{
 var validStatusUndeliverable = `{
 	"results": [
 		{
-			"messageId": 12345,
+			"messageId": "12345",
 			"status": {
 				"groupName": "UNDELIVERABLE"
 			}
@@ -131,18 +131,24 @@ var validStatusUndeliverable = `{
 var validStatusPending = `{
 	"results": [
 		{
-			"messageId": 12345,
+			"messageId": "12345",
 			"status": {
 				"groupName": "PENDING"
 			}
-		}
+		},
+		{
+			"messageId": "12347",
+			"status": {
+				"groupName": "PENDING"
+			}
+		}		
 	]
 }`
 
 var validStatusExpired = `{
 	"results": [
 		{
-			"messageId": 12345,
+			"messageId": "12345",
 			"status": {
 				"groupName": "EXPIRED"
 			}
@@ -153,7 +159,7 @@ var validStatusExpired = `{
 var invalidStatus = `{
 	"results": [
 		{
-			"messageId": 12345,
+			"messageId": "12345",
 			"status": {
 				"groupName": "UNEXPECTED"
 			}
@@ -192,8 +198,8 @@ func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Ms
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: `{"messages":[{"status":{"groupId": 1}}}`, ResponseStatus: 200,
+		Status: "W", ExternalID: "12345",
+		ResponseBody: `{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`, ResponseStatus: 200,
 		Headers: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",

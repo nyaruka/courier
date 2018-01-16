@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -147,6 +148,30 @@ func DecodeAndValidateJSON(envelope interface{}, r *http.Request) error {
 	err = validate.Struct(envelope)
 	if err != nil {
 		return fmt.Errorf("request JSON doesn't match required schema: %s", err)
+	}
+
+	return nil
+}
+
+// DecodeAndValidateXML takes the passed in envelope and tries to unmarshal it from the body
+// of the passed in request, then validating it
+func DecodeAndValidateXML(envelope interface{}, r *http.Request) error {
+	// read our body
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
+	defer r.Body.Close()
+	if err != nil {
+		return fmt.Errorf("unable to read request body: %s", err)
+	}
+
+	// try to decode our envelope
+	if err = xml.Unmarshal(body, envelope); err != nil {
+		return fmt.Errorf("unable to parse request XML: %s", err)
+	}
+
+	// check our input is valid
+	err = validate.Struct(envelope)
+	if err != nil {
+		return fmt.Errorf("request XML doesn't match required schema: %s", err)
 	}
 
 	return nil

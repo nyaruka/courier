@@ -10,6 +10,9 @@ import (
 )
 
 const (
+	// ConfigAPIID is a constant key for channel configs
+	ConfigAPIID = "api_id"
+
 	// ConfigAPIKey is a constant key for channel configs
 	ConfigAPIKey = "api_key"
 
