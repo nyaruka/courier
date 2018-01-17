@@ -50,23 +50,13 @@ func (h *handler) Initialize(s courier.Server) error {
 		return err
 	}
 
-	err = s.AddHandlerRoute(h, http.MethodGet, "received", h.ReceiveMessage)
-	if err != nil {
-		return err
-	}
-
 	return s.AddHandlerRoute(h, http.MethodGet, "delivered", h.StatusMessage)
 }
 
-type dartStatus struct {
-	MessageID string `name:"messageid"`
-	Status    string `name:"status"`
-}
-
 type dartMessage struct {
-	Message string `name:"message"`
-	From    string `name:"original"`
-	To      string `name:"sendto"`
+	Message  string `name:"message"`
+	Original string `name:"original"`
+	SendTo   string `name:"sendto"`
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
@@ -77,8 +67,12 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
+	if daMessage.Original == "" || daMessage.SendTo == "" {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing required parameters original and sendto"))
+	}
+
 	// create our URN
-	urn := urns.NewTelURNForCountry(daMessage.From, channel.Country())
+	urn := urns.NewTelURNForCountry(daMessage.Original, channel.Country())
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, daMessage.Message)
@@ -92,6 +86,11 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	return []courier.Event{msg}, h.writeReceiveSuccess(ctx, w, r, msg)
 }
 
+type dartStatus struct {
+	MessageID string `name:"messageid"`
+	Status    string `name:"status"`
+}
+
 // StatusMessage is our HTTP handler function for status updates
 func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	daStatus := &dartStatus{}
@@ -101,7 +100,7 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 	}
 
 	if daStatus.Status == "" || daStatus.MessageID == "" {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("parameters messageid and status should not be null"))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("parameters messageid and status should not be empty"))
 	}
 
 	statusInt, err := strconv.Atoi(daStatus.Status)
@@ -135,7 +134,6 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 
 // DartMedia expects "000" from a message receive request
 func (h *handler) writeReceiveSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, msg courier.Msg) error {
-	courier.LogMsgReceived(r, msg)
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "000")
 	return err
@@ -143,7 +141,6 @@ func (h *handler) writeReceiveSuccess(ctx context.Context, w http.ResponseWriter
 
 // DartMedia expects "000" from a status request
 func (h *handler) writeStatusSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, status courier.MsgStatus) error {
-	courier.LogMsgStatusReceived(r, status)
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "000")
 	return err
