@@ -46,10 +46,10 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 // setSendURL takes care of setting the send_url to our test server host
-func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Msg) {
-	sendURL1 = server.URL
-	sendURL2 = server.URL
-	sendURL3 = server.URL
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+	sendURL1 = s.URL
+	sendURL2 = s.URL
+	sendURL3 = s.URL
 }
 
 var getSendTestCases = []ChannelSendTestCase{

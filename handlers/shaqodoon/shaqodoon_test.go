@@ -45,8 +45,8 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, NewHandler(), handleTestCases)
 }
 
-func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Msg) {
-	channel.(*courier.MockChannel).SetConfig(courier.ConfigSendURL, server.URL)
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+	c.(*courier.MockChannel).SetConfig(courier.ConfigSendURL, s.URL)
 }
 
 var getSendTestCases = []ChannelSendTestCase{
