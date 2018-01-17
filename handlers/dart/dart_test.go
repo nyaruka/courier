@@ -1,7 +1,6 @@
 package dart
 
 import (
-	"fmt"
 	"net/http/httptest"
 	"testing"
 
@@ -47,10 +46,9 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 // setSendURL takes care of setting the sendURL to call
-func setSendURL(server *httptest.Server, h courier.ChannelHandler, channel courier.Channel, msg courier.Msg) {
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
 	daHandler := h.(*handler)
-	fmt.Printf("Setting sendURL to the appropriate URL, currently: %s", daHandler.sendURL)
-	daHandler.sendURL = server.URL
+	daHandler.sendURL = s.URL
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{

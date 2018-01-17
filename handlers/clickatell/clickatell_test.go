@@ -10,8 +10,8 @@ import (
 )
 
 // setSendURL takes care of setting the sendURL to call
-func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Msg) {
-	sendURL = server.URL
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+	sendURL = s.URL
 }
 
 var successSendResponse = `{"messages":[{"apiMessageId":"id1002","accepted":true,"to":"12067799299","error":null}],"error":null}`
