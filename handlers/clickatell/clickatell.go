@@ -165,7 +165,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 // utility method to decode crazy clickatell 16 bit format
 func decodeUTF16BE(b []byte) (string, error) {
 	if len(b)%2 != 0 {
-		return "", fmt.Errorf("byte slice must be of event length: %v", b)
+		return "", fmt.Errorf("byte slice must be of even length: %v", b)
 	}
 	u16s := make([]uint16, 1)
 	ret := &bytes.Buffer{}
