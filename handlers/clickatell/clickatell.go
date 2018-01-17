@@ -7,26 +7,20 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strings"
 	"time"
 	"unicode/utf16"
 	"unicode/utf8"
 
+	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
-/*
-GET /api/v1/clickatell/receive/uuid?api_id=12345&from=263778181111&timestamp=2017-05-03+07%3A30%3A10&text=Msg&charset=ISO-8859-1&udh=&moMsgId=b1e4782a3c87339d706ab1343b4df1ce&to=33500
-*/
-var maxMsgLength = 420
-var sendURL = "https://api.clickatell.com/http/sendmsg"
-var IDRegex = regexp.MustCompile(`^ID: (.*)`)
+var maxMsgLength = 640
+var sendURL = "https://platform.clickatell.com/messages/http/send"
 
 func init() {
 	courier.RegisterHandler(NewHandler())
@@ -44,17 +38,7 @@ func NewHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodGet, "receive", h.ReceiveMessage)
-	if err != nil {
-		return err
-	}
-
-	err = s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
-	if err != nil {
-		return err
-	}
-
-	err = s.AddHandlerRoute(h, http.MethodGet, "status", h.StatusMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
@@ -62,57 +46,52 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type statusReport struct {
-	SmsID      string `name:"apiMsgId"`
-	APIID      string `name:"api_id"`
-	StatusCode string `name:"status"`
+	MessageID  string `name:"messageId"`
+	StatusCode int    `name:"statusCode"`
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"001": courier.MsgFailed,    // incorrect msg id
-	"002": courier.MsgWired,     // queued
-	"003": courier.MsgSent,      // delivered to upstream gateway
-	"004": courier.MsgDelivered, // received by handset
-	"005": courier.MsgFailed,    // error in message
-	"006": courier.MsgFailed,    // terminated by user
-	"007": courier.MsgFailed,    // error delivering
-	"008": courier.MsgWired,     // msg received
-	"009": courier.MsgFailed,    // error routing
-	"010": courier.MsgFailed,    // expired
-	"011": courier.MsgWired,     // delayed but queued
-	"012": courier.MsgFailed,    // out of credit
-	"014": courier.MsgFailed,    // too long
+var statusMapping = map[int]courier.MsgStatusValue{
+	1:  courier.MsgFailed, // incorrect msg id
+	2:  courier.MsgWired,  // queued
+	3:  courier.MsgSent,   // delivered to upstream gateway
+	4:  courier.MsgSent,   // delivered to upstream gateway
+	5:  courier.MsgFailed, // error in message
+	6:  courier.MsgFailed, // terminated by user
+	7:  courier.MsgFailed, // error delivering
+	8:  courier.MsgWired,  // msg received
+	9:  courier.MsgFailed, // error routing
+	10: courier.MsgFailed, // expired
+	11: courier.MsgWired,  // delayed but queued
+	12: courier.MsgFailed, // out of credit
+	14: courier.MsgFailed, // too long
 }
 
 // StatusMessage is our HTTP handler function for status updates
 func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	statusReport := &statusReport{}
-	err := handlers.DecodeAndValidateQueryParams(statusReport, r)
-
-	// if this is a post, also try to parse the form body
-	if r.Method == http.MethodPost {
-		err = handlers.DecodeAndValidateForm(statusReport, r)
-	}
+	err := handlers.DecodeAndValidateJSON(statusReport, r)
 
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	if statusReport.APIID != "" && statusReport.APIID != channel.StringConfigForKey(courier.ConfigAPIID, "") {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid API ID for status report: %s", statusReport.APIID))
-	}
-
-	if statusReport.SmsID == "" || statusReport.StatusCode == "" {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "missing one of 'apiMsgId' or 'status' in request parameters.")
+	if statusReport.MessageID == "" || statusReport.StatusCode == 0 {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel,
+			fmt.Errorf("missing one of 'messageId' or 'statusCode' in request parameters"))
 	}
 
 	msgStatus, found := statusMapping[statusReport.StatusCode]
 	if !found {
-		return nil, fmt.Errorf("unknown status '%s', must be one of 001, 002, 003, 004, 005, 006, 007, 008, 009, 010, 011, 012, 014", statusReport.StatusCode)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel,
+			fmt.Errorf("unknown status '%d', must be one of 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14", statusReport.StatusCode))
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, statusReport.SmsID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, statusReport.MessageID, msgStatus)
 	err = h.Backend().WriteMsgStatus(ctx, status)
+	if err == courier.ErrMsgNotFound {
+		return []courier.Event{}, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -121,52 +100,36 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 }
 
 type clickatellIncomingMsg struct {
-	From      string `name:"from"`
-	Text      string `name:"text"`
-	SmsID     string `name:"moMsgId"`
-	Timestamp string `name:"timestamp"`
-	APIID     string `name:"api_id"`
-	Charset   string `name:"charset"`
+	MessageID  string `name:"messageId"`
+	FromNumber string `name:"fromNumber"`
+	ToNumber   string `name:"toNumber"`
+	Timestamp  int64  `name:"timestamp"`
+	Text       string `name:"text"`
+	Charset    string `name:"charset"`
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	ctIncomingMessage := &clickatellIncomingMsg{}
-	err := handlers.DecodeAndValidateQueryParams(ctIncomingMessage, r)
-
-	// if this is a post, also try to parse the form body
-	if r.Method == http.MethodPost {
-		err = handlers.DecodeAndValidateForm(ctIncomingMessage, r)
-	}
+	ctMO := &clickatellIncomingMsg{}
+	err := handlers.DecodeAndValidateJSON(ctMO, r)
 
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	if ctIncomingMessage.APIID != "" && ctIncomingMessage.APIID != channel.StringConfigForKey(courier.ConfigAPIID, "") {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid API ID for message delivery: %s", ctIncomingMessage.APIID))
+	if ctMO.FromNumber == "" || ctMO.MessageID == "" || ctMO.Text == "" || ctMO.Timestamp == 0 {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel,
+			fmt.Errorf("missing one of 'messageId', 'fromNumber', 'text' or 'timestamp' in request body"))
 	}
 
-	if ctIncomingMessage.From == "" || ctIncomingMessage.SmsID == "" || ctIncomingMessage.Text == "" || ctIncomingMessage.Timestamp == "" {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "missing one of 'from', 'text', 'moMsgId' or 'timestamp' in request parameters.")
-	}
+	date := time.Unix(0, ctMO.Timestamp*1000000)
 
-	dateString := ctIncomingMessage.Timestamp
+	text := ctMO.Text
+	if ctMO.Charset == "UTF-16BE" {
+		// unescape the JSON
+		text, _ = url.QueryUnescape(text)
 
-	date := time.Now()
-	if dateString != "" {
-		loc, _ := time.LoadLocation("Europe/Berlin")
-		date, err = time.ParseInLocation("2006-01-02 15:04:05", dateString, loc)
-		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, errors.New("invalid date format, must be YYYY-MM-DD HH:MM:SS"))
-		}
-	}
-
-	// create our URN
-	urn := urns.NewTelURNForCountry(ctIncomingMessage.From, channel.Country())
-
-	text := ctIncomingMessage.Text
-	if ctIncomingMessage.Charset == "UTF-16BE" {
+		// then decode from UTF16
 		textBytes := []byte{}
 		for _, textByte := range text {
 			textBytes = append(textBytes, byte(textByte))
@@ -174,13 +137,21 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		text, _ = decodeUTF16BE(textBytes)
 	}
 
-	if ctIncomingMessage.Charset == "ISO-8859-1" {
+	// clickatell URL encodes escapes ISO 8859 escape sequences
+	if ctMO.Charset == "ISO-8859-1" {
+		// unescape the JSON
+		text, _ = url.QueryUnescape(text)
+
+		// then decode from 8859
 		text = mime.BEncoding.Encode("ISO-8859-1", text)
 		text, _ = new(mime.WordDecoder).DecodeHeader(text)
 	}
 
+	// create our URN
+	urn := urns.NewTelURNForCountry(ctMO.FromNumber, channel.Country())
+
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text)).WithReceivedOn(date.UTC()).WithExternalID(ctIncomingMessage.SmsID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text)).WithReceivedOn(date.UTC()).WithExternalID(ctMO.MessageID)
 
 	// and write it
 	err = h.Backend().WriteMsg(ctx, msg)
@@ -191,9 +162,10 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
+// utility method to decode crazy clickatell 16 bit format
 func decodeUTF16BE(b []byte) (string, error) {
 	if len(b)%2 != 0 {
-		return "", fmt.Errorf("Must have even length byte slice")
+		return "", fmt.Errorf("byte slice must be of event length: %v", b)
 	}
 	u16s := make([]uint16, 1)
 	ret := &bytes.Buffer{}
@@ -211,70 +183,44 @@ func decodeUTF16BE(b []byte) (string, error) {
 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("no username set for CT channel")
-	}
-
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("no password set for CT channel")
-	}
-
-	apiID := msg.Channel().StringConfigForKey(courier.ConfigAPIID, "")
-	if apiID == "" {
-		return nil, fmt.Errorf("no api_id set for CT channel")
-	}
-
-	unicodeSwitch := "0"
-	text := courier.GetTextAndAttachments(msg)
-	if !gsm7.IsGSM7(text) {
-		replaced := gsm7.ReplaceNonGSM7Chars(text)
-		if gsm7.IsGSM7(replaced) {
-			text = replaced
-		} else {
-			unicodeSwitch = "1"
-		}
+	apiKey := msg.Channel().StringConfigForKey(courier.ConfigAPIKey, "")
+	if apiKey == "" {
+		return nil, fmt.Errorf("no api_key set for CT channel")
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(text, maxMsgLength)
+	parts := handlers.SplitMsg(courier.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
-			"api_id":   []string{apiID},
-			"user":     []string{username},
-			"password": []string{password},
-			"from":     []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
-			"concat":   []string{"3"},
-			"callback": []string{"7"},
-			"mo":       []string{"1"},
-			"unicode":  []string{unicodeSwitch},
-			"to":       []string{strings.TrimPrefix(msg.URN().Path(), "+")},
-			"text":     []string{part},
+			"apiKey":  []string{apiKey},
+			"from":    []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
+			"to":      []string{strings.TrimPrefix(msg.URN().Path(), "+")},
+			"content": []string{part},
 		}
 
-		encodedForm := form.Encode()
-		partSendURL := fmt.Sprintf("%s?%s", sendURL, encodedForm)
+		partSendURL, _ := url.Parse(sendURL)
+		partSendURL.RawQuery = form.Encode()
 
-		req, err := http.NewRequest(http.MethodGet, partSendURL, nil)
+		req, err := http.NewRequest(http.MethodGet, partSendURL.String(), nil)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Accept", "application/json")
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Send Error", err)
 		status.AddLog(log)
 		if err != nil {
-			log.WithError("Message Send Error", err)
 			return status, nil
 		}
 
-		status.SetStatus(courier.MsgWired)
-
-		matched := IDRegex.FindAllStringSubmatch(string([]byte(rr.Body)), -1)
-		if len(matched) > 0 && len(matched[0]) > 0 && matched[0][1] != "" {
-			status.SetExternalID(matched[0][1])
+		// try to read out our message id, if we can't then this was a failure
+		externalID, err := jsonparser.GetString(rr.Body, "messages", "[0]", "apiMessageId")
+		if err != nil {
+			log.WithError("Send Error", err)
+		} else {
+			status.SetStatus(courier.MsgWired)
+			status.SetExternalID(externalID)
 		}
-
 	}
 
 	return status, nil
