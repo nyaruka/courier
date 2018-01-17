@@ -106,6 +106,7 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, data strin
 
 	if data != "" {
 		req, err = http.NewRequest("POST", url, strings.NewReader(data))
+		require.Nil(tb, err)
 
 		// guess our content type
 		contentType := "application/x-www-form-urlencoded"
