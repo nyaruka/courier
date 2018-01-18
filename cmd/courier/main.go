@@ -28,6 +28,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/telegram"
 	_ "github.com/nyaruka/courier/handlers/twilio"
 	_ "github.com/nyaruka/courier/handlers/whatsapp"
+	_ "github.com/nyaruka/courier/handlers/zenvia"
 
 	// load available backends
 	_ "github.com/nyaruka/courier/backends/rapidpro"
