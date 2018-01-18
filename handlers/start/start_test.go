@@ -66,13 +66,13 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "<state>Accepted</state>",
 		Text: Sp("Hello World"), URN: Sp("tel:+250788123123"), Date: Tp(time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC))},
-	{Label: "Receive Valid Encoded", URL: receiveURL, Data: validReceiveEncoded, Status: 200, Response: "Message Accepted",
+	{Label: "Receive Valid Encoded", URL: receiveURL, Data: validReceiveEncoded, Status: 200, Response: "<state>Accepted</state>",
 		Text: Sp("Кохання"), URN: Sp("tel:+380501529999"), Date: Tp(time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC))},
-	{Label: "Receive Valid with empty Text", URL: receiveURL, Data: validReceiveEmptyText, Status: 200, Response: "Message Accepted",
+	{Label: "Receive Valid with empty Text", URL: receiveURL, Data: validReceiveEmptyText, Status: 200, Response: "<state>Accepted</state>",
 		Text: Sp(""), URN: Sp("tel:+250788123123")},
-	{Label: "Receive Valid missing body", URL: receiveURL, Data: validMissingBody, Status: 200, Response: "Message Accepted",
+	{Label: "Receive Valid missing body", URL: receiveURL, Data: validMissingBody, Status: 200, Response: "<state>Accepted</state>",
 		Text: Sp(""), URN: Sp("tel:+250788123123")},
 	{Label: "Receive missing Request ID", URL: receiveURL, Data: missingRequestID, Status: 400, Response: "Error"},
 	{Label: "Receive missing From", URL: receiveURL, Data: missingFrom, Status: 400, Response: "Error"},
