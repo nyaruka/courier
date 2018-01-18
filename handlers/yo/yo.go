@@ -24,15 +24,14 @@ var sendURL2 = "http://41.220.12.201:9100/sendsms"
 var sendURL3 = "http://164.40.148.210:9100/sendsms"
 
 func init() {
-	courier.RegisterHandler(NewHandler())
+	courier.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-// NewHandler returns a new Yo! handler
-func NewHandler() courier.ChannelHandler {
+func newHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("YO"), "YO!")}
 }
 

@@ -57,7 +57,7 @@ func TestSending(t *testing.T) {
 			courier.ConfigAPIKey: "API-KEY",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
 }
 
 var testChannels = []courier.Channel{
@@ -130,9 +130,9 @@ var testCases = []ChannelHandleTestCase{
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, NewHandler(), testCases)
+	RunChannelTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, NewHandler(), testCases)
+	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }

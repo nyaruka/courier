@@ -22,15 +22,14 @@ mobile=9779811781111&message=Msg
 var sendURL = "http://smail.smscentral.com.np/bp/ApiSms.php"
 
 func init() {
-	courier.RegisterHandler(NewHandler())
+	courier.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-// NewHandler returns a new Yo! handler
-func NewHandler() courier.ChannelHandler {
+func newHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("SC"), "SMS Central")}
 }
 

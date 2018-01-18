@@ -41,15 +41,14 @@ const (
 )
 
 func init() {
-	courier.RegisterHandler(NewHandler())
+	courier.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-// NewHandler returns a new FacebookHandler ready to be registered
-func NewHandler() courier.ChannelHandler {
+func newHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("FB"), "Facebook")}
 }
 

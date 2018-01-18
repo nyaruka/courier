@@ -38,11 +38,11 @@ var handleTestCases = []ChannelHandleTestCase{
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, NewHandler(), handleTestCases)
+	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, NewHandler(), handleTestCases)
+	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
 }
 
 // setSendURL takes care of setting the send_url to our test server host
@@ -96,5 +96,5 @@ var getSendTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	var getChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "YO", "2020", "US", map[string]interface{}{"username": "yo-username", "password": "yo-password"})
 
-	RunChannelSendTestCases(t, getChannel, NewHandler(), getSendTestCases)
+	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases)
 }

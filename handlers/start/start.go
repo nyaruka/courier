@@ -25,15 +25,14 @@ var maxMsgLength = 1600
 var sendURL = "http://bulk.startmobile.com.ua/clients.php"
 
 func init() {
-	courier.RegisterHandler(NewHandler())
+	courier.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-// NewHandler returns a new Zenvia handler
-func NewHandler() courier.ChannelHandler {
+func newHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("ST"), "Start Mobile")}
 }
 

@@ -39,11 +39,11 @@ var testCases = []ChannelHandleTestCase{
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, NewHandler(), testCases)
+	RunChannelTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, NewHandler(), testCases)
+	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
 // setSendURL takes care of setting the sendURL to call
@@ -103,6 +103,6 @@ func TestSending(t *testing.T) {
 			configIsShared:         true,
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
-	RunChannelSendTestCases(t, sharedChannel, NewHandler(), sharedSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
+	RunChannelSendTestCases(t, sharedChannel, newHandler(), sharedSendTestCases)
 }

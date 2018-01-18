@@ -44,14 +44,13 @@ type handler struct {
 	ignoreDeliveryReports bool
 }
 
-// NewHandler returns a new TwilioHandler ready to be registered
-func NewHandler(channelType string, name string) courier.ChannelHandler {
+func newHandler(channelType string, name string) courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType(channelType), name), false}
 }
 
 func init() {
-	courier.RegisterHandler(NewHandler("T", "Twilio"))
-	courier.RegisterHandler(NewHandler("TMS", "Twilio Messaging Service"))
+	courier.RegisterHandler(newHandler("T", "Twilio"))
+	courier.RegisterHandler(newHandler("TMS", "Twilio Messaging Service"))
 
 }
 

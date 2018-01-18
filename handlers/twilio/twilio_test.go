@@ -118,13 +118,13 @@ func addInvalidSignature(r *http.Request) {
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, NewHandler("T", "Twilio"), testCases)
-	RunChannelTestCases(t, tmsTestChannels, NewHandler("TMS", "Twilio Messaging Service"), tmsTestCases)
+	RunChannelTestCases(t, testChannels, newHandler("T", "Twilio"), testCases)
+	RunChannelTestCases(t, tmsTestChannels, newHandler("TMS", "Twilio Messaging Service"), tmsTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, NewHandler("T", "Twilio"), testCases)
-	RunChannelBenchmarks(b, tmsTestChannels, NewHandler("TMS", "Twilio Messaging Service"), tmsTestCases)
+	RunChannelBenchmarks(b, testChannels, newHandler("T", "Twilio"), testCases)
+	RunChannelBenchmarks(b, tmsTestChannels, newHandler("TMS", "Twilio Messaging Service"), tmsTestCases)
 }
 
 // setSendURL takes care of setting the send_url to our test server host
@@ -247,6 +247,6 @@ func TestSending(t *testing.T) {
 			configAccountSID:          "accountSID",
 			courier.ConfigAuthToken:   "authToken"})
 
-	RunChannelSendTestCases(t, defaultChannel, NewHandler("T", "Twilio"), defaultSendTestCases)
-	RunChannelSendTestCases(t, tmsDefaultChannel, NewHandler("TMS", "Twilio Messaging Service"), tmsDefaultSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler("T", "Twilio"), defaultSendTestCases)
+	RunChannelSendTestCases(t, tmsDefaultChannel, newHandler("TMS", "Twilio Messaging Service"), tmsDefaultSendTestCases)
 }
