@@ -98,7 +98,7 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 
 	// nexmo can return more than one message id when doing multipart, so ignore status updates which might be for one of those parts
 	if err == courier.ErrMsgNotFound {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "message not found, ignored")
+		return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
 	}
 
 	if err != nil {

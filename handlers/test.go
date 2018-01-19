@@ -51,7 +51,7 @@ type ChannelHandleTestCase struct {
 }
 
 // SendPrepFunc allows test cases to modify the channel, msg or server before a message is sent
-type SendPrepFunc func(*httptest.Server, courier.Channel, courier.Msg)
+type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, courier.Channel, courier.Msg)
 
 // ChannelSendTestCase defines the test values for a particular test case
 type ChannelSendTestCase struct {
@@ -106,6 +106,7 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, data strin
 
 	if data != "" {
 		req, err = http.NewRequest("POST", url, strings.NewReader(data))
+		require.Nil(tb, err)
 
 		// guess our content type
 		contentType := "application/x-www-form-urlencoded"
@@ -176,7 +177,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 			// call our prep function if we have one
 			if testCase.SendPrep != nil {
-				testCase.SendPrep(server, channel, msg)
+				testCase.SendPrep(server, handler, channel, msg)
 			}
 
 			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)

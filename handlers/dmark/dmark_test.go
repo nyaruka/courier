@@ -49,8 +49,8 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 // setSendURL takes care of setting the sendURL to call
-func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Msg) {
-	sendURL = server.URL
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+	sendURL = s.URL
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{

@@ -357,6 +357,7 @@ type mockMsg struct {
 	contactName  string
 	highPriority bool
 	quickReplies []string
+	responseToID MsgID
 
 	receivedOn *time.Time
 	sentOn     *time.Time
@@ -374,6 +375,7 @@ func (m *mockMsg) URN() urns.URN          { return m.urn }
 func (m *mockMsg) ContactName() string    { return m.contactName }
 func (m *mockMsg) HighPriority() bool     { return m.highPriority }
 func (m *mockMsg) QuickReplies() []string { return m.quickReplies }
+func (m *mockMsg) ResponseToID() MsgID    { return m.responseToID }
 
 func (m *mockMsg) ReceivedOn() *time.Time { return m.receivedOn }
 func (m *mockMsg) SentOn() *time.Time     { return m.sentOn }

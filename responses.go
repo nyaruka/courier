@@ -12,6 +12,8 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
+const statusMsgNotFoundDetail = "message not found, ignored"
+
 // WriteError writes a JSON response for the passed in error
 func WriteError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error {
 	errors := []interface{}{NewErrorData(err.Error())}
@@ -35,6 +37,12 @@ func WriteAndLogRequestError(ctx context.Context, w http.ResponseWriter, r *http
 func WriteAndLogRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, details string) error {
 	LogRequestIgnored(r, c, details)
 	return WriteDataResponse(ctx, w, http.StatusOK, "Ignored", []interface{}{NewInfoData(details)})
+}
+
+// WriteAndLogStatusMsgNotFound writes a JSON response for the passed in message and logs an info message
+func WriteAndLogStatusMsgNotFound(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel) error {
+	LogRequestIgnored(r, c, statusMsgNotFoundDetail)
+	return WriteDataResponse(ctx, w, http.StatusOK, "Ignored", []interface{}{NewInfoData(statusMsgNotFoundDetail)})
 }
 
 // WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it

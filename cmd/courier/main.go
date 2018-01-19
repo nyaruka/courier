@@ -14,17 +14,22 @@ import (
 	// load channel handler packages
 	_ "github.com/nyaruka/courier/handlers/africastalking"
 	_ "github.com/nyaruka/courier/handlers/blackmyna"
+	_ "github.com/nyaruka/courier/handlers/clickatell"
+	_ "github.com/nyaruka/courier/handlers/dart"
 	_ "github.com/nyaruka/courier/handlers/dmark"
 	_ "github.com/nyaruka/courier/handlers/external"
 	_ "github.com/nyaruka/courier/handlers/facebook"
+	_ "github.com/nyaruka/courier/handlers/hub9"
 	_ "github.com/nyaruka/courier/handlers/infobip"
 	_ "github.com/nyaruka/courier/handlers/kannel"
 	_ "github.com/nyaruka/courier/handlers/nexmo"
 	_ "github.com/nyaruka/courier/handlers/shaqodoon"
+	_ "github.com/nyaruka/courier/handlers/start"
 	_ "github.com/nyaruka/courier/handlers/telegram"
 	_ "github.com/nyaruka/courier/handlers/twilio"
 	_ "github.com/nyaruka/courier/handlers/viber"
 	_ "github.com/nyaruka/courier/handlers/whatsapp"
+	_ "github.com/nyaruka/courier/handlers/zenvia"
 
 	// load available backends
 	_ "github.com/nyaruka/courier/backends/rapidpro"

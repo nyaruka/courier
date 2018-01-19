@@ -129,6 +129,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	ts.Equal(msg.ExternalID(), "")
 	ts.Equal([]string{"Yes", "No"}, msg.QuickReplies())
+	ts.Equal(courier.NewMsgID(15), msg.ResponseToID())
 	ts.True(msg.HighPriority())
 
 	msgJSONNoQR := `{
@@ -151,7 +152,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"sent_on": null, 
 		"high_priority": true,
 		"channel_id": 11, 
-		"response_to_id": 15, 
+		"response_to_id": null, 
 		"external_id": null,
 		"metadata": null
 	}`
@@ -160,6 +161,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	err = json.Unmarshal([]byte(msgJSONNoQR), &msg)
 	ts.NoError(err)
 	ts.Equal([]string{}, msg.QuickReplies())
+	ts.Equal(courier.NilMsgID, msg.ResponseToID())
 }
 
 func (ts *BackendTestSuite) TestCheckMsgExists() {

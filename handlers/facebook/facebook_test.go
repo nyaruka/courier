@@ -408,3 +408,53 @@ func TestVerify(t *testing.T) {
 		t.Error("subscribe endpoint should have been called")
 	}
 }
+
+// setSendURL takes care of setting the send_url to our test server host
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+	facebookSendURL = s.URL
+}
+
+var defaultSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "facebook:12345",
+		Status: "W", ExternalID: "mid.133",
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
+		SendPrep:    setSendURL},
+	{Label: "Quick Reply",
+		Text: "Are you happy?", URN: "facebook:12345", QuickReplies: []string{"Yes", "No"},
+		Status: "W", ExternalID: "mid.133",
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Are you happy?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
+		SendPrep:    setSendURL},
+	{Label: "Long Message",
+		Text: "This is a long message which spans more than one part, what will actually be sent in the end if we exceed the max length?",
+		URN:  "facebook:12345", QuickReplies: []string{"Yes", "No"},
+		Status: "W", ExternalID: "mid.133",
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"we exceed the max length?"}}`,
+		SendPrep:    setSendURL},
+	{Label: "Send Photo",
+		URN: "facebook:12345", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Status: "W", ExternalID: "mid.133",
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
+		SendPrep:    setSendURL},
+	{Label: "ID Error",
+		Text: "ID Error", URN: "facebook:12345",
+		Status:       "E",
+		ResponseBody: `{ "is_error": true }`, ResponseStatus: 200,
+		SendPrep: setSendURL},
+	{Label: "Error",
+		Text: "Error", URN: "facebook:12345",
+		Status:       "E",
+		ResponseBody: `{ "is_error": true }`, ResponseStatus: 403,
+		SendPrep: setSendURL},
+}
+
+func TestSending(t *testing.T) {
+	// shorter max msg length for testing
+	maxMsgLength = 100
+	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FB", "2020", "US", map[string]interface{}{courier.ConfigAuthToken: "access_token"})
+	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
+}

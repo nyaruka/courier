@@ -1,7 +1,9 @@
 package facebook
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -13,13 +15,20 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-var facebookMessageURL = "https://graph.facebook.com/v2.6/me/messages"
+// Endpoints we hit
+var facebookSendURL = "https://graph.facebook.com/v2.6/me/messages"
 var facebookSubscribeURL = "https://graph.facebook.com/v2.6/me/subscribed_apps"
 var facebookGraphURL = "https://graph.facebook.com/v2.6/"
+
+// How long we want after the subscribe callback to register the page for events
 var facebookSubscribeTimeout = time.Second * 2
+
+// Facebook API says 640 is max for the body
+var maxMsgLength = 640
 
 // keys for extra in channel events
 const (
@@ -30,9 +39,6 @@ const (
 	titleKey      = "title"
 	payloadKey    = "payload"
 )
-
-// Facebook API says 640 is max for the body
-const maxLength = 640
 
 func init() {
 	courier.RegisterHandler(NewHandler())
@@ -63,19 +69,19 @@ func (h *handler) ReceiveVerify(ctx context.Context, channel courier.Channel, w 
 
 	// this isn't a subscribe verification, that's an error
 	if mode != "subscribe" {
-		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("unknown request"))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown request"))
 	}
 
 	// verify the token against our secret, if the same return the challenge FB sent us
 	secret := r.URL.Query().Get("hub.verify_token")
 	if secret != channel.StringConfigForKey(courier.ConfigSecret, "") {
-		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("token does not match secret"))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("token does not match secret"))
 	}
 
 	// make sure we have an auth token
 	authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
 	if authToken == "" {
-		return nil, courier.WriteError(ctx, w, r, fmt.Errorf("missing auth token for FB channel"))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing auth token for FB channel"))
 	}
 
 	// everything looks good, we will subscribe to this page's messages asynchronously
@@ -181,7 +187,7 @@ func (h *handler) Receive(ctx context.Context, channel courier.Channel, w http.R
 	mo := &moEnvelope{}
 	err := handlers.DecodeAndValidateJSON(mo, r)
 	if err != nil {
-		return nil, courier.WriteError(ctx, w, r, err)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// not a page object? ignore
@@ -222,7 +228,12 @@ func (h *handler) Receive(ctx context.Context, channel courier.Channel, w http.R
 		urn := urns.NewURNFromParts(urns.FacebookScheme, msg.Sender.ID, "")
 
 		if msg.OptIn != nil {
-			// this is an opt in, if we have a user_ref, use that as our URN
+			// this is an opt in, if we have a user_ref, use that as our URN (this is a checkbox plugin)
+			// TODO:
+			//    We need to deal with the case of them responding and remapping the user_ref in that case:
+			//    https://developers.facebook.com/docs/messenger-platform/discovery/checkbox-plugin
+			//    Right now that we even support this isn't documented and I don't think anybody uses it, so leaving that out.
+			//    (things will still work, we just will have dupe contacts, one with user_ref for the first contact, then with the real id when they reply)
 			if msg.OptIn.UserRef != "" {
 				urn = urns.NewURNFromParts(urns.FacebookScheme, urns.FacebookRefPrefix+msg.OptIn.UserRef, "")
 			}
@@ -333,7 +344,7 @@ func (h *handler) Receive(ctx context.Context, channel courier.Channel, w http.R
 
 				// we don't know about this message, just tell them we ignored it
 				if err == courier.ErrMsgNotFound {
-					data = append(data, courier.NewInfoData("unknown message, ignoring"))
+					data = append(data, courier.NewInfoData("message not found, ignored"))
 					continue
 				}
 
@@ -353,8 +364,143 @@ func (h *handler) Receive(ctx context.Context, channel courier.Channel, w http.R
 	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
 }
 
+// {
+//     "messaging_type": "<MESSAGING_TYPE>"
+//     "recipient":{
+//         "id":"<PSID>"
+//     },
+//     "message":{
+//	       "text":"hello, world!"
+//         "attachment":{
+//             "type":"image",
+//             "payload":{
+//                 "url":"http://www.messenger-rocks.com/image.jpg",
+//                 "is_reusable":true
+//             }
+//         }
+//     }
+// }
+type mtEnvelope struct {
+	MessagingType string `json:"messaging_type"`
+	Recipient     struct {
+		UserRef string `json:"user_ref,omitempty"`
+		ID      string `json:"id,omitempty"`
+	} `json:"recipient"`
+	Message struct {
+		Text         string         `json:"text,omitempty"`
+		QuickReplies []mtQuickReply `json:"quick_replies,omitempty"`
+		Attachment   *mtAttachment  `json:"attachment,omitempty"`
+	} `json:"message"`
+}
+
+type mtAttachment struct {
+	Type    string `json:"type"`
+	Payload struct {
+		URL        string `json:"url"`
+		IsReusable bool   `json:"is_reusable"`
+	} `json:"payload"`
+}
+
+type mtQuickReply struct {
+	Title       string `json:"title"`
+	Payload     string `json:"payload"`
+	ContentType string `json:"content_type"`
+}
+
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	return nil, fmt.Errorf("FB sending via Courier not yet implemented")
+	// can't do anything without an access token
+	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	if accessToken == "" {
+		return nil, fmt.Errorf("missing access token")
+	}
+
+	payload := mtEnvelope{}
+
+	// set our message type
+	if msg.ResponseToID().IsZero() {
+		payload.MessagingType = "NON_PROMOTIONAL_SUBSCRIPTION"
+	} else {
+		payload.MessagingType = "RESPONSE"
+	}
+
+	// build our recipient
+	if msg.URN().IsFacebookRef() {
+		payload.Recipient.UserRef = msg.URN().FacebookRef()
+	} else {
+		payload.Recipient.ID = msg.URN().Path()
+	}
+
+	sendURL, _ := url.Parse(facebookSendURL)
+	query := url.Values{}
+	query.Set("access_token", accessToken)
+	sendURL.RawQuery = query.Encode()
+
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+
+	msgParts := make([]string, 0)
+	if msg.Text() != "" {
+		msgParts = handlers.SplitMsg(msg.Text(), maxMsgLength)
+	}
+
+	// send each part and each attachment separately
+	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
+		if i < len(msgParts) {
+			// this is still a msg part
+			payload.Message.Text = msgParts[i]
+			payload.Message.Attachment = nil
+		} else {
+			// this is an attachment
+			payload.Message.Attachment = &mtAttachment{}
+			attType, attURL := courier.SplitAttachment(msg.Attachments()[i-len(msgParts)])
+			attType = strings.Split(attType, "/")[0]
+			payload.Message.Attachment.Type = attType
+			payload.Message.Attachment.Payload.URL = attURL
+			payload.Message.Attachment.Payload.IsReusable = true
+			payload.Message.Text = ""
+		}
+
+		// include any quick replies on the first piece we send
+		if i == 0 {
+			for _, qr := range msg.QuickReplies() {
+				payload.Message.QuickReplies = append(payload.Message.QuickReplies, mtQuickReply{qr, qr, "text"})
+			}
+		} else {
+			payload.Message.QuickReplies = nil
+		}
+
+		jsonBody, err := json.Marshal(payload)
+		if err != nil {
+			return status, err
+		}
+
+		req, err := http.NewRequest(http.MethodPost, sendURL.String(), bytes.NewReader(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		rr, err := utils.MakeHTTPRequest(req)
+
+		// record our status and log
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
+		if err != nil {
+			return status, nil
+		}
+
+		externalID, err := jsonparser.GetString(rr.Body, "message_id")
+		if err != nil {
+			log.WithError("Message Send Error", errors.Errorf("unable to get message_id from body"))
+			return status, nil
+		}
+
+		// if this is our first message, record the external id
+		if i == 0 {
+			status.SetExternalID(externalID)
+		}
+
+		// this was wired successfully
+		status.SetStatus(courier.MsgWired)
+	}
+
+	return status, nil
 }
 
 // ReceiveVerify handles Facebook's webhook verification callback
@@ -381,7 +527,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
 	rr, err := utils.MakeHTTPRequest(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
 	}
 
 	// read our first and last name

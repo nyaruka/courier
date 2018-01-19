@@ -113,7 +113,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// we had an error downloading media
 	if err != nil {
-		return nil, courier.WriteError(ctx, w, r, errors.WrapPrefix(err, "error retrieving media", 0))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, errors.WrapPrefix(err, "error retrieving media", 0))
 	}
 
 	// build our msg

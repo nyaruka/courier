@@ -69,7 +69,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		sender = yoMessage.From
 	}
 	if sender == "" {
-		return nil, courier.WriteError(ctx, w, r, errors.New("must have one of 'sender' or 'from' set"))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, errors.New("must have one of 'sender' or 'from' set"))
 	}
 
 	// if we have a date, parse it
@@ -82,7 +82,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	if dateString != "" {
 		date, err = time.Parse(time.RFC3339Nano, dateString)
 		if err != nil {
-			return nil, courier.WriteError(ctx, w, r, errors.New("invalid date format, must be RFC 3339"))
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, errors.New("invalid date format, must be RFC 3339"))
 		}
 	}
 
