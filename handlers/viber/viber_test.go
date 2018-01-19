@@ -14,7 +14,7 @@ import (
 )
 
 // setSend takes care of setting the sendURL to call
-func setSendURL(server *httptest.Server, channel courier.Channel, msg courier.Msg) {
+func setSendURL(server *httptest.Server, h courier.ChannelHandler, channel courier.Channel, msg courier.Msg) {
 	sendURL = server.URL
 }
 
