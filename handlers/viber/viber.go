@@ -257,7 +257,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// figure out whether we have a keyboard to send as well
 	qrs := msg.QuickReplies()
-	replies := ""
+	var replies *viberKeyboard
 
 	if len(qrs) > 0 {
 
@@ -265,16 +265,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		for i, qr := range qrs {
 			buttons[i].ActionType = "reply"
 			buttons[i].TextSize = "regular"
-			buttons[i].ActionBody = string(qr[:quickReplyTextSize])
-			buttons[i].Text = string(qr[:quickReplyTextSize])
+			buttons[i].ActionBody = string(qr[:])
+			buttons[i].Text = string(qr[:])
 		}
 
-		viberKeyboard := viberKeyboard{"keyboard", true, buttons}
-		replyBytes, err := json.Marshal(viberKeyboard)
-		if err != nil {
-			return nil, err
-		}
-		replies = string(replyBytes)
+		replies = &viberKeyboard{"keyboard", true, buttons}
 	}
 
 	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
@@ -375,7 +370,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		status.SetStatus(courier.MsgWired)
-		replies = ""
+		replies = nil
 	}
 	return status, nil
 }
@@ -390,7 +385,7 @@ type viberOutgoingMessage struct {
 	Media        string            `json:"media,omitempty"`
 	Size         int               `json:"size,omitempty"`
 	FileName     string            `json:"file_name,omitempty"`
-	Keyboard     string            `json:"keyboard,omitempty"`
+	Keyboard     *viberKeyboard    `json:"keyboard,omitempty"`
 }
 
 type viberKeyboard struct {
