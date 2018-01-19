@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -281,7 +280,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
 	for i, part := range parts {
 		viberMessageType := "text"
-		viberMsgSize := ""
+		viberMsgSize := -1
 		filename := ""
 		viberMediaURL := ""
 
@@ -339,12 +338,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			Keyboard:     replies,
 		}
 
-		if viberMsgSize != "" {
-			viberMsgSizeInt, err := strconv.Atoi(viberMsgSize)
-			if err != nil {
-				return nil, err
-			}
-			viberMsg.Size = viberMsgSizeInt
+		if viberMsgSize != -1 {
+			viberMsg.Size = viberMsgSize
 		}
 
 		requestBody := &bytes.Buffer{}
