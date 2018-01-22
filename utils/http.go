@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"strconv"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
@@ -16,14 +17,15 @@ type RequestResponseStatus string
 
 // RequestResponse represents both the outgoing request and response for a particular URL/method/body
 type RequestResponse struct {
-	Method     string
-	URL        string
-	Status     RequestResponseStatus
-	StatusCode int
-	Request    string
-	Response   string
-	Body       []byte
-	Elapsed    time.Duration
+	Method        string
+	URL           string
+	Status        RequestResponseStatus
+	StatusCode    int
+	Request       string
+	Response      string
+	Body          []byte
+	ContentLength int
+	Elapsed       time.Duration
 }
 
 const (
@@ -87,7 +89,7 @@ func MakeHTTPRequest(req *http.Request) (*RequestResponse, error) {
 
 // newRRFromResponse creates a new RequestResponse based on the passed in http request and error (when we received no response)
 func newRRFromRequestAndError(r *http.Request, requestTrace string, requestError error) (*RequestResponse, error) {
-	rr := RequestResponse{}
+	rr := RequestResponse{ContentLength: -1}
 	rr.Method = r.Method
 	rr.URL = r.URL.String()
 
@@ -101,10 +103,19 @@ func newRRFromRequestAndError(r *http.Request, requestTrace string, requestError
 // newRRFromResponse creates a new RequestResponse based on the passed in http Response
 func newRRFromResponse(method string, requestTrace string, r *http.Response) (*RequestResponse, error) {
 	var err error
-	rr := RequestResponse{}
+	rr := RequestResponse{ContentLength: -1}
 	rr.Method = method
 	rr.URL = r.Request.URL.String()
 	rr.StatusCode = r.StatusCode
+
+	// set our content length if we have its header
+
+	if r.Header.Get("Content-Length") != "" {
+		contentLength, err := strconv.Atoi(r.Header.Get("Content-Length"))
+		if err == nil {
+			rr.ContentLength = contentLength
+		}
+	}
 
 	// set our status based on our status code
 	if rr.StatusCode/100 == 2 {

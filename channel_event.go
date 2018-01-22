@@ -13,6 +13,7 @@ type ChannelEventType string
 const (
 	NewConversation ChannelEventType = "new_conversation"
 	Referral        ChannelEventType = "referral"
+	StopContact     ChannelEventType = "stop_contact"
 )
 
 //-----------------------------------------------------------------------------
