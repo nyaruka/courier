@@ -82,7 +82,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"10","keyboard":{"type":"keyboard","DefaultHeight":true,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular"},{"ActionType":"reply","ActionBody":"No","Text":"No","TextSize":"regular"}]}}`,
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":true,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular"},{"ActionType":"reply","ActionBody":"No","Text":"No","TextSize":"regular"}]}}`,
 		SendPrep:    setSendURL},
 	{Label: "Send Attachment",
 		Text: "My pic!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"image/jpeg:https://localhost/image.jpg"},
@@ -116,7 +116,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:    setSendURL},
 	{Label: "Got non-0 response",
 		Text: "Simple Message", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		Status: "F", ResponseStatus: 200,
+		Status: "E", ResponseStatus: 200,
 		ResponseBody: `{"status":3,"status_message":"InvalidToken"}`,
 		Headers: map[string]string{
 			"Content-Type": "application/json",
@@ -126,7 +126,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:    setSendURL},
 	{Label: "Got Invalid JSON response",
 		Text: "Simple Message", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		Status: "F", ResponseStatus: 200,
+		Status: "E", ResponseStatus: 200,
 		ResponseBody: `invalidJSON`,
 		Headers: map[string]string{
 			"Content-Type": "application/json",
@@ -147,8 +147,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 var invalidTokenSendTestCases = []ChannelSendTestCase{
-	{Label: "Invalid token",
-		Error: "invalid auth token config"},
+	{Label: "Invalid token", Error: "missing auth token in config"},
 }
 
 func TestSending(t *testing.T) {
@@ -163,8 +162,8 @@ func TestSending(t *testing.T) {
 	var invalidTokenChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		map[string]interface{}{},
 	)
-	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
-	RunChannelSendTestCases(t, invalidTokenChannel, NewHandler(), invalidTokenSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
+	RunChannelSendTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases)
 }
 
 var testChannels = []courier.Channel{
@@ -378,7 +377,7 @@ var testCases = []ChannelHandleTestCase{
 		PrepRequest: addValidSignature},
 	{Label: "Receive invalid Message Type", URL: receiveURL, Data: receiveInvalidMessageType, Status: 400, Response: "unknown message type",
 		PrepRequest: addValidSignature},
-	{Label: "Webhook validation", URL: receiveURL, Data: webhookCheck, Status: 200, Response: "webhook valid.", PrepRequest: addValidSignature},
+	{Label: "Webhook validation", URL: receiveURL, Data: webhookCheck, Status: 200, Response: "webhook valid", PrepRequest: addValidSignature},
 	{Label: "Failed Status Report", URL: receiveURL, Data: failedStatusReport, Status: 200, Response: `"status":"F"`, PrepRequest: addValidSignature},
 	{Label: "Delivered Status Report", URL: receiveURL, Data: deliveredStatusReport, Status: 200, Response: `"status":"D"`, PrepRequest: addValidSignature},
 	{Label: "Subcribe", URL: receiveURL, Data: validSubscribed, Status: 200, Response: "Accepted", PrepRequest: addValidSignature},
@@ -414,9 +413,9 @@ func addInvalidSignature(r *http.Request) {
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, NewHandler(), testCases)
+	RunChannelTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, NewHandler(), testCases)
+	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
