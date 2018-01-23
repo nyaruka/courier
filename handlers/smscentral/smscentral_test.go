@@ -28,11 +28,11 @@ var handleTestCases = []ChannelHandleTestCase{
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, NewHandler(), handleTestCases)
+	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, NewHandler(), handleTestCases)
+	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
 }
 
 // setSend takes care of setting the sendURL to call
@@ -75,5 +75,5 @@ func TestSending(t *testing.T) {
 			courier.ConfigUsername: "Username",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
 }

@@ -35,15 +35,14 @@ var sendURL = "https://rest.nexmo.com/sms/json"
 var throttledRE = regexp.MustCompile(`.*Throughput Rate Exceeded - please wait \[ (\d+) \] and retry.*`)
 
 func init() {
-	courier.RegisterHandler(NewHandler())
+	courier.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-// NewHandler returns a new Infobip handler
-func NewHandler() courier.ChannelHandler {
+func newHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("NX"), "Nexmo")}
 }
 

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -18,19 +17,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-var maxMsgLength = 150
+var maxMsgLength = 1152
 var sendURL = "https://api-rest.zenvia360.com.br/services"
 
 func init() {
-	courier.RegisterHandler(NewHandler())
+	courier.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-// NewHandler returns a new Zenvia handler
-func NewHandler() courier.ChannelHandler {
+func newHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("ZV"), "Zenvia")}
 }
 
@@ -55,13 +53,13 @@ func (h *handler) Initialize(s courier.Server) error {
 //         	"correlatedMessageSmsId": "hs765939061"
 //  	}
 // }
-type messageRequest struct {
+type moRequest struct {
 	CallbackMORequest struct {
-		ID         string `validate:"required" json:"id"`
-		From       string `validate:"required" json:"mobile"`
-		Text       string `validate:"required" json:"body"`
-		Date       string `validate:"required" json:"received"`
-		ExternalID string `validate:"required" json:"correlatedMessageSmsId"`
+		ID         string `json:"id"                      validate:"required" `
+		From       string `json:"mobile"                  validate:"required" `
+		Text       string `json:"body"`
+		Date       string `json:"received"                validate:"required" `
+		ExternalID string `json:"correlatedMessageSmsId"  validate:"required" `
 	} `json:"callbackMoRequest"`
 }
 
@@ -78,8 +76,8 @@ type messageRequest struct {
 // }
 type statusRequest struct {
 	CallbackMTRequest struct {
-		StatusCode string `validate:"required" json:"status"`
-		ID         string `validate:"required" json:"id"`
+		StatusCode string `json:"status" validate:"required"`
+		ID         string `json:"id"     validate:"required" `
 	}
 }
 
@@ -94,18 +92,16 @@ type statusRequest struct {
 //         "aggregateId": "1111"
 //     }
 // }
-type zvOutgoingMsg struct {
-	SendSMSRequest zvSendSMSRequest `json:"sendSmsRequest"`
-}
-
-type zvSendSMSRequest struct {
-	From           string `validate:"required" json:"from"`
-	To             string `validate:"required" json:"to"`
-	Schedule       string `validate:"required" json:"schedule"`
-	Msg            string `validate:"required" json:"msg"`
-	CallbackOption string `validate:"required" json:"callbackOption"`
-	ID             string `validate:"required" json:"id"`
-	AggregateID    string `validate:"required" json:"aggregateId"`
+type mtRequest struct {
+	SendSMSRequest struct {
+		From           string `json:"from"`
+		To             string `json:"to"`
+		Schedule       string `json:"schedule"`
+		Msg            string `json:"msg"`
+		CallbackOption string `json:"callbackOption"`
+		ID             string `json:"id"`
+		AggregateID    string `json:"aggregateId"`
+	} `json:"sendSmsRequest"`
 }
 
 var statusMapping = map[string]courier.MsgStatusValue{
@@ -125,7 +121,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
-	zvMsg := &messageRequest{}
+	zvMsg := &moRequest{}
 	err := handlers.DecodeAndValidateJSON(zvMsg, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
@@ -170,6 +166,10 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 	// write our status
 	status := h.Backend().NewMsgStatusForExternalID(channel, zvStatus.CallbackMTRequest.ID, msgStatus)
 	err = h.Backend().WriteMsgStatus(ctx, status)
+	if err == courier.ErrMsgNotFound {
+		return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -193,17 +193,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(courier.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
-		zvMsg := zvOutgoingMsg{
-			SendSMSRequest: zvSendSMSRequest{
-				From:           "Sender",
-				To:             strings.TrimLeft(msg.URN().Path(), "+"),
-				Schedule:       "",
-				Msg:            part,
-				ID:             msg.ID().String(),
-				CallbackOption: strconv.Itoa(1),
-				AggregateID:    "",
-			},
-		}
+		zvMsg := mtRequest{}
+		zvMsg.SendSMSRequest.From = "Sender"
+		zvMsg.SendSMSRequest.To = strings.TrimLeft(msg.URN().Path(), "+")
+		zvMsg.SendSMSRequest.Msg = part
+		zvMsg.SendSMSRequest.ID = msg.ID().String()
+		zvMsg.SendSMSRequest.CallbackOption = "1"
 
 		requestBody := new(bytes.Buffer)
 		json.NewEncoder(requestBody).Encode(zvMsg)
@@ -224,7 +219,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		// was this request successful?
-		responseMsgStatus, _ := jsonparser.GetString([]byte(rr.Body), "sendSmsResponse", "statusCode")
+		responseMsgStatus, _ := jsonparser.GetString(rr.Body, "sendSmsResponse", "statusCode")
 		msgStatus, found := statusMapping[responseMsgStatus]
 		if msgStatus == courier.MsgErrored || !found {
 			return status, errors.Errorf("received non-success response from Zenvia '%s'", responseMsgStatus)

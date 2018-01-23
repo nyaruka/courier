@@ -92,11 +92,11 @@ var testCases = []ChannelHandleTestCase{
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, NewHandler(), testCases)
+	RunChannelTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, NewHandler(), testCases)
+	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
 // setSendURL takes care of setting the base_url to our test server host
@@ -139,5 +139,5 @@ func TestSending(t *testing.T) {
 			"base_url": "https://foo.bar/",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
 }

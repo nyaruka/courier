@@ -346,7 +346,7 @@ func TestDescribe(t *testing.T) {
 	fbGraph := buildMockFBGraph(testCases)
 	defer fbGraph.Close()
 
-	handler := NewHandler().(courier.URNDescriber)
+	handler := newHandler().(courier.URNDescriber)
 	tcs := []struct {
 		urn      urns.URN
 		metadata map[string]string
@@ -361,14 +361,14 @@ func TestDescribe(t *testing.T) {
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, NewHandler(), testCases)
+	RunChannelTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
 	fbService := buildMockFBGraph(testCases)
 	defer fbService.Close()
 
-	RunChannelBenchmarks(b, testChannels, NewHandler(), testCases)
+	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
 func TestVerify(t *testing.T) {
@@ -393,7 +393,7 @@ func TestVerify(t *testing.T) {
 	facebookSubscribeURL = server.URL
 	facebookSubscribeTimeout = time.Millisecond
 
-	RunChannelTestCases(t, testChannels, NewHandler(), []ChannelHandleTestCase{
+	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
 		{Label: "Receive Message", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, Status: 200},
 		{Label: "Verify No Mode", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Status: 400, Response: "unknown request"},
 		{Label: "Verify No Secret", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?hub.mode=subscribe", Status: 400, Response: "token does not match secret"},
@@ -456,5 +456,5 @@ func TestSending(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FB", "2020", "US", map[string]interface{}{courier.ConfigAuthToken: "access_token"})
-	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
 }
