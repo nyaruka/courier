@@ -19,9 +19,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-var sendURL1 = "http://smgw1.yo.co.ug:9100/sendsms"
-var sendURL2 = "http://41.220.12.201:9100/sendsms"
-var sendURL3 = "http://164.40.148.210:9100/sendsms"
+var sendURLs = []string{
+	"http://smgw1.yo.co.ug:9100/sendsms",
+	"http://41.220.12.201:9100/sendsms",
+	"http://164.40.148.210:9100/sendsms",
+}
+
+var maxMsgLength = 1600
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -35,46 +39,40 @@ func newHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("YO"), "YO!")}
 }
 
-// Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, "GET", "receive", h.ReceiveMessage)
-	if err != nil {
-		return err
-	}
+	return s.AddHandlerRoute(h, http.MethodGet, "receive", h.ReceiveMessage)
+}
 
-	return nil
+type moMsg struct {
+	From   string `name:"from"`
+	Sender string `name:"sender"`
+	Text   string `name:"text"    validate:"required"`
+	Date   string `name:"date"`
+	Time   string `name:"time"`
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	yoMessage := &yoMessage{}
-	handlers.DecodeAndValidateQueryParams(yoMessage, r)
-
-	// if this is a post, also try to parse the form body
-	if r.Method == http.MethodPost {
-		handlers.DecodeAndValidateForm(yoMessage, r)
-	}
-
-	// validate whether our required fields are present
-	err := handlers.Validate(yoMessage)
+	msg := &moMsg{}
+	err := handlers.DecodeAndValidateQueryParams(msg, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// must have one of from or sender set, error if neither
-	sender := yoMessage.Sender
+	sender := msg.Sender
 	if sender == "" {
-		sender = yoMessage.From
+		sender = msg.From
 	}
 	if sender == "" {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, errors.New("must have one of 'sender' or 'from' set"))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, errors.New("must have one of 'sender' or 'from'"))
 	}
 
 	// if we have a date, parse it
-	dateString := yoMessage.Date
+	dateString := msg.Date
 	if dateString == "" {
-		dateString = yoMessage.Time
+		dateString = msg.Time
 	}
 
 	date := time.Now()
@@ -89,28 +87,19 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	urn := urns.NewTelURNForCountry(sender, channel.Country())
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, yoMessage.Text).WithReceivedOn(date)
+	dbMsg := h.Backend().NewIncomingMsg(channel, urn, msg.Text).WithReceivedOn(date)
 
 	// and write it
-	err = h.Backend().WriteMsg(ctx, msg)
+	err = h.Backend().WriteMsg(ctx, dbMsg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
-}
-
-type yoMessage struct {
-	From   string `name:"from"`
-	Sender string `name:"sender"`
-	Text   string `validate:"required" name:"text"`
-	Date   string `name:"date"`
-	Time   string `name:"time"`
+	return []courier.Event{dbMsg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{dbMsg})
 }
 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for YO channel")
@@ -121,76 +110,50 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no password set for YO channel")
 	}
 
-	// build our request
-	form := url.Values{
-		"origin":       []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
-		"sms_content":  []string{courier.GetTextAndAttachments(msg)},
-		"destinations": []string{strings.TrimPrefix(msg.URN().Path(), "+")},
-		"ybsacctno":    []string{username},
-		"password":     []string{password},
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	var err error
+
+	for _, part := range handlers.SplitMsg(courier.GetTextAndAttachments(msg), maxMsgLength) {
+		form := url.Values{
+			"origin":       []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
+			"sms_content":  []string{part},
+			"destinations": []string{strings.TrimPrefix(msg.URN().Path(), "+")},
+			"ybsacctno":    []string{username},
+			"password":     []string{password},
+		}
+
+		for _, sendURL := range sendURLs {
+			sendURL, _ := url.Parse(sendURL)
+			sendURL.RawQuery = form.Encode()
+
+			req, err := http.NewRequest(http.MethodGet, sendURL.String(), nil)
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			rr, err := utils.MakeHTTPRequest(req)
+			log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+			status.AddLog(log)
+
+			if err != nil {
+				continue
+			}
+
+			responseQS, _ := url.ParseQuery(string(rr.Body))
+
+			// check whether we were blacklisted
+			createMessage, _ := responseQS["ybs_autocreate_message"]
+			if len(createMessage) > 0 && strings.Contains(createMessage[0], "BLACKLISTED") {
+				status.SetStatus(courier.MsgFailed)
+				h.Backend().StopMsgContact(ctx, msg)
+				return status, nil
+			}
+
+			// finally check that we were sent
+			createStatus, _ := responseQS["ybs_autocreate_status"]
+			if len(createStatus) > 0 && createStatus[0] == "OK" {
+				status.SetStatus(courier.MsgWired)
+				return status, nil
+			}
+		}
 	}
 
-	var status courier.MsgStatus
-	encodedForm := form.Encode()
-	sendURLs := []string{sendURL1, sendURL2, sendURL3}
-
-	for _, sendURL := range sendURLs {
-		failed := false
-		sendURL := fmt.Sprintf("%s?%s", sendURL, encodedForm)
-
-		req, err := http.NewRequest(http.MethodGet, sendURL, nil)
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		rr, err := utils.MakeHTTPRequest(req)
-
-		if err != nil {
-			failed = true
-		}
-		// record our status and log
-		status = h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-
-		if err != nil {
-			return status, nil
-		}
-
-		responseQS, err := url.ParseQuery(string(rr.Body))
-
-		if err != nil {
-			failed = true
-		}
-
-		if !failed && rr.StatusCode != 200 && rr.StatusCode != 201 {
-			failed = true
-		}
-
-		ybsAutocreateStatus, ok := responseQS["ybs_autocreate_status"]
-		if !ok {
-			ybsAutocreateStatus = []string{""}
-		}
-
-		if !failed && ybsAutocreateStatus[0] != "OK" {
-			failed = true
-		}
-
-		ybsAutocreateMessage, ok := responseQS["ybs_autocreate_message"]
-
-		if !ok {
-			ybsAutocreateMessage = []string{""}
-		}
-
-		if failed && strings.Contains(ybsAutocreateMessage[0], "BLACKLISTED") {
-			status.SetStatus(courier.MsgFailed)
-			h.Backend().StopMsgContact(ctx, msg)
-			return status, nil
-		}
-
-		if !failed {
-			status.SetStatus(courier.MsgWired)
-			return status, nil
-		}
-
-	}
-
-	return status, errors.Errorf("received error from Yo! API")
+	return status, err
 }
