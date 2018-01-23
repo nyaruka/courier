@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -228,25 +229,25 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 
 	// read our body
 	body, err := ioutil.ReadAll(r.Body)
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-	expected, err := calculateSignature(authToken, body)
 	if err != nil {
 		return err
 	}
 
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	expected := calculateSignature(authToken, body)
+
 	// compare signatures in way that isn't sensitive to a timing attack
-	if !hmac.Equal(expected, []byte(actual)) {
-		return fmt.Errorf("invalid request signature")
+	if !hmac.Equal([]byte(expected), []byte(actual)) {
+		return fmt.Errorf("invalid request signature: %s", actual)
 	}
 
 	return nil
 }
 
-func calculateSignature(authToken string, contents []byte) ([]byte, error) {
+func calculateSignature(authToken string, contents []byte) string {
 	mac := hmac.New(sha256.New, []byte(authToken))
 	mac.Write(contents)
-	hash := mac.Sum(nil)
-	return hash, nil
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 type mtMsg struct {

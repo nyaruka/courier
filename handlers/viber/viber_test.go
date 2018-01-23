@@ -2,6 +2,7 @@ package viber
 
 import (
 	"bytes"
+	"crypto/hmac"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -404,8 +405,19 @@ var testCases = []ChannelHandleTestCase{
 func addValidSignature(r *http.Request) {
 	body, _ := ioutil.ReadAll(r.Body)
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-	sig, _ := calculateSignature("Token", body)
+	sig := calculateSignature("Token", body)
 	r.Header.Set(viberSignatureHeader, string(sig))
+}
+
+func TestSignature(t *testing.T) {
+	sig := calculateSignature(
+		"44b935abea139fd6-53fa53b32559c4a6-12dbd3d883b06835",
+		[]byte(`{"event":"unsubscribed","timestamp":1516678387902,"user_id":"KMMqtlNTDxIm/5bZhdQ5uA==","message_token":5136431130449316903}`),
+	)
+
+	if !hmac.Equal([]byte(sig), []byte("d84d8648b402a2737838fea4da41d903d1af1aed92466b1758828ad27e31a9f9")) {
+		t.Errorf("hex digest not equal: %s", sig)
+	}
 }
 
 func addInvalidSignature(r *http.Request) {
