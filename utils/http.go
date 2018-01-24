@@ -1,12 +1,12 @@
 package utils
 
 import (
-	"strconv"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -131,8 +131,9 @@ func newRRFromResponse(method string, requestTrace string, r *http.Response) (*R
 	contentType := r.Header.Get("Content-Type")
 	if strings.Contains(contentType, "text") ||
 		strings.Contains(contentType, "json") ||
-		strings.Contains(contentType, "utf") ||
 		strings.Contains(contentType, "javascript") ||
+		strings.Contains(contentType, "urlencoded") ||
+		strings.Contains(contentType, "utf") ||
 		strings.Contains(contentType, "xml") {
 
 		isText = true
