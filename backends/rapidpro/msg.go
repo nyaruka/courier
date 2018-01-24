@@ -63,7 +63,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg) error {
 	// if we have media, go download it to S3
 	for i, attachment := range m.Attachments_ {
 		if strings.HasPrefix(attachment, "http") {
-			url, err := downloadMediaToS3(b, channel, m.OrgID_, m.UUID_, attachment)
+			url, err := downloadMediaToS3(ctx, b, channel, m.OrgID_, m.UUID_, attachment)
 			if err != nil {
 				return err
 			}
@@ -183,14 +183,19 @@ func readMsgFromDB(b *backend, id courier.MsgID) (*DBMsg, error) {
 // Media download and classification
 //-----------------------------------------------------------------------------
 
-func downloadMediaToS3(b *backend, channel courier.Channel, orgID OrgID, msgUUID courier.MsgUUID, mediaURL string) (string, error) {
+func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel, orgID OrgID, msgUUID courier.MsgUUID, mediaURL string) (string, error) {
+
+	parsedURL, err := url.Parse(mediaURL)
+	if err != nil {
+		return "", err
+	}
 
 	var req *http.Request
 	handler := courier.GetHandler(channel.ChannelType())
 	if handler != nil {
 		mediaDownloadRequestBuilder, isMediaDownloadRequestBuilder := handler.(courier.MediaDownloadRequestBuilder)
 		if isMediaDownloadRequestBuilder {
-			req, err := mediaDownloadRequestBuilder.BuildDownloadMediaRequest(ctx, channel, mediaURL)
+			req, err := mediaDownloadRequestBuilder.BuildDownloadMediaRequest(ctx, channel, parsedURL.String())
 
 			// in the case of errors, we log the error but move onwards anyways
 			if err != nil {
@@ -200,11 +205,6 @@ func downloadMediaToS3(b *backend, channel courier.Channel, orgID OrgID, msgUUID
 	}
 
 	if req == nil {
-
-		parsedURL, err := url.Parse(mediaURL)
-		if err != nil {
-			return "", err
-		}
 
 		// first fetch our media
 		req, err := http.NewRequest("GET", mediaURL, nil)
