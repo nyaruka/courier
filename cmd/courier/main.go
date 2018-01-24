@@ -21,6 +21,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/facebook"
 	_ "github.com/nyaruka/courier/handlers/hub9"
 	_ "github.com/nyaruka/courier/handlers/infobip"
+	_ "github.com/nyaruka/courier/handlers/jiochat"
 	_ "github.com/nyaruka/courier/handlers/kannel"
 	_ "github.com/nyaruka/courier/handlers/nexmo"
 	_ "github.com/nyaruka/courier/handlers/shaqodoon"
