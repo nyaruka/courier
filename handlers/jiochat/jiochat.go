@@ -18,15 +18,14 @@ import (
 )
 
 func init() {
-	courier.RegisterHandler(NewHandler())
+	courier.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-// NewHandler returns a new Infobip handler
-func NewHandler() courier.ChannelHandler {
+func newHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
 }
 
@@ -51,34 +50,34 @@ func (h *handler) Initialize(s courier.Server) error {
 	return s.AddHandlerRoute(h, http.MethodPost, "rcv/event/follow", h.ReceiveMessage)
 }
 
-type jiochatVerifyRequest struct {
+type verifyRequest struct {
 	Signature string `name:"signature"`
 	Timestamp string `name:"timestamp"`
 	Nonce     string `name:"nonce"`
 	EchoStr   string `name:"echostr"`
 }
 
-// VerifyURL is our HTTP handler function for incoming messages
+// VerifyURL is our HTTP handler function for Jiochat config URL verification callbacks
 func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	jcVerify := &jiochatVerifyRequest{}
+	jcVerify := &verifyRequest{}
 	err := handlers.DecodeAndValidateQueryParams(jcVerify, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	stringSlice := []string{channel.StringConfigForKey(courier.ConfigSecret, ""), jcVerify.Timestamp, jcVerify.Nonce}
-	sort.Sort(sort.StringSlice(stringSlice))
+	dictOrder := []string{channel.StringConfigForKey(courier.ConfigSecret, ""), jcVerify.Timestamp, jcVerify.Nonce}
+	sort.Sort(sort.StringSlice(dictOrder))
 
-	value := strings.Join(stringSlice, "")
+	combinedParams := strings.Join(dictOrder, "")
 
-	hashObject := sha1.New()
-	hashObject.Write([]byte(value))
-	signatureCheck := hex.EncodeToString(hashObject.Sum(nil))
+	hash := sha1.New()
+	hash.Write([]byte(combinedParams))
+	encoded := hex.EncodeToString(hash.Sum(nil))
 
 	ResponseText := "unknown request"
 	StatusCode := 400
 
-	if signatureCheck == jcVerify.Signature {
+	if encoded == jcVerify.Signature {
 		ResponseText = jcVerify.EchoStr
 		StatusCode = 200
 	}
@@ -89,10 +88,10 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	return nil, err
 }
 
-type jiochatMsgRequest struct {
-	FromUsername string `json:"FromUserName"`
+type moMsg struct {
+	FromUsername string `json:"FromUserName"    validate:"required"`
+	MsgType      string `json:"MsgType"         validate:"required"`
 	CreateTime   int64  `json:"CreateTime"`
-	MsgType      string `json:"MsgType"`
 	MsgID        int64  `json:"MsgId"`
 	Event        string `json:"Event"`
 	Content      string `json:"Content"`
@@ -101,14 +100,14 @@ type jiochatMsgRequest struct {
 
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	jcRequest := &jiochatMsgRequest{}
+	jcRequest := &moMsg{}
 	err := handlers.DecodeAndValidateJSON(jcRequest, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	if jcRequest.FromUsername == "" || jcRequest.MsgType == "" || (jcRequest.MsgID == 0 && jcRequest.Event == "") {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing parameters, must have 'FromUserName', 'MsgType' and either 'MsgId' or 'Event'"))
+	if jcRequest.MsgID == 0 && jcRequest.Event == "" {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing parameters, must have either 'MsgId' or 'Event'"))
 	}
 
 	date := time.Unix(jcRequest.CreateTime, 0).UTC()
@@ -118,7 +117,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	if jcRequest.MsgType == "event" && jcRequest.Event == "subscribe" {
 
 		// build the channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.Follow, urn)
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn)
 
 		err := h.Backend().WriteChannelEvent(ctx, channelEvent)
 		if err != nil {
@@ -135,7 +134,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	// create our message
 	msg := h.Backend().NewIncomingMsg(channel, urn, jcRequest.Content).WithExternalID(fmt.Sprintf("%d", jcRequest.MsgID)).WithReceivedOn(date)
 	if jcRequest.MsgType == "image" || jcRequest.MsgType == "video" || jcRequest.MsgType == "voice" {
-		mediaURL := resolveFileID(jcRequest.MediaID)
+		mediaURL := resolveMediaID(jcRequest.MediaID)
 		msg.WithAttachment(mediaURL)
 	}
 
@@ -149,13 +148,10 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 
 var mediaDownloadURL = "https://channels.jiochat.com/media/download.action"
 
-func resolveFileID(mediaID string) string {
-	form := url.Values{
-		"media_id": []string{mediaID},
-	}
-	encodedForm := form.Encode()
-	mediaURL := fmt.Sprintf("%s?%s", mediaDownloadURL, encodedForm)
-	return mediaURL
+func resolveMediaID(mediaID string) string {
+	mediaURL, _ := url.Parse(mediaDownloadURL)
+	mediaURL.RawQuery = url.Values{"media_id": []string{mediaID}}.Encode()
+	return mediaURL.String()
 }
 
 func getAccessToken(channel courier.Channel) string {
@@ -178,10 +174,11 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	form := url.Values{
 		"openid": []string{path},
 	}
-	encodedForm := form.Encode()
-	userDetailsURL = fmt.Sprintf("%s?%s", userDetailsURL, encodedForm)
 
-	req, err := http.NewRequest(http.MethodGet, userDetailsURL, nil)
+	reqURL, _ := url.Parse(userDetailsURL)
+	reqURL.RawQuery = form.Encode()
+
+	req, err := http.NewRequest(http.MethodGet, reqURL.String(), nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 	if err != nil {
 		return nil, err

@@ -54,12 +54,21 @@ var (
 		"Event": "unsubscribe"
 	}`
 
-	missingParams = `
+	missingParamsRequired = `
 	{
 		"ToUsername": "12121212121212",
 		"CreateTime": 1454119029,
 		"MsgType": "text",
 		"MsgId": 123456,
+		"Content": "Simple Message"
+	}`
+
+	missingParams = `
+	{
+		"ToUsername": "12121212121212",
+		"FromUserName": "1234",
+		"CreateTime": 1454119029,
+		"MsgType": "text",
 		"Content": "Simple Message"
 	}`
 
@@ -131,7 +140,8 @@ var testCases = []ChannelHandleTestCase{
 		Text: Sp("Simple Message"), URN: Sp("jiochat:1234"), ExternalID: Sp("123456"),
 		Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 
-	{Label: "Missing params", URL: receiveURL, Data: missingParams, Status: 400, Response: "missing parameters, must have 'FromUserName'"},
+	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, Status: 400, Response: "Error:Field validation"},
+	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, Status: 400, Response: "missing parameters, must have either 'MsgId' or 'Event'"},
 
 	{Label: "Receive Image", URL: receiveURL, Data: imageMessage, Status: 200, Response: "Accepted",
 		Text: Sp(""), URN: Sp("jiochat:1234"), ExternalID: Sp("123456"),
@@ -139,7 +149,7 @@ var testCases = []ChannelHandleTestCase{
 		Date:       Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 
 	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, Status: 200, Response: "Event Accepted",
-		ChannelEvent: Sp(courier.Follow), URN: Sp("jiochat:1234")},
+		ChannelEvent: Sp(courier.NewConversation), URN: Sp("jiochat:1234")},
 
 	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, Status: 400, Response: "unknown event"},
 
@@ -151,11 +161,11 @@ var testCases = []ChannelHandleTestCase{
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, NewHandler(), testCases)
+	RunChannelTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, NewHandler(), testCases)
+	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
 // mocks the call to the Jiochat API
@@ -182,7 +192,7 @@ func TestDescribe(t *testing.T) {
 	JCAPI := buildMockJCAPI(testCases)
 	defer JCAPI.Close()
 
-	handler := NewHandler().(courier.URNDescriber)
+	handler := newHandler().(courier.URNDescriber)
 	tcs := []struct {
 		urn      urns.URN
 		metadata map[string]string

@@ -14,7 +14,6 @@ const (
 	NewConversation ChannelEventType = "new_conversation"
 	Referral        ChannelEventType = "referral"
 	StopContact     ChannelEventType = "stop_contact"
-	Follow	        ChannelEventType = "follow"
 )
 
 //-----------------------------------------------------------------------------
