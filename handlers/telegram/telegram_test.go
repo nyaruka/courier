@@ -548,14 +548,14 @@ func TestHandler(t *testing.T) {
 	telegramService := buildMockTelegramService(testCases)
 	defer telegramService.Close()
 
-	RunChannelTestCases(t, testChannels, NewHandler(), testCases)
+	RunChannelTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
 	telegramService := buildMockTelegramService(testCases)
 	defer telegramService.Close()
 
-	RunChannelBenchmarks(b, testChannels, NewHandler(), testCases)
+	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
 // setSendURL takes care of setting the send_url to our test server host
@@ -624,5 +624,5 @@ func TestSending(t *testing.T) {
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US",
 		map[string]interface{}{courier.ConfigAuthToken: "auth_token"})
 
-	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
 }

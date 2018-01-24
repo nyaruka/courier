@@ -207,8 +207,8 @@ func (w *Sender) sendMessage(msg Msg) {
 		}
 	}
 
-	// we allot 5 seconds to write our status to the db
-	writeCTX, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	// we allot 10 seconds to write our status to the db
+	writeCTX, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	err = backend.WriteMsgStatus(writeCTX, status)

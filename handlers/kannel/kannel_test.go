@@ -34,11 +34,11 @@ var handleTestCases = []ChannelHandleTestCase{
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, NewHandler(), handleTestCases)
+	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, NewHandler(), handleTestCases)
+	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
 }
 
 // setSendURL takes care of setting the send_url to our test server host
@@ -120,6 +120,6 @@ func TestSending(t *testing.T) {
 			"verify_ssl":   false,
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, NewHandler(), defaultSendTestCases)
-	RunChannelSendTestCases(t, nationalChannel, NewHandler(), nationalSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
+	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalSendTestCases)
 }

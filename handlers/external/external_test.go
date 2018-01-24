@@ -53,11 +53,11 @@ var handleTestCases = []ChannelHandleTestCase{
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, NewHandler(), handleTestCases)
+	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, NewHandler(), handleTestCases)
+	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
 }
 
 // setSendURL takes care of setting the send_url to our test server host
@@ -209,8 +209,8 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendMethod:  http.MethodPut,
 		})
 
-	RunChannelSendTestCases(t, getChannel, NewHandler(), getSendTestCases)
-	RunChannelSendTestCases(t, postChannel, NewHandler(), postSendTestCases)
-	RunChannelSendTestCases(t, jsonChannel, NewHandler(), jsonSendTestCases)
-	RunChannelSendTestCases(t, xmlChannel, NewHandler(), xmlSendTestCases)
+	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases)
+	RunChannelSendTestCases(t, postChannel, newHandler(), postSendTestCases)
+	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases)
+	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases)
 }
