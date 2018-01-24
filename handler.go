@@ -31,6 +31,11 @@ type URNDescriber interface {
 	DescribeURN(context.Context, Channel, urns.URN) (map[string]string, error)
 }
 
+// MediaDownloader is the interface handlers which can allow a custom way to download attachment media for messages should satisfy
+type MediaDownloadRequestBuilder interface {
+	BuildDownloadMediaRequest(context.Context, Channel, string) (http.Request, error)
+}
+
 // RegisterHandler adds a new handler for a channel type, this is called by individual handlers when they are initialized
 func RegisterHandler(handler ChannelHandler) {
 	registeredHandlers[handler.ChannelType()] = handler

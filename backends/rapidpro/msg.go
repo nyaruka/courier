@@ -58,10 +58,12 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg) error {
 		return nil
 	}
 
+	channel := m.Channel()
+
 	// if we have media, go download it to S3
 	for i, attachment := range m.Attachments_ {
 		if strings.HasPrefix(attachment, "http") {
-			url, err := downloadMediaToS3(b, m.OrgID_, m.UUID_, attachment)
+			url, err := downloadMediaToS3(b, channel, m.OrgID_, m.UUID_, attachment)
 			if err != nil {
 				return err
 			}
@@ -181,17 +183,37 @@ func readMsgFromDB(b *backend, id courier.MsgID) (*DBMsg, error) {
 // Media download and classification
 //-----------------------------------------------------------------------------
 
-func downloadMediaToS3(b *backend, orgID OrgID, msgUUID courier.MsgUUID, mediaURL string) (string, error) {
-	parsedURL, err := url.Parse(mediaURL)
-	if err != nil {
-		return "", err
+func downloadMediaToS3(b *backend, channel courier.Channel, orgID OrgID, msgUUID courier.MsgUUID, mediaURL string) (string, error) {
+
+	var req *http.Request
+	handler := courier.GetHandler(channel.ChannelType())
+	if handler != nil {
+		mediaDownloadRequestBuilder, isMediaDownloadRequestBuilder := handler.(courier.MediaDownloadRequestBuilder)
+		if isMediaDownloadRequestBuilder {
+			req, err := mediaDownloadRequestBuilder.BuildDownloadMediaRequest(ctx, channel, mediaURL)
+
+			// in the case of errors, we log the error but move onwards anyways
+			if err != nil {
+				logrus.WithField("channel_uuid", channel.UUID()).WithField("channel_type", channel.ChannelType()).WithField("media_url", mediaURL).WithError(err).Error("unable to build media download request")
+			}
+		}
 	}
 
-	// first fetch our media
-	req, err := http.NewRequest("GET", mediaURL, nil)
-	if err != nil {
-		return "", err
+	if req == nil {
+
+		parsedURL, err := url.Parse(mediaURL)
+		if err != nil {
+			return "", err
+		}
+
+		// first fetch our media
+		req, err := http.NewRequest("GET", mediaURL, nil)
+		if err != nil {
+			return "", err
+		}
+
 	}
+
 	resp, err := utils.GetHTTPClient().Do(req)
 	if err != nil {
 		return "", err

@@ -192,3 +192,22 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 
 	return map[string]string{"name": nickname}, nil
 }
+
+// BuildDownloadMediaRequest download media for message attachment
+func (h *handler) BuildDownloadMediaRequest(ctx context.Context, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+	parsedURL, err := url.Parse(attachmentURL)
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken := getAccessToken(channel)
+
+	// first fetch our media
+	req, err := http.NewRequest("GET", parsedURL.String(), nil)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
