@@ -195,7 +195,7 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 	if handler != nil {
 		mediaDownloadRequestBuilder, isMediaDownloadRequestBuilder := handler.(courier.MediaDownloadRequestBuilder)
 		if isMediaDownloadRequestBuilder {
-			req, err := mediaDownloadRequestBuilder.BuildDownloadMediaRequest(ctx, channel, parsedURL.String())
+			req, err = mediaDownloadRequestBuilder.BuildDownloadMediaRequest(ctx, channel, parsedURL.String())
 
 			// in the case of errors, we log the error but move onwards anyways
 			if err != nil {
@@ -207,7 +207,7 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 	if req == nil {
 
 		// first fetch our media
-		req, err := http.NewRequest("GET", mediaURL, nil)
+		req, err = http.NewRequest("GET", mediaURL, nil)
 		if err != nil {
 			return "", err
 		}
