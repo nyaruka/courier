@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/buger/jsonparser"
-	"github.com/garyburd/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
@@ -155,32 +154,8 @@ func resolveMediaID(mediaID string) string {
 	return mediaURL.String()
 }
 
-var luaAccessToken = redis.NewScript(2, `-- KEYS: [LockKey, CacheKey]
-	-- Do we have the lock for the refresh token happening?
-	local lock
-
-	-- Wait until the lock is released
-	repeat
-		lock = redis.call("get", KEYS[1])
-	until (not lock)
-
-	-- Get the current access token
-	local accessToken = redis.call("get", KEYS[2])
-
-	-- Return the access token
-	return accessToken
-`)
-
-func (h *handler) getAccessToken(channel courier.Channel) string {
-	rc := h.Backend().RedisPool().Get()
-	defer rc.Close()
-
-	lockName := fmt.Sprintf("jiochat_channel_access_token:refresh-lock:%s", channel.UUID().String())
-	cacheKey := fmt.Sprintf("jiochat_channel_access_token:%s", channel.UUID().String())
-
-	accessToken, _ := redis.String(luaAccessToken.Do(rc, lockName, cacheKey))
-
-	return accessToken
+func getAccessToken(channel courier.Channel) string {
+	return ""
 }
 
 // SendMsg sends the passed in message, returning any error
@@ -192,7 +167,7 @@ var userDetailsURL = "https://channels.jiochat.com/user/info.action"
 
 // DescribeURN handles Jiochat contact details
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
-	accessToken := h.getAccessToken(channel)
+	accessToken := getAccessToken(channel)
 
 	_, path, _ := urn.ToParts()
 
@@ -225,7 +200,7 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, channel courier
 		return nil, err
 	}
 
-	accessToken := h.getAccessToken(channel)
+	accessToken := getAccessToken(channel)
 
 	// first fetch our media
 	req, err := http.NewRequest("GET", parsedURL.String(), nil)

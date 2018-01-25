@@ -53,11 +53,6 @@ func (b *backend) GetChannel(ctx context.Context, ct courier.ChannelType, uuid c
 	return getChannel(timeout, b.db, ct, uuid)
 }
 
-// RedisPool returns the redisPool for this backend
-func (b *backend) RedisPool() *redis.Pool {
-	return b.redisPool
-}
-
 // NewIncomingMsg creates a new message from the given params
 func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
 	// remove any control characters

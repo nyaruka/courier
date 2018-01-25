@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/garyburd/redigo/redis"
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/gocommon/urns"
 )
@@ -72,9 +71,6 @@ type Backend interface {
 
 	// Status returns a string describing the current status, this can detail queue sizes or other attributes
 	Status() string
-
-	// RedisPool returns the redisPool for this backend
-	RedisPool() *redis.Pool
 }
 
 // NewBackend creates the type of backend passed in
