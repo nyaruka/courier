@@ -182,7 +182,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		rr := &utils.RequestResponse{}
+		var rr *utils.RequestResponse
 		var requestErr error
 		for i := 0; i < 3; i++ {
 			rr, requestErr = utils.MakeHTTPRequest(req)
