@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/garyburd/redigo/redis"
 	"sync"
 
 	"time"
@@ -242,11 +241,6 @@ func (mb *MockBackend) Health() string {
 // Status returns a string describing the status of the service, queue size etc..
 func (mb *MockBackend) Status() string {
 	return ""
-}
-
-// RedisPool returns the redisPool for this backend
-func (mb *MockBackend) RedisPool() *redis.Pool {
-	return nil
 }
 
 func buildMockBackend(config *config.Courier) Backend {
