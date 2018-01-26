@@ -122,7 +122,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	form := url.Values{
 		"address":       []string{msg.URN().Path()},
 		"senderaddress": []string{msg.Channel().Address()},
-		"message":       []string{courier.GetTextAndAttachments(msg)},
+		"message":       []string{handlers.GetTextAndAttachments(msg)},
 	}
 
 	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))

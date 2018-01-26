@@ -138,7 +138,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		"username": []string{username},
 		"password": []string{password},
 		"from":     []string{msg.Channel().Address()},
-		"text":     []string{courier.GetTextAndAttachments(msg)},
+		"text":     []string{handlers.GetTextAndAttachments(msg)},
 		"to":       []string{msg.URN().Path()},
 		"dlr-url":  []string{dlrURL},
 		"dlr-mask": []string{"31"},
@@ -162,7 +162,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// if we are smart, first try to convert to GSM7 chars
 	if encoding == encodingSmart {
-		replaced := gsm7.ReplaceSubstitutions(courier.GetTextAndAttachments(msg))
+		replaced := gsm7.ReplaceSubstitutions(handlers.GetTextAndAttachments(msg))
 		if gsm7.IsValid(replaced) {
 			form["text"] = []string{replaced}
 		} else {

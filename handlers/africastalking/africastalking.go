@@ -137,7 +137,7 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 	form := url.Values{
 		"username": []string{username},
 		"to":       []string{msg.URN().Path()},
-		"message":  []string{courier.GetTextAndAttachments(msg)},
+		"message":  []string{handlers.GetTextAndAttachments(msg)},
 	}
 
 	// if this isn't shared, include our from
