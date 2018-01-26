@@ -8,6 +8,7 @@ import (
 
 	"time"
 
+	"github.com/garyburd/redigo/redis"
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/gocommon/urns"
@@ -31,13 +32,26 @@ type MockBackend struct {
 
 	stoppedMsgContacts []Msg
 	sentMsgs           map[MsgID]bool
+	redisPool          *redis.Pool
 }
 
 // NewMockBackend returns a new mock backend suitable for testing
 func NewMockBackend() *MockBackend {
+	redisPool := &redis.Pool{
+		Wait:        true,
+		MaxActive:   1,
+		MaxIdle:     1,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			conn, _ := redis.Dial("tcp", fmt.Sprintf("%s", "redis://localhost:6379/0"))
+			return conn, nil
+		},
+	}
+
 	return &MockBackend{
-		channels: make(map[ChannelUUID]Channel),
-		sentMsgs: make(map[MsgID]bool),
+		channels:  make(map[ChannelUUID]Channel),
+		sentMsgs:  make(map[MsgID]bool),
+		redisPool: redisPool,
 	}
 }
 
@@ -241,6 +255,11 @@ func (mb *MockBackend) Health() string {
 // Status returns a string describing the status of the service, queue size etc..
 func (mb *MockBackend) Status() string {
 	return ""
+}
+
+// RedisPool returns the redisPool for this backend
+func (mb *MockBackend) RedisPool() *redis.Pool {
+	return mb.redisPool
 }
 
 func buildMockBackend(config *config.Courier) Backend {
