@@ -219,7 +219,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// send each attachment
 	for _, attachment := range msg.Attachments() {
-		mediaType, mediaURL := courier.SplitAttachment(attachment)
+		mediaType, mediaURL := handlers.SplitAttachment(attachment)
 		switch strings.Split(mediaType, "/")[0] {
 		case "image":
 			form := url.Values{

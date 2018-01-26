@@ -205,7 +205,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 						MessageID: msg.ID().String(),
 					},
 				},
-				Text:               courier.GetTextAndAttachments(msg),
+				Text:               handlers.GetTextAndAttachments(msg),
 				NotifyContentType:  "application/json",
 				IntermediateReport: true,
 				NotifyURL:          statusURL,

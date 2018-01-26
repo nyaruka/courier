@@ -1,10 +1,8 @@
 package courier
 
 import (
-	"bytes"
 	"errors"
 	"strconv"
-	"strings"
 	"time"
 
 	null "gopkg.in/guregu/null.v3"
@@ -87,24 +85,4 @@ type Msg interface {
 	WithAttachment(url string) Msg
 
 	EventID() int64
-}
-
-// GetTextAndAttachments returns both the text of our message as well as any attachments, newline delimited
-func GetTextAndAttachments(m Msg) string {
-	buf := bytes.NewBuffer([]byte(m.Text()))
-	for _, a := range m.Attachments() {
-		_, url := SplitAttachment(a)
-		buf.WriteString("\n")
-		buf.WriteString(url)
-	}
-	return buf.String()
-}
-
-// SplitAttachment takes an attachment string and returns the media type and URL for the attachment
-func SplitAttachment(attachment string) (string, string) {
-	parts := strings.SplitN(attachment, ":", 2)
-	if len(parts) < 2 {
-		return "", parts[0]
-	}
-	return parts[0], parts[1]
 }

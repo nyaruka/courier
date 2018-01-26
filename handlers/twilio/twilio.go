@@ -212,7 +212,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		// add any media URL to the first part
 		if len(msg.Attachments()) > 0 && i == 0 {
-			_, mediaURL := courier.SplitAttachment(msg.Attachments()[0])
+			_, mediaURL := handlers.SplitAttachment(msg.Attachments()[0])
 			form["MediaUrl"] = []string{mediaURL}
 		}
 
