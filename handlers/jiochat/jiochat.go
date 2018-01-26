@@ -1,9 +1,11 @@
 package jiochat
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/buger/jsonparser"
 	"github.com/garyburd/redigo/redis"
@@ -17,6 +19,9 @@ import (
 	"strings"
 	"time"
 )
+
+const configJiochatAppID = "jiochat_app_id"
+const configJiochatAppSecret = "jiochat_app_secret"
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -66,7 +71,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	dictOrder := []string{channel.StringConfigForKey(courier.ConfigSecret, ""), jcVerify.Timestamp, jcVerify.Nonce}
+	dictOrder := []string{channel.StringConfigForKey(configJiochatAppSecret, ""), jcVerify.Timestamp, jcVerify.Nonce}
 	sort.Sort(sort.StringSlice(dictOrder))
 
 	combinedParams := strings.Join(dictOrder, "")
@@ -81,6 +86,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	if encoded == jcVerify.Signature {
 		ResponseText = jcVerify.EchoStr
 		StatusCode = 200
+		go h.fetchAccessToken(channel)
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -153,6 +159,46 @@ func resolveMediaID(mediaID string) string {
 	mediaURL, _ := url.Parse(mediaDownloadURL)
 	mediaURL.RawQuery = url.Values{"media_id": []string{mediaID}}.Encode()
 	return mediaURL.String()
+}
+
+var refreshTokenURL = "https://channels.jiochat.com/auth/token.action"
+
+type refreshTokenData struct {
+	GrantType    string `json:"grant_type"`
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+}
+
+func (h *handler) fetchAccessToken(channel courier.Channel) error {
+	tokenURL, _ := url.Parse(refreshTokenURL)
+
+	refreshTokenData := &refreshTokenData{
+		GrantType:    "client_credentials",
+		ClientID:     channel.StringConfigForKey(configJiochatAppID, ""),
+		ClientSecret: channel.StringConfigForKey(configJiochatAppSecret, ""),
+	}
+
+	jsonBody, err := json.Marshal(refreshTokenData)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, tokenURL.String(), bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	rr, err := utils.MakeHTTPRequest(req)
+
+	accessToken, err := jsonparser.GetString([]byte(rr.Body), "access_token")
+	if err != nil {
+		return err
+	}
+
+	rc := h.Backend().RedisPool().Get()
+	defer rc.Close()
+	cacheKey := fmt.Sprintf("jiochat_channel_access_token:%s", channel.UUID().String())
+
+	_, err = rc.Do("set", cacheKey, accessToken, 7200)
+	return err
 }
 
 func (h *handler) getAccessToken(channel courier.Channel) string {
