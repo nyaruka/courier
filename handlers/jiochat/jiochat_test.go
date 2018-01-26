@@ -96,9 +96,6 @@ func addValidSignature(r *http.Request) {
 	hashObject.Write([]byte(value))
 	signatureCheck := hex.EncodeToString(hashObject.Sum(nil))
 
-	fmt.Println(signatureCheck)
-	fmt.Println(r.URL)
-
 	query := url.Values{}
 	query.Set("signature", signatureCheck)
 	query.Set("timestamp", timestamp)
@@ -122,9 +119,6 @@ func addInvalidSignature(r *http.Request) {
 	hashObject := sha1.New()
 	hashObject.Write([]byte(value))
 	signatureCheck := hex.EncodeToString(hashObject.Sum(nil))
-
-	fmt.Println(signatureCheck)
-	fmt.Println(r.URL)
 
 	query := url.Values{}
 	query.Set("signature", signatureCheck)
