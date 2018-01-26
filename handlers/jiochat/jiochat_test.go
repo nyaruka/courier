@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
-	"fmt"
 	"github.com/nyaruka/gocommon/urns"
 	"net/http"
 	"net/http/httptest"
