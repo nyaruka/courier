@@ -161,7 +161,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	text := courier.GetTextAndAttachments(msg)
 
 	textType := "text"
-	if !gsm7.IsGSM7(text) {
+	if !gsm7.IsValid(text) {
 		textType = "unicode"
 	}
 

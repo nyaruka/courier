@@ -45,11 +45,11 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type moMsg struct {
-	From   string `name:"from"`
-	Sender string `name:"sender"`
-	Text   string `name:"text"    validate:"required"`
-	Date   string `name:"date"`
-	Time   string `name:"time"`
+	From    string `name:"from"`
+	Sender  string `name:"sender"`
+	Message string `name:"message"`
+	Date    string `name:"date"`
+	Time    string `name:"time"`
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
@@ -87,7 +87,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	urn := urns.NewTelURNForCountry(sender, channel.Country())
 
 	// build our msg
-	dbMsg := h.Backend().NewIncomingMsg(channel, urn, msg.Text).WithReceivedOn(date)
+	dbMsg := h.Backend().NewIncomingMsg(channel, urn, msg.Message).WithReceivedOn(date)
 
 	// and write it
 	err = h.Backend().WriteMsg(ctx, dbMsg)

@@ -21,6 +21,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/facebook"
 	_ "github.com/nyaruka/courier/handlers/hub9"
 	_ "github.com/nyaruka/courier/handlers/infobip"
+	_ "github.com/nyaruka/courier/handlers/jasmin"
 	_ "github.com/nyaruka/courier/handlers/kannel"
 	_ "github.com/nyaruka/courier/handlers/nexmo"
 	_ "github.com/nyaruka/courier/handlers/shaqodoon"
@@ -29,6 +30,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/twilio"
 	_ "github.com/nyaruka/courier/handlers/viber"
 	_ "github.com/nyaruka/courier/handlers/whatsapp"
+	_ "github.com/nyaruka/courier/handlers/yo"
 	_ "github.com/nyaruka/courier/handlers/zenvia"
 
 	// load available backends

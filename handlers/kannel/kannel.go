@@ -39,12 +39,12 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
 
-	return s.AddHandlerRoute(h, "GET", "status", h.StatusMessage)
+	return s.AddHandlerRoute(h, http.MethodGet, "status", h.StatusMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
@@ -162,8 +162,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// if we are smart, first try to convert to GSM7 chars
 	if encoding == encodingSmart {
-		replaced := gsm7.ReplaceNonGSM7Chars(courier.GetTextAndAttachments(msg))
-		if gsm7.IsGSM7(replaced) {
+		replaced := gsm7.ReplaceSubstitutions(courier.GetTextAndAttachments(msg))
+		if gsm7.IsValid(replaced) {
 			form["text"] = []string{replaced}
 		} else {
 			encoding = encodingUnicode
