@@ -4,7 +4,11 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
+	"github.com/nyaruka/courier/config"
+	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -181,11 +185,26 @@ func buildMockJCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 	return server
 }
 
+func newServer(backend courier.Backend) courier.Server {
+	// for benchmarks, log to null
+	logger := logrus.New()
+	logger.Out = ioutil.Discard
+	logrus.SetOutput(ioutil.Discard)
+	config := config.NewTest()
+	config.DB = "postgres://courier@localhost/courier_test?sslmode=disable"
+	config.Redis = "redis://localhost:6379/0"
+	return courier.NewServerWithLogger(config, backend, logger)
+}
+
 func TestDescribe(t *testing.T) {
 	JCAPI := buildMockJCAPI(testCases)
 	defer JCAPI.Close()
 
-	handler := newHandler().(courier.URNDescriber)
+	mb := courier.NewMockBackend()
+	s := newServer(mb)
+	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
+	handler.Initialize(s)
+
 	tcs := []struct {
 		urn      urns.URN
 		metadata map[string]string

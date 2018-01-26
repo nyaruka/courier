@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 
 	"time"
@@ -38,14 +39,25 @@ type MockBackend struct {
 // NewMockBackend returns a new mock backend suitable for testing
 func NewMockBackend() *MockBackend {
 	redisPool := &redis.Pool{
-		Wait:        true,
-		MaxActive:   1,
-		MaxIdle:     1,
-		IdleTimeout: 240 * time.Second,
+		Wait:        true,              // makes callers wait for a connection
+		MaxActive:   5,                 // only open this many concurrent connections at once
+		MaxIdle:     2,                 // only keep up to 2 idle
+		IdleTimeout: 240 * time.Second, // how long to wait before reaping a connection
 		Dial: func() (redis.Conn, error) {
-			conn, _ := redis.Dial("tcp", fmt.Sprintf("%s", "redis://localhost:6379/0"))
-			return conn, nil
+			conn, err := redis.Dial("tcp", "localhost:6379")
+			if err != nil {
+				return nil, err
+			}
+			_, err = conn.Do("SELECT", 0)
+			return conn, err
 		},
+	}
+	conn := redisPool.Get()
+	defer conn.Close()
+
+	_, err := conn.Do("FLUSHDB")
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	return &MockBackend{

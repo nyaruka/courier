@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/buger/jsonparser"
+	"github.com/garyburd/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
@@ -154,8 +155,12 @@ func resolveMediaID(mediaID string) string {
 	return mediaURL.String()
 }
 
-func getAccessToken(channel courier.Channel) string {
-	return ""
+func (h *handler) getAccessToken(channel courier.Channel) string {
+	rc := h.Backend().RedisPool().Get()
+	defer rc.Close()
+	cacheKey := fmt.Sprintf("jiochat_channel_access_token:%s", channel.UUID().String())
+	accessToken, _ := redis.String(rc.Do("GET", cacheKey))
+	return accessToken
 }
 
 // SendMsg sends the passed in message, returning any error
@@ -167,7 +172,7 @@ var userDetailsURL = "https://channels.jiochat.com/user/info.action"
 
 // DescribeURN handles Jiochat contact details
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
-	accessToken := getAccessToken(channel)
+	accessToken := h.getAccessToken(channel)
 
 	_, path, _ := urn.ToParts()
 
@@ -194,13 +199,13 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 }
 
 // BuildDownloadMediaRequest download media for message attachment
-func (h *handler) BuildDownloadMediaRequest(ctx context.Context, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
 	parsedURL, err := url.Parse(attachmentURL)
 	if err != nil {
 		return nil, err
 	}
 
-	accessToken := getAccessToken(channel)
+	accessToken := h.getAccessToken(channel)
 
 	// first fetch our media
 	req, err := http.NewRequest("GET", parsedURL.String(), nil)
