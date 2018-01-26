@@ -1,4 +1,4 @@
-package kannel
+package jasmin
 
 import (
 	"net/http/httptest"
@@ -88,7 +88,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
+	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JS", "2020", "US",
 		map[string]interface{}{
 			"password": "Password",
 			"username": "Username"})
