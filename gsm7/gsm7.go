@@ -2,7 +2,8 @@ package gsm7
 
 import "bytes"
 
-var validGSM7 = map[rune]byte{
+// base gsm7 characters in our normal table
+var baseGSM7 = map[rune]byte{
 	'@':  0x00,
 	'£':  0x01,
 	'$':  0x02,
@@ -109,33 +110,33 @@ var validGSM7 = map[rune]byte{
 	'g':  0x67,
 	'h':  0x68,
 	'i':  0x69,
-	'j':  0x7A,
-	'k':  0x7B,
-	'l':  0x7C,
-	'm':  0x7D,
-	'n':  0x7E,
-	'o':  0x7F,
-	'p':  0x80,
-	'q':  0x81,
-	'r':  0x82,
-	's':  0x83,
-	't':  0x84,
-	'u':  0x85,
-	'v':  0x86,
-	'w':  0x87,
-	'x':  0x88,
-	'y':  0x89,
-	'z':  0x8A,
-	'ä':  0x8B,
-	'ö':  0x8C,
-	'ñ':  0x8D,
-	'ü':  0x8E,
-	'à':  0x8F,
+	'j':  0x6A,
+	'k':  0x6B,
+	'l':  0x6C,
+	'm':  0x6D,
+	'n':  0x6E,
+	'o':  0x6F,
+	'p':  0x70,
+	'q':  0x71,
+	'r':  0x72,
+	's':  0x73,
+	't':  0x74,
+	'u':  0x75,
+	'v':  0x76,
+	'w':  0x77,
+	'x':  0x78,
+	'y':  0x79,
+	'z':  0x7A,
+	'ä':  0x7B,
+	'ö':  0x7C,
+	'ñ':  0x7D,
+	'ü':  0x7E,
+	'à':  0x7F,
+}
 
-	// extended char set
-	// 'FF':  0x0A   // Page break
-	// 'CR2': 0x0D   // Control char
-	// 'SS2': 0x1B   // Single shift escape
+// extended gsm7 characters, these my be preceded by our escape
+var extendedGSM7 = map[rune]byte{
+	' ':  0x0A,
 	'^':  0x14,
 	'{':  0x28,
 	'}':  0x29,
@@ -189,19 +190,47 @@ var gsm7Replacements = map[rune]rune{
 	'\xa0': ' ',
 }
 
-// IsGSM7 returns whether the passed in string is made up of entirely GSM7 characters
-func IsGSM7(text string) bool {
+// esc is our escape byte for the extended charset
+const esc byte = 0x1B
+
+// unknown is the rune we replace invalid characters with
+const unknown byte = '?'
+
+// max GSM7 value
+const max byte = 0x7F
+
+// our reverse mapping from GSM7 byte to rune
+var gsm7ToBase = make(map[byte]rune)
+var gsm7ToExtended = make(map[byte]rune)
+
+// we create our reverse mappings in our init
+func init() {
+	for r, b := range baseGSM7 {
+		gsm7ToBase[b] = r
+	}
+
+	for r, b := range extendedGSM7 {
+		gsm7ToExtended[b] = r
+	}
+}
+
+// IsValid returns whether the passed in string is made up of entirely GSM7 characters
+func IsValid(text string) bool {
 	for _, r := range text {
-		_, present := validGSM7[r]
+		_, present := baseGSM7[r]
 		if !present {
-			return false
+			_, present = extendedGSM7[r]
+			if !present {
+				return false
+			}
 		}
 	}
 	return true
 }
 
-// ReplaceNonGSM7Chars replaces all the non-gsm7 characters it can in the passed in string
-func ReplaceNonGSM7Chars(text string) string {
+// ReplaceSubstitutions replaces all the non-GSM7 characters that have valid substitutions
+// with their GSM7 versions
+func ReplaceSubstitutions(text string) string {
 	output := bytes.Buffer{}
 	for _, r := range text {
 		replacement, present := gsm7Replacements[r]
@@ -212,4 +241,57 @@ func ReplaceNonGSM7Chars(text string) string {
 		}
 	}
 	return output.String()
+}
+
+// Encode encodes the given UTF-8 text into a string composed of GSM7 bytes. Each 7 bit
+// GSM7 char is encoded in a single byte
+func Encode(str string) []byte {
+	buffer := bytes.Buffer{}
+	for _, r := range str {
+		i, found := baseGSM7[r]
+
+		// valid GSM7 base set, output it plainly
+		if found {
+			buffer.Write([]byte{i})
+			continue
+		}
+
+		// extended character, output escape then our index
+		i, found = extendedGSM7[r]
+		if found {
+			buffer.Write([]byte{esc, i})
+			continue
+		}
+
+		// hrmm, this isn't valid GSM7, output ?
+		buffer.Write([]byte{unknown})
+	}
+	return buffer.Bytes()
+}
+
+// Decode decodes the passed in bytes as GSM7 encodings. Each byte is expected to
+// be a single 7 bit GSM7 character.
+func Decode(gsm7 []byte) (str string) {
+	var escaped bool
+	var found bool
+	var r rune
+
+	for _, b := range gsm7 {
+		if b > max || b < 0 {
+			r = '?'
+		} else if escaped {
+			r, found = gsm7ToExtended[b]
+			if !found {
+				r = '?'
+			}
+			escaped = false
+		} else if b == esc {
+			escaped = true
+			continue
+		} else {
+			r, _ = gsm7ToBase[b]
+		}
+		str += string(r)
+	}
+	return str
 }
