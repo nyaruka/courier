@@ -23,6 +23,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/infobip"
 	_ "github.com/nyaruka/courier/handlers/jasmin"
 	_ "github.com/nyaruka/courier/handlers/kannel"
+	_ "github.com/nyaruka/courier/handlers/m3tech"
 	_ "github.com/nyaruka/courier/handlers/nexmo"
 	_ "github.com/nyaruka/courier/handlers/shaqodoon"
 	_ "github.com/nyaruka/courier/handlers/start"
