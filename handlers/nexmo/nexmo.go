@@ -158,10 +158,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	callbackURL := fmt.Sprintf("https://%s/c/nx/%s/status", callbackDomain, msg.Channel().UUID())
 
-	text := courier.GetTextAndAttachments(msg)
+	text := handlers.GetTextAndAttachments(msg)
 
 	textType := "text"
-	if !gsm7.IsGSM7(text) {
+	if !gsm7.IsValid(text) {
 		textType = "unicode"
 	}
 

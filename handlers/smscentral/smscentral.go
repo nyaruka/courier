@@ -98,7 +98,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		"user":    []string{username},
 		"pass":    []string{password},
 		"mobile":  []string{strings.TrimPrefix(msg.URN().Path(), "+")},
-		"content": []string{courier.GetTextAndAttachments(msg)},
+		"content": []string{handlers.GetTextAndAttachments(msg)},
 	}
 
 	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
@@ -11,10 +12,12 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/gorilla/schema"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
@@ -237,4 +240,49 @@ func SplitMsg(text string, max int) []string {
 	}
 
 	return parts
+}
+
+// NewTelQueryReceiveHandler creates a new receive handler given the passed in text and from fields
+func NewTelQueryReceiveHandler(h BaseHandler, fromField string, textField string) courier.ChannelHandleFunc {
+	// ReceiveMessage is our HTTP handler function for incoming messages
+	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+		text := r.URL.Query().Get(textField)
+		from := r.URL.Query().Get(fromField)
+		if from == "" {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("missing required field '%s'", fromField))
+		}
+		// create our URN
+		urn := urns.NewTelURNForCountry(from, c.Country())
+
+		// build our msg
+		msg := h.Backend().NewIncomingMsg(c, urn, text).WithReceivedOn(time.Now().UTC())
+
+		// and finally queue our message
+		err := h.Backend().WriteMsg(ctx, msg)
+		if err != nil {
+			return nil, err
+		}
+
+		return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+	}
+}
+
+// GetTextAndAttachments returns both the text of our message as well as any attachments, newline delimited
+func GetTextAndAttachments(m courier.Msg) string {
+	buf := bytes.NewBuffer([]byte(m.Text()))
+	for _, a := range m.Attachments() {
+		_, url := SplitAttachment(a)
+		buf.WriteString("\n")
+		buf.WriteString(url)
+	}
+	return buf.String()
+}
+
+// SplitAttachment takes an attachment string and returns the media type and URL for the attachment
+func SplitAttachment(attachment string) (string, string) {
+	parts := strings.SplitN(attachment, ":", 2)
+	if len(parts) < 2 {
+		return "", parts[0]
+	}
+	return parts[0], parts[1]
 }
