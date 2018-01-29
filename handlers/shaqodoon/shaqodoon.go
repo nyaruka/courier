@@ -169,7 +169,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	// build our request
 	form := url.Values{
 		"from":     []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
-		"msg":      []string{courier.GetTextAndAttachments(msg)},
+		"msg":      []string{handlers.GetTextAndAttachments(msg)},
 		"to":       []string{strings.TrimPrefix(msg.URN().Path(), "+")},
 		"username": []string{username},
 		"password": []string{password},

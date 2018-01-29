@@ -310,7 +310,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		// add any media URL to the first part
 		if len(msg.Attachments()) > 0 && i == 0 {
-			mediaType, mediaURL := courier.SplitAttachment(msg.Attachments()[0])
+			mediaType, mediaURL := handlers.SplitAttachment(msg.Attachments()[0])
 			switch strings.Split(mediaType, "/")[0] {
 			case "image":
 				msgType = "picture"

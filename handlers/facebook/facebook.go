@@ -450,7 +450,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		} else {
 			// this is an attachment
 			payload.Message.Attachment = &mtAttachment{}
-			attType, attURL := courier.SplitAttachment(msg.Attachments()[i-len(msgParts)])
+			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i-len(msgParts)])
 			attType = strings.Split(attType, "/")[0]
 			payload.Message.Attachment.Type = attType
 			payload.Message.Attachment.Payload.URL = attURL

@@ -159,7 +159,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(courier.GetTextAndAttachments(msg), h.maxLength)
+	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), h.maxLength)
 	for _, part := range parts {
 		form := url.Values{
 			"userid":    []string{username},

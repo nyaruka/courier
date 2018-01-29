@@ -153,7 +153,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		"dlr-level":  []string{"2"},
 		"dlr-method": []string{"POST"},
 		"coding":     []string{"0"},
-		"content":    []string{string(gsm7.Encode(gsm7.ReplaceSubstitutions(courier.GetTextAndAttachments(msg))))},
+		"content":    []string{string(gsm7.Encode(gsm7.ReplaceSubstitutions(handlers.GetTextAndAttachments(msg))))},
 	}
 
 	fullURL, _ := url.Parse(sendURL)

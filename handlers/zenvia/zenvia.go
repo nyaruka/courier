@@ -191,7 +191,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(courier.GetTextAndAttachments(msg), maxMsgLength)
+	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		zvMsg := mtRequest{}
 		zvMsg.SendSMSRequest.From = "Sender"

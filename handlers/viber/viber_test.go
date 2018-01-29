@@ -32,7 +32,7 @@ func buildMockAttachmentService(testCases []ChannelSendTestCase) *httptest.Serve
 	for c := range testCases {
 		if len(testCases[c].Attachments) > 0 {
 			for i, a := range testCases[c].Attachments {
-				mediaType, mediaURL := courier.SplitAttachment(a)
+				mediaType, mediaURL := SplitAttachment(a)
 				parts := strings.Split(mediaURL, "/")
 				testCases[c].Attachments[i] = fmt.Sprintf("%s:%s/%s", mediaType, server.URL, parts[len(parts)-1])
 			}
