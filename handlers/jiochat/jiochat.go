@@ -20,6 +20,8 @@ import (
 	"time"
 )
 
+var maxMsgLength = 1600
+
 const configJiochatAppID = "jiochat_app_id"
 const configJiochatAppSecret = "jiochat_app_secret"
 
@@ -209,9 +211,53 @@ func (h *handler) getAccessToken(channel courier.Channel) string {
 	return accessToken
 }
 
+type mtMsg struct {
+	MsgType string `json:"msgtype"`
+	ToUser  string `json:"touser"`
+	Text    struct {
+		Content string `json:"content"`
+	} `json:"text"`
+}
+
+var sendURL = "https://channels.jiochat.com/custom/custom_send.action"
+
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	return nil, fmt.Errorf("JC sending via Courier not yet implemented")
+	accessToken := h.getAccessToken(msg.Channel())
+
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	parts := handlers.SplitMsg(courier.GetTextAndAttachments(msg), maxMsgLength)
+	for _, part := range parts {
+		jcMsg := &mtMsg{}
+		jcMsg.MsgType = "text"
+		jcMsg.ToUser = msg.URN().Path()
+		jcMsg.Text.Content = part
+
+		requestBody := new(bytes.Buffer)
+		json.NewEncoder(requestBody).Encode(jcMsg)
+
+		// build our request
+		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+		if err != nil {
+			return nil, err
+		}
+
+		rr, err := utils.MakeHTTPRequest(req)
+
+		// record our status and log
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
+
+		if err != nil {
+			return status, err
+		}
+		status.SetStatus(courier.MsgWired)
+
+	}
+	return status, nil
 }
 
 var userDetailsURL = "https://channels.jiochat.com/user/info.action"
