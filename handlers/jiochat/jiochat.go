@@ -21,9 +21,12 @@ import (
 )
 
 var maxMsgLength = 1600
+var jiochatFetchTimeout = time.Second * 2
 
 const configJiochatAppID = "jiochat_app_id"
 const configJiochatAppSecret = "jiochat_app_secret"
+
+var jiochatURL = "https://channels.jiochat.com"
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -155,15 +158,11 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
-var mediaDownloadURL = "https://channels.jiochat.com/media/download.action"
-
 func resolveMediaID(mediaID string) string {
-	mediaURL, _ := url.Parse(mediaDownloadURL)
+	mediaURL, _ := url.Parse(fmt.Sprintf("%s/%s", jiochatURL, "media/download.action"))
 	mediaURL.RawQuery = url.Values{"media_id": []string{mediaID}}.Encode()
 	return mediaURL.String()
 }
-
-var refreshTokenURL = "https://channels.jiochat.com/auth/token.action"
 
 type refreshTokenData struct {
 	GrantType    string `json:"grant_type"`
@@ -172,7 +171,9 @@ type refreshTokenData struct {
 }
 
 func (h *handler) fetchAccessToken(channel courier.Channel) error {
-	tokenURL, _ := url.Parse(refreshTokenURL)
+	time.Sleep(jiochatFetchTimeout)
+
+	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", jiochatURL, "auth/token.action"))
 
 	refreshTokenData := &refreshTokenData{
 		GrantType:    "client_credentials",
@@ -219,11 +220,14 @@ type mtMsg struct {
 	} `json:"text"`
 }
 
-var sendURL = "https://channels.jiochat.com/custom/custom_send.action"
-
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	accessToken := h.getAccessToken(msg.Channel())
+
+	if accessToken == "" {
+		h.fetchAccessToken(msg.Channel())
+		accessToken = h.getAccessToken(msg.Channel())
+	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
@@ -237,7 +241,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		json.NewEncoder(requestBody).Encode(jcMsg)
 
 		// build our request
-		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", jiochatURL, "custom/custom_send.action"), requestBody)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
@@ -260,8 +264,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	return status, nil
 }
 
-var userDetailsURL = "https://channels.jiochat.com/user/info.action"
-
 // DescribeURN handles Jiochat contact details
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
 	accessToken := h.getAccessToken(channel)
@@ -272,7 +274,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 		"openid": []string{path},
 	}
 
-	reqURL, _ := url.Parse(userDetailsURL)
+	reqURL, _ := url.Parse(fmt.Sprintf("%s/%s", jiochatURL, "user/info.action"))
 	reqURL.RawQuery = form.Encode()
 
 	req, err := http.NewRequest(http.MethodGet, reqURL.String(), nil)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
+	"fmt"
 	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
@@ -165,22 +166,74 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
+func TestFetchAccessToken(t *testing.T) {
+	fetchCalled := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "auth/token.action") {
+			defer r.Body.Close()
+			// valid token
+			w.Write([]byte(`{"access_token": "TOKEN"}`))
+		}
+
+		// mark that we were called
+		fetchCalled++
+	}))
+	jiochatURL = server.URL
+	jiochatFetchTimeout = time.Millisecond
+
+	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
+		{Label: "Receive Message", URL: receiveURL, Data: validMsg, Status: 200, Response: "Accepted"},
+
+		{Label: "Verify URL", URL: verifyURL, Status: 200, Response: "SUCCESS",
+			PrepRequest: addValidSignature},
+
+		{Label: "Verify URL Invalid signature", URL: verifyURL, Status: 400, Response: "unknown request",
+			PrepRequest: addInvalidSignature},
+	})
+
+	// wait for our fetch to be called
+	time.Sleep(100 * time.Millisecond)
+
+	expectedCallCount := 1
+	if fetchCalled != expectedCallCount {
+		t.Errorf("fetch access point should have been called %d times, actually called %d times", expectedCallCount, fetchCalled)
+	}
+
+}
+
 // mocks the call to the Jiochat API
 func buildMockJCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		openID := r.URL.Query().Get("openid")
 		defer r.Body.Close()
 
-		// user has a name
-		if strings.HasSuffix(openID, "1337") {
-			w.Write([]byte(`{ "nickname": "John Doe"}`))
-			return
+		if strings.HasSuffix(r.URL.Path, "user/info.action") {
+			openID := r.URL.Query().Get("openid")
+
+			// user has a name
+			if strings.HasSuffix(openID, "1337") {
+				w.Write([]byte(`{ "nickname": "John Doe"}`))
+				return
+			}
+
+			// no name
+			w.Write([]byte(`{ "nickname": ""}`))
+
 		}
 
-		// no name
-		w.Write([]byte(`{ "nickname": ""}`))
+		if strings.HasSuffix(r.URL.Path, "media/download.action") {
+			mediaID := r.URL.Query().Get("media_id")
+
+			if mediaID == "12" {
+				w.Write([]byte(`File`))
+			} else {
+				http.Error(w, "invalid file", 403)
+				return
+			}
+
+		}
+
 	}))
-	userDetailsURL = server.URL
+	jiochatURL = server.URL
 
 	return server
 }
@@ -219,9 +272,36 @@ func TestDescribe(t *testing.T) {
 	}
 }
 
+func TestBuildMediaRequest(t *testing.T) {
+	JCAPI := buildMockJCAPI(testCases)
+	defer JCAPI.Close()
+
+	mb := courier.NewMockBackend()
+	s := newServer(mb)
+	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
+	handler.Initialize(s)
+
+	tcs := []struct {
+		url                 string
+		authorizationHeader string
+	}{
+		{
+			fmt.Sprintf("%s/media/download.action?media_id=12", jiochatURL),
+			"Bearer ",
+		},
+	}
+
+	for _, tc := range tcs {
+		req, _ := handler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], tc.url)
+		assert.Equal(t, tc.url, req.URL.String())
+		assert.Equal(t, tc.authorizationHeader, req.Header.Get("Authorization"))
+	}
+
+}
+
 // setSendURL takes care of setting the sendURL to call
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	sendURL = s.URL
+	jiochatURL = s.URL
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
