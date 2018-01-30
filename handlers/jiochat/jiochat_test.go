@@ -167,7 +167,7 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 func TestFetchAccessToken(t *testing.T) {
-	fetchCalled := 0
+	fetchCalled := false
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "auth/token.action") {
 			defer r.Body.Close()
@@ -176,7 +176,7 @@ func TestFetchAccessToken(t *testing.T) {
 		}
 
 		// mark that we were called
-		fetchCalled++
+		fetchCalled = true
 	}))
 	jiochatURL = server.URL
 	jiochatFetchTimeout = time.Millisecond
@@ -194,9 +194,8 @@ func TestFetchAccessToken(t *testing.T) {
 	// wait for our fetch to be called
 	time.Sleep(100 * time.Millisecond)
 
-	expectedCallCount := 1
-	if fetchCalled != expectedCallCount {
-		t.Errorf("fetch access point should have been called %d times, actually called %d times", expectedCallCount, fetchCalled)
+	if !fetchCalled {
+		t.Error("fetch access point should have been called")
 	}
 
 }
