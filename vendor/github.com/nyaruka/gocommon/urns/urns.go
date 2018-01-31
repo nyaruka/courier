@@ -50,7 +50,8 @@ const (
 	FacebookRefPrefix string = "ref:"
 )
 
-var validSchemes = map[string]bool{
+// ValidSchemes is the set of URN schemes understood by this library
+var ValidSchemes = map[string]bool{
 	EmailScheme:     true,
 	ExternalScheme:  true,
 	FacebookScheme:  true,
@@ -67,7 +68,7 @@ var validSchemes = map[string]bool{
 
 // IsValidScheme checks whether the provided scheme is valid
 func IsValidScheme(scheme string) bool {
-	_, valid := validSchemes[scheme]
+	_, valid := ValidSchemes[scheme]
 	return valid
 }
 
@@ -279,8 +280,6 @@ func (u URN) Resolve(key string) interface{} {
 		return u.Path()
 	case "scheme":
 		return u.Scheme()
-	case "urn":
-		return string(u)
 	}
 	return fmt.Errorf("no field '%s' on URN", key)
 }
@@ -290,6 +289,24 @@ func (u URN) Default() interface{} { return u }
 
 // String returns the string representation of this URN
 func (u URN) String() string { return string(u) }
+
+// Format formats this URN as a human friendly string
+func (u URN) Format() string {
+	scheme, path, display := u.ToParts()
+
+	if scheme == TelScheme {
+		parsed, err := phonenumbers.Parse(path, "")
+		if err != nil {
+			return path
+		}
+		return phonenumbers.Format(parsed, phonenumbers.NATIONAL)
+	}
+
+	if display != "" {
+		return display
+	}
+	return path
+}
 
 // NilURN is our constant for nil URNs
 var NilURN = URN("")

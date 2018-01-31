@@ -1,25 +1,42 @@
-package facebook
+package twitter
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/buger/jsonparser"
+	"github.com/dghubble/oauth1"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/pkg/errors"
 )
 
 // Endpoints we hit
-var twitterSendURL = "https://api.twitter.com/1.1/direct_messages/events/new.json"
+var sendURL = "https://api.twitter.com/1.1/direct_messages/events/new.json"
 
 // DMs can be up to 10,000 characters long
 var maxMsgLength = 10000
+
+// Labels in quick replies can't be more than 36 characters
+var maxOptionLength = 36
+
+const (
+	configHandleID          = "handle_id"
+	configAPIKey            = "api_key"
+	configAPISecret         = "api_secret"
+	configAccessToken       = "access_token"
+	configAccessTokenSecret = "access_token_secret"
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -50,14 +67,14 @@ func (h *handler) ReceiveVerify(ctx context.Context, c courier.Channel, w http.R
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf(`missing required 'crc_token' query parameter`))
 	}
 
-	secret := c.StringConfigForKey(courier.ConfigSecret, "")
+	secret := c.StringConfigForKey("api_secret", "")
 	if secret == "" {
 		return nil, fmt.Errorf("TWT channel missing required secret in channel config")
 	}
 
 	signature := generateSignature(secret, crcToken)
 	w.Header().Set("Content-Type", "application/json")
-	_, err := w.Write([]byte(fmt.Sprintf(`{"response_token": "%s"}`, signature)))
+	_, err := w.Write([]byte(fmt.Sprintf(`{"response_token": "sha256=%s"}`, signature)))
 
 	return nil, err
 }
@@ -94,7 +111,12 @@ type moEnvelope struct {
 		CreatedTimestamp string `json:"created_timestamp" validate:"required"`
 		MessageCreate    struct {
 			MessageData struct {
-				Text string `json:"text"`
+				Text       string `json:"text"`
+				Attachment *struct {
+					Media struct {
+						MediaURLHTTPS string `json:"media_url_https"`
+					} `json:"media"`
+				} `json:"attachment,omitempty"`
 			} `json:"message_data"`
 			SenderID string `json:"sender_id" validate:"required"`
 			Target   struct {
@@ -110,7 +132,7 @@ type moEnvelope struct {
 // Receive is our HTTP handler function for incoming messages
 func (h *handler) Receive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// read our handle id
-	handleID := c.StringConfigForKey("handle_id", "")
+	handleID := c.StringConfigForKey(configHandleID, "")
 	if handleID == "" {
 		return nil, fmt.Errorf("Missing handle id config for TWT channel")
 	}
@@ -161,6 +183,12 @@ func (h *handler) Receive(ctx context.Context, c courier.Channel, w http.Respons
 
 		// create our message
 		msg := h.Backend().NewIncomingMsg(c, urn, entry.MessageCreate.MessageData.Text).WithExternalID(entry.ID).WithReceivedOn(date).WithContactName(user.Name)
+
+		// if we have an attachment, add that as well
+		if entry.MessageCreate.MessageData.Attachment != nil {
+			msg.WithAttachment(entry.MessageCreate.MessageData.Attachment.Media.MediaURLHTTPS)
+		}
+
 		err = h.Backend().WriteMsg(ctx, msg)
 		if err != nil {
 			return nil, err
@@ -208,20 +236,81 @@ type mtEnvelope struct {
 }
 
 type mtQR struct {
-	QuickReply struct {
-		Type    string       `json:"type"`
-		Options []mtQROption `json:"options"`
-	}
+	Type    string       `json:"type"`
+	Options []mtQROption `json:"options"`
 }
 
 type mtQROption struct {
-	Title       string `json:"title"`
-	Payload     string `json:"payload"`
-	ContentType string `json:"content_type"`
+	Label string `json:"label"`
 }
 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	return nil, fmt.Errorf("sending not implemented for twitter")
+	apiKey := msg.Channel().StringConfigForKey(configAPIKey, "")
+	apiSecret := msg.Channel().StringConfigForKey(configAPISecret, "")
+	accessToken := msg.Channel().StringConfigForKey(configAccessToken, "")
+	accessSecret := msg.Channel().StringConfigForKey(configAccessTokenSecret, "")
+	if apiKey == "" || apiSecret == "" || accessToken == "" || accessSecret == "" {
+		return nil, fmt.Errorf("missing api or tokens for TWT channel")
+	}
+
+	// create our OAuth client that will take care of signing
+	config := oauth1.NewConfig(apiKey, apiSecret)
+	token := oauth1.NewToken(accessToken, accessSecret)
+	client := config.Client(ctx, token)
+
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	for i, text := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
+		payload := mtEnvelope{}
+		payload.Event.Type = "message_create"
+		payload.Event.MessageCreate.Target.RecipientID = msg.URN().Path()
+		payload.Event.MessageCreate.MessageData.Text = text
+
+		// attach quick replies if we have them
+		if i == 0 && len(msg.QuickReplies()) > 0 {
+			qrs := &mtQR{}
+			qrs.Type = "options"
+			for _, option := range msg.QuickReplies() {
+				if len(option) > maxOptionLength {
+					option = option[:maxOptionLength]
+				}
+				qrs.Options = append(qrs.Options, mtQROption{option})
+			}
+			payload.Event.MessageCreate.MessageData.QuickReply = qrs
+		}
+
+		jsonBody, err := json.Marshal(payload)
+		if err != nil {
+			return status, err
+		}
+
+		req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		rr, err := utils.MakeHTTPRequestWithClient(req, client)
+
+		// record our status and log
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
+		if err != nil {
+			return status, nil
+		}
+
+		externalID, err := jsonparser.GetString(rr.Body, "event", "id")
+		if err != nil {
+			log.WithError("Message Send Error", errors.Errorf("unable to get message_id from body"))
+			return status, nil
+		}
+
+		// if this is our first message, record the external id
+		if i == 0 {
+			status.SetExternalID(externalID)
+		}
+
+		// this was wired successfully
+		status.SetStatus(courier.MsgWired)
+	}
+
+	return status, nil
 }
 
 // hashes the passed in content in sha256 using the passed in secret
