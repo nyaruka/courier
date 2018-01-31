@@ -238,18 +238,6 @@ func buildMockJCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 
 		}
 
-		if strings.HasSuffix(r.URL.Path, "media/download.action") {
-			mediaID := r.URL.Query().Get("media_id")
-
-			if mediaID == "12" {
-				w.Write([]byte(`File`))
-			} else {
-				http.Error(w, "invalid file", 403)
-				return
-			}
-
-		}
-
 	}))
 	jiochatURL = server.URL
 
@@ -292,9 +280,6 @@ func TestDescribe(t *testing.T) {
 }
 
 func TestBuildMediaRequest(t *testing.T) {
-	JCAPI := buildMockJCAPI(testCases)
-	defer JCAPI.Close()
-
 	mb := courier.NewMockBackend()
 	s := newServer(mb)
 	jiochatAccessMock := &jiochatAccessMock{"ACCESS_TOKEN", nil}
