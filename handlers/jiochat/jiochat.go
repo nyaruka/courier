@@ -198,6 +198,9 @@ func (jCli *jiochatClient) fetchAccessToken(h *handler, channel courier.Channel)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	rr, err := utils.MakeHTTPRequest(req)
+	if err != nil {
+		return err
+	}
 
 	accessToken, err := jsonparser.GetString([]byte(rr.Body), "access_token")
 	if err != nil {
@@ -298,7 +301,10 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	if err != nil {
 		return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
 	}
-	nickname, _ := jsonparser.GetString(rr.Body, "nickname")
+	nickname, err := jsonparser.GetString(rr.Body, "nickname")
+	if err != nil {
+		return nil, err
+	}
 
 	return map[string]string{"name": nickname}, nil
 }
