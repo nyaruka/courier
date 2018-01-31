@@ -24,6 +24,19 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 )
 
+type jiochatAccessMock struct {
+	accessToken string
+	err         error
+}
+
+func (ja *jiochatAccessMock) fetchAccessToken(h *handler, channel courier.Channel) error {
+	return ja.err
+}
+
+func (ja *jiochatAccessMock) getAccessToken(h *handler, channel courier.Channel) string {
+	return ja.accessToken
+}
+
 var testChannels = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configJiochatAppSecret: "secret", configJiochatAppID: "app-id"}),
 }
@@ -159,11 +172,11 @@ var testCases = []ChannelHandleTestCase{
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+	RunChannelTestCases(t, testChannels, newHandler(&jiochatAccessMock{"ACCESS_TOKEN", nil}), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
+	RunChannelBenchmarks(b, testChannels, newHandler(&jiochatAccessMock{"ACCESS_TOKEN", nil}), testCases)
 }
 
 func TestFetchAccessToken(t *testing.T) {
@@ -181,7 +194,7 @@ func TestFetchAccessToken(t *testing.T) {
 	jiochatURL = server.URL
 	jiochatFetchTimeout = time.Millisecond
 
-	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
+	RunChannelTestCases(t, testChannels, newHandler(&jiochatClient{}), []ChannelHandleTestCase{
 		{Label: "Receive Message", URL: receiveURL, Data: validMsg, Status: 200, Response: "Accepted"},
 
 		{Label: "Verify URL", URL: verifyURL, Status: 200, Response: "SUCCESS",
@@ -203,7 +216,13 @@ func TestFetchAccessToken(t *testing.T) {
 // mocks the call to the Jiochat API
 func buildMockJCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authorizationHeader := r.Header.Get("Authorization")
 		defer r.Body.Close()
+
+		if authorizationHeader != "Bearer ACCESS_TOKEN" {
+			http.Error(w, "invalid file", 403)
+			return
+		}
 
 		if strings.HasSuffix(r.URL.Path, "user/info.action") {
 			openID := r.URL.Query().Get("openid")
@@ -254,7 +273,8 @@ func TestDescribe(t *testing.T) {
 
 	mb := courier.NewMockBackend()
 	s := newServer(mb)
-	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
+	jiochatAccessMock := &jiochatAccessMock{"ACCESS_TOKEN", nil}
+	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat"), jiochatAccessMock}
 	handler.Initialize(s)
 
 	tcs := []struct {
@@ -277,7 +297,8 @@ func TestBuildMediaRequest(t *testing.T) {
 
 	mb := courier.NewMockBackend()
 	s := newServer(mb)
-	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
+	jiochatAccessMock := &jiochatAccessMock{"ACCESS_TOKEN", nil}
+	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat"), jiochatAccessMock}
 	handler.Initialize(s)
 
 	tcs := []struct {
@@ -286,7 +307,7 @@ func TestBuildMediaRequest(t *testing.T) {
 	}{
 		{
 			fmt.Sprintf("%s/media/download.action?media_id=12", jiochatURL),
-			"Bearer ",
+			"Bearer ACCESS_TOKEN",
 		},
 	}
 
@@ -311,8 +332,9 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExternalID:     "",
 		ResponseStatus: 200,
 		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Bearer ACCESS_TOKEN",
 		},
 		RequestBody: `{"msgtype":"text","touser":"+250788383383","text":{"content":"Simple Message ☺"}}`,
 		SendPrep:    setSendURL},
@@ -323,8 +345,9 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExternalID:     "",
 		ResponseStatus: 200,
 		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Bearer ACCESS_TOKEN",
 		},
 		RequestBody: `{"msgtype":"text","touser":"+250788383383","text":{"content":"I need to keep adding more things to make it work"}}`,
 		SendPrep:    setSendURL},
@@ -336,8 +359,9 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExternalID:     "",
 		ResponseStatus: 200,
 		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Bearer ACCESS_TOKEN",
 		},
 		RequestBody: `{"msgtype":"text","touser":"+250788383383","text":{"content":"My pic!\nhttps://foo.bar/image.jpg"}}`,
 		SendPrep:    setSendURL},
@@ -353,5 +377,5 @@ var defaultSendTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configJiochatAppSecret: "secret", configJiochatAppID: "app-id"})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(&jiochatAccessMock{"ACCESS_TOKEN", nil}), defaultSendTestCases)
 }

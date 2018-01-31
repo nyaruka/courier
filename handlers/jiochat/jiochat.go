@@ -29,15 +29,16 @@ const configJiochatAppSecret = "jiochat_app_secret"
 var jiochatURL = "https://channels.jiochat.com"
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	courier.RegisterHandler(newHandler(&jiochatClient{}))
 }
 
 type handler struct {
 	handlers.BaseHandler
+	jiochatClient jiochatAccess
 }
 
-func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
+func newHandler(ja jiochatAccess) courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat"), ja}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -91,7 +92,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	if encoded == jcVerify.Signature {
 		ResponseText = jcVerify.EchoStr
 		StatusCode = 200
-		go h.fetchAccessToken(channel)
+		go h.doFetchAccessToken(channel)
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -164,13 +165,20 @@ func resolveMediaID(mediaID string) string {
 	return mediaURL.String()
 }
 
+type jiochatAccess interface {
+	fetchAccessToken(*handler, courier.Channel) error
+	getAccessToken(*handler, courier.Channel) string
+}
+
+type jiochatClient struct{}
+
 type refreshTokenData struct {
 	GrantType    string `json:"grant_type"`
 	ClientID     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
 }
 
-func (h *handler) fetchAccessToken(channel courier.Channel) error {
+func (jCli *jiochatClient) fetchAccessToken(h *handler, channel courier.Channel) error {
 	time.Sleep(jiochatFetchTimeout)
 
 	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", jiochatURL, "auth/token.action"))
@@ -204,12 +212,20 @@ func (h *handler) fetchAccessToken(channel courier.Channel) error {
 	return err
 }
 
-func (h *handler) getAccessToken(channel courier.Channel) string {
+func (jCli *jiochatClient) getAccessToken(h *handler, channel courier.Channel) string {
 	rc := h.Backend().RedisPool().Get()
 	defer rc.Close()
 	cacheKey := fmt.Sprintf("jiochat_channel_access_token:%s", channel.UUID().String())
 	accessToken, _ := redis.String(rc.Do("GET", cacheKey))
 	return accessToken
+}
+
+func (h *handler) findAccessToken(channel courier.Channel) string {
+	return h.jiochatClient.getAccessToken(h, channel)
+}
+
+func (h *handler) doFetchAccessToken(channel courier.Channel) error {
+	return h.jiochatClient.fetchAccessToken(h, channel)
 }
 
 type mtMsg struct {
@@ -222,12 +238,7 @@ type mtMsg struct {
 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	accessToken := h.getAccessToken(msg.Channel())
-
-	if accessToken == "" {
-		h.fetchAccessToken(msg.Channel())
-		accessToken = h.getAccessToken(msg.Channel())
-	}
+	accessToken := h.findAccessToken(msg.Channel())
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
@@ -266,7 +277,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 // DescribeURN handles Jiochat contact details
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
-	accessToken := h.getAccessToken(channel)
+	accessToken := h.findAccessToken(channel)
 
 	_, path, _ := urn.ToParts()
 
@@ -299,7 +310,7 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backe
 		return nil, err
 	}
 
-	accessToken := h.getAccessToken(channel)
+	accessToken := h.findAccessToken(channel)
 
 	// first fetch our media
 	req, err := http.NewRequest("GET", parsedURL.String(), nil)
