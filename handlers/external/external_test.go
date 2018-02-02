@@ -209,8 +209,8 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendMethod:  http.MethodPut,
 		})
 
-	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases)
-	RunChannelSendTestCases(t, postChannel, newHandler(), postSendTestCases)
-	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases)
-	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases)
+	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil)
+	RunChannelSendTestCases(t, postChannel, newHandler(), postSendTestCases, nil)
+	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil)
+	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil)
 }

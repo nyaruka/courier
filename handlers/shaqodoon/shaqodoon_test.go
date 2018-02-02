@@ -83,5 +83,5 @@ func TestSending(t *testing.T) {
 			courier.ConfigPassword: "Password",
 			courier.ConfigUsername: "Username"})
 
-	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases)
+	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil)
 }

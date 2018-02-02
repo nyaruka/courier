@@ -57,7 +57,7 @@ func TestSending(t *testing.T) {
 			courier.ConfigAPIKey: "API-KEY",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 }
 
 var testChannels = []courier.Channel{

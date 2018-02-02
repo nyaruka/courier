@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -247,6 +248,15 @@ func TestDescribe(t *testing.T) {
 	defer JCAPI.Close()
 
 	mb := courier.NewMockBackend()
+	conn := mb.RedisPool().Get()
+
+	_, err := conn.Do("Set", "jiochat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	conn.Close()
+
 	s := newServer(mb)
 	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
 	handler.Initialize(s)
@@ -267,6 +277,14 @@ func TestDescribe(t *testing.T) {
 
 func TestBuildMediaRequest(t *testing.T) {
 	mb := courier.NewMockBackend()
+	conn := mb.RedisPool().Get()
+
+	_, err := conn.Do("Set", "jiochat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	conn.Close()
 	s := newServer(mb)
 	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
 	handler.Initialize(s)
@@ -344,8 +362,19 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:       setSendURL},
 }
 
+func setupBackend(mb *courier.MockBackend) {
+	conn := mb.RedisPool().Get()
+
+	_, err := conn.Do("Set", "jiochat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	conn.Close()
+}
+
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configJiochatAppSecret: "secret", configJiochatAppID: "app-id"})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, setupBackend)
 }

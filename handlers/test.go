@@ -150,8 +150,11 @@ func newServer(backend courier.Backend) courier.Server {
 }
 
 // RunChannelSendTestCases runs all the passed in test cases against the channel
-func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler courier.ChannelHandler, testCases []ChannelSendTestCase) {
+func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler courier.ChannelHandler, testCases []ChannelSendTestCase, setupBackend func(*courier.MockBackend)) {
 	mb := courier.NewMockBackend()
+	if setupBackend != nil {
+		setupBackend(mb)
+	}
 	s := newServer(mb)
 	mb.AddChannel(channel)
 	handler.Initialize(s)
