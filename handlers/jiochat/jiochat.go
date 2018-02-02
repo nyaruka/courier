@@ -29,16 +29,15 @@ const configJiochatAppSecret = "jiochat_app_secret"
 var jiochatURL = "https://channels.jiochat.com"
 
 func init() {
-	courier.RegisterHandler(newHandler(&jiochatClient{}))
+	courier.RegisterHandler(newHandler())
 }
 
 type handler struct {
 	handlers.BaseHandler
-	jiochatClient jiochatAccess
 }
 
-func newHandler(ja jiochatAccess) courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat"), ja}
+func newHandler() courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -92,7 +91,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	if encoded == jcVerify.Signature {
 		ResponseText = jcVerify.EchoStr
 		StatusCode = 200
-		go h.doFetchAccessToken(channel)
+		go h.fetchAccessToken(channel)
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -147,7 +146,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	// create our message
 	msg := h.Backend().NewIncomingMsg(channel, urn, jcRequest.Content).WithExternalID(fmt.Sprintf("%d", jcRequest.MsgID)).WithReceivedOn(date)
 	if jcRequest.MsgType == "image" || jcRequest.MsgType == "video" || jcRequest.MsgType == "voice" {
-		mediaURL := resolveMediaID(jcRequest.MediaID)
+		mediaURL := buildMediaURL(jcRequest.MediaID)
 		msg.WithAttachment(mediaURL)
 	}
 
@@ -159,18 +158,11 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
-func resolveMediaID(mediaID string) string {
+func buildMediaURL(mediaID string) string {
 	mediaURL, _ := url.Parse(fmt.Sprintf("%s/%s", jiochatURL, "media/download.action"))
 	mediaURL.RawQuery = url.Values{"media_id": []string{mediaID}}.Encode()
 	return mediaURL.String()
 }
-
-type jiochatAccess interface {
-	fetchAccessToken(*handler, courier.Channel) error
-	getAccessToken(*handler, courier.Channel) string
-}
-
-type jiochatClient struct{}
 
 type refreshTokenData struct {
 	GrantType    string `json:"grant_type"`
@@ -178,7 +170,7 @@ type refreshTokenData struct {
 	ClientSecret string `json:"client_secret"`
 }
 
-func (jCli *jiochatClient) fetchAccessToken(h *handler, channel courier.Channel) error {
+func (h *handler) fetchAccessToken(channel courier.Channel) error {
 	time.Sleep(jiochatFetchTimeout)
 
 	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", jiochatURL, "auth/token.action"))
@@ -215,20 +207,15 @@ func (jCli *jiochatClient) fetchAccessToken(h *handler, channel courier.Channel)
 	return err
 }
 
-func (jCli *jiochatClient) getAccessToken(h *handler, channel courier.Channel) string {
+func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
 	rc := h.Backend().RedisPool().Get()
 	defer rc.Close()
 	cacheKey := fmt.Sprintf("jiochat_channel_access_token:%s", channel.UUID().String())
-	accessToken, _ := redis.String(rc.Do("GET", cacheKey))
-	return accessToken
-}
-
-func (h *handler) findAccessToken(channel courier.Channel) string {
-	return h.jiochatClient.getAccessToken(h, channel)
-}
-
-func (h *handler) doFetchAccessToken(channel courier.Channel) error {
-	return h.jiochatClient.fetchAccessToken(h, channel)
+	accessToken, err := redis.String(rc.Do("GET", cacheKey))
+	if err != nil {
+		return "", err
+	}
+	return accessToken, nil
 }
 
 type mtMsg struct {
@@ -241,7 +228,10 @@ type mtMsg struct {
 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	accessToken := h.findAccessToken(msg.Channel())
+	accessToken, err := h.getAccessToken(msg.Channel())
+	if err != nil {
+		return nil, err
+	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
@@ -280,7 +270,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 // DescribeURN handles Jiochat contact details
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
-	accessToken := h.findAccessToken(channel)
+	accessToken, err := h.getAccessToken(channel)
+	if err != nil {
+		return nil, err
+	}
 
 	_, path, _ := urn.ToParts()
 
@@ -316,10 +309,13 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backe
 		return nil, err
 	}
 
-	accessToken := h.findAccessToken(channel)
+	accessToken, err := h.getAccessToken(channel)
+	if err != nil {
+		return nil, err
+	}
 
 	// first fetch our media
-	req, err := http.NewRequest("GET", parsedURL.String(), nil)
+	req, err := http.NewRequest(http.MethodGet, parsedURL.String(), nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 	if err != nil {
 		return nil, err

@@ -60,6 +60,11 @@ func NewMockBackend() *MockBackend {
 		log.Fatal(err)
 	}
 
+	_, err = conn.Do("Set", "jiochat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return &MockBackend{
 		channels:  make(map[ChannelUUID]Channel),
 		sentMsgs:  make(map[MsgID]bool),
