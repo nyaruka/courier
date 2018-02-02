@@ -42,30 +42,18 @@ const (
 // MakeInsecureHTTPRequest fires the passed in http request against a transport that does not validate
 // SSL certificates.
 func MakeInsecureHTTPRequest(req *http.Request) (*RequestResponse, error) {
-	req.Header.Set("User-Agent", HTTPUserAgent)
-
-	start := time.Now()
-	requestTrace, err := httputil.DumpRequestOut(req, true)
-	if err != nil {
-		rr, _ := newRRFromRequestAndError(req, string(requestTrace), err)
-		return rr, err
-	}
-
-	resp, err := GetInsecureHTTPClient().Do(req)
-	if err != nil {
-		rr, _ := newRRFromRequestAndError(req, string(requestTrace), err)
-		return rr, err
-	}
-	defer resp.Body.Close()
-
-	rr, err := newRRFromResponse(req.Method, string(requestTrace), resp)
-	rr.Elapsed = time.Now().Sub(start)
-	return rr, err
+	return MakeHTTPRequestWithClient(req, GetInsecureHTTPClient())
 }
 
 // MakeHTTPRequest fires the passed in http request, returning any errors encountered. RequestResponse is always set
 // regardless of any errors being set
 func MakeHTTPRequest(req *http.Request) (*RequestResponse, error) {
+	return MakeHTTPRequestWithClient(req, GetHTTPClient())
+}
+
+// MakeHTTPRequestWithClient makes an HTTP request with the passed in client, returning a
+// RequestResponse containing logging information gathered during the request
+func MakeHTTPRequestWithClient(req *http.Request, client *http.Client) (*RequestResponse, error) {
 	req.Header.Set("User-Agent", HTTPUserAgent)
 
 	start := time.Now()
@@ -75,7 +63,7 @@ func MakeHTTPRequest(req *http.Request) (*RequestResponse, error) {
 		return rr, err
 	}
 
-	resp, err := GetHTTPClient().Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		rr, _ := newRRFromRequestAndError(req, string(requestTrace), err)
 		return rr, err
