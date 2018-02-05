@@ -244,7 +244,6 @@ func SplitMsg(text string, max int) []string {
 
 // NewTelQueryReceiveHandler creates a new receive handler given the passed in text and from fields
 func NewTelQueryReceiveHandler(h BaseHandler, fromField string, textField string) courier.ChannelHandleFunc {
-	// ReceiveMessage is our HTTP handler function for incoming messages
 	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 		text := r.URL.Query().Get(textField)
 		from := r.URL.Query().Get(fromField)
@@ -264,6 +263,34 @@ func NewTelQueryReceiveHandler(h BaseHandler, fromField string, textField string
 		}
 
 		return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+	}
+}
+
+// NewExternalIDQueryStatusHandler creates a new status handler given the passed in status map and fields
+func NewExternalIDQueryStatusHandler(h BaseHandler, statuses map[string]courier.MsgStatusValue, externalIDField string, statusField string) courier.ChannelHandleFunc {
+	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+		externalID := r.URL.Query().Get(externalIDField)
+		if externalID == "" {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("missing required field '%s'", externalIDField))
+		}
+
+		s := r.URL.Query().Get(statusField)
+		sValue, found := statuses[s]
+		if !found {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("unknown status value '%s'", s))
+		}
+
+		// create our status
+		status := h.Backend().NewMsgStatusForExternalID(c, externalID, sValue)
+		err := h.Backend().WriteMsgStatus(ctx, status)
+		if err == courier.ErrMsgNotFound {
+			return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, c)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
 	}
 }
 
