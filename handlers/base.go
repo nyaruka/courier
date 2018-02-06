@@ -242,9 +242,14 @@ func SplitMsg(text string, max int) []string {
 	return parts
 }
 
-// NewTelQueryReceiveHandler creates a new receive handler given the passed in text and from fields
-func NewTelQueryReceiveHandler(h BaseHandler, fromField string, textField string) courier.ChannelHandleFunc {
+// NewTelReceiveHandler creates a new receive handler given the passed in text and from fields
+func NewTelReceiveHandler(h BaseHandler, fromField string, textField string) courier.ChannelHandleFunc {
 	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+		err := r.ParseForm()
+		if err != nil {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		}
+
 		text := r.URL.Query().Get(textField)
 		from := r.URL.Query().Get(fromField)
 		if from == "" {
@@ -257,7 +262,7 @@ func NewTelQueryReceiveHandler(h BaseHandler, fromField string, textField string
 		msg := h.Backend().NewIncomingMsg(c, urn, text).WithReceivedOn(time.Now().UTC())
 
 		// and finally queue our message
-		err := h.Backend().WriteMsg(ctx, msg)
+		err = h.Backend().WriteMsg(ctx, msg)
 		if err != nil {
 			return nil, err
 		}
@@ -266,15 +271,20 @@ func NewTelQueryReceiveHandler(h BaseHandler, fromField string, textField string
 	}
 }
 
-// NewExternalIDQueryStatusHandler creates a new status handler given the passed in status map and fields
-func NewExternalIDQueryStatusHandler(h BaseHandler, statuses map[string]courier.MsgStatusValue, externalIDField string, statusField string) courier.ChannelHandleFunc {
+// NewExternalIDStatusHandler creates a new status handler given the passed in status map and fields
+func NewExternalIDStatusHandler(h BaseHandler, statuses map[string]courier.MsgStatusValue, externalIDField string, statusField string) courier.ChannelHandleFunc {
 	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-		externalID := r.URL.Query().Get(externalIDField)
+		err := r.ParseForm()
+		if err != nil {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		}
+
+		externalID := r.Form.Get(externalIDField)
 		if externalID == "" {
 			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("missing required field '%s'", externalIDField))
 		}
 
-		s := r.URL.Query().Get(statusField)
+		s := r.Form.Get(statusField)
 		sValue, found := statuses[s]
 		if !found {
 			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("unknown status value '%s'", s))
@@ -282,7 +292,7 @@ func NewExternalIDQueryStatusHandler(h BaseHandler, statuses map[string]courier.
 
 		// create our status
 		status := h.Backend().NewMsgStatusForExternalID(c, externalID, sValue)
-		err := h.Backend().WriteMsgStatus(ctx, status)
+		err = h.Backend().WriteMsgStatus(ctx, status)
 		if err == courier.ErrMsgNotFound {
 			return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, c)
 		}

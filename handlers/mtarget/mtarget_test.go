@@ -9,13 +9,15 @@ import (
 )
 
 var (
-	receiveValidMessage = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?Msisdn=+923161909799&Content=hello+world&Keyword=Default"
-	receiveStop         = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?Msisdn=+923161909799&Content=Stop&Keyword=Stop"
-	receiveMissingFrom  = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?Content=hello&Keyword=Default"
+	receiveURL          = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
+	receiveValidMessage = "Msisdn=+923161909799&Content=hello+world&Keyword=Default"
+	receiveStop         = "Msisdn=+923161909799&Content=Stop&Keyword=Stop"
+	receiveMissingFrom  = "Content=hello&Keyword=Default"
 
-	statusDelivered = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?MsgId=12a7ee90-50ce-11e7-80ae-00000a0a643c&Status=3"
-	statusFailed    = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?MsgId=12a7ee90-50ce-11e7-80ae-00000a0a643c&Status=4"
-	statusMissingID = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?Status=4"
+	statusURL       = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"
+	statusDelivered = "MsgId=12a7ee90-50ce-11e7-80ae-00000a0a643c&Status=3"
+	statusFailed    = "MsgId=12a7ee90-50ce-11e7-80ae-00000a0a643c&Status=4"
+	statusMissingID = "status?Status=4"
 )
 
 var testChannels = []courier.Channel{
@@ -23,17 +25,17 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: " ", Status: 200, Response: "Accepted",
+	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, Status: 200, Response: "Accepted",
 		Text: Sp("hello world"), URN: Sp("tel:+923161909799")},
-	{Label: "Receive Stop", URL: receiveStop, Data: " ", Status: 200, Response: "Accepted",
+	{Label: "Receive Stop", URL: receiveURL, Data: receiveStop, Status: 200, Response: "Accepted",
 		URN: Sp("tel:+923161909799"), ChannelEvent: Sp("stop_contact")},
-	{Label: "Receive Missing From", URL: receiveMissingFrom, Data: " ", Status: 400, Response: "missing required field 'Msisdn'"},
+	{Label: "Receive Missing From", URL: receiveURL, Data: receiveMissingFrom, Status: 400, Response: "missing required field 'Msisdn'"},
 
-	{Label: "Status Delivered", URL: statusDelivered, Data: " ", Status: 200, Response: "Accepted",
+	{Label: "Status Delivered", URL: statusURL, Data: statusDelivered, Status: 200, Response: "Accepted",
 		ExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), MsgStatus: Sp("D")},
-	{Label: "Status Failed", URL: statusFailed, Data: " ", Status: 200, Response: "Accepted",
+	{Label: "Status Failed", URL: statusURL, Data: statusFailed, Status: 200, Response: "Accepted",
 		ExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), MsgStatus: Sp("F")},
-	{Label: "Status Missing ID", URL: statusMissingID, Data: " ", Status: 400, Response: "missing required field 'MsgId'"},
+	{Label: "Status Missing ID", URL: statusURL, Data: statusMissingID, Status: 400, Response: "missing required field 'MsgId'"},
 }
 
 func TestHandler(t *testing.T) {

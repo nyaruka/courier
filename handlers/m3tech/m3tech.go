@@ -32,7 +32,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	receiveHandler := handlers.NewTelQueryReceiveHandler(h.BaseHandler, "from", "text")
+	receiveHandler := handlers.NewTelReceiveHandler(h.BaseHandler, "from", "text")
 	return s.AddHandlerRoute(h, http.MethodPost, "receive", receiveHandler)
 }
 

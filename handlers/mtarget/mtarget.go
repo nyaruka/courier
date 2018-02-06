@@ -46,15 +46,20 @@ func (h *handler) Initialize(s courier.Server) error {
 		return nil
 	}
 
-	statusHandler := handlers.NewExternalIDQueryStatusHandler(h.BaseHandler, statuses, "MsgId", "Status")
+	statusHandler := handlers.NewExternalIDStatusHandler(h.BaseHandler, statuses, "MsgId", "Status")
 	return s.AddHandlerRoute(h, http.MethodPost, "status", statusHandler)
 }
 
 // ReceiveMsg handles both MO messages and Stop commands
 func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	text := r.URL.Query().Get("Content")
-	from := r.URL.Query().Get("Msisdn")
-	keyword := r.URL.Query().Get("Keyword")
+	err := r.ParseForm()
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+	}
+
+	text := r.Form.Get("Content")
+	from := r.Form.Get("Msisdn")
+	keyword := r.Form.Get("Keyword")
 
 	if from == "" {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("missing required field 'Msisdn'"))
@@ -75,7 +80,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 
 	// otherwise, create our incoming message and write that
 	msg := h.Backend().NewIncomingMsg(c, urn, text).WithReceivedOn(time.Now().UTC())
-	err := h.Backend().WriteMsg(ctx, msg)
+	err = h.Backend().WriteMsg(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
