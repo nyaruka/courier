@@ -14,7 +14,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var sendURL = "https://api-public.mtarget.fr/sms.json"
+var sendURL = "https://api-public.mtarget.fr/api-sms.json"
 var maxLength = 765
 var statuses = map[string]courier.MsgStatusValue{
 	"0": courier.MsgWired,
@@ -107,7 +107,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		msgURL, _ := url.Parse(sendURL)
 		msgURL.RawQuery = params.Encode()
-		req, err := http.NewRequest(http.MethodGet, msgURL.String(), nil)
+		req, err := http.NewRequest(http.MethodPost, msgURL.String(), nil)
 		if err != nil {
 			return nil, err
 		}
