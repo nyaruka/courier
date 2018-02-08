@@ -40,6 +40,11 @@ func (h *handler) Initialize(s courier.Server) error {
 	return s.AddHandlerRoute(h, "POST", "receive", receiveHandler)
 }
 
+// <response>
+//   <code>XXX</code>
+//   <text>response_text</text>
+//   <message_id>message_id_in_case_of_success_sending</message_id>
+// </response>
 type mtResponse struct {
 	Code      string `xml:"code"`
 	Text      string `xml:"text"`
@@ -92,7 +97,7 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 			return status, nil
 		}
 
-		// our response is XML, but we cheat and only care about <code>204</code> which is returned on success
+		// parse our response as XML
 		response := &mtResponse{}
 		err = xml.Unmarshal(rr.Body, response)
 		if err != nil {
@@ -100,6 +105,7 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 			break
 		}
 
+		// we always get 204 on success
 		if response.Code == "204" {
 			status.SetStatus(courier.MsgWired)
 			status.SetExternalID(response.MessageID)
