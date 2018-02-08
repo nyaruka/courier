@@ -13,6 +13,7 @@ import (
 
 	// load channel handler packages
 	_ "github.com/nyaruka/courier/handlers/africastalking"
+	_ "github.com/nyaruka/courier/handlers/arabiacell"
 	_ "github.com/nyaruka/courier/handlers/blackmyna"
 	_ "github.com/nyaruka/courier/handlers/clickatell"
 	_ "github.com/nyaruka/courier/handlers/dart"
