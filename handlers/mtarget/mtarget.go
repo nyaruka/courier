@@ -104,10 +104,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength) {
 		// build our request
 		params := url.Values{
-			"username": []string{username},
-			"password": []string{password},
-			"msisdn":   []string{msg.URN().Path()},
-			"msg":      []string{part},
+			"username":  []string{username},
+			"password":  []string{password},
+			"msisdn":    []string{msg.URN().Path()},
+			"msg":       []string{part},
+			"serviceid": []string{msg.Channel().Address()},
 		}
 
 		msgURL, _ := url.Parse(sendURL)
