@@ -5,10 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"github.com/nyaruka/courier/config"
-	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/gocommon/urns"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -19,6 +15,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nyaruka/courier/config"
+	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/urns"
+	"github.com/sirupsen/logrus"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/nyaruka/courier"
@@ -26,7 +27,7 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configJiochatAppSecret: "secret", configJiochatAppID: "app-id"}),
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configAppSecret: "secret", configAppID: "app-id"}),
 }
 
 var (
@@ -150,7 +151,7 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, Status: 200, Response: "Event Accepted",
 		ChannelEvent: Sp(courier.NewConversation), URN: Sp("jiochat:1234")},
 
-	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, Status: 400, Response: "unknown event"},
+	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, Status: 200, Response: "unknown event"},
 
 	{Label: "Verify URL", URL: verifyURL, Status: 200, Response: "SUCCESS",
 		PrepRequest: addValidSignature},
@@ -179,8 +180,8 @@ func TestFetchAccessToken(t *testing.T) {
 		// mark that we were called
 		fetchCalled = true
 	}))
-	jiochatURL = server.URL
-	jiochatFetchTimeout = time.Millisecond
+	apiURL = server.URL
+	fetchTimeout = time.Millisecond
 
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
 		{Label: "Receive Message", URL: receiveURL, Data: validMsg, Status: 200, Response: "Accepted"},
@@ -227,7 +228,7 @@ func buildMockJCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 		}
 
 	}))
-	jiochatURL = server.URL
+	apiURL = server.URL
 
 	return server
 }
@@ -294,7 +295,7 @@ func TestBuildMediaRequest(t *testing.T) {
 		authorizationHeader string
 	}{
 		{
-			fmt.Sprintf("%s/media/download.action?media_id=12", jiochatURL),
+			fmt.Sprintf("%s/media/download.action?media_id=12", apiURL),
 			"Bearer ACCESS_TOKEN",
 		},
 	}
@@ -309,7 +310,7 @@ func TestBuildMediaRequest(t *testing.T) {
 
 // setSendURL takes care of setting the sendURL to call
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	jiochatURL = s.URL
+	apiURL = s.URL
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
@@ -375,6 +376,6 @@ func setupBackend(mb *courier.MockBackend) {
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configJiochatAppSecret: "secret", configJiochatAppID: "app-id"})
+	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configAppSecret: "secret", configAppID: "app-id"})
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, setupBackend)
 }

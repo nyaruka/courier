@@ -7,26 +7,28 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
+	"sort"
+	"strings"
+	"time"
+
 	"github.com/buger/jsonparser"
 	"github.com/garyburd/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
-	"net/http"
-	"net/url"
-	"sort"
-	"strings"
-	"time"
 )
 
 var maxMsgLength = 1600
-var jiochatFetchTimeout = time.Second * 2
+var fetchTimeout = time.Second * 2
+var apiURL = "https://channels.jiochat.com"
 
-const configJiochatAppID = "jiochat_app_id"
-const configJiochatAppSecret = "jiochat_app_secret"
-
-var jiochatURL = "https://channels.jiochat.com"
+const (
+	configAppID     = "jiochat_app_id"
+	configAppSecret = "jiochat_app_secret"
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -76,7 +78,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	dictOrder := []string{channel.StringConfigForKey(configJiochatAppSecret, ""), jcVerify.Timestamp, jcVerify.Nonce}
+	dictOrder := []string{channel.StringConfigForKey(configAppSecret, ""), jcVerify.Timestamp, jcVerify.Nonce}
 	sort.Sort(sort.StringSlice(dictOrder))
 
 	combinedParams := strings.Join(dictOrder, "")
@@ -126,9 +128,8 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 
 	urn := urns.NewURNFromParts(urns.JiochatScheme, jcRequest.FromUsername, "")
 
+	// subscribe event, trigger a new conversation
 	if jcRequest.MsgType == "event" && jcRequest.Event == "subscribe" {
-
-		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn)
 
 		err := h.Backend().WriteChannelEvent(ctx, channelEvent)
@@ -139,8 +140,9 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
 	}
 
+	// unknown event type (we only deal with subscribe)
 	if jcRequest.MsgType == "event" {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown event"))
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "unknown event type")
 	}
 
 	// create our message
@@ -159,29 +161,30 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 func buildMediaURL(mediaID string) string {
-	mediaURL, _ := url.Parse(fmt.Sprintf("%s/%s", jiochatURL, "media/download.action"))
+	mediaURL, _ := url.Parse(fmt.Sprintf("%s/%s", apiURL, "media/download.action"))
 	mediaURL.RawQuery = url.Values{"media_id": []string{mediaID}}.Encode()
 	return mediaURL.String()
 }
 
-type refreshTokenData struct {
+type fetchTokenData struct {
 	GrantType    string `json:"grant_type"`
 	ClientID     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
 }
 
+// fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(channel courier.Channel) error {
-	time.Sleep(jiochatFetchTimeout)
+	time.Sleep(fetchTimeout)
 
-	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", jiochatURL, "auth/token.action"))
+	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", apiURL, "auth/token.action"))
 
-	refreshTokenData := &refreshTokenData{
+	payload := &fetchTokenData{
 		GrantType:    "client_credentials",
-		ClientID:     channel.StringConfigForKey(configJiochatAppID, ""),
-		ClientSecret: channel.StringConfigForKey(configJiochatAppSecret, ""),
+		ClientID:     channel.StringConfigForKey(configAppID, ""),
+		ClientSecret: channel.StringConfigForKey(configAppSecret, ""),
 	}
 
-	jsonBody, err := json.Marshal(refreshTokenData)
+	jsonBody, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
@@ -201,20 +204,26 @@ func (h *handler) fetchAccessToken(channel courier.Channel) error {
 
 	rc := h.Backend().RedisPool().Get()
 	defer rc.Close()
-	cacheKey := fmt.Sprintf("jiochat_channel_access_token:%s", channel.UUID().String())
 
+	cacheKey := fmt.Sprintf("jiochat_channel_access_token:%s", channel.UUID().String())
 	_, err = rc.Do("set", cacheKey, accessToken, 7200)
+
 	return err
 }
 
 func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
 	rc := h.Backend().RedisPool().Get()
 	defer rc.Close()
+
 	cacheKey := fmt.Sprintf("jiochat_channel_access_token:%s", channel.UUID().String())
 	accessToken, err := redis.String(rc.Do("GET", cacheKey))
 	if err != nil {
 		return "", err
 	}
+	if accessToken == "" {
+		return "", fmt.Errorf("no access token for channel")
+	}
+
 	return accessToken, nil
 }
 
@@ -241,11 +250,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		jcMsg.ToUser = msg.URN().Path()
 		jcMsg.Text.Content = part
 
-		requestBody := new(bytes.Buffer)
+		requestBody := &bytes.Buffer{}
 		json.NewEncoder(requestBody).Encode(jcMsg)
 
 		// build our request
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", jiochatURL, "custom/custom_send.action"), requestBody)
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", apiURL, "custom/custom_send.action"), requestBody)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
@@ -263,8 +272,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return status, err
 		}
 		status.SetStatus(courier.MsgWired)
-
 	}
+
 	return status, nil
 }
 
@@ -281,7 +290,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 		"openid": []string{path},
 	}
 
-	reqURL, _ := url.Parse(fmt.Sprintf("%s/%s", jiochatURL, "user/info.action"))
+	reqURL, _ := url.Parse(fmt.Sprintf("%s/%s", apiURL, "user/info.action"))
 	reqURL.RawQuery = form.Encode()
 
 	req, err := http.NewRequest(http.MethodGet, reqURL.String(), nil)
