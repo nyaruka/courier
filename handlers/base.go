@@ -243,15 +243,15 @@ func SplitMsg(text string, max int) []string {
 }
 
 // NewTelReceiveHandler creates a new receive handler given the passed in text and from fields
-func NewTelReceiveHandler(h BaseHandler, fromField string, textField string) courier.ChannelHandleFunc {
+func NewTelReceiveHandler(h BaseHandler, fromField string, bodyField string) courier.ChannelHandleFunc {
 	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 		err := r.ParseForm()
 		if err != nil {
 			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
 		}
 
-		text := r.URL.Query().Get(textField)
-		from := r.URL.Query().Get(fromField)
+		body := r.Form.Get(bodyField)
+		from := r.Form.Get(fromField)
 		if from == "" {
 			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("missing required field '%s'", fromField))
 		}
@@ -259,7 +259,7 @@ func NewTelReceiveHandler(h BaseHandler, fromField string, textField string) cou
 		urn := urns.NewTelURNForCountry(from, c.Country())
 
 		// build our msg
-		msg := h.Backend().NewIncomingMsg(c, urn, text).WithReceivedOn(time.Now().UTC())
+		msg := h.Backend().NewIncomingMsg(c, urn, body).WithReceivedOn(time.Now().UTC())
 
 		// and finally queue our message
 		err = h.Backend().WriteMsg(ctx, msg)
