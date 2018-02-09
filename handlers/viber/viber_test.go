@@ -163,8 +163,8 @@ func TestSending(t *testing.T) {
 	var invalidTokenChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		map[string]interface{}{},
 	)
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
-	RunChannelSendTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases, nil)
 }
 
 var testChannels = []courier.Channel{

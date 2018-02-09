@@ -120,6 +120,6 @@ func TestSending(t *testing.T) {
 			"verify_ssl":   false,
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
-	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalSendTestCases, nil)
 }

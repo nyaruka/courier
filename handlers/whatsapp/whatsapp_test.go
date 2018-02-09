@@ -139,5 +139,5 @@ func TestSending(t *testing.T) {
 			"base_url": "https://foo.bar/",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 }

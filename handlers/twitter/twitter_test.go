@@ -145,5 +145,5 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), defaultSendTestCases)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), defaultSendTestCases, nil)
 }

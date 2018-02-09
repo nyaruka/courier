@@ -247,6 +247,6 @@ func TestSending(t *testing.T) {
 			configAccountSID:          "accountSID",
 			courier.ConfigAuthToken:   "authToken"})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler("T", "Twilio"), defaultSendTestCases)
-	RunChannelSendTestCases(t, tmsDefaultChannel, newHandler("TMS", "Twilio Messaging Service"), tmsDefaultSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler("T", "Twilio"), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, tmsDefaultChannel, newHandler("TMS", "Twilio Messaging Service"), tmsDefaultSendTestCases, nil)
 }

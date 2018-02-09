@@ -93,5 +93,5 @@ func TestSending(t *testing.T) {
 			"password": "Password",
 			"username": "Username"})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 }

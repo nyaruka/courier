@@ -481,6 +481,11 @@ func (b *backend) Cleanup() error {
 	return b.redisPool.Close()
 }
 
+// RedisPool returns the redisPool for this backend
+func (b *backend) RedisPool() *redis.Pool {
+	return b.redisPool
+}
+
 // NewBackend creates a new RapidPro backend
 func newBackend(config *config.Courier) courier.Backend {
 	return &backend{

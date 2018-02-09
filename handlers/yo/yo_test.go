@@ -98,5 +98,5 @@ var getSendTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	var getChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "YO", "2020", "US", map[string]interface{}{"username": "yo-username", "password": "yo-password"})
 
-	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases)
+	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil)
 }
