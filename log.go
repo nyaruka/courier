@@ -59,6 +59,16 @@ func LogRequestIgnored(r *http.Request, channel Channel, details string) {
 	}).Info("request ignored")
 }
 
+// LogRequestHandled logs that we handled the passed in request but didn't create any events
+func LogRequestHandled(r *http.Request, channel Channel, details string) {
+	logrus.WithFields(logrus.Fields{
+		"channel_uuid": channel.UUID(),
+		"url":          r.Context().Value(contextRequestURL),
+		"elapsed_ms":   getElapsedMS(r),
+		"details":      details,
+	}).Info("request handled")
+}
+
 // LogRequestError logs that errored during parsing (this is logged as an info as it isn't an error on our side)
 func LogRequestError(r *http.Request, channel Channel, err error) {
 	log := logrus.WithFields(logrus.Fields{

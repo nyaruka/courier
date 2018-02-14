@@ -45,6 +45,12 @@ func WriteAndLogStatusMsgNotFound(ctx context.Context, w http.ResponseWriter, r 
 	return WriteDataResponse(ctx, w, http.StatusOK, "Ignored", []interface{}{NewInfoData(statusMsgNotFoundDetail)})
 }
 
+// WriteAndLogRequestHandled writes a JSON response for the passed in message and logs an info message
+func WriteAndLogRequestHandled(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, details string) error {
+	LogRequestHandled(r, c, details)
+	return WriteDataResponse(ctx, w, http.StatusOK, "Handled", []interface{}{NewInfoData(details)})
+}
+
 // WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it
 func WriteChannelEventSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, event ChannelEvent) error {
 	return WriteDataResponse(ctx, w, http.StatusOK, "Event Accepted", []interface{}{NewEventReceiveData(event)})

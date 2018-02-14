@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
+	"github.com/garyburd/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
@@ -65,6 +68,65 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("missing required field 'Msisdn'"))
 	}
 
+	// if we have a long message id, then this is part of a multipart message, we don't write the message until
+	// we have received all parts, which we buffer in Redis
+	longID := r.Form.Get("msglong_id")
+	if longID != "" {
+		longCount, _ := strconv.Atoi(r.Form.Get("msglong_msgcount"))
+		longRef, _ := strconv.Atoi(r.Form.Get("msglong_msgref"))
+
+		if longCount == 0 || longRef == 0 {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("invalid or missing 'msglong_msgcount' or 'msglong_msgref' parameters"))
+		}
+
+		if longRef < 1 || longRef > longCount {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("'msglong_msgref' needs to be between 1 and 'msglong_msgcount' inclusive"))
+		}
+
+		rc := h.Backend().RedisPool().Get()
+		defer rc.Close()
+
+		// first things first, populate the new part we just received
+		mapKey := fmt.Sprintf("%s:%s", c.UUID().String(), longID)
+		rc.Send("MULTI")
+		rc.Send("HSET", mapKey, longRef, text)
+		rc.Send("EXPIRE", mapKey, 300)
+		_, err := rc.Do("EXEC")
+		if err != nil {
+			return nil, err
+		}
+
+		// see if we have all the parts we need
+		count, err := redis.Int(rc.Do("HLEN", mapKey))
+		if err != nil {
+			return nil, err
+		}
+
+		// we don't have all the parts yet, say we received the message
+		if count != longCount {
+			return nil, courier.WriteAndLogRequestHandled(ctx, w, r, c, "Message part received")
+		}
+
+		// we have all our parts, grab them and put them together
+		// build up the list of keys we are looking up
+		keys := make([]interface{}, longCount+1)
+		keys[0] = mapKey
+		for i := 1; i < longCount+1; i++ {
+			keys[i] = fmt.Sprintf("%d", i)
+		}
+
+		segments, err := redis.Strings(rc.Do("HMGET", keys...))
+		if err != nil {
+			return nil, err
+		}
+
+		// join our segments in our text
+		text = strings.Join(segments, "")
+
+		// finally delete our key, we are done with this message
+		rc.Do("DEL", mapKey)
+	}
+
 	// create our URN
 	urn := urns.NewTelURNForCountry(from, c.Country())
 
@@ -104,11 +166,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength) {
 		// build our request
 		params := url.Values{
-			"username":  []string{username},
-			"password":  []string{password},
-			"msisdn":    []string{msg.URN().Path()},
-			"msg":       []string{part},
-			"serviceid": []string{msg.Channel().Address()},
+			"username":     []string{username},
+			"password":     []string{password},
+			"msisdn":       []string{msg.URN().Path()},
+			"msg":          []string{part},
+			"serviceid":    []string{msg.Channel().Address()},
+			"allowunicode": []string{"true"},
 		}
 
 		msgURL, _ := url.Parse(sendURL)
