@@ -15,8 +15,8 @@ var (
 	receiveStop         = "Msisdn=+923161909799&Content=Stop&Keyword=Stop"
 	receiveMissingFrom  = "Content=hello&Keyword=Default"
 
-	receivePart2 = "Msisdn=+923161909799&Content=world&Keyword=Default&msglong_id=longmsg&msglong_msgcount=2&msglong_msgref=2"
-	receivePart1 = "Msisdn=+923161909799&Content=hello+&Keyword=Default&msglong_id=longmsg&msglong_msgcount=2&msglong_msgref=1"
+	receivePart2 = "Msisdn=+923161909799&Content=world&Keyword=Default&msglong.id=longmsg&msglong.msgcount=2&msglong.msgref=2"
+	receivePart1 = "Msisdn=+923161909799&Content=hello+&Keyword=Default&msglong.id=longmsg&msglong.msgcount=2&msglong.msgref=1"
 
 	statusURL = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"
 

@@ -70,17 +70,17 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 
 	// if we have a long message id, then this is part of a multipart message, we don't write the message until
 	// we have received all parts, which we buffer in Redis
-	longID := r.Form.Get("msglong_id")
+	longID := r.Form.Get("msglong.id")
 	if longID != "" {
-		longCount, _ := strconv.Atoi(r.Form.Get("msglong_msgcount"))
-		longRef, _ := strconv.Atoi(r.Form.Get("msglong_msgref"))
+		longCount, _ := strconv.Atoi(r.Form.Get("msglong.msgcount"))
+		longRef, _ := strconv.Atoi(r.Form.Get("msglong.msgref"))
 
 		if longCount == 0 || longRef == 0 {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("invalid or missing 'msglong_msgcount' or 'msglong_msgref' parameters"))
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("invalid or missing 'msglong.msgcount' or 'msglong.msgref' parameters"))
 		}
 
 		if longRef < 1 || longRef > longCount {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("'msglong_msgref' needs to be between 1 and 'msglong_msgcount' inclusive"))
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("'msglong.msgref' needs to be between 1 and 'msglong.msgcount' inclusive"))
 		}
 
 		rc := h.Backend().RedisPool().Get()
