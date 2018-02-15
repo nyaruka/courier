@@ -73,7 +73,7 @@ type verifyRequest struct {
 // VerifyURL is our HTTP handler function for Jiochat config URL verification callbacks
 func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	jcVerify := &verifyRequest{}
-	err := handlers.DecodeAndValidateQueryParams(jcVerify, r)
+	err := handlers.DecodeAndValidateForm(jcVerify, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}

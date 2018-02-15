@@ -61,12 +61,7 @@ func (h *handler) Initialize(s courier.Server) error {
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	externalMessage := &externalMessage{}
-	handlers.DecodeAndValidateQueryParams(externalMessage, r)
-
-	// if this is a post, also try to parse the form body
-	if r.Method == http.MethodPost {
-		handlers.DecodeAndValidateForm(externalMessage, r)
-	}
+	handlers.DecodeAndValidateForm(externalMessage, r)
 
 	// validate whether our required fields are present
 	err := handlers.Validate(externalMessage)

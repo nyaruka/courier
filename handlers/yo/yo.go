@@ -55,7 +55,7 @@ type moMsg struct {
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	msg := &moMsg{}
-	err := handlers.DecodeAndValidateQueryParams(msg, r)
+	err := handlers.DecodeAndValidateForm(msg, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}

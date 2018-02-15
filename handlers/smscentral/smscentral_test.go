@@ -9,10 +9,11 @@ import (
 )
 
 var (
-	receiveValidMessage = "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?mobile=%2B2349067554729&message=Join"
-	receiveNoParams     = "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-	receiveNoSender     = "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?message=Join"
-	receiveNoMessage    = "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?mobile=%2B2349067554729"
+	receiveURL          = "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
+	receiveValidMessage = "mobile=%2B2349067554729&message=Join"
+	receiveNoMessage    = "mobile=%2B2349067554729"
+	receiveNoParams     = "none"
+	receiveNoSender     = "message=Join"
 )
 
 var testChannels = []courier.Channel{
@@ -20,11 +21,12 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", Status: 200, Response: "Accepted",
+	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", Status: 400, Response: "field 'message' required"},
-	{Label: "Receive No Sender", URL: receiveNoSender, Data: "empty", Status: 400, Response: "field 'mobile' required"},
-	{Label: "Receive No Message", URL: receiveNoMessage, Data: "empty", Status: 400, Response: "field 'message' required"},
+	{Label: "Receive No Message", URL: receiveURL, Data: receiveNoMessage, Status: 200, Response: "Accepted",
+		Text: Sp(""), URN: Sp("tel:+2349067554729")},
+	{Label: "Receive No Params", URL: receiveURL, Data: receiveNoParams, Status: 400, Response: "field 'mobile' required"},
+	{Label: "Receive No Sender", URL: receiveURL, Data: receiveNoSender, Status: 400, Response: "field 'mobile' required"},
 }
 
 func TestHandler(t *testing.T) {
