@@ -94,7 +94,7 @@ func Validate(form interface{}) error {
 }
 
 // DecodeAndValidateForm takes the passed in form and attempts to parse and validate it from the
-// POST parameters of the passed in request
+// URL query parameters as well as any POST parameters of the passed in request
 func DecodeAndValidateForm(form interface{}, r *http.Request) error {
 	err := r.ParseForm()
 	if err != nil {
@@ -102,23 +102,6 @@ func DecodeAndValidateForm(form interface{}, r *http.Request) error {
 	}
 
 	err = decoder.Decode(form, r.Form)
-	if err != nil {
-		return err
-	}
-
-	// check our input is valid
-	err = validate.Struct(form)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// DecodeAndValidateQueryParams takes the passed in form and attempts to parse and validate it from the
-// GET parameters of the passed in request
-func DecodeAndValidateQueryParams(form interface{}, r *http.Request) error {
-	err := decoder.Decode(form, r.URL.Query())
 	if err != nil {
 		return err
 	}

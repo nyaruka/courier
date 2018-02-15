@@ -20,7 +20,7 @@ before_script:
 - go get github.com/mattn/goveralls
 
 script:
-- go test github.com/nyaruka/courier/... -p=1 -bench=.
+- go test github.com/nyaruka/courier/... -p=1
 - $HOME/gopath/bin/goveralls -service=travis-ci -v
 
 after_success:

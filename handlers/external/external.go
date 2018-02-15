@@ -18,7 +18,6 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 const contentURLEncoded = "application/x-www-form-urlencoded"
@@ -61,17 +60,9 @@ func (h *handler) Initialize(s courier.Server) error {
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	externalMessage := &externalMessage{}
-	handlers.DecodeAndValidateQueryParams(externalMessage, r)
-
-	// if this is a post, also try to parse the form body
-	if r.Method == http.MethodPost {
-		handlers.DecodeAndValidateForm(externalMessage, r)
-	}
-
-	// validate whether our required fields are present
-	err := handlers.Validate(externalMessage)
+	err := handlers.DecodeAndValidateForm(externalMessage, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// must have one of from or sender set, error if neither
@@ -80,7 +71,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		sender = externalMessage.From
 	}
 	if sender == "" {
-		return nil, errors.New("must have one of 'sender' or 'from' set")
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("must have one of 'sender' or 'from' set"))
 	}
 
 	// if we have a date, parse it
@@ -93,7 +84,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	if dateString != "" {
 		date, err = time.Parse(time.RFC3339Nano, dateString)
 		if err != nil {
-			return nil, errors.New("invalid date format, must be RFC 3339")
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid date format, must be RFC 3339"))
 		}
 	}
 
@@ -130,23 +121,15 @@ func (h *handler) buildStatusHandler(status string) courier.ChannelHandleFunc {
 // StatusMessage is our HTTP handler function for status updates
 func (h *handler) StatusMessage(ctx context.Context, statusString string, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	statusForm := &statusForm{}
-	handlers.DecodeAndValidateQueryParams(statusForm, r)
-
-	// if this is a post, also try to parse the form body
-	if r.Method == http.MethodPost {
-		handlers.DecodeAndValidateForm(statusForm, r)
-	}
-
-	// validate whether our required fields are present
-	err := handlers.Validate(statusForm)
+	err := handlers.DecodeAndValidateForm(statusForm, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	// get our id
+	// get our status
 	msgStatus, found := statusMappings[strings.ToLower(statusString)]
 	if !found {
-		return nil, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString))
 	}
 
 	// write our status

@@ -79,7 +79,7 @@ var statusMappings = map[string]courier.MsgStatusValue{
 // StatusMessage is our HTTP handler function for status updates
 func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	nexmoDeliveryReport := &nexmoDeliveryReport{}
-	handlers.DecodeAndValidateQueryParams(nexmoDeliveryReport, r)
+	handlers.DecodeAndValidateForm(nexmoDeliveryReport, r)
 
 	if nexmoDeliveryReport.MessageID == "" {
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "no messageId parameter, ignored")
@@ -117,12 +117,7 @@ type nexmoIncomingMessage struct {
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	nexmoIncomingMessage := &nexmoIncomingMessage{}
-	handlers.DecodeAndValidateQueryParams(nexmoIncomingMessage, r)
-
-	// if this is a post, also try to parse the form body
-	if r.Method == http.MethodPost {
-		handlers.DecodeAndValidateForm(nexmoIncomingMessage, r)
-	}
+	handlers.DecodeAndValidateForm(nexmoIncomingMessage, r)
 
 	if nexmoIncomingMessage.To == "" {
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "no to parameter, ignored")

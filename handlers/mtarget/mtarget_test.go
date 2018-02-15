@@ -9,12 +9,17 @@ import (
 )
 
 var (
-	receiveURL          = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
+	receiveURL = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
+
 	receiveValidMessage = "Msisdn=+923161909799&Content=hello+world&Keyword=Default"
 	receiveStop         = "Msisdn=+923161909799&Content=Stop&Keyword=Stop"
 	receiveMissingFrom  = "Content=hello&Keyword=Default"
 
-	statusURL       = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"
+	receivePart2 = "Msisdn=+923161909799&Content=world&Keyword=Default&msglong.id=longmsg&msglong.msgcount=2&msglong.msgref=2"
+	receivePart1 = "Msisdn=+923161909799&Content=hello+&Keyword=Default&msglong.id=longmsg&msglong.msgcount=2&msglong.msgref=1"
+
+	statusURL = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"
+
 	statusDelivered = "MsgId=12a7ee90-50ce-11e7-80ae-00000a0a643c&Status=3"
 	statusFailed    = "MsgId=12a7ee90-50ce-11e7-80ae-00000a0a643c&Status=4"
 	statusMissingID = "status?Status=4"
@@ -30,6 +35,10 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Stop", URL: receiveURL, Data: receiveStop, Status: 200, Response: "Accepted",
 		URN: Sp("tel:+923161909799"), ChannelEvent: Sp("stop_contact")},
 	{Label: "Receive Missing From", URL: receiveURL, Data: receiveMissingFrom, Status: 400, Response: "missing required field 'Msisdn'"},
+
+	{Label: "Receive Part 2", URL: receiveURL, Data: receivePart2, Status: 200, Response: "Handled"},
+	{Label: "Receive Part 1", URL: receiveURL, Data: receivePart1, Status: 200, Response: "Accepted",
+		Text: Sp("hello world"), URN: Sp("tel:+923161909799")},
 
 	{Label: "Status Delivered", URL: statusURL, Data: statusDelivered, Status: 200, Response: "Accepted",
 		ExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), MsgStatus: Sp("D")},
@@ -57,11 +66,12 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: `{"results":[{"code": "0", "ticket": "externalID"}]}`, ResponseStatus: 200,
 		URLParams: map[string]string{
-			"msisdn":    "+250788383383",
-			"msg":       "Simple Message",
-			"username":  "Username",
-			"password":  "Password",
-			"serviceid": "2020",
+			"msisdn":       "+250788383383",
+			"msg":          "Simple Message",
+			"username":     "Username",
+			"password":     "Password",
+			"serviceid":    "2020",
+			"allowunicode": "true",
 		},
 		SendPrep: setSendURL},
 	{Label: "Unicode Send",

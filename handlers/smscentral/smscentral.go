@@ -45,22 +45,14 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type smsCentralMessage struct {
-	Message string `validate:"required" name:"message"`
-	Mobile  string `validate:"required" name:"mobile"`
+	Message string `name:"message"`
+	Mobile  string `name:"mobile" validate:"required" `
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	smsCentralMessage := &smsCentralMessage{}
-	handlers.DecodeAndValidateQueryParams(smsCentralMessage, r)
-
-	// if this is a post, also try to parse the form body
-	if r.Method == http.MethodPost {
-		handlers.DecodeAndValidateForm(smsCentralMessage, r)
-	}
-
-	// validate whether our required fields are present
-	err := handlers.Validate(smsCentralMessage)
+	err := handlers.DecodeAndValidateForm(smsCentralMessage, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
