@@ -18,7 +18,6 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 const contentURLEncoded = "application/x-www-form-urlencoded"
@@ -63,7 +62,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	externalMessage := &externalMessage{}
 	err := handlers.DecodeAndValidateForm(externalMessage, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// must have one of from or sender set, error if neither
@@ -72,7 +71,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		sender = externalMessage.From
 	}
 	if sender == "" {
-		return nil, errors.New("must have one of 'sender' or 'from' set")
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("must have one of 'sender' or 'from' set"))
 	}
 
 	// if we have a date, parse it
@@ -85,7 +84,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	if dateString != "" {
 		date, err = time.Parse(time.RFC3339Nano, dateString)
 		if err != nil {
-			return nil, errors.New("invalid date format, must be RFC 3339")
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid date format, must be RFC 3339"))
 		}
 	}
 
@@ -124,13 +123,13 @@ func (h *handler) StatusMessage(ctx context.Context, statusString string, channe
 	statusForm := &statusForm{}
 	err := handlers.DecodeAndValidateForm(statusForm, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	// get our id
+	// get our status
 	msgStatus, found := statusMappings[strings.ToLower(statusString)]
 	if !found {
-		return nil, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%s', must be one failed, sent or delivered", statusString))
 	}
 
 	// write our status

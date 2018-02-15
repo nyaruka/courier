@@ -95,12 +95,12 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 	kannelStatus := &kannelStatus{}
 	err := handlers.DecodeAndValidateForm(kannelStatus, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	msgStatus, found := kannelStatusMapping[kannelStatus.Status]
 	if !found {
-		return nil, fmt.Errorf("unknown status '%d', must be one of 1,2,4,8,16", kannelStatus.Status)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%d', must be one of 1,2,4,8,16", kannelStatus.Status))
 	}
 
 	// write our status
