@@ -1,8 +1,11 @@
 package line
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"net/http"
 	"time"
@@ -10,6 +13,9 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 )
+
+var sendURL = "https://api.line.me/v2/bot/message/push"
+var maxMsgLength = 1600
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -114,7 +120,59 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 
 }
 
+type mtMsg struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+type mtEnvelop struct {
+	To       string  `json:"to"`
+	Messages []mtMsg `json:"messages"`
+}
+
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	return nil, fmt.Errorf("LN sending via courier not yet implemented")
+	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	if authToken == "" {
+		return nil, fmt.Errorf("no auth token set for LN channel: %s", msg.Channel().UUID())
+	}
+
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
+	for _, part := range parts {
+		lineEnvelop := mtEnvelop{
+			To: msg.URN().Path(),
+			Messages: []mtMsg{
+				mtMsg{
+					Type: "text",
+					Text: part,
+				},
+			},
+		}
+
+		requestBody := &bytes.Buffer{}
+		json.NewEncoder(requestBody).Encode(lineEnvelop)
+
+		// build our request
+		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authToken))
+		if err != nil {
+			return nil, err
+		}
+
+		rr, err := utils.MakeHTTPRequest(req)
+		// record our status and log
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
+
+		if err != nil {
+			return status, err
+		}
+		status.SetStatus(courier.MsgWired)
+	}
+
+	return status, nil
+
 }

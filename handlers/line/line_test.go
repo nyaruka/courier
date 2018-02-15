@@ -1,6 +1,7 @@
 package line
 
 import (
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -111,4 +112,62 @@ func TestHandler(t *testing.T) {
 
 func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
+}
+
+// setSendURL takes care of setting the send_url to our test server host
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+	sendURL = s.URL
+}
+
+var defaultSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "line:uabcdefghij",
+		Status:       "W",
+		ResponseBody: `{}`, ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Bearer AccessToken",
+		},
+		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message"}]}`,
+		SendPrep:    setSendURL},
+	{Label: "Unicode Send",
+		Text: "Simple Message ☺", URN: "line:uabcdefghij",
+		Status:       "W",
+		ResponseBody: `{}`, ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Bearer AccessToken",
+		},
+		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message ☺"}]}`,
+		SendPrep:    setSendURL},
+	{Label: "Send Attachment",
+		Text: "My pic!", URN: "line:uabcdefghij", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Status:       "W",
+		ResponseBody: `{}`, ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Bearer AccessToken",
+		},
+		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"My pic!\nhttps://foo.bar/image.jpg"}]}`,
+		SendPrep:    setSendURL},
+	{Label: "Error Sending",
+		Text: "Error Sending", URN: "line:uabcdefghij",
+		Status:       "E",
+		ResponseBody: `{"message": "Error"}`, ResponseStatus: 403,
+		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
+		Error:       "received non 200 status: 403",
+		SendPrep:    setSendURL},
+}
+
+func TestSending(t *testing.T) {
+	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US",
+		map[string]interface{}{
+			"auth_token": "AccessToken",
+		},
+	)
+
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 }
