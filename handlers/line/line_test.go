@@ -103,7 +103,7 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessageLast, Status: 200, Response: "Accepted",
 		Text: Sp("Last event"), URN: Sp("line:uabcdefghij"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
 	{Label: "Missing message", URL: receiveURL, Data: missingMessage, Status: 200, Response: "ignoring request, no message"},
-	{Label: "No event request", URL: receiveURL, Data: noEvent, Status: 400, Response: "missing message, source or type in the event"},
+	{Label: "No event request", URL: receiveURL, Data: noEvent, Status: 200, Response: "ignoring request, no message"},
 }
 
 func TestHandler(t *testing.T) {

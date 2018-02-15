@@ -112,11 +112,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	if len(msgs) == 0 {
-		if len(lineRequest.Events) > 0 {
-			return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring request, no message")
-		}
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing message, source or type in the event"))
-
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring request, no message")
 	}
 
 	return events, courier.WriteMsgSuccess(ctx, w, r, msgs)
