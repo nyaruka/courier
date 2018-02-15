@@ -51,7 +51,7 @@ func (h *handler) Initialize(s courier.Server) error {
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
 	kannelMsg := &kannelMessage{}
-	err := handlers.DecodeAndValidateQueryParams(kannelMsg, r)
+	err := handlers.DecodeAndValidateForm(kannelMsg, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
@@ -93,14 +93,14 @@ var kannelStatusMapping = map[int]courier.MsgStatusValue{
 func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
 	kannelStatus := &kannelStatus{}
-	err := handlers.DecodeAndValidateQueryParams(kannelStatus, r)
+	err := handlers.DecodeAndValidateForm(kannelStatus, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	msgStatus, found := kannelStatusMapping[kannelStatus.Status]
 	if !found {
-		return nil, fmt.Errorf("unknown status '%d', must be one of 1,2,4,8,16", kannelStatus.Status)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%d', must be one of 1,2,4,8,16", kannelStatus.Status))
 	}
 
 	// write our status
