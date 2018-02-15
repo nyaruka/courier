@@ -61,10 +61,7 @@ func (h *handler) Initialize(s courier.Server) error {
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	externalMessage := &externalMessage{}
-	handlers.DecodeAndValidateForm(externalMessage, r)
-
-	// validate whether our required fields are present
-	err := handlers.Validate(externalMessage)
+	err := handlers.DecodeAndValidateForm(externalMessage, r)
 	if err != nil {
 		return nil, err
 	}
@@ -125,15 +122,7 @@ func (h *handler) buildStatusHandler(status string) courier.ChannelHandleFunc {
 // StatusMessage is our HTTP handler function for status updates
 func (h *handler) StatusMessage(ctx context.Context, statusString string, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	statusForm := &statusForm{}
-	handlers.DecodeAndValidateQueryParams(statusForm, r)
-
-	// if this is a post, also try to parse the form body
-	if r.Method == http.MethodPost {
-		handlers.DecodeAndValidateForm(statusForm, r)
-	}
-
-	// validate whether our required fields are present
-	err := handlers.Validate(statusForm)
+	err := handlers.DecodeAndValidateForm(statusForm, r)
 	if err != nil {
 		return nil, err
 	}

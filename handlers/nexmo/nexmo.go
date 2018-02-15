@@ -119,11 +119,6 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	nexmoIncomingMessage := &nexmoIncomingMessage{}
 	handlers.DecodeAndValidateForm(nexmoIncomingMessage, r)
 
-	// if this is a post, also try to parse the form body
-	if r.Method == http.MethodPost {
-		handlers.DecodeAndValidateForm(nexmoIncomingMessage, r)
-	}
-
 	if nexmoIncomingMessage.To == "" {
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "no to parameter, ignored")
 	}
