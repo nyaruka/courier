@@ -142,6 +142,18 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message ☺"}]}`,
 		SendPrep:    setSendURL},
+	{Label: "Long Send",
+		Text:         "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		URN:          "line:uabcdefghij",
+		Status:       "W",
+		ResponseBody: `{}`, ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Bearer AccessToken",
+		},
+		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"I need to keep adding more things to make it work"}]}`,
+		SendPrep:    setSendURL},
 	{Label: "Send Attachment",
 		Text: "My pic!", URN: "line:uabcdefghij", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status:       "W",
@@ -163,6 +175,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
+	maxMsgLength = 160
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US",
 		map[string]interface{}{
 			"auth_token": "AccessToken",

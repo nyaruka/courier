@@ -15,7 +15,7 @@ import (
 )
 
 var sendURL = "https://api.line.me/v2/bot/message/push"
-var maxMsgLength = 1600
+var maxMsgLength = 2000
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -87,6 +87,8 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	msgs := []courier.Msg{}
+	events := []courier.Event{}
+
 	for _, lineEvent := range lineRequest.Events {
 		if (lineEvent.Source.Type == "" && lineEvent.Source.UserID == "") || (lineEvent.Message.Type == "" && lineEvent.Message.ID == "" && lineEvent.Message.Text == "") || lineEvent.Message.Type != "text" {
 
@@ -106,6 +108,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 			return nil, err
 		}
 		msgs = append(msgs, msg)
+		events = append(events, msg)
 	}
 
 	if len(msgs) == 0 {
@@ -116,7 +119,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 
 	}
 
-	return []courier.Event{msgs[0]}, courier.WriteMsgSuccess(ctx, w, r, msgs)
+	return events, courier.WriteMsgSuccess(ctx, w, r, msgs)
 
 }
 
