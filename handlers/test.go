@@ -237,6 +237,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if testCase.Status != "" {
+				require.NotNil(status)
 				require.Equal(testCase.Status, string(status.Status()))
 			}
 
