@@ -40,7 +40,7 @@ var (
 		"FromUserName": "1234",
 		"CreateTime": 1454119029,
 		"MsgType": "text",
-		"MsgId": 123456,
+		"MsgId": "123456",
 		"Content": "Simple Message"
 	}`
 
@@ -65,7 +65,7 @@ var (
 		"ToUsername": "12121212121212",
 		"CreateTime": 1454119029,
 		"MsgType": "text",
-		"MsgId": 123456,
+		"MsgId": "123456",
 		"Content": "Simple Message"
 	}`
 
@@ -83,7 +83,7 @@ var (
 		"FromUserName": "1234",
 		"CreateTime": 1454119029,
 		"MsgType": "image",
-		"MsgId": 123456,
+		"MsgId": "123456",
 		"MediaId": "12"
 	}`
 )

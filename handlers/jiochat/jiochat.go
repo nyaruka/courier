@@ -106,7 +106,7 @@ type moMsg struct {
 	FromUsername string `json:"FromUserName"    validate:"required"`
 	MsgType      string `json:"MsgType"         validate:"required"`
 	CreateTime   int64  `json:"CreateTime"`
-	MsgID        int64  `json:"MsgId"`
+	MsgID        string `json:"MsgId"`
 	Event        string `json:"Event"`
 	Content      string `json:"Content"`
 	MediaID      string `json:"MediaId"`
@@ -120,7 +120,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	if jcRequest.MsgID == 0 && jcRequest.Event == "" {
+	if jcRequest.MsgID == "" && jcRequest.Event == "" {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing parameters, must have either 'MsgId' or 'Event'"))
 	}
 
@@ -146,7 +146,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our message
-	msg := h.Backend().NewIncomingMsg(channel, urn, jcRequest.Content).WithExternalID(fmt.Sprintf("%d", jcRequest.MsgID)).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, jcRequest.Content).WithExternalID(jcRequest.MsgID).WithReceivedOn(date)
 	if jcRequest.MsgType == "image" || jcRequest.MsgType == "video" || jcRequest.MsgType == "voice" {
 		mediaURL := buildMediaURL(jcRequest.MediaID)
 		msg.WithAttachment(mediaURL)

@@ -61,6 +61,9 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text str
 	// create our msg
 	msg := newMsg(MsgIncoming, channel, urn, text)
 
+	// set received on to now
+	msg.WithReceivedOn(time.Now().UTC())
+
 	// have we seen this msg in the past period?
 	prevUUID := checkMsgSeen(b, msg)
 	if prevUUID != courier.NilMsgUUID {
