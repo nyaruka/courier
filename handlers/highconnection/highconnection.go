@@ -37,7 +37,18 @@ func (h *handler) Initialize(s courier.Server) error {
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	err = s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	if err != nil {
+		return err
+	}
+
+	err = s.AddHandlerRoute(h, http.MethodPost, "status", h.StatusMessage)
+	if err != nil {
+		return err
+	}
+
+	return s.AddHandlerRoute(h, http.MethodGet, "status", h.StatusMessage)
+
 }
 
 type moMsg struct {
@@ -75,6 +86,51 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, err
 	}
 	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+
+}
+
+type moStatus struct {
+	RetID  int64 `name:"ret_id" validate:"required"`
+	Status int   `name:"status" validate:"required"`
+}
+
+var statusMapping = map[int]courier.MsgStatusValue{
+	2:  courier.MsgFailed,
+	4:  courier.MsgSent,
+	6:  courier.MsgDelivered,
+	11: courier.MsgFailed,
+	12: courier.MsgFailed,
+	13: courier.MsgFailed,
+	14: courier.MsgFailed,
+	15: courier.MsgFailed,
+	16: courier.MsgFailed,
+}
+
+// StatusMessage is our HTTP handler function for status updates
+func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	hxRequest := &moStatus{}
+	err := handlers.DecodeAndValidateForm(hxRequest, r)
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+	}
+
+	msgStatus, found := statusMapping[hxRequest.Status]
+	if !found {
+		return nil, fmt.Errorf("unknown status '%d', must be one of 2, 4, 6, 11, 12, 13, 14, 15  or 16", hxRequest.Status)
+	}
+
+	// write our status
+	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(hxRequest.RetID), msgStatus)
+	err = h.Backend().WriteMsgStatus(ctx, status)
+	if err == courier.ErrMsgNotFound {
+		return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
 
 }
 
