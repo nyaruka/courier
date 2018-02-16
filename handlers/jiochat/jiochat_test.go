@@ -38,7 +38,7 @@ var (
 	{
 		"ToUsername": "12121212121212",
 		"FromUserName": "1234",
-		"CreateTime": 1454119029,
+		"CreateTime": 1518774424438,
 		"MsgType": "text",
 		"MsgId": "123456",
 		"Content": "Simple Message"
@@ -47,7 +47,7 @@ var (
 	subscribeEvent = `{
 		"ToUsername": "12121212121212",
 		"FromUserName": "1234",
-		"CreateTime": 1454119029,
+		"CreateTime": 1518774424438,
 		"MsgType": "event",
 		"Event": "subscribe"
 	}`
@@ -63,7 +63,7 @@ var (
 	missingParamsRequired = `
 	{
 		"ToUsername": "12121212121212",
-		"CreateTime": 1454119029,
+		"CreateTime": 1518774424438,
 		"MsgType": "text",
 		"MsgId": "123456",
 		"Content": "Simple Message"
@@ -73,7 +73,7 @@ var (
 	{
 		"ToUsername": "12121212121212",
 		"FromUserName": "1234",
-		"CreateTime": 1454119029,
+		"CreateTime": 1518774424438,
 		"MsgType": "text",
 		"Content": "Simple Message"
 	}`
@@ -81,7 +81,7 @@ var (
 	imageMessage = `{
 		"ToUsername": "12121212121212",
 		"FromUserName": "1234",
-		"CreateTime": 1454119029,
+		"CreateTime": 1518774424438,
 		"MsgType": "image",
 		"MsgId": "123456",
 		"MediaId": "12"
@@ -138,7 +138,7 @@ func addInvalidSignature(r *http.Request) {
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Message", URL: receiveURL, Data: validMsg, Status: 200, Response: "Accepted",
 		Text: Sp("Simple Message"), URN: Sp("jiochat:1234"), ExternalID: Sp("123456"),
-		Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+		Date: Tp(time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC))},
 
 	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, Status: 400, Response: "Error:Field validation"},
 	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, Status: 400, Response: "missing parameters, must have either 'MsgId' or 'Event'"},
@@ -146,7 +146,7 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Image", URL: receiveURL, Data: imageMessage, Status: 200, Response: "Accepted",
 		Text: Sp(""), URN: Sp("jiochat:1234"), ExternalID: Sp("123456"),
 		Attachment: Sp("https://channels.jiochat.com/media/download.action?media_id=12"),
-		Date:       Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+		Date:       Tp(time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC))},
 
 	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, Status: 200, Response: "Event Accepted",
 		ChannelEvent: Sp(courier.NewConversation), URN: Sp("jiochat:1234")},

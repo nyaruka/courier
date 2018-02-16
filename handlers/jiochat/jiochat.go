@@ -124,8 +124,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing parameters, must have either 'MsgId' or 'Event'"))
 	}
 
-	date := time.Unix(jcRequest.CreateTime, 0).UTC()
-
+	date := time.Unix(jcRequest.CreateTime/1000, jcRequest.CreateTime%1000*1000000).UTC()
 	urn := urns.NewURNFromParts(urns.JiochatScheme, jcRequest.FromUsername, "")
 
 	// subscribe event, trigger a new conversation
