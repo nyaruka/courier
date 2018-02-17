@@ -17,17 +17,17 @@ var (
 	receiveURL = "/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	statusURL  = "/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 
-	validReceive       = receiveURL + "?FROM=+33610346460&TO=5151&MESSAGE=Hello+World&RECEPTION_DATE=2015-04-02T14:26:06"
-	invalidDateReceive = receiveURL + "?FROM=+33610346460&TO=5151&MESSAGE=Hello+World&RECEPTION_DATE=2015-04-02T14:26"
+	validReceive       = "FROM=+33610346460&TO=5151&MESSAGE=Hello+World&RECEPTION_DATE=2015-04-02T14%3A26%3A06"
+	invalidDateReceive = "FROM=+33610346460&TO=5151&MESSAGE=Hello+World&RECEPTION_DATE=2015-04-02T14:26"
 	validStatus        = statusURL + "?ret_id=12345&status=6"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: validReceive, Status: 200, Response: "Accepted",
+	{Label: "Receive Valid Message", URL: receiveURL, Data: validReceive, Status: 200, Response: "Accepted",
 		Text: Sp("Hello World"), URN: Sp("tel:+33610346460"),
 		Date: Tp(time.Date(2015, 04, 02, 14, 26, 06, 0, time.UTC))},
-	{Label: "Receive Missing Params", URL: receiveURL, Status: 400, Response: "validation for 'Message' failed"},
-	{Label: "Receive Invalid Date", URL: invalidDateReceive, Status: 400, Response: "cannot parse"},
+	{Label: "Receive Missing Params", URL: receiveURL, Data: " ", Status: 400, Response: "validation for 'From' failed"},
+	{Label: "Receive Invalid Date", URL: receiveURL, Data: invalidDateReceive, Status: 400, Response: "cannot parse"},
 	{Label: "Status Missing Params", URL: statusURL, Status: 400, Response: "validation for 'Status' failed"},
 	{Label: "Status Delivered", URL: validStatus, Status: 200, Response: `"status":"D"`},
 }

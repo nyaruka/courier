@@ -38,20 +38,10 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodGet, "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
-	err = s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
-	if err != nil {
-		return err
-	}
-
-	err = s.AddHandlerRoute(h, http.MethodPost, "status", h.StatusMessage)
-	if err != nil {
-		return err
-	}
-
 	return s.AddHandlerRoute(h, http.MethodGet, "status", h.StatusMessage)
 
 }
@@ -59,7 +49,7 @@ func (h *handler) Initialize(s courier.Server) error {
 type moMsg struct {
 	To          string `name:"TO" validate:"required"`
 	From        string `name:"FROM" validate:"required"`
-	Message     string `name:"MESSAGE" validate:"required"`
+	Message     string `name:"MESSAGE"`
 	ReceiveDate string `name:"RECEPTION_DATE"`
 }
 
@@ -82,7 +72,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	// create our URN
 	urn := urns.NewTelURNForCountry(hxRequest.From, channel.Country())
 
-	// build our infobipMessage
+	// build our Message
 	msg := h.Backend().NewIncomingMsg(channel, urn, hxRequest.Message).WithReceivedOn(date.UTC())
 
 	// and write it
@@ -152,8 +142,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
-	statusURL := fmt.Sprintf("https://%s%s%s/status", callbackDomain, "/c/hx/", msg.Channel().UUID())
-	receiveURL := fmt.Sprintf("https://%s%s%s/receive", callbackDomain, "/c/hx/", msg.Channel().UUID())
+	statusURL := fmt.Sprintf("https://%s/c/hx/%s/status", callbackDomain, msg.Channel().UUID())
+	receiveURL := fmt.Sprintf("https://%s/c/hx/%s/receive", callbackDomain, msg.Channel().UUID())
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
@@ -174,7 +164,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		msgURL, _ := url.Parse(sendURL)
 		msgURL.RawQuery = form.Encode()
 
-		req, err := http.NewRequest(http.MethodPost, msgURL.String(), nil)
+		req, _ := http.NewRequest(http.MethodPost, msgURL.String(), nil)
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log
