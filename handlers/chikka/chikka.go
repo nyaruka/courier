@@ -26,11 +26,6 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodGet, "receive", h.ReceiveMessage)
-	if err != nil {
-		return err
-	}
-
 	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
 }
 
