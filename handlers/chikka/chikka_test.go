@@ -24,9 +24,13 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
 		Text: Sp("Hello World"), URN: Sp("tel:+639178020779"), ExternalID: Sp("4004"),
 		Date: Tp(time.Date(2016, 03, 11, 04, 20, 59, 690000128, time.UTC))},
+	{Label: "Receive Valid via GET", URL: receiveURL + "?" + validReceive, Status: 200, Response: "Message Accepted",
+		Text: Sp("Hello World"), URN: Sp("tel:+639178020779"), ExternalID: Sp("4004"),
+		Date: Tp(time.Date(2016, 03, 11, 04, 20, 59, 690000128, time.UTC))},
 
 	{Label: "Ignore Invalid message_type", URL: receiveURL, Data: "message_type=invalid", Status: 200, Response: "unknown message_type request"},
 	{Label: "Status Sent Valid", URL: receiveURL, Data: validSentStatus, Status: 200, Response: `"status":"S"`},
+	{Label: "Status Sent Valid via GET", URL: receiveURL + "?" + validSentStatus, Status: 200, Response: `"status":"S"`},
 	{Label: "Status Failed Valid", URL: receiveURL, Data: validFailedStatus, Status: 200, Response: `"status":"F"`},
 	{Label: "Status Invalid", URL: receiveURL, Data: invalidStatus, Status: 400, Response: `must be either 'SENT' or 'FAILED'`},
 }
