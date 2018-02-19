@@ -185,7 +185,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Status:         "E",
 		ResponseBody:   `{ "error": "failed" }`,
 		ResponseStatus: 401,
-		Error:          "received non 200 status: 401",
 		RequestBody:    `{"sendSmsRequest":{"from":"Sender","to":"250788383383","schedule":"","msg":"Error Message","callbackOption":"1","id":"10","aggregateId":""}}`,
 		SendPrep:       setSendURL},
 }
