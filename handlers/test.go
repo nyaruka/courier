@@ -35,6 +35,7 @@ type ChannelHandleTestCase struct {
 	Name        *string
 	Text        *string
 	URN         *string
+	URNAuth     *string
 	Attachment  *string
 	Attachments []string
 	Date        *time.Time
@@ -59,6 +60,7 @@ type ChannelSendTestCase struct {
 
 	Text         string
 	URN          string
+	URNAuth      string
 	Attachments  []string
 	QuickReplies []string
 	HighPriority bool
@@ -166,6 +168,9 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(testCase.URN), testCase.Text, testCase.HighPriority, testCase.QuickReplies)
 			for _, a := range testCase.Attachments {
 				msg.WithAttachment(a)
+			}
+			if testCase.URNAuth != "" {
+				msg.WithURNAuth(testCase.URNAuth)
 			}
 
 			var testRequest *http.Request
@@ -294,6 +299,11 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 						require.Equal(*testCase.URN, string(event.URN()))
 					} else {
 						require.Equal(*testCase.URN, "")
+					}
+				}
+				if testCase.URNAuth != nil {
+					if msg != nil {
+						require.Equal(*testCase.URNAuth, msg.URNAuth())
 					}
 				}
 				if testCase.ExternalID != nil {

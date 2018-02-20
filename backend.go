@@ -27,6 +27,9 @@ type Backend interface {
 	// GetChannel returns the channel with the passed in type and UUID
 	GetChannel(context.Context, ChannelType, ChannelUUID) (Channel, error)
 
+	// GetContact returns (or creates) the contact for the passed in channel and URN
+	GetContact(context context.Context, channel Channel, urn urns.URN, auth string, name string) (Contact, error)
+
 	// NewIncomingMsg creates a new message from the given params
 	NewIncomingMsg(channel Channel, urn urns.URN, text string) Msg
 

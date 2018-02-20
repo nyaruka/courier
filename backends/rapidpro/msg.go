@@ -126,7 +126,7 @@ RETURNING id
 
 func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 	// grab the contact for this msg
-	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.ContactName_)
+	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuth_, m.ContactName_)
 
 	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {
@@ -134,8 +134,8 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 	}
 
 	// set our contact and urn ids from our contact
-	m.ContactID_ = contact.ID
-	m.ContactURNID_ = contact.URNID
+	m.ContactID_ = contact.ID_
+	m.ContactURNID_ = contact.URNID_
 
 	rows, err := b.db.NamedQueryContext(ctx, insertMsgSQL, m)
 	if err != nil {
@@ -152,7 +152,7 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 	// queue this up to be handled by RapidPro
 	rc := b.redisPool.Get()
 	defer rc.Close()
-	err = queueMsgHandling(rc, m.OrgID_, m.ContactID_, m.ID_, contact.IsNew)
+	err = queueMsgHandling(rc, m.OrgID_, m.ContactID_, m.ID_, contact.IsNew_)
 
 	// if we had a problem queueing the handling, log it, but our message is written, it'll
 	// get picked up by our rapidpro catch-all after a period
@@ -376,6 +376,7 @@ type DBMsg struct {
 	Visibility_   MsgVisibility          `json:"visibility"      db:"visibility"`
 	HighPriority_ null.Bool              `json:"high_priority"   db:"high_priority"`
 	URN_          urns.URN               `json:"urn"`
+	URNAuth_      string                 `json:"urn_auth"`
 	Text_         string                 `json:"text"            db:"text"`
 	Attachments_  pq.StringArray         `json:"attachments"     db:"attachments"`
 	ExternalID_   null.String            `json:"external_id"     db:"external_id"`
@@ -411,6 +412,7 @@ func (m *DBMsg) Text() string                { return m.Text_ }
 func (m *DBMsg) Attachments() []string       { return []string(m.Attachments_) }
 func (m *DBMsg) ExternalID() string          { return m.ExternalID_.String }
 func (m *DBMsg) URN() urns.URN               { return m.URN_ }
+func (m *DBMsg) URNAuth() string             { return m.URNAuth_ }
 func (m *DBMsg) ContactName() string         { return m.ContactName_ }
 func (m *DBMsg) HighPriority() bool          { return m.HighPriority_.Valid && m.HighPriority_.Bool }
 func (m *DBMsg) ReceivedOn() *time.Time      { return &m.SentOn_ }
@@ -461,5 +463,11 @@ func (m *DBMsg) WithUUID(uuid courier.MsgUUID) courier.Msg { m.UUID_ = uuid; ret
 // WithAttachment can be used to append to the media urls for a message
 func (m *DBMsg) WithAttachment(url string) courier.Msg {
 	m.Attachments_ = append(m.Attachments_, url)
+	return m
+}
+
+// WithURNAuth can be used to add a URN auth setting to a message
+func (m *DBMsg) WithURNAuth(auth string) courier.Msg {
+	m.URNAuth_ = auth
 	return m
 }

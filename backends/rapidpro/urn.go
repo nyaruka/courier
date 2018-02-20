@@ -22,7 +22,7 @@ type ContactURNID struct {
 var NilContactURNID = ContactURNID{null.NewInt(0, false)}
 
 // NewDBContactURN returns a new ContactURN object for the passed in org, contact and string urn, this is not saved to the DB yet
-func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN) *DBContactURN {
+func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN, auth string) *DBContactURN {
 	return &DBContactURN{
 		OrgID:     org,
 		ChannelID: channelID,
@@ -31,11 +31,12 @@ func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID
 		Scheme:    urn.Scheme(),
 		Path:      urn.Path(),
 		Display:   utils.NullStringIfEmpty(urn.Display()),
+		Auth:      utils.NullStringIfEmpty(auth),
 	}
 }
 
 const selectContactURNs = `
-SELECT id, identity, scheme, display, priority, contact_id, channel_id
+SELECT id, identity, scheme, display, auth, priority, contact_id, channel_id
 FROM contacts_contacturn
 WHERE contact_id = $1
 ORDER BY priority desc
@@ -71,7 +72,7 @@ func contactURNsForContact(db *sqlx.Tx, contactID ContactID) ([]*DBContactURN, e
 // Note that the URN must be one of the contact's URN before calling this method
 func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact, urn urns.URN) error {
 	scheme := urn.Scheme()
-	contactURNs, err := contactURNsForContact(db, contact.ID)
+	contactURNs, err := contactURNsForContact(db, contact.ID_)
 	if err != nil {
 		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("channel_id", channelID.Int64).Error("error looking up contact urns")
 		return err
@@ -79,7 +80,7 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 
 	// no URNs? that's an error
 	if len(contactURNs) == 0 {
-		return fmt.Errorf("URN '%s' not present for contact %d", urn.Identity(), contact.ID.Int64)
+		return fmt.Errorf("URN '%s' not present for contact %d", urn.Identity(), contact.ID_.Int64)
 	}
 
 	// only a single URN and it is ours
@@ -123,7 +124,7 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 }
 
 const selectOrgURN = `
-SELECT org_id, id, identity, scheme, path, display, priority, channel_id, contact_id 
+SELECT org_id, id, identity, scheme, path, display, auth, priority, channel_id, contact_id 
 FROM contacts_contacturn
 WHERE org_id = $1 AND identity = $2
 ORDER BY priority desc LIMIT 1
@@ -131,8 +132,8 @@ ORDER BY priority desc LIMIT 1
 
 // contactURNForURN returns the ContactURN for the passed in org and URN, creating and associating
 // it with the passed in contact if necessary
-func contactURNForURN(db *sqlx.Tx, org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN) (*DBContactURN, error) {
-	contactURN := newDBContactURN(org, channelID, contactID, urn)
+func contactURNForURN(db *sqlx.Tx, org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN, auth string) (*DBContactURN, error) {
+	contactURN := newDBContactURN(org, channelID, contactID, urn, auth)
 	err := db.Get(contactURN, selectOrgURN, org, urn.Identity())
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
@@ -154,14 +155,23 @@ func contactURNForURN(db *sqlx.Tx, org OrgID, channelID courier.ChannelID, conta
 		contactURN.ContactID = contactID
 		contactURN.Display = display
 		err = updateContactURN(db, contactURN)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// update our auth if we have a value set
+	if auth != "" && auth != contactURN.Auth.String {
+		contactURN.Auth = null.NewString(auth, true)
+		err = updateContactURN(db, contactURN)
 	}
 
 	return contactURN, err
 }
 
 const insertURN = `
-INSERT INTO contacts_contacturn(org_id, identity, path, scheme, display, priority, channel_id, contact_id)
-VALUES(:org_id, :identity, :path, :scheme, :display, :priority, :channel_id, :contact_id)
+INSERT INTO contacts_contacturn(org_id, identity, path, scheme, display, auth, priority, channel_id, contact_id)
+VALUES(:org_id, :identity, :path, :scheme, :display, :auth, :priority, :channel_id, :contact_id)
 RETURNING id
 `
 
@@ -181,7 +191,7 @@ func insertContactURN(db *sqlx.Tx, urn *DBContactURN) error {
 
 const updateURN = `
 UPDATE contacts_contacturn
-SET channel_id = :channel_id, contact_id = :contact_id, display = :display, priority = :priority
+SET channel_id = :channel_id, contact_id = :contact_id, display = :display, auth = :auth, priority = :priority
 WHERE id = :id
 `
 
@@ -208,6 +218,7 @@ type DBContactURN struct {
 	Scheme    string            `db:"scheme"`
 	Path      string            `db:"path"`
 	Display   null.String       `db:"display"`
+	Auth      null.String       `db:"auth"`
 	Priority  int               `db:"priority"`
 	ChannelID courier.ChannelID `db:"channel_id"`
 	ContactID ContactID         `db:"contact_id"`

@@ -7,6 +7,8 @@ import (
 	"log"
 	"sync"
 
+	"github.com/satori/go.uuid"
+
 	"time"
 
 	"github.com/garyburd/redigo/redis"
@@ -22,6 +24,7 @@ import (
 // MockBackend is a mocked version of a backend which doesn't require a real database or cache
 type MockBackend struct {
 	channels     map[ChannelUUID]Channel
+	contacts     map[urns.URN]Contact
 	queueMsgs    []Msg
 	errorOnQueue bool
 
@@ -62,6 +65,7 @@ func NewMockBackend() *MockBackend {
 
 	return &MockBackend{
 		channels:  make(map[ChannelUUID]Channel),
+		contacts:  make(map[urns.URN]Contact),
 		sentMsgs:  make(map[MsgID]bool),
 		redisPool: redisPool,
 	}
@@ -235,6 +239,17 @@ func (mb *MockBackend) GetChannel(ctx context.Context, cType ChannelType, uuid C
 	return channel, nil
 }
 
+// GetContact creates a new contact with the passed in channel and URN
+func (mb *MockBackend) GetContact(ctx context.Context, channel Channel, urn urns.URN, auth string, name string) (Contact, error) {
+	contact, found := mb.contacts[urn]
+	if !found {
+		uuid, _ := NewContactUUID(uuid.NewV4().String())
+		contact = &mockContact{channel, urn, auth, uuid}
+		mb.contacts[urn] = contact
+	}
+	return contact, nil
+}
+
 // AddChannel adds a test channel to the test server
 func (mb *MockBackend) AddChannel(channel Channel) {
 	mb.channels[channel.UUID()] = channel
@@ -385,6 +400,7 @@ type mockMsg struct {
 	attachments  []string
 	externalID   string
 	urn          urns.URN
+	urnAuth      string
 	contactName  string
 	highPriority bool
 	quickReplies []string
@@ -403,6 +419,7 @@ func (m *mockMsg) Text() string           { return m.text }
 func (m *mockMsg) Attachments() []string  { return m.attachments }
 func (m *mockMsg) ExternalID() string     { return m.externalID }
 func (m *mockMsg) URN() urns.URN          { return m.urn }
+func (m *mockMsg) URNAuth() string        { return m.urnAuth }
 func (m *mockMsg) ContactName() string    { return m.contactName }
 func (m *mockMsg) HighPriority() bool     { return m.highPriority }
 func (m *mockMsg) QuickReplies() []string { return m.quickReplies }
@@ -413,6 +430,7 @@ func (m *mockMsg) SentOn() *time.Time     { return m.sentOn }
 func (m *mockMsg) WiredOn() *time.Time    { return m.wiredOn }
 
 func (m *mockMsg) WithContactName(name string) Msg   { m.contactName = name; return m }
+func (m *mockMsg) WithURNAuth(auth string) Msg       { m.urnAuth = auth; return m }
 func (m *mockMsg) WithReceivedOn(date time.Time) Msg { m.receivedOn = &date; return m }
 func (m *mockMsg) WithExternalID(id string) Msg      { m.externalID = id; return m }
 func (m *mockMsg) WithID(id MsgID) Msg               { m.id = id; return m }
@@ -487,3 +505,16 @@ func (e *mockChannelEvent) WithOccurredOn(time time.Time) ChannelEvent {
 
 func (e *mockChannelEvent) Logs() []*ChannelLog    { return e.logs }
 func (e *mockChannelEvent) AddLog(log *ChannelLog) { e.logs = append(e.logs, log) }
+
+//-----------------------------------------------------------------------------
+// Mock Contact implementation
+//-----------------------------------------------------------------------------
+
+type mockContact struct {
+	channel Channel
+	urn     urns.URN
+	auth    string
+	uuid    ContactUUID
+}
+
+func (c *mockContact) UUID() ContactUUID { return c.uuid }

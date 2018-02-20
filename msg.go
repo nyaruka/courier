@@ -66,6 +66,7 @@ type Msg interface {
 	Attachments() []string
 	ExternalID() string
 	URN() urns.URN
+	URNAuth() string
 	ContactName() string
 	QuickReplies() []string
 	ResponseToID() MsgID
@@ -83,6 +84,7 @@ type Msg interface {
 	WithID(id MsgID) Msg
 	WithUUID(uuid MsgUUID) Msg
 	WithAttachment(url string) Msg
+	WithURNAuth(auth string) Msg
 
 	EventID() int64
 }
