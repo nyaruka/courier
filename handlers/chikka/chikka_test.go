@@ -1,6 +1,7 @@
 package chikka
 
 import (
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -37,4 +38,115 @@ func TestHandler(t *testing.T) {
 
 func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
+}
+
+// setSend takes care of setting the sendURL to call
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+	sendURL = s.URL
+}
+
+var defaultSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "tel:+63911231234",
+		Status:       "W",
+		ResponseBody: "Success", ResponseStatus: 200,
+		PostParams: map[string]string{
+			"message":       "Simple Message",
+			"message_type":  "SEND",
+			"mobile_number": "63911231234",
+			"shortcode":     "2020",
+			"request_cost":  "FREE",
+			"client_id":     "Username",
+			"secret_key":    "Password",
+			"message_id":    "10",
+		},
+		SendPrep: setSendURL},
+	{Label: "Plain Reply",
+		Text: "Simple Message", URN: "tel:+63911231234",
+		Status:       "W",
+		ResponseToID: 5,
+		ResponseBody: "Success", ResponseStatus: 200,
+		PostParams: map[string]string{
+			"message":       "Simple Message",
+			"message_type":  "REPLY",
+			"request_id":    "5",
+			"mobile_number": "63911231234",
+			"shortcode":     "2020",
+			"request_cost":  "FREE",
+			"client_id":     "Username",
+			"secret_key":    "Password",
+			"message_id":    "10",
+		},
+		SendPrep: setSendURL},
+	{Label: "Unicode Send",
+		Text: "☺", URN: "tel:+63911231234",
+		Status:       "W",
+		ResponseBody: "Success", ResponseStatus: 200,
+		PostParams: map[string]string{
+			"message":       "☺",
+			"message_type":  "SEND",
+			"mobile_number": "63911231234",
+			"shortcode":     "2020",
+			"request_cost":  "FREE",
+			"client_id":     "Username",
+			"secret_key":    "Password",
+			"message_id":    "10",
+		},
+		SendPrep: setSendURL},
+	{Label: "Long Send",
+		Text:         "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		URN:          "tel:+63911231234",
+		Status:       "W",
+		ResponseBody: "Success", ResponseStatus: 200,
+		PostParams: map[string]string{
+			"message":       "I need to keep adding more things to make it work",
+			"message_type":  "SEND",
+			"mobile_number": "63911231234",
+			"shortcode":     "2020",
+			"request_cost":  "FREE",
+			"client_id":     "Username",
+			"secret_key":    "Password",
+			"message_id":    "10",
+		},
+		SendPrep: setSendURL},
+	{Label: "Send Attachment",
+		Text: "My pic!", URN: "tel:+63911231234", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Status:       "W",
+		ResponseBody: "Success", ResponseStatus: 200,
+		PostParams: map[string]string{
+			"message":       "My pic!\nhttps://foo.bar/image.jpg",
+			"message_type":  "SEND",
+			"mobile_number": "63911231234",
+			"shortcode":     "2020",
+			"request_cost":  "FREE",
+			"client_id":     "Username",
+			"secret_key":    "Password",
+			"message_id":    "10",
+		},
+		SendPrep: setSendURL},
+	{Label: "Error Sending",
+		Text: "Error Message", URN: "tel:+63911231234",
+		Status:       "E",
+		ResponseBody: `ERROR`, ResponseStatus: 401,
+		PostParams: map[string]string{
+			"message":       "Error Message",
+			"message_type":  "SEND",
+			"mobile_number": "63911231234",
+			"shortcode":     "2020",
+			"request_cost":  "FREE",
+			"client_id":     "Username",
+			"secret_key":    "Password",
+			"message_id":    "10",
+		},
+		SendPrep: setSendURL},
+}
+
+func TestSending(t *testing.T) {
+	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CK", "2020", "US",
+		map[string]interface{}{
+			courier.ConfigPassword: "Password",
+			courier.ConfigUsername: "Username",
+		})
+
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 }

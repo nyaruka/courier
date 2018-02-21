@@ -102,8 +102,8 @@ func (mb *MockBackend) NewIncomingMsg(channel Channel, urn urns.URN, text string
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool, replies []string) Msg {
-	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority, quickReplies: replies}
+func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool, replies []string, responseToID MsgID) Msg {
+	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority, quickReplies: replies, responseToID: responseToID}
 }
 
 // PushOutgoingMsg is a test method to add a message to our queue of messages to send
