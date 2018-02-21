@@ -39,20 +39,20 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.methodPost, "receive", h.ReceiveMessage)
-	s.AddHandlerRoute(h, http.methodGet, "receive", h.ReceiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", h.ReceiveMessage)
 
 	sentHandler := h.buildStatusHandler("sent")
-	s.AddHandlerRoute(h, http.methodGet, "sent", sentHandler)
-	s.AddHandlerRoute(h, http.methodPost, "sent", sentHandler)
+	s.AddHandlerRoute(h, http.MethodGet, "sent", sentHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "sent", sentHandler)
 
 	deliveredHandler := h.buildStatusHandler("delivered")
-	s.AddHandlerRoute(h, http.methodGet, "delivered", deliveredHandler)
-	s.AddHandlerRoute(h, http.methodPost, "delivered", deliveredHandler)
+	s.AddHandlerRoute(h, http.MethodGet, "delivered", deliveredHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "delivered", deliveredHandler)
 
 	failedHandler := h.buildStatusHandler("failed")
-	s.AddHandlerRoute(h, http.methodGet, "failed", failedHandler)
-	s.AddHandlerRoute(h, http.methodPost, "failed", failedHandler)
+	s.AddHandlerRoute(h, http.MethodGet, "failed", failedHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "failed", failedHandler)
 
 	return nil
 }

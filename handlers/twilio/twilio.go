@@ -61,12 +61,12 @@ func (h *handler) Initialize(s courier.Server) error {
 	// save whether we should ignore delivery reports
 	h.ignoreDeliveryReports = s.Config().IgnoreDeliveryReports
 
-	err := s.AddHandlerRoute(h, http.methodPost, "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
 
-	return s.AddHandlerRoute(h, http.methodPost, "status", h.StatusMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "status", h.StatusMessage)
 }
 
 type twMessage struct {

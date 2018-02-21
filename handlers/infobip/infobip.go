@@ -34,11 +34,11 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.methodPost, "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, http.methodPost, "delivered", h.StatusMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "delivered", h.StatusMessage)
 }
 
 // StatusMessage is our HTTP handler function for status updates

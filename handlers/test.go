@@ -106,7 +106,7 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, data strin
 	url := fmt.Sprintf("https://%s%s", s.Config().Domain, path)
 
 	if data != "" {
-		req, err = http.NewRequest(http.methodPost, url, strings.NewReader(data))
+		req, err = http.NewRequest(http.MethodPost, url, strings.NewReader(data))
 		require.Nil(tb, err)
 
 		// guess our content type
@@ -118,7 +118,7 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, data strin
 		}
 		req.Header.Set("Content-Type", contentType)
 	} else {
-		req, err = http.NewRequest(http.methodGet, url, nil)
+		req, err = http.NewRequest(http.MethodGet, url, nil)
 	}
 
 	require.Nil(tb, err)
