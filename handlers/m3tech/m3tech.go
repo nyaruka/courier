@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"strings"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var sendURL = "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS"
@@ -32,8 +34,36 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	receiveHandler := handlers.NewTelReceiveHandler(h.BaseHandler, "from", "text")
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", receiveHandler)
+	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.handleReceive)
+}
+
+// handleReceive takes care of handling incoming messages
+func (h *handler) handleReceive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	err := r.ParseForm()
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+	}
+
+	body := r.Form.Get("text")
+	from := r.Form.Get("from")
+	if from == "" {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("missing required field 'from'"))
+	}
+
+	// create our URN
+	urn := urns.NewTelURNForCountry(from, c.Country())
+
+	// build our msg
+	msg := h.Backend().NewIncomingMsg(c, urn, body).WithReceivedOn(time.Now().UTC())
+
+	// and finally queue our message
+	err = h.Backend().WriteMsg(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	// we need to write our response ourselves as M3Tech expects "SMS Accepted" in the response body
+	return []courier.Event{msg}, courier.WriteDataResponse(ctx, w, http.StatusOK, fmt.Sprintf("SMS Accepted: %d", msg.ID().Int64), []interface{}{courier.NewMsgReceiveData(msg)})
 }
 
 // SendMsg sends the passed in message, returning any error
