@@ -22,7 +22,10 @@ const (
 	configKey          = "FCM_KEY"
 )
 
-var sendURL = "https://fcm.googleapis.com/fcm/send"
+var (
+	sendURL = "https://fcm.googleapis.com/fcm/send"
+	msgSize = 1024
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -152,64 +155,69 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	configNotification := msg.Channel().ConfigForKey(configNotification, false)
 	notification, _ := configNotification.(bool)
 
-	payload := mtPayload{}
-
-	payload.Data.Type = "rapidpro"
-	payload.Data.Title = title
-	payload.Data.Message = handlers.GetTextAndAttachments(msg)
-	payload.Data.MessageID = msg.ID().Int64
-
-	payload.To = msg.URNAuth()
-	payload.Priority = "high"
-
-	if notification {
-		payload.Notification = &mtNotification{
-			Title: title,
-			Body:  handlers.GetTextAndAttachments(msg),
-		}
-		payload.ContentAvailable = true
-	}
-
-	if len(msg.QuickReplies()) > 0 {
-		quickReplies := make([]mtQuickReply, len(msg.QuickReplies()))
-		for i, qr := range msg.QuickReplies() {
-			quickReplies[i].Title = qr
-			quickReplies[i].Payload = qr
-		}
-		payload.QuickReplies = quickReplies
-	}
-
-	jsonPayload, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonPayload))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("key=%s", fcmKey))
-	rr, err := utils.MakeHTTPRequest(req)
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-	if err != nil {
-		return status, nil
+	for i, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), msgSize) {
+		payload := mtPayload{}
+
+		payload.Data.Type = "rapidpro"
+		payload.Data.Title = title
+		payload.Data.Message = part
+		payload.Data.MessageID = msg.ID().Int64
+
+		payload.To = msg.URNAuth()
+		payload.Priority = "high"
+
+		if notification {
+			payload.Notification = &mtNotification{
+				Title: title,
+				Body:  part,
+			}
+			payload.ContentAvailable = true
+		}
+
+		if len(msg.QuickReplies()) > 0 {
+			quickReplies := make([]mtQuickReply, len(msg.QuickReplies()))
+			for i, qr := range msg.QuickReplies() {
+				quickReplies[i].Title = qr
+				quickReplies[i].Payload = qr
+			}
+			payload.QuickReplies = quickReplies
+		}
+
+		jsonPayload, err := json.Marshal(payload)
+		if err != nil {
+			return nil, err
+		}
+
+		req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonPayload))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("Authorization", fmt.Sprintf("key=%s", fcmKey))
+		rr, err := utils.MakeHTTPRequest(req)
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
+		if err != nil {
+			return status, nil
+		}
+
+		// was this successful
+		success, _ := jsonparser.GetInt(rr.Body, "success")
+		if success != 1 {
+			log.WithError("Message Send Error", errors.Errorf("received non-1 value for success in response"))
+			return status, nil
+		}
+
+		// grab the id if this is our first part
+		if i == 0 {
+			externalID, err := jsonparser.GetInt(rr.Body, "multicast_id")
+			if err != nil {
+				log.WithError("Message Send Error", errors.Errorf("unable to get multicast_id from response"))
+				return status, nil
+			}
+			status.SetExternalID(fmt.Sprintf("%d", externalID))
+		}
 	}
 
-	// was this successful
-	success, _ := jsonparser.GetInt(rr.Body, "success")
-	if success != 1 {
-		log.WithError("Message Send Error", errors.Errorf("received non-1 value for success in response"))
-		return status, nil
-	}
-
-	// grab the id
-	externalID, err := jsonparser.GetInt(rr.Body, "multicast_id")
-	if err != nil {
-		log.WithError("Message Send Error", errors.Errorf("unable to get multicast_id from response"))
-		return status, nil
-	}
-	status.SetExternalID(fmt.Sprintf("%d", externalID))
 	status.SetStatus(courier.MsgWired)
-
 	return status, nil
 }
