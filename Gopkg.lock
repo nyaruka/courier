@@ -98,13 +98,13 @@
   revision = "563b81fc02b75d664e54da31f787c2cc2186780b"
 
 [[projects]]
+  branch = "master"
   name = "github.com/go-chi/chi"
   packages = [
     ".",
     "middleware"
   ]
-  revision = "e83ac2304db3c50cf03d96a2fcd39009d458bc35"
-  version = "v3.3.2"
+  revision = "e223a795a06a5598451cf022558c17c779f5a7ab"
 
 [[projects]]
   name = "github.com/go-errors/errors"
@@ -178,7 +178,7 @@
   branch = "master"
   name = "github.com/nyaruka/gocommon"
   packages = ["urns"]
-  revision = "59c88aca71e999dc56e5a7601277555e78ce2623"
+  revision = "c3bea84b51d08816f35dca4b44f8fa3286f6e477"
 
 [[projects]]
   name = "github.com/nyaruka/phonenumbers"

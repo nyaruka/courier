@@ -53,6 +53,12 @@ func (b *backend) GetChannel(ctx context.Context, ct courier.ChannelType, uuid c
 	return getChannel(timeout, b.db, ct, uuid)
 }
 
+// GetContact returns the contact for the passed in channel and URN
+func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, auth string, name string) (courier.Contact, error) {
+	dbChannel := c.(*DBChannel)
+	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, auth, name)
+}
+
 // NewIncomingMsg creates a new message from the given params
 func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
 	// remove any control characters

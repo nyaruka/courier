@@ -72,13 +72,13 @@ RETURNING id
 // writeChannelEventToDB writes the passed in msg status to our db
 func writeChannelEventToDB(ctx context.Context, b *backend, e *DBChannelEvent) error {
 	// grab the contact for this event
-	contact, err := contactForURN(ctx, b, e.OrgID_, e.channel, e.URN_, e.ContactName_)
+	contact, err := contactForURN(ctx, b, e.OrgID_, e.channel, e.URN_, "", e.ContactName_)
 	if err != nil {
 		return err
 	}
 
-	e.ContactID_ = contact.ID
-	e.ContactURNID_ = contact.URNID
+	e.ContactID_ = contact.ID_
+	e.ContactURNID_ = contact.URNID_
 
 	rows, err := b.db.NamedQueryContext(ctx, insertChannelEventSQL, e)
 	if err != nil {

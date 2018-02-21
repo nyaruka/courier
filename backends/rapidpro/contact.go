@@ -47,7 +47,7 @@ func insertContact(tx *sqlx.Tx, contact *DBContact) error {
 	}
 	defer rows.Close()
 	if rows.Next() {
-		err = rows.Scan(&contact.ID)
+		err = rows.Scan(&contact.ID_)
 	}
 	return err
 }
@@ -59,7 +59,7 @@ WHERE u.identity = $1 AND u.contact_id = c.id AND u.org_id = $2 AND c.is_active 
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
-func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChannel, urn urns.URN, name string) (*DBContact, error) {
+func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChannel, urn urns.URN, auth string, name string) (*DBContact, error) {
 	// try to look up our contact by URN
 	contact := &DBContact{}
 	err := b.db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
@@ -87,11 +87,11 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	}
 
 	// didn't find it, we need to create it instead
-	contact.OrgID = org
-	contact.UUID = uuid.NewV4().String()
-	contact.CreatedOn = time.Now()
-	contact.ModifiedOn = time.Now()
-	contact.IsNew = true
+	contact.OrgID_ = org
+	contact.UUID_, _ = courier.NewContactUUID(uuid.NewV4().String())
+	contact.CreatedOn_ = time.Now()
+	contact.ModifiedOn_ = time.Now()
+	contact.IsNew_ = true
 
 	// if we aren't an anonymous org, we want to look up a name if possible and set it
 	if !channel.OrgIsAnon() {
@@ -114,13 +114,13 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 		}
 
 		if name != "" {
-			contact.Name = null.StringFrom(name)
+			contact.Name_ = null.StringFrom(name)
 		}
 	}
 
 	// TODO: Set these to a system user
-	contact.CreatedBy = 1
-	contact.ModifiedBy = 1
+	contact.CreatedBy_ = 1
+	contact.ModifiedBy_ = 1
 
 	// insert it
 	tx, err := b.db.BeginTxx(ctx, nil)
@@ -137,22 +137,22 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	// associate our URN
 	// If we've inserted a duplicate URN then we'll get a uniqueness violation.
 	// That means this contact URN was written by someone else after we tried to look it up.
-	contactURN, err := contactURNForURN(tx, org, channel.ID(), contact.ID, urn)
+	contactURN, err := contactURNForURN(tx, org, channel.ID(), contact.ID_, urn, auth)
 	if err != nil {
 		tx.Rollback()
 		if pqErr, ok := err.(*pq.Error); ok {
 			// if this was a duplicate URN, start over with a contact lookup
 			if pqErr.Code.Name() == "unique_violation" {
-				return contactForURN(ctx, b, org, channel, urn, name)
+				return contactForURN(ctx, b, org, channel, urn, auth, name)
 			}
 		}
 		return nil, err
 	}
 
 	// if the returned URN is for a different contact, then we were in a race as well, rollback and start over
-	if contactURN.ContactID.Int64 != contact.ID.Int64 {
+	if contactURN.ContactID.Int64 != contact.ID_.Int64 {
 		tx.Rollback()
-		return contactForURN(ctx, b, org, channel, urn, name)
+		return contactForURN(ctx, b, org, channel, urn, auth, name)
 	}
 
 	// all is well, we created the new contact, commit and move forward
@@ -162,7 +162,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	}
 
 	// store this URN on our contact
-	contact.URNID = contactURN.ID
+	contact.URNID_ = contactURN.ID
 
 	// and return it
 	return contact, nil
@@ -170,18 +170,21 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 
 // DBContact is our struct for a contact in the database
 type DBContact struct {
-	OrgID OrgID       `db:"org_id"`
-	ID    ContactID   `db:"id"`
-	UUID  string      `db:"uuid"`
-	Name  null.String `db:"name"`
+	OrgID_ OrgID               `db:"org_id"`
+	ID_    ContactID           `db:"id"`
+	UUID_  courier.ContactUUID `db:"uuid"`
+	Name_  null.String         `db:"name"`
 
-	URNID ContactURNID `db:"urn_id"`
+	URNID_ ContactURNID `db:"urn_id"`
 
-	CreatedOn  time.Time `db:"created_on"`
-	ModifiedOn time.Time `db:"modified_on"`
+	CreatedOn_  time.Time `db:"created_on"`
+	ModifiedOn_ time.Time `db:"modified_on"`
 
-	CreatedBy  int `db:"created_by_id"`
-	ModifiedBy int `db:"modified_by_id"`
+	CreatedBy_  int `db:"created_by_id"`
+	ModifiedBy_ int `db:"modified_by_id"`
 
-	IsNew bool
+	IsNew_ bool
 }
+
+// UUID returns the UUID for this contact
+func (c *DBContact) UUID() courier.ContactUUID { return c.UUID_ }

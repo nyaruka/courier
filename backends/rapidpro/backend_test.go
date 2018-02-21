@@ -193,31 +193,31 @@ func (ts *BackendTestSuite) TestContact() {
 	now := time.Now()
 
 	// create our new contact
-	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "Ryan Lewis")
+	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Ryan Lewis")
 	ts.NoError(err)
 
 	now2 := time.Now()
 
 	// load this contact again by URN, should be same contact, name unchanged
-	contact2, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "Other Name")
+	contact2, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Other Name")
 	ts.NoError(err)
 
-	ts.Equal(contact.UUID, contact2.UUID)
-	ts.Equal(contact.ID, contact2.ID)
-	ts.Equal(knChannel.OrgID(), contact2.OrgID)
-	ts.Equal("Ryan Lewis", contact2.Name.String)
-	ts.True(contact2.ModifiedOn.After(now))
-	ts.True(contact2.CreatedOn.After(now))
-	ts.True(contact2.ModifiedOn.Before(now2))
-	ts.True(contact2.CreatedOn.Before(now2))
+	ts.Equal(contact.UUID_, contact2.UUID_)
+	ts.Equal(contact.ID_, contact2.ID_)
+	ts.Equal(knChannel.OrgID(), contact2.OrgID_)
+	ts.Equal("Ryan Lewis", contact2.Name_.String)
+	ts.True(contact2.ModifiedOn_.After(now))
+	ts.True(contact2.CreatedOn_.After(now))
+	ts.True(contact2.ModifiedOn_.Before(now2))
+	ts.True(contact2.CreatedOn_.Before(now2))
 
 	// load a contact by URN instead (this one is in our testdata)
-	contact, err = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urns.NewTelURNForCountry("+12067799192", "US"), "")
+	contact, err = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urns.NewTelURNForCountry("+12067799192", "US"), "", "")
 	ts.NoError(err)
 	ts.NotNil(contact)
 
-	ts.Equal("", contact.Name.String)
-	ts.Equal("a984069d-0008-4d8c-a772-b14a8a6acccc", contact.UUID)
+	ts.Equal("", contact.Name_.String)
+	ts.Equal("a984069d-0008-4d8c-a772-b14a8a6acccc", contact.UUID_.String())
 }
 
 func (ts *BackendTestSuite) TestContactURN() {
@@ -227,23 +227,24 @@ func (ts *BackendTestSuite) TestContactURN() {
 
 	ctx := context.Background()
 
-	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, urn, "")
+	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, urn, "", "")
 	ts.NoError(err)
 
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
 
 	// first build a URN for our number with the kannel channel
-	knURN, err := contactURNForURN(tx, knChannel.OrgID_, knChannel.ID_, contact.ID, urn)
+	knURN, err := contactURNForURN(tx, knChannel.OrgID_, knChannel.ID_, contact.ID_, urn, "sesame")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(knURN.OrgID, knChannel.OrgID_)
+	ts.Equal("sesame", knURN.Auth.String)
 
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
 
 	// then with our twilio channel
-	twURN, err := contactURNForURN(tx, twChannel.OrgID_, twChannel.ID_, contact.ID, urn)
+	twURN, err := contactURNForURN(tx, twChannel.OrgID_, twChannel.ID_, contact.ID_, urn, "")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
@@ -256,26 +257,38 @@ func (ts *BackendTestSuite) TestContactURN() {
 	// and channel should be set to twitter
 	ts.Equal(twURN.ChannelID, twChannel.ID())
 
-	// test that we don't use display when looking up URNs
-	tgChannel := ts.getChannel("TG", "dbc126ed-66bc-4e28-b67b-81dc3327c98a")
-	tgURN := urns.NewTelegramURN(12345, "")
-
-	tgContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURN, "")
-	ts.NoError(err)
-
-	tgURNDisplay := urns.NewTelegramURN(12345, "Jane")
-	displayContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURNDisplay, "")
-
-	ts.Equal(tgContact.URNID, displayContact.URNID)
-	ts.Equal(tgContact.ID, displayContact.ID)
+	// auth should be unchanged
+	ts.Equal("sesame", twURN.Auth.String)
 
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
 
-	tgContactURN, err := contactURNForURN(tx, tgChannel.OrgID_, tgChannel.ID_, tgContact.ID, tgURNDisplay)
+	// again with different auth
+	twURN, err = contactURNForURN(tx, twChannel.OrgID_, twChannel.ID_, contact.ID_, urn, "peanut")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
-	ts.Equal(tgContact.URNID, tgContactURN.ID)
+	ts.Equal("peanut", twURN.Auth.String)
+
+	// test that we don't use display when looking up URNs
+	tgChannel := ts.getChannel("TG", "dbc126ed-66bc-4e28-b67b-81dc3327c98a")
+	tgURN := urns.NewTelegramURN(12345, "")
+
+	tgContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURN, "", "")
+	ts.NoError(err)
+
+	tgURNDisplay := urns.NewTelegramURN(12345, "Jane")
+	displayContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURNDisplay, "", "")
+
+	ts.Equal(tgContact.URNID_, displayContact.URNID_)
+	ts.Equal(tgContact.ID_, displayContact.ID_)
+
+	tx, err = ts.b.db.Beginx()
+	ts.NoError(err)
+
+	tgContactURN, err := contactURNForURN(tx, tgChannel.OrgID_, tgChannel.ID_, tgContact.ID_, tgURNDisplay, "")
+	ts.NoError(err)
+	ts.NoError(tx.Commit())
+	ts.Equal(tgContact.URNID_, tgContactURN.ID)
 	ts.Equal("jane", tgContactURN.Display.String)
 
 	// try to create two contacts at the same time in goroutines, this tests our transaction rollbacks
@@ -285,21 +298,21 @@ func (ts *BackendTestSuite) TestContactURN() {
 	wait.Add(2)
 	go func() {
 		var err2 error
-		contact2, err2 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn2, "")
+		contact2, err2 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn2, "", "")
 		ts.NoError(err2)
 		wait.Done()
 	}()
 	go func() {
 		var err3 error
-		contact3, err3 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn2, "")
+		contact3, err3 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn2, "", "")
 		ts.NoError(err3)
 		wait.Done()
 	}()
 	wait.Wait()
 	ts.NotNil(contact2)
 	ts.NotNil(contact3)
-	ts.Equal(contact2.ID.Int64, contact3.ID.Int64)
-	ts.Equal(contact2.URNID.Int64, contact3.URNID.Int64)
+	ts.Equal(contact2.ID_.Int64, contact3.ID_.Int64)
+	ts.Equal(contact2.URNID_.Int64, contact3.URNID_.Int64)
 }
 
 func (ts *BackendTestSuite) TestContactURNPriority() {
@@ -310,28 +323,28 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 
 	ctx := context.Background()
 
-	knContact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, knURN, "")
+	knContact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, knURN, "", "")
 	ts.NoError(err)
 
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
 
-	_, err = contactURNForURN(tx, knChannel.OrgID_, twChannel.ID_, knContact.ID, twURN)
+	_, err = contactURNForURN(tx, knChannel.OrgID_, twChannel.ID_, knContact.ID_, twURN, "")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
 	// ok, now looking up our contact should reset our URNs and their affinity..
 	// TwitterURN should be first all all URNs should now use Twitter channel
-	twContact, err := contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, twURN, "")
+	twContact, err := contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, twURN, "", "")
 	ts.NoError(err)
 
-	ts.Equal(twContact.ID, knContact.ID)
+	ts.Equal(twContact.ID_, knContact.ID_)
 
 	// get all the URNs for this contact
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
 
-	urns, err := contactURNsForContact(tx, twContact.ID)
+	urns, err := contactURNsForContact(tx, twContact.ID_)
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
@@ -654,7 +667,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.NoError(err)
 
 	// load our URN
-	contactURN, err := contactURNForURN(tx, m.OrgID_, m.ChannelID_, m.ContactID_, urn)
+	contactURN, err := contactURNForURN(tx, m.OrgID_, m.ChannelID_, m.ContactID_, urn, "")
 	if !ts.NoError(err) || !ts.NoError(tx.Commit()) {
 		ts.FailNow("failed writing contact urn")
 	}
@@ -680,12 +693,12 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.NotNil(m.ModifiedOn_)
 	ts.NotNil(m.QueuedOn_)
 
-	contact, err := contactForURN(ctx, ts.b, m.OrgID_, knChannel, urn, "")
-	ts.Equal("test contact", contact.Name.String)
-	ts.Equal(m.OrgID_, contact.OrgID)
-	ts.Equal(m.ContactID_, contact.ID)
-	ts.NotNil(contact.UUID)
-	ts.NotNil(contact.ID)
+	contact, err := contactForURN(ctx, ts.b, m.OrgID_, knChannel, urn, "", "")
+	ts.Equal("test contact", contact.Name_.String)
+	ts.Equal(m.OrgID_, contact.OrgID_)
+	ts.Equal(m.ContactID_, contact.ID_)
+	ts.NotNil(contact.UUID_)
+	ts.NotNil(contact.ID_)
 
 	// waiting 5 seconds should let us write it successfully
 	time.Sleep(5 * time.Second)
@@ -713,17 +726,17 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	err := ts.b.WriteChannelEvent(ctx, event)
 	ts.NoError(err)
 
-	contact, err := contactForURN(ctx, ts.b, channel.OrgID_, channel, urn, "")
+	contact, err := contactForURN(ctx, ts.b, channel.OrgID_, channel, urn, "", "")
 	ts.NoError(err)
-	ts.Equal("kermit frog", contact.Name.String)
+	ts.Equal("kermit frog", contact.Name_.String)
 
 	dbE := event.(*DBChannelEvent)
 	dbE, err = readChannelEventFromDB(ts.b, dbE.ID_)
 	ts.NoError(err)
 	ts.Equal(dbE.EventType_, courier.Referral)
 	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra_.Map)
-	ts.Equal(contact.ID, dbE.ContactID_)
-	ts.Equal(contact.URNID, dbE.ContactURNID_)
+	ts.Equal(contact.ID_, dbE.ContactID_)
+	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 }
 
 func TestMsgSuite(t *testing.T) {
