@@ -133,7 +133,14 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 	}
 
 	// try to flush to our db
-	return writeMsgStatusToDB(context.Background(), b, status)
+	err = writeMsgStatusToDB(context.Background(), b, status)
+
+	// not finding the message is ok for status updates
+	if err == courier.ErrMsgNotFound {
+		return nil
+	}
+
+	return err
 }
 
 //-----------------------------------------------------------------------------

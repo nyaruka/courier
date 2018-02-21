@@ -45,6 +45,7 @@ func TestSending(t *testing.T) {
 	assert.Equal(1, len(mb.msgStatuses))
 	assert.Equal(msg.ID(), mb.msgStatuses[0].ID())
 	assert.Equal(MsgErrored, mb.msgStatuses[0].Status())
+	assert.Equal(1, len(mb.msgStatuses[0].Logs()))
 
 	// clear our statuses
 	mb.msgStatuses = nil

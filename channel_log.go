@@ -52,6 +52,20 @@ func NewChannelLogFromRR(description string, channel Channel, msgID MsgID, rr *u
 	return log
 }
 
+// NewChannelLogFromError creates a new channel log for the passed in channel, msg id and error
+func NewChannelLogFromError(description string, channel Channel, msgID MsgID, elapsed time.Duration, err error) *ChannelLog {
+	log := &ChannelLog{
+		Description: description,
+		Channel:     channel,
+		MsgID:       msgID,
+		Error:       err.Error(),
+		CreatedOn:   time.Now(),
+		Elapsed:     elapsed,
+	}
+
+	return log
+}
+
 // WithError augments the passed in ChannelLog with the passed in description and error if error is not nil
 func (l *ChannelLog) WithError(description string, err error) *ChannelLog {
 	if err != nil {

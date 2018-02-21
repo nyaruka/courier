@@ -194,6 +194,7 @@ func (w *Sender) sendMessage(msg Msg) {
 			msgLog.WithError(err).WithField("elapsed", duration).Error("error sending message")
 			if status == nil {
 				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
+				status.AddLog(NewChannelLogFromError("Sending Error", msg.Channel(), msg.ID(), duration, err))
 			}
 		}
 
