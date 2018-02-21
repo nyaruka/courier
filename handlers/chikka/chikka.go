@@ -125,7 +125,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"client_id":     []string{username},
 			"secret_key":    []string{password},
 		}
-		if msg.ResponseToID().String() != "null" && msg.ResponseToID().String() != "0" {
+		if !msg.ResponseToID().IsZero() {
 			form["message_type"] = []string{"REPLY"}
 			form["request_id"] = []string{msg.ResponseToID().String()}
 		}

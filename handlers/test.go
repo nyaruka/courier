@@ -18,7 +18,6 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
-	null "gopkg.in/guregu/null.v3"
 )
 
 // RequestPrepFunc is our type for a hook for tests to use before a request is fired in a test
@@ -165,7 +164,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 		t.Run(testCase.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(testCase.URN), testCase.Text, testCase.HighPriority, testCase.QuickReplies, courier.NewMsgID(null.IntFrom(testCase.ResponseToID).Int64))
+			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(testCase.URN), testCase.Text, testCase.HighPriority, testCase.QuickReplies, testCase.ResponseToID)
 
 			for _, a := range testCase.Attachments {
 				msg.WithAttachment(a)
