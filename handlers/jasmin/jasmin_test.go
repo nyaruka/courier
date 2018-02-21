@@ -1,6 +1,7 @@
 package jasmin
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
