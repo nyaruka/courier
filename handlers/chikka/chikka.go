@@ -37,14 +37,16 @@ func (h *handler) Initialize(s courier.Server) error {
 	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
 }
 
-type moMsg struct {
-	MessageType  string  `name:"message_type" validate:"required"`
-	RequestID    string  `name:"request_id"`
-	MobileNumber string  `name:"mobile_number"`
+type incomingReceiveForm struct {
+	RequestID    string  `name:"request_id" validate:"required"`
+	MobileNumber string  `name:"mobile_number" validate:"required"`
 	Message      string  `name:"message"`
-	Timestamp    float64 `name:"timestamp"`
-	MessageID    int64   `name:"message_id"`
-	Status       string  `name:"status"`
+	Timestamp    float64 `name:"timestamp" validate:"required"`
+}
+
+type incomingStatusForm struct {
+	MessageID int64  `name:"message_id" validate:"required"`
+	Status    string `name:"status" validate:"required"`
 }
 
 var statusMapping = map[string]courier.MsgStatusValue{
@@ -54,38 +56,51 @@ var statusMapping = map[string]courier.MsgStatusValue{
 
 // ReceiveMessage is our HTTP handler function for incoming messages
 func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	ckRequest := &moMsg{}
-	err := handlers.DecodeAndValidateForm(ckRequest, r)
+	err := r.ParseForm()
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
+	messageType := r.Form.Get("message_type")
 
-	if ckRequest.MessageType == "outgoing" {
+	if messageType == "outgoing" {
+		form := &incomingStatusForm{}
+		err := handlers.DecodeAndValidateForm(form, r)
+		if err != nil {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		}
 
-		msgStatus, found := statusMapping[ckRequest.Status]
+		msgStatus, found := statusMapping[form.Status]
 		if !found {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf(`unknown status '%s', must be either 'SENT' or 'FAILED'`, ckRequest.Status))
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf(`unknown status '%s', must be either 'SENT' or 'FAILED'`, form.Status))
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(ckRequest.MessageID), msgStatus)
+		status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.MessageID), msgStatus)
 		err = h.Backend().WriteMsgStatus(ctx, status)
+		if err == courier.ErrMsgNotFound {
+			return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
+		}
+
 		if err != nil {
 			return nil, err
 		}
 
 		return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
 
-	} else if ckRequest.MessageType == "incoming" {
-
+	} else if messageType == "incoming" {
+		form := &incomingReceiveForm{}
+		err := handlers.DecodeAndValidateForm(form, r)
+		if err != nil {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		}
 		// create our date from the timestamp
-		date := time.Unix(0, int64(ckRequest.Timestamp*1000000000)).UTC()
+		date := time.Unix(0, int64(form.Timestamp*1000000000)).UTC()
 
 		// create our URN
-		urn := urns.NewTelURNForCountry(ckRequest.MobileNumber, channel.Country())
+		urn := urns.NewTelURNForCountry(form.MobileNumber, channel.Country())
 
 		// build our msg
-		msg := h.Backend().NewIncomingMsg(channel, urn, ckRequest.Message).WithExternalID(ckRequest.RequestID).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithExternalID(form.RequestID).WithReceivedOn(date)
 
 		// and finally queue our message
 		err = h.Backend().WriteMsg(ctx, msg)
