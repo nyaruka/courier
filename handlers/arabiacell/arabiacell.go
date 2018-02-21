@@ -37,7 +37,7 @@ func newHandler() courier.ChannelHandler {
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	receiveHandler := handlers.NewTelReceiveHandler(h.BaseHandler, "M", "B")
-	return s.AddHandlerRoute(h, "POST", "receive", receiveHandler)
+	return s.AddHandlerRoute(h, http.methodPost, "receive", receiveHandler)
 }
 
 // <response>

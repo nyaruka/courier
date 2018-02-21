@@ -215,7 +215,7 @@ func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
 	defer rc.Close()
 
 	cacheKey := fmt.Sprintf("jiochat_channel_access_token:%s", channel.UUID().String())
-	accessToken, err := redis.String(rc.Do("GET", cacheKey))
+	accessToken, err := redis.String(rc.Do(http.methodGet, cacheKey))
 	if err != nil {
 		return "", err
 	}

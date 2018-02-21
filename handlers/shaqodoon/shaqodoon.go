@@ -35,7 +35,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
+	s.AddHandlerRoute(h, http.methodPost, "receive", h.ReceiveMessage)
 	return nil
 }
 

@@ -151,7 +151,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		"dlr":        []string{"yes"},
 		"dlr-url":    []string{dlrURL},
 		"dlr-level":  []string{"2"},
-		"dlr-method": []string{"POST"},
+		"dlr-method": []string{http.methodPost},
 		"coding":     []string{"0"},
 		"content":    []string{string(gsm7.Encode(gsm7.ReplaceSubstitutions(handlers.GetTextAndAttachments(msg))))},
 	}
