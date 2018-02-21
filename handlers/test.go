@@ -64,6 +64,7 @@ type ChannelSendTestCase struct {
 	Attachments  []string
 	QuickReplies []string
 	HighPriority bool
+	ResponseToID int64
 
 	ResponseStatus int
 	ResponseBody   string
@@ -107,7 +108,7 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, data strin
 	url := fmt.Sprintf("https://%s%s", s.Config().Domain, path)
 
 	if data != "" {
-		req, err = http.NewRequest("POST", url, strings.NewReader(data))
+		req, err = http.NewRequest(http.MethodPost, url, strings.NewReader(data))
 		require.Nil(tb, err)
 
 		// guess our content type
@@ -119,7 +120,7 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, data strin
 		}
 		req.Header.Set("Content-Type", contentType)
 	} else {
-		req, err = http.NewRequest("GET", url, nil)
+		req, err = http.NewRequest(http.MethodGet, url, nil)
 	}
 
 	require.Nil(tb, err)
@@ -165,7 +166,8 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 		t.Run(testCase.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(testCase.URN), testCase.Text, testCase.HighPriority, testCase.QuickReplies)
+			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(testCase.URN), testCase.Text, testCase.HighPriority, testCase.QuickReplies, testCase.ResponseToID)
+
 			for _, a := range testCase.Attachments {
 				msg.WithAttachment(a)
 			}

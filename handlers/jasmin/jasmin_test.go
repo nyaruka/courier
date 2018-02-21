@@ -1,6 +1,7 @@
 package jasmin
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -58,7 +59,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: `Success "External ID1"`, ResponseStatus: 200, ExternalID: "External ID1",
 		URLParams: map[string]string{"content": "Simple Message", "to": "250788383383", "coding": "0",
-			"dlr-level": "2", "dlr": "yes", "dlr-method": "POST", "username": "Username", "password": "Password",
+			"dlr-level": "2", "dlr": "yes", "dlr-method": http.MethodPost, "username": "Username", "password": "Password",
 			"dlr-url": "https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"},
 		SendPrep: setSendURL},
 	{Label: "Unicode Send",
