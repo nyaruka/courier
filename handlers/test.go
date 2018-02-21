@@ -31,6 +31,7 @@ type ChannelHandleTestCase struct {
 	Data     string
 	Status   int
 	Response string
+	Headers  map[string]string
 
 	Name        *string
 	Text        *string
@@ -101,7 +102,7 @@ func ensureTestServerUp(host string) {
 }
 
 // utility method to make a request to a handler URL
-func testHandlerRequest(tb testing.TB, s courier.Server, path string, data string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
+func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers map[string]string, data string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
 	var req *http.Request
 	var err error
 	url := fmt.Sprintf("https://%s%s", s.Config().Domain, path)
@@ -120,6 +121,12 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, data strin
 		req.Header.Set("Content-Type", contentType)
 	} else {
 		req, err = http.NewRequest("GET", url, nil)
+	}
+
+	if headers != nil {
+		for key, val := range headers {
+			req.Header.Set(key, val)
+		}
 	}
 
 	require.Nil(tb, err)
@@ -270,7 +277,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 
 			mb.ClearQueueMsgs()
 
-			testHandlerRequest(t, s, testCase.URL, testCase.Data, testCase.Status, &testCase.Response, testCase.PrepRequest)
+			testHandlerRequest(t, s, testCase.URL, testCase.Headers, testCase.Data, testCase.Status, &testCase.Response, testCase.PrepRequest)
 
 			// pop our message off and test against it
 			contactName := mb.GetLastContactName()
@@ -351,12 +358,12 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 	t.Run("Queue Error", func(t *testing.T) {
 		mb.SetErrorOnQueue(true)
 		defer mb.SetErrorOnQueue(false)
-		testHandlerRequest(t, s, validCase.URL, validCase.Data, 400, Sp("unable to queue message"), validCase.PrepRequest)
+		testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, 400, Sp("unable to queue message"), validCase.PrepRequest)
 	})
 
 	t.Run("Receive With Invalid Channel", func(t *testing.T) {
 		mb.ClearChannels()
-		testHandlerRequest(t, s, validCase.URL, validCase.Data, 400, Sp("channel not found"), validCase.PrepRequest)
+		testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, 400, Sp("channel not found"), validCase.PrepRequest)
 	})
 }
 
@@ -375,7 +382,7 @@ func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler cour
 
 		b.Run(testCase.Label, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				testHandlerRequest(b, s, testCase.URL, testCase.Data, testCase.Status, nil, testCase.PrepRequest)
+				testHandlerRequest(b, s, testCase.URL, testCase.Headers, testCase.Data, testCase.Status, nil, testCase.PrepRequest)
 			}
 		})
 	}
