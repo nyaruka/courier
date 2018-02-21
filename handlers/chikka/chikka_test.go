@@ -14,7 +14,7 @@ var testChannels = []courier.Channel{
 }
 
 var (
-	receiveURL           = "/c/ck/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
+	receiveURL           = "/c/ck/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 	validReceive         = "message_type=incoming&mobile_number=639178020779&request_id=4004&message=Hello+World&timestamp=1457670059.69"
 	missingParamsReceive = "message_type=incoming&message=Hello+World&timestamp=1457670059.69"
 

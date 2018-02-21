@@ -3,11 +3,12 @@ package chikka
 import (
 	"context"
 	"fmt"
-	"github.com/nyaruka/courier/utils"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/nyaruka/courier/utils"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
@@ -37,16 +38,16 @@ func (h *handler) Initialize(s courier.Server) error {
 	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
 }
 
-type incomingReceiveForm struct {
-	RequestID    string  `name:"request_id" validate:"required"`
+type moForm struct {
+	RequestID    string  `name:"request_id"    validate:"required"`
 	MobileNumber string  `name:"mobile_number" validate:"required"`
 	Message      string  `name:"message"`
-	Timestamp    float64 `name:"timestamp" validate:"required"`
+	Timestamp    float64 `name:"timestamp"     validate:"required"`
 }
 
-type incomingStatusForm struct {
+type statusForm struct {
 	MessageID int64  `name:"message_id" validate:"required"`
-	Status    string `name:"status" validate:"required"`
+	Status    string `name:"status"     validate:"required"`
 }
 
 var statusMapping = map[string]courier.MsgStatusValue{
@@ -63,7 +64,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	messageType := r.Form.Get("message_type")
 
 	if messageType == "outgoing" {
-		form := &incomingStatusForm{}
+		form := &statusForm{}
 		err := handlers.DecodeAndValidateForm(form, r)
 		if err != nil {
 			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
@@ -88,7 +89,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
 
 	} else if messageType == "incoming" {
-		form := &incomingReceiveForm{}
+		form := &moForm{}
 		err := handlers.DecodeAndValidateForm(form, r)
 		if err != nil {
 			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
