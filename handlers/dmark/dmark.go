@@ -56,11 +56,11 @@ var statusMapping = map[string]courier.MsgStatusValue{
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, "POST", "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, "POST", "status", h.StatusMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "status", h.StatusMessage)
 }
 
 // ReceiveMessage is our HTTP handler function for incoming messages
