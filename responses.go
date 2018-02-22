@@ -39,6 +39,12 @@ func WriteAndLogRequestIgnored(ctx context.Context, w http.ResponseWriter, r *ht
 	return WriteDataResponse(ctx, w, http.StatusOK, "Ignored", []interface{}{NewInfoData(details)})
 }
 
+// WriteAndLogUnauthorized writes a JSON response for the passed in message and logs an info message
+func WriteAndLogUnauthorized(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
+	LogRequestError(r, c, err)
+	return WriteDataResponse(ctx, w, http.StatusUnauthorized, "Unauthorized", []interface{}{NewErrorData(err.Error())})
+}
+
 // WriteAndLogStatusMsgNotFound writes a JSON response for the passed in message and logs an info message
 func WriteAndLogStatusMsgNotFound(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel) error {
 	LogRequestIgnored(r, c, statusMsgNotFoundDetail)
