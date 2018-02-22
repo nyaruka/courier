@@ -47,7 +47,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.statusMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
@@ -94,8 +94,8 @@ var statusMapping = map[string]courier.MsgStatusValue{
 	"Failed":   courier.MsgFailed,
 }
 
-// statusMessage is our HTTP handler function for status updates
-func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveStatus is our HTTP handler function for status updates
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)

@@ -43,7 +43,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.statusMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
 }
 
 type statusPayload struct {
@@ -67,8 +67,8 @@ var statusMapping = map[int]courier.MsgStatusValue{
 	14: courier.MsgFailed, // too long
 }
 
-// statusMessage is our HTTP handler function for status updates
-func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveStatus is our HTTP handler function for status updates
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	payload := &statusPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 

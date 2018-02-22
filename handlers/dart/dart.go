@@ -50,7 +50,7 @@ func (h *handler) Initialize(s courier.Server) error {
 		return err
 	}
 
-	return s.AddHandlerRoute(h, http.MethodGet, "delivered", h.statusMessage)
+	return s.AddHandlerRoute(h, http.MethodGet, "delivered", h.receiveStatus)
 }
 
 type moForm struct {
@@ -91,8 +91,8 @@ type statusForm struct {
 	Status    string `name:"status"`
 }
 
-// statusMessage is our HTTP handler function for status updates
-func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveStatus is our HTTP handler function for status updates
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
