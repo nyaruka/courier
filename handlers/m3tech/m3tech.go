@@ -63,7 +63,9 @@ func (h *handler) handleReceive(ctx context.Context, c courier.Channel, w http.R
 	}
 
 	// we need to write our response ourselves as M3Tech expects "SMS Accepted" in the response body
-	return []courier.Event{msg}, courier.WriteDataResponse(ctx, w, http.StatusOK, fmt.Sprintf("SMS Accepted: %d", msg.ID().Int64), []interface{}{courier.NewMsgReceiveData(msg)})
+	w.Header().Set("Content-Type", "application/json")
+	_, err = fmt.Fprintf(w, "SMS Accepted: %d", msg.ID().Int64)
+	return []courier.Event{msg}, err
 }
 
 // SendMsg sends the passed in message, returning any error
