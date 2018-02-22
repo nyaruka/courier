@@ -32,7 +32,7 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodGet, "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
 	if err != nil {
 		return err
 	}
@@ -40,20 +40,26 @@ func (h *handler) Initialize(s courier.Server) error {
 	return s.AddHandlerRoute(h, http.MethodGet, "status", h.StatusMessage)
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+type moForm struct {
+	To   string `validate:"required" name:"to"`
+	Text string `validate:"required" name:"text"`
+	From string `validate:"required" name:"from"`
+}
+
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
-	bmMsg := &bmMessage{}
-	err := handlers.DecodeAndValidateForm(bmMsg, r)
+	form := &moForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, err
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(bmMsg.From, channel.Country())
+	urn := urns.NewTelURNForCountry(form.From, channel.Country())
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, bmMsg.Text)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text)
 
 	// and finally queue our message
 	err = h.Backend().WriteMsg(ctx, msg)
@@ -64,13 +70,12 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
-type bmMessage struct {
-	To   string `validate:"required" name:"to"`
-	Text string `validate:"required" name:"text"`
-	From string `validate:"required" name:"from"`
+type statusForm struct {
+	ID     string `validate:"required" name:"id"`
+	Status int    `validate:"required" name:"status"`
 }
 
-var bmStatusMapping = map[int]courier.MsgStatusValue{
+var statusMapping = map[int]courier.MsgStatusValue{
 	1:  courier.MsgDelivered,
 	2:  courier.MsgFailed,
 	8:  courier.MsgSent,
@@ -80,19 +85,19 @@ var bmStatusMapping = map[int]courier.MsgStatusValue{
 // StatusMessage is our HTTP handler function for status updates
 func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
-	bmStatus := &bmStatus{}
-	err := handlers.DecodeAndValidateForm(bmStatus, r)
+	form := &statusForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, err
 	}
 
-	msgStatus, found := bmStatusMapping[bmStatus.Status]
+	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return nil, fmt.Errorf("unknown status '%d', must be one of 1, 2, 8 or 16", bmStatus.Status)
+		return nil, fmt.Errorf("unknown status '%d', must be one of 1, 2, 8 or 16", form.Status)
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, bmStatus.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus)
 	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err != nil {
 		return nil, err
@@ -147,9 +152,4 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	status.SetExternalID(externalID)
 
 	return status, nil
-}
-
-type bmStatus struct {
-	ID     string `validate:"required" name:"id"`
-	Status int    `validate:"required" name:"status"`
 }

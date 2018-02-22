@@ -33,11 +33,11 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.UpdateStatus)
+	return s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
 }
 
 // {
@@ -57,7 +57,7 @@ func (h *handler) Initialize(s courier.Server) error {
 //	 },
 //	 "error": false
 // }
-type waReceive struct {
+type moPayload struct {
 	Payload struct {
 		From      string `json:"from" validate:"required"`
 		MessageID string `json:"message_id" validate:"required"`
@@ -74,35 +74,30 @@ type waReceive struct {
 	Error bool `json:"error"`
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	waReceive := &waReceive{}
-	err := handlers.DecodeAndValidateJSON(waReceive, r)
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	payload := &moPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// if this is an error, that's an erro
-	if waReceive.Error {
+	if payload.Error {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("received errored message"))
 	}
 
 	// create our date from the timestamp
-	ts, err := strconv.ParseInt(waReceive.Payload.Timestamp, 10, 64)
+	ts, err := strconv.ParseInt(payload.Payload.Timestamp, 10, 64)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid timestamp: %s", waReceive.Payload.Timestamp))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid timestamp: %s", payload.Payload.Timestamp))
 	}
 	date := time.Unix(ts, 0).UTC()
 
 	// create our URN
-	urn, err := urns.NewWhatsAppURN(waReceive.Payload.From)
+	urn, err := urns.NewWhatsAppURN(payload.Payload.From)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
-	}
-
-	// ignore this if there's no message
-	if waReceive.Payload.Message.Text == "" {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring, empty message")
 	}
 
 	// TODO: should we be hitting the API to look up contact information?
@@ -110,7 +105,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	// TODO: deal with location messages
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, waReceive.Payload.Message.Text).WithReceivedOn(date).WithExternalID(waReceive.Payload.MessageID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Payload.Message.Text).WithReceivedOn(date).WithExternalID(payload.Payload.MessageID)
 
 	// queue our message
 	err = h.Backend().WriteMsg(ctx, msg)
@@ -131,7 +126,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 //   },
 //   "error": false
 // }
-type waStatus struct {
+type statusPayload struct {
 	Payload struct {
 		MessageID     string `json:"message_id"      validate:"required"`
 		To            string `json:"to"              validate:"required"`
@@ -148,24 +143,24 @@ var waStatusMapping = map[string]courier.MsgStatusValue{
 	"failed":    courier.MsgFailed,
 }
 
-// UpdateStatus is our HTTP handler function for status updates
-func (h *handler) UpdateStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveStatus is our HTTP handler function for status updates
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
-	waStatus := &waStatus{}
-	err := handlers.DecodeAndValidateJSON(waStatus, r)
+	payload := &statusPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	msgStatus, found := waStatusMapping[waStatus.Payload.MessageStatus]
+	msgStatus, found := waStatusMapping[payload.Payload.MessageStatus]
 	if !found {
 		return nil, courier.WriteAndLogRequestError(
 			ctx, w, r, channel,
-			fmt.Errorf("unknown status '%s', must be one of 'sending', 'sent', 'delivered', 'read' or 'failed'", waStatus.Payload.MessageStatus))
+			fmt.Errorf("unknown status '%s', must be one of 'sending', 'sent', 'delivered', 'read' or 'failed'", payload.Payload.MessageStatus))
 	}
 
 	// if we have no status, then build it from the external (twilio) id
-	status := h.Backend().NewMsgStatusForExternalID(channel, waStatus.Payload.MessageID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, payload.Payload.MessageID, msgStatus)
 
 	// write our status
 	err = h.Backend().WriteMsgStatus(ctx, status)
@@ -188,22 +183,9 @@ func (h *handler) UpdateStatus(ctx context.Context, channel courier.Channel, w h
 //     "body": "hello world"
 //   }
 // }
-type waPayload struct {
+type mtPayload struct {
 	To   string `json:"to"    validate:"required"`
 	Body string `json:"body"  validate:"required"`
-}
-
-// {
-//   "payload": {
-//     "message_id": "1015511",
-//   },
-//	 "error": false
-// }
-type waSendResponse struct {
-	Payload struct {
-		MessageID string `json:"message_id"  validate:"required"`
-	} `json:"payload"`
-	Error bool `json:"error"`
 }
 
 // whatsapp only allows messages up to 4096 chars
@@ -213,18 +195,12 @@ const maxMsgLength = 4096
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	// get our username and password
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("no username set for WA channel")
-	}
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("no password set for WA channel")
-	}
-	urlStr := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
-	if urlStr == "" {
-		return nil, fmt.Errorf("no base url set for WA channel")
+	if username == "" || password == "" {
+		return nil, fmt.Errorf("missing username or password for WA channel")
 	}
 
+	urlStr := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid base url set for WA channel: %s", err)
@@ -237,7 +213,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
 	for i, part := range parts {
-		payload := waPayload{
+		payload := mtPayload{
 			To:   msg.URN().Path(),
 			Body: part,
 		}
@@ -279,10 +255,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if i == 0 {
 			status.SetExternalID(externalID)
 		}
-
-		// this was wired successfully
-		status.SetStatus(courier.MsgWired)
 	}
 
+	status.SetStatus(courier.MsgWired)
 	return status, nil
 }

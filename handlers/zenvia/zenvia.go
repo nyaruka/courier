@@ -17,8 +17,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-var maxMsgLength = 1152
-var sendURL = "https://api-rest.zenvia360.com.br/services"
+var (
+	maxMsgLength = 1152
+	sendURL      = "https://api-rest.zenvia360.com.br/services"
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -35,11 +37,11 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.StatusMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
 }
 
 // {
@@ -53,7 +55,7 @@ func (h *handler) Initialize(s courier.Server) error {
 //         	"correlatedMessageSmsId": "hs765939061"
 //  	}
 // }
-type moRequest struct {
+type moPayload struct {
 	CallbackMORequest struct {
 		ID         string `json:"id"                      validate:"required" `
 		From       string `json:"mobile"                  validate:"required" `
@@ -74,7 +76,7 @@ type moRequest struct {
 //         	"mobileOperatorName": "Claro"
 // 		}
 // }
-type statusRequest struct {
+type statusPayload struct {
 	CallbackMTRequest struct {
 		StatusCode string `json:"status" validate:"required"`
 		ID         string `json:"id"     validate:"required" `
@@ -92,7 +94,7 @@ type statusRequest struct {
 //         "aggregateId": "1111"
 //     }
 // }
-type mtRequest struct {
+type mtPayload struct {
 	SendSMSRequest struct {
 		From           string `json:"from"`
 		To             string `json:"to"`
@@ -118,27 +120,27 @@ var statusMapping = map[string]courier.MsgStatusValue{
 	"10": courier.MsgErrored,
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
-	zvMsg := &moRequest{}
-	err := handlers.DecodeAndValidateJSON(zvMsg, r)
+	payload := &moPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// create our date from the timestamp
 	// 2017-05-03T06:04:45.345-03:00
-	date, err := time.Parse("2006-01-02T15:04:05.000-07:00", zvMsg.CallbackMORequest.Date)
+	date, err := time.Parse("2006-01-02T15:04:05.000-07:00", payload.CallbackMORequest.Date)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid date format: %s", zvMsg.CallbackMORequest.Date))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid date format: %s", payload.CallbackMORequest.Date))
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(zvMsg.CallbackMORequest.From, channel.Country())
+	urn := urns.NewTelURNForCountry(payload.CallbackMORequest.From, channel.Country())
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, zvMsg.CallbackMORequest.Text).WithExternalID(zvMsg.CallbackMORequest.ExternalID).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.CallbackMORequest.Text).WithExternalID(payload.CallbackMORequest.ExternalID).WithReceivedOn(date.UTC())
 
 	// and finally queue our message
 	err = h.Backend().WriteMsg(ctx, msg)
@@ -149,22 +151,22 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
-// StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveStatus is our HTTP handler function for status updates
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
-	zvStatus := &statusRequest{}
-	err := handlers.DecodeAndValidateJSON(zvStatus, r)
+	payload := &statusPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	msgStatus, found := statusMapping[zvStatus.CallbackMTRequest.StatusCode]
+	msgStatus, found := statusMapping[payload.CallbackMTRequest.StatusCode]
 	if !found {
 		msgStatus = courier.MsgErrored
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, zvStatus.CallbackMTRequest.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CallbackMTRequest.ID, msgStatus)
 	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err == courier.ErrMsgNotFound {
 		return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
@@ -193,7 +195,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
-		zvMsg := mtRequest{}
+		zvMsg := mtPayload{}
 		zvMsg.SendSMSRequest.From = "Sender"
 		zvMsg.SendSMSRequest.To = strings.TrimLeft(msg.URN().Path(), "+")
 		zvMsg.SendSMSRequest.Msg = part

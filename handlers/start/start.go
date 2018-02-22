@@ -21,8 +21,10 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var maxMsgLength = 1600
-var sendURL = "http://bulk.startmobile.com.ua/clients.php"
+var (
+	maxMsgLength = 1600
+	sendURL      = "http://bulk.startmobile.com.ua/clients.php"
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -39,11 +41,11 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	return nil
 }
 
-type moMessage struct {
+type moPayload struct {
 	XMLName xml.Name `xml:"message"`
 	Service struct {
 		Timestamp string `xml:"timestamp,attr"`
@@ -56,33 +58,33 @@ type moMessage struct {
 	} `xml:"body"`
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	mo := &moMessage{}
-	err := handlers.DecodeAndValidateXML(mo, r)
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	payload := &moPayload{}
+	err := handlers.DecodeAndValidateXML(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	if mo.Service.RequestID == "" || mo.From == "" || mo.To == "" {
+	if payload.Service.RequestID == "" || payload.From == "" || payload.To == "" {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing parameters, must have 'request_id', 'to' and 'body'"))
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(mo.From, channel.Country())
+	urn := urns.NewTelURNForCountry(payload.From, channel.Country())
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// create our date from the timestamp
-	ts, err := strconv.ParseInt(mo.Service.Timestamp, 10, 64)
+	ts, err := strconv.ParseInt(payload.Service.Timestamp, 10, 64)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid timestamp: %s", mo.Service.Timestamp))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid timestamp: %s", payload.Service.Timestamp))
 	}
 	date := time.Unix(ts, 0).UTC()
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, mo.Body.Text).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body.Text).WithReceivedOn(date)
 
 	// and write it
 	err = h.Backend().WriteMsg(ctx, msg)
@@ -102,26 +104,26 @@ func (h *handler) writeReceiveSuccess(ctx context.Context, w http.ResponseWriter
 	return err
 }
 
-type body struct {
+type mtBody struct {
 	ContentType string `xml:"content-type,attr"`
 	Encoding    string `xml:"encoding,attr"`
 	Text        string `xml:",chardata"`
 }
 
-type service struct {
+type mtService struct {
 	ID       string `xml:"id,attr"`
 	Source   string `xml:"source,attr"`
 	Validity string `xml:"validity,attr"`
 }
 
-type mtMessage struct {
-	XMLName xml.Name `xml:"message"`
-	Service service  `xml:"service"`
-	To      string   `xml:"to"`
-	Body    body     `xml:"body"`
+type mtPayload struct {
+	XMLName xml.Name  `xml:"message"`
+	Service mtService `xml:"service"`
+	To      string    `xml:"to"`
+	Body    mtBody    `xml:"body"`
 }
 
-type stResponse struct {
+type mtResponse struct {
 	XMLName xml.Name `xml:"status"`
 	ID      string   `xml:"id"`
 	State   string   `xml:"state"`
@@ -142,14 +144,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for i, part := range parts {
 
-		stMsg := mtMessage{
-			Service: service{
+		payload := mtPayload{
+			Service: mtService{
 				ID:       "single",
 				Source:   msg.Channel().Address(),
 				Validity: "+12 hours",
 			},
 			To: msg.URN().Path(),
-			Body: body{
+			Body: mtBody{
 				ContentType: "plain/text",
 				Encoding:    "plain",
 				Text:        part,
@@ -157,7 +159,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		requestBody := &bytes.Buffer{}
-		err := xml.NewEncoder(requestBody).Encode(stMsg)
+		err := xml.NewEncoder(requestBody).Encode(payload)
 		if err != nil {
 			return nil, err
 		}
@@ -175,12 +177,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return status, nil
 		}
 
-		stResponse := &stResponse{}
-		err = xml.Unmarshal(rr.Body, stResponse)
+		response := &mtResponse{}
+		err = xml.Unmarshal(rr.Body, response)
 		if err == nil {
 			status.SetStatus(courier.MsgWired)
 			if i == 0 {
-				status.SetExternalID(stResponse.ID)
+				status.SetExternalID(response.ID)
 			}
 		}
 	}

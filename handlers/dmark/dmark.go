@@ -16,10 +16,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-var sendURL = "https://smsapi1.dmarkmobile.com/sms/"
-
-// DMark supports up to 3 segment messages
-const maxMsgLength = 453
+var (
+	sendURL      = "https://smsapi1.dmarkmobile.com/sms/"
+	maxMsgLength = 453
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -33,14 +33,54 @@ func newHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("DK"), "dmark")}
 }
 
-type receiveRequest struct {
+// Initialize is called by the engine once everything is loaded
+func (h *handler) Initialize(s courier.Server) error {
+	h.SetServer(s)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	if err != nil {
+		return err
+	}
+	return s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+}
+
+type moForm struct {
 	MSISDN    string `validate:"required" name:"msisdn"`
 	Text      string `validate:"required" name:"text"`
 	ShortCode string `validate:"required" name:"short_code"`
 	TStamp    string `validate:"required" name:"tstamp"`
 }
 
-type statusRequest struct {
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	// get our params
+	form := &moForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
+	if err != nil {
+		return nil, err
+	}
+
+	// create our date from the timestamp "2017-10-26T15:51:32.906335+00:00"
+	date, err := time.Parse("2006-01-02T15:04:05.999999-07:00", form.TStamp)
+	if err != nil {
+		return nil, fmt.Errorf("invalid tstamp: %s", form.TStamp)
+	}
+
+	// create our URN
+	urn := urns.NewTelURNForCountry(form.MSISDN, channel.Country())
+
+	// build our msg
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithReceivedOn(date)
+
+	// and finally queue our message
+	err = h.Backend().WriteMsg(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+}
+
+type statusForm struct {
 	ID     string `validate:"required" name:"id"`
 	Status string `validate:"required" name:"status"`
 }
@@ -53,62 +93,22 @@ var statusMapping = map[string]courier.MsgStatusValue{
 	"16": courier.MsgErrored,
 }
 
-// Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(s courier.Server) error {
-	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.StatusMessage)
-}
-
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveStatus is our HTTP handler function for status updates
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
-	dkMsg := &receiveRequest{}
-	err := handlers.DecodeAndValidateForm(dkMsg, r)
+	form := &statusForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, err
 	}
 
-	// create our date from the timestamp "2017-10-26T15:51:32.906335+00:00"
-	date, err := time.Parse("2006-01-02T15:04:05.999999-07:00", dkMsg.TStamp)
-	if err != nil {
-		return nil, fmt.Errorf("invalid tstamp: %s", dkMsg.TStamp)
-	}
-
-	// create our URN
-	urn := urns.NewTelURNForCountry(dkMsg.MSISDN, channel.Country())
-
-	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, dkMsg.Text).WithReceivedOn(date)
-
-	// and finally queue our message
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
-}
-
-// StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	// get our params
-	dkStatus := &statusRequest{}
-	err := handlers.DecodeAndValidateForm(dkStatus, r)
-	if err != nil {
-		return nil, err
-	}
-
-	msgStatus, found := statusMapping[dkStatus.Status]
+	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return nil, fmt.Errorf("unknown status '%s', must be one of '1','2','4','8' or '16'", dkStatus.Status)
+		return nil, fmt.Errorf("unknown status '%s', must be one of '1','2','4','8' or '16'", form.Status)
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, dkStatus.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus)
 	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err != nil {
 		return nil, err

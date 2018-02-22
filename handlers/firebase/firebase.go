@@ -23,8 +23,8 @@ const (
 )
 
 var (
-	sendURL = "https://fcm.googleapis.com/fcm/send"
-	msgSize = 1024
+	sendURL    = "https://fcm.googleapis.com/fcm/send"
+	maxMsgSize = 1024
 )
 
 func init() {
@@ -41,11 +41,11 @@ func newHandler() courier.ChannelHandler {
 
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, http.MethodPost, "register", h.RegisterContact)
+	return s.AddHandlerRoute(h, http.MethodPost, "register", h.registerContact)
 }
 
 type receiveForm struct {
@@ -56,8 +56,8 @@ type receiveForm struct {
 	Name     string `name:"name"`
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	form := &receiveForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -93,8 +93,8 @@ type registerForm struct {
 	Name     string `name:"name"`
 }
 
-// RegisterContact is our HTTP handler function for when a contact is registered (or renewed)
-func (h *handler) RegisterContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// registerContact is our HTTP handler function for when a contact is registered (or renewed)
+func (h *handler) registerContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	form := &registerForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -156,7 +156,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	notification, _ := configNotification.(bool)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	for i, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), msgSize) {
+	for i, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgSize) {
 		payload := mtPayload{}
 
 		payload.Data.Type = "rapidpro"

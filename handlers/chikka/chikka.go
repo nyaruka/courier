@@ -35,7 +35,7 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 }
 
 type moForm struct {
@@ -55,8 +55,8 @@ var statusMapping = map[string]courier.MsgStatusValue{
 	"FAILED": courier.MsgFailed,
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := r.ParseForm()
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)

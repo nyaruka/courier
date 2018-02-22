@@ -21,14 +21,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Endpoints we hit
-var sendURL = "https://api.twitter.com/1.1/direct_messages/events/new.json"
+var (
+	sendURL      = "https://api.twitter.com/1.1/direct_messages/events/new.json"
+	maxMsgLength = 10000
 
-// DMs can be up to 10,000 characters long
-var maxMsgLength = 10000
-
-// Labels in quick replies can't be more than 36 characters
-var maxOptionLength = 36
+	// Labels in quick replies can't be more than 36 characters
+	maxOptionLength = 36
+)
 
 const (
 	configHandleID          = "handle_id"
@@ -53,15 +52,15 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.Receive)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, http.MethodGet, "receive", h.ReceiveVerify)
+	return s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveVerify)
 }
 
-// ReceiveVerify handles Twitter's webhook verification callback
-func (h *handler) ReceiveVerify(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveVerify handles Twitter's webhook verification callback
+func (h *handler) receiveVerify(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	crcToken := r.URL.Query().Get("crc_token")
 	if crcToken == "" {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf(`missing required 'crc_token' query parameter`))
@@ -80,7 +79,7 @@ func (h *handler) ReceiveVerify(ctx context.Context, c courier.Channel, w http.R
 }
 
 // struct for each user
-type twtUser struct {
+type moUser struct {
 	ID         string `json:"id"          validate:"required"`
 	Name       string `json:"name"        validate:"required"`
 	ScreenName string `json:"screen_name" validate:"required"`
@@ -106,7 +105,7 @@ type twtUser struct {
 //       "twitterid2": { "id": "twitterid2", "name": "jane", "screen_name": "jane" },
 //    }
 // }
-type moEnvelope struct {
+type moPayload struct {
 	DirectMessageEvents []struct {
 		CreatedTimestamp string `json:"created_timestamp" validate:"required"`
 		MessageCreate    struct {
@@ -126,25 +125,25 @@ type moEnvelope struct {
 		Type string `json:"type" validate:"required"`
 		ID   string `json:"id"   validate:"required"`
 	} `json:"direct_message_events"`
-	Users map[string]twtUser `json:"users"`
+	Users map[string]moUser `json:"users"`
 }
 
-// Receive is our HTTP handler function for incoming messages
-func (h *handler) Receive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveEvent is our HTTP handler function for incoming events
+func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// read our handle id
 	handleID := c.StringConfigForKey(configHandleID, "")
 	if handleID == "" {
 		return nil, fmt.Errorf("Missing handle id config for TWT channel")
 	}
 
-	mo := &moEnvelope{}
-	err := handlers.DecodeAndValidateJSON(mo, r)
+	payload := &moPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
 	}
 
 	// no direct message events? ignore
-	if len(mo.DirectMessageEvents) == 0 {
+	if len(payload.DirectMessageEvents) == 0 {
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, c, "ignoring, no direct messages")
 	}
 
@@ -153,7 +152,7 @@ func (h *handler) Receive(ctx context.Context, c courier.Channel, w http.Respons
 	events := make([]courier.Event, 0, 2)
 
 	// for each entry
-	for _, entry := range mo.DirectMessageEvents {
+	for _, entry := range payload.DirectMessageEvents {
 		// not a message create, ignore
 		if entry.Type != "message_create" {
 			continue
@@ -167,7 +166,7 @@ func (h *handler) Receive(ctx context.Context, c courier.Channel, w http.Respons
 		}
 
 		// look up the user for this sender
-		user, found := mo.Users[senderID]
+		user, found := payload.Users[senderID]
 		if !found {
 			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("unable to find user for id: %s", senderID))
 		}
@@ -220,7 +219,7 @@ func (h *handler) Receive(ctx context.Context, c courier.Channel, w http.Respons
 //     }
 //	 }
 // }
-type mtEnvelope struct {
+type mtPayload struct {
 	Event struct {
 		Type          string `json:"type"`
 		MessageCreate struct {
@@ -260,7 +259,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	for i, text := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
-		payload := mtEnvelope{}
+		payload := mtPayload{}
 		payload.Event.Type = "message_create"
 		payload.Event.MessageCreate.Target.RecipientID = msg.URN().Path()
 		payload.Event.MessageCreate.MessageData.Text = text

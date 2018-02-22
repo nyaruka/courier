@@ -36,7 +36,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	if err != nil {
 		return err
 	}
@@ -44,24 +44,24 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-type smsCentralMessage struct {
+type moForm struct {
 	Message string `name:"message"`
 	Mobile  string `name:"mobile" validate:"required" `
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	smsCentralMessage := &smsCentralMessage{}
-	err := handlers.DecodeAndValidateForm(smsCentralMessage, r)
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	form := &moForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(smsCentralMessage.Mobile, channel.Country())
+	urn := urns.NewTelURNForCountry(form.Mobile, channel.Country())
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, smsCentralMessage.Message)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message)
 
 	// and finally queue our message
 	err = h.Backend().WriteMsg(ctx, msg)

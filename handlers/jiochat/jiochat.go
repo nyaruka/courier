@@ -21,9 +21,11 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var maxMsgLength = 1600
-var fetchTimeout = time.Second * 2
-var apiURL = "https://channels.jiochat.com"
+var (
+	sendURL      = "https://channels.jiochat.com"
+	maxMsgLength = 1600
+	fetchTimeout = time.Second * 2
+)
 
 const (
 	configAppID     = "jiochat_app_id"
@@ -50,20 +52,20 @@ func (h *handler) Initialize(s courier.Server) error {
 		return err
 	}
 
-	err = s.AddHandlerRoute(h, http.MethodPost, "rcv/msg/message", h.ReceiveMessage)
+	err = s.AddHandlerRoute(h, http.MethodPost, "rcv/msg/message", h.receiveMessage)
 	if err != nil {
 		return err
 	}
 
-	err = s.AddHandlerRoute(h, http.MethodPost, "rcv/event/menu", h.ReceiveMessage)
+	err = s.AddHandlerRoute(h, http.MethodPost, "rcv/event/menu", h.receiveMessage)
 	if err != nil {
 		return err
 	}
 
-	return s.AddHandlerRoute(h, http.MethodPost, "rcv/event/follow", h.ReceiveMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "rcv/event/follow", h.receiveMessage)
 }
 
-type verifyRequest struct {
+type verifyForm struct {
 	Signature string `name:"signature"`
 	Timestamp string `name:"timestamp"`
 	Nonce     string `name:"nonce"`
@@ -72,13 +74,13 @@ type verifyRequest struct {
 
 // VerifyURL is our HTTP handler function for Jiochat config URL verification callbacks
 func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	jcVerify := &verifyRequest{}
-	err := handlers.DecodeAndValidateForm(jcVerify, r)
+	form := &verifyForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	dictOrder := []string{channel.StringConfigForKey(configAppSecret, ""), jcVerify.Timestamp, jcVerify.Nonce}
+	dictOrder := []string{channel.StringConfigForKey(configAppSecret, ""), form.Timestamp, form.Nonce}
 	sort.Sort(sort.StringSlice(dictOrder))
 
 	combinedParams := strings.Join(dictOrder, "")
@@ -90,8 +92,8 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	ResponseText := "unknown request"
 	StatusCode := 400
 
-	if encoded == jcVerify.Signature {
-		ResponseText = jcVerify.EchoStr
+	if encoded == form.Signature {
+		ResponseText = form.EchoStr
 		StatusCode = 200
 		go h.fetchAccessToken(channel)
 	}
@@ -102,7 +104,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	return nil, err
 }
 
-type moMsg struct {
+type moPayload struct {
 	FromUsername string `json:"FromUserName"    validate:"required"`
 	MsgType      string `json:"MsgType"         validate:"required"`
 	CreateTime   int64  `json:"CreateTime"`
@@ -112,23 +114,23 @@ type moMsg struct {
 	MediaID      string `json:"MediaId"`
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	jcRequest := &moMsg{}
-	err := handlers.DecodeAndValidateJSON(jcRequest, r)
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	payload := &moPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	if jcRequest.MsgID == "" && jcRequest.Event == "" {
+	if payload.MsgID == "" && payload.Event == "" {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing parameters, must have either 'MsgId' or 'Event'"))
 	}
 
-	date := time.Unix(jcRequest.CreateTime/1000, jcRequest.CreateTime%1000*1000000).UTC()
-	urn := urns.NewURNFromParts(urns.JiochatScheme, jcRequest.FromUsername, "")
+	date := time.Unix(payload.CreateTime/1000, payload.CreateTime%1000*1000000).UTC()
+	urn := urns.NewURNFromParts(urns.JiochatScheme, payload.FromUsername, "")
 
 	// subscribe event, trigger a new conversation
-	if jcRequest.MsgType == "event" && jcRequest.Event == "subscribe" {
+	if payload.MsgType == "event" && payload.Event == "subscribe" {
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn)
 
 		err := h.Backend().WriteChannelEvent(ctx, channelEvent)
@@ -140,14 +142,14 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// unknown event type (we only deal with subscribe)
-	if jcRequest.MsgType == "event" {
+	if payload.MsgType == "event" {
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "unknown event type")
 	}
 
 	// create our message
-	msg := h.Backend().NewIncomingMsg(channel, urn, jcRequest.Content).WithExternalID(jcRequest.MsgID).WithReceivedOn(date)
-	if jcRequest.MsgType == "image" || jcRequest.MsgType == "video" || jcRequest.MsgType == "voice" {
-		mediaURL := buildMediaURL(jcRequest.MediaID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Content).WithExternalID(payload.MsgID).WithReceivedOn(date)
+	if payload.MsgType == "image" || payload.MsgType == "video" || payload.MsgType == "voice" {
+		mediaURL := buildMediaURL(payload.MediaID)
 		msg.WithAttachment(mediaURL)
 	}
 
@@ -160,12 +162,12 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 func buildMediaURL(mediaID string) string {
-	mediaURL, _ := url.Parse(fmt.Sprintf("%s/%s", apiURL, "media/download.action"))
+	mediaURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "media/download.action"))
 	mediaURL.RawQuery = url.Values{"media_id": []string{mediaID}}.Encode()
 	return mediaURL.String()
 }
 
-type fetchTokenData struct {
+type fetchPayload struct {
 	GrantType    string `json:"grant_type"`
 	ClientID     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
@@ -175,9 +177,9 @@ type fetchTokenData struct {
 func (h *handler) fetchAccessToken(channel courier.Channel) error {
 	time.Sleep(fetchTimeout)
 
-	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", apiURL, "auth/token.action"))
+	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "auth/token.action"))
 
-	payload := &fetchTokenData{
+	payload := &fetchPayload{
 		GrantType:    "client_credentials",
 		ClientID:     channel.StringConfigForKey(configAppID, ""),
 		ClientSecret: channel.StringConfigForKey(configAppSecret, ""),
@@ -226,7 +228,7 @@ func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
 	return accessToken, nil
 }
 
-type mtMsg struct {
+type mtPayload struct {
 	MsgType string `json:"msgtype"`
 	ToUser  string `json:"touser"`
 	Text    struct {
@@ -244,7 +246,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
-		jcMsg := &mtMsg{}
+		jcMsg := &mtPayload{}
 		jcMsg.MsgType = "text"
 		jcMsg.ToUser = msg.URN().Path()
 		jcMsg.Text.Content = part
@@ -253,7 +255,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		json.NewEncoder(requestBody).Encode(jcMsg)
 
 		// build our request
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", apiURL, "custom/custom_send.action"), requestBody)
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", sendURL, "custom/custom_send.action"), requestBody)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
@@ -289,7 +291,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 		"openid": []string{path},
 	}
 
-	reqURL, _ := url.Parse(fmt.Sprintf("%s/%s", apiURL, "user/info.action"))
+	reqURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "user/info.action"))
 	reqURL.RawQuery = form.Encode()
 
 	req, err := http.NewRequest(http.MethodGet, reqURL.String(), nil)

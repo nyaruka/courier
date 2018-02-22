@@ -17,16 +17,10 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var sendURL = "https://api-public.mtarget.fr/api-sms.json"
-var maxLength = 765
-var statuses = map[string]courier.MsgStatusValue{
-	"0": courier.MsgWired,
-	"1": courier.MsgWired,
-	"2": courier.MsgSent,
-	"3": courier.MsgDelivered,
-	"4": courier.MsgFailed,
-	"6": courier.MsgFailed,
-}
+var (
+	sendURL      = "https://api-public.mtarget.fr/api-sms.json"
+	maxMsgLength = 765
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -40,6 +34,15 @@ func newHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("MT"), "Mtarget")}
 }
 
+var statusMapping = map[string]courier.MsgStatusValue{
+	"0": courier.MsgWired,
+	"1": courier.MsgWired,
+	"2": courier.MsgSent,
+	"3": courier.MsgDelivered,
+	"4": courier.MsgFailed,
+	"6": courier.MsgFailed,
+}
+
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
@@ -49,7 +52,7 @@ func (h *handler) Initialize(s courier.Server) error {
 		return nil
 	}
 
-	statusHandler := handlers.NewExternalIDStatusHandler(h.BaseHandler, statuses, "MsgId", "Status")
+	statusHandler := handlers.NewExternalIDStatusHandler(h.BaseHandler, statusMapping, "MsgId", "Status")
 	return s.AddHandlerRoute(h, http.MethodPost, "status", statusHandler)
 }
 
@@ -163,7 +166,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// send our message
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength) {
+	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		// build our request
 		params := url.Values{
 			"username":     []string{username},

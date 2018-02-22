@@ -20,15 +20,17 @@ import (
 )
 
 // Endpoints we hit
-var facebookSendURL = "https://graph.facebook.com/v2.6/me/messages"
-var facebookSubscribeURL = "https://graph.facebook.com/v2.6/me/subscribed_apps"
-var facebookGraphURL = "https://graph.facebook.com/v2.6/"
+var (
+	sendURL      = "https://graph.facebook.com/v2.6/me/messages"
+	subscribeURL = "https://graph.facebook.com/v2.6/me/subscribed_apps"
+	graphURL     = "https://graph.facebook.com/v2.6/"
 
-// How long we want after the subscribe callback to register the page for events
-var facebookSubscribeTimeout = time.Second * 2
+	// How long we want after the subscribe callback to register the page for events
+	subscribeTimeout = time.Second * 2
 
-// Facebook API says 640 is max for the body
-var maxMsgLength = 640
+	// Facebook API says 640 is max for the body
+	maxMsgLength = 640
+)
 
 // keys for extra in channel events
 const (
@@ -55,15 +57,15 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.Receive)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, http.MethodGet, "receive", h.ReceiveVerify)
+	return s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveVerify)
 }
 
-// ReceiveVerify handles Facebook's webhook verification callback
-func (h *handler) ReceiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveVerify handles Facebook's webhook verification callback
+func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	mode := r.URL.Query().Get("hub.mode")
 
 	// this isn't a subscribe verification, that's an error
@@ -86,12 +88,12 @@ func (h *handler) ReceiveVerify(ctx context.Context, channel courier.Channel, w 
 	// everything looks good, we will subscribe to this page's messages asynchronously
 	go func() {
 		// wait a bit for Facebook to handle this response
-		time.Sleep(facebookSubscribeTimeout)
+		time.Sleep(subscribeTimeout)
 
 		// subscribe to messaging events for this page
 		form := url.Values{}
 		form.Set("access_token", authToken)
-		req, _ := http.NewRequest(http.MethodPost, facebookSubscribeURL, strings.NewReader(form.Encode()))
+		req, _ := http.NewRequest(http.MethodPost, subscribeURL, strings.NewReader(form.Encode()))
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		rr, err := utils.MakeHTTPRequest(req)
 
@@ -128,7 +130,7 @@ type fbUser struct {
 //     }]
 //   }]
 // }
-type moEnvelope struct {
+type moPayload struct {
 	Object string `json:"object"`
 	Entry  []struct {
 		ID        string `json:"id"`
@@ -181,21 +183,21 @@ type moEnvelope struct {
 	} `json:"entry"`
 }
 
-// Receive is our HTTP handler function for incoming messages and status updates
-func (h *handler) Receive(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	mo := &moEnvelope{}
-	err := handlers.DecodeAndValidateJSON(mo, r)
+// receiveEvent is our HTTP handler function for incoming messages and status updates
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	payload := &moPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// not a page object? ignore
-	if mo.Object != "page" {
+	if payload.Object != "page" {
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring non-page request")
 	}
 
 	// no entries? ignore this request
-	if len(mo.Entry) == 0 {
+	if len(payload.Entry) == 0 {
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring request, no entries")
 	}
 
@@ -206,7 +208,7 @@ func (h *handler) Receive(ctx context.Context, channel courier.Channel, w http.R
 	data := make([]interface{}, 0, 2)
 
 	// for each entry
-	for _, entry := range mo.Entry {
+	for _, entry := range payload.Entry {
 		// no entry, ignore
 		if len(entry.Messaging) == 0 {
 			continue
@@ -379,7 +381,7 @@ func (h *handler) Receive(ctx context.Context, channel courier.Channel, w http.R
 //         }
 //     }
 // }
-type mtEnvelope struct {
+type mtPayload struct {
 	MessagingType string `json:"messaging_type"`
 	Recipient     struct {
 		UserRef string `json:"user_ref,omitempty"`
@@ -413,7 +415,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("missing access token")
 	}
 
-	payload := mtEnvelope{}
+	payload := mtPayload{}
 
 	// set our message type
 	if msg.ResponseToID().IsZero() {
@@ -429,10 +431,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		payload.Recipient.ID = msg.URN().Path()
 	}
 
-	sendURL, _ := url.Parse(facebookSendURL)
+	msgURL, _ := url.Parse(sendURL)
 	query := url.Values{}
 	query.Set("access_token", accessToken)
-	sendURL.RawQuery = query.Encode()
+	msgURL.RawQuery = query.Encode()
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
@@ -472,7 +474,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return status, err
 		}
 
-		req, err := http.NewRequest(http.MethodPost, sendURL.String(), bytes.NewReader(jsonBody))
+		req, err := http.NewRequest(http.MethodPost, msgURL.String(), bytes.NewReader(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		rr, err := utils.MakeHTTPRequest(req)
@@ -515,7 +517,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	}
 
 	// build a request to lookup the stats for this contact
-	base, _ := url.Parse(facebookGraphURL)
+	base, _ := url.Parse(graphURL)
 	path, _ := url.Parse(fmt.Sprintf("/%s", urn.Path()))
 	u := base.ResolveReference(path)
 

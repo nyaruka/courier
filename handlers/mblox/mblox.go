@@ -5,10 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/buger/jsonparser"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/buger/jsonparser"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
@@ -17,7 +18,7 @@ import (
 )
 
 var (
-	mbloxAPIURL  = "https://api.mblox.com/xms/v1"
+	sendURL      = "https://api.mblox.com/xms/v1"
 	maxMsgLength = 459
 )
 
@@ -36,11 +37,11 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
 }
 
-type moPayload struct {
-	Type       string `json:"type"`
+type eventPayload struct {
+	Type       string `json:"type"       validate:"required"`
 	BatchID    string `json:"batch_id"`
 	Status     string `json:"status"`
 	ID         string `json:"id"`
@@ -59,9 +60,9 @@ var statusMapping = map[string]courier.MsgStatusValue{
 	"Expired":    courier.MsgFailed,
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	payload := &moPayload{}
+// receiveEvent is our HTTP handler function for incoming messages
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	payload := &eventPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
@@ -146,7 +147,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		json.NewEncoder(requestBody).Encode(payload)
 
 		// build our request
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s/batches", mbloxAPIURL, username), requestBody)
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s/batches", sendURL, username), requestBody)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", password))

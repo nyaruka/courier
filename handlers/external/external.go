@@ -20,9 +20,11 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-const contentURLEncoded = "application/x-www-form-urlencoded"
-const contentJSON = "application/json"
-const contentXML = "text/xml; charset=utf-8"
+const (
+	contentURLEncoded = "application/x-www-form-urlencoded"
+	contentJSON       = "application/json"
+	contentXML        = "text/xml; charset=utf-8"
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -39,8 +41,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
-	s.AddHandlerRoute(h, http.MethodGet, "receive", h.ReceiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
 
 	sentHandler := h.buildStatusHandler("sent")
 	s.AddHandlerRoute(h, http.MethodGet, "sent", sentHandler)
@@ -57,27 +59,35 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	externalMessage := &externalMessage{}
-	err := handlers.DecodeAndValidateForm(externalMessage, r)
+type moForm struct {
+	From   string `name:"from"`
+	Sender string `name:"sender"`
+	Text   string `validate:"required" name:"text"`
+	Date   string `name:"date"`
+	Time   string `name:"time"`
+}
+
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	form := &moForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// must have one of from or sender set, error if neither
-	sender := externalMessage.Sender
+	sender := form.Sender
 	if sender == "" {
-		sender = externalMessage.From
+		sender = form.From
 	}
 	if sender == "" {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("must have one of 'sender' or 'from' set"))
 	}
 
 	// if we have a date, parse it
-	dateString := externalMessage.Date
+	dateString := form.Date
 	if dateString == "" {
-		dateString = externalMessage.Time
+		dateString = form.Time
 	}
 
 	date := time.Now()
@@ -92,7 +102,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	urn := urns.NewURNFromParts(channel.Schemes()[0], sender, "").Normalize("")
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, externalMessage.Text).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithReceivedOn(date)
 
 	// and write it
 	err = h.Backend().WriteMsg(ctx, msg)
@@ -103,25 +113,27 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
-type externalMessage struct {
-	From   string `name:"from"`
-	Sender string `name:"sender"`
-	Text   string `validate:"required" name:"text"`
-	Date   string `name:"date"`
-	Time   string `name:"time"`
-}
-
 // buildStatusHandler deals with building a handler that takes what status is received in the URL
 func (h *handler) buildStatusHandler(status string) courier.ChannelHandleFunc {
 	return func(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-		return h.StatusMessage(ctx, status, channel, w, r)
+		return h.receiveStatus(ctx, status, channel, w, r)
 	}
 }
 
-// StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(ctx context.Context, statusString string, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	statusForm := &statusForm{}
-	err := handlers.DecodeAndValidateForm(statusForm, r)
+type statusForm struct {
+	ID int64 `name:"id" validate:"required"`
+}
+
+var statusMappings = map[string]courier.MsgStatusValue{
+	"failed":    courier.MsgFailed,
+	"sent":      courier.MsgSent,
+	"delivered": courier.MsgDelivered,
+}
+
+// receiveStatus is our HTTP handler function for status updates
+func (h *handler) receiveStatus(ctx context.Context, statusString string, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	form := &statusForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
@@ -133,23 +145,13 @@ func (h *handler) StatusMessage(ctx context.Context, statusString string, channe
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(statusForm.ID), msgStatus)
+	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.ID), msgStatus)
 	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err != nil {
 		return nil, err
 	}
 
 	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
-}
-
-type statusForm struct {
-	ID int64 `name:"id" validate:"required"`
-}
-
-var statusMappings = map[string]courier.MsgStatusValue{
-	"failed":    courier.MsgFailed,
-	"sent":      courier.MsgSent,
-	"delivered": courier.MsgDelivered,
 }
 
 // SendMsg sends the passed in message, returning any error

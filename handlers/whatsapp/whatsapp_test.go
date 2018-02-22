@@ -37,6 +37,36 @@ var helloMsg = `{
   "error": false
 }`
 
+var invalidFrom = `{
+  "meta": null,
+  "payload": {
+    "from": "notnumber",
+    "message_id": "41",
+    "timestamp": "1454119029",
+    "message": {
+        "has_media": false,
+        "text": "hello world",
+        "type": "text"
+    }
+  },
+  "error": false
+}`
+
+var invalidTimestamp = `{
+  "meta": null,
+  "payload": {
+    "from": "250788123123",
+    "message_id": "41",
+    "timestamp": "asdf",
+    "message": {
+        "has_media": false,
+        "text": "hello world",
+        "type": "text"
+    }
+  },
+  "error": false
+}`
+
 var invalidMsg = `not json`
 
 var errorMsg = `{
@@ -84,6 +114,8 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, Status: 200, Response: "Accepted",
 		Text: Sp("hello world"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 	{Label: "Receive Invalid JSON", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidMsg, Status: 400, Response: "unable to parse"},
+	{Label: "Receive Invalid From", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidFrom, Status: 400, Response: "invalid whatsapp identifier"},
+	{Label: "Receive Invalid Timestamp", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTimestamp, Status: 400, Response: "invalid timestamp"},
 	{Label: "Receive Error Msg", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: errorMsg, Status: 400, Response: "received errored message"},
 
 	{Label: "Receive Valid Status", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/status", Data: validStatus, Status: 200, Response: "Status Update Accepted"},
@@ -121,6 +153,12 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text: "Error", URN: "whatsapp:250788123123",
 		Status:       "E",
 		ResponseBody: `{ "error": true }`, ResponseStatus: 403,
+		RequestBody: `{"payload":{"to":"250788123123","body":"Error"}}`,
+		SendPrep:    setSendURL},
+	{Label: "No Message ID",
+		Text: "Error", URN: "whatsapp:250788123123",
+		Status:       "E",
+		ResponseBody: `{ "error": false }`, ResponseStatus: 200,
 		RequestBody: `{"payload":{"to":"250788123123","body":"Error"}}`,
 		SendPrep:    setSendURL},
 	{Label: "Error Field",

@@ -337,7 +337,7 @@ func buildMockFBGraph(testCases []ChannelHandleTestCase) *httptest.Server {
 		// no name
 		w.Write([]byte(`{ "first_name": "", "last_name": ""}`))
 	}))
-	facebookGraphURL = server.URL
+	graphURL = server.URL
 
 	return server
 }
@@ -390,8 +390,8 @@ func TestVerify(t *testing.T) {
 		// mark that we were called
 		subscribeCalled = true
 	}))
-	facebookSubscribeURL = server.URL
-	facebookSubscribeTimeout = time.Millisecond
+	subscribeURL = server.URL
+	subscribeTimeout = time.Millisecond
 
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
 		{Label: "Receive Message", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, Status: 200},
@@ -411,7 +411,7 @@ func TestVerify(t *testing.T) {
 
 // setSendURL takes care of setting the send_url to our test server host
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	facebookSendURL = s.URL
+	sendURL = s.URL
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
