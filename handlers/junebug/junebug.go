@@ -70,9 +70,9 @@ func (h *handler) ReceiveInbound(ctx context.Context, c courier.Channel, w http.
 	// check authentication
 	secret := c.StringConfigForKey(courier.ConfigSecret, "")
 	if secret != "" {
-		authorization := r.Header.Get("HTTP_AUTHORIZATION")
+		authorization := r.Header.Get("Authorization")
 		if authorization != fmt.Sprintf("Token %s", secret) {
-			return nil, courier.WriteAndLogUnauthorized(ctx, w, r, c, fmt.Errorf("invalid HTTP_AUTHORIZATION header"))
+			return nil, courier.WriteAndLogUnauthorized(ctx, w, r, c, fmt.Errorf("invalid Authorization header"))
 		}
 	}
 
@@ -105,6 +105,7 @@ type eventPayload struct {
 
 var statusMapping = map[string]courier.MsgStatusValue{
 	"submitted":          courier.MsgSent,
+	"delivery_pending":   courier.MsgWired,
 	"delivery_succeeded": courier.MsgDelivered,
 	"delivery_failed":    courier.MsgFailed,
 	"rejected":           courier.MsgFailed,
@@ -121,16 +122,21 @@ func (h *handler) ReceiveEvent(ctx context.Context, c courier.Channel, w http.Re
 	// check authentication
 	secret := c.StringConfigForKey(courier.ConfigSecret, "")
 	if secret != "" {
-		authorization := r.Header.Get("HTTP_AUTHORIZATION")
+		authorization := r.Header.Get("Authorization")
 		if authorization != fmt.Sprintf("Token %s", secret) {
-			return nil, courier.WriteAndLogUnauthorized(ctx, w, r, c, fmt.Errorf("invalid HTTP_AUTHORIZATION header"))
+			return nil, courier.WriteAndLogUnauthorized(ctx, w, r, c, fmt.Errorf("invalid Authorization header"))
 		}
 	}
 
 	// look up our status
 	msgStatus, found := statusMapping[payload.EventType]
 	if !found {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, c, "Ignoring unknown event_type")
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, c, "ignoring unknown event_type")
+	}
+
+	// ignore pending, same status we are already in
+	if msgStatus == courier.MsgWired {
+		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, c, "ignoring existing pending status")
 	}
 
 	status := h.Backend().NewMsgStatusForExternalID(c, payload.MessageID, msgStatus)

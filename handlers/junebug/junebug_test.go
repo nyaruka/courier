@@ -52,6 +52,11 @@ var (
 
 	eventURL = "/c/jn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/event"
 
+	pendingEvent = `{
+		"event_type": "delivery_pending",
+		"message_id": "xx12345"
+	}`
+
 	sentEvent = `{
 		"event_type": "submitted",
 		"message_id": "xx12345"
@@ -87,6 +92,7 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Missing Message ID", URL: inboundURL, Data: missingMessageID,
 		Status: 400, Response: "'MessageID' failed on the 'required'"},
 
+	{Label: "Receive Pending Event", URL: eventURL, Data: pendingEvent, Status: 200, Response: "Ignored"},
 	{Label: "Receive Sent Event", URL: eventURL, Data: sentEvent, Status: 200, Response: "Accepted",
 		ExternalID: Sp("xx12345"), MsgStatus: Sp("S")},
 	{Label: "Receive Delivered Event", URL: eventURL, Data: deliveredEvent, Status: 200, Response: "Accepted",
@@ -100,18 +106,18 @@ var testCases = []ChannelHandleTestCase{
 }
 
 var authenticatedTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: inboundURL, Data: validMsg, Headers: map[string]string{"HTTP_AUTHORIZATION": "Token sesame"},
+	{Label: "Receive Valid Message", URL: inboundURL, Data: validMsg, Headers: map[string]string{"Authorization": "Token sesame"},
 		Status: 200, Response: "Accepted",
 		Text: Sp("hello world"), URN: Sp("tel:+250788383383"),
 		Date: Tp(time.Date(2017, 01, 01, 1, 2, 3, 50000000, time.UTC))},
 
-	{Label: "Invalid Incoming Authorization", URL: inboundURL, Data: validMsg, Headers: map[string]string{"HTTP_AUTHORIZATION": "Token foo"},
+	{Label: "Invalid Incoming Authorization", URL: inboundURL, Data: validMsg, Headers: map[string]string{"Authorization": "Token foo"},
 		Status: 401, Response: "Unauthorized"},
 
-	{Label: "Receive Sent Event", URL: eventURL, Data: sentEvent, Headers: map[string]string{"HTTP_AUTHORIZATION": "Token sesame"},
+	{Label: "Receive Sent Event", URL: eventURL, Data: sentEvent, Headers: map[string]string{"Authorization": "Token sesame"},
 		Status: 200, Response: "Accepted",
 		ExternalID: Sp("xx12345"), MsgStatus: Sp("S")},
-	{Label: "Invalid Incoming Authorization", URL: eventURL, Data: sentEvent, Headers: map[string]string{"HTTP_AUTHORIZATION": "Token foo"},
+	{Label: "Invalid Incoming Authorization", URL: eventURL, Data: sentEvent, Headers: map[string]string{"Authorization": "Token foo"},
 		Status: 401, Response: "Unauthorized"},
 }
 
