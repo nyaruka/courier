@@ -22,5 +22,7 @@ script:
 - go test -p=1 -coverprofile=coverage.text -covermode=atomic github.com/nyaruka/courier/...
 
 after_success:
-- test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
 - bash <(curl -s https://codecov.io/bash)
+- rm coverage.text
+- test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
+
