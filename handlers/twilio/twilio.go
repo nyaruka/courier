@@ -27,14 +27,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-const configAccountSID = "account_sid"
-const configMessagingServiceSID = "messaging_service_sid"
-const configSendURL = "send_url"
+const (
+	configAccountSID          = "account_sid"
+	configMessagingServiceSID = "messaging_service_sid"
+	configSendURL             = "send_url"
 
-const twSignatureHeader = "X-Twilio-Signature"
+	twSignatureHeader = "X-Twilio-Signature"
+)
 
-var maxMsgLength = 1600
-var sendURL = "https://api.twilio.com/2010-04-01/Accounts"
+var (
+	maxMsgLength = 1600
+	sendURL      = "https://api.twilio.com/2010-04-01/Accounts"
+)
 
 // error code twilio returns when a contact has sent "stop"
 const errorStopped = 21610
@@ -61,15 +65,15 @@ func (h *handler) Initialize(s courier.Server) error {
 	// save whether we should ignore delivery reports
 	h.ignoreDeliveryReports = s.Config().IgnoreDeliveryReports
 
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	if err != nil {
 		return err
 	}
 
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.StatusMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "status", h.statusMessage)
 }
 
-type twMessage struct {
+type moForm struct {
 	MessageSID  string `validate:"required"`
 	AccountSID  string `validate:"required"`
 	From        string `validate:"required"`
@@ -80,13 +84,13 @@ type twMessage struct {
 	NumMedia    int
 }
 
-type twStatus struct {
+type statusForm struct {
 	MessageSID    string `validate:"required"`
 	MessageStatus string `validate:"required"`
 	ErrorCode     string
 }
 
-var twStatusMapping = map[string]courier.MsgStatusValue{
+var statusMapping = map[string]courier.MsgStatusValue{
 	"queued":      courier.MsgSent,
 	"failed":      courier.MsgFailed,
 	"sent":        courier.MsgSent,
@@ -94,33 +98,33 @@ var twStatusMapping = map[string]courier.MsgStatusValue{
 	"undelivered": courier.MsgFailed,
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
 	}
 
 	// get our params
-	twMsg := &twMessage{}
-	err = handlers.DecodeAndValidateForm(twMsg, r)
+	form := &moForm{}
+	err = handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, err
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(twMsg.From, twMsg.FromCountry)
+	urn := urns.NewTelURNForCountry(form.From, form.FromCountry)
 
-	if twMsg.Body != "" {
+	if form.Body != "" {
 		// Twilio sometimes sends concatenated sms as base64 encoded MMS
-		twMsg.Body = handlers.DecodePossibleBase64(twMsg.Body)
+		form.Body = handlers.DecodePossibleBase64(form.Body)
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, twMsg.Body).WithExternalID(twMsg.MessageSID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Body).WithExternalID(form.MessageSID)
 
 	// process any attached media
-	for i := 0; i < twMsg.NumMedia; i++ {
+	for i := 0; i < form.NumMedia; i++ {
 		mediaURL := r.PostForm.Get(fmt.Sprintf("MediaUrl%d", i))
 		msg.WithAttachment(mediaURL)
 	}
@@ -134,23 +138,23 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	return []courier.Event{msg}, h.writeReceiveSuccess(ctx, w, r, msg)
 }
 
-// StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// statusMessage is our HTTP handler function for status updates
+func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
 	}
 
 	// get our params
-	twStatus := &twStatus{}
-	err = handlers.DecodeAndValidateForm(twStatus, r)
+	form := &statusForm{}
+	err = handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, err
 	}
 
-	msgStatus, found := twStatusMapping[twStatus.MessageStatus]
+	msgStatus, found := statusMapping[form.MessageStatus]
 	if !found {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", twStatus.MessageStatus))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", form.MessageStatus))
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on
@@ -172,7 +176,7 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 
 	// if we have no status, then build it from the external (twilio) id
 	if status == nil {
-		status = h.Backend().NewMsgStatusForExternalID(channel, twStatus.MessageSID, msgStatus)
+		status = h.Backend().NewMsgStatusForExternalID(channel, form.MessageSID, msgStatus)
 	}
 
 	// write our status

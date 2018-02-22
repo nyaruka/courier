@@ -18,6 +18,8 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
+var apiURL = "https://api.telegram.org"
+
 func init() {
 	courier.RegisterHandler(newHandler())
 }
@@ -33,33 +35,33 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	te := &telegramEnvelope{}
-	err := handlers.DecodeAndValidateJSON(te, r)
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	payload := &moPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// no message? ignore this
-	if te.Message.MessageID == 0 {
+	if payload.Message.MessageID == 0 {
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "Ignoring request, no message")
 	}
 
 	// create our date from the timestamp
-	date := time.Unix(te.Message.Date, 0).UTC()
+	date := time.Unix(payload.Message.Date, 0).UTC()
 
 	// create our URN
-	urn := urns.NewTelegramURN(te.Message.From.ContactID, te.Message.From.Username)
+	urn := urns.NewTelegramURN(payload.Message.From.ContactID, payload.Message.From.Username)
 
 	// build our name from first and last
-	name := handlers.NameFromFirstLastUsername(te.Message.From.FirstName, te.Message.From.LastName, te.Message.From.Username)
+	name := handlers.NameFromFirstLastUsername(payload.Message.From.FirstName, payload.Message.From.LastName, payload.Message.From.Username)
 
 	// our text is either "text" or "caption" (or empty)
-	text := te.Message.Text
+	text := payload.Message.Text
 
 	// this is a start command, trigger a new conversation
 	if text == "/start" {
@@ -72,42 +74,42 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// normal message of some kind
-	if text == "" && te.Message.Caption != "" {
-		text = te.Message.Caption
+	if text == "" && payload.Message.Caption != "" {
+		text = payload.Message.Caption
 	}
 
 	// deal with attachments
 	mediaURL := ""
-	if len(te.Message.Photo) > 0 {
+	if len(payload.Message.Photo) > 0 {
 		// grab the largest photo less than 100k
-		photo := te.Message.Photo[0]
-		for i := 1; i < len(te.Message.Photo); i++ {
-			if te.Message.Photo[i].FileSize > 100000 {
+		photo := payload.Message.Photo[0]
+		for i := 1; i < len(payload.Message.Photo); i++ {
+			if payload.Message.Photo[i].FileSize > 100000 {
 				break
 			}
-			photo = te.Message.Photo[i]
+			photo = payload.Message.Photo[i]
 		}
 		mediaURL, err = resolveFileID(channel, photo.FileID)
-	} else if te.Message.Video != nil {
-		mediaURL, err = resolveFileID(channel, te.Message.Video.FileID)
-	} else if te.Message.Voice != nil {
-		mediaURL, err = resolveFileID(channel, te.Message.Voice.FileID)
-	} else if te.Message.Sticker != nil {
-		mediaURL, err = resolveFileID(channel, te.Message.Sticker.Thumb.FileID)
-	} else if te.Message.Document != nil {
-		mediaURL, err = resolveFileID(channel, te.Message.Document.FileID)
-	} else if te.Message.Venue != nil {
-		text = utils.JoinNonEmpty(", ", te.Message.Venue.Title, te.Message.Venue.Address)
-		mediaURL = fmt.Sprintf("geo:%f,%f", te.Message.Location.Latitude, te.Message.Location.Longitude)
-	} else if te.Message.Location != nil {
-		text = fmt.Sprintf("%f,%f", te.Message.Location.Latitude, te.Message.Location.Longitude)
-		mediaURL = fmt.Sprintf("geo:%f,%f", te.Message.Location.Latitude, te.Message.Location.Longitude)
-	} else if te.Message.Contact != nil {
+	} else if payload.Message.Video != nil {
+		mediaURL, err = resolveFileID(channel, payload.Message.Video.FileID)
+	} else if payload.Message.Voice != nil {
+		mediaURL, err = resolveFileID(channel, payload.Message.Voice.FileID)
+	} else if payload.Message.Sticker != nil {
+		mediaURL, err = resolveFileID(channel, payload.Message.Sticker.Thumb.FileID)
+	} else if payload.Message.Document != nil {
+		mediaURL, err = resolveFileID(channel, payload.Message.Document.FileID)
+	} else if payload.Message.Venue != nil {
+		text = utils.JoinNonEmpty(", ", payload.Message.Venue.Title, payload.Message.Venue.Address)
+		mediaURL = fmt.Sprintf("geo:%f,%f", payload.Message.Location.Latitude, payload.Message.Location.Longitude)
+	} else if payload.Message.Location != nil {
+		text = fmt.Sprintf("%f,%f", payload.Message.Location.Latitude, payload.Message.Location.Longitude)
+		mediaURL = fmt.Sprintf("geo:%f,%f", payload.Message.Location.Latitude, payload.Message.Location.Longitude)
+	} else if payload.Message.Contact != nil {
 		phone := ""
-		if te.Message.Contact.PhoneNumber != "" {
-			phone = fmt.Sprintf("(%s)", te.Message.Contact.PhoneNumber)
+		if payload.Message.Contact.PhoneNumber != "" {
+			phone = fmt.Sprintf("(%s)", payload.Message.Contact.PhoneNumber)
 		}
-		text = utils.JoinNonEmpty(" ", te.Message.Contact.FirstName, te.Message.Contact.LastName, phone)
+		text = utils.JoinNonEmpty(" ", payload.Message.Contact.FirstName, payload.Message.Contact.LastName, phone)
 	}
 
 	// we had an error downloading media
@@ -116,7 +118,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(fmt.Sprintf("%d", te.Message.MessageID)).WithContactName(name)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(fmt.Sprintf("%d", payload.Message.MessageID)).WithContactName(name)
 
 	if mediaURL != "" {
 		msg.WithAttachment(mediaURL)
@@ -139,7 +141,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 		form.Add("reply_markup", replies)
 	}
 
-	sendURL := fmt.Sprintf("%s/bot%s/%s", telegramAPIURL, token, path)
+	sendURL := fmt.Sprintf("%s/bot%s/%s", apiURL, token, path)
 	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
@@ -188,12 +190,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	replies := ""
 
 	if len(qrs) > 0 {
-		keys := make([]telegramKey, len(qrs))
+		keys := make([]moKey, len(qrs))
 		for i, qr := range qrs {
 			keys[i].Text = qr
 		}
 
-		tk := telegramKeyboard{true, true, [][]telegramKey{keys}}
+		tk := moKeyboard{true, true, [][]moKey{keys}}
 		replyBytes, err := json.Marshal(tk)
 		if err != nil {
 			return nil, err
@@ -272,8 +274,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	return status, nil
 }
 
-var telegramAPIURL = "https://api.telegram.org"
-
 func resolveFileID(channel courier.Channel, fileID string) (string, error) {
 	confAuth := channel.ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
@@ -281,7 +281,7 @@ func resolveFileID(channel courier.Channel, fileID string) (string, error) {
 		return "", fmt.Errorf("invalid auth token config")
 	}
 
-	fileURL := fmt.Sprintf("%s/bot%s/getFile", telegramAPIURL, authToken)
+	fileURL := fmt.Sprintf("%s/bot%s/getFile", apiURL, authToken)
 
 	form := url.Values{}
 	form.Set("file_id", fileID)
@@ -315,25 +315,25 @@ func resolveFileID(channel courier.Channel, fileID string) (string, error) {
 	}
 
 	// return the URL
-	return fmt.Sprintf("%s/file/bot%s/%s", telegramAPIURL, authToken, filePath), nil
+	return fmt.Sprintf("%s/file/bot%s/%s", apiURL, authToken, filePath), nil
 }
 
-type telegramKeyboard struct {
-	ResizeKeyboard  bool            `json:"resize_keyboard"`
-	OneTimeKeyboard bool            `json:"one_time_keyboard"`
-	Keyboard        [][]telegramKey `json:"keyboard"`
+type moKeyboard struct {
+	ResizeKeyboard  bool      `json:"resize_keyboard"`
+	OneTimeKeyboard bool      `json:"one_time_keyboard"`
+	Keyboard        [][]moKey `json:"keyboard"`
 }
 
-type telegramKey struct {
+type moKey struct {
 	Text string `json:"text"`
 }
 
-type telegramFile struct {
+type moFile struct {
 	FileID   string `json:"file_id"    validate:"required"`
 	FileSize int    `json:"file_size"`
 }
 
-type telegramLocation struct {
+type moLocation struct {
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
 }
@@ -358,7 +358,7 @@ type telegramLocation struct {
 //     "text": "Hello World"
 // 	 }
 // }
-type telegramEnvelope struct {
+type moPayload struct {
 	UpdateID int64 `json:"update_id" validate:"required"`
 	Message  struct {
 		MessageID int64 `json:"message_id"`
@@ -372,17 +372,17 @@ type telegramEnvelope struct {
 		Text    string `json:"text"`
 		Caption string `json:"caption"`
 		Sticker *struct {
-			Thumb telegramFile `json:"thumb"`
+			Thumb moFile `json:"thumb"`
 		} `json:"sticker"`
-		Photo    []telegramFile    `json:"photo"`
-		Video    *telegramFile     `json:"video"`
-		Voice    *telegramFile     `json:"voice"`
-		Document *telegramFile     `json:"document"`
-		Location *telegramLocation `json:"location"`
+		Photo    []moFile    `json:"photo"`
+		Video    *moFile     `json:"video"`
+		Voice    *moFile     `json:"voice"`
+		Document *moFile     `json:"document"`
+		Location *moLocation `json:"location"`
 		Venue    *struct {
-			Location *telegramLocation `json:"location"`
-			Title    string            `json:"title"`
-			Address  string            `json:"address"`
+			Location *moLocation `json:"location"`
+			Title    string      `json:"title"`
+			Address  string      `json:"address"`
 		}
 		Contact *struct {
 			PhoneNumber string `json:"phone_number"`

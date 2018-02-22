@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	msgLength = 1530
+	maxMsgLength = 1530
 )
 
 func init() {
@@ -35,11 +35,11 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "event", h.ReceiveEvent)
+	err := s.AddHandlerRoute(h, http.MethodPost, "event", h.receiveEvent)
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, http.MethodPost, "inbound", h.ReceiveInbound)
+	return s.AddHandlerRoute(h, http.MethodPost, "inbound", h.receiveMessage)
 }
 
 // {
@@ -59,8 +59,8 @@ type moPayload struct {
 	MessageID string `json:"message_id" validate:"required"`
 }
 
-// ReceiveInbound is our HTTP handler function for incoming messages
-func (h *handler) ReceiveInbound(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -111,8 +111,8 @@ var statusMapping = map[string]courier.MsgStatusValue{
 	"rejected":           courier.MsgFailed,
 }
 
-// ReceiveEvent is our HTTP handler function for incoming events
-func (h *handler) ReceiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveEvent is our HTTP handler function for incoming events
+func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	payload := &eventPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -185,7 +185,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	eventURL := fmt.Sprintf("https://%s/c/jn/%s/event", callbackDomain, msg.Channel().UUID())
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	for i, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), msgLength) {
+	for i, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		payload := mtPayload{
 			EventURL: eventURL,
 			Content:  part,

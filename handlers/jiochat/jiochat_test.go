@@ -180,7 +180,7 @@ func TestFetchAccessToken(t *testing.T) {
 		// mark that we were called
 		fetchCalled = true
 	}))
-	apiURL = server.URL
+	sendURL = server.URL
 	fetchTimeout = time.Millisecond
 
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
@@ -228,7 +228,7 @@ func buildMockJCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 		}
 
 	}))
-	apiURL = server.URL
+	sendURL = server.URL
 
 	return server
 }
@@ -295,7 +295,7 @@ func TestBuildMediaRequest(t *testing.T) {
 		authorizationHeader string
 	}{
 		{
-			fmt.Sprintf("%s/media/download.action?media_id=12", apiURL),
+			fmt.Sprintf("%s/media/download.action?media_id=12", sendURL),
 			"Bearer ACCESS_TOKEN",
 		},
 	}
@@ -310,7 +310,7 @@ func TestBuildMediaRequest(t *testing.T) {
 
 // setSendURL takes care of setting the sendURL to call
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	apiURL = s.URL
+	sendURL = s.URL
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{

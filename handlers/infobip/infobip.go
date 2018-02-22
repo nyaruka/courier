@@ -34,25 +34,43 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, http.MethodPost, "delivered", h.StatusMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "delivered", h.statusMessage)
 }
 
-// StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	ibStatusEnvelope := &ibStatusEnvelope{}
-	err := handlers.DecodeAndValidateJSON(ibStatusEnvelope, r)
+var statusMapping = map[string]courier.MsgStatusValue{
+	"PENDING":       courier.MsgSent,
+	"EXPIRED":       courier.MsgSent,
+	"DELIVERED":     courier.MsgDelivered,
+	"REJECTED":      courier.MsgFailed,
+	"UNDELIVERABLE": courier.MsgFailed,
+}
+
+type statusPayload struct {
+	Results []ibStatus `validate:"required" json:"results"`
+}
+type ibStatus struct {
+	MessageID string `validate:"required" json:"messageId"`
+	Status    struct {
+		GroupName string `validate:"required" json:"groupName"`
+	} `validate:"required" json:"status"`
+}
+
+// statusMessage is our HTTP handler function for status updates
+func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	payload := &statusPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	data := make([]interface{}, len(ibStatusEnvelope.Results))
-	statuses := make([]courier.Event, len(ibStatusEnvelope.Results))
-	for _, s := range ibStatusEnvelope.Results {
-		msgStatus, found := infobipStatusMapping[s.Status.GroupName]
+	data := make([]interface{}, len(payload.Results))
+	statuses := make([]courier.Event, len(payload.Results))
+	for _, s := range payload.Results {
+		msgStatus, found := statusMapping[s.Status.GroupName]
 		if !found {
 			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", s.Status.GroupName))
 		}
@@ -75,38 +93,54 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 	return statuses, courier.WriteDataResponse(ctx, w, http.StatusOK, "statuses handled", data)
 }
 
-var infobipStatusMapping = map[string]courier.MsgStatusValue{
-	"PENDING":       courier.MsgSent,
-	"EXPIRED":       courier.MsgSent,
-	"DELIVERED":     courier.MsgDelivered,
-	"REJECTED":      courier.MsgFailed,
-	"UNDELIVERABLE": courier.MsgFailed,
+// {
+// 	"results": [
+// 	  {
+// 		"messageId": "817790313235066447",
+// 		"from": "385916242493",
+// 		"to": "385921004026",
+// 		"text": "QUIZ Correct answer is Paris",
+// 		"cleanText": "Correct answer is Paris",
+// 		"keyword": "QUIZ",
+// 		"receivedAt": "2016-10-06T09:28:39.220+0000",
+// 		"smsCount": 1,
+// 		"price": {
+// 		  "pricePerMessage": 0,
+// 		  "currency": "EUR"
+// 		},
+// 		"callbackData": "callbackData"
+// 	  }
+// 	],
+// 	"messageCount": 1,
+// 	"pendingMessageCount": 0
+// }
+type moPayload struct {
+	PendingMessageCount int         `json:"pendingMessageCount"`
+	MessageCount        int         `json:"messageCount"`
+	Results             []moMessage `validate:"required" json:"results"`
 }
 
-type ibStatusEnvelope struct {
-	Results []ibStatus `validate:"required" json:"results"`
-}
-type ibStatus struct {
-	MessageID string `validate:"required" json:"messageId"`
-	Status    struct {
-		GroupName string `validate:"required" json:"groupName"`
-	} `validate:"required" json:"status"`
+type moMessage struct {
+	MessageID  string `json:"messageId"`
+	From       string `json:"from" validate:"required"`
+	Text       string `json:"text"`
+	ReceivedAt string `json:"receivedAt"`
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	ie := &infobipEnvelope{}
-	err := handlers.DecodeAndValidateJSON(ie, r)
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	payload := &moPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	if ie.MessageCount == 0 {
+	if payload.MessageCount == 0 {
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring request, no message")
 	}
 
 	msgs := []courier.Msg{}
-	for _, infobipMessage := range ie.Results {
+	for _, infobipMessage := range payload.Results {
 		messageID := infobipMessage.MessageID
 		text := infobipMessage.Text
 		dateString := infobipMessage.ReceivedAt
@@ -145,43 +179,8 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	return []courier.Event{msgs[0]}, courier.WriteMsgSuccess(ctx, w, r, msgs)
 }
 
-type infobipMessage struct {
-	MessageID  string `json:"messageId"`
-	From       string `json:"from" validate:"required"`
-	Text       string `json:"text"`
-	ReceivedAt string `json:"receivedAt"`
-}
-
-// {
-// 	"results": [
-// 	  {
-// 		"messageId": "817790313235066447",
-// 		"from": "385916242493",
-// 		"to": "385921004026",
-// 		"text": "QUIZ Correct answer is Paris",
-// 		"cleanText": "Correct answer is Paris",
-// 		"keyword": "QUIZ",
-// 		"receivedAt": "2016-10-06T09:28:39.220+0000",
-// 		"smsCount": 1,
-// 		"price": {
-// 		  "pricePerMessage": 0,
-// 		  "currency": "EUR"
-// 		},
-// 		"callbackData": "callbackData"
-// 	  }
-// 	],
-// 	"messageCount": 1,
-// 	"pendingMessageCount": 0
-// }
-type infobipEnvelope struct {
-	PendingMessageCount int              `json:"pendingMessageCount"`
-	MessageCount        int              `json:"messageCount"`
-	Results             []infobipMessage `validate:"required" json:"results"`
-}
-
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for IB channel")
@@ -195,12 +194,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	statusURL := fmt.Sprintf("https://%s%s%s/delivered", callbackDomain, "/c/ib/", msg.Channel().UUID())
 
-	ibMsg := ibOutgoingEnvelope{
-		Messages: []ibOutgoingMessage{
-			ibOutgoingMessage{
+	ibMsg := mtPayload{
+		Messages: []mtMessage{
+			mtMessage{
 				From: msg.Channel().Address(),
-				Destinations: []ibDestination{
-					ibDestination{
+				Destinations: []mtDestination{
+					mtDestination{
 						To:        strings.TrimLeft(msg.URN().Path(), "+"),
 						MessageID: msg.ID().String(),
 					},
@@ -281,20 +280,20 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 //
 // API docs from https://dev.infobip.com/docs/fully-featured-textual-message
 
-type ibOutgoingEnvelope struct {
-	Messages []ibOutgoingMessage `json:"messages"`
+type mtPayload struct {
+	Messages []mtMessage `json:"messages"`
 }
 
-type ibOutgoingMessage struct {
+type mtMessage struct {
 	From               string          `json:"from"`
-	Destinations       []ibDestination `json:"destinations"`
+	Destinations       []mtDestination `json:"destinations"`
 	Text               string          `json:"text"`
 	NotifyContentType  string          `json:"notifyContentType"`
 	IntermediateReport bool            `json:"intermediateReport"`
 	NotifyURL          string          `json:"notifyUrl"`
 }
 
-type ibDestination struct {
+type mtDestination struct {
 	To        string `json:"to"`
 	MessageID string `json:"messageId"`
 }

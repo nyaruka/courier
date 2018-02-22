@@ -19,13 +19,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-var sendURLs = []string{
-	"http://smgw1.yo.co.ug:9100/sendsms",
-	"http://41.220.12.201:9100/sendsms",
-	"http://164.40.148.210:9100/sendsms",
-}
-
-var maxMsgLength = 1600
+var (
+	sendURLs = []string{
+		"http://smgw1.yo.co.ug:9100/sendsms",
+		"http://41.220.12.201:9100/sendsms",
+		"http://164.40.148.210:9100/sendsms",
+	}
+	maxMsgLength = 1600
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -41,10 +42,10 @@ func newHandler() courier.ChannelHandler {
 
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodGet, "receive", h.ReceiveMessage)
+	return s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
 }
 
-type moMsg struct {
+type moForm struct {
 	From    string `name:"from"`
 	Sender  string `name:"sender"`
 	Message string `name:"message"`
@@ -52,27 +53,27 @@ type moMsg struct {
 	Time    string `name:"time"`
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	msg := &moMsg{}
-	err := handlers.DecodeAndValidateForm(msg, r)
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	form := &moForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// must have one of from or sender set, error if neither
-	sender := msg.Sender
+	sender := form.Sender
 	if sender == "" {
-		sender = msg.From
+		sender = form.From
 	}
 	if sender == "" {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, errors.New("must have one of 'sender' or 'from'"))
 	}
 
 	// if we have a date, parse it
-	dateString := msg.Date
+	dateString := form.Date
 	if dateString == "" {
-		dateString = msg.Time
+		dateString = form.Time
 	}
 
 	date := time.Now()
@@ -87,7 +88,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	urn := urns.NewTelURNForCountry(sender, channel.Country())
 
 	// build our msg
-	dbMsg := h.Backend().NewIncomingMsg(channel, urn, msg.Message).WithReceivedOn(date)
+	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithReceivedOn(date)
 
 	// and write it
 	err = h.Backend().WriteMsg(ctx, dbMsg)

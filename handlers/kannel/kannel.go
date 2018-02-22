@@ -16,13 +16,15 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-const configUseNational = "use_national"
-const configEncoding = "encoding"
-const configVerifySSL = "verify_ssl"
+const (
+	configUseNational = "use_national"
+	configEncoding    = "encoding"
+	configVerifySSL   = "verify_ssl"
 
-const encodingDefault = "D"
-const encodingUnicode = "U"
-const encodingSmart = "S"
+	encodingDefault = "D"
+	encodingUnicode = "U"
+	encodingSmart   = "S"
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -39,31 +41,38 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	if err != nil {
 		return err
 	}
 
-	return s.AddHandlerRoute(h, http.MethodGet, "status", h.StatusMessage)
+	return s.AddHandlerRoute(h, http.MethodGet, "status", h.receiveStatus)
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+type moForm struct {
+	ID      string `validate:"required" name:"id"`
+	TS      int64  `validate:"required" name:"ts"`
+	Message string `name:"message"`
+	Sender  string `validate:"required" name:"sender"`
+}
+
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
-	kannelMsg := &kannelMessage{}
-	err := handlers.DecodeAndValidateForm(kannelMsg, r)
+	form := &moForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// create our date from the timestamp
-	date := time.Unix(kannelMsg.TS, 0).UTC()
+	date := time.Unix(form.TS, 0).UTC()
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(kannelMsg.Sender, channel.Country())
+	urn := urns.NewTelURNForCountry(form.Sender, channel.Country())
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, kannelMsg.Message).WithExternalID(kannelMsg.ID).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithExternalID(form.ID).WithReceivedOn(date)
 
 	// and finally queue our message
 	err = h.Backend().WriteMsg(ctx, msg)
@@ -74,14 +83,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
-type kannelMessage struct {
-	ID      string `validate:"required" name:"id"`
-	TS      int64  `validate:"required" name:"ts"`
-	Message string `name:"message"`
-	Sender  string `validate:"required" name:"sender"`
-}
-
-var kannelStatusMapping = map[int]courier.MsgStatusValue{
+var statusMapping = map[int]courier.MsgStatusValue{
 	1:  courier.MsgDelivered,
 	2:  courier.MsgErrored,
 	4:  courier.MsgSent,
@@ -89,22 +91,27 @@ var kannelStatusMapping = map[int]courier.MsgStatusValue{
 	16: courier.MsgErrored,
 }
 
-// StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+type statusForm struct {
+	ID     courier.MsgID `validate:"required" name:"id"`
+	Status int           `validate:"required" name:"status"`
+}
+
+// receiveStatus is our HTTP handler function for status updates
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
-	kannelStatus := &kannelStatus{}
-	err := handlers.DecodeAndValidateForm(kannelStatus, r)
+	form := &statusForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	msgStatus, found := kannelStatusMapping[kannelStatus.Status]
+	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%d', must be one of 1,2,4,8,16", kannelStatus.Status))
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%d', must be one of 1,2,4,8,16", form.Status))
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, kannelStatus.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForID(channel, form.ID, msgStatus)
 	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err == courier.ErrMsgNotFound {
 		return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
@@ -218,9 +225,4 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	return status, nil
-}
-
-type kannelStatus struct {
-	ID     courier.MsgID `validate:"required" name:"id"`
-	Status int           `validate:"required" name:"status"`
 }

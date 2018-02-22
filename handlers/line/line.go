@@ -5,17 +5,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 	"net/http"
 	"time"
+
+	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 )
 
-var sendURL = "https://api.line.me/v2/bot/message/push"
-var maxMsgLength = 2000
+var (
+	sendURL      = "https://api.line.me/v2/bot/message/push"
+	maxMsgLength = 2000
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -32,7 +35,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 }
 
 // {
@@ -62,7 +65,7 @@ func (h *handler) Initialize(s courier.Server) error {
 // 	  }
 // 	]
 // }
-type moMsg struct {
+type moPayload struct {
 	Events []struct {
 		Type      string `json:"type"`
 		Timestamp int64  `json:"timestamp"`
@@ -78,10 +81,10 @@ type moMsg struct {
 	} `json:"events"`
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	lineRequest := &moMsg{}
-	err := handlers.DecodeAndValidateJSON(lineRequest, r)
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	payload := &moPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
@@ -89,7 +92,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	msgs := []courier.Msg{}
 	events := []courier.Event{}
 
-	for _, lineEvent := range lineRequest.Events {
+	for _, lineEvent := range payload.Events {
 		if (lineEvent.Source.Type == "" && lineEvent.Source.UserID == "") || (lineEvent.Message.Type == "" && lineEvent.Message.ID == "" && lineEvent.Message.Text == "") || lineEvent.Message.Type != "text" {
 
 			continue
@@ -124,7 +127,7 @@ type mtMsg struct {
 	Text string `json:"text"`
 }
 
-type mtEnvelop struct {
+type mtPayload struct {
 	To       string  `json:"to"`
 	Messages []mtMsg `json:"messages"`
 }
@@ -139,7 +142,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
-		lineEnvelop := mtEnvelop{
+		payload := mtPayload{
 			To: msg.URN().Path(),
 			Messages: []mtMsg{
 				mtMsg{
@@ -150,7 +153,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		requestBody := &bytes.Buffer{}
-		json.NewEncoder(requestBody).Encode(lineEnvelop)
+		json.NewEncoder(requestBody).Encode(payload)
 
 		// build our request
 		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)

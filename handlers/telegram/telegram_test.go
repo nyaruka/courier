@@ -532,12 +532,12 @@ func buildMockTelegramService(testCases []ChannelHandleTestCase) *httptest.Serve
 		w.Write([]byte(fmt.Sprintf(`{ "ok": true, "result": { "file_path": "%s" } }`, filePath)))
 	}))
 
-	telegramAPIURL = server.URL
+	apiURL = server.URL
 
 	// update our tests media urls
 	for c := range testCases {
 		if testCases[c].Attachment != nil && !strings.HasPrefix(*testCases[c].Attachment, "geo") {
-			testCases[c].Attachment = Sp(fmt.Sprintf("%s%s", telegramAPIURL, *testCases[c].Attachment))
+			testCases[c].Attachment = Sp(fmt.Sprintf("%s%s", apiURL, *testCases[c].Attachment))
 		}
 	}
 
@@ -560,7 +560,7 @@ func BenchmarkHandler(b *testing.B) {
 
 // setSendURL takes care of setting the send_url to our test server host
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	telegramAPIURL = s.URL
+	apiURL = s.URL
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{

@@ -16,8 +16,10 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var sendURL = "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS"
-var maxLength = 160
+var (
+	sendURL      = "https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS"
+	maxMsgLength = 160
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -34,11 +36,11 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.handleReceive)
+	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 }
 
-// handleReceive takes care of handling incoming messages
-func (h *handler) handleReceive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveMessage takes care of handling incoming messages
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := r.ParseForm()
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
@@ -89,7 +91,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// send our message
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	for _, part := range handlers.SplitMsg(text, maxLength) {
+	for _, part := range handlers.SplitMsg(text, maxMsgLength) {
 		// build our request
 		params := url.Values{
 			"AuthKey":     []string{"m3-Tech"},

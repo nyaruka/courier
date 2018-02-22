@@ -35,38 +35,38 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.ReceiveStatus)
+	return s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
 }
 
-type statusRequest struct {
+type statusForm struct {
 	ID        string `name:"id"     validate:"required"`
 	Delivered int    `name:"dlvrd"`
 	Err       int    `name:"err"`
 }
 
-// ReceiveStatus is our HTTP handler function for status updates
-func (h *handler) ReceiveStatus(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	req := &statusRequest{}
-	err := handlers.DecodeAndValidateForm(req, r)
+// receiveStatus is our HTTP handler function for status updates
+func (h *handler) receiveStatus(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	form := &statusForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
 	}
 
 	// should have either delivered or err
 	reqStatus := courier.NilMsgStatus
-	if req.Delivered == 1 {
+	if form.Delivered == 1 {
 		reqStatus = courier.MsgDelivered
-	} else if req.Err == 1 {
+	} else if form.Err == 1 {
 		reqStatus = courier.MsgFailed
 	} else {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("must have either dlvrd or err set to 1"))
 	}
 
-	status := h.Backend().NewMsgStatusForExternalID(c, req.ID, reqStatus)
+	status := h.Backend().NewMsgStatusForExternalID(c, form.ID, reqStatus)
 	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err == courier.ErrMsgNotFound {
 		return nil, writeJasminACK(w)
@@ -78,7 +78,7 @@ func (h *handler) ReceiveStatus(ctx context.Context, c courier.Channel, w http.R
 	return []courier.Event{status}, writeJasminACK(w)
 }
 
-type moRequest struct {
+type moForm struct {
 	Content string `name:"content"`
 	Coding  string `name:"coding"   validate:"required"`
 	From    string `name:"from"     validate:"required"`
@@ -86,26 +86,26 @@ type moRequest struct {
 	ID      string `name:"id"       validate:"required"`
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
-	req := &moRequest{}
-	err := handlers.DecodeAndValidateForm(req, r)
+	form := &moForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(req.From, c.Country())
+	urn := urns.NewTelURNForCountry(form.From, c.Country())
 
 	// Decode from GSM7 if required
-	text := string(req.Content)
-	if req.Coding == "0" {
-		text = gsm7.Decode([]byte(req.Content))
+	text := string(form.Content)
+	if form.Coding == "0" {
+		text = gsm7.Decode([]byte(form.Content))
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(c, urn, text).WithExternalID(req.ID).WithReceivedOn(time.Now().UTC())
+	msg := h.Backend().NewIncomingMsg(c, urn, text).WithExternalID(form.ID).WithReceivedOn(time.Now().UTC())
 
 	// and finally queue our message
 	err = h.Backend().WriteMsg(ctx, msg)

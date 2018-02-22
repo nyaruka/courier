@@ -32,7 +32,7 @@ func newHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("AT"), "Africas Talking")}
 }
 
-type messageRequest struct {
+type moForm struct {
 	ID   string `validate:"required" name:"id"`
 	Text string `validate:"required" name:"text"`
 	From string `validate:"required" name:"from"`
@@ -40,7 +40,48 @@ type messageRequest struct {
 	Date string `validate:"required" name:"date"`
 }
 
-type statusRequest struct {
+// Initialize is called by the engine once everything is loaded
+func (h *handler) Initialize(s courier.Server) error {
+	h.SetServer(s)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	if err != nil {
+		return err
+	}
+	return s.AddHandlerRoute(h, http.MethodPost, "status", h.statusMessage)
+}
+
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	// get our params
+	form := &moForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
+	if err != nil {
+		return nil, err
+	}
+
+	// create our date from the timestamp
+	// 2017-05-03T06:04:45Z
+	date, err := time.Parse("2006-01-02T15:04:05Z", form.Date)
+	if err != nil {
+		return nil, fmt.Errorf("invalid date format: %s", form.Date)
+	}
+
+	// create our URN
+	urn := urns.NewTelURNForCountry(form.From, channel.Country())
+
+	// build our msg
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithExternalID(form.ID).WithReceivedOn(date)
+
+	// and finally queue our message
+	err = h.Backend().WriteMsg(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+}
+
+type statusForm struct {
 	ID     string `validate:"required" name:"id"`
 	Status string `validate:"required" name:"status"`
 }
@@ -53,63 +94,22 @@ var statusMapping = map[string]courier.MsgStatusValue{
 	"Failed":   courier.MsgFailed,
 }
 
-// Initialize is called by the engine once everything is loaded
-func (h *handler) Initialize(s courier.Server) error {
-	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.StatusMessage)
-}
-
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// statusMessage is our HTTP handler function for status updates
+func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	// get our params
-	atMsg := &messageRequest{}
-	err := handlers.DecodeAndValidateForm(atMsg, r)
+	form := &statusForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
 		return nil, err
 	}
 
-	// create our date from the timestamp
-	// 2017-05-03T06:04:45Z
-	date, err := time.Parse("2006-01-02T15:04:05Z", atMsg.Date)
-	if err != nil {
-		return nil, fmt.Errorf("invalid date format: %s", atMsg.Date)
-	}
-
-	// create our URN
-	urn := urns.NewTelURNForCountry(atMsg.From, channel.Country())
-
-	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, atMsg.Text).WithExternalID(atMsg.ID).WithReceivedOn(date)
-
-	// and finally queue our message
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
-}
-
-// StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	// get our params
-	atStatus := &statusRequest{}
-	err := handlers.DecodeAndValidateForm(atStatus, r)
-	if err != nil {
-		return nil, err
-	}
-
-	msgStatus, found := statusMapping[atStatus.Status]
+	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return nil, fmt.Errorf("unknown status '%s', must be one of 'Success','Sent','Buffered','Rejected' or 'Failed'", atStatus.Status)
+		return nil, fmt.Errorf("unknown status '%s', must be one of 'Success','Sent','Buffered','Rejected' or 'Failed'", form.Status)
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, atStatus.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus)
 	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err != nil {
 		return nil, err

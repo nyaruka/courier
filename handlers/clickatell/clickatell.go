@@ -19,8 +19,10 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var maxMsgLength = 640
-var sendURL = "https://platform.clickatell.com/messages/http/send"
+var (
+	maxMsgLength = 640
+	sendURL      = "https://platform.clickatell.com/messages/http/send"
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -37,14 +39,14 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	if err != nil {
 		return err
 	}
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.StatusMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "status", h.statusMessage)
 }
 
-type statusReport struct {
+type statusPayload struct {
 	MessageID  string `name:"messageId"`
 	StatusCode int    `name:"statusCode"`
 }
@@ -65,28 +67,28 @@ var statusMapping = map[int]courier.MsgStatusValue{
 	14: courier.MsgFailed, // too long
 }
 
-// StatusMessage is our HTTP handler function for status updates
-func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	statusReport := &statusReport{}
-	err := handlers.DecodeAndValidateJSON(statusReport, r)
+// statusMessage is our HTTP handler function for status updates
+func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	payload := &statusPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
 
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	if statusReport.MessageID == "" || statusReport.StatusCode == 0 {
+	if payload.MessageID == "" || payload.StatusCode == 0 {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel,
 			fmt.Errorf("missing one of 'messageId' or 'statusCode' in request parameters"))
 	}
 
-	msgStatus, found := statusMapping[statusReport.StatusCode]
+	msgStatus, found := statusMapping[payload.StatusCode]
 	if !found {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel,
-			fmt.Errorf("unknown status '%d', must be one of 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14", statusReport.StatusCode))
+			fmt.Errorf("unknown status '%d', must be one of 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14", payload.StatusCode))
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, statusReport.MessageID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, payload.MessageID, msgStatus)
 	err = h.Backend().WriteMsgStatus(ctx, status)
 	if err == courier.ErrMsgNotFound {
 		return []courier.Event{}, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
@@ -98,7 +100,7 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
 }
 
-type clickatellIncomingMsg struct {
+type moPayload struct {
 	MessageID  string `name:"messageId"`
 	FromNumber string `name:"fromNumber"`
 	ToNumber   string `name:"toNumber"`
@@ -107,24 +109,24 @@ type clickatellIncomingMsg struct {
 	Charset    string `name:"charset"`
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	ctMO := &clickatellIncomingMsg{}
-	err := handlers.DecodeAndValidateJSON(ctMO, r)
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	payload := &moPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
 
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	if ctMO.FromNumber == "" || ctMO.MessageID == "" || ctMO.Text == "" || ctMO.Timestamp == 0 {
+	if payload.FromNumber == "" || payload.MessageID == "" || payload.Text == "" || payload.Timestamp == 0 {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel,
 			fmt.Errorf("missing one of 'messageId', 'fromNumber', 'text' or 'timestamp' in request body"))
 	}
 
-	date := time.Unix(0, ctMO.Timestamp*1000000)
+	date := time.Unix(0, payload.Timestamp*1000000)
 
-	text := ctMO.Text
-	if ctMO.Charset == "UTF-16BE" {
+	text := payload.Text
+	if payload.Charset == "UTF-16BE" {
 		// unescape the JSON
 		text, _ = url.QueryUnescape(text)
 
@@ -137,7 +139,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// clickatell URL encodes escapes ISO 8859 escape sequences
-	if ctMO.Charset == "ISO-8859-1" {
+	if payload.Charset == "ISO-8859-1" {
 		// unescape the JSON
 		text, _ = url.QueryUnescape(text)
 
@@ -147,10 +149,10 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(ctMO.FromNumber, channel.Country())
+	urn := urns.NewTelURNForCountry(payload.FromNumber, channel.Country())
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text)).WithReceivedOn(date.UTC()).WithExternalID(ctMO.MessageID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text)).WithReceivedOn(date.UTC()).WithExternalID(payload.MessageID)
 
 	// and write it
 	err = h.Backend().WriteMsg(ctx, msg)

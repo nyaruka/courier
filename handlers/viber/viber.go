@@ -21,10 +21,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-var viberSignatureHeader = "X-Viber-Content-Signature"
-var sendURL = "https://chatapi.viber.com/pa/send_message"
-var maxMsgLength = 7000
-var quickReplyTextSize = 36
+var (
+	viberSignatureHeader = "X-Viber-Content-Signature"
+	sendURL              = "https://chatapi.viber.com/pa/send_message"
+	maxMsgLength         = 7000
+	quickReplyTextSize   = 36
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -41,10 +43,10 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
 }
 
-type moMsg struct {
+type eventPayload struct {
 	Event        string `json:"event"         validate:"required"`
 	Timestamp    int64  `json:"timestamp"     validate:"required"`
 	MessageToken int64  `json:"message_token" validate:"required"`
@@ -72,20 +74,20 @@ type moMsg struct {
 	} `json:"message"`
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// receiveEvent is our HTTP handler function for incoming messages
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	viberMsg := &moMsg{}
-	err = handlers.DecodeAndValidateJSON(viberMsg, r)
+	payload := &eventPayload{}
+	err = handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
-	event := viberMsg.Event
+	event := payload.Event
 	switch event {
 	case "webhook":
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "webhook valid")
@@ -94,8 +96,8 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignored conversation start")
 
 	case "subscribed":
-		viberID := viberMsg.User.ID
-		ContactName := viberMsg.User.Name
+		viberID := payload.User.ID
+		ContactName := payload.User.Name
 
 		// build the URN
 		urn := urns.NewURNFromParts(urns.ViberScheme, viberID, "")
@@ -111,7 +113,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
 
 	case "unsubscribed":
-		viberID := viberMsg.User.ID
+		viberID := payload.User.ID
 
 		// build the URN
 		urn := urns.NewURNFromParts(urns.ViberScheme, viberID, "")
@@ -127,7 +129,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
 
 	case "failed":
-		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, string(viberMsg.MessageToken), courier.MsgFailed)
+		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, string(payload.MessageToken), courier.MsgFailed)
 
 		err = h.Backend().WriteMsgStatus(ctx, msgStatus)
 		if err == courier.ErrMsgNotFound {
@@ -141,7 +143,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{msgStatus})
 
 	case "delivered":
-		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, fmt.Sprintf("%d", viberMsg.MessageToken), courier.MsgDelivered)
+		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), courier.MsgDelivered)
 
 		err = h.Backend().WriteMsgStatus(ctx, msgStatus)
 		if err == courier.ErrMsgNotFound {
@@ -155,39 +157,39 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{msgStatus})
 
 	case "message":
-		sender := viberMsg.Sender.ID
+		sender := payload.Sender.ID
 		if sender == "" {
 			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing required sender id"))
 		}
 
-		contactName := viberMsg.Sender.Name
+		contactName := payload.Sender.Name
 
 		// create our URN
 		urn := urns.NewURNFromParts(urns.ViberScheme, sender, "")
-		text := viberMsg.Message.Text
+		text := payload.Message.Text
 		mediaURL := ""
 
 		// process any attached media
-		messageType := viberMsg.Message.Type
+		messageType := payload.Message.Type
 		switch messageType {
 
 		case "picture":
-			mediaURL = viberMsg.Message.Media
+			mediaURL = payload.Message.Media
 
 		case "video":
-			mediaURL = viberMsg.Message.Media
+			mediaURL = payload.Message.Media
 
 		case "contact":
-			text = fmt.Sprintf("%s: %s", viberMsg.Message.Contact.Name, viberMsg.Message.Contact.PhoneNumber)
+			text = fmt.Sprintf("%s: %s", payload.Message.Contact.Name, payload.Message.Contact.PhoneNumber)
 
 		case "url":
-			text = viberMsg.Message.Media
+			text = payload.Message.Media
 
 		case "location":
-			mediaURL = fmt.Sprintf("geo:%f,%f", viberMsg.Message.Location.Latitude, viberMsg.Message.Location.Longitude)
+			mediaURL = fmt.Sprintf("geo:%f,%f", payload.Message.Location.Latitude, payload.Message.Location.Longitude)
 
 		case "text":
-			text = viberMsg.Message.Text
+			text = payload.Message.Text
 
 		default:
 			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown message type: %s", messageType))
@@ -198,7 +200,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// build our msg
-		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(fmt.Sprintf("%d", viberMsg.MessageToken)).WithContactName(contactName)
+		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(fmt.Sprintf("%d", payload.MessageToken)).WithContactName(contactName)
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)
 		}
@@ -250,7 +252,7 @@ func calculateSignature(authToken string, contents []byte) string {
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
-type mtMsg struct {
+type mtPayload struct {
 	AuthToken    string            `json:"auth_token"`
 	Receiver     string            `json:"receiver"`
 	Text         string            `json:"text"`
@@ -351,7 +353,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			}
 		}
 
-		viberMsg := mtMsg{
+		payload := mtPayload{
 			AuthToken:    authToken,
 			Receiver:     msg.URN().Path(),
 			Text:         part,
@@ -363,11 +365,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		if attSize != -1 {
-			viberMsg.Size = attSize
+			payload.Size = attSize
 		}
 
 		requestBody := &bytes.Buffer{}
-		err := json.NewEncoder(requestBody).Encode(viberMsg)
+		err := json.NewEncoder(requestBody).Encode(payload)
 		if err != nil {
 			return nil, err
 		}

@@ -18,8 +18,10 @@ const (
 	configChargingLevel = "charging_level"
 )
 
-var sendURL = "https://acsdp.arabiacell.net"
-var maxLength = 1530
+var (
+	sendURL      = "https://acsdp.arabiacell.net"
+	maxMsgLength = 1530
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -74,7 +76,7 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength) {
+	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		form := url.Values{
 			"userName":      []string{username},
 			"password":      []string{password},

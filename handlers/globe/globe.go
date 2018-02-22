@@ -15,8 +15,10 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var maxMsgLength = 160
-var sendURL = "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/%s/requests"
+var (
+	maxMsgLength = 160
+	sendURL      = "https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/%s/requests"
+)
 
 const (
 	configPassphrase = "passphrase"
@@ -39,7 +41,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.ReceiveMessage)
+	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 }
 
 // {
@@ -59,7 +61,7 @@ func (h *handler) Initialize(s courier.Server) error {
 //		 "totalNumberOfPendingMessages":null
 //	 }
 // }
-type moMsg struct {
+type moPayload struct {
 	InboundSMSMessageList struct {
 		InboundSMSMessage []struct {
 			DateTime           string `json:"dateTime"`
@@ -71,15 +73,15 @@ type moMsg struct {
 	} `json:"inboundSMSMessageList"`
 }
 
-// ReceiveMessage is our HTTP handler function for incoming messages
-func (h *handler) ReceiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	glRequest := &moMsg{}
-	err := handlers.DecodeAndValidateJSON(glRequest, r)
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	payload := &moPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
 	}
 
-	if len(glRequest.InboundSMSMessageList.InboundSMSMessage) == 0 {
+	if len(payload.InboundSMSMessageList.InboundSMSMessage) == 0 {
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, c, "no messages, ignored")
 	}
 
@@ -87,7 +89,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, c courier.Channel, w http.
 	msgs := make([]courier.Msg, 0, 1)
 
 	// parse each inbound message
-	for _, glMsg := range glRequest.InboundSMSMessageList.InboundSMSMessage {
+	for _, glMsg := range payload.InboundSMSMessageList.InboundSMSMessage {
 		// parse our date from format: "Fri Nov 22 2013 12:12:13 GMT+0000 (UTC)"
 		date, err := time.Parse("Mon Jan 2 2006 15:04:05 GMT+0000 (UTC)", glMsg.DateTime)
 		if err != nil {
@@ -120,7 +122,7 @@ func (h *handler) ReceiveMessage(ctx context.Context, c courier.Channel, w http.
 //    "app_id": "my app id",
 //    "app_secret": "my app secret"
 // }
-type mtMsg struct {
+type mtPayload struct {
 	Address    string `json:"address"`
 	Message    string `json:"message"`
 	Passphrase string `json:"passphrase"`
@@ -148,15 +150,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
-		glMsg := &mtMsg{}
-		glMsg.Address = strings.TrimPrefix(msg.URN().Path(), "+")
-		glMsg.Message = part
-		glMsg.Passphrase = passphrase
-		glMsg.AppID = appID
-		glMsg.AppSecret = appSecret
+		payload := &mtPayload{}
+		payload.Address = strings.TrimPrefix(msg.URN().Path(), "+")
+		payload.Message = part
+		payload.Passphrase = passphrase
+		payload.AppID = appID
+		payload.AppSecret = appSecret
 
 		requestBody := &bytes.Buffer{}
-		json.NewEncoder(requestBody).Encode(glMsg)
+		json.NewEncoder(requestBody).Encode(payload)
 
 		// build our request
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, msg.Channel().Address()), requestBody)
