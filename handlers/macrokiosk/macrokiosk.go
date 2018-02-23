@@ -17,11 +17,14 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-var (
-	sendURL                   = "https://www.etracker.cc/bulksms/send"
-	maxMsgLength              = 1600
+const (
 	configMacrokioskSenderID  = "macrokiosk_sender_id"
 	configMacrokioskServiceID = "macrokiosk_service_id"
+)
+
+var (
+	sendURL      = "https://www.etracker.cc/bulksms/send"
+	maxMsgLength = 1600
 )
 
 func init() {
