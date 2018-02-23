@@ -151,13 +151,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, err
 	}
 	courier.LogMsgReceived(r, msg)
-	return []courier.Event{msg}, h.writeReceiveSuccess(ctx, w, r, "-1") // MacroKiosk expects "-1" back for successful requests
-}
-
-func (h *handler) writeReceiveSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, responseText string) error {
 	w.WriteHeader(200)
-	_, err := fmt.Fprint(w, responseText)
-	return err
+	_, err = fmt.Fprint(w, "-1") // MacroKiosk expects "-1" back for successful requests
+	return []courier.Event{msg}, err
 }
 
 type mtPayload struct {
@@ -190,15 +186,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(text, maxMsgLength)
 	for _, part := range parts {
-		payload := &mtPayload{}
-		payload.From = senderID
-		payload.ServID = servID
-		payload.To = strings.TrimPrefix(msg.URN().Path(), "+")
-		payload.Text = part
-		payload.User = username
-		payload.Pass = password
-		payload.Type = encoding
-
+		payload := &mtPayload{
+			From:   senderID,
+			ServID: servID,
+			To:     strings.TrimPrefix(msg.URN().Path(), "+"),
+			Text:   part,
+			User:   username,
+			Pass:   password,
+			Type:   encoding,
+		}
 		requestBody := &bytes.Buffer{}
 		json.NewEncoder(requestBody).Encode(payload)
 
