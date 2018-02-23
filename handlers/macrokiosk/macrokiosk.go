@@ -1,14 +1,27 @@
 package macrokiosk
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/nyaruka/gocommon/urns"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
+)
+
+var (
+	sendURL                   = "https://www.etracker.cc/bulksms/send"
+	maxMsgLength              = 1600
+	configMacrokioskSenderID  = "macrokiosk_sender_id"
+	configMacrokioskServiceID = "macrokiosk_service_id"
 )
 
 func init() {
@@ -144,7 +157,71 @@ func (h *handler) writeReceiveSuccess(ctx context.Context, w http.ResponseWriter
 	return err
 }
 
+type mtPayload struct {
+	User   string `json:"user"`
+	Pass   string `json:"pass"`
+	To     string `json:"to"`
+	Text   string `json:"text"`
+	From   string `json:"from"`
+	ServID string `json:"servid"`
+	Type   string `json:"type"`
+}
+
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	return nil, fmt.Errorf("MK sending via courier not yet implemented")
+	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
+	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
+	servID := msg.Channel().StringConfigForKey(configMacrokioskServiceID, "")
+	senderID := msg.Channel().StringConfigForKey(configMacrokioskSenderID, "")
+	if username == "" || password == "" || servID == "" || senderID == "" {
+		return nil, fmt.Errorf("missing username, password, serviceID or senderID for MK channel")
+	}
+
+	// figure out if we need to send as unicode (encoding 5)
+	text := gsm7.ReplaceSubstitutions(handlers.GetTextAndAttachments(msg))
+	encoding := "0"
+	if !gsm7.IsValid(text) {
+		encoding = "5"
+	}
+
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	parts := handlers.SplitMsg(text, maxMsgLength)
+	for _, part := range parts {
+		payload := &mtPayload{}
+		payload.From = senderID
+		payload.ServID = servID
+		payload.To = strings.TrimPrefix(msg.URN().Path(), "+")
+		payload.Text = part
+		payload.User = username
+		payload.Pass = password
+		payload.Type = encoding
+
+		requestBody := &bytes.Buffer{}
+		json.NewEncoder(requestBody).Encode(payload)
+
+		// build our request
+		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+
+		if err != nil {
+			return nil, err
+		}
+
+		rr, err := utils.MakeHTTPRequest(req)
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
+		if err != nil {
+			return status, nil
+		}
+
+		externalID, err := jsonparser.GetString([]byte(rr.Body), "msgid")
+		if err != nil {
+			return status, fmt.Errorf("unable to parse response body from Macrokiosk")
+		}
+
+		status.SetStatus(courier.MsgWired)
+		status.SetExternalID(externalID)
+	}
+	return status, nil
 }

@@ -1,6 +1,7 @@
 package macrokiosk
 
 import (
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -52,4 +53,87 @@ func TestHandler(t *testing.T) {
 
 func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
+}
+
+// setSendURL takes care of setting the send_url to our test server host
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+	sendURL = s.URL
+}
+
+var defaultSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text:           "Simple Message ☺",
+		URN:            "tel:+250788383383",
+		Status:         "W",
+		ExternalID:     "abc123",
+		ResponseBody:   `{ "msgid":"abc123" }`,
+		ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+			"Accept":       "application/json",
+		},
+		RequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"Simple Message ☺","from":"macro","servid":"service-id","type":"5"}`,
+		SendPrep:    setSendURL},
+	{Label: "Long Send",
+		Text:           "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		URN:            "tel:+250788383383",
+		Status:         "W",
+		ExternalID:     "abc123",
+		ResponseBody:   `{ "msgid":"abc123" }`,
+		ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+			"Accept":       "application/json",
+		},
+		RequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"I need to keep adding more things to make it work","from":"macro","servid":"service-id","type":"0"}`,
+		SendPrep:    setSendURL},
+	{Label: "Send Attachment",
+		Text:           "My pic!",
+		URN:            "tel:+250788383383",
+		Attachments:    []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Status:         "W",
+		ExternalID:     "abc123",
+		ResponseBody:   `{ "msgid":"abc123" }`,
+		ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+			"Accept":       "application/json",
+		},
+		RequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"My pic!\nhttps://foo.bar/image.jpg","from":"macro","servid":"service-id","type":"0"}`,
+		SendPrep:    setSendURL},
+	{Label: "No External Id",
+		Text:           "No External ID",
+		URN:            "tel:+250788383383",
+		Status:         "E",
+		ResponseBody:   `{ "missing":"OzYDlvf3SQVc" }`,
+		ResponseStatus: 200,
+		Error:          "unable to parse response body from Macrokiosk",
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+			"Accept":       "application/json",
+		},
+		RequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"No External ID","from":"macro","servid":"service-id","type":"0"}`,
+		SendPrep:    setSendURL},
+	{Label: "Error Sending",
+		Text:           "Error Message",
+		URN:            "tel:+250788383383",
+		Status:         "E",
+		ResponseBody:   `{ "error": "failed" }`,
+		ResponseStatus: 401,
+		RequestBody:    `{"user":"Username","pass":"Password","to":"250788383383","text":"Error Message","from":"macro","servid":"service-id","type":"0"}`,
+		SendPrep:       setSendURL},
+}
+
+func TestSending(t *testing.T) {
+	maxMsgLength = 160
+	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MK", "2020", "US",
+		map[string]interface{}{
+			"password":                "Password",
+			"username":                "Username",
+			configMacrokioskSenderID:  "macro",
+			configMacrokioskServiceID: "service-id",
+		},
+	)
+
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 }
