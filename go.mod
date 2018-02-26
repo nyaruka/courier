@@ -15,6 +15,7 @@ require (
 	"github.com/nyaruka/gocommon/urns" v0.1.0
 	"github.com/satori/go.uuid" v1.2.0
 	"github.com/sirupsen/logrus" v1.0.4
+	"github.com/stretchr/testify" v1.2.1
 	"golang.org/x/crypto" v0.0.0-20180222182404-49796115aa4b
 	"golang.org/x/sys" v0.0.0-20180222210305-c1138c84af3a
 	"gopkg.in/go-playground/validator.v9" v1.11.0-gopkgin-v9.11.0
