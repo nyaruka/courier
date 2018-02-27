@@ -44,7 +44,7 @@ var testCases = []ChannelHandleTestCase{
 
 	{Label: "Valid Status", URL: statusURL, Data: validStatus, Status: 200, Response: `"status":"S"`},
 	{Label: "Wired Status", URL: statusURL, Data: processingStatus, Status: 200, Response: `"status":"W"`},
-	{Label: "Wired Status", URL: statusURL, Data: unknownStatus, Status: 200, Response: `ignoring unknown status 'UNKNOWN'`},
+	{Label: "Unknown Status", URL: statusURL, Data: unknownStatus, Status: 200, Response: `ignoring unknown status 'UNKNOWN'`},
 }
 
 func TestHandler(t *testing.T) {
