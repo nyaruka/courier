@@ -13,10 +13,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/buger/jsonparser"
-	"github.com/nyaruka/courier/utils"
 	"net/http"
 	"strings"
+
+	"github.com/buger/jsonparser"
+	"github.com/nyaruka/courier/utils"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
@@ -57,10 +58,10 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type statusForm struct {
-	From              string `name:"From" validate:"required"`
-	To                string `name:"To" validate:"required"`
-	MessageUUID       string `name:"MessageUUID" validate:"required"`
-	Status            string `name:"Status" validate:"required"`
+	From              string `name:"From"               validate:"required"`
+	To                string `name:"To"                 validate:"required"`
+	MessageUUID       string `name:"MessageUUID"        validate:"required"`
+	Status            string `name:"Status"             validate:"required"`
 	ParentMessageUUID string `name:"ParentMessageUUID"`
 }
 
@@ -109,8 +110,8 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 }
 
 type moForm struct {
-	From        string `name:"From" validate:"required"`
-	To          string `name:"To" validate:"required"`
+	From        string `name:"From"        validate:"required"`
+	To          string `name:"To"          validate:"required"`
 	MessageUUID string `name:"MessageUUID" validate:"required"`
 	Text        string `name:"Text"`
 }
@@ -163,7 +164,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
-	for _, part := range parts {
+	for i, part := range parts {
 		payload := &mtPayload{
 			Src:    strings.TrimPrefix(msg.Channel().Address(), "+"),
 			Dst:    strings.TrimPrefix(msg.URN().Path(), "+"),
@@ -176,14 +177,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		json.NewEncoder(requestBody).Encode(payload)
 
 		// build our request
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, authID), requestBody)
+		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, authID), requestBody)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(authID, authToken)
-
-		if err != nil {
-			return nil, err
-		}
 
 		rr, err := utils.MakeHTTPRequest(req)
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
@@ -192,13 +189,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString([]byte(rr.Body), "message_uuid", "[0]")
+		externalID, err := jsonparser.GetString(rr.Body, "message_uuid", "[0]")
 		if err != nil {
 			return status, fmt.Errorf("unable to parse response body from Plivo")
 		}
 
-		status.SetStatus(courier.MsgWired)
-		status.SetExternalID(externalID)
+		// set external id on first part
+		if i == 0 {
+			status.SetExternalID(externalID)
+		}
 	}
+
+	status.SetStatus(courier.MsgWired)
 	return status, nil
 }
