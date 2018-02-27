@@ -249,8 +249,8 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		baseCtx := context.WithValue(r.Context(), contextRequestURL, r.URL.String())
 		baseCtx = context.WithValue(baseCtx, contextRequestStart, time.Now())
 
-		// add a 10 second timeout
-		ctx, cancel := context.WithTimeout(baseCtx, time.Second*10)
+		// add a 25 second timeout
+		ctx, cancel := context.WithTimeout(baseCtx, time.Second*30)
 		defer cancel()
 
 		uuid, err := NewChannelUUID(chi.URLParam(r, "uuid"))

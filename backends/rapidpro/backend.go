@@ -39,7 +39,7 @@ const chatbaseVersion = "CHATBASE_VERSION"
 const chatbaseMessageType = "msg"
 
 // our timeout for backend operations
-const backendTimeout = time.Second * 30
+const backendTimeout = time.Second * 20
 
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
