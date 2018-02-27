@@ -282,7 +282,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return status, err
 		}
 
-		req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonBody))
+		req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		rr, err := utils.MakeHTTPRequestWithClient(req, client)

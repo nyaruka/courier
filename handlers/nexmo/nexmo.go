@@ -173,7 +173,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"type":              []string{textType},
 		}
 
-		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		var rr *utils.RequestResponse

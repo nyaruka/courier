@@ -111,7 +111,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	encodedForm := form.Encode()
 	sendURL = fmt.Sprintf("%s?%s", sendURL, encodedForm)
 
-	req, err := http.NewRequest(http.MethodGet, sendURL, nil)
+	req, _ := http.NewRequest(http.MethodGet, sendURL, nil)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rr, err := utils.MakeInsecureHTTPRequest(req)
 

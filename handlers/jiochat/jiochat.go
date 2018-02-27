@@ -190,7 +190,7 @@ func (h *handler) fetchAccessToken(channel courier.Channel) error {
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, tokenURL.String(), bytes.NewReader(jsonBody))
+	req, _ := http.NewRequest(http.MethodPost, tokenURL.String(), bytes.NewReader(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	rr, err := utils.MakeHTTPRequest(req)
@@ -255,13 +255,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		json.NewEncoder(requestBody).Encode(jcMsg)
 
 		// build our request
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", sendURL, "custom/custom_send.action"), requestBody)
+		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", sendURL, "custom/custom_send.action"), requestBody)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 		if err != nil {
-			return nil, err
-		}
 
 		rr, err := utils.MakeHTTPRequest(req)
 
@@ -294,11 +292,8 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	reqURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "user/info.action"))
 	reqURL.RawQuery = form.Encode()
 
-	req, err := http.NewRequest(http.MethodGet, reqURL.String(), nil)
+	req, _ := http.NewRequest(http.MethodGet, reqURL.String(), nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-	if err != nil {
-		return nil, err
-	}
 
 	rr, err := utils.MakeHTTPRequest(req)
 	if err != nil {
@@ -325,11 +320,7 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backe
 	}
 
 	// first fetch our media
-	req, err := http.NewRequest(http.MethodGet, parsedURL.String(), nil)
+	req, _ := http.NewRequest(http.MethodGet, parsedURL.String(), nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-	if err != nil {
-		return nil, err
-	}
-
 	return req, nil
 }

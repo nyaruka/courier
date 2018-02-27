@@ -138,7 +138,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"dlr_url":  []string{dlrURL},
 		}
 
-		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Token %s", auth))

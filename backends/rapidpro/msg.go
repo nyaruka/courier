@@ -205,13 +205,11 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 	}
 
 	if req == nil {
-
 		// first fetch our media
-		req, err = http.NewRequest("GET", mediaURL, nil)
+		req, err = http.NewRequest(http.MethodGet, mediaURL, nil)
 		if err != nil {
 			return "", err
 		}
-
 	}
 
 	resp, err := utils.GetHTTPClient().Do(req)

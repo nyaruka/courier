@@ -87,7 +87,7 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 			"chargingLevel": []string{chargingLevel},
 		}
 
-		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/xml")
 		rr, err := utils.MakeHTTPRequest(req)
