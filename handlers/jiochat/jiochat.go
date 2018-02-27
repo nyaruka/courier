@@ -259,8 +259,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-		if err != nil {
-
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log
