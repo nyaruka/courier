@@ -9,14 +9,29 @@ To=4759440448&From=4795961111&TotalRate=0&Units=1&Text=Msg&TotalAmount=0&Type=sm
 */
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/buger/jsonparser"
+	"github.com/nyaruka/courier/utils"
 	"net/http"
 	"strings"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
+)
+
+var (
+	sendURL      = "https://api.plivo.com/v1/Account/%s/Message/"
+	maxMsgLength = 1600
+)
+
+const (
+	configPlivoAuthID    = "PLIVO_AUTH_ID"
+	configPlivoAuthToken = "PLIVO_AUTH_TOKEN"
+	configPlivoAPPID     = "PLIVO_APP_ID"
 )
 
 func init() {
@@ -126,7 +141,64 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
 }
 
+type mtPayload struct {
+	Src    string `json:"src"`
+	Dst    string `json:"dst"`
+	Text   string `json:"text"`
+	URL    string `json:"url"`
+	Method string `json:"method"`
+}
+
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	return nil, fmt.Errorf("PL sending via courier not yet implemented")
+	authID := msg.Channel().StringConfigForKey(configPlivoAuthID, "")
+	authToken := msg.Channel().StringConfigForKey(configPlivoAuthToken, "")
+	plivoAppID := msg.Channel().StringConfigForKey(configPlivoAPPID, "")
+	if authID == "" || authToken == "" || plivoAppID == "" {
+		return nil, fmt.Errorf("missing auth_id, auth_token, app_id for PL channel")
+	}
+
+	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+	statusURL := fmt.Sprintf("https://%s/c/pl/%s/status", callbackDomain, msg.Channel().UUID())
+
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
+	for _, part := range parts {
+		payload := &mtPayload{
+			Src:    strings.TrimPrefix(msg.Channel().Address(), "+"),
+			Dst:    strings.TrimPrefix(msg.URN().Path(), "+"),
+			Text:   part,
+			URL:    statusURL,
+			Method: "POST",
+		}
+
+		requestBody := &bytes.Buffer{}
+		json.NewEncoder(requestBody).Encode(payload)
+
+		// build our request
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, authID), requestBody)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+		req.SetBasicAuth(authID, authToken)
+
+		if err != nil {
+			return nil, err
+		}
+
+		rr, err := utils.MakeHTTPRequest(req)
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
+		if err != nil {
+			return status, nil
+		}
+
+		externalID, err := jsonparser.GetString([]byte(rr.Body), "message_uuid", "[0]")
+		if err != nil {
+			return status, fmt.Errorf("unable to parse response body from Plivo")
+		}
+
+		status.SetStatus(courier.MsgWired)
+		status.SetExternalID(externalID)
+	}
+	return status, nil
 }
