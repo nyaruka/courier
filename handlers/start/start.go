@@ -165,7 +165,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		// build our request
-		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+		req, _ := http.NewRequest(http.MethodPost, sendURL, requestBody)
 		req.Header.Set("Content-Type", "application/xml; charset=utf8")
 		req.SetBasicAuth(username, password)
 		rr, err := utils.MakeHTTPRequest(req)

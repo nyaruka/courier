@@ -142,7 +142,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 	}
 
 	sendURL := fmt.Sprintf("%s/bot%s/%s", apiURL, token, path)
-	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+	req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	rr, err := utils.MakeHTTPRequest(req)
@@ -286,12 +286,8 @@ func resolveFileID(channel courier.Channel, fileID string) (string, error) {
 	form := url.Values{}
 	form.Set("file_id", fileID)
 
-	req, err := http.NewRequest(http.MethodPost, fileURL, strings.NewReader(form.Encode()))
+	req, _ := http.NewRequest(http.MethodPost, fileURL, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	if err != nil {
-		return "", err
-	}
 
 	rr, err := utils.MakeHTTPRequest(req)
 	if err != nil {

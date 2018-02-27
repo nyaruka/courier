@@ -189,7 +189,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return nil, err
 		}
 
-		req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonPayload))
+		req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonPayload))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("key=%s", fcmKey))

@@ -131,7 +131,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	loc, err := time.LoadLocation("Asia/Kuala_Lumpur")
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, err
 	}
 
 	date, err := time.ParseInLocation("2006-01-0215:04:05", form.Time, loc)
@@ -185,7 +185,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(text, maxMsgLength)
-	for _, part := range parts {
+	for i, part := range parts {
 		payload := &mtPayload{
 			From:   senderID,
 			ServID: servID,
@@ -199,13 +199,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		json.NewEncoder(requestBody).Encode(payload)
 
 		// build our request
-		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+		req, _ := http.NewRequest(http.MethodPost, sendURL, requestBody)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
-
-		if err != nil {
-			return nil, err
-		}
 
 		rr, err := utils.MakeHTTPRequest(req)
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
@@ -219,8 +215,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return status, fmt.Errorf("unable to parse response body from Macrokiosk")
 		}
 
-		status.SetStatus(courier.MsgWired)
-		status.SetExternalID(externalID)
+		// set the external id if this is our first part
+		if i == 0 {
+			status.SetExternalID(externalID)
+		}
 	}
+	status.SetStatus(courier.MsgWired)
 	return status, nil
 }

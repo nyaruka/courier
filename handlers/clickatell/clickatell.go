@@ -202,7 +202,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		partSendURL, _ := url.Parse(sendURL)
 		partSendURL.RawQuery = form.Encode()
 
-		req, err := http.NewRequest(http.MethodGet, partSendURL.String(), nil)
+		req, _ := http.NewRequest(http.MethodGet, partSendURL.String(), nil)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 		rr, err := utils.MakeHTTPRequest(req)

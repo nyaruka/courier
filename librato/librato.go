@@ -106,11 +106,7 @@ func (c *Sender) flush(count int) {
 		return
 	}
 
-	req, err := http.NewRequest("POST", libratoEndpoint, bytes.NewReader(encoded))
-	if err != nil {
-		logrus.WithField("comp", "librato").WithError(err).Error("error sending librato metrics")
-		return
-	}
+	req, _ := http.NewRequest("POST", libratoEndpoint, bytes.NewReader(encoded))
 	req.SetBasicAuth(c.username, c.token)
 	req.Header.Set("Content-Type", "application/json")
 	_, err = utils.MakeHTTPRequest(req)
