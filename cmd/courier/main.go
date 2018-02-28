@@ -37,6 +37,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/mtarget"
 	_ "github.com/nyaruka/courier/handlers/nexmo"
 	_ "github.com/nyaruka/courier/handlers/plivo"
+	_ "github.com/nyaruka/courier/handlers/redrabbit"
 	_ "github.com/nyaruka/courier/handlers/shaqodoon"
 	_ "github.com/nyaruka/courier/handlers/smscentral"
 	_ "github.com/nyaruka/courier/handlers/start"
