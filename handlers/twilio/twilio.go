@@ -55,6 +55,7 @@ func newHandler(channelType string, name string) courier.ChannelHandler {
 func init() {
 	courier.RegisterHandler(newHandler("T", "Twilio"))
 	courier.RegisterHandler(newHandler("TMS", "Twilio Messaging Service"))
+	courier.RegisterHandler(newHandler("TW", "TwiML API"))
 
 }
 
