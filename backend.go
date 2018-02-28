@@ -1,10 +1,13 @@
 package courier
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
+	"github.com/garyburd/redigo/redis"
 	"github.com/nyaruka/courier/config"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 // BackendConstructorFunc defines a function to create a particular backend type
@@ -12,14 +15,69 @@ type BackendConstructorFunc func(*config.Courier) Backend
 
 // Backend represents the part of Courier that deals with looking up and writing channels and results
 type Backend interface {
+	// Start starts the backend and opens any db connections it needs
 	Start() error
+
+	// Stop stops any backend processes
 	Stop() error
 
-	GetChannel(ChannelType, ChannelUUID) (Channel, error)
-	WriteMsg(*Msg) error
-	WriteMsgStatus(*MsgStatusUpdate) error
+	// Cleanup closes any active connections to databases
+	Cleanup() error
 
+	// GetChannel returns the channel with the passed in type and UUID
+	GetChannel(context.Context, ChannelType, ChannelUUID) (Channel, error)
+
+	// GetContact returns (or creates) the contact for the passed in channel and URN
+	GetContact(context context.Context, channel Channel, urn urns.URN, auth string, name string) (Contact, error)
+
+	// NewIncomingMsg creates a new message from the given params
+	NewIncomingMsg(channel Channel, urn urns.URN, text string) Msg
+
+	// WriteMsg writes the passed in message to our backend
+	WriteMsg(context.Context, Msg) error
+
+	// NewMsgStatusForID creates a new Status object for the given message id
+	NewMsgStatusForID(Channel, MsgID, MsgStatusValue) MsgStatus
+
+	// NewMsgStatusForExternalID creates a new Status object for the given external id
+	NewMsgStatusForExternalID(Channel, string, MsgStatusValue) MsgStatus
+
+	// WriteMsgStatus writes the passed in status update to our backend
+	WriteMsgStatus(context.Context, MsgStatus) error
+
+	// NewChannelEvent creates a new channel event for the given channel and event type
+	NewChannelEvent(Channel, ChannelEventType, urns.URN) ChannelEvent
+
+	// WriteChannelEvent writes the passed in channel even returning any error
+	WriteChannelEvent(context.Context, ChannelEvent) error
+
+	// WriteChannelLogs writes the passed in channel logs to our backend
+	WriteChannelLogs(context.Context, []*ChannelLog) error
+
+	// PopNextOutgoingMsg returns the next message that needs to be sent, callers should call MarkOutgoingMsgComplete with the
+	// returned message when they have dealt with the message (regardless of whether it was sent or not)
+	PopNextOutgoingMsg(context.Context) (Msg, error)
+
+	// WasMsgSent returns whether the backend thinks the passed in message was already sent. This can be used in cases where
+	// a backend wants to implement a failsafe against double sending messages (say if they were double queued)
+	WasMsgSent(context.Context, Msg) (bool, error)
+
+	// MarkOutgoingMsgComplete marks the passed in message as having been processed. Note this should be called even in the case
+	// of errors during sending as it will manage the number of active workers per channel. The optional status parameter can be
+	// used to determine any sort of deduping of msg sends
+	MarkOutgoingMsgComplete(context.Context, Msg, MsgStatus)
+
+	// StopMsgContact marks the contact for the passed in msg as stopped
+	StopMsgContact(context.Context, Msg)
+
+	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string
+
+	// Status returns a string describing the current status, this can detail queue sizes or other attributes
+	Status() string
+
+	// RedisPool returns the redisPool for this backend
+	RedisPool() *redis.Pool
 }
 
 // NewBackend creates the type of backend passed in

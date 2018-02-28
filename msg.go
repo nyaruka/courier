@@ -1,13 +1,13 @@
 package courier
 
 import (
-	"database/sql"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
+	null "gopkg.in/guregu/null.v3"
+
+	"github.com/nyaruka/gocommon/urns"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -16,36 +16,24 @@ var ErrMsgNotFound = errors.New("message not found")
 
 // MsgID is our typing of the db int type
 type MsgID struct {
-	sql.NullInt64
+	null.Int
 }
 
 // NewMsgID creates a new MsgID for the passed in int64
 func NewMsgID(id int64) MsgID {
-	return MsgID{sql.NullInt64{Int64: id, Valid: true}}
-}
-
-// UnmarshalText satisfies text unmarshalling so ids can be decoded from forms
-func (i *MsgID) UnmarshalText(text []byte) (err error) {
-	id, err := strconv.Atoi(string(text))
-	i.Int64 = int64(id)
-	if err != nil {
-		i.Valid = false
-	}
-	return err
-}
-
-// UnmarshalJSON satisfies json unmarshalling so ids can be decoded from JSON
-func (i *MsgID) UnmarshalJSON(bytes []byte) (err error) {
-	return json.Unmarshal(bytes, &i.NullInt64)
+	return MsgID{null.NewInt(id, true)}
 }
 
 // String satisfies the Stringer interface
-func (i *MsgID) String() string {
-	return fmt.Sprintf("%d", i.Int64)
+func (i MsgID) String() string {
+	if i.Valid {
+		return strconv.FormatInt(i.Int64, 10)
+	}
+	return "null"
 }
 
 // NilMsgID is our nil value for MsgID
-var NilMsgID = MsgID{sql.NullInt64{Int64: 0, Valid: false}}
+var NilMsgID = MsgID{null.NewInt(0, false)}
 
 // MsgUUID is the UUID of a message which has been received
 type MsgUUID struct {
@@ -60,43 +48,43 @@ func NewMsgUUID() MsgUUID {
 	return MsgUUID{uuid.NewV4()}
 }
 
-// NewIncomingMsg creates a new message from the given params
-func NewIncomingMsg(channel Channel, urn URN, text string) *Msg {
-	m := &Msg{}
-	m.UUID = NewMsgUUID()
-	m.Channel = channel
-	m.Text = text
-	m.URN = urn
-	m.ReceivedOn = time.Now()
-
-	return m
+// NewMsgUUIDFromString creates a new message UUID for the passed in string
+func NewMsgUUIDFromString(uuidString string) MsgUUID {
+	uuid, _ := uuid.FromString(uuidString)
+	return MsgUUID{uuid}
 }
 
 //-----------------------------------------------------------------------------
-// Msg implementation
+// Msg interface
 //-----------------------------------------------------------------------------
 
-// Msg is our base struct to represent an incoming or outgoing message
-type Msg struct {
-	Channel     Channel
-	ID          MsgID
-	UUID        MsgUUID
-	Text        string
-	Attachments []string
-	ExternalID  string
-	URN         URN
-	ContactName string
-	ReceivedOn  time.Time
+// Msg is our interface to represent an incoming or outgoing message
+type Msg interface {
+	ID() MsgID
+	UUID() MsgUUID
+	Text() string
+	Attachments() []string
+	ExternalID() string
+	URN() urns.URN
+	URNAuth() string
+	ContactName() string
+	QuickReplies() []string
+	ResponseToID() MsgID
+
+	Channel() Channel
+
+	ReceivedOn() *time.Time
+	SentOn() *time.Time
+
+	HighPriority() bool
+
+	WithContactName(name string) Msg
+	WithReceivedOn(date time.Time) Msg
+	WithExternalID(id string) Msg
+	WithID(id MsgID) Msg
+	WithUUID(uuid MsgUUID) Msg
+	WithAttachment(url string) Msg
+	WithURNAuth(auth string) Msg
+
+	EventID() int64
 }
-
-// WithContactName can be used to set the contact name on a msg
-func (m *Msg) WithContactName(name string) *Msg { m.ContactName = name; return m }
-
-// WithReceivedOn can be used to set sent_on on a msg in a chained call
-func (m *Msg) WithReceivedOn(date time.Time) *Msg { m.ReceivedOn = date; return m }
-
-// WithExternalID can be used to set the external id on a msg in a chained call
-func (m *Msg) WithExternalID(id string) *Msg { m.ExternalID = id; return m }
-
-// AddAttachment can be used to append to the media urls for a message
-func (m *Msg) AddAttachment(url string) *Msg { m.Attachments = append(m.Attachments, url); return m }

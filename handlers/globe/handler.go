@@ -1,3 +1,0 @@
-package globe
-
-/* no logs */

@@ -1,0 +1,76 @@
+[prune]
+  non-go = true
+  go-tests = true
+  unused-packages = true
+
+[[constraint]]
+  name = "github.com/aws/aws-sdk-go"
+  version = "^1.12.48"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/buger/jsonparser"
+
+[[constraint]]
+  name = "github.com/evalphobia/logrus_sentry"
+  version = ">=0.4.2, <1.0.0"
+
+[[constraint]]
+  name = "github.com/garyburd/redigo"
+  version = "^1.3.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/go-chi/chi"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/go-errors/errors"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/gorilla/schema"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/jmoiron/sqlx"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/koding/multiconfig"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/lib/pq"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/nyaruka/gocommon"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/pkg/errors"
+
+[[constraint]]
+  name = "github.com/satori/go.uuid"
+  version = "^1.1.0"
+
+[[constraint]]
+  name = "github.com/sirupsen/logrus"
+  version = "^1.0.4"
+
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  version = "^1.1.4"
+
+[[constraint]]
+  name = "gopkg.in/go-playground/validator.v9"
+  version = "^9.9.1"
+
+[[constraint]]
+  name = "gopkg.in/guregu/null.v3"
+  version = "^3.3.0"
+
+[[constraint]]
+  name = "gopkg.in/h2non/filetype.v1"
+  version = "^1.0.5"

@@ -1,78 +1,187 @@
 package courier
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
-	"github.com/pressly/lg"
-
+	"github.com/nyaruka/gocommon/urns"
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
-// WriteError writes a JSON response for the passed in error
-func WriteError(w http.ResponseWriter, r *http.Request, err error) error {
-	lg.Log(r.Context()).WithError(err).Error()
+const statusMsgNotFoundDetail = "message not found, ignored"
 
-	errors := []string{err.Error()}
+// WriteError writes a JSON response for the passed in error
+func WriteError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error {
+	errors := []interface{}{NewErrorData(err.Error())}
 
 	vErrs, isValidation := err.(validator.ValidationErrors)
 	if isValidation {
-		errors = []string{}
 		for i := range vErrs {
-			errors = append(errors, fmt.Sprintf("field '%s' %s", strings.ToLower(vErrs[i].Field()), vErrs[i].Tag()))
+			errors = append(errors, NewErrorData(fmt.Sprintf("field '%s' %s", strings.ToLower(vErrs[i].Field()), vErrs[i].Tag())))
 		}
 	}
-	return writeJSONResponse(w, http.StatusBadRequest, &errorResponse{errors})
+	return WriteDataResponse(ctx, w, http.StatusBadRequest, "Error", errors)
 }
 
-// WriteIgnored writes a JSON response for the passed in message
-func WriteIgnored(w http.ResponseWriter, r *http.Request, message string) error {
-	lg.Log(r.Context()).Info("ignored message")
-	return writeData(w, http.StatusOK, message, struct{}{})
+// WriteAndLogRequestError writes a JSON response for the passed in message and logs an info messages
+func WriteAndLogRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
+	LogRequestError(r, c, err)
+	return WriteError(ctx, w, r, err)
 }
 
-// WriteReceiveSuccess writes a JSON response for the passed in msg indicating we handled it
-func WriteReceiveSuccess(w http.ResponseWriter, r *http.Request, msg *Msg) error {
-	lg.Log(r.Context()).WithField("msg_uuid", msg.UUID).Info("message received")
-	return writeData(w, http.StatusOK, "Message Accepted", &receiveData{msg.UUID})
+// WriteAndLogRequestIgnored writes a JSON response for the passed in message and logs an info message
+func WriteAndLogRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, details string) error {
+	LogRequestIgnored(r, c, details)
+	return WriteDataResponse(ctx, w, http.StatusOK, "Ignored", []interface{}{NewInfoData(details)})
+}
+
+// WriteAndLogUnauthorized writes a JSON response for the passed in message and logs an info message
+func WriteAndLogUnauthorized(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
+	LogRequestError(r, c, err)
+	return WriteDataResponse(ctx, w, http.StatusUnauthorized, "Unauthorized", []interface{}{NewErrorData(err.Error())})
+}
+
+// WriteAndLogStatusMsgNotFound writes a JSON response for the passed in message and logs an info message
+func WriteAndLogStatusMsgNotFound(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel) error {
+	LogRequestIgnored(r, c, statusMsgNotFoundDetail)
+	return WriteDataResponse(ctx, w, http.StatusOK, "Ignored", []interface{}{NewInfoData(statusMsgNotFoundDetail)})
+}
+
+// WriteAndLogRequestHandled writes a JSON response for the passed in message and logs an info message
+func WriteAndLogRequestHandled(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, details string) error {
+	LogRequestHandled(r, c, details)
+	return WriteDataResponse(ctx, w, http.StatusOK, "Handled", []interface{}{NewInfoData(details)})
+}
+
+// WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it
+func WriteChannelEventSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, event ChannelEvent) error {
+	return WriteDataResponse(ctx, w, http.StatusOK, "Event Accepted", []interface{}{NewEventReceiveData(event)})
+}
+
+// WriteMsgSuccess writes a JSON response for the passed in msg indicating we handled it
+func WriteMsgSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []Msg) error {
+	data := []interface{}{}
+	for _, msg := range msgs {
+		data = append(data, NewMsgReceiveData(msg))
+	}
+
+	return WriteDataResponse(ctx, w, http.StatusOK, "Message Accepted", data)
 }
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
-func WriteStatusSuccess(w http.ResponseWriter, r *http.Request, status *MsgStatusUpdate) error {
-	if status.ID != NilMsgID {
-		lg.Log(r.Context()).WithField("msg_id", status.ID).Info("status updated")
-	} else {
-		lg.Log(r.Context()).WithField("msg_id", status.ExternalID).Info("status updated")
+func WriteStatusSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []MsgStatus) error {
+	data := []interface{}{}
+	for _, status := range statuses {
+		data = append(data, NewStatusData(status))
 	}
 
-	return writeData(w, http.StatusOK, "Status Update Accepted", &statusData{status.Status})
+	return WriteDataResponse(ctx, w, http.StatusOK, "Status Update Accepted", data)
 }
 
-type errorResponse struct {
-	Text []string `json:"errors"`
+// WriteDataResponse writes a JSON formatted response with the passed in status code, message and data
+func WriteDataResponse(ctx context.Context, w http.ResponseWriter, statusCode int, message string, data []interface{}) error {
+	return writeJSONResponse(ctx, w, statusCode, &dataResponse{message, data})
 }
 
-type successResponse struct {
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
+// MsgReceiveData is our response payload for a received message
+type MsgReceiveData struct {
+	Type        string      `json:"type"`
+	ChannelUUID ChannelUUID `json:"channel_uuid"`
+	MsgUUID     MsgUUID     `json:"msg_uuid"`
+	Text        string      `json:"text"`
+	URN         urns.URN    `json:"urn"`
+	Attachments []string    `json:"attachments,omitempty"`
+	ExternalID  string      `json:"external_id,omitempty"`
+	ReceivedOn  *time.Time  `json:"received_on,omitempty"`
 }
 
-type receiveData struct {
-	UUID MsgUUID `json:"uuid"`
+// NewMsgReceiveData creates a new data response for the passed in msg parameters
+func NewMsgReceiveData(msg Msg) MsgReceiveData {
+	return MsgReceiveData{
+		"msg",
+		msg.Channel().UUID(),
+		msg.UUID(),
+		msg.Text(),
+		msg.URN(),
+		msg.Attachments(),
+		msg.ExternalID(),
+		msg.ReceivedOn(),
+	}
 }
 
-type statusData struct {
-	Status MsgStatus `json:"status"`
+// EventReceiveData is our response payload for a channel event
+type EventReceiveData struct {
+	Type        string           `json:"type"`
+	ChannelUUID ChannelUUID      `json:"channel_uuid"`
+	EventType   ChannelEventType `json:"event_type"`
+	URN         urns.URN         `json:"urn"`
+	ReceivedOn  time.Time        `json:"received_on"`
 }
 
-func writeJSONResponse(w http.ResponseWriter, statusCode int, response interface{}) error {
+// NewEventReceiveData creates a new receive data for the passed in event
+func NewEventReceiveData(event ChannelEvent) EventReceiveData {
+	return EventReceiveData{
+		"event",
+		event.ChannelUUID(),
+		event.EventType(),
+		event.URN(),
+		event.OccurredOn(),
+	}
+}
+
+// StatusData is our response payload for a status update
+type StatusData struct {
+	Type        string         `json:"type"`
+	ChannelUUID ChannelUUID    `json:"channel_uuid"`
+	Status      MsgStatusValue `json:"status"`
+	MsgID       MsgID          `json:"msg_id,omitempty"`
+	ExternalID  string         `json:"external_id,omitempty"`
+}
+
+// NewStatusData creates a new status data object for the passed in status
+func NewStatusData(status MsgStatus) StatusData {
+	return StatusData{
+		"status",
+		status.ChannelUUID(),
+		status.Status(),
+		status.ID(),
+		status.ExternalID(),
+	}
+}
+
+// ErrorData is our response payload for an error
+type ErrorData struct {
+	Type  string `json:"type"`
+	Error string `json:"error"`
+}
+
+// NewErrorData creates a new data segment for the passed in error string
+func NewErrorData(err string) ErrorData {
+	return ErrorData{"error", err}
+}
+
+// InfoData is our response payload for an informational message
+type InfoData struct {
+	Type string `json:"type"`
+	Info string `json:"info"`
+}
+
+// NewInfoData creates a new data segment for the passed in info string
+func NewInfoData(info string) InfoData {
+	return InfoData{"info", info}
+}
+
+type dataResponse struct {
+	Message string        `json:"message"`
+	Data    []interface{} `json:"data"`
+}
+
+func writeJSONResponse(ctx context.Context, w http.ResponseWriter, statusCode int, response interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	return json.NewEncoder(w).Encode(response)
-}
-
-func writeData(w http.ResponseWriter, statusCode int, message string, response interface{}) error {
-	return writeJSONResponse(w, statusCode, &successResponse{message, response})
 }

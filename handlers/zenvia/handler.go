@@ -1,3 +1,0 @@
-package zenvia
-
-/* no logs */

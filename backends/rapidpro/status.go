@@ -1,6 +1,7 @@
 package rapidpro
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -8,21 +9,26 @@ import (
 	"os"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 )
 
-// WriteMsgStatus writes the passed in status to the database, queueing it to our spool in case the database is down
-func writeMsgStatus(b *backend, status *courier.MsgStatusUpdate) error {
-	// create our msg status object
-	dbStatus := &DBMsgStatus{
-		ChannelUUID: status.Channel.UUID(),
-		ID:          status.ID,
-		ExternalID:  status.ExternalID,
-		Status:      status.Status,
-		ModifiedOn:  status.CreatedOn,
+// newMsgStatus creates a new DBMsgStatus for the passed in parameters
+func newMsgStatus(channel courier.Channel, id courier.MsgID, externalID string, status courier.MsgStatusValue) *DBMsgStatus {
+	return &DBMsgStatus{
+		ChannelUUID_: channel.UUID(),
+		ID_:          id,
+		ExternalID_:  externalID,
+		Status_:      status,
+		ModifiedOn_:  time.Now().In(time.UTC),
 	}
+}
 
-	err := writeMsgStatusToDB(b, dbStatus)
+// writeMsgStatus writes the passed in status to the database, queueing it to our spool in case the database is down
+func writeMsgStatus(ctx context.Context, b *backend, status courier.MsgStatus) error {
+	dbStatus := status.(*DBMsgStatus)
+
+	err := writeMsgStatusToDB(ctx, b, dbStatus)
 	if err == courier.ErrMsgNotFound {
 		return err
 	}
@@ -41,13 +47,13 @@ SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_i
 const selectMsgIDForExternalID = `
 SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (m."external_id" = $1 AND c."uuid" = $2)`
 
-func checkMsgExists(b *backend, status *courier.MsgStatusUpdate) (err error) {
+func checkMsgExists(b *backend, status courier.MsgStatus) (err error) {
 	var id int64
 
-	if status.ID != courier.NilMsgID {
-		err = b.db.QueryRow(selectMsgIDForID, status.ID, status.Channel.UUID()).Scan(&id)
-	} else if status.ExternalID != "" {
-		err = b.db.QueryRow(selectMsgIDForExternalID, status.ExternalID, status.Channel.UUID()).Scan(&id)
+	if status.ID() != courier.NilMsgID {
+		err = b.db.QueryRow(selectMsgIDForID, status.ID(), status.ChannelUUID()).Scan(&id)
+	} else if status.ExternalID() != "" {
+		err = b.db.QueryRow(selectMsgIDForExternalID, status.ExternalID(), status.ChannelUUID()).Scan(&id)
 	} else {
 		return fmt.Errorf("no id or external id for status update")
 	}
@@ -58,39 +64,59 @@ func checkMsgExists(b *backend, status *courier.MsgStatusUpdate) (err error) {
 	return err
 }
 
+// the craziness below lets us update our status to 'F' and schedule retries without knowing anything about the message
 const updateMsgID = `
-UPDATE msgs_msg SET status = :status, modified_on = :modified_on WHERE msgs_msg.id IN
-	(SELECT msgs_msg.id FROM msgs_msg INNER JOIN channels_channel ON (msgs_msg.channel_id = channels_channel.id) 
-WHERE (msgs_msg.id = :msg_id AND channels_channel.uuid = :channel_uuid))
+UPDATE msgs_msg SET 
+	status = CASE WHEN :status = 'E' THEN CASE WHEN error_count >= 2 OR status = 'F' THEN 'F' ELSE 'E' END ELSE :status END,
+	error_count = CASE WHEN :status = 'E' THEN error_count + 1 ELSE error_count END,
+	next_attempt = CASE WHEN :status = 'E' THEN NOW() + (5 * (error_count+1) * interval '1 minutes') ELSE next_attempt END,
+	external_id = CASE WHEN :external_id != '' THEN :external_id ELSE external_id END,
+	sent_on = CASE WHEN :status = 'W' THEN NOW() ELSE sent_on END,
+	modified_on = :modified_on
+
+	WHERE msgs_msg.id IN
+		(SELECT msgs_msg.id 
+			FROM msgs_msg INNER JOIN channels_channel ON (msgs_msg.channel_id = channels_channel.id) 
+			WHERE (msgs_msg.id = :msg_id AND channels_channel.uuid = :channel_uuid)) 
+			RETURNING msgs_msg.id
 `
 
 const updateMsgExternalID = `
-UPDATE msgs_msg SET status = :status, modified_on = :modified_on WHERE msgs_msg.id IN
-	(SELECT msgs_msg.id FROM msgs_msg INNER JOIN channels_channel ON (msgs_msg.channel_id = channels_channel.id) 
-WHERE (msgs_msg.external_id = :external_id AND channels_channel.uuid = :channel_uuid))
+UPDATE msgs_msg SET 
+	status = CASE WHEN :status = 'E' THEN CASE WHEN error_count >= 2 OR status = 'F' THEN 'F' ELSE 'E' END ELSE :status END,
+	error_count = CASE WHEN :status = 'E' THEN error_count + 1 ELSE error_count END,
+	next_attempt = CASE WHEN :status = 'E' THEN NOW() + (5 * (error_count+1) * interval '1 minutes') ELSE next_attempt END,
+	sent_on = CASE WHEN :status = 'W' THEN NOW() ELSE sent_on END,
+	modified_on = :modified_on
+
+WHERE msgs_msg.id IN
+	(SELECT msgs_msg.id 
+		FROM msgs_msg INNER JOIN channels_channel ON (msgs_msg.channel_id = channels_channel.id) 
+		WHERE (msgs_msg.external_id = :external_id AND channels_channel.uuid = :channel_uuid)) 
+		RETURNING msgs_msg.id
 `
 
 // writeMsgStatusToDB writes the passed in msg status to our db
-func writeMsgStatusToDB(b *backend, status *DBMsgStatus) error {
-	var result sql.Result
+func writeMsgStatusToDB(ctx context.Context, b *backend, status *DBMsgStatus) error {
+	var rows *sqlx.Rows
 	var err error
-	if status.ID != courier.NilMsgID {
-		result, err = b.db.NamedExec(updateMsgID, status)
-	} else if status.ExternalID != "" {
-		result, err = b.db.NamedExec(updateMsgExternalID, status)
+
+	if status.ID() != courier.NilMsgID {
+		rows, err = b.db.NamedQueryContext(ctx, updateMsgID, status)
+	} else if status.ExternalID() != "" {
+		rows, err = b.db.NamedQueryContext(ctx, updateMsgExternalID, status)
 	} else {
 		return fmt.Errorf("attempt to update msg status without id or external id")
 	}
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rows == 0 {
+	// scan and read the id of the msg that was updated
+	if rows.Next() {
+		rows.Scan(&status.ID_)
+	} else {
 		return courier.ErrMsgNotFound
 	}
 
@@ -106,8 +132,15 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 		return nil
 	}
 
-	// try to flush to redis
-	return writeMsgStatusToDB(b, status)
+	// try to flush to our db
+	err = writeMsgStatusToDB(context.Background(), b, status)
+
+	// not finding the message is ok for status updates
+	if err == courier.ErrMsgNotFound {
+		return nil
+	}
+
+	return err
 }
 
 //-----------------------------------------------------------------------------
@@ -116,9 +149,25 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 
 // DBMsgStatus represents a status update on a message
 type DBMsgStatus struct {
-	ChannelUUID courier.ChannelUUID `json:"channel_uuid"             db:"channel_uuid"`
-	ID          courier.MsgID       `json:"msg_id,omitempty"             db:"msg_id"`
-	ExternalID  string              `json:"external_id,omitempty"    db:"external_id"`
-	Status      courier.MsgStatus   `json:"status"                   db:"status"`
-	ModifiedOn  time.Time           `json:"modified_on"              db:"modified_on"`
+	ChannelUUID_ courier.ChannelUUID    `json:"channel_uuid"             db:"channel_uuid"`
+	ID_          courier.MsgID          `json:"msg_id,omitempty"         db:"msg_id"`
+	ExternalID_  string                 `json:"external_id,omitempty"    db:"external_id"`
+	Status_      courier.MsgStatusValue `json:"status"                   db:"status"`
+	ModifiedOn_  time.Time              `json:"modified_on"              db:"modified_on"`
+
+	logs []*courier.ChannelLog
 }
+
+func (s *DBMsgStatus) EventID() int64 { return s.ID_.Int64 }
+
+func (s *DBMsgStatus) ChannelUUID() courier.ChannelUUID { return s.ChannelUUID_ }
+func (s *DBMsgStatus) ID() courier.MsgID                { return s.ID_ }
+
+func (s *DBMsgStatus) ExternalID() string      { return s.ExternalID_ }
+func (s *DBMsgStatus) SetExternalID(id string) { s.ExternalID_ = id }
+
+func (s *DBMsgStatus) Logs() []*courier.ChannelLog    { return s.logs }
+func (s *DBMsgStatus) AddLog(log *courier.ChannelLog) { s.logs = append(s.logs, log) }
+
+func (s *DBMsgStatus) Status() courier.MsgStatusValue          { return s.Status_ }
+func (s *DBMsgStatus) SetStatus(status courier.MsgStatusValue) { s.Status_ = status }

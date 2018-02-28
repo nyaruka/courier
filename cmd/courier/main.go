@@ -1,11 +1,11 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/evalphobia/logrus_sentry"
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/config"
@@ -13,10 +13,41 @@ import (
 
 	// load channel handler packages
 	_ "github.com/nyaruka/courier/handlers/africastalking"
+	_ "github.com/nyaruka/courier/handlers/arabiacell"
 	_ "github.com/nyaruka/courier/handlers/blackmyna"
+	_ "github.com/nyaruka/courier/handlers/chikka"
+	_ "github.com/nyaruka/courier/handlers/clickatell"
+	_ "github.com/nyaruka/courier/handlers/dart"
+	_ "github.com/nyaruka/courier/handlers/dmark"
+	_ "github.com/nyaruka/courier/handlers/external"
+	_ "github.com/nyaruka/courier/handlers/facebook"
+	_ "github.com/nyaruka/courier/handlers/firebase"
+	_ "github.com/nyaruka/courier/handlers/globe"
+	_ "github.com/nyaruka/courier/handlers/highconnection"
+	_ "github.com/nyaruka/courier/handlers/hub9"
+	_ "github.com/nyaruka/courier/handlers/infobip"
+	_ "github.com/nyaruka/courier/handlers/jasmin"
+	_ "github.com/nyaruka/courier/handlers/jiochat"
+	_ "github.com/nyaruka/courier/handlers/junebug"
 	_ "github.com/nyaruka/courier/handlers/kannel"
+	_ "github.com/nyaruka/courier/handlers/line"
+	_ "github.com/nyaruka/courier/handlers/m3tech"
+	_ "github.com/nyaruka/courier/handlers/macrokiosk"
+	_ "github.com/nyaruka/courier/handlers/mblox"
+	_ "github.com/nyaruka/courier/handlers/mtarget"
+	_ "github.com/nyaruka/courier/handlers/nexmo"
+	_ "github.com/nyaruka/courier/handlers/plivo"
+	_ "github.com/nyaruka/courier/handlers/redrabbit"
+	_ "github.com/nyaruka/courier/handlers/shaqodoon"
+	_ "github.com/nyaruka/courier/handlers/smscentral"
+	_ "github.com/nyaruka/courier/handlers/start"
 	_ "github.com/nyaruka/courier/handlers/telegram"
 	_ "github.com/nyaruka/courier/handlers/twilio"
+	_ "github.com/nyaruka/courier/handlers/twitter"
+	_ "github.com/nyaruka/courier/handlers/viber"
+	_ "github.com/nyaruka/courier/handlers/whatsapp"
+	_ "github.com/nyaruka/courier/handlers/yo"
+	_ "github.com/nyaruka/courier/handlers/zenvia"
 
 	// load available backends
 	_ "github.com/nyaruka/courier/backends/rapidpro"
@@ -29,7 +60,7 @@ func main() {
 	config := &config.Courier{}
 	err := m.Load(config)
 	if err != nil {
-		log.Fatalf("Error loading configuration: %s", err)
+		logrus.Fatalf("Error loading configuration: %s", err)
 	}
 
 	// if we have a custom version, use it
@@ -41,25 +72,38 @@ func main() {
 	logrus.SetOutput(os.Stdout)
 	level, err := logrus.ParseLevel(config.LogLevel)
 	if err != nil {
-		log.Fatalf("Invalid log level '%s'", level)
+		logrus.Fatalf("Invalid log level '%s'", level)
 	}
 	logrus.SetLevel(level)
+
+	// if we have a DSN entry, try to initialize it
+	if config.SentryDSN != "" {
+		hook, err := logrus_sentry.NewSentryHook(config.SentryDSN, []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel})
+		hook.Timeout = 0
+		hook.StacktraceConfiguration.Enable = true
+		hook.StacktraceConfiguration.Skip = 4
+		hook.StacktraceConfiguration.Context = 5
+		if err != nil {
+			logrus.Fatalf("Invalid sentry DSN: '%s': %s", config.SentryDSN, err)
+		}
+		logrus.StandardLogger().Hooks.Add(hook)
+	}
 
 	// load our backend
 	backend, err := courier.NewBackend(config)
 	if err != nil {
-		log.Fatalf("Error creating backend: %s", err)
+		logrus.Fatalf("Error creating backend: %s", err)
 	}
 
 	server := courier.NewServer(config, backend)
 	err = server.Start()
 	if err != nil {
-		log.Fatalf("Error starting server: %s", err)
+		logrus.Fatalf("Error starting server: %s", err)
 	}
 
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	log.Println(<-ch)
+	logrus.WithField("comp", "main").WithField("signal", <-ch).Info("stopping")
 
 	server.Stop()
 }

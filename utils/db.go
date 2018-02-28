@@ -4,7 +4,14 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+
+	"gopkg.in/guregu/null.v3"
 )
+
+// NewNullMap creates a new null map with the passed in map
+func NewNullMap(validMap map[string]interface{}) NullMap {
+	return NullMap{Map: validMap, Valid: true}
+}
 
 // NullMap is a one level deep dictionary that is represented as JSON in the database
 type NullMap struct {
@@ -40,7 +47,15 @@ func (n *NullMap) Scan(src interface{}) error {
 
 // Value implements the driver Valuer interface
 func (n *NullMap) Value() (driver.Value, error) {
+	if n == nil {
+		return nil, nil
+	}
+
 	if !n.Valid {
+		return nil, nil
+	}
+
+	if len(n.Map) == 0 {
 		return nil, nil
 	}
 	return json.Marshal(n.Map)
@@ -49,7 +64,7 @@ func (n *NullMap) Value() (driver.Value, error) {
 // MarshalJSON decodes our dictionary from the passed in bytes
 func (n *NullMap) MarshalJSON() ([]byte, error) {
 	if !n.Valid {
-		return nil, nil
+		return json.Marshal(nil)
 	}
 	return json.Marshal(n.Map)
 }
@@ -63,4 +78,8 @@ func (n *NullMap) UnmarshalJSON(data []byte) error {
 	n.Map = make(map[string]interface{})
 	n.Valid = true
 	return json.Unmarshal(data, &n.Map)
+}
+
+func NullStringIfEmpty(s string) null.String {
+	return null.NewString(s, len(s) > 0)
 }
