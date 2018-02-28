@@ -86,8 +86,8 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, fmt.Sprintf("ignoring unknown status '%s'", form.Status))
 	}
 
-	if strings.TrimPrefix(channel.Address(), "+") != strings.TrimPrefix(form.To, "+") {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid to number [%s], expecting [%s]", strings.TrimPrefix(form.To, "+"), strings.TrimPrefix(channel.Address(), "+")))
+	if strings.TrimPrefix(channel.Address(), "+") != strings.TrimPrefix(form.From, "+") {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid to number [%s], expecting [%s]", strings.TrimPrefix(form.From, "+"), strings.TrimPrefix(channel.Address(), "+")))
 	}
 
 	externalID := form.MessageUUID
