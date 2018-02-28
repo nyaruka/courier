@@ -20,10 +20,10 @@ var (
 	invalidAddress = "To=1515&From=60124361111&TotalRate=0&Units=1&Text=Hello&TotalAmount=0&Type=sms&MessageUUID=abc1234"
 	missingParams  = "From=60124361111&TotalRate=0&Units=1&Text=Hello&TotalAmount=0&Type=sms&MessageUUID=abc1234"
 
-	validStatus          = "MessageUUID=12345&status=delivered&From=%2B60124361111&To=2020"
-	validSentStatus      = "ParentMessageUUID=12345&status=sent&MessageUUID=123&From=%2B60124361111&To=2020"
-	invalidStatusAddress = "ParentMessageUUID=12345&status=sent&MessageUUID=123&From=%2B60124361111&To=1515"
-	unknownStatus        = "MessageUUID=12345&status=UNKNOWN&From=%2B60124361111&To=2020"
+	validStatus          = "MessageUUID=12345&status=delivered&To=%2B60124361111&From=2020"
+	validSentStatus      = "ParentMessageUUID=12345&status=sent&MessageUUID=123&To=%2B60124361111&From=2020"
+	invalidStatusAddress = "ParentMessageUUID=12345&status=sent&MessageUUID=123&To=%2B60124361111&From=1515"
+	unknownStatus        = "MessageUUID=12345&status=UNKNOWN&To=%2B60124361111&From=2020"
 )
 
 var testCases = []ChannelHandleTestCase{
