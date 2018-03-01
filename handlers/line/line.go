@@ -101,7 +101,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		// create our date from the timestamp (they give us millis, arg is nanos)
 		date := time.Unix(0, lineEvent.Timestamp*1000000).UTC()
 
-		urn := urns.NewURNFromParts(urns.LineScheme, lineEvent.Source.UserID, "")
+		urn, err := urns.NewURNFromParts(urns.LineScheme, lineEvent.Source.UserID, "")
+		if err != nil {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid user id: %s", lineEvent.Source.UserID))
+		}
 
 		msg := h.Backend().NewIncomingMsg(channel, urn, lineEvent.Message.Text).WithReceivedOn(date)
 
