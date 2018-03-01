@@ -55,7 +55,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	date := time.Unix(payload.Message.Date, 0).UTC()
 
 	// create our URN
-	urn, err := urns.NewTelegramURN(payload.Message.From.ContactID, payload.Message.From.Username)
+	urn, err := urns.NewTelegramURN(payload.Message.From.ContactID, strings.ToLower(payload.Message.From.Username))
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}

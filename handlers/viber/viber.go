@@ -50,6 +50,7 @@ type eventPayload struct {
 	Event        string `json:"event"         validate:"required"`
 	Timestamp    int64  `json:"timestamp"     validate:"required"`
 	MessageToken int64  `json:"message_token" validate:"required"`
+	UserID       string `json:"user_id"`
 	Sender       struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
@@ -116,7 +117,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
 
 	case "unsubscribed":
-		viberID := payload.User.ID
+		viberID := payload.UserID
 
 		// build the URN
 		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "")
