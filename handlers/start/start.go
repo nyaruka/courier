@@ -71,7 +71,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(payload.From, channel.Country())
+	urn, err := urns.NewTelURNForCountry(payload.From, channel.Country())
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}

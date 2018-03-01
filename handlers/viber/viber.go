@@ -108,7 +108,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn).WithContactName(ContactName)
 
-		err := h.Backend().WriteChannelEvent(ctx, channelEvent)
+		err = h.Backend().WriteChannelEvent(ctx, channelEvent)
 		if err != nil {
 			return nil, err
 		}
@@ -126,7 +126,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
 
-		err := h.Backend().WriteChannelEvent(ctx, channelEvent)
+		err = h.Backend().WriteChannelEvent(ctx, channelEvent)
 		if err != nil {
 			return nil, err
 		}

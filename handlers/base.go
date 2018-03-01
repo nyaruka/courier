@@ -239,8 +239,10 @@ func NewTelReceiveHandler(h BaseHandler, fromField string, bodyField string) cou
 			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("missing required field '%s'", fromField))
 		}
 		// create our URN
-		urn := urns.NewTelURNForCountry(from, c.Country())
-
+		urn, err := urns.NewTelURNForCountry(from, c.Country())
+		if err != nil {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		}
 		// build our msg
 		msg := h.Backend().NewIncomingMsg(c, urn, body).WithReceivedOn(time.Now().UTC())
 

@@ -114,7 +114,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(form.From, form.FromCountry)
+	urn, err := urns.NewTelURNForCountry(form.From, form.FromCountry)
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+	}
 
 	if form.Body != "" {
 		// Twilio sometimes sends concatenated sms as base64 encoded MMS

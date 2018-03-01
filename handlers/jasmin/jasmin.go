@@ -96,7 +96,10 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(form.From, c.Country())
+	urn, err := urns.NewTelURNForCountry(form.From, c.Country())
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+	}
 
 	// Decode from GSM7 if required
 	text := string(form.Content)

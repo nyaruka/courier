@@ -107,10 +107,10 @@
   revision = "e223a795a06a5598451cf022558c17c779f5a7ab"
 
 [[projects]]
+  branch = "master"
   name = "github.com/go-errors/errors"
   packages = ["."]
-  revision = "3afebba5a48dbc89b574d890b6b34d9ee10b4785"
-  version = "v1.0.0"
+  revision = "a6af135bd4e28680facf08a3d206b454abc877a4"
 
 [[projects]]
   name = "github.com/go-ini/ini"
@@ -178,7 +178,7 @@
   branch = "master"
   name = "github.com/nyaruka/gocommon"
   packages = ["urns"]
-  revision = "c3bea84b51d08816f35dca4b44f8fa3286f6e477"
+  revision = "105f126c144c580e85f07a8672b9b274340cc667"
 
 [[projects]]
   name = "github.com/nyaruka/phonenumbers"
