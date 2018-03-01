@@ -20,13 +20,13 @@ behind a reverse proxy such as nginx or Elastic Load Balancer that provides HTTP
 
 # Configuration
 
-Courier uses a tiered configuration system, with precendence as follows:
+Courier uses a tiered configuration system, each option takes precendence over the ones above it:
  1. The configuration file
  2. Environment variables starting with `COURIER_` 
  3. Command line parameters
 
 We recommend running courier with no changes to the configuration and no parameters, using only environment variables to configure it. You can
-use `% courier --help` to see a list of the environment variables available and browse the [config file](https://github.com/nyaruka/courier/blob/master/config/courier.go) for more details on each option.
+use `% courier --help` to see a list of the environment variables and parameters and for more details on each option.
 
 # RapidPro Configuration
 
@@ -80,5 +80,5 @@ $ psql -d courier_test -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA publi
 To run all of the tests including benchmarks:
 
 ```
-go test $(go list ./... | grep -v /vendor/) -cover -bench=.
+go test github.com/nyaruka/courier/... -p=1 -bench=.
 ```
