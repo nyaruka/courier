@@ -10,7 +10,7 @@ messenger. The goal is for Courier to support every popular messaging channels a
 to help accomplish that.
 
 Courier is currently used to power [RapidPro](https://rapidpro.io) and [TextIt](https://textit.in) but the backend is pluggable, so you can
-add your own backend for your project.
+add your own backend to read and write messages.
 
 # Deploying
 
