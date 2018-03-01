@@ -290,7 +290,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(tgContact.URNID_, tgContactURN.ID)
-	ts.Equal("jane", tgContactURN.Display.String)
+	ts.Equal("Jane", tgContactURN.Display.String)
 
 	// try to create two contacts at the same time in goroutines, this tests our transaction rollbacks
 	urn2, _ := urns.NewTelURNForCountry("12065551616", "US")
