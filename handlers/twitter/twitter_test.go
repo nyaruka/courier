@@ -107,11 +107,11 @@ var testCases = []ChannelHandleTestCase{
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+	RunChannelTestCases(t, testChannels, newHandler("TWT", "Twitter Activity"), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
+	RunChannelBenchmarks(b, testChannels, newHandler("TWT", "Twitter Activity"), testCases)
 }
 
 // setSendURL takes care of setting the send_url to our test server host
@@ -145,5 +145,5 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler("TWT", "Twitter Activity"), defaultSendTestCases, nil)
 }

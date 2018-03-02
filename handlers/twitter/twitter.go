@@ -38,15 +38,16 @@ const (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	courier.RegisterHandler(newHandler("TWT", "Twitter Activity"))
+	courier.RegisterHandler(newHandler("TT", "Twitter"))
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("TWT"), "Twitter")}
+func newHandler(channelType string, name string) courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandler(courier.ChannelType(channelType), name)}
 }
 
 // Initialize is called by the engine once everything is loaded
