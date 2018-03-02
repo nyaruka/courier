@@ -231,7 +231,7 @@ var (
 		"type": "open",
 		"context": "context information",
 		"user": {
-			"id": "01234567890A=",
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
 			"name": "yarden",
 			"avatar": "http://avatar_url",
 			"country": "IL",

@@ -137,7 +137,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(payload.CallbackMORequest.From, channel.Country())
+	urn, err := urns.NewTelURNForCountry(payload.CallbackMORequest.From, channel.Country())
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+	}
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, payload.CallbackMORequest.Text).WithExternalID(payload.CallbackMORequest.ExternalID).WithReceivedOn(date.UTC())

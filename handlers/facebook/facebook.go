@@ -226,8 +226,10 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		date := time.Unix(0, msg.Timestamp*1000000).UTC()
 
 		// create our URN
-		urn := urns.NewURNFromParts(urns.FacebookScheme, msg.Sender.ID, "")
-
+		urn, err := urns.NewURNFromParts(urns.FacebookScheme, msg.Sender.ID, "")
+		if err != nil {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		}
 		if msg.OptIn != nil {
 			// this is an opt in, if we have a user_ref, use that as our URN (this is a checkbox plugin)
 			// TODO:
@@ -236,7 +238,10 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			//    Right now that we even support this isn't documented and I don't think anybody uses it, so leaving that out.
 			//    (things will still work, we just will have dupe contacts, one with user_ref for the first contact, then with the real id when they reply)
 			if msg.OptIn.UserRef != "" {
-				urn = urns.NewURNFromParts(urns.FacebookScheme, urns.FacebookRefPrefix+msg.OptIn.UserRef, "")
+				urn, err = urns.NewURNFromParts(urns.FacebookScheme, urns.FacebookRefPrefix+msg.OptIn.UserRef, "")
+				if err != nil {
+					return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+				}
 			}
 
 			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn).WithOccurredOn(date)

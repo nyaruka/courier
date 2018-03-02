@@ -73,7 +73,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn := urns.NewFirebaseURN(form.From)
+	urn, err := urns.NewFirebaseURN(form.From)
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+	}
 
 	// build our msg
 	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Msg).WithReceivedOn(date).WithContactName(form.Name).WithURNAuth(form.FCMToken)
@@ -102,7 +105,10 @@ func (h *handler) registerContact(ctx context.Context, channel courier.Channel, 
 	}
 
 	// create our URN
-	urn := urns.NewFirebaseURN(form.URN)
+	urn, err := urns.NewFirebaseURN(form.URN)
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+	}
 
 	// create our contact
 	contact, err := h.Backend().GetContact(ctx, channel, urn, form.FCMToken, form.Name)

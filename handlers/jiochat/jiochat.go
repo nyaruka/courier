@@ -127,7 +127,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	date := time.Unix(payload.CreateTime/1000, payload.CreateTime%1000*1000000).UTC()
-	urn := urns.NewURNFromParts(urns.JiochatScheme, payload.FromUsername, "")
+	urn, err := urns.NewURNFromParts(urns.JiochatScheme, payload.FromUsername, "")
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+	}
 
 	// subscribe event, trigger a new conversation
 	if payload.MsgType == "event" && payload.Event == "subscribe" {

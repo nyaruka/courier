@@ -102,7 +102,10 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// create our URN
-		urn := urns.NewTelURNForCountry(payload.From, channel.Country())
+		urn, err := urns.NewTelURNForCountry(payload.From, channel.Country())
+		if err != nil {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		}
 
 		// build our Message
 		msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body).WithReceivedOn(date.UTC()).WithExternalID(payload.ID)

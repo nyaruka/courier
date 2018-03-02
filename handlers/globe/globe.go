@@ -100,7 +100,11 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("invalid 'senderAddress' parameter"))
 		}
 
-		urn := urns.NewTelURNForCountry(glMsg.SenderAddress[4:], c.Country())
+		urn, err := urns.NewTelURNForCountry(glMsg.SenderAddress[4:], c.Country())
+		if err != nil {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		}
+
 		msg := h.Backend().NewIncomingMsg(c, urn, glMsg.Message).WithExternalID(glMsg.MessageID).WithReceivedOn(date)
 
 		err = h.Backend().WriteMsg(ctx, msg)

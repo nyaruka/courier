@@ -131,7 +131,10 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(from, c.Country())
+	urn, err := urns.NewTelURNForCountry(from, c.Country())
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+	}
 
 	// if this a stop command, shortcut stopping that contact
 	if keyword == "Stop" {

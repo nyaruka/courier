@@ -187,7 +187,7 @@ func (ts *BackendTestSuite) TestCheckMsgExists() {
 
 func (ts *BackendTestSuite) TestContact() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	urn := urns.NewTelURNForCountry("12065551518", "US")
+	urn, _ := urns.NewTelURNForCountry("12065551518", "US")
 
 	ctx := context.Background()
 	now := time.Now()
@@ -212,7 +212,8 @@ func (ts *BackendTestSuite) TestContact() {
 	ts.True(contact2.CreatedOn_.Before(now2))
 
 	// load a contact by URN instead (this one is in our testdata)
-	contact, err = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urns.NewTelURNForCountry("+12067799192", "US"), "", "")
+	cURN, _ := urns.NewTelURNForCountry("+12067799192", "US")
+	contact, err = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, cURN, "", "")
 	ts.NoError(err)
 	ts.NotNil(contact)
 
@@ -223,7 +224,7 @@ func (ts *BackendTestSuite) TestContact() {
 func (ts *BackendTestSuite) TestContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
-	urn := urns.NewTelURNForCountry("12065551515", "US")
+	urn, _ := urns.NewTelURNForCountry("12065551515", "US")
 
 	ctx := context.Background()
 
@@ -271,12 +272,12 @@ func (ts *BackendTestSuite) TestContactURN() {
 
 	// test that we don't use display when looking up URNs
 	tgChannel := ts.getChannel("TG", "dbc126ed-66bc-4e28-b67b-81dc3327c98a")
-	tgURN := urns.NewTelegramURN(12345, "")
+	tgURN, _ := urns.NewTelegramURN(12345, "")
 
 	tgContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURN, "", "")
 	ts.NoError(err)
 
-	tgURNDisplay := urns.NewTelegramURN(12345, "Jane")
+	tgURNDisplay, _ := urns.NewTelegramURN(12345, "Jane")
 	displayContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURNDisplay, "", "")
 
 	ts.Equal(tgContact.URNID_, displayContact.URNID_)
@@ -289,10 +290,10 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(tgContact.URNID_, tgContactURN.ID)
-	ts.Equal("jane", tgContactURN.Display.String)
+	ts.Equal("Jane", tgContactURN.Display.String)
 
 	// try to create two contacts at the same time in goroutines, this tests our transaction rollbacks
-	urn2 := urns.NewTelURNForCountry("12065551616", "US")
+	urn2, _ := urns.NewTelURNForCountry("12065551616", "US")
 	var wait sync.WaitGroup
 	var contact2, contact3 *DBContact
 	wait.Add(2)
@@ -318,8 +319,8 @@ func (ts *BackendTestSuite) TestContactURN() {
 func (ts *BackendTestSuite) TestContactURNPriority() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
-	knURN := urns.NewTelURNForCountry("12065551111", "US")
-	twURN := urns.NewTelURNForCountry("12065552222", "US")
+	knURN, _ := urns.NewTelURNForCountry("12065551111", "US")
+	twURN, _ := urns.NewTelURNForCountry("12065552222", "US")
 
 	ctx := context.Background()
 
@@ -586,7 +587,7 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 	}))
 
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	urn := urns.NewTelURNForCountry("12065551215", knChannel.Country())
+	urn, _ := urns.NewTelURNForCountry("12065551215", knChannel.Country())
 	msg := ts.b.NewIncomingMsg(knChannel, urn, "invalid attachment").(*DBMsg)
 	msg.WithAttachment(testServer.URL)
 
@@ -643,7 +644,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	now := time.Now().Round(time.Microsecond).In(time.UTC)
 
 	// create a new courier msg
-	urn := urns.NewTelURNForCountry("12065551212", knChannel.Country())
+	urn, _ := urns.NewTelURNForCountry("12065551212", knChannel.Country())
 	msg := ts.b.NewIncomingMsg(knChannel, urn, "test123").WithExternalID("ext123").WithReceivedOn(now).WithContactName("test contact").(*DBMsg)
 
 	// try to write it to our db
@@ -721,7 +722,7 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	ctx := context.Background()
 
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	urn := urns.NewTelURNForCountry("12065551616", channel.Country())
+	urn, _ := urns.NewTelURNForCountry("12065551616", channel.Country())
 	event := ts.b.NewChannelEvent(channel, courier.Referral, urn).WithExtra(map[string]interface{}{"ref_id": "12345"}).WithContactName("kermit frog")
 	err := ts.b.WriteChannelEvent(ctx, event)
 	ts.NoError(err)

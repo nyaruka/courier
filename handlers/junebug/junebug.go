@@ -82,7 +82,11 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("unable to parse date: %s", payload.Timestamp))
 	}
 
-	urn := urns.NewTelURNForCountry(payload.From, c.Country())
+	urn, err := urns.NewTelURNForCountry(payload.From, c.Country())
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+	}
+
 	msg := h.Backend().NewIncomingMsg(c, urn, payload.Content).WithExternalID(payload.MessageID).WithReceivedOn(date.UTC())
 
 	err = h.Backend().WriteMsg(ctx, msg)
