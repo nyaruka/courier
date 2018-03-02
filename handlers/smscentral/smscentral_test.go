@@ -11,6 +11,7 @@ import (
 var (
 	receiveURL          = "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 	receiveValidMessage = "mobile=%2B2349067554729&message=Join"
+	invalidURN          = "mobile=MTN&message=Join"
 	receiveNoMessage    = "mobile=%2B2349067554729"
 	receiveNoParams     = "none"
 	receiveNoSender     = "message=Join"
@@ -25,6 +26,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
 	{Label: "Receive No Message", URL: receiveURL, Data: receiveNoMessage, Status: 200, Response: "Accepted",
 		Text: Sp(""), URN: Sp("tel:+2349067554729")},
+	{Label: "Receive invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied was empty"},
 	{Label: "Receive No Params", URL: receiveURL, Data: receiveNoParams, Status: 400, Response: "field 'mobile' required"},
 	{Label: "Receive No Sender", URL: receiveURL, Data: receiveNoSender, Status: 400, Response: "field 'mobile' required"},
 }

@@ -33,6 +33,15 @@ var (
 	}
 	`
 
+	invalidURN = `{
+		"from": "MTN",
+		"timestamp": "2017-01-01 01:02:03.05",
+		"content": "hello world",
+		"to": "2020",
+		"message_id": "external-id"
+	}
+	`
+
 	invalidTimestamp = `{
 		"from": "+250788383383",
 		"timestamp": "20170101T01:02:03.05",
@@ -87,6 +96,8 @@ var testCases = []ChannelHandleTestCase{
 		Text: Sp("hello world"), URN: Sp("tel:+250788383383"),
 		Date: Tp(time.Date(2017, 01, 01, 1, 2, 3, 50000000, time.UTC))},
 
+	{Label: "Invalid URN", URL: inboundURL, Data: invalidURN,
+		Status: 400, Response: "phone number supplied was empty"},
 	{Label: "Invalid Timestamp", URL: inboundURL, Data: invalidTimestamp,
 		Status: 400, Response: "unable to parse date"},
 	{Label: "Missing Message ID", URL: inboundURL, Data: missingMessageID,

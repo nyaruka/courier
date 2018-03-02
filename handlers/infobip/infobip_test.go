@@ -38,6 +38,28 @@ var helloMsg = `{
 	"pendingMessageCount": 0
 }`
 
+var invalidURN = `{
+	"results": [
+		{
+			"messageId": "817790313235066447",
+			"from": "MTN",
+			"to": "385921004026",
+			"text": "QUIZ Correct answer is Paris",
+			"cleanText": "Correct answer is Paris",
+			"keyword": "QUIZ",
+			"receivedAt": "2016-10-06T09:28:39.220+0000",
+			"smsCount": 1,
+			"price": {
+				"pricePerMessage": 0,
+				"currency": "EUR"
+			},
+			"callbackData": "callbackData"
+		}
+	],
+	"messageCount": 1,
+	"pendingMessageCount": 0
+}`
+
 var missingResults = `{
 	"unexpected": [
 	  {
@@ -172,6 +194,7 @@ var testCases = []ChannelHandleTestCase{
 		Text: Sp("QUIZ Correct answer is Paris"), URN: Sp("tel:+385916242493"), ExternalID: Sp("817790313235066447"), Date: Tp(time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.FixedZone("", 0)))},
 	{Label: "Receive missing results key", URL: receiveURL, Data: missingResults, Status: 400, Response: "validation for 'Results' failed"},
 	{Label: "Receive missing text key", URL: receiveURL, Data: missingText, Status: 200, Response: "ignoring request, no message"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied was empty"},
 	{Label: "Status report invalid JSON", URL: statusURL, Data: invalidJSONStatus, Status: 400, Response: "unable to parse request JSON"},
 	{Label: "Status report missing results key", URL: statusURL, Data: statusMissingResultsKey, Status: 400, Response: "Field validation for 'Results' failed"},
 	{Label: "Status delivered", URL: statusURL, Data: validStatusDelivered, Status: 200, Response: `"status":"D"`},

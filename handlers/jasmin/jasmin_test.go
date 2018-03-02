@@ -13,6 +13,7 @@ var (
 	receiveURL          = "/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	receiveValidMessage = "content=%05v%05nement&coding=0&From=2349067554729&To=2349067554711&id=1001"
 	receiveMissingTo    = "content=%05v%05nement&coding=0&From=2349067554729&id=1001"
+	invalidURN          = "content=%05v%05nement&coding=0&From=MTN&To=2349067554711&id=1001"
 
 	statusURL       = "/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 	statusDelivered = "id=external1&dlvrd=1"
@@ -29,7 +30,8 @@ var handleTestCases = []ChannelHandleTestCase{
 		Text: Sp("événement"), URN: Sp("tel:+2349067554729"), ExternalID: Sp("1001")},
 	{Label: "Receive Missing To", URL: receiveURL, Data: receiveMissingTo, Status: 400,
 		Response: "field 'to' required"},
-
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400,
+		Response: "phone number supplied was empty"},
 	{Label: "Status Delivered", URL: statusURL, Data: statusDelivered, Status: 200, Response: "ACK/Jasmin",
 		MsgStatus: Sp("D"), ExternalID: Sp("external1")},
 	{Label: "Status Failed", URL: statusURL, Data: statusFailed, Status: 200, Response: "ACK/Jasmin",

@@ -44,6 +44,16 @@ var (
 		"Content": "Simple Message"
 	}`
 
+	invalidURN = `
+	{
+		"ToUsername": "1212121221212",
+		"FromUserName": "1234abc",
+		"CreateTime": 1518774424438,
+		"MsgType": "text",
+		"MsgId": "123456",
+		"Content": "Simple Message"
+	}`
+
 	subscribeEvent = `{
 		"ToUsername": "12121212121212",
 		"FromUserName": "1234",
@@ -140,6 +150,7 @@ var testCases = []ChannelHandleTestCase{
 		Text: Sp("Simple Message"), URN: Sp("jiochat:1234"), ExternalID: Sp("123456"),
 		Date: Tp(time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC))},
 
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "invalid jiochat id"},
 	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, Status: 400, Response: "Error:Field validation"},
 	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, Status: 400, Response: "missing parameters, must have either 'MsgId' or 'Event'"},
 
