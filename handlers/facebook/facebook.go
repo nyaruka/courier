@@ -228,7 +228,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		// create our URN
 		urn, err := urns.NewURNFromParts(urns.FacebookScheme, msg.Sender.ID, "")
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid sender id: %s", msg.Sender.ID))
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 		}
 		if msg.OptIn != nil {
 			// this is an opt in, if we have a user_ref, use that as our URN (this is a checkbox plugin)
@@ -240,7 +240,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			if msg.OptIn.UserRef != "" {
 				urn, err = urns.NewURNFromParts(urns.FacebookScheme, urns.FacebookRefPrefix+msg.OptIn.UserRef, "")
 				if err != nil {
-					return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid user ref: %s", msg.OptIn.UserRef))
+					return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 				}
 			}
 

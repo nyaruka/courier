@@ -103,7 +103,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		// build the URN
 		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "")
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid user id: %s", viberID))
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 		}
 
 		// build the channel event
@@ -122,7 +122,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		// build the URN
 		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "")
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid user id: %s", viberID))
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 		}
 		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
@@ -173,7 +173,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		// create our URN
 		urn, err := urns.NewURNFromParts(urns.ViberScheme, sender, "")
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid sender id: %s", sender))
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 		}
 
 		text := payload.Message.Text

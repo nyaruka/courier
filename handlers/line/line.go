@@ -103,7 +103,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 		urn, err := urns.NewURNFromParts(urns.LineScheme, lineEvent.Source.UserID, "")
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid user id: %s", lineEvent.Source.UserID))
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 		}
 
 		msg := h.Backend().NewIncomingMsg(channel, urn, lineEvent.Message.Text).WithReceivedOn(date)

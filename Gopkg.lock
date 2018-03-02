@@ -178,7 +178,7 @@
   branch = "master"
   name = "github.com/nyaruka/gocommon"
   packages = ["urns"]
-  revision = "105f126c144c580e85f07a8672b9b274340cc667"
+  revision = "d5464b95212020325f3d3ec985f3fc63a972f783"
 
 [[projects]]
   name = "github.com/nyaruka/phonenumbers"

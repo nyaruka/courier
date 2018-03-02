@@ -75,7 +75,8 @@ func IsValidScheme(scheme string) bool {
 var nonTelCharsRegex = regexp.MustCompile(`[^0-9a-z]`)
 var twitterHandleRegex = regexp.MustCompile(`^[a-zA-Z0-9_]{1,15}$`)
 var emailRegex = regexp.MustCompile(`^[^\s@]+@[^\s@]+$`)
-var viberRegex = regexp.MustCompile(`^[a-zA-Z0-9_=]{1,24}$`)
+var viberRegex = regexp.MustCompile(`^[a-zA-Z0-9_=/+]{1,24}$`)
+var lineRegex = regexp.MustCompile(`^[a-zA-Z0-9_]{1,36}$`)
 var allDigitsRegex = regexp.MustCompile(`^[0-9]+$`)
 
 // URN represents a Universal Resource Name, we use this for contact identifiers like phone numbers etc..
@@ -180,10 +181,6 @@ func (u URN) Validate() error {
 		return fmt.Errorf("invalid scheme: '%s'", scheme)
 	}
 
-	if path == "" {
-		return fmt.Errorf("invalid path: '%s'", path)
-	}
-
 	switch scheme {
 	case TelScheme:
 		// validate is possible phone number
@@ -193,8 +190,8 @@ func (u URN) Validate() error {
 		}
 	case TwitterScheme:
 		// validate twitter URNs look like handles
-		if twitterHandleRegex.MatchString(path) {
-			return nil
+		if !twitterHandleRegex.MatchString(path) {
+			return fmt.Errorf("invalid twitter handle: %s", path)
 		}
 
 	case TwitterIDScheme:
@@ -203,7 +200,7 @@ func (u URN) Validate() error {
 			return fmt.Errorf("invalid twitter id: %s", path)
 		}
 		if display != "" && !twitterHandleRegex.MatchString(display) {
-			return fmt.Errorf("invalid display: %s", display)
+			return fmt.Errorf("invalid twitter handle: %s", display)
 		}
 
 	case EmailScheme:
@@ -221,6 +218,15 @@ func (u URN) Validate() error {
 		if !allDigitsRegex.MatchString(path) {
 			return fmt.Errorf("invalid facebook id: %s", path)
 		}
+	case JiochatScheme:
+		if !allDigitsRegex.MatchString(path) {
+			return fmt.Errorf("invalid jiochat id: %s", path)
+		}
+
+	case LineScheme:
+		if !lineRegex.MatchString(path) {
+			return fmt.Errorf("invalid line id: %s", path)
+		}
 
 	case TelegramScheme:
 		if !allDigitsRegex.MatchString(path) {
@@ -236,6 +242,10 @@ func (u URN) Validate() error {
 		if !allDigitsRegex.MatchString(path) {
 			return fmt.Errorf("invalid whatsapp id: %s", path)
 		}
+	}
+
+	if path == "" {
+		return fmt.Errorf("invalid path: '%s'", path)
 	}
 
 	return nil // anything goes for external schemes

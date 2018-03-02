@@ -181,7 +181,7 @@ var (
 		"timestamp": 1481142112807,
 		"message_token": 4987381189870374000,
 		"sender": {
-			"id": "xy55y6O81kbWHpLhBoA==",
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
 			"name": "ET3"
 		},
 		"message": {
@@ -231,7 +231,7 @@ var (
 		"type": "open",
 		"context": "context information",
 		"user": {
-			"id": "01234567890A=",
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
 			"name": "yarden",
 			"avatar": "http://avatar_url",
 			"country": "IL",
@@ -245,7 +245,7 @@ var (
 		"timestamp": 1481142112807,
 		"message_token": 4987381189870374000,
 		"sender": {
-			"id": "xy55y6O81kbWHpLhBoA==",
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
 			"name": "ET3"
 		},
 		"message": {
@@ -259,7 +259,7 @@ var (
 		"timestamp": 1481142112807,
 		"message_token": 4987381189870374000,
 		"sender": {
-			"id": "xy55y6O81kbWHpLhBoA==",
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
 			"name": "ET3"
 		},
 		"message": {
@@ -273,7 +273,7 @@ var (
 		"timestamp": 1481142112807,
 		"message_token": 4987381189870374000,
 		"sender": {
-			"id": "xy55y6O81kbWHpLhBoA==",
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
 			"name": "ET3"
 		},
 		"message": {
@@ -287,7 +287,7 @@ var (
 		"timestamp": 1481142112807,
 		"message_token": 4987381189870374000,
 		"sender": {
-			"id": "xy55y6O81kbWHpLhBoA==",
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
 			"name": "ET3"
 		},
 		"message": {
@@ -306,7 +306,7 @@ var (
 		"timestamp": 1481142112807,
 		"message_token": 4987381189870374000,
 		"sender": {
-			"id": "xy55y6O81kbWHpLhBoA==",
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
 			"name": "ET3"
 		},
 		"message": {
@@ -322,7 +322,7 @@ var (
 		"timestamp": 1481142112807,
 		"message_token": 4987381189870374000,
 		"sender": {
-			"id": "xy55y6O81kbWHpLhBoA==",
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
 			"name": "ET3"
 		},
 		"message": {
@@ -341,7 +341,7 @@ var (
 		"timestamp": 1481142112807,
 		"message_token": 4987381189870374000,
 		"sender": {
-			"id": "xy55y6O81kbWHpLhBoA==",
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
 			"name": "ET3"
 		},
 		"message": {
@@ -370,7 +370,7 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, Status: 200, Response: "Accepted",
-		Text: Sp("incoming msg"), URN: Sp("viber:xy55y6O81kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
 		PrepRequest: addValidSignature},
 	{Label: "Receive invalid signature", URL: receiveURL, Data: validMsg, Status: 400, Response: "invalid request signature",
 		PrepRequest: addInvalidSignature},
@@ -391,14 +391,14 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Video missing media", URL: receiveURL, Data: rejectedVideo, Status: 400, Response: "missing text or media in message in request body", PrepRequest: addValidSignature},
 
 	{Label: "Valid Contact receive", URL: receiveURL, Data: validReceiveContact, Status: 200, Response: "Accepted",
-		Text: Sp("Alex: +12067799191"), URN: Sp("viber:xy55y6O81kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+		Text: Sp("Alex: +12067799191"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
 		PrepRequest: addValidSignature},
 	{Label: "Valid URL receive", URL: receiveURL, Data: validReceiveURL, Status: 200, Response: "Accepted",
-		Text: Sp("http://foo.com/"), URN: Sp("viber:xy55y6O81kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+		Text: Sp("http://foo.com/"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
 		PrepRequest: addValidSignature},
 
 	{Label: "Valid Location receive", URL: receiveURL, Data: validReceiveLocation, Status: 200, Response: "Accepted",
-		Text: Sp("incoming msg"), URN: Sp("viber:xy55y6O81kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
 		Attachment: Sp("geo:1.200000,-1.300000"), PrepRequest: addValidSignature},
 }
 

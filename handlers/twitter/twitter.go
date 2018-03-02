@@ -175,7 +175,7 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 
 		urn, err := urns.NewURNFromParts(urns.TwitterIDScheme, user.ID, strings.ToLower(user.ScreenName))
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("invalid user id: %s", user.ID))
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
 		}
 
 		// create our date from the timestamp (they give us millis, arg is nanos)
