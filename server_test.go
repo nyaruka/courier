@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -13,7 +12,7 @@ import (
 
 func TestServer(t *testing.T) {
 	logger := logrus.New()
-	config := config.NewTest()
+	config := NewConfig()
 	config.StatusUsername = "admin"
 	config.StatusPassword = "password123"
 

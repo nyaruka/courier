@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
@@ -238,7 +237,7 @@ func newServer(backend courier.Backend) courier.Server {
 	logger := logrus.New()
 	logger.Out = ioutil.Discard
 	logrus.SetOutput(ioutil.Discard)
-	config := config.NewTest()
+	config := courier.NewConfig()
 	config.DB = "postgres://courier@localhost/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
 	return courier.NewServerWithLogger(config, backend, logger)
