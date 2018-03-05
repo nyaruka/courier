@@ -308,3 +308,27 @@ func SplitAttachment(attachment string) (string, string) {
 	}
 	return parts[0], parts[1]
 }
+
+// WriteMsg writes the passed in message to our backend
+func WriteMsg(ctx context.Context, h BaseHandler, msg courier.Msg, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	err := h.Backend().WriteMsg(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+}
+
+// WriteMsgStatus write the passed in status to our backend
+func WriteMsgStatus(ctx context.Context, h BaseHandler, channel courier.Channel, status courier.MsgStatus, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	err := h.Backend().WriteMsgStatus(ctx, status)
+	if err == courier.ErrMsgNotFound {
+		return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+}

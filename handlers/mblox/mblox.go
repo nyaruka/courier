@@ -80,16 +80,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 		// write our status
 		status := h.Backend().NewMsgStatusForExternalID(channel, payload.BatchID, msgStatus)
-		err = h.Backend().WriteMsgStatus(ctx, status)
-		if err == courier.ErrMsgNotFound {
-			return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+		return handlers.WriteMsgStatus(ctx, h.BaseHandler, channel, status, w, r)
 
 	} else if payload.Type == "mo_text" {
 		if payload.ID == "" || payload.From == "" || payload.To == "" || payload.Body == "" || payload.ReceivedAt == "" {
@@ -110,13 +101,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		// build our Message
 		msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body).WithReceivedOn(date.UTC()).WithExternalID(payload.ID)
 
-		// and write it
-		err = h.Backend().WriteMsg(ctx, msg)
-		if err != nil {
-			return nil, err
-		}
-		return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
-
+		// and finally write our message
+		return handlers.WriteMsg(ctx, h.BaseHandler, msg, w, r)
 	}
 
 	return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("not handled, unknown type: %s", payload.Type))

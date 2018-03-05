@@ -83,16 +83,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 	// write our status
 	status := h.Backend().NewMsgStatusForExternalID(channel, form.MsgID, msgStatus)
-	err = h.Backend().WriteMsgStatus(ctx, status)
-	if err == courier.ErrMsgNotFound {
-		return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+	return handlers.WriteMsgStatus(ctx, h.BaseHandler, channel, status, w, r)
 
 }
 

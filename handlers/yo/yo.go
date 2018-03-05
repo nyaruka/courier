@@ -93,13 +93,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// build our msg
 	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithReceivedOn(date)
 
-	// and write it
-	err = h.Backend().WriteMsg(ctx, dbMsg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{dbMsg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{dbMsg})
+	// and finally write our message
+	return handlers.WriteMsg(ctx, h.BaseHandler, dbMsg, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error

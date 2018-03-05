@@ -126,14 +126,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	if mediaURL != "" {
 		msg.WithAttachment(mediaURL)
 	}
-
-	// queue our message
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+	// and finally write our message
+	return handlers.WriteMsg(ctx, h.BaseHandler, msg, w, r)
 }
 
 func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, replies string) (string, *courier.ChannelLog, error) {

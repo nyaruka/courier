@@ -91,19 +91,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 
 	status := h.Backend().NewMsgStatusForExternalID(channel, form.MessageID, msgStatus)
 
-	// write our status
-	err := h.Backend().WriteMsgStatus(ctx, status)
-
-	// nexmo can return more than one message id when doing multipart, so ignore status updates which might be for one of those parts
-	if err == courier.ErrMsgNotFound {
-		return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+	return handlers.WriteMsgStatus(ctx, h.BaseHandler, channel, status, w, r)
 }
 
 type moForm struct {
@@ -130,14 +118,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text)
-
-	// and write it
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+	// and finally write our message
+	return handlers.WriteMsg(ctx, h.BaseHandler, msg, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error

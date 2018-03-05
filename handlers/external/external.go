@@ -108,13 +108,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithReceivedOn(date)
 
-	// and write it
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+	// and finally write our message
+	return handlers.WriteMsg(ctx, h.BaseHandler, msg, w, r)
 }
 
 // buildStatusHandler deals with building a handler that takes what status is received in the URL
@@ -150,12 +145,7 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 
 	// write our status
 	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.ID), msgStatus)
-	err = h.Backend().WriteMsgStatus(ctx, status)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+	return handlers.WriteMsgStatus(ctx, h.BaseHandler, channel, status, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error
