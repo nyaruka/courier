@@ -107,7 +107,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Payload.Message.Text).WithReceivedOn(date).WithExternalID(payload.Payload.MessageID)
 	// and finally write our message
-	return handlers.WriteMsg(ctx, h.BaseHandler, msg, w, r)
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 // {
@@ -157,7 +157,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	status := h.Backend().NewMsgStatusForExternalID(channel, payload.Payload.MessageID, msgStatus)
 
 	// write our status
-	return handlers.WriteMsgStatus(ctx, h.BaseHandler, channel, status, w, r)
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // {

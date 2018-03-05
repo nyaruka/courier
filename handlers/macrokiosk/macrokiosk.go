@@ -83,7 +83,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 	// write our status
 	status := h.Backend().NewMsgStatusForExternalID(channel, form.MsgID, msgStatus)
-	return handlers.WriteMsgStatus(ctx, h.BaseHandler, channel, status, w, r)
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 }
 
@@ -140,14 +140,14 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithExternalID(form.MsgID).WithReceivedOn(date.UTC())
 
 	// and write it
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-	courier.LogMsgReceived(r, msg)
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+}
+
+// WriteMsgSuccessResponse
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
 	w.WriteHeader(200)
-	_, err = fmt.Fprint(w, "-1") // MacroKiosk expects "-1" back for successful requests
-	return []courier.Event{msg}, err
+	_, err := fmt.Fprint(w, "-1") // MacroKiosk expects "-1" back for successful requests
+	return err
 }
 
 type mtPayload struct {

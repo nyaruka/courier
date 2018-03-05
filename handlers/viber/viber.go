@@ -136,13 +136,13 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 	case "failed":
 		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, string(payload.MessageToken), courier.MsgFailed)
-		return handlers.WriteMsgStatus(ctx, h.BaseHandler, channel, msgStatus, w, r)
+		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "delivered":
 		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), courier.MsgDelivered)
 
 		err = h.Backend().WriteMsgStatus(ctx, msgStatus)
-		return handlers.WriteMsgStatus(ctx, h.BaseHandler, channel, msgStatus, w, r)
+		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "message":
 		sender := payload.Sender.ID
@@ -197,7 +197,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			msg.WithAttachment(mediaURL)
 		}
 		// and finally write our message
-		return handlers.WriteMsg(ctx, h.BaseHandler, msg, w, r)
+		return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 	}
 
 	return nil, courier.WriteError(ctx, w, r, fmt.Errorf("not handled, unknown event: %s", event))

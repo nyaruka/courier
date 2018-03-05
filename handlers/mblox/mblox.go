@@ -80,7 +80,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 		// write our status
 		status := h.Backend().NewMsgStatusForExternalID(channel, payload.BatchID, msgStatus)
-		return handlers.WriteMsgStatus(ctx, h.BaseHandler, channel, status, w, r)
+		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 	} else if payload.Type == "mo_text" {
 		if payload.ID == "" || payload.From == "" || payload.To == "" || payload.Body == "" || payload.ReceivedAt == "" {
@@ -102,7 +102,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body).WithReceivedOn(date.UTC()).WithExternalID(payload.ID)
 
 		// and finally write our message
-		return handlers.WriteMsg(ctx, h.BaseHandler, msg, w, r)
+		return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 	}
 
 	return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("not handled, unknown type: %s", payload.Type))

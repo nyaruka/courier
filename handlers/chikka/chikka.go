@@ -77,7 +77,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 		// write our status
 		status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.MessageID), msgStatus)
-		return handlers.WriteMsgStatus(ctx, h.BaseHandler, channel, status, w, r)
+		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 	} else if messageType == "incoming" {
 		form := &moForm{}
@@ -97,7 +97,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithExternalID(form.RequestID).WithReceivedOn(date)
 
 		// and finally write our message
-		return handlers.WriteMsg(ctx, h.BaseHandler, msg, w, r)
+		return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 	} else {
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "unknown message_type request")
 	}

@@ -82,7 +82,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Msg).WithReceivedOn(date).WithContactName(form.Name).WithURNAuth(form.FCMToken)
 
 	// and finally write our message
-	return handlers.WriteMsg(ctx, h.BaseHandler, dbMsg, w, r)
+	return handlers.WriteMsgAndResponse(ctx, h, dbMsg, w, r)
 }
 
 type registerForm struct {

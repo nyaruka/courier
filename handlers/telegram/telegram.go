@@ -127,7 +127,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		msg.WithAttachment(mediaURL)
 	}
 	// and finally write our message
-	return handlers.WriteMsg(ctx, h.BaseHandler, msg, w, r)
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, replies string) (string, *courier.ChannelLog, error) {

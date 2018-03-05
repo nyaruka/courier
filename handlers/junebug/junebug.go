@@ -90,7 +90,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	msg := h.Backend().NewIncomingMsg(c, urn, payload.Content).WithExternalID(payload.MessageID).WithReceivedOn(date.UTC())
 
 	// and finally write our message
-	return handlers.WriteMsg(ctx, h.BaseHandler, msg, w, r)
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 // {
@@ -140,7 +140,7 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 	}
 
 	status := h.Backend().NewMsgStatusForExternalID(c, payload.MessageID, msgStatus)
-	return handlers.WriteMsgStatus(ctx, h.BaseHandler, c, status, w, r)
+	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 }
 
 // {

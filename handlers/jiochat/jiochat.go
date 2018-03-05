@@ -157,7 +157,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// and finally write our message
-	return handlers.WriteMsg(ctx, h.BaseHandler, msg, w, r)
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 func buildMediaURL(mediaID string) string {

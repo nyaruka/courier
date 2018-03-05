@@ -63,6 +63,23 @@ func (h *BaseHandler) ChannelName() string {
 	return h.name
 }
 
+// ResponseSuccess interace with response methods for success responses
+type ResponseSuccess interface {
+	Backend() courier.Backend
+	WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []courier.MsgStatus) error
+	WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error
+}
+
+// WriteStatusSuccessResponse writes a success response for the statuses
+func (h *BaseHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []courier.MsgStatus) error {
+	return courier.WriteStatusSuccess(ctx, w, r, statuses)
+}
+
+// WriteMsgSuccessResponse writes a success response for the messages
+func (h *BaseHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+	return courier.WriteMsgSuccess(ctx, w, r, msgs)
+}
+
 var (
 	decoder  = schema.NewDecoder()
 	validate = validator.New()
@@ -309,18 +326,18 @@ func SplitAttachment(attachment string) (string, string) {
 	return parts[0], parts[1]
 }
 
-// WriteMsg writes the passed in message to our backend
-func WriteMsg(ctx context.Context, h BaseHandler, msg courier.Msg, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// WriteMsgAndResponse writes the passed in message to our backend
+func WriteMsgAndResponse(ctx context.Context, h ResponseSuccess, msg courier.Msg, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.Backend().WriteMsg(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+	return []courier.Event{msg}, h.WriteMsgSuccessResponse(ctx, w, r, []courier.Msg{msg})
 }
 
-// WriteMsgStatus write the passed in status to our backend
-func WriteMsgStatus(ctx context.Context, h BaseHandler, channel courier.Channel, status courier.MsgStatus, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// WriteMsgStatusAndResponse write the passed in status to our backend
+func WriteMsgStatusAndResponse(ctx context.Context, h ResponseSuccess, channel courier.Channel, status courier.MsgStatus, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.Backend().WriteMsgStatus(ctx, status)
 	if err == courier.ErrMsgNotFound {
 		return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
@@ -330,5 +347,5 @@ func WriteMsgStatus(ctx context.Context, h BaseHandler, channel courier.Channel,
 		return nil, err
 	}
 
-	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+	return []courier.Event{status}, h.WriteStatusSuccessResponse(ctx, w, r, []courier.MsgStatus{status})
 }

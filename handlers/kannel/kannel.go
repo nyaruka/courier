@@ -78,7 +78,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithExternalID(form.ID).WithReceivedOn(date)
 
 	// and finally write our message
-	return handlers.WriteMsg(ctx, h.BaseHandler, msg, w, r)
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 var statusMapping = map[int]courier.MsgStatusValue{
@@ -111,7 +111,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	// write our status
 	status := h.Backend().NewMsgStatusForID(channel, form.ID, msgStatus)
 	err = h.Backend().WriteMsgStatus(ctx, status)
-	return handlers.WriteMsgStatus(ctx, h.BaseHandler, channel, status, w, r)
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error

@@ -91,7 +91,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 
 	status := h.Backend().NewMsgStatusForExternalID(channel, form.MessageID, msgStatus)
 
-	return handlers.WriteMsgStatus(ctx, h.BaseHandler, channel, status, w, r)
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 type moForm struct {
@@ -119,7 +119,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text)
 	// and finally write our message
-	return handlers.WriteMsg(ctx, h.BaseHandler, msg, w, r)
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error

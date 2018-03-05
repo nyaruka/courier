@@ -65,7 +65,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text)
 
 	// and finally write our message
-	return handlers.WriteMsg(ctx, h.BaseHandler, msg, w, r)
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 type statusForm struct {
@@ -96,7 +96,7 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 
 	// write our status
 	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus)
-	return handlers.WriteMsgStatus(ctx, h.BaseHandler, channel, status, w, r)
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error
