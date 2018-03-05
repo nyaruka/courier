@@ -83,16 +83,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 	// write our status
 	status := h.Backend().NewMsgStatusForExternalID(channel, form.MsgID, msgStatus)
-	err = h.Backend().WriteMsgStatus(ctx, status)
-	if err == courier.ErrMsgNotFound {
-		return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 }
 
@@ -149,14 +140,14 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithExternalID(form.MsgID).WithReceivedOn(date.UTC())
 
 	// and write it
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-	courier.LogMsgReceived(r, msg)
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+}
+
+// WriteMsgSuccessResponse
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
 	w.WriteHeader(200)
-	_, err = fmt.Fprint(w, "-1") // MacroKiosk expects "-1" back for successful requests
-	return []courier.Event{msg}, err
+	_, err := fmt.Fprint(w, "-1") // MacroKiosk expects "-1" back for successful requests
+	return err
 }
 
 type mtPayload struct {

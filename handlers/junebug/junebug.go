@@ -89,12 +89,8 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 
 	msg := h.Backend().NewIncomingMsg(c, urn, payload.Content).WithExternalID(payload.MessageID).WithReceivedOn(date.UTC())
 
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+	// and finally write our message
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 // {
@@ -144,16 +140,7 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 	}
 
 	status := h.Backend().NewMsgStatusForExternalID(c, payload.MessageID, msgStatus)
-	err = h.Backend().WriteMsgStatus(ctx, status)
-	if err == courier.ErrMsgNotFound {
-		return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, c)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 }
 
 // {

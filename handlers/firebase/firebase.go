@@ -81,13 +81,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// build our msg
 	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Msg).WithReceivedOn(date).WithContactName(form.Name).WithURNAuth(form.FCMToken)
 
-	// queue our message
-	err = h.Backend().WriteMsg(ctx, dbMsg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{dbMsg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{dbMsg})
+	// and finally write our message
+	return handlers.WriteMsgAndResponse(ctx, h, dbMsg, w, r)
 }
 
 type registerForm struct {
