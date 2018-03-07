@@ -111,7 +111,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f", 
 		"next_attempt": "2017-07-21T19:22:23.254182Z", 
 		"urn": "telegram:3527065",
-		"contact_urn_auth": "5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2",
+		"urn_auth": "5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2",
 		"org_id": 1, 
 		"created_on": "2017-07-21T19:22:23.242757Z", 
 		"sent_on": null, 
