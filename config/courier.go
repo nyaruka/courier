@@ -27,8 +27,17 @@ type Courier struct {
 	// SpoolDir is the local directory where courier will write statuses or msgs that need to be retried (needs to be writable)
 	SpoolDir string `default:"/var/spool/courier"`
 
+	// S3Endpoint is the S3 endpoint we will write attachments to
+	S3Endpoint string `default:"https://s3.amazonaws.com"`
+
 	// S3Region is the S3 region we will write attachments to
 	S3Region string `default:"us-east-1"`
+
+	// S3DisableSSL should always be set to False unless you're hosting an S3 compatible service within a secure internal network
+	S3DisableSSL bool
+
+	// S3ForcePathStyle will generally need to default to False unless you're hosting an S3 compatible service
+	S3ForcePathStyle bool
 
 	// S3MediaBucket is the S3 bucket we will write attachments to
 	S3MediaBucket string `default:"courier-media"`
