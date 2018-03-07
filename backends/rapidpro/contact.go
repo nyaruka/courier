@@ -84,7 +84,9 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 			return nil, err
 		}
 		// update urn auth if necessary
-		contactURNForURN(tx, org, channel.ID(), contact.ID_, urn, auth)
+		if auth != "" {
+			contactURNForURN(tx, org, channel.ID(), contact.ID_, urn, auth)
+		}
 		return contact, tx.Commit()
 	}
 
