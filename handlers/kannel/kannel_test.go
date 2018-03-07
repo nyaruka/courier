@@ -12,6 +12,7 @@ import (
 var (
 	receiveNoParams     = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	receiveValidMessage = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B2349067554729&message=Join&ts=1493735509&id=asdf-asdf&to=24453"
+	receiveInvalidURN   = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=MTN&message=Join&ts=1493735509&id=asdf-asdf&to=24453"
 	receiveEmptyMessage = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B2349067554729&message=&ts=1493735509&id=asdf-asdf&to=24453"
 	statusNoParams      = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 	statusInvalidStatus = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=66"
@@ -28,6 +29,7 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Empty Message", URL: receiveEmptyMessage, Data: "empty", Status: 200, Response: "Accepted",
 		Text: Sp(""), URN: Sp("tel:+2349067554729"), ExternalID: Sp("asdf-asdf"), Date: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
 	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", Status: 400, Response: "field 'sender' required"},
+	{Label: "Invalid URN", URL: receiveInvalidURN, Data: "empty", Status: 400, Response: "phone number supplied was empty"},
 	{Label: "Status No Params", URL: statusNoParams, Status: 400, Response: "field 'status' required"},
 	{Label: "Status Invalid Status", URL: statusInvalidStatus, Status: 400, Response: "unknown status '66', must be one of 1,2,4,8,16"},
 	{Label: "Status Valid", URL: statusValid, Status: 200, Response: `"status":"S"`},
