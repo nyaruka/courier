@@ -175,7 +175,7 @@
   branch = "master"
   name = "github.com/nyaruka/ezconf"
   packages = ["."]
-  revision = "aff9caa6eeeca798912872d5a75fa76eb79d154a"
+  revision = "b12749342a72c772a96134ba3204d2c7ee2cee53"
 
 [[projects]]
   branch = "master"
