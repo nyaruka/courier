@@ -246,7 +246,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.NoError(err)
 	ts.Equal("chestnut", contactURNs[0].Auth.String)
 
-	// first build a URN for our number with the kannel channel
+	// now build a URN for our number with the kannel channel
 	knURN, err := contactURNForURN(tx, knChannel.OrgID_, knChannel.ID_, contact.ID_, urn, "sesame")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())

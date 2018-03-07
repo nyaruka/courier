@@ -88,10 +88,12 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 		display := utils.NullStringIfEmpty(urn.Display())
 
 		// if display, channel id or auth changed, update them
-		if contactURNs[0].Display != display || contactURNs[0].ChannelID != channelID || contactURNs[0].Auth.String != auth {
+		if contactURNs[0].Display != display || contactURNs[0].ChannelID != channelID || (auth != "" && contactURNs[0].Auth.ValueOrZero() != auth) {
 			contactURNs[0].Display = display
 			contactURNs[0].ChannelID = channelID
-			contactURNs[0].Auth = null.StringFrom(auth)
+			if auth != "" {
+				contactURNs[0].Auth = null.StringFrom(auth)
+			}
 			return updateContactURN(db, contactURNs[0])
 		}
 		return nil
@@ -103,9 +105,13 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 	topPriority := 99
 	currPriority := 50
 	for _, existing := range contactURNs {
+		// if this is current URN, make sure it has an updated auth as well
 		if existing.Identity == urn.Identity() {
 			existing.Priority = topPriority
 			existing.ChannelID = channelID
+			if auth != "" {
+				existing.Auth = null.StringFrom(auth)
+			}
 		} else {
 			existing.Priority = currPriority
 
