@@ -132,14 +132,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		mediaURL := r.PostForm.Get(fmt.Sprintf("MediaUrl%d", i))
 		msg.WithAttachment(mediaURL)
 	}
-
-	// and finally queue our message
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{msg}, h.writeReceiveSuccess(ctx, w, r, msg)
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -182,14 +175,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	if status == nil {
 		status = h.Backend().NewMsgStatusForExternalID(channel, form.MessageSID, msgStatus)
 	}
-
-	// write our status
-	err = h.Backend().WriteMsgStatus(ctx, status)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error
@@ -285,8 +271,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 }
 
 // Twilio expects Twiml from a message receive request
-func (h *handler) writeReceiveSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, msg courier.Msg) error {
-	courier.LogMsgReceived(r, msg)
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, `<?xml version="1.0" encoding="UTF-8"?><Response/>`)

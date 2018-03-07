@@ -156,12 +156,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		msg.WithAttachment(mediaURL)
 	}
 
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+	// and finally write our message
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 func buildMediaURL(mediaID string) string {

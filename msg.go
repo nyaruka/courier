@@ -70,6 +70,7 @@ type Msg interface {
 	ContactName() string
 	QuickReplies() []string
 	ResponseToID() MsgID
+	ResponseToExternalID() string
 
 	Channel() Channel
 

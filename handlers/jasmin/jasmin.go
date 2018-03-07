@@ -111,12 +111,15 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	msg := h.Backend().NewIncomingMsg(c, urn, text).WithExternalID(form.ID).WithReceivedOn(time.Now().UTC())
 
 	// and finally queue our message
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+}
 
-	return []courier.Event{msg}, writeJasminACK(w)
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+	return writeJasminACK(w)
+}
+
+func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []courier.MsgStatus) error {
+	return writeJasminACK(w)
 }
 
 func writeJasminACK(w http.ResponseWriter) error {

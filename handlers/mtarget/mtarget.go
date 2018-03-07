@@ -148,11 +148,8 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 
 	// otherwise, create our incoming message and write that
 	msg := h.Backend().NewIncomingMsg(c, urn, text).WithReceivedOn(time.Now().UTC())
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+	// and finally write our message
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error

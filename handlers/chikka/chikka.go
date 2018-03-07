@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nyaruka/courier/utils"
+	"github.com/buger/jsonparser"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -77,16 +78,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 		// write our status
 		status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.MessageID), msgStatus)
-		err = h.Backend().WriteMsgStatus(ctx, status)
-		if err == courier.ErrMsgNotFound {
-			return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 	} else if messageType == "incoming" {
 		form := &moForm{}
@@ -105,13 +97,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		// build our msg
 		msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithExternalID(form.RequestID).WithReceivedOn(date)
 
-		// and finally queue our message
-		err = h.Backend().WriteMsg(ctx, msg)
-		if err != nil {
-			return nil, err
-		}
-
-		return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+		// and finally write our message
+		return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 	} else {
 		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "unknown message_type request")
 	}
@@ -143,14 +130,30 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"client_id":     []string{username},
 			"secret_key":    []string{password},
 		}
-		if !msg.ResponseToID().IsZero() {
+		if msg.ResponseToExternalID() != "" {
 			form["message_type"] = []string{"REPLY"}
-			form["request_id"] = []string{msg.ResponseToID().String()}
+			form["request_id"] = []string{msg.ResponseToExternalID()}
 		}
 
 		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		rr, err := utils.MakeHTTPRequest(req)
+
+		if rr.StatusCode == 400 {
+			message, _ := jsonparser.GetString([]byte(rr.Body), "message")
+			description, _ := jsonparser.GetString([]byte(rr.Body), "description")
+
+			if message == "BAD REQUEST" && description == "Invalid/Used Request ID" {
+				delete(form, "request_id")
+				form["message_type"] = []string{"SEND"}
+
+				req, _ = http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				rr, err = utils.MakeHTTPRequest(req)
+
+			}
+
+		}
 
 		// record our status and log
 		status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))

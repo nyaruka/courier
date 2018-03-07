@@ -196,7 +196,7 @@ var postback = `{
 	}]
 }`
 
-var postbackGetStarted = `{
+var postbackReferral = `{
 	"object":"page",
 	"entry": [{
 	  "id": "208685479508187",
@@ -209,6 +209,27 @@ var postbackGetStarted = `{
 			  "source": "postback source",
 			  "type": "postback type"
 			}
+		},
+		"recipient": {
+		  "id": "1234"
+		},
+		"sender": {
+		  "id": "5678"
+		},
+		"timestamp": 1459991487970
+	  }],
+	  "time": 1459991487970
+	}]
+}`
+
+var postbackGetStarted = `{
+	"object":"page",
+	"entry": [{
+	  "id": "208685479508187",
+	  "messaging": [{
+		"postback": {
+			"title": "postback title",  
+			"payload": "get_started"
 		},
 		"recipient": {
 		  "id": "1234"
@@ -315,11 +336,14 @@ var testCases = []ChannelHandleTestCase{
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		ChannelEvent: Sp(courier.Referral), ChannelEventExtra: map[string]interface{}{"referrer_id": "optin_ref"}},
 
-	{Label: "Receive Postback", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: postback, Status: 200, Response: "Handled",
+	{Label: "Receive Get Started", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: postbackGetStarted, Status: 200, Response: "Handled",
+		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.NewConversation),
+		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started"}},
+	{Label: "Receive Referral Postback", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: postback, Status: 200, Response: "Handled",
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
 		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"}},
-	{Label: "Receive Postback Get Started", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: postbackGetStarted, Status: 200, Response: "Handled",
-		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.NewConversation),
+	{Label: "Receive Referral", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: postbackReferral, Status: 200, Response: "Handled",
+		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
 		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"}},
 
 	{Label: "Receive Referral", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: referral, Status: 200, Response: "Handled",

@@ -261,21 +261,26 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			data = append(data, courier.NewEventReceiveData(event))
 
 		} else if msg.Postback != nil {
-			// this is a postback
-			eventType := courier.Referral
-			if msg.Postback.Payload == "get_started" {
-				eventType = courier.NewConversation
+			// by default postbacks are treated as new conversations, unless we have referral information
+			eventType := courier.NewConversation
+			if msg.Postback.Referral.Ref != "" {
+				eventType = courier.Referral
 			}
 			event := h.Backend().NewChannelEvent(channel, eventType, urn).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]interface{}{
-				titleKey:      msg.Postback.Title,
-				payloadKey:    msg.Postback.Payload,
-				referrerIDKey: msg.Postback.Referral.Ref,
-				sourceKey:     msg.Postback.Referral.Source,
-				typeKey:       msg.Postback.Referral.Type,
+				titleKey:   msg.Postback.Title,
+				payloadKey: msg.Postback.Payload,
 			}
+
+			// add in referral information if we have it
+			if eventType == courier.Referral {
+				extra[referrerIDKey] = msg.Postback.Referral.Ref
+				extra[sourceKey] = msg.Postback.Referral.Source
+				extra[typeKey] = msg.Postback.Referral.Type
+			}
+
 			event = event.WithExtra(extra)
 
 			err := h.Backend().WriteChannelEvent(ctx, event)
