@@ -70,7 +70,7 @@ func contactURNsForContact(db *sqlx.Tx, contactID ContactID) ([]*DBContactURN, e
 // that the passed in channel is the default one for that URN
 //
 // Note that the URN must be one of the contact's URN before calling this method
-func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact, urn urns.URN) error {
+func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact, urn urns.URN, auth string) error {
 	scheme := urn.Scheme()
 	contactURNs, err := contactURNsForContact(db, contact.ID_)
 	if err != nil {
@@ -87,10 +87,11 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 	if contactURNs[0].Identity == urn.Identity() {
 		display := utils.NullStringIfEmpty(urn.Display())
 
-		// if display or channel ids changed, update them
-		if contactURNs[0].Display != display || contactURNs[0].ChannelID != channelID {
+		// if display, channel id or auth changed, update them
+		if contactURNs[0].Display != display || contactURNs[0].ChannelID != channelID || contactURNs[0].Auth.String != auth {
 			contactURNs[0].Display = display
 			contactURNs[0].ChannelID = channelID
+			contactURNs[0].Auth = null.StringFrom(auth)
 			return updateContactURN(db, contactURNs[0])
 		}
 		return nil
