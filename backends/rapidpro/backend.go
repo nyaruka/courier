@@ -429,7 +429,10 @@ func (b *backend) Start() error {
 	// create our s3 client
 	s3Session, err := session.NewSession(&aws.Config{
 		Credentials: credentials.NewStaticCredentials(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, ""),
+		Endpoint:    aws.String(b.config.S3Endpoint),
 		Region:      aws.String(b.config.S3Region),
+		DisableSSL:       aws.Bool(b.config.S3DisableSSL),
+		S3ForcePathStyle: aws.Bool(b.config.S3ForcePathStyle),
 	})
 	if err != nil {
 		return err
