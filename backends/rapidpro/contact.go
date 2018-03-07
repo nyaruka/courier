@@ -77,7 +77,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 			return nil, err
 		}
 
-		err = setDefaultURN(tx, channel.ID(), contact, urn)
+		err = setDefaultURN(tx, channel.ID(), contact, urn, auth)
 		if err != nil {
 			logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
 			tx.Rollback()

@@ -109,7 +109,8 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba", 
 		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f", 
 		"next_attempt": "2017-07-21T19:22:23.254182Z", 
-		"urn": "telegram:3527065", 
+		"urn": "telegram:3527065",
+		"urn_auth": "5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2",
 		"org_id": 1, 
 		"created_on": "2017-07-21T19:22:23.242757Z", 
 		"sent_on": null, 
@@ -127,6 +128,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal(msg.ChannelUUID_.String(), "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba")
 	ts.Equal(msg.ChannelID_, courier.NewChannelID(11))
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
+	ts.Equal(msg.URNAuth_, "5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2")
 	ts.Equal(msg.ExternalID(), "")
 	ts.Equal([]string{"Yes", "No"}, msg.QuickReplies())
 	ts.Equal(courier.NewMsgID(15), msg.ResponseToID())
@@ -236,6 +238,13 @@ func (ts *BackendTestSuite) TestContactURN() {
 
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
+
+	contact, err = contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, urn, "chestnut", "")
+	ts.NoError(err)
+
+	contactURNs, err := contactURNsForContact(tx, contact.ID_)
+	ts.NoError(err)
+	ts.Equal("chestnut", contactURNs[0].Auth.String)
 
 	// first build a URN for our number with the kannel channel
 	knURN, err := contactURNForURN(tx, knChannel.OrgID_, knChannel.ID_, contact.ID_, urn, "sesame")
