@@ -235,6 +235,13 @@ func (ts *BackendTestSuite) TestContactURN() {
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
 
+	contact, err = contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, urn, "chestnut", "")
+	ts.NoError(err)
+
+	contactURNs, err := contactURNsForContact(tx, contact.ID_)
+	ts.NoError(err)
+	ts.Equal("chestnut", contactURNs[0].Auth.String)
+
 	// first build a URN for our number with the kannel channel
 	knURN, err := contactURNForURN(tx, knChannel.OrgID_, knChannel.ID_, contact.ID_, urn, "sesame")
 	ts.NoError(err)
