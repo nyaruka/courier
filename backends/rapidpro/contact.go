@@ -83,6 +83,8 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 			tx.Rollback()
 			return nil, err
 		}
+		// update urn auth if necessary
+		contactURNForURN(tx, org, channel.ID(), contact.ID_, urn, auth)
 		return contact, tx.Commit()
 	}
 
