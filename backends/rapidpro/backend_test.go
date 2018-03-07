@@ -103,14 +103,15 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"queued_on": null, 
 		"text": "Test message 21", 
 		"contact_id": 30, 
-		"contact_urn_id": 14, 
+		"contact_urn_id": 14,
 		"error_count": 0, 
 		"modified_on": "2017-07-21T19:22:23.254133Z", 
 		"id": 204,
 		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba", 
 		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f", 
 		"next_attempt": "2017-07-21T19:22:23.254182Z", 
-		"urn": "telegram:3527065", 
+		"urn": "telegram:3527065",
+		"contact_urn_auth": "5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2",
 		"org_id": 1, 
 		"created_on": "2017-07-21T19:22:23.242757Z", 
 		"sent_on": null, 
@@ -126,6 +127,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.NoError(err)
 	ts.Equal(msg.ChannelUUID_.String(), "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba")
 	ts.Equal(msg.ChannelID_, courier.NewChannelID(11))
+	ts.Equal(msg.URNAuth_, "5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2")
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	ts.Equal(msg.ExternalID(), "")
 	ts.Equal([]string{"Yes", "No"}, msg.QuickReplies())
