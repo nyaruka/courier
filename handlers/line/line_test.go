@@ -45,6 +45,38 @@ var receiveValidMessage = `
 	}]
 }`
 
+var invalidURN = `
+{
+	"events": [{
+		"replyToken": "abcdefghij",
+		"type": "message",
+		"timestamp": 1459991487970,
+		"source": {
+			"type": "user",
+			"userId": "uabc!!$$defghij"
+		},
+		"message": {
+			"id": "100001",
+			"type": "text",
+			"text": "Hello, world"
+		}
+	}, {
+		"replyToken": "abcdefghijklm",
+		"type": "message",
+		"timestamp": 1459991487970,
+		"source": {
+			"type": "user",
+			"userId": "uabc!!$$defghij"
+		},
+		"message": {
+			"id": "100002",
+			"type": "sticker",
+			"packageId": "1",
+			"stickerId": "1"
+		}
+	}]
+}`
+
 var receiveValidMessageLast = `
 {
 	"events": [{
@@ -103,6 +135,7 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessageLast, Status: 200, Response: "Accepted",
 		Text: Sp("Last event"), URN: Sp("line:uabcdefghij"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
 	{Label: "Missing message", URL: receiveURL, Data: missingMessage, Status: 200, Response: "ignoring request, no message"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "invalid line id"},
 	{Label: "No event request", URL: receiveURL, Data: noEvent, Status: 200, Response: "ignoring request, no message"},
 }
 

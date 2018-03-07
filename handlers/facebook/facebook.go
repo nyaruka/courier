@@ -226,8 +226,10 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		date := time.Unix(0, msg.Timestamp*1000000).UTC()
 
 		// create our URN
-		urn := urns.NewURNFromParts(urns.FacebookScheme, msg.Sender.ID, "")
-
+		urn, err := urns.NewURNFromParts(urns.FacebookScheme, msg.Sender.ID, "")
+		if err != nil {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		}
 		if msg.OptIn != nil {
 			// this is an opt in, if we have a user_ref, use that as our URN (this is a checkbox plugin)
 			// TODO:
@@ -236,7 +238,10 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			//    Right now that we even support this isn't documented and I don't think anybody uses it, so leaving that out.
 			//    (things will still work, we just will have dupe contacts, one with user_ref for the first contact, then with the real id when they reply)
 			if msg.OptIn.UserRef != "" {
-				urn = urns.NewURNFromParts(urns.FacebookScheme, urns.FacebookRefPrefix+msg.OptIn.UserRef, "")
+				urn, err = urns.NewURNFromParts(urns.FacebookScheme, urns.FacebookRefPrefix+msg.OptIn.UserRef, "")
+				if err != nil {
+					return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+				}
 			}
 
 			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn).WithOccurredOn(date)
@@ -256,21 +261,26 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			data = append(data, courier.NewEventReceiveData(event))
 
 		} else if msg.Postback != nil {
-			// this is a postback
-			eventType := courier.Referral
-			if msg.Postback.Payload == "get_started" {
-				eventType = courier.NewConversation
+			// by default postbacks are treated as new conversations, unless we have referral information
+			eventType := courier.NewConversation
+			if msg.Postback.Referral.Ref != "" {
+				eventType = courier.Referral
 			}
 			event := h.Backend().NewChannelEvent(channel, eventType, urn).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]interface{}{
-				titleKey:      msg.Postback.Title,
-				payloadKey:    msg.Postback.Payload,
-				referrerIDKey: msg.Postback.Referral.Ref,
-				sourceKey:     msg.Postback.Referral.Source,
-				typeKey:       msg.Postback.Referral.Type,
+				titleKey:   msg.Postback.Title,
+				payloadKey: msg.Postback.Payload,
 			}
+
+			// add in referral information if we have it
+			if eventType == courier.Referral {
+				extra[referrerIDKey] = msg.Postback.Referral.Ref
+				extra[sourceKey] = msg.Postback.Referral.Source
+				extra[typeKey] = msg.Postback.Referral.Type
+			}
+
 			event = event.WithExtra(extra)
 
 			err := h.Backend().WriteChannelEvent(ctx, event)

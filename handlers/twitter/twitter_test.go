@@ -53,6 +53,72 @@ var helloMsg = `{
 	}
 }`
 
+var invalidTwitterHandle = `{
+	"direct_message_events": [
+			{
+					"type": "message_create",
+					"id": "958501034212564996",
+					"created_timestamp": "1517359429301",
+					"message_create": {
+							"target": {
+									"recipient_id": "835740314006511618"
+							},
+							"sender_id": "272953809",
+							"message_data": {
+									"text": "Hello World"
+							}
+					}
+			}
+	],
+	"users": {
+			"272953809": {
+					"id": "272953809",
+					"created_timestamp": "1301236201000",
+					"name": "Nicolas Pottier",
+					"screen_name": "nicpottier!!$"
+			},
+			"835740314006511618": {
+					"id": "835740314006511618",
+					"created_timestamp": "1488090992969",
+					"name": "Resistbot",
+					"screen_name": "resistbot"
+			}
+	}
+}`
+
+var invalidTwitterID = `{
+	"direct_message_events": [
+			{
+					"type": "message_create",
+					"id": "958501034212564996",
+					"created_timestamp": "1517359429301",
+					"message_create": {
+							"target": {
+									"recipient_id": "835740314006511618"
+							},
+							"sender_id": "272953qwe809",
+							"message_data": {
+									"text": "Hello World"
+							}
+					}
+			}
+	],
+	"users": {
+			"272953qwe809": {
+					"id": "272953qwe809",
+					"created_timestamp": "1301236201000",
+					"name": "Nicolas Pottier",
+					"screen_name": "nicpottier"
+			},
+			"835740314006511618": {
+					"id": "835740314006511618",
+					"created_timestamp": "1488090992969",
+					"name": "Resistbot",
+					"screen_name": "resistbot"
+			}
+	}
+}`
+
 var attachment = `{
 	"direct_message_events": [
 			{
@@ -101,6 +167,8 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Attachment", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: attachment, Status: 200, Response: "Accepted",
 		Text: Sp("Hello"), Attachments: []string{"https://image.foo.com/image.jpg"}, URN: Sp("twitterid:272953809#nicpottier"), ExternalID: Sp("958501034212564996"), Date: Tp(time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC))},
 	{Label: "Not JSON", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: notJSON, Status: 400, Response: "Error"},
+	{Label: "Invalid Twitter handle", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTwitterHandle, Status: 400, Response: "invalid twitter handle"},
+	{Label: "Invalid Twitter ID", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTwitterID, Status: 400, Response: "invalid twitter id"},
 
 	{Label: "Webhook Verification", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?crc_token=test+token", Status: 200, Response: "sha256=O5hJl2njQRIa4vsumZ+3oom9ECR5m3aQLRZkPoYelp0="},
 	{Label: "Webhook Verification Error", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Status: 400, Response: "missing required 'crc_token'"},

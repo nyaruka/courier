@@ -8,7 +8,6 @@ import (
 	"github.com/evalphobia/logrus_sentry"
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/config"
 	"github.com/sirupsen/logrus"
 
 	// load channel handler packages
@@ -56,12 +55,7 @@ import (
 var version = "Dev"
 
 func main() {
-	m := config.NewWithPath("courier.toml")
-	config := &config.Courier{}
-	err := m.Load(config)
-	if err != nil {
-		logrus.Fatalf("Error loading configuration: %s", err)
-	}
+	config := courier.LoadConfig("courier.toml")
 
 	// if we have a custom version, use it
 	if version != "Dev" {

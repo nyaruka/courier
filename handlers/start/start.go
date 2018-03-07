@@ -71,7 +71,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(payload.From, channel.Country())
+	urn, err := urns.NewTelURNForCountry(payload.From, channel.Country())
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
@@ -87,17 +87,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body.Text).WithReceivedOn(date)
 
 	// and write it
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{msg}, h.writeReceiveSuccess(ctx, w, r, msg)
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 // Start Mobile expects a XML response from a message receive request
-func (h *handler) writeReceiveSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, msg courier.Msg) error {
-	courier.LogMsgReceived(r, msg)
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, `<answer type="async"><state>Accepted</state></answer>`)

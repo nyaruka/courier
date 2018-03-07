@@ -50,6 +50,7 @@ type eventPayload struct {
 	Event        string `json:"event"         validate:"required"`
 	Timestamp    int64  `json:"timestamp"     validate:"required"`
 	MessageToken int64  `json:"message_token" validate:"required"`
+	UserID       string `json:"user_id"`
 	Sender       struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
@@ -100,12 +101,15 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		ContactName := payload.User.Name
 
 		// build the URN
-		urn := urns.NewURNFromParts(urns.ViberScheme, viberID, "")
+		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "")
+		if err != nil {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		}
 
 		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn).WithContactName(ContactName)
 
-		err := h.Backend().WriteChannelEvent(ctx, channelEvent)
+		err = h.Backend().WriteChannelEvent(ctx, channelEvent)
 		if err != nil {
 			return nil, err
 		}
@@ -113,15 +117,17 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
 
 	case "unsubscribed":
-		viberID := payload.User.ID
+		viberID := payload.UserID
 
 		// build the URN
-		urn := urns.NewURNFromParts(urns.ViberScheme, viberID, "")
-
+		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "")
+		if err != nil {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		}
 		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
 
-		err := h.Backend().WriteChannelEvent(ctx, channelEvent)
+		err = h.Backend().WriteChannelEvent(ctx, channelEvent)
 		if err != nil {
 			return nil, err
 		}
@@ -130,31 +136,13 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 	case "failed":
 		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, string(payload.MessageToken), courier.MsgFailed)
-
-		err = h.Backend().WriteMsgStatus(ctx, msgStatus)
-		if err == courier.ErrMsgNotFound {
-			return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		return nil, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{msgStatus})
+		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "delivered":
 		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), courier.MsgDelivered)
 
 		err = h.Backend().WriteMsgStatus(ctx, msgStatus)
-		if err == courier.ErrMsgNotFound {
-			return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		return nil, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{msgStatus})
+		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "message":
 		sender := payload.Sender.ID
@@ -165,7 +153,11 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		contactName := payload.Sender.Name
 
 		// create our URN
-		urn := urns.NewURNFromParts(urns.ViberScheme, sender, "")
+		urn, err := urns.NewURNFromParts(urns.ViberScheme, sender, "")
+		if err != nil {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		}
+
 		text := payload.Message.Text
 		mediaURL := ""
 
@@ -204,14 +196,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)
 		}
-
-		// and finally queue our message
-		err = h.Backend().WriteMsg(ctx, msg)
-		if err != nil {
-			return nil, err
-		}
-
-		return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+		// and finally write our message
+		return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 	}
 
 	return nil, courier.WriteError(ctx, w, r, fmt.Errorf("not handled, unknown event: %s", event))

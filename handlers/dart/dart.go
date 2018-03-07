@@ -72,18 +72,16 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(form.Original, channel.Country())
+	urn, err := urns.NewTelURNForCountry(form.Original, channel.Country())
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+	}
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message)
 
 	// and finally queue our message
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{msg}, h.writeReceiveSuccess(ctx, w, r, msg)
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 type statusForm struct {
@@ -124,23 +122,18 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 
 	// write our status
 	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus)
-	err = h.Backend().WriteMsgStatus(ctx, status)
-	if err != nil && err != courier.ErrMsgNotFound {
-		return nil, err
-	}
-
-	return []courier.Event{status}, h.writeStatusSuccess(ctx, w, r, status)
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // DartMedia expects "000" from a message receive request
-func (h *handler) writeReceiveSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, msg courier.Msg) error {
+func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []courier.MsgStatus) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "000")
 	return err
 }
 
 // DartMedia expects "000" from a status request
-func (h *handler) writeStatusSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, status courier.MsgStatus) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "000")
 	return err

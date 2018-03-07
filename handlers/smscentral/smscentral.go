@@ -58,19 +58,15 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(form.Mobile, channel.Country())
+	urn, err := urns.NewTelURNForCountry(form.Mobile, channel.Country())
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+	}
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message)
-
-	// and finally queue our message
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
-
+	// and finally write our message
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error

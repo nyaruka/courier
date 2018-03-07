@@ -18,7 +18,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
@@ -42,8 +41,8 @@ func (m *mockS3Client) HeadBucket(*s3.HeadBucketInput) (*s3.HeadBucketOutput, er
 	return nil, nil
 }
 
-func testConfig() *config.Courier {
-	config := config.NewTest()
+func testConfig() *courier.Config {
+	config := courier.NewConfig()
 	config.DB = "postgres://courier@localhost/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
 	return config
@@ -110,13 +109,15 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba", 
 		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f", 
 		"next_attempt": "2017-07-21T19:22:23.254182Z", 
-		"urn": "telegram:3527065", 
+		"urn": "telegram:3527065",
+		"urn_auth": "5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2",
 		"org_id": 1, 
 		"created_on": "2017-07-21T19:22:23.242757Z", 
 		"sent_on": null, 
 		"high_priority": true,
 		"channel_id": 11, 
 		"response_to_id": 15, 
+		"response_to_external_id": "external-id",
 		"external_id": null,
 		"metadata": {"quick_replies": ["Yes", "No"]}
 	}`
@@ -127,9 +128,11 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal(msg.ChannelUUID_.String(), "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba")
 	ts.Equal(msg.ChannelID_, courier.NewChannelID(11))
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
+	ts.Equal(msg.URNAuth_, "5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2")
 	ts.Equal(msg.ExternalID(), "")
 	ts.Equal([]string{"Yes", "No"}, msg.QuickReplies())
 	ts.Equal(courier.NewMsgID(15), msg.ResponseToID())
+	ts.Equal("external-id", msg.ResponseToExternalID())
 	ts.True(msg.HighPriority())
 
 	msgJSONNoQR := `{
@@ -153,6 +156,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"high_priority": true,
 		"channel_id": 11, 
 		"response_to_id": null, 
+		"response_to_external_id": "",
 		"external_id": null,
 		"metadata": null
 	}`
@@ -162,6 +166,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.NoError(err)
 	ts.Equal([]string{}, msg.QuickReplies())
 	ts.Equal(courier.NilMsgID, msg.ResponseToID())
+	ts.Equal("", msg.ResponseToExternalID())
 }
 
 func (ts *BackendTestSuite) TestCheckMsgExists() {
@@ -187,7 +192,7 @@ func (ts *BackendTestSuite) TestCheckMsgExists() {
 
 func (ts *BackendTestSuite) TestContact() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	urn := urns.NewTelURNForCountry("12065551518", "US")
+	urn, _ := urns.NewTelURNForCountry("12065551518", "US")
 
 	ctx := context.Background()
 	now := time.Now()
@@ -212,7 +217,8 @@ func (ts *BackendTestSuite) TestContact() {
 	ts.True(contact2.CreatedOn_.Before(now2))
 
 	// load a contact by URN instead (this one is in our testdata)
-	contact, err = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urns.NewTelURNForCountry("+12067799192", "US"), "", "")
+	cURN, _ := urns.NewTelURNForCountry("+12067799192", "US")
+	contact, err = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, cURN, "", "")
 	ts.NoError(err)
 	ts.NotNil(contact)
 
@@ -223,7 +229,7 @@ func (ts *BackendTestSuite) TestContact() {
 func (ts *BackendTestSuite) TestContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
-	urn := urns.NewTelURNForCountry("12065551515", "US")
+	urn, _ := urns.NewTelURNForCountry("12065551515", "US")
 
 	ctx := context.Background()
 
@@ -233,7 +239,14 @@ func (ts *BackendTestSuite) TestContactURN() {
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
 
-	// first build a URN for our number with the kannel channel
+	contact, err = contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, urn, "chestnut", "")
+	ts.NoError(err)
+
+	contactURNs, err := contactURNsForContact(tx, contact.ID_)
+	ts.NoError(err)
+	ts.Equal("chestnut", contactURNs[0].Auth.String)
+
+	// now build a URN for our number with the kannel channel
 	knURN, err := contactURNForURN(tx, knChannel.OrgID_, knChannel.ID_, contact.ID_, urn, "sesame")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
@@ -271,12 +284,12 @@ func (ts *BackendTestSuite) TestContactURN() {
 
 	// test that we don't use display when looking up URNs
 	tgChannel := ts.getChannel("TG", "dbc126ed-66bc-4e28-b67b-81dc3327c98a")
-	tgURN := urns.NewTelegramURN(12345, "")
+	tgURN, _ := urns.NewTelegramURN(12345, "")
 
 	tgContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURN, "", "")
 	ts.NoError(err)
 
-	tgURNDisplay := urns.NewTelegramURN(12345, "Jane")
+	tgURNDisplay, _ := urns.NewTelegramURN(12345, "Jane")
 	displayContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURNDisplay, "", "")
 
 	ts.Equal(tgContact.URNID_, displayContact.URNID_)
@@ -289,10 +302,10 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(tgContact.URNID_, tgContactURN.ID)
-	ts.Equal("jane", tgContactURN.Display.String)
+	ts.Equal("Jane", tgContactURN.Display.String)
 
 	// try to create two contacts at the same time in goroutines, this tests our transaction rollbacks
-	urn2 := urns.NewTelURNForCountry("12065551616", "US")
+	urn2, _ := urns.NewTelURNForCountry("12065551616", "US")
 	var wait sync.WaitGroup
 	var contact2, contact3 *DBContact
 	wait.Add(2)
@@ -318,8 +331,8 @@ func (ts *BackendTestSuite) TestContactURN() {
 func (ts *BackendTestSuite) TestContactURNPriority() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
-	knURN := urns.NewTelURNForCountry("12065551111", "US")
-	twURN := urns.NewTelURNForCountry("12065552222", "US")
+	knURN, _ := urns.NewTelURNForCountry("12065551111", "US")
+	twURN, _ := urns.NewTelURNForCountry("12065552222", "US")
 
 	ctx := context.Background()
 
@@ -586,7 +599,7 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 	}))
 
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	urn := urns.NewTelURNForCountry("12065551215", knChannel.Country())
+	urn, _ := urns.NewTelURNForCountry("12065551215", knChannel.Country())
 	msg := ts.b.NewIncomingMsg(knChannel, urn, "invalid attachment").(*DBMsg)
 	msg.WithAttachment(testServer.URL)
 
@@ -643,7 +656,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	now := time.Now().Round(time.Microsecond).In(time.UTC)
 
 	// create a new courier msg
-	urn := urns.NewTelURNForCountry("12065551212", knChannel.Country())
+	urn, _ := urns.NewTelURNForCountry("12065551212", knChannel.Country())
 	msg := ts.b.NewIncomingMsg(knChannel, urn, "test123").WithExternalID("ext123").WithReceivedOn(now).WithContactName("test contact").(*DBMsg)
 
 	// try to write it to our db
@@ -721,7 +734,7 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	ctx := context.Background()
 
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	urn := urns.NewTelURNForCountry("12065551616", channel.Country())
+	urn, _ := urns.NewTelURNForCountry("12065551616", channel.Country())
 	event := ts.b.NewChannelEvent(channel, courier.Referral, urn).WithExtra(map[string]interface{}{"ref_id": "12345"}).WithContactName("kermit frog")
 	err := ts.b.WriteChannelEvent(ctx, event)
 	ts.NoError(err)
@@ -744,12 +757,12 @@ func TestMsgSuite(t *testing.T) {
 }
 
 var invalidConfigTestCases = []struct {
-	config        config.Courier
+	config        courier.Config
 	expectedError string
 }{
-	{config: config.Courier{DB: ":foo"}, expectedError: "unable to parse DB URL"},
-	{config: config.Courier{DB: "mysql:test"}, expectedError: "only postgres is supported"},
-	{config: config.Courier{DB: "postgres://courier@localhost/courier", Redis: ":foo"}, expectedError: "unable to parse Redis URL"},
+	{config: courier.Config{DB: ":foo"}, expectedError: "unable to parse DB URL"},
+	{config: courier.Config{DB: "mysql:test"}, expectedError: "only postgres is supported"},
+	{config: courier.Config{DB: "postgres://courier@localhost/courier", Redis: ":foo"}, expectedError: "unable to parse Redis URL"},
 }
 
 func (ts *ServerTestSuite) TestInvalidConfigs() {

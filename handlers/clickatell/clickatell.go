@@ -89,15 +89,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 
 	// write our status
 	status := h.Backend().NewMsgStatusForExternalID(channel, payload.MessageID, msgStatus)
-	err = h.Backend().WriteMsgStatus(ctx, status)
-	if err == courier.ErrMsgNotFound {
-		return []courier.Event{}, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 type moPayload struct {
@@ -149,18 +141,15 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(payload.FromNumber, channel.Country())
-
+	urn, err := urns.NewTelURNForCountry(payload.FromNumber, channel.Country())
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+	}
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text)).WithReceivedOn(date.UTC()).WithExternalID(payload.MessageID)
 
-	// and write it
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+	// and finally write our message
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 // utility method to decode crazy clickatell 16 bit format

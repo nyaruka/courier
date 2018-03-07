@@ -2,12 +2,6 @@
 
 
 [[projects]]
-  name = "github.com/BurntSushi/toml"
-  packages = ["."]
-  revision = "b26d9c308763d68093482582cea63d69be07a0f0"
-  version = "v0.3.0"
-
-[[projects]]
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -71,12 +65,6 @@
   version = "v0.4.2"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/fatih/camelcase"
-  packages = ["."]
-  revision = "44e46d280b43ec1531bb25252440e34f1b800b65"
-
-[[projects]]
   name = "github.com/fatih/structs"
   packages = ["."]
   revision = "a720dfa8df582c51dee1b36feabb906bde1588bd"
@@ -107,10 +95,10 @@
   revision = "e223a795a06a5598451cf022558c17c779f5a7ab"
 
 [[projects]]
+  branch = "master"
   name = "github.com/go-errors/errors"
   packages = ["."]
-  revision = "3afebba5a48dbc89b574d890b6b34d9ee10b4785"
-  version = "v1.0.0"
+  revision = "a6af135bd4e28680facf08a3d206b454abc877a4"
 
 [[projects]]
   name = "github.com/go-ini/ini"
@@ -161,12 +149,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/koding/multiconfig"
-  packages = ["."]
-  revision = "69c27309b2d751c576b59ea9c3726597c2375da3"
-
-[[projects]]
-  branch = "master"
   name = "github.com/lib/pq"
   packages = [
     ".",
@@ -175,10 +157,31 @@
   revision = "19c8e9ad00952ce0c64489b60e8df88bb16dd514"
 
 [[projects]]
+  name = "github.com/naoina/go-stringutil"
+  packages = ["."]
+  revision = "6b638e95a32d0c1131db0e7fe83775cbea4a0d0b"
+  version = "v0.1.0"
+
+[[projects]]
+  name = "github.com/naoina/toml"
+  packages = [
+    ".",
+    "ast"
+  ]
+  revision = "e6f5723bf2a66af014955e0888881314cf294129"
+  version = "v0.1.1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/nyaruka/ezconf"
+  packages = ["."]
+  revision = "aff9caa6eeeca798912872d5a75fa76eb79d154a"
+
+[[projects]]
   branch = "master"
   name = "github.com/nyaruka/gocommon"
   packages = ["urns"]
-  revision = "c3bea84b51d08816f35dca4b44f8fa3286f6e477"
+  revision = "d5464b95212020325f3d3ec985f3fc63a972f783"
 
 [[projects]]
   name = "github.com/nyaruka/phonenumbers"
@@ -263,15 +266,9 @@
   revision = "cc14fdc9ca0e4c2bafad7458f6ff79fd3947cfbb"
   version = "v1.0.5"
 
-[[projects]]
-  branch = "v2"
-  name = "gopkg.in/yaml.v2"
-  packages = ["."]
-  revision = "d670f9405373e636a5a2765eea47fac0c9bc91a4"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0adacba4e4719b96547b89013ad87c004c1f543ffdbc4593f6e6b2b2a0f1a29d"
+  inputs-digest = "82036ef04d86dc5ffbae2ef639189b2bced3a514713aab8db01bc213abfe480f"
   solver-name = "gps-cdcl"
   solver-version = 1

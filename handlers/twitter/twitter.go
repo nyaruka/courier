@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -172,7 +173,10 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("unable to find user for id: %s", senderID))
 		}
 
-		urn := urns.NewURNFromParts(urns.TwitterIDScheme, user.ID, user.ScreenName)
+		urn, err := urns.NewURNFromParts(urns.TwitterIDScheme, user.ID, strings.ToLower(user.ScreenName))
+		if err != nil {
+			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		}
 
 		// create our date from the timestamp (they give us millis, arg is nanos)
 		ts, err := strconv.ParseInt(entry.CreatedTimestamp, 10, 64)

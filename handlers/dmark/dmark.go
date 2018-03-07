@@ -66,18 +66,16 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(form.MSISDN, channel.Country())
+	urn, err := urns.NewTelURNForCountry(form.MSISDN, channel.Country())
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+	}
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithReceivedOn(date)
 
-	// and finally queue our message
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+	// and finally write our message
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 type statusForm struct {
@@ -109,12 +107,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 
 	// write our status
 	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus)
-	err = h.Backend().WriteMsgStatus(ctx, status)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error

@@ -25,6 +25,15 @@ var (
 		"received_at": "2016-03-30T19:33:06.643Z"
 	}`
 
+	invalidURN = `{
+		"id": "OzQ5UqIOdoY8",
+		"from": "MTN",
+		"to": "18444651185",
+		"body": "Hello World",
+		"type": "mo_text",
+		"received_at": "2016-03-30T19:33:06.643Z"
+	}`
+
 	missingParamsRecieve = `{
 		"id": "OzQ5UqIOdoY8",
 		"to": "18444651185",
@@ -55,7 +64,9 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
 		Text: Sp("Hello World"), URN: Sp("tel:+12067799294"), Date: Tp(time.Date(2016, 3, 30, 19, 33, 06, 643000000, time.UTC)),
 		ExternalID: Sp("OzQ5UqIOdoY8")},
-	{Label: "Receive Valid", URL: receiveURL, Data: missingParamsRecieve, Status: 400, Response: "missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"},
+
+	{Label: "Receive Missing Params", URL: receiveURL, Data: missingParamsRecieve, Status: 400, Response: "missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied was empty"},
 
 	{Label: "Status Valid", URL: receiveURL, Data: validStatus, Status: 200, Response: `"status":"D"`},
 	{Label: "Status Unknown", URL: receiveURL, Data: unknownStatus, Status: 400, Response: `unknown status 'INVALID'`},

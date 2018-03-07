@@ -53,7 +53,10 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(from, c.Country())
+	urn, err := urns.NewTelURNForCountry(from, c.Country())
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+	}
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(c, urn, body).WithReceivedOn(time.Now().UTC())

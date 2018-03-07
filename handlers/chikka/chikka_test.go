@@ -16,6 +16,7 @@ var testChannels = []courier.Channel{
 var (
 	receiveURL           = "/c/ck/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 	validReceive         = "message_type=incoming&mobile_number=639178020779&request_id=4004&message=Hello+World&timestamp=1457670059.69"
+	invalidURN           = "message_type=incoming&mobile_number=MTN&request_id=4004&message=Hello+World&timestamp=1457670059.69"
 	missingParamsReceive = "message_type=incoming&message=Hello+World&timestamp=1457670059.69"
 
 	validSentStatus     = "message_type=outgoing&message_id=10&status=SENT"
@@ -29,6 +30,7 @@ var testCases = []ChannelHandleTestCase{
 		Text: Sp("Hello World"), URN: Sp("tel:+639178020779"), ExternalID: Sp("4004"),
 		Date: Tp(time.Date(2016, 03, 11, 04, 20, 59, 690000128, time.UTC))},
 
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied was empty"},
 	{Label: "Receive Mising Params", URL: receiveURL, Data: missingParamsReceive, Status: 400, Response: "Field validation for 'RequestID' failed"},
 	{Label: "Ignore Invalid message_type", URL: receiveURL, Data: "message_type=invalid", Status: 200, Response: "unknown message_type request"},
 	{Label: "Status Sent Valid", URL: receiveURL, Data: validSentStatus, Status: 200, Response: `"status":"S"`},
@@ -68,13 +70,31 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep: setSendURL},
 	{Label: "Plain Reply",
 		Text: "Simple Message", URN: "tel:+63911231234",
-		Status:       "W",
-		ResponseToID: 5,
-		ResponseBody: "Success", ResponseStatus: 200,
+		Status:               "W",
+		ResponseToID:         5,
+		ResponseToExternalID: "external-id",
+		ResponseBody:         "Success", ResponseStatus: 200,
 		PostParams: map[string]string{
 			"message":       "Simple Message",
 			"message_type":  "REPLY",
-			"request_id":    "5",
+			"request_id":    "external-id",
+			"mobile_number": "63911231234",
+			"shortcode":     "2020",
+			"request_cost":  "FREE",
+			"client_id":     "Username",
+			"secret_key":    "Password",
+			"message_id":    "10",
+		},
+		SendPrep: setSendURL},
+	{Label: "Failed Reply use Send",
+		Text: "Simple Message", URN: "tel:+63911231234",
+		ResponseToID:         5,
+		ResponseToExternalID: "external-id",
+		ResponseBody:         `{"status":400,"message":"BAD REQUEST","description":"Invalid\\/Used Request ID"}`,
+		ResponseStatus:       400,
+		PostParams: map[string]string{
+			"message":       "Simple Message",
+			"message_type":  "SEND",
 			"mobile_number": "63911231234",
 			"shortcode":     "2020",
 			"request_cost":  "FREE",

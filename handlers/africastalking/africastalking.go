@@ -56,29 +56,26 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	// create our date from the timestamp
 	// 2017-05-03T06:04:45Z
 	date, err := time.Parse("2006-01-02T15:04:05Z", form.Date)
 	if err != nil {
-		return nil, fmt.Errorf("invalid date format: %s", form.Date)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid date format: %s", form.Date))
 	}
 
 	// create our URN
-	urn := urns.NewTelURNForCountry(form.From, channel.Country())
-
+	urn, err := urns.NewTelURNForCountry(form.From, channel.Country())
+	if err != nil {
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+	}
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithExternalID(form.ID).WithReceivedOn(date)
 
-	// and finally queue our message
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+	// and finally write our message
+	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
 
 type statusForm struct {
@@ -100,22 +97,18 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return nil, fmt.Errorf("unknown status '%s', must be one of 'Success','Sent','Buffered','Rejected' or 'Failed'", form.Status)
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel,
+			fmt.Errorf("unknown status '%s', must be one of 'Success','Sent','Buffered','Rejected' or 'Failed'", form.Status))
 	}
 
 	// write our status
 	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus)
-	err = h.Backend().WriteMsgStatus(ctx, status)
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error

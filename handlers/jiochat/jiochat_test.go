@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
@@ -38,6 +37,16 @@ var (
 	{
 		"ToUsername": "12121212121212",
 		"FromUserName": "1234",
+		"CreateTime": 1518774424438,
+		"MsgType": "text",
+		"MsgId": "123456",
+		"Content": "Simple Message"
+	}`
+
+	invalidURN = `
+	{
+		"ToUsername": "1212121221212",
+		"FromUserName": "1234abc",
 		"CreateTime": 1518774424438,
 		"MsgType": "text",
 		"MsgId": "123456",
@@ -140,6 +149,7 @@ var testCases = []ChannelHandleTestCase{
 		Text: Sp("Simple Message"), URN: Sp("jiochat:1234"), ExternalID: Sp("123456"),
 		Date: Tp(time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC))},
 
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "invalid jiochat id"},
 	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, Status: 400, Response: "Error:Field validation"},
 	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, Status: 400, Response: "missing parameters, must have either 'MsgId' or 'Event'"},
 
@@ -238,7 +248,7 @@ func newServer(backend courier.Backend) courier.Server {
 	logger := logrus.New()
 	logger.Out = ioutil.Discard
 	logrus.SetOutput(ioutil.Discard)
-	config := config.NewTest()
+	config := courier.NewConfig()
 	config.DB = "postgres://courier@localhost/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
 	return courier.NewServerWithLogger(config, backend, logger)

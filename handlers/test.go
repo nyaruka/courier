@@ -14,7 +14,6 @@ import (
 
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
@@ -59,13 +58,14 @@ type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, courier.Channel
 type ChannelSendTestCase struct {
 	Label string
 
-	Text         string
-	URN          string
-	URNAuth      string
-	Attachments  []string
-	QuickReplies []string
-	HighPriority bool
-	ResponseToID int64
+	Text                 string
+	URN                  string
+	URNAuth              string
+	Attachments          []string
+	QuickReplies         []string
+	HighPriority         bool
+	ResponseToID         int64
+	ResponseToExternalID string
 
 	ResponseStatus int
 	ResponseBody   string
@@ -156,7 +156,7 @@ func newServer(backend courier.Backend) courier.Server {
 	logger.Out = ioutil.Discard
 	logrus.SetOutput(ioutil.Discard)
 
-	return courier.NewServerWithLogger(config.NewTest(), backend, logger)
+	return courier.NewServerWithLogger(courier.NewConfig(), backend, logger)
 }
 
 // RunChannelSendTestCases runs all the passed in test cases against the channel
@@ -173,7 +173,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 		t.Run(testCase.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(testCase.URN), testCase.Text, testCase.HighPriority, testCase.QuickReplies, testCase.ResponseToID)
+			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(testCase.URN), testCase.Text, testCase.HighPriority, testCase.QuickReplies, testCase.ResponseToID, testCase.ResponseToExternalID)
 
 			for _, a := range testCase.Attachments {
 				msg.WithAttachment(a)
