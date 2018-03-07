@@ -90,7 +90,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text: "Simple Message", URN: "tel:+63911231234",
 		ResponseToID:         5,
 		ResponseToExternalID: "external-id",
-		ResponseBody:         `{"status":400,"message":"BAD REQUEST","description":"Invalid/Used Request ID"}`,
+		ResponseBody:         `{"status":400,"message":"BAD REQUEST","description":"Invalid\\/Used Request ID"}`,
 		ResponseStatus:       400,
 		PostParams: map[string]string{
 			"message":       "Simple Message",

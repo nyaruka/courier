@@ -143,7 +143,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			message, _ := jsonparser.GetString([]byte(rr.Body), "message")
 			description, _ := jsonparser.GetString([]byte(rr.Body), "description")
 
-			if message == "BAD REQUEST" && description == "Invalid/Used Request ID" {
+			if message == "BAD REQUEST" && description == `Invalid\/Used Request ID` {
 				delete(form, "request_id")
 				form["message_type"] = []string{"SEND"}
 
