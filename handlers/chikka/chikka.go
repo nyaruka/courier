@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nyaruka/courier/utils"
+	"github.com/buger/jsonparser"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -129,7 +130,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"client_id":     []string{username},
 			"secret_key":    []string{password},
 		}
-		if !msg.ResponseToID().IsZero() {
+		if msg.ResponseToExternalID() != "" {
 			form["message_type"] = []string{"REPLY"}
 			form["request_id"] = []string{msg.ResponseToExternalID()}
 		}
@@ -137,6 +138,22 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		rr, err := utils.MakeHTTPRequest(req)
+
+		if rr.StatusCode == 400 {
+			message, _ := jsonparser.GetString([]byte(rr.Body), "message")
+			description, _ := jsonparser.GetString([]byte(rr.Body), "description")
+
+			if message == "BAD REQUEST" && description == "Invalid/Used Request ID" {
+				delete(form, "request_id")
+				form["message_type"] = []string{"SEND"}
+
+				req, _ = http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				rr, err = utils.MakeHTTPRequest(req)
+
+			}
+
+		}
 
 		// record our status and log
 		status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
