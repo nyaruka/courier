@@ -106,13 +106,13 @@ func (mb *MockBackend) NewIncomingMsg(channel Channel, urn urns.URN, text string
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool, replies []string, responseToID int64) Msg {
+func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool, replies []string, responseToID int64, responseToExternalID string) Msg {
 	msgResponseToID := NilMsgID
 	if responseToID != 0 {
 		msgResponseToID = NewMsgID(responseToID)
 	}
 
-	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority, quickReplies: replies, responseToID: msgResponseToID}
+	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority, quickReplies: replies, responseToID: msgResponseToID, responseToExternalID: responseToExternalID}
 }
 
 // PushOutgoingMsg is a test method to add a message to our queue of messages to send
@@ -398,37 +398,39 @@ func NewMockChannel(uuid string, channelType string, address string, country str
 //-----------------------------------------------------------------------------
 
 type mockMsg struct {
-	channel      Channel
-	id           MsgID
-	uuid         MsgUUID
-	text         string
-	attachments  []string
-	externalID   string
-	urn          urns.URN
-	urnAuth      string
-	contactName  string
-	highPriority bool
-	quickReplies []string
-	responseToID MsgID
+	channel              Channel
+	id                   MsgID
+	uuid                 MsgUUID
+	text                 string
+	attachments          []string
+	externalID           string
+	urn                  urns.URN
+	urnAuth              string
+	contactName          string
+	highPriority         bool
+	quickReplies         []string
+	responseToID         MsgID
+	responseToExternalID string
 
 	receivedOn *time.Time
 	sentOn     *time.Time
 	wiredOn    *time.Time
 }
 
-func (m *mockMsg) Channel() Channel       { return m.channel }
-func (m *mockMsg) ID() MsgID              { return m.id }
-func (m *mockMsg) EventID() int64         { return m.id.Int64 }
-func (m *mockMsg) UUID() MsgUUID          { return m.uuid }
-func (m *mockMsg) Text() string           { return m.text }
-func (m *mockMsg) Attachments() []string  { return m.attachments }
-func (m *mockMsg) ExternalID() string     { return m.externalID }
-func (m *mockMsg) URN() urns.URN          { return m.urn }
-func (m *mockMsg) URNAuth() string        { return m.urnAuth }
-func (m *mockMsg) ContactName() string    { return m.contactName }
-func (m *mockMsg) HighPriority() bool     { return m.highPriority }
-func (m *mockMsg) QuickReplies() []string { return m.quickReplies }
-func (m *mockMsg) ResponseToID() MsgID    { return m.responseToID }
+func (m *mockMsg) Channel() Channel             { return m.channel }
+func (m *mockMsg) ID() MsgID                    { return m.id }
+func (m *mockMsg) EventID() int64               { return m.id.Int64 }
+func (m *mockMsg) UUID() MsgUUID                { return m.uuid }
+func (m *mockMsg) Text() string                 { return m.text }
+func (m *mockMsg) Attachments() []string        { return m.attachments }
+func (m *mockMsg) ExternalID() string           { return m.externalID }
+func (m *mockMsg) URN() urns.URN                { return m.urn }
+func (m *mockMsg) URNAuth() string              { return m.urnAuth }
+func (m *mockMsg) ContactName() string          { return m.contactName }
+func (m *mockMsg) HighPriority() bool           { return m.highPriority }
+func (m *mockMsg) QuickReplies() []string       { return m.quickReplies }
+func (m *mockMsg) ResponseToID() MsgID          { return m.responseToID }
+func (m *mockMsg) ResponseToExternalID() string { return m.responseToExternalID }
 
 func (m *mockMsg) ReceivedOn() *time.Time { return m.receivedOn }
 func (m *mockMsg) SentOn() *time.Time     { return m.sentOn }

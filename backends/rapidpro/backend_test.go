@@ -117,6 +117,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"high_priority": true,
 		"channel_id": 11, 
 		"response_to_id": 15, 
+		"response_to_external_id": "external-id",
 		"external_id": null,
 		"metadata": {"quick_replies": ["Yes", "No"]}
 	}`
@@ -130,6 +131,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal(msg.ExternalID(), "")
 	ts.Equal([]string{"Yes", "No"}, msg.QuickReplies())
 	ts.Equal(courier.NewMsgID(15), msg.ResponseToID())
+	ts.Equal("external-id", msg.ResponseToExternalID())
 	ts.True(msg.HighPriority())
 
 	msgJSONNoQR := `{
@@ -153,6 +155,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"high_priority": true,
 		"channel_id": 11, 
 		"response_to_id": null, 
+		"response_to_external_id": "",
 		"external_id": null,
 		"metadata": null
 	}`
@@ -162,6 +165,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.NoError(err)
 	ts.Equal([]string{}, msg.QuickReplies())
 	ts.Equal(courier.NilMsgID, msg.ResponseToID())
+	ts.Equal("", msg.ResponseToExternalID())
 }
 
 func (ts *BackendTestSuite) TestCheckMsgExists() {
