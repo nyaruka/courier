@@ -374,7 +374,7 @@ type DBMsg struct {
 	Visibility_   MsgVisibility          `json:"visibility"      db:"visibility"`
 	HighPriority_ null.Bool              `json:"high_priority"   db:"high_priority"`
 	URN_          urns.URN               `json:"urn"`
-	URNAuth_      string                 `json:"contact_urn_auth"`
+	URNAuth_      string                 `json:"urn_auth"`
 	Text_         string                 `json:"text"            db:"text"`
 	Attachments_  pq.StringArray         `json:"attachments"     db:"attachments"`
 	ExternalID_   null.String            `json:"external_id"     db:"external_id"`
