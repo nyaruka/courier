@@ -6,12 +6,11 @@ import (
 	"strings"
 
 	"github.com/garyburd/redigo/redis"
-	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/gocommon/urns"
 )
 
 // BackendConstructorFunc defines a function to create a particular backend type
-type BackendConstructorFunc func(*config.Courier) Backend
+type BackendConstructorFunc func(*Config) Backend
 
 // Backend represents the part of Courier that deals with looking up and writing channels and results
 type Backend interface {
@@ -81,7 +80,7 @@ type Backend interface {
 }
 
 // NewBackend creates the type of backend passed in
-func NewBackend(config *config.Courier) (Backend, error) {
+func NewBackend(config *Config) (Backend, error) {
 	backendFunc, found := registeredBackends[strings.ToLower(config.Backend)]
 	if !found {
 		return nil, fmt.Errorf("no such backend type: '%s'", config.Backend)

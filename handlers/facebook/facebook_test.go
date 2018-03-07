@@ -42,6 +42,27 @@ var helloMsg = `{
 	}]
 }`
 
+var invalidURN = `{
+	"object":"page",
+	"entry": [{
+	  "id": "208685479508187",
+	  "messaging": [{
+		"message": {
+		  "text": "Hello World",
+		  "mid": "external_id"
+		},
+		"recipient": {
+		  "id": "1234"
+		},
+		"sender": {
+		  "id": "abc5678"
+		},
+		"timestamp": 1459991487970
+	  }],
+	  "time": 1459991487970
+	}]
+}`
+
 var attachment = `{
 	"object":"page",
 	"entry": [{
@@ -339,6 +360,7 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "No Messaging Entries", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: noMessagingEntries, Status: 200, Response: "Handled"},
 	{Label: "Unknown Messaging Entry", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: unkownMessagingEntry, Status: 200, Response: "Handled"},
 	{Label: "Not JSON", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: notJSON, Status: 400, Response: "Error"},
+	{Label: "Invalid URN", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidURN, Status: 400, Response: "invalid facebook id"},
 }
 
 // mocks the call to the Facebook graph API

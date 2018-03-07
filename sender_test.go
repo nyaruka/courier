@@ -4,12 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/config"
 	"github.com/stretchr/testify/assert"
 )
 
-func testConfig() *config.Courier {
-	config := config.NewTest()
+func testConfig() *Config {
+	config := NewConfig()
 	config.DB = "postgres://courier@localhost/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
 	return config

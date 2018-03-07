@@ -18,6 +18,7 @@ var (
 
 	validMessage   = receiveURL + "?userid=testusr&password=test&original=6289881134560&sendto=2020&message=Msg"
 	invalidMessage = receiveURL
+	invalidURN     = receiveURL + "?userid=testusr&password=test&original=MTN&sendto=2020&message=Msg"
 
 	validStatus        = statusURL + "?status=10&messageid=12345"
 	failedStatus       = statusURL + "?status=30&messageid=12345"
@@ -30,6 +31,7 @@ var daTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: validMessage, Status: 200, Response: "000", Text: Sp("Msg"), URN: Sp("tel:+6289881134560")},
 	{Label: "Receive Invalid", URL: invalidMessage, Status: 400, Response: "missing required parameters original and sendto"},
 
+	{Label: "Invalid URN", URL: invalidURN, Status: 400, Response: "phone number supplied was empty"},
 	{Label: "Valid Status", URL: validStatus, Status: 200, Response: "000", MsgStatus: Sp("D")},
 	{Label: "Failed Status", URL: failedStatus, Status: 200, Response: "000", MsgStatus: Sp("F")},
 	{Label: "Missing Status", URL: missingStatus, Status: 400, Response: "parameters messageid and status should not be empty"},

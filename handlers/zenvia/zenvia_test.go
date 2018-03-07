@@ -67,6 +67,18 @@ var validReceive = `{
     }
 }`
 
+var invalidURN = `{
+    "callbackMoRequest": {
+        "id": "20690090",
+        "mobile": "MTN",
+        "shortCode": "40001",
+        "account": "zenvia.envio",
+        "body": "Msg",
+        "received": "2017-05-03T03:04:45.123-03:00",
+        "correlatedMessageSmsId": "hs765939061"
+    }
+}`
+
 var invalidDateReceive = `{
     "callbackMoRequest": {
         "id": "20690090",
@@ -95,6 +107,7 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
 		Text: Sp("Msg"), URN: Sp("tel:+254791541111"), Date: Tp(time.Date(2017, 5, 3, 06, 04, 45, 123000000, time.UTC))},
 
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied was empty"},
 	{Label: "Not JSON body", URL: receiveURL, Data: notJSON, Status: 400, Response: "unable to parse request JSON"},
 	{Label: "Wrong JSON schema", URL: receiveURL, Data: wrongJSONSchema, Status: 400, Response: "request JSON doesn't match required schema"},
 	{Label: "Missing field", URL: receiveURL, Data: missingFieldsReceive, Status: 400, Response: "validation for 'ID' failed on the 'required'"},

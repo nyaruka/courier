@@ -37,15 +37,15 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/koding/multiconfig"
-
-[[constraint]]
-  branch = "master"
   name = "github.com/lib/pq"
 
 [[constraint]]
   branch = "master"
   name = "github.com/nyaruka/gocommon"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/nyaruka/ezconf"
 
 [[constraint]]
   branch = "master"

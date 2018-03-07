@@ -18,7 +18,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
@@ -42,8 +41,8 @@ func (m *mockS3Client) HeadBucket(*s3.HeadBucketInput) (*s3.HeadBucketOutput, er
 	return nil, nil
 }
 
-func testConfig() *config.Courier {
-	config := config.NewTest()
+func testConfig() *courier.Config {
+	config := courier.NewConfig()
 	config.DB = "postgres://courier@localhost/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
 	return config
@@ -117,6 +116,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"high_priority": true,
 		"channel_id": 11, 
 		"response_to_id": 15, 
+		"response_to_external_id": "external-id",
 		"external_id": null,
 		"metadata": {"quick_replies": ["Yes", "No"]}
 	}`
@@ -130,6 +130,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal(msg.ExternalID(), "")
 	ts.Equal([]string{"Yes", "No"}, msg.QuickReplies())
 	ts.Equal(courier.NewMsgID(15), msg.ResponseToID())
+	ts.Equal("external-id", msg.ResponseToExternalID())
 	ts.True(msg.HighPriority())
 
 	msgJSONNoQR := `{
@@ -153,6 +154,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"high_priority": true,
 		"channel_id": 11, 
 		"response_to_id": null, 
+		"response_to_external_id": "",
 		"external_id": null,
 		"metadata": null
 	}`
@@ -162,6 +164,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.NoError(err)
 	ts.Equal([]string{}, msg.QuickReplies())
 	ts.Equal(courier.NilMsgID, msg.ResponseToID())
+	ts.Equal("", msg.ResponseToExternalID())
 }
 
 func (ts *BackendTestSuite) TestCheckMsgExists() {
@@ -745,12 +748,12 @@ func TestMsgSuite(t *testing.T) {
 }
 
 var invalidConfigTestCases = []struct {
-	config        config.Courier
+	config        courier.Config
 	expectedError string
 }{
-	{config: config.Courier{DB: ":foo"}, expectedError: "unable to parse DB URL"},
-	{config: config.Courier{DB: "mysql:test"}, expectedError: "only postgres is supported"},
-	{config: config.Courier{DB: "postgres://courier@localhost/courier", Redis: ":foo"}, expectedError: "unable to parse Redis URL"},
+	{config: courier.Config{DB: ":foo"}, expectedError: "unable to parse DB URL"},
+	{config: courier.Config{DB: "mysql:test"}, expectedError: "only postgres is supported"},
+	{config: courier.Config{DB: "postgres://courier@localhost/courier", Redis: ":foo"}, expectedError: "unable to parse Redis URL"},
 }
 
 func (ts *ServerTestSuite) TestInvalidConfigs() {

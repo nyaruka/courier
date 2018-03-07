@@ -100,10 +100,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// create our URN
 	urn, err := urns.NewURNFromParts(channel.Schemes()[0], sender, "")
-	urn, err = urn.Normalize("")
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
+	urn, _ = urn.Normalize("")
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithReceivedOn(date)
