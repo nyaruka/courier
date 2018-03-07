@@ -131,7 +131,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 		if !msg.ResponseToID().IsZero() {
 			form["message_type"] = []string{"REPLY"}
-			form["request_id"] = []string{msg.ResponseToID().String()}
+			form["request_id"] = []string{msg.ResponseToExternalID()}
 		}
 
 		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
