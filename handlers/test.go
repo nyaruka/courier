@@ -14,7 +14,6 @@ import (
 
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
@@ -157,7 +156,7 @@ func newServer(backend courier.Backend) courier.Server {
 	logger.Out = ioutil.Discard
 	logrus.SetOutput(ioutil.Discard)
 
-	return courier.NewServerWithLogger(config.NewTest(), backend, logger)
+	return courier.NewServerWithLogger(courier.NewConfig(), backend, logger)
 }
 
 // RunChannelSendTestCases runs all the passed in test cases against the channel

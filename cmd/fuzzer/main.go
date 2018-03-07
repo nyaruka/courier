@@ -8,16 +8,11 @@ import (
 	"time"
 
 	"github.com/garyburd/redigo/redis"
-	"github.com/nyaruka/courier/config"
+	"github.com/nyaruka/courier"
 )
 
 func main() {
-	m := config.NewWithPath("courier.toml")
-	config := &config.Courier{}
-	err := m.Load(config)
-	if err != nil {
-		log.Fatalf("Error loading configuration: %s", err)
-	}
+	config := courier.LoadConfig("courier.toml")
 
 	// parse and test our redis config
 	redisURL, err := url.Parse(config.Redis)

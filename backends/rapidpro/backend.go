@@ -20,7 +20,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/chatbase"
-	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
@@ -496,7 +495,7 @@ func (b *backend) RedisPool() *redis.Pool {
 }
 
 // NewBackend creates a new RapidPro backend
-func newBackend(config *config.Courier) courier.Backend {
+func newBackend(config *courier.Config) courier.Backend {
 	return &backend{
 		config: config,
 
@@ -506,7 +505,7 @@ func newBackend(config *config.Courier) courier.Backend {
 }
 
 type backend struct {
-	config *config.Courier
+	config *courier.Config
 
 	db        *sqlx.DB
 	redisPool *redis.Pool

@@ -16,7 +16,6 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/courier/librato"
 	"github.com/nyaruka/courier/utils"
 	"github.com/sirupsen/logrus"
@@ -25,7 +24,7 @@ import (
 // Server is the main interface ChannelHandlers use to interact with backends. It provides an
 // abstraction that makes mocking easier for isolated unit tests
 type Server interface {
-	Config() *config.Courier
+	Config() *Config
 
 	AddHandlerRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelHandleFunc) error
 
@@ -45,7 +44,7 @@ type Server interface {
 
 // NewServer creates a new Server for the passed in configuration. The server will have to be started
 // afterwards, which is when configuration options are checked.
-func NewServer(config *config.Courier, backend Backend) Server {
+func NewServer(config *Config, backend Backend) Server {
 	// create our top level router
 	logger := logrus.New()
 	return NewServerWithLogger(config, backend, logger)
@@ -53,7 +52,7 @@ func NewServer(config *config.Courier, backend Backend) Server {
 
 // NewServerWithLogger creates a new Server for the passed in configuration. The server will have to be started
 // afterwards, which is when configuration options are checked.
-func NewServerWithLogger(config *config.Courier, backend Backend, logger *logrus.Logger) Server {
+func NewServerWithLogger(config *Config, backend Backend, logger *logrus.Logger) Server {
 	router := chi.NewRouter()
 	router.Use(middleware.DefaultCompress)
 	router.Use(middleware.StripSlashes)
@@ -195,7 +194,7 @@ func (s *server) SendMsg(ctx context.Context, msg Msg) (MsgStatus, error) {
 
 func (s *server) WaitGroup() *sync.WaitGroup { return s.waitGroup }
 func (s *server) StopChan() chan bool        { return s.stopChan }
-func (s *server) Config() *config.Courier    { return s.config }
+func (s *server) Config() *Config            { return s.config }
 func (s *server) Stopped() bool              { return s.stopped }
 
 func (s *server) Backend() Backend   { return s.backend }
@@ -210,7 +209,7 @@ type server struct {
 
 	foreman *Foreman
 
-	config *config.Courier
+	config *Config
 
 	waitGroup *sync.WaitGroup
 	stopChan  chan bool

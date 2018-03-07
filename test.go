@@ -13,7 +13,6 @@ import (
 
 	"github.com/garyburd/redigo/redis"
 	_ "github.com/lib/pq" // postgres driver
-	"github.com/nyaruka/courier/config"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -294,7 +293,7 @@ func (mb *MockBackend) RedisPool() *redis.Pool {
 	return mb.redisPool
 }
 
-func buildMockBackend(config *config.Courier) Backend {
+func buildMockBackend(config *Config) Backend {
 	return NewMockBackend()
 }
 

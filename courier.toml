@@ -12,9 +12,6 @@
 # What backend to use for looking up and writing data
 backend = "rapidpro"
 
-# The externally accessible base URL of the server
-base_url = "https://localhost:8080"
-
 # What port courier will run on
 port = 8080
 
@@ -40,11 +37,5 @@ s3_media_bucket = "courier-test"
 # prefix to our filenames for media (files will be named after the msg uuid)
 s3_media_prefix = "media"
 
-# the URL that should be hit with new msgs on RapidPro
-rapidpro_handle_url = "https://app.rapidpro.io/handlers/mage/handle_message/"
-
-# the token used for authentication agains the RapidPro instance
-rapidpro_token = "missing_rapidpro_token"
-
 # the DSN token for reporting errors to sentry
-dsn = ""
+sentry_dsn = ""
