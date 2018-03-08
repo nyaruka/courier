@@ -16,9 +16,9 @@ func parseFlags(fs *flag.FlagSet, args []string) (map[string]ezValue, error) {
 	}
 
 	// visit all our flags, populate a value for every value that isn't the default
-	fs.VisitAll(func(flag *flag.Flag) {
+	fs.Visit(func(flag *flag.Flag) {
 		snake := strings.Replace(flag.Name, "-", "_", -1)
-		if snake != "help" && snake != "debug_conf" && flag.Value.String() != flag.DefValue {
+		if snake != "help" && snake != "debug_conf" {
 			values[snake] = ezValue{flag.Name, flag.Value.String()}
 		}
 	})

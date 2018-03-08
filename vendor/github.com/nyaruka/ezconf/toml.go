@@ -73,7 +73,7 @@ func camelNormalizer(typ reflect.Type, keyOrField string) string {
 	return CamelToSnake(keyOrField)
 }
 
-// Satifies the FieldToKey interface and determines the TOML key of a struct field when encoding.
+// Satisfies the FieldToKey interface and determines the TOML key of a struct field when encoding.
 //
 // Note that FieldToKey is not used for fields which define a TOML key through the struct tag.
 func camelKey(typ reflect.Type, field string) string {
