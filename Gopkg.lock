@@ -186,8 +186,8 @@
 [[projects]]
   name = "github.com/nyaruka/phonenumbers"
   packages = ["."]
-  revision = "34eec53a155fd71705f167eb5e7eb17aeeb310fe"
-  version = "v8.8.10"
+  revision = "655c1dd072852a36c55c60d5c7593d607f748b90"
+  version = "v0.1.891"
 
 [[projects]]
   branch = "master"
