@@ -204,7 +204,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString([]byte(rr.Body), "msgid")
+		externalID, err := jsonparser.GetString([]byte(rr.Body), "MsgID")
 		if err != nil {
 			return status, fmt.Errorf("unable to parse response body from Macrokiosk")
 		}

@@ -68,7 +68,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		URN:            "tel:+250788383383",
 		Status:         "W",
 		ExternalID:     "abc123",
-		ResponseBody:   `{ "msgid":"abc123" }`,
+		ResponseBody:   `{ "MsgID":"abc123" }`,
 		ResponseStatus: 200,
 		Headers: map[string]string{
 			"Content-Type": "application/json",
@@ -81,7 +81,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		URN:            "tel:+250788383383",
 		Status:         "W",
 		ExternalID:     "abc123",
-		ResponseBody:   `{ "msgid":"abc123" }`,
+		ResponseBody:   `{ "MsgID":"abc123" }`,
 		ResponseStatus: 200,
 		Headers: map[string]string{
 			"Content-Type": "application/json",
@@ -95,7 +95,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Attachments:    []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status:         "W",
 		ExternalID:     "abc123",
-		ResponseBody:   `{ "msgid":"abc123" }`,
+		ResponseBody:   `{ "MsgID":"abc123" }`,
 		ResponseStatus: 200,
 		Headers: map[string]string{
 			"Content-Type": "application/json",
