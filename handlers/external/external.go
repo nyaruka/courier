@@ -99,7 +99,15 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn, err := urns.NewURNFromParts(channel.Schemes()[0], sender, "")
+	urn := urns.NilURN
+	if channel.Schemes()[0] == urns.TelScheme {
+		urn, err = urns.NewTelURNForCountry(sender, channel.Country())
+		if err != nil && !strings.HasPrefix(sender, "+") {
+			urn, err = urns.NewTelURNForCountry("+"+sender, "")
+		}
+	} else {
+		urn, err = urns.NewURNFromParts(channel.Schemes()[0], sender, "")
+	}
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
