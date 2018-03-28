@@ -549,6 +549,21 @@ func (ts *BackendTestSuite) TestChannel() {
 	val = knChannel.ConfigForKey("encoding", "default")
 	ts.Equal("smart", val)
 
+	val = knChannel.StringConfigForKey("encoding", "default")
+	ts.Equal("smart", val)
+
+	val = knChannel.StringConfigForKey("encoding_missing", "default")
+	ts.Equal("default", val)
+
+	val = knChannel.IntConfigForKey("max_length_int", -1)
+	ts.Equal(320, val)
+
+	val = knChannel.IntConfigForKey("max_length_str", -1)
+	ts.Equal(320, val)
+
+	val = knChannel.IntConfigForKey("max_length_missing", -1)
+	ts.Equal(-1, val)
+
 	// missing value
 	val = knChannel.ConfigForKey("missing", "missingValue")
 	ts.Equal("missingValue", val)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -218,6 +219,26 @@ func (c *DBChannel) StringConfigForKey(key string, defaultValue string) string {
 		return defaultValue
 	}
 	return str
+}
+
+// IntConfigForKey returns the config value for the passed in key
+func (c *DBChannel) IntConfigForKey(key string, defaultValue int) int {
+	val := c.ConfigForKey(key, defaultValue)
+
+	// golang unmarshals number literals in JSON into float64s by default
+	i, isFloat := val.(float64)
+	if isFloat {
+		return int(i)
+	}
+
+	str, isStr := val.(string)
+	if isStr {
+		i, err := strconv.Atoi(str)
+		if err == nil {
+			return i
+		}
+	}
+	return defaultValue
 }
 
 // supportsScheme returns whether the passed in channel supports the passed in scheme
