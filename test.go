@@ -371,9 +371,11 @@ func (c *MockChannel) StringConfigForKey(key string, defaultValue string) string
 // IntConfigForKey returns the config value for the passed in key
 func (c *MockChannel) IntConfigForKey(key string, defaultValue int) int {
 	val := c.ConfigForKey(key, defaultValue)
-	i, isInt := val.(int)
-	if isInt {
-		return i
+
+	// golang unmarshals number literals in JSON into float64s by default
+	i, isFloat := val.(float64)
+	if isFloat {
+		return int(i)
 	}
 
 	str, isStr := val.(string)
