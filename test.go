@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"sync"
 
 	"github.com/satori/go.uuid"
@@ -365,6 +366,32 @@ func (c *MockChannel) StringConfigForKey(key string, defaultValue string) string
 		return defaultValue
 	}
 	return str
+}
+
+// IntConfigForKey returns the config value for the passed in key
+func (c *MockChannel) IntConfigForKey(key string, defaultValue int) int {
+	val := c.ConfigForKey(key, defaultValue)
+
+	// golang unmarshals number literals in JSON into float64s by default
+	f, isFloat := val.(float64)
+	if isFloat {
+		return int(f)
+	}
+
+	// test authors may use literal ints
+	i, isInt := val.(int)
+	if isInt {
+		return i
+	}
+
+	str, isStr := val.(string)
+	if isStr {
+		i, err := strconv.Atoi(str)
+		if err == nil {
+			return i
+		}
+	}
+	return defaultValue
 }
 
 // OrgConfigForKey returns the org config value for the passed in key

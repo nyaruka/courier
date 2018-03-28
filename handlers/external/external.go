@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
 
 	"strings"
@@ -99,7 +98,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn, err := urns.NewURNFromParts(channel.Schemes()[0], sender, "")
+	urn := urns.NilURN
+	if channel.Schemes()[0] == urns.TelScheme {
+		urn, err = urns.NewTelURNForCountry(sender, channel.Country())
+	} else {
+		urn, err = urns.NewURNFromParts(channel.Schemes()[0], sender, "")
+	}
 	if err != nil {
 		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
@@ -159,12 +163,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
 	contentType := msg.Channel().StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
 
-	maxLengthStr := msg.Channel().StringConfigForKey(courier.ConfigMaxLength, "160")
-	maxLength, err := strconv.Atoi(maxLengthStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid value for max length on EX channel %s: %s", msg.Channel().UUID(), maxLengthStr)
-	}
-
+	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, 160)
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength)
 	for _, part := range parts {

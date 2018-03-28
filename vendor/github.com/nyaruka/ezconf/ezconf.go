@@ -12,7 +12,7 @@ import (
 	"github.com/fatih/structs"
 )
 
-// CamelToSnake convers a CamelCase strings to a snake_case using the following algorithm:
+// CamelToSnake converts a CamelCase strings to a snake_case using the following algorithm:
 //  1) for every transition from upper->lowercase insert an underscore before the uppercase character
 //  2) for every transition fro lowercase->uppercase insert an underscore before the uppercase
 //  3) lowercase resulting string
@@ -70,7 +70,7 @@ func CamelToSnake(camel string) string {
 	return strings.ToLower(strings.Join(snakes, "_"))
 }
 
-// EZLoader allows you to load your configuration from four sources, in order of priority (later overrides ealier):
+// EZLoader allows you to load your configuration from four sources, in order of priority (later overrides earlier):
 //  1. The default values of your configuration struct
 //  2. TOML files you specify (optional)
 //  3. Set environment variables
@@ -82,7 +82,7 @@ type EZLoader struct {
 	config      interface{}
 	files       []string
 
-	// overriden in tests
+	// overridden in tests
 	args []string
 
 	// we hang onto this to print usage where needed

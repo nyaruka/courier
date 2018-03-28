@@ -6,7 +6,7 @@ INSERT INTO orgs_org("id", "name", "language", "is_anon", "config")
 /* Channel with id 10, 11, 12 */
 DELETE FROM channels_channel;
 INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "config")
-                      VALUES('10', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c95d', 'KN', '2500', 1, 'RW', '{ "encoding": "smart", "use_national": true }');
+                      VALUES('10', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c95d', 'KN', '2500', 1, 'RW', '{ "encoding": "smart", "use_national": true, "max_length_int": 320, "max_length_str": "320" }');
 
 INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "config")
                       VALUES('11', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c96a', 'TW', '4500', 1, 'US', NULL);

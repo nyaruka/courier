@@ -99,11 +99,13 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
 		dbMsg := &DBMsg{}
 		err = json.Unmarshal([]byte(msgJSON), dbMsg)
 		if err != nil {
+			queue.MarkComplete(rc, msgQueueName, token)
 			return nil, fmt.Errorf("unable to unmarshal message '%s': %s", msgJSON, err)
 		}
 		// populate the channel on our db msg
 		channel, err := b.GetChannel(ctx, courier.AnyChannelType, dbMsg.ChannelUUID_)
 		if err != nil {
+			queue.MarkComplete(rc, msgQueueName, token)
 			return nil, err
 		}
 		dbMsg.channel = channel.(*DBChannel)
@@ -428,8 +430,11 @@ func (b *backend) Start() error {
 
 	// create our s3 client
 	s3Session, err := session.NewSession(&aws.Config{
-		Credentials: credentials.NewStaticCredentials(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, ""),
-		Region:      aws.String(b.config.S3Region),
+		Credentials:      credentials.NewStaticCredentials(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, ""),
+		Endpoint:         aws.String(b.config.S3Endpoint),
+		Region:           aws.String(b.config.S3Region),
+		DisableSSL:       aws.Bool(b.config.S3DisableSSL),
+		S3ForcePathStyle: aws.Bool(b.config.S3ForcePathStyle),
 	})
 	if err != nil {
 		return err

@@ -15,6 +15,7 @@ import (
 var (
 	receiveValidMessage         = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join"
 	receiveValidMessageFrom     = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=%2B2349067554729&text=Join"
+	receiveValidNoPlus          = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=2349067554729&text=Join"
 	receiveValidMessageWithDate = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join&date=2017-06-23T12:30:00.500Z"
 	receiveValidMessageWithTime = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join&time=2017-06-23T12:30:00Z"
 	receiveNoParams             = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
@@ -39,6 +40,8 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Post", URL: receiveNoParams, Data: "sender=%2B2349067554729&text=Join", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
 	{Label: "Receive Valid From", URL: receiveValidMessageFrom, Data: "empty", Status: 200, Response: "Accepted",
+		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
+	{Label: "Receive Country Parse", URL: receiveValidNoPlus, Data: "empty", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
 	{Label: "Receive Valid Message With Date", URL: receiveValidMessageWithDate, Data: "empty", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC))},
@@ -70,6 +73,15 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL := c.StringConfigForKey("send_path", "")
 	sendURL, _ = utils.AddURLPath(s.URL, sendURL)
 	c.(*courier.MockChannel).SetConfig(courier.ConfigSendURL, sendURL)
+}
+
+var longSendTestCases = []ChannelSendTestCase{
+	{Label: "Long Send",
+		Text: "This is a long message that will be longer than 30....... characters", URN: "tel:+250788383383",
+		Status:       "W",
+		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
+		URLParams: map[string]string{"text": "characters", "to": "+250788383383", "from": "2020"},
+		SendPrep:  setSendURL},
 }
 
 var getSendTestCases = []ChannelSendTestCase{
@@ -217,4 +229,19 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, postChannel, newHandler(), postSendTestCases, nil)
 	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil)
 	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil)
+
+	var getChannel30IntLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
+		map[string]interface{}{
+			"max_length":             30,
+			"send_path":              "?to={{to}}&text={{text}}&from={{from}}",
+			courier.ConfigSendMethod: http.MethodGet})
+
+	var getChannel30StrLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
+		map[string]interface{}{
+			"max_length":             "30",
+			"send_path":              "?to={{to}}&text={{text}}&from={{from}}",
+			courier.ConfigSendMethod: http.MethodGet})
+
+	RunChannelSendTestCases(t, getChannel30IntLength, newHandler(), longSendTestCases, nil)
+	RunChannelSendTestCases(t, getChannel30StrLength, newHandler(), longSendTestCases, nil)
 }
