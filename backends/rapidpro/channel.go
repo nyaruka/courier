@@ -226,9 +226,9 @@ func (c *DBChannel) IntConfigForKey(key string, defaultValue int) int {
 	val := c.ConfigForKey(key, defaultValue)
 
 	// golang unmarshals number literals in JSON into float64s by default
-	i, isFloat := val.(float64)
+	f, isFloat := val.(float64)
 	if isFloat {
-		return int(i)
+		return int(f)
 	}
 
 	str, isStr := val.(string)
