@@ -85,7 +85,6 @@ type statusPayload struct {
 
 // {
 //     "sendSmsRequest": {
-//         "from": "Sender",
 //         "to": "555199999999",
 //         "schedule": "2014-08-22T14:55:00",
 //         "msg": "Test message.",
