@@ -96,7 +96,6 @@ type statusPayload struct {
 // }
 type mtPayload struct {
 	SendSMSRequest struct {
-		From           string `json:"from"`
 		To             string `json:"to"`
 		Schedule       string `json:"schedule"`
 		Msg            string `json:"msg"`
@@ -184,7 +183,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		zvMsg := mtPayload{}
-		zvMsg.SendSMSRequest.From = "Sender"
 		zvMsg.SendSMSRequest.To = strings.TrimLeft(msg.URN().Path(), "+")
 		zvMsg.SendSMSRequest.Msg = part
 		zvMsg.SendSMSRequest.ID = msg.ID().String()
