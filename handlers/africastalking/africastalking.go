@@ -47,6 +47,14 @@ func (h *handler) Initialize(s courier.Server) error {
 	if err != nil {
 		return err
 	}
+	err = s.AddHandlerRoute(h, http.MethodPost, "callback", h.receiveMessage)
+	if err != nil {
+		return err
+	}
+	err = s.AddHandlerRoute(h, http.MethodPost, "delivery", h.receiveStatus)
+	if err != nil {
+		return err
+	}
 	return s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
 }
 
