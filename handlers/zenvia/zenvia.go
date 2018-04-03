@@ -19,7 +19,7 @@ import (
 
 var (
 	maxMsgLength = 1152
-	sendURL      = "https://api-rest.zenvia360.com.br/services"
+	sendURL      = "https://api-rest.zenvia360.com.br/services/send-sms"
 )
 
 func init() {
@@ -61,7 +61,7 @@ type moPayload struct {
 		From       string `json:"mobile"                  validate:"required" `
 		Text       string `json:"body"`
 		Date       string `json:"received"                validate:"required" `
-		ExternalID string `json:"correlatedMessageSmsId"  validate:"required" `
+		ExternalID string `json:"correlatedMessageSmsId"`
 	} `json:"callbackMoRequest"`
 }
 
@@ -85,7 +85,6 @@ type statusPayload struct {
 
 // {
 //     "sendSmsRequest": {
-//         "from": "Sender",
 //         "to": "555199999999",
 //         "schedule": "2014-08-22T14:55:00",
 //         "msg": "Test message.",
@@ -96,7 +95,6 @@ type statusPayload struct {
 // }
 type mtPayload struct {
 	SendSMSRequest struct {
-		From           string `json:"from"`
 		To             string `json:"to"`
 		Schedule       string `json:"schedule"`
 		Msg            string `json:"msg"`
@@ -143,7 +141,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.CallbackMORequest.Text).WithExternalID(payload.CallbackMORequest.ExternalID).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.CallbackMORequest.Text).WithExternalID(payload.CallbackMORequest.ID).WithReceivedOn(date.UTC())
 	// and finally write our message
 	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
 }
@@ -184,11 +182,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		zvMsg := mtPayload{}
-		zvMsg.SendSMSRequest.From = "Sender"
 		zvMsg.SendSMSRequest.To = strings.TrimLeft(msg.URN().Path(), "+")
 		zvMsg.SendSMSRequest.Msg = part
 		zvMsg.SendSMSRequest.ID = msg.ID().String()
-		zvMsg.SendSMSRequest.CallbackOption = "1"
+		zvMsg.SendSMSRequest.CallbackOption = "FINAL"
 
 		requestBody := new(bytes.Buffer)
 		json.NewEncoder(requestBody).Encode(zvMsg)
