@@ -72,7 +72,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text: "No External ID", URN: "tel:+250788383383",
 		Status:       "E",
 		ResponseBody: `{ "SMSMessageData": {"Recipients": [{"status": "Failed" }] } }`, ResponseStatus: 200,
-		Error:      "received non-success status 'Failed'",
 		PostParams: map[string]string{"message": `No External ID`},
 		SendPrep:   setSendURL},
 	{Label: "Error Sending",

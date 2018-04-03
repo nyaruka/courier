@@ -13,7 +13,6 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 const configIsShared = "is_shared"
@@ -162,7 +161,8 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 	// was this request successful?
 	msgStatus, _ := jsonparser.GetString([]byte(rr.Body), "SMSMessageData", "Recipients", "[0]", "status")
 	if msgStatus != "Success" {
-		return status, errors.Errorf("received non-success status '%s'", msgStatus)
+		status.SetStatus(courier.MsgErrored)
+		return status, nil
 	}
 
 	// grab the external id if we can
