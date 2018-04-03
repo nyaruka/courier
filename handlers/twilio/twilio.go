@@ -146,7 +146,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	form := &statusForm{}
 	err = handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, err
+		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
 	}
 
 	msgStatus, found := statusMapping[form.MessageStatus]
