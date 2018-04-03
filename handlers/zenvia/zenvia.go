@@ -185,7 +185,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		zvMsg.SendSMSRequest.To = strings.TrimLeft(msg.URN().Path(), "+")
 		zvMsg.SendSMSRequest.Msg = part
 		zvMsg.SendSMSRequest.ID = msg.ID().String()
-		zvMsg.SendSMSRequest.CallbackOption = "1"
+		zvMsg.SendSMSRequest.CallbackOption = "FINAL"
 
 		requestBody := new(bytes.Buffer)
 		json.NewEncoder(requestBody).Encode(zvMsg)
