@@ -42,7 +42,8 @@ func newHandler() courier.ChannelHandler {
 
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
+	return nil
 }
 
 type moForm struct {
@@ -58,7 +59,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// must have one of from or sender set, error if neither
@@ -67,7 +68,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		sender = form.From
 	}
 	if sender == "" {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, errors.New("must have one of 'sender' or 'from'"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("must have one of 'sender' or 'from'"))
 	}
 
 	// if we have a date, parse it
@@ -80,21 +81,21 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	if dateString != "" {
 		date, err = time.Parse(time.RFC3339Nano, dateString)
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, errors.New("invalid date format, must be RFC 3339"))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid date format, must be RFC 3339"))
 		}
 	}
 
 	// create our URN
 	urn, err := urns.NewTelURNForCountry(sender, channel.Country())
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// build our msg
 	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithReceivedOn(date)
 
 	// and finally write our message
-	return handlers.WriteMsgAndResponse(ctx, h, dbMsg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error

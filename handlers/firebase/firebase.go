@@ -41,11 +41,9 @@ func newHandler() courier.ChannelHandler {
 
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, http.MethodPost, "register", h.registerContact)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "register", h.registerContact)
+	return nil
 }
 
 type receiveForm struct {
@@ -61,28 +59,28 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	form := &receiveForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	date := time.Now().UTC()
 	if form.Date != "" {
 		date, err = time.Parse("2006-01-02T15:04:05.000", form.Date)
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unable to parse date: %s", form.Date))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to parse date: %s", form.Date))
 		}
 	}
 
 	// create our URN
 	urn, err := urns.NewFirebaseURN(form.From)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// build our msg
 	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Msg).WithReceivedOn(date).WithContactName(form.Name).WithURNAuth(form.FCMToken)
 
 	// and finally write our message
-	return handlers.WriteMsgAndResponse(ctx, h, dbMsg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r)
 }
 
 type registerForm struct {
@@ -96,13 +94,13 @@ func (h *handler) registerContact(ctx context.Context, channel courier.Channel, 
 	form := &registerForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// create our URN
 	urn, err := urns.NewFirebaseURN(form.URN)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// create our contact

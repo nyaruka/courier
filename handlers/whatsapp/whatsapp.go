@@ -33,11 +33,9 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	return nil
 }
 
 // {
@@ -79,25 +77,25 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// if this is an error, that's an erro
 	if payload.Error {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("received errored message"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("received errored message"))
 	}
 
 	// create our date from the timestamp
 	ts, err := strconv.ParseInt(payload.Payload.Timestamp, 10, 64)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid timestamp: %s", payload.Payload.Timestamp))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid timestamp: %s", payload.Payload.Timestamp))
 	}
 	date := time.Unix(ts, 0).UTC()
 
 	// create our URN
 	urn, err := urns.NewWhatsAppURN(payload.Payload.From)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// TODO: should we be hitting the API to look up contact information?
@@ -107,7 +105,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Payload.Message.Text).WithReceivedOn(date).WithExternalID(payload.Payload.MessageID)
 	// and finally write our message
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 // {
@@ -143,13 +141,13 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	payload := &statusPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	msgStatus, found := waStatusMapping[payload.Payload.MessageStatus]
 	if !found {
-		return nil, courier.WriteAndLogRequestError(
-			ctx, w, r, channel,
+		return nil, handlers.WriteAndLogRequestError(
+			ctx, h, channel, w, r,
 			fmt.Errorf("unknown status '%s', must be one of 'sending', 'sent', 'delivered', 'read' or 'failed'", payload.Payload.MessageStatus))
 	}
 
