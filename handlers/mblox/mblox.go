@@ -37,7 +37,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
+	return nil
 }
 
 type eventPayload struct {
@@ -65,12 +66,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	payload := &eventPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	if payload.Type == "recipient_delivery_report_sms" {
 		if payload.BatchID == "" || payload.Status == "" {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing one of 'batch_id' or 'status' in request body"))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing one of 'batch_id' or 'status' in request body"))
 		}
 
 		msgStatus, found := statusMapping[payload.Status]
@@ -84,28 +85,28 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 	} else if payload.Type == "mo_text" {
 		if payload.ID == "" || payload.From == "" || payload.To == "" || payload.Body == "" || payload.ReceivedAt == "" {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"))
 		}
 
 		date, err := time.Parse("2006-01-02T15:04:05.000Z", payload.ReceivedAt)
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
 		// create our URN
 		urn, err := urns.NewTelURNForCountry(payload.From, channel.Country())
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
 		// build our Message
 		msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body).WithReceivedOn(date.UTC()).WithExternalID(payload.ID)
 
 		// and finally write our message
-		return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 	}
 
-	return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("not handled, unknown type: %s", payload.Type))
+	return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("not handled, unknown type: %s", payload.Type))
 }
 
 type mtPayload struct {

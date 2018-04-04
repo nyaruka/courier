@@ -47,22 +47,11 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodGet, "", h.VerifyURL)
-	if err != nil {
-		return err
-	}
-
-	err = s.AddHandlerRoute(h, http.MethodPost, "rcv/msg/message", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-
-	err = s.AddHandlerRoute(h, http.MethodPost, "rcv/event/menu", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-
-	return s.AddHandlerRoute(h, http.MethodPost, "rcv/event/follow", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodGet, "", h.VerifyURL)
+	s.AddHandlerRoute(h, http.MethodPost, "rcv/msg/message", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "rcv/event/menu", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "rcv/event/follow", h.receiveMessage)
+	return nil
 }
 
 type verifyForm struct {
@@ -77,7 +66,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	dictOrder := []string{channel.StringConfigForKey(configAppSecret, ""), form.Timestamp, form.Nonce}
@@ -119,17 +108,17 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	if payload.MsgID == "" && payload.Event == "" {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing parameters, must have either 'MsgId' or 'Event'"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing parameters, must have either 'MsgId' or 'Event'"))
 	}
 
 	date := time.Unix(payload.CreateTime/1000, payload.CreateTime%1000*1000000).UTC()
 	urn, err := urns.NewURNFromParts(urns.JiochatScheme, payload.FromUsername, "")
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// subscribe event, trigger a new conversation
@@ -146,7 +135,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// unknown event type (we only deal with subscribe)
 	if payload.MsgType == "event" {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "unknown event type")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "unknown event type")
 	}
 
 	// create our message
@@ -157,7 +146,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// and finally write our message
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 func buildMediaURL(mediaID string) string {

@@ -63,11 +63,13 @@ func (h *BaseHandler) ChannelName() string {
 	return h.name
 }
 
-// ResponseSuccess interace with response methods for success responses
-type ResponseSuccess interface {
+// ResponseWriter interace with response methods for success responses
+type ResponseWriter interface {
 	Backend() courier.Backend
 	WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []courier.MsgStatus) error
 	WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error
+	WriteRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error
+	WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, msg string) error
 }
 
 // WriteStatusSuccessResponse writes a success response for the statuses
@@ -78,6 +80,16 @@ func (h *BaseHandler) WriteStatusSuccessResponse(ctx context.Context, w http.Res
 // WriteMsgSuccessResponse writes a success response for the messages
 func (h *BaseHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
 	return courier.WriteMsgSuccess(ctx, w, r, msgs)
+}
+
+// WriteRequestError writes the passed in error to our response writer
+func (h *BaseHandler) WriteRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error {
+	return courier.WriteError(ctx, w, r, err)
+}
+
+// WriteRequestIgnored writes an ignored payload to our response writer
+func (h *BaseHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, details string) error {
+	return courier.WriteIgnored(ctx, w, r, details)
 }
 
 var (
@@ -243,66 +255,51 @@ func SplitMsg(text string, max int) []string {
 }
 
 // NewTelReceiveHandler creates a new receive handler given the passed in text and from fields
-func NewTelReceiveHandler(h BaseHandler, fromField string, bodyField string) courier.ChannelHandleFunc {
+func NewTelReceiveHandler(h *BaseHandler, fromField string, bodyField string) courier.ChannelHandleFunc {
 	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 		err := r.ParseForm()
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
 		body := r.Form.Get(bodyField)
 		from := r.Form.Get(fromField)
 		if from == "" {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("missing required field '%s'", fromField))
+			return nil, WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required field '%s'", fromField))
 		}
 		// create our URN
 		urn, err := urns.NewTelURNForCountry(from, c.Country())
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 		// build our msg
 		msg := h.Backend().NewIncomingMsg(c, urn, body).WithReceivedOn(time.Now().UTC())
-
-		// and finally queue our message
-		err = h.Backend().WriteMsg(ctx, msg)
-		if err != nil {
-			return nil, err
-		}
-
-		return []courier.Event{msg}, courier.WriteMsgSuccess(ctx, w, r, []courier.Msg{msg})
+		return WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 	}
 }
 
 // NewExternalIDStatusHandler creates a new status handler given the passed in status map and fields
-func NewExternalIDStatusHandler(h BaseHandler, statuses map[string]courier.MsgStatusValue, externalIDField string, statusField string) courier.ChannelHandleFunc {
+func NewExternalIDStatusHandler(h *BaseHandler, statuses map[string]courier.MsgStatusValue, externalIDField string, statusField string) courier.ChannelHandleFunc {
 	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 		err := r.ParseForm()
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
 		externalID := r.Form.Get(externalIDField)
 		if externalID == "" {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("missing required field '%s'", externalIDField))
+			return nil, WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required field '%s'", externalIDField))
 		}
 
 		s := r.Form.Get(statusField)
 		sValue, found := statuses[s]
 		if !found {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("unknown status value '%s'", s))
+			return nil, WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("unknown status value '%s'", s))
 		}
 
 		// create our status
 		status := h.Backend().NewMsgStatusForExternalID(c, externalID, sValue)
-		err = h.Backend().WriteMsgStatus(ctx, status)
-		if err == courier.ErrMsgNotFound {
-			return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, c)
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		return []courier.Event{status}, courier.WriteStatusSuccess(ctx, w, r, []courier.MsgStatus{status})
+		return WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 	}
 }
 
@@ -326,21 +323,25 @@ func SplitAttachment(attachment string) (string, string) {
 	return parts[0], parts[1]
 }
 
-// WriteMsgAndResponse writes the passed in message to our backend
-func WriteMsgAndResponse(ctx context.Context, h ResponseSuccess, msg courier.Msg, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	err := h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
+// WriteMsgsAndResponse writes the passed in message to our backend
+func WriteMsgsAndResponse(ctx context.Context, h ResponseWriter, msgs []courier.Msg, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	events := make([]courier.Event, len(msgs), len(msgs))
+	for i, m := range msgs {
+		err := h.Backend().WriteMsg(ctx, m)
+		if err != nil {
+			return nil, err
+		}
+		events[i] = m
 	}
 
-	return []courier.Event{msg}, h.WriteMsgSuccessResponse(ctx, w, r, []courier.Msg{msg})
+	return events, h.WriteMsgSuccessResponse(ctx, w, r, msgs)
 }
 
 // WriteMsgStatusAndResponse write the passed in status to our backend
-func WriteMsgStatusAndResponse(ctx context.Context, h ResponseSuccess, channel courier.Channel, status courier.MsgStatus, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func WriteMsgStatusAndResponse(ctx context.Context, h ResponseWriter, channel courier.Channel, status courier.MsgStatus, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.Backend().WriteMsgStatus(ctx, status)
 	if err == courier.ErrMsgNotFound {
-		return nil, courier.WriteAndLogStatusMsgNotFound(ctx, w, r, channel)
+		return nil, WriteAndLogRequestIgnored(ctx, h, channel, w, r, "msg not found, ignored")
 	}
 
 	if err != nil {
@@ -348,4 +349,16 @@ func WriteMsgStatusAndResponse(ctx context.Context, h ResponseSuccess, channel c
 	}
 
 	return []courier.Event{status}, h.WriteStatusSuccessResponse(ctx, w, r, []courier.MsgStatus{status})
+}
+
+// WriteAndLogRequestError logs the passed in error and writes the response to the response writer
+func WriteAndLogRequestError(ctx context.Context, h ResponseWriter, channel courier.Channel, w http.ResponseWriter, r *http.Request, err error) error {
+	courier.LogRequestError(r, channel, err)
+	return h.WriteRequestError(ctx, w, r, err)
+}
+
+// WriteAndLogRequestIgnored logs that the passed in request was ignored and writes the response to the response writer
+func WriteAndLogRequestIgnored(ctx context.Context, h ResponseWriter, channel courier.Channel, w http.ResponseWriter, r *http.Request, details string) error {
+	courier.LogRequestIgnored(r, channel, details)
+	return h.WriteRequestIgnored(ctx, w, r, details)
 }

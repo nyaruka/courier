@@ -42,19 +42,11 @@ type moForm struct {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-	err = s.AddHandlerRoute(h, http.MethodPost, "callback", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-	err = s.AddHandlerRoute(h, http.MethodPost, "delivery", h.receiveStatus)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "callback", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "delivery", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	return nil
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
@@ -63,26 +55,26 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// create our date from the timestamp
 	// 2017-05-03T06:04:45Z
 	date, err := time.Parse("2006-01-02T15:04:05Z", form.Date)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid date format: %s", form.Date))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid date format: %s", form.Date))
 	}
 
 	// create our URN
 	urn, err := urns.NewTelURNForCountry(form.From, channel.Country())
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithExternalID(form.ID).WithReceivedOn(date)
 
 	// and finally write our message
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 type statusForm struct {
@@ -104,12 +96,12 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel,
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
 			fmt.Errorf("unknown status '%s', must be one of 'Success','Sent','Buffered','Rejected' or 'Failed'", form.Status))
 	}
 

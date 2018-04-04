@@ -38,7 +38,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		URN: Sp("tel:+923161909799"), ChannelEvent: Sp("stop_contact")},
 	{Label: "Receive Missing From", URL: receiveURL, Data: receiveMissingFrom, Status: 400, Response: "missing required field 'Msisdn'"},
 
-	{Label: "Receive Part 2", URL: receiveURL, Data: receivePart2, Status: 200, Response: "Handled"},
+	{Label: "Receive Part 2", URL: receiveURL, Data: receivePart2, Status: 200, Response: "received"},
 	{Label: "Receive Part 1", URL: receiveURL, Data: receivePart1, Status: 200, Response: "Accepted",
 		Text: Sp("hello world"), URN: Sp("tel:+923161909799")},
 

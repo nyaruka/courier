@@ -39,11 +39,9 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	return nil
 }
 
 type statusPayload struct {
@@ -73,17 +71,17 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	err := handlers.DecodeAndValidateJSON(payload, r)
 
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	if payload.MessageID == "" || payload.StatusCode == 0 {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel,
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
 			fmt.Errorf("missing one of 'messageId' or 'statusCode' in request parameters"))
 	}
 
 	msgStatus, found := statusMapping[payload.StatusCode]
 	if !found {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel,
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
 			fmt.Errorf("unknown status '%d', must be one of 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14", payload.StatusCode))
 	}
 
@@ -107,11 +105,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	err := handlers.DecodeAndValidateJSON(payload, r)
 
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	if payload.FromNumber == "" || payload.MessageID == "" || payload.Text == "" || payload.Timestamp == 0 {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel,
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
 			fmt.Errorf("missing one of 'messageId', 'fromNumber', 'text' or 'timestamp' in request body"))
 	}
 
@@ -143,13 +141,13 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// create our URN
 	urn, err := urns.NewTelURNForCountry(payload.FromNumber, channel.Country())
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text)).WithReceivedOn(date.UTC()).WithExternalID(payload.MessageID)
 
 	// and finally write our message
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 // utility method to decode crazy clickatell 16 bit format

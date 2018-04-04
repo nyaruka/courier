@@ -35,7 +35,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	return nil
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
@@ -43,12 +44,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// no message? ignore this
 	if payload.Message.MessageID == 0 {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "Ignoring request, no message")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 	}
 
 	// create our date from the timestamp
@@ -57,7 +58,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// create our URN
 	urn, err := urns.NewTelegramURN(payload.Message.From.ContactID, strings.ToLower(payload.Message.From.Username))
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// build our name from first and last
@@ -117,7 +118,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// we had an error downloading media
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, errors.WrapPrefix(err, "error retrieving media", 0))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.WrapPrefix(err, "error retrieving media", 0))
 	}
 
 	// build our msg
@@ -127,7 +128,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		msg.WithAttachment(mediaURL)
 	}
 	// and finally write our message
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, replies string) (string, *courier.ChannelLog, error) {

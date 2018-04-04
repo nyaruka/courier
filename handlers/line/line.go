@@ -35,7 +35,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	return nil
 }
 
 // {
@@ -86,11 +87,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	msgs := []courier.Msg{}
-	events := []courier.Event{}
 
 	for _, lineEvent := range payload.Events {
 		if (lineEvent.Source.Type == "" && lineEvent.Source.UserID == "") || (lineEvent.Message.Type == "" && lineEvent.Message.ID == "" && lineEvent.Message.Text == "") || lineEvent.Message.Type != "text" {
@@ -103,25 +103,18 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 		urn, err := urns.NewURNFromParts(urns.LineScheme, lineEvent.Source.UserID, "")
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
 		msg := h.Backend().NewIncomingMsg(channel, urn, lineEvent.Message.Text).WithReceivedOn(date)
-
-		// and write it
-		err = h.Backend().WriteMsg(ctx, msg)
-		if err != nil {
-			return nil, err
-		}
 		msgs = append(msgs, msg)
-		events = append(events, msg)
 	}
 
 	if len(msgs) == 0 {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring request, no message")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
 
-	return events, courier.WriteMsgSuccess(ctx, w, r, msgs)
+	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
 
 }
 
