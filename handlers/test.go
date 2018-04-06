@@ -293,6 +293,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 				}
 				if testCase.Text != nil {
 					require.NotNil(msg)
+					require.Equal(mb.LenQueuedMsgs(), 1)
 					require.Equal(*testCase.Text, msg.Text())
 				}
 				if testCase.ChannelEvent != nil {

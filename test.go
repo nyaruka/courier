@@ -279,6 +279,11 @@ func (mb *MockBackend) ClearQueueMsgs() {
 	mb.queueMsgs = nil
 }
 
+// LenQueuedMsgs Get the length of queued msgs
+func (mb *MockBackend) LenQueuedMsgs() int {
+	return len(mb.queueMsgs)
+}
+
 // Health gives a string representing our health, empty for our mock
 func (mb *MockBackend) Health() string {
 	return ""

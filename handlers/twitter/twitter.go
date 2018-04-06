@@ -190,11 +190,6 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 			msg.WithAttachment(entry.MessageCreate.MessageData.Attachment.Media.MediaURLHTTPS)
 		}
 
-		err = h.Backend().WriteMsg(ctx, msg)
-		if err != nil {
-			return nil, err
-		}
-
 		msgs = append(msgs, msg)
 	}
 
