@@ -284,7 +284,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		duration := time.Now().Sub(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
-		// if we received an error, write it out and report itf
+		// if we received an error, write it out and report it
 		if err != nil {
 			logrus.WithError(err).WithField("channel_uuid", channel.UUID()).WithField("url", url).WithField("request", string(request)).Error("error handling request")
 			writeAndLogRequestError(ctx, ww, r, channel, err)
@@ -366,7 +366,7 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
-	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "404").Error("not found")
+	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "404").Info("not found")
 	errors := []interface{}{NewErrorData(fmt.Sprintf("not found: %s", r.URL.String()))}
 	err := WriteDataResponse(context.Background(), w, http.StatusNotFound, "Not Found", errors)
 	if err != nil {
@@ -375,7 +375,7 @@ func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handle405(w http.ResponseWriter, r *http.Request) {
-	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "405").Error("invalid method")
+	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "405").Info("invalid method")
 	errors := []interface{}{NewErrorData(fmt.Sprintf("method not allowed: %s", r.Method))}
 	err := WriteDataResponse(context.Background(), w, http.StatusMethodNotAllowed, "Method Not Allowed", errors)
 	if err != nil {
