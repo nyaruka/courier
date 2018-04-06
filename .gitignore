@@ -3,6 +3,8 @@
 *.a
 *.so
 *~
+fabfile.py
+fabfile.pyc
 
 # Folders
 _obj
