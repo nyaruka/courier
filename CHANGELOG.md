@@ -1,3 +1,7 @@
+v1.2.73
+----------
+ * do not log illegal methods or 404s
+
 v1.1.3
 ----------
  * Add changelog
