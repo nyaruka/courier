@@ -163,12 +163,6 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 		// build our infobipMessage
 		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(messageID)
-
-		// and write it
-		err = h.Backend().WriteMsg(ctx, msg)
-		if err != nil {
-			return nil, err
-		}
 		msgs = append(msgs, msg)
 
 	}
