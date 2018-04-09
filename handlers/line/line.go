@@ -161,9 +161,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		// record our status and log
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 		status.AddLog(log)
-
 		if err != nil {
-			return status, err
+			return status, nil
 		}
 		status.SetStatus(courier.MsgWired)
 	}
