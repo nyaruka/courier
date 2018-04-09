@@ -36,41 +36,39 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	return nil
 }
 
 // receiveMessage takes care of handling incoming messages
 func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := r.ParseForm()
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	body := r.Form.Get("text")
 	from := r.Form.Get("from")
 	if from == "" {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("missing required field 'from'"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required field 'from'"))
 	}
 
 	// create our URN
 	urn, err := urns.NewTelURNForCountry(from, c.Country())
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(c, urn, body).WithReceivedOn(time.Now().UTC())
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+}
 
-	// and finally queue our message
-	err = h.Backend().WriteMsg(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	// we need to write our response ourselves as M3Tech expects "SMS Accepted" in the response body
+// WriteMsgSuccessResponse writes a success response for the messages
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
 	w.Header().Set("Content-Type", "application/json")
-	_, err = fmt.Fprintf(w, "SMS Accepted: %d", msg.ID().Int64)
-	return []courier.Event{msg}, err
+	_, err := fmt.Fprintf(w, "SMS Accepted: %d", msgs[0].ID().Int64)
+	return err
 }
 
 // SendMsg sends the passed in message, returning any error

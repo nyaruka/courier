@@ -34,11 +34,9 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, http.MethodPost, "delivered", h.statusMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "delivered", h.statusMessage)
+	return nil
 }
 
 var statusMapping = map[string]courier.MsgStatusValue{
@@ -64,7 +62,7 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 	payload := &statusPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	data := make([]interface{}, len(payload.Results))
@@ -72,7 +70,7 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 	for _, s := range payload.Results {
 		msgStatus, found := statusMapping[s.Status.GroupName]
 		if !found {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", s.Status.GroupName))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%s', must be one of PENDING, DELIVERED, EXPIRED, REJECTED or UNDELIVERABLE", s.Status.GroupName))
 		}
 
 		// write our status
@@ -132,11 +130,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	if payload.MessageCount == 0 {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring request, no message")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
 
 	msgs := []courier.Msg{}
@@ -153,33 +151,27 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		if dateString != "" {
 			date, err = time.Parse("2006-01-02T15:04:05.999999999-0700", dateString)
 			if err != nil {
-				return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 			}
 		}
 
 		// create our URN
 		urn, err := urns.NewTelURNForCountry(infobipMessage.From, channel.Country())
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
 		// build our infobipMessage
 		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(messageID)
-
-		// and write it
-		err = h.Backend().WriteMsg(ctx, msg)
-		if err != nil {
-			return nil, err
-		}
 		msgs = append(msgs, msg)
 
 	}
 
 	if len(msgs) == 0 {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring request, no message")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
 
-	return []courier.Event{msgs[0]}, courier.WriteMsgSuccess(ctx, w, r, msgs)
+	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error

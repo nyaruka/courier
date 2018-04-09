@@ -35,11 +35,9 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "event", h.receiveEvent)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, http.MethodPost, "inbound", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "event", h.receiveEvent)
+	s.AddHandlerRoute(h, http.MethodPost, "inbound", h.receiveMessage)
+	return nil
 }
 
 // {
@@ -64,7 +62,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	// check authentication
@@ -79,18 +77,18 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	// parse our date
 	date, err := time.Parse("2006-01-02 15:04:05", payload.Timestamp)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("unable to parse date: %s", payload.Timestamp))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("unable to parse date: %s", payload.Timestamp))
 	}
 
 	urn, err := urns.NewTelURNForCountry(payload.From, c.Country())
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	msg := h.Backend().NewIncomingMsg(c, urn, payload.Content).WithExternalID(payload.MessageID).WithReceivedOn(date.UTC())
 
 	// and finally write our message
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 // {
@@ -116,7 +114,7 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 	payload := &eventPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	// check authentication
@@ -131,12 +129,12 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 	// look up our status
 	msgStatus, found := statusMapping[payload.EventType]
 	if !found {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, c, "ignoring unknown event_type")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "ignoring unknown event_type")
 	}
 
 	// ignore pending, same status we are already in
 	if msgStatus == courier.MsgWired {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, c, "ignoring existing pending status")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "ignoring existing pending status")
 	}
 
 	status := h.Backend().NewMsgStatusForExternalID(c, payload.MessageID, msgStatus)

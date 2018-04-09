@@ -42,19 +42,11 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
-	if err != nil {
-		return err
-	}
-	err = s.AddHandlerRoute(h, http.MethodGet, "status", h.receiveStatus)
-	if err != nil {
-		return err
-	}
-	err = s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodGet, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	return nil
 }
 
 type statusForm struct {
@@ -74,12 +66,12 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, fmt.Sprintf("ignoring unknown status '%s'", form.Status))
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("ignoring unknown status '%s'", form.Status))
 	}
 	// write our status
 	status := h.Backend().NewMsgStatusForExternalID(channel, form.MsgID, msgStatus)
@@ -102,7 +94,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	recipient := form.Longcode
@@ -113,11 +105,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	if recipient == "" || sender == "" {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing shortcode, longcode, from or msisdn parameters"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing shortcode, longcode, from or msisdn parameters"))
 	}
 
 	if channel.Address() != recipient {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid to number [%s], expecting [%s]", recipient, channel.Address()))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid to number [%s], expecting [%s]", recipient, channel.Address()))
 	}
 
 	loc, err := time.LoadLocation("Asia/Kuala_Lumpur")
@@ -127,20 +119,20 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	date, err := time.ParseInLocation("2006-01-0215:04:05", form.Time, loc)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// create our URN
 	urn, err := urns.NewTelURNForCountry(sender, channel.Country())
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithExternalID(form.MsgID).WithReceivedOn(date.UTC())
 
 	// and write it
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 // WriteMsgSuccessResponse
