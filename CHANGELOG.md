@@ -1,3 +1,7 @@
+v1.2.77
+----------
+ * Update .gitignore
+
 v1.2.76
 ----------
  * Update .gitignore
