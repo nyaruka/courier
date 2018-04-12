@@ -182,8 +182,11 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 		}
 		date := time.Unix(0, ts*1000000).UTC()
 
+		// Twitter escapes & in HTML format, so replace &amp; with &
+		text := strings.Replace(entry.MessageCreate.MessageData.Text, "&amp;", "&", -1)
+
 		// create our message
-		msg := h.Backend().NewIncomingMsg(c, urn, entry.MessageCreate.MessageData.Text).WithExternalID(entry.ID).WithReceivedOn(date).WithContactName(user.Name)
+		msg := h.Backend().NewIncomingMsg(c, urn, text).WithExternalID(entry.ID).WithReceivedOn(date).WithContactName(user.Name)
 
 		// if we have an attachment, add that as well
 		if entry.MessageCreate.MessageData.Attachment != nil {
