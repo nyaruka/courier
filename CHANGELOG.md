@@ -1,3 +1,7 @@
+v1.2.80
+----------
+ * Make sure the messageid is unique for multiple part messages for Dartmedia
+
 v1.2.79
 ----------
  * Decode &amp; in Twitter message bodies
