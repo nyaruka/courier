@@ -1,3 +1,11 @@
+v1.2.79
+----------
+ * Decode &amp; in Twitter message bodies
+
+v1.2.78
+----------
+ * Accept Hub9/Dart encrypted phonenumber identifier and save then as external scheme
+
 v1.2.77
 ----------
  * Update .gitignore
