@@ -21,6 +21,7 @@ var (
 	externalURN    = receiveURL + "?userid=testusr&password=test&original=cmp-oodddqddwdwdcd&sendto=2020&message=Msg"
 
 	validStatus        = statusURL + "?status=10&messageid=12345"
+	validPartStatus    = statusURL + "?status=10&messageid=12345.2"
 	failedStatus       = statusURL + "?status=30&messageid=12345"
 	badStatus          = statusURL + "?status=foo&messageid=12345"
 	badStatusMessageID = statusURL + "?status=10&messageid=abc"
@@ -33,6 +34,7 @@ var daTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Invalid", URL: invalidMessage, Status: 400, Response: "missing required parameters original and sendto"},
 
 	{Label: "Valid Status", URL: validStatus, Status: 200, Response: "000", MsgStatus: Sp("D")},
+	{Label: "Valid Status", URL: validPartStatus, Status: 200, Response: "000", MsgStatus: Sp("D")},
 	{Label: "Failed Status", URL: failedStatus, Status: 200, Response: "000", MsgStatus: Sp("F")},
 	{Label: "Missing Status", URL: missingStatus, Status: 400, Response: "parameters messageid and status should not be empty"},
 	{Label: "Missing Status", URL: badStatus, Status: 400, Response: "parsing failed: status 'foo' is not an integer"},
@@ -64,7 +66,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text:         "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
 		URN:          "tel:+250788383383",
 		Status:       "W",
-		URLParams:    map[string]string{"message": "I need to keep adding more things to make it work", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
+		URLParams:    map[string]string{"message": "I need to keep adding more things to make it work", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10.2"},
 		ResponseBody: "000", ResponseStatus: 200,
 		SendPrep: setSendURL},
 	{Label: "Send Attachment",
