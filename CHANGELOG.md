@@ -1,3 +1,7 @@
+v1.2.81
+----------
+ * Honor x-forwarded-path header for twilio signatures
+
 v1.2.80
 ----------
  * Make sure the messageid is unique for multiple part messages for Dartmedia
