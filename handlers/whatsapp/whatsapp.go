@@ -159,14 +159,18 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 }
 
 // {
-//   "payload": {
-//     "to": "16315555555",
-//     "body": "hello world"
+//   "to": "16315555555",
+//   "type": "text",
+//   "text": {
+//     "body": "text message"
 //   }
 // }
 type mtPayload struct {
 	To   string `json:"to"    validate:"required"`
-	Body string `json:"body"  validate:"required"`
+	Type string `json:"type"`
+	Text struct {
+		Body string `json:"body"  validate:"required"`
+	} `json:"text"`
 }
 
 // whatsapp only allows messages up to 4096 chars
@@ -174,11 +178,10 @@ const maxMsgLength = 4096
 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	// get our username and password
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if username == "" || password == "" {
-		return nil, fmt.Errorf("missing username or password for WA channel")
+	// get our token
+	token := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	if token == "" {
+		return nil, fmt.Errorf("missing token for WA channel")
 	}
 
 	urlStr := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
@@ -186,7 +189,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	if err != nil {
 		return nil, fmt.Errorf("invalid base url set for WA channel: %s", err)
 	}
-	sendPath, _ := url.Parse("/api/rest_send.php")
+	sendPath, _ := url.Parse("/v1/messages")
 	sendURL := url.ResolveReference(sendPath).String()
 
 	// TODO: figure out sending media
@@ -196,11 +199,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	for i, part := range parts {
 		payload := mtPayload{
 			To:   msg.URN().Path(),
-			Body: part,
+			Type: "text",
 		}
+		payload.Text.Body = part
 
-		body := map[string]interface{}{"payload": payload}
-		jsonBody, err := json.Marshal(body)
+		jsonBody, err := json.Marshal(payload)
 		if err != nil {
 			return status, err
 		}
@@ -208,7 +211,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
-		req.SetBasicAuth(username, password)
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log
@@ -219,16 +222,16 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		// was this an error?
-		wasError, err := jsonparser.GetBoolean([]byte(rr.Body), "error")
-		if err != nil || wasError {
+		errorTitle, _ := jsonparser.GetString([]byte(rr.Body), "errors", "[0]", "title")
+		if errorTitle != "" {
 			log.WithError("Message Send Error", errors.Errorf("received error from send endpoint"))
 			return status, nil
 		}
 
 		// grab the id
-		externalID, err := jsonparser.GetString([]byte(rr.Body), "payload", "message_id")
+		externalID, err := jsonparser.GetString([]byte(rr.Body), "messages", "[0]", "id")
 		if err != nil {
-			log.WithError("Message Send Error", errors.Errorf("unable to get message_id from body"))
+			log.WithError("Message Send Error", errors.Errorf("unable to get messages.0.id from body"))
 			return status, nil
 		}
 
