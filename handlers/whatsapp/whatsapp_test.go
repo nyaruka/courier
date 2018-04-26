@@ -16,111 +16,81 @@ var testChannels = []courier.Channel{
 		"250788383383",
 		"RW",
 		map[string]interface{}{
-			"username": "wa123",
-			"password": "pword123",
 			"base_url": "https://foo.bar/",
 		}),
 }
 
 var helloMsg = `{
-  "meta": null,
-  "payload": {
+  "messages": [{
     "from": "250788123123",
-    "message_id": "41",
+    "id": "41",
     "timestamp": "1454119029",
-    "message": {
-        "has_media": false,
-        "text": "hello world",
-        "type": "text"
-    }
-  },
-  "error": false
+    "text": {
+      "body": "hello world"
+    },
+    "type": "text"
+  }]
 }`
 
 var invalidFrom = `{
-  "meta": null,
-  "payload": {
+  "messages": [{
     "from": "notnumber",
-    "message_id": "41",
+    "id": "41",
     "timestamp": "1454119029",
-    "message": {
-        "has_media": false,
-        "text": "hello world",
-        "type": "text"
-    }
-  },
-  "error": false
+    "text": {
+      "body": "hello world"
+    },
+    "type": "text"
+  }]
 }`
 
 var invalidTimestamp = `{
-  "meta": null,
-  "payload": {
-    "from": "250788123123",
-    "message_id": "41",
+  "messages": [{
+    "from": "notnumber",
+    "id": "41",
     "timestamp": "asdf",
-    "message": {
-        "has_media": false,
-        "text": "hello world",
-        "type": "text"
-    }
-  },
-  "error": false
+    "text": {
+      "body": "hello world"
+    },
+    "type": "text"
+  }]
 }`
 
 var invalidMsg = `not json`
 
-var errorMsg = `{
-    "meta": null,
-    "payload": {
-      "from": "250788123123",
-      "message_id": "41",
-      "timestamp": "1454119029",
-      "message": {
-          "has_media": false,
-          "text": "hello world",
-          "type": "text"
-      }
-    },
-    "error": true
-  }`
-
 var validStatus = `
 {
-    "meta": null,
-    "payload": {
-      "message_id": "157b5e14568e8",
-      "to": "16315555555",
-      "timestamp": "1476225796",
-      "message_status": "sent"
-    },
-    "error": false
-  } 
+  "statuses": [{
+    "id": "9712A34B4A8B6AD50F",
+    "recipient_id": "16315555555",
+    "status": "sent",
+    "timestamp": "1518694700"
+  }]
+}
 `
 
 var invalidStatus = `
 {
-    "meta": null,
-    "payload": {
-      "message_id": "157b5e14568e8",
-      "to": "16315555555",
-      "timestamp": "1476225796",
-      "message_status": "in_orbit"
-    },
-    "error": false
-  } 
+  "statuses": [{
+    "id": "9712A34B4A8B6AD50F",
+    "recipient_id": "16315555555",
+    "status": "in_orbit",
+    "timestamp": "1518694700"
+  }]
+}
 `
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, Status: 200, Response: "Accepted",
+	{Label: "Receive Valid Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, Status: 200, Response: `"type":"msg"`,
 		Text: Sp("hello world"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 	{Label: "Receive Invalid JSON", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidMsg, Status: 400, Response: "unable to parse"},
 	{Label: "Receive Invalid From", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidFrom, Status: 400, Response: "invalid whatsapp id"},
 	{Label: "Receive Invalid Timestamp", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTimestamp, Status: 400, Response: "invalid timestamp"},
-	{Label: "Receive Error Msg", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: errorMsg, Status: 400, Response: "received errored message"},
 
-	{Label: "Receive Valid Status", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/status", Data: validStatus, Status: 200, Response: "Status Update Accepted"},
-	{Label: "Receive Invalid JSON", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/status", Data: "not json", Status: 400, Response: "unable to parse"},
-	{Label: "Receive Invalid Status", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/status", Data: invalidStatus, Status: 400, Response: "unknown status"},
+	{Label: "Receive Valid Status", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: validStatus, Status: 200, Response: `"type":"status"`,
+		MsgStatus: Sp("S"), ExternalID: Sp("9712A34B4A8B6AD50F")},
+	{Label: "Receive Invalid JSON", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: "not json", Status: 400, Response: "unable to parse"},
+	{Label: "Receive Invalid Status", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidStatus, Status: 400, Response: `"invalid status: in_orbit"`},
 }
 
 func TestHandler(t *testing.T) {
