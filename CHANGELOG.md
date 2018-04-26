@@ -1,3 +1,7 @@
+v1.2.83
+----------
+ * implement unified webhook endpoint for whatsapp
+
 v1.2.82
 ----------
  * Implement new WhatsApp API for sending
