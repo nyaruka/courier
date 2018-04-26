@@ -1,3 +1,7 @@
+v1.2.82
+----------
+ * Implement new WhatsApp API for sending
+
 v1.2.81 
 ----------
  * Honor x-forwarded-path header for twilio signatures
