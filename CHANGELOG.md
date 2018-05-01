@@ -1,3 +1,7 @@
+v1.2.84
+----------
+ * write UUID fields for incoming messages
+
 v1.2.83
 ----------
  * implement unified webhook endpoint for whatsapp
