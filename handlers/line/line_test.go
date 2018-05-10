@@ -203,7 +203,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Status:       "E",
 		ResponseBody: `{"message": "Error"}`, ResponseStatus: 403,
 		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
-		Error:       "received non 200 status: 403",
 		SendPrep:    setSendURL},
 }
 
