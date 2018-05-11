@@ -14,7 +14,7 @@ var (
 	receiveValidMessageFrom     = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=%2B2349067554729&message=Join"
 	receiveValidMessageWithDate = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&message=Join&date=2017-06-23T12:30:00.500Z"
 	receiveValidMessageWithTime = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&message=Join&time=2017-06-23T12:30:00Z"
-	receiveInvalidURN           = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=MTN&message=Join"
+	receiveInvalidURN           = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=MTN12345678901234567&message=Join"
 	receiveNoParams             = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	receiveNoSender             = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?message=Join"
 	receiveInvalidDate          = "/c/yo/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&message=Join&time=20170623T123000Z"
@@ -33,7 +33,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC))},
 	{Label: "Receive Valid Message With Time", URL: receiveValidMessageWithTime, Data: "", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC))},
-	{Label: "Invalid URN", URL: receiveInvalidURN, Data: "", Status: 400, Response: "phone number supplied was empty"},
+	{Label: "Invalid URN", URL: receiveInvalidURN, Data: "", Status: 400, Response: "invalid tel number"},
 	{Label: "Receive No Params", URL: receiveNoParams, Data: "", Status: 400, Response: "must have one of 'sender' or 'from'"},
 	{Label: "Receive No Sender", URL: receiveNoSender, Data: "", Status: 400, Response: "must have one of 'sender' or 'from'"},
 	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "", Status: 400, Response: "invalid date format, must be RFC 3339"},

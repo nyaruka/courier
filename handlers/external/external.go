@@ -102,12 +102,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	if channel.Schemes()[0] == urns.TelScheme {
 		urn, err = urns.NewTelURNForCountry(sender, channel.Country())
 	} else {
-		urn, err = urns.NewURNFromParts(channel.Schemes()[0], sender, "")
+		urn, err = urns.NewURNFromParts(channel.Schemes()[0], sender, "", "")
 	}
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
-	urn, _ = urn.Normalize("")
+	urn = urn.Normalize("")
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithReceivedOn(date)
