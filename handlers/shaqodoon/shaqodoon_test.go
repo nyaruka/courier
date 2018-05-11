@@ -11,7 +11,7 @@ import (
 
 var (
 	receiveValidMessage         = "/c/sq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=%2B2349067554729&text=Join"
-	receiveInvalidURN           = "/c/sq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=MTN&text=Join"
+	receiveInvalidURN           = "/c/sq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=MTN12345678901234567&text=Join"
 	receiveEmptyMessage         = "/c/sq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=%2B2349067554729&text="
 	receiveValidMessageWithDate = "/c/sq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=%2B2349067554729&text=Join&date=2017-06-23T12:30:00.500Z"
 	receiveValidMessageWithTime = "/c/sq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=%2B2349067554729&text=Join&time=2017-06-23T12:30:00Z"

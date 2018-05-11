@@ -178,10 +178,10 @@
   revision = "b12749342a72c772a96134ba3204d2c7ee2cee53"
 
 [[projects]]
-  branch = "add-wechat-scheme"
+  branch = "master"
   name = "github.com/nyaruka/gocommon"
   packages = ["urns"]
-  revision = "5af6b3f51929a847a2e898fc017bdb9d7f86bea6"
+  revision = "bc2f2eb770fbf625b50efe550c9652b9291d8992"
 
 [[projects]]
   name = "github.com/nyaruka/phonenumbers"
@@ -269,6 +269,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "83af15f1fc53ba9c8ed8c42e0087c883481b6ff656ed4fc3a26e84c42474d55a"
+  inputs-digest = "82036ef04d86dc5ffbae2ef639189b2bced3a514713aab8db01bc213abfe480f"
   solver-name = "gps-cdcl"
   solver-version = 1

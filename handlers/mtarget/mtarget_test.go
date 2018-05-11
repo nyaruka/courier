@@ -12,7 +12,7 @@ var (
 	receiveURL = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 
 	receiveValidMessage = "Msisdn=+923161909799&Content=hello+world&Keyword=Default"
-	receiveInvalidURN   = "Msisdn=MTN&Content=hello+world&Keyword=Default"
+	receiveInvalidURN   = "Msisdn=MTN12345678901234567&Content=hello+world&Keyword=Default"
 	receiveStop         = "Msisdn=+923161909799&Content=Stop&Keyword=Stop"
 	receiveMissingFrom  = "Content=hello&Keyword=Default"
 

@@ -40,7 +40,7 @@
   name = "github.com/lib/pq"
 
 [[constraint]]
-  branch = "add-wechat-scheme"
+  branch = "master"
   name = "github.com/nyaruka/gocommon"
 
 [[constraint]]
