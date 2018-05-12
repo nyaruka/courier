@@ -162,7 +162,7 @@ func (w *Sender) sendMessage(msg Msg) {
 	sendCTX, cancel := context.WithTimeout(context.Background(), time.Second*35)
 	defer cancel()
 
-	msgLog := log.WithField("msg_id", msg.ID().String()).WithField("msg_text", msg.Text()).WithField("msg_urn", msg.URN().Identity())
+	msgLog := log.WithField("msg_id", msg.ID().String()).WithField("msg_text", msg.Text()).WithField("msg_urn", msg.URN().Identity().String())
 	if len(msg.Attachments()) > 0 {
 		msgLog = msgLog.WithField("attachments", msg.Attachments())
 	}

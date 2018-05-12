@@ -27,7 +27,7 @@ func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID
 		OrgID:     org,
 		ChannelID: channelID,
 		ContactID: contactID,
-		Identity:  urn.Identity(),
+		Identity:  urn.Identity().String(),
 		Scheme:    urn.Scheme(),
 		Path:      urn.Path(),
 		Display:   utils.NullStringIfEmpty(urn.Display()),
@@ -74,17 +74,17 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 	scheme := urn.Scheme()
 	contactURNs, err := contactURNsForContact(db, contact.ID_)
 	if err != nil {
-		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("channel_id", channelID.Int64).Error("error looking up contact urns")
+		logrus.WithError(err).WithField("urn", urn.Identity().String()).WithField("channel_id", channelID.Int64).Error("error looking up contact urns")
 		return err
 	}
 
 	// no URNs? that's an error
 	if len(contactURNs) == 0 {
-		return fmt.Errorf("URN '%s' not present for contact %d", urn.Identity(), contact.ID_.Int64)
+		return fmt.Errorf("URN '%s' not present for contact %d", urn.Identity().String(), contact.ID_.Int64)
 	}
 
 	// only a single URN and it is ours
-	if contactURNs[0].Identity == urn.Identity() {
+	if contactURNs[0].Identity == urn.Identity().String() {
 		display := utils.NullStringIfEmpty(urn.Display())
 
 		// if display, channel id or auth changed, update them
@@ -106,7 +106,7 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 	currPriority := 50
 	for _, existing := range contactURNs {
 		// if this is current URN, make sure it has an updated auth as well
-		if existing.Identity == urn.Identity() {
+		if existing.Identity == urn.Identity().String() {
 			existing.Priority = topPriority
 			existing.ChannelID = channelID
 			if auth != "" {
@@ -141,7 +141,7 @@ ORDER BY priority desc LIMIT 1
 // it with the passed in contact if necessary
 func contactURNForURN(db *sqlx.Tx, org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN, auth string) (*DBContactURN, error) {
 	contactURN := newDBContactURN(org, channelID, contactID, urn, auth)
-	err := db.Get(contactURN, selectOrgURN, org, urn.Identity())
+	err := db.Get(contactURN, selectOrgURN, org, urn.Identity().String())
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
