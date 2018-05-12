@@ -117,9 +117,9 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 }
 
 const insertMsgSQL = `
-INSERT INTO msgs_msg(org_id, direction, text, attachments, msg_count, error_count, high_priority, status, 
+INSERT INTO msgs_msg(org_id, uuid, direction, text, attachments, msg_count, error_count, high_priority, status, 
                      visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on)
-              VALUES(:org_id, :direction, :text, :attachments, :msg_count, :error_count, :high_priority, :status, 
+              VALUES(:org_id, :uuid, :direction, :text, :attachments, :msg_count, :error_count, :high_priority, :status, 
                      :visibility, :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :next_attempt, :queued_on, :sent_on)
 RETURNING id
 `
@@ -368,7 +368,7 @@ func writeMsgSeen(b *backend, msg *DBMsg) {
 type DBMsg struct {
 	OrgID_                OrgID                  `json:"org_id"          db:"org_id"`
 	ID_                   courier.MsgID          `json:"id"              db:"id"`
-	UUID_                 courier.MsgUUID        `json:"uuid"`
+	UUID_                 courier.MsgUUID        `json:"uuid"            db:"uuid"`
 	Direction_            MsgDirection           `json:"direction"       db:"direction"`
 	Status_               courier.MsgStatusValue `json:"status"          db:"status"`
 	Visibility_           MsgVisibility          `json:"visibility"      db:"visibility"`

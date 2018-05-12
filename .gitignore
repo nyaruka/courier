@@ -5,6 +5,8 @@
 *~
 fabfile.py
 fabfile.pyc
+fabconfig.py
+fabconfig.pyc
 
 # Folders
 _obj

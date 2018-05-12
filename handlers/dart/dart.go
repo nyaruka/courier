@@ -71,7 +71,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// create our URN
 	urn, err := urns.NewTelURNForCountry(form.Original, channel.Country())
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		urn, err = urns.NewURNFromParts(urns.ExternalScheme, form.Original, "")
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		}
 	}
 
 	// build our msg
@@ -112,7 +115,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		msgStatus = courier.MsgFailed
 	}
 
-	msgID, err := strconv.ParseInt(form.MessageID, 10, 64)
+	msgID, err := strconv.ParseInt(strings.Split(form.MessageID, ".")[0], 10, 64)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("parsing failed: messageid '%s' is not an integer", form.MessageID))
 	}
@@ -150,17 +153,22 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), h.maxLength)
-	for _, part := range parts {
+	for i, part := range parts {
 		form := url.Values{
-			"userid":    []string{username},
-			"password":  []string{password},
-			"sendto":    []string{strings.TrimPrefix(msg.URN().Path(), "+")},
-			"original":  []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
-			"messageid": []string{msg.ID().String()},
-			"udhl":      []string{"0"},
-			"dcs":       []string{"0"},
-			"message":   []string{part},
+			"userid":   []string{username},
+			"password": []string{password},
+			"sendto":   []string{strings.TrimPrefix(msg.URN().Path(), "+")},
+			"original": []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
+			"udhl":     []string{"0"},
+			"dcs":      []string{"0"},
+			"message":  []string{part},
 		}
+
+		messageid := msg.ID().String()
+		if i > 0 {
+			messageid = fmt.Sprintf("%s.%d", msg.ID().String(), i+1)
+		}
+		form["messageid"] = []string{messageid}
 
 		partSendURL, _ := url.Parse(h.sendURL)
 		partSendURL.RawQuery = form.Encode()

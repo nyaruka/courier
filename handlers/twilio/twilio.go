@@ -32,7 +32,8 @@ const (
 	configMessagingServiceSID = "messaging_service_sid"
 	configSendURL             = "send_url"
 
-	twSignatureHeader = "X-Twilio-Signature"
+	signatureHeader     = "X-Twilio-Signature"
+	forwardedPathHeader = "X-Forwarded-Path"
 )
 
 var (
@@ -268,7 +269,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 // see https://www.twilio.com/docs/api/security
 func (h *handler) validateSignature(channel courier.Channel, r *http.Request) error {
-	actual := r.Header.Get(twSignatureHeader)
+	actual := r.Header.Get(signatureHeader)
 	if actual == "" {
 		return fmt.Errorf("missing request signature")
 	}
@@ -283,7 +284,13 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 		return fmt.Errorf("invalid or missing auth token in config")
 	}
 
-	url := fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI())
+	path := r.URL.RequestURI()
+	proxyPath := r.Header.Get(forwardedPathHeader)
+	if proxyPath != "" {
+		path = proxyPath
+	}
+
+	url := fmt.Sprintf("https://%s%s", r.Host, path)
 	expected, err := twCalculateSignature(url, r.PostForm, authToken)
 	if err != nil {
 		return err
