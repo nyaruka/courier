@@ -17,10 +17,10 @@ import (
 )
 
 const (
-	configPublicKey  = "public_key"
-	configPrivateKey = "private_key"
-	configInstanceId = "instance_id"
-	configCarrierId  = "carrier_id"
+	configPublicKey  = "messangi_public_key"
+	configPrivateKey = "messangi_private_key"
+	configInstanceId = "messangi_instance_id"
+	configCarrierId  = "messangi_carrier_id"
 )
 
 var (
