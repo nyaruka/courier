@@ -96,8 +96,8 @@ func (h *handler) fetchAccessToken(channel courier.Channel) error {
 	time.Sleep(fetchTimeout)
 
 	form := url.Values{
-		"grant_type": []string{"client_credentials"},
-		"app_id":     []string{channel.StringConfigForKey(configAppID, "")},
+		"grant_type": []string{"client_credential"},
+		"appid":      []string{channel.StringConfigForKey(configAppID, "")},
 		"secret":     []string{channel.StringConfigForKey(configAppSecret, "")},
 	}
 
