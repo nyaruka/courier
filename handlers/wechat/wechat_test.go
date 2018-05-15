@@ -26,64 +26,72 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US", map[string]interface{}{configAppSecret: "secret", configAppID: "app-id"}),
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US",
+		map[string]interface{}{courier.ConfigSecret: "secret", configAppSecret: "app-secret", configAppID: "app-id"}),
 }
 
 var (
 	receiveURL = "/c/wc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab"
 
 	validMsg = `
-	{
-		"ToUsername": "12121212121212",
-		"FromUserName": "1234",
-		"CreateTime": 1518774424438,
-		"MsgType": "text",
-		"MsgId": "123456",
-		"Content": "Simple Message"
-	}`
+	<xml>
+    <ToUserName><![CDATA[12121212121212]]></ToUserName>
+    <FromUserName><![CDATA[1234]]></FromUserName>
+    <CreateTime>1518774424438</CreateTime>
+    <MsgType><![CDATA[text]]></MsgType>
+    <Content><![CDATA[Simple Message]]></Content>
+    <MsgId>123456</MsgId>
+	</xml>
+	`
 
-	subscribeEvent = `{
-		"ToUsername": "12121212121212",
-		"FromUserName": "1234",
-		"CreateTime": 1518774424438,
-		"MsgType": "event",
-		"Event": "subscribe"
-	}`
+	subscribeEvent = `
+	<xml>
+    <ToUserName><![CDATA[12121212121212]]></ToUserName>
+    <FromUserName><![CDATA[1234]]></FromUserName>
+    <CreateTime>1518774424438</CreateTime>
+    <MsgType><![CDATA[event]]></MsgType>
+    <Event><![CDATA[subscribe]]></Event>
+	</xml>`
 
-	unsubscribeEvent = `{
-		"ToUsername": "12121212121212",
-		"FromUserName": "1234",
-		"CreateTime": 1454119029,
-		"MsgType": "event",
-		"Event": "unsubscribe"
-	}`
+	unsubscribeEvent = `
+	<xml>
+    <ToUserName><![CDATA[12121212121212]]></ToUserName>
+    <FromUserName><![CDATA[1234]]></FromUserName>
+    <CreateTime>1518774424438</CreateTime>
+    <MsgType><![CDATA[event]]></MsgType>
+    <Event><![CDATA[unsubscribe]]></Event>
+	</xml>`
 
 	missingParamsRequired = `
-	{
-		"ToUsername": "12121212121212",
-		"CreateTime": 1518774424438,
-		"MsgType": "text",
-		"MsgId": "123456",
-		"Content": "Simple Message"
-	}`
+	<xml>
+    <ToUserName><![CDATA[12121212121212]]></ToUserName>
+    <CreateTime>1518774424438</CreateTime>
+    <MsgType><![CDATA[text]]></MsgType>
+    <Content><![CDATA[Simple Message]]></Content>
+    <MsgId>123456</MsgId>
+	</xml>
+	`
 
 	missingParams = `
-	{
-		"ToUsername": "12121212121212",
-		"FromUserName": "1234",
-		"CreateTime": 1518774424438,
-		"MsgType": "text",
-		"Content": "Simple Message"
-	}`
+	<xml>
+    <ToUserName><![CDATA[12121212121212]]></ToUserName>
+    <FromUserName><![CDATA[1234]]></FromUserName>
+    <CreateTime>1518774424438</CreateTime>
+    <MsgType><![CDATA[text]]></MsgType>
+    <Content><![CDATA[Simple Message]]></Content>
+	</xml>
+	`
 
-	imageMessage = `{
-		"ToUsername": "12121212121212",
-		"FromUserName": "1234",
-		"CreateTime": 1518774424438,
-		"MsgType": "image",
-		"MsgId": "123456",
-		"MediaId": "12"
-	}`
+	imageMessage = `
+	<xml>
+    <ToUserName><![CDATA[12121212121212]]></ToUserName>
+    <FromUserName><![CDATA[1234]]></FromUserName>
+    <CreateTime>1518774424438</CreateTime>
+    <MsgType><![CDATA[image]]></MsgType>
+	<MsgId>123456</MsgId>
+	<MediaId>12</MediaId>
+	</xml>
+	`
 )
 
 func addValidSignature(r *http.Request) {

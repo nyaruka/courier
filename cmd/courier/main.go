@@ -44,6 +44,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/twilio"
 	_ "github.com/nyaruka/courier/handlers/twitter"
 	_ "github.com/nyaruka/courier/handlers/viber"
+	_ "github.com/nyaruka/courier/handlers/wechat"
 	_ "github.com/nyaruka/courier/handlers/whatsapp"
 	_ "github.com/nyaruka/courier/handlers/yo"
 	_ "github.com/nyaruka/courier/handlers/zenvia"

@@ -67,7 +67,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	dictOrder := []string{channel.StringConfigForKey(configAppSecret, ""), form.Timestamp, form.Nonce}
+	dictOrder := []string{channel.StringConfigForKey(courier.ConfigSecret, ""), form.Timestamp, form.Nonce}
 	sort.Sort(sort.StringSlice(dictOrder))
 
 	combinedParams := strings.Join(dictOrder, "")
@@ -147,19 +147,19 @@ func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
 }
 
 type moPayload struct {
-	FromUsername string `json:"FromUserName"    validate:"required"`
-	MsgType      string `json:"MsgType"         validate:"required"`
-	CreateTime   int64  `json:"CreateTime"`
-	MsgID        string `json:"MsgId"`
-	Event        string `json:"Event"`
-	Content      string `json:"Content"`
-	MediaID      string `json:"MediaId"`
+	FromUsername string `xml:"FromUserName"    validate:"required"`
+	MsgType      string `xml:"MsgType"         validate:"required"`
+	CreateTime   int64  `xml:"CreateTime"`
+	MsgID        string `xml:"MsgId"`
+	Event        string `xml:"Event"`
+	Content      string `xml:"Content"`
+	MediaID      string `xml:"MediaId"`
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	payload := &moPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
+	err := handlers.DecodeAndValidateXML(payload, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
