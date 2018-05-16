@@ -86,7 +86,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	for _, part := range parts {
 		shortcode  := strings.TrimPrefix(msg.Channel().Address(), "+")
 		to         := strings.TrimPrefix(msg.URN().Path(), "+")
-		textBase64 := base64.StdEncoding.EncodeToString([]byte(part))
+		textBase64 := base64.RawURLEncoding.EncodeToString([]byte(part))
 		params     := fmt.Sprintf("%d/%s/%d/%s/%s", instanceId, shortcode, carrierId, to, textBase64)
 		signature  := signHmacSha256(privateKey, params)
 		fullURL    := fmt.Sprintf("%s/%s/%s/%s", sendURL, params, publicKey, signature)
