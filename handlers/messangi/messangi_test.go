@@ -62,10 +62,10 @@ func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MG", "2020", "JM",
 		map[string]interface{}{
-			"messangi_public_key": "my-public-key",
-			"messangi_private_key": "my-private-key",
-			"messangi_instance_id": 7,
-			"messangi_carrier_id": 2,
+			"public_key": "my-public-key",
+			"private_key": "my-private-key",
+			"instance_id": 7,
+			"carrier_id": 2,
 		})
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 }
