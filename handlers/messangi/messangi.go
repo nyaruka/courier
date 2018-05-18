@@ -88,10 +88,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		to         := strings.TrimPrefix(msg.URN().Path(), "+")
 		textBase64 := base64.RawURLEncoding.EncodeToString([]byte(part))
 		params     := fmt.Sprintf("%d/%s/%d/%s/%s", instanceId, shortcode, carrierId, to, textBase64)
-		signature  := signHmacSha256(privateKey, params)
+		signature  := signHMAC256(privateKey, params)
 		fullURL    := fmt.Sprintf("%s/%s/%s/%s", sendURL, params, publicKey, signature)
 
-		fmt.Println(fullURL)
 		req, _ := http.NewRequest(http.MethodGet, fullURL, nil)
 		rr, err := utils.MakeHTTPRequest(req)
 
@@ -123,7 +122,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	return status, nil
 }
 
-func signHmacSha256(privateKey string, params string) string {
+func signHMAC256(privateKey string, params string) string {
 	hash := hmac.New(sha256.New, []byte(privateKey))
 	hash.Write([]byte(params))
 
