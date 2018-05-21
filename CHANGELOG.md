@@ -1,3 +1,7 @@
+v1.2.85
+----------
+ * update celery queuing to new kombu format
+
 v1.2.84
 ----------
  * write UUID fields for incoming messages
