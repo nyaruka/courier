@@ -3,7 +3,6 @@ package celery
 import (
 	"encoding/json"
 	"log"
-	"strings"
 	"testing"
 	"time"
 
@@ -54,11 +53,6 @@ func TestQueue(t *testing.T) {
 	}
 
 	// check whether things look right
-	members, err := redis.Strings(conn.Do("smembers", "_kombu.binding.handler"))
-	if len(members) != 1 || !strings.HasPrefix(members[0], "handler") {
-		t.Errorf("handler queue has unexpected members: %s", members)
-	}
-
 	taskJSON, err := redis.String(conn.Do("LPOP", "handler"))
 	if err != nil {
 		t.Errorf("should have value in handler queue: %s", err)
@@ -75,4 +69,7 @@ func TestQueue(t *testing.T) {
 	if task.Properties.DeliveryInfo.RoutingKey != "handler" {
 		t.Errorf("task should have handler as routing key")
 	}
+
+	// check our unacked queue
+
 }
