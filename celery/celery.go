@@ -3,8 +3,6 @@ package celery
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
-	"time"
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/satori/go.uuid"
@@ -80,14 +78,6 @@ func QueueEmptyTask(rc redis.Conn, queueName string, taskName string) error {
 	}
 
 	rc.Send("lpush", queueName, string(taskJSON))
-
-	ackJSON, err := json.Marshal([]interface{}{task, "", queueName})
-	if err != nil {
-		return err
-	}
-
-	rc.Send("zadd", "unacked_index", fmt.Sprintf("%.6f", float64(time.Now().UnixNano())/float64(time.Second)), deliveryTag)
-	rc.Send("hset", "unacked", deliveryTag, ackJSON)
 	return nil
 }
 

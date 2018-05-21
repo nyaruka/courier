@@ -69,7 +69,4 @@ func TestQueue(t *testing.T) {
 	if task.Properties.DeliveryInfo.RoutingKey != "handler" {
 		t.Errorf("task should have handler as routing key")
 	}
-
-	// check our unacked queue
-
 }
