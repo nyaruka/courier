@@ -3,8 +3,12 @@ package line
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -18,6 +22,8 @@ import (
 var (
 	sendURL      = "https://api.line.me/v2/bot/message/push"
 	maxMsgLength = 2000
+
+	signatureHeader = "X-Line-Signature"
 )
 
 func init() {
@@ -84,8 +90,13 @@ type moPayload struct {
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	err := h.validateSignature(channel, r)
+	if err != nil {
+		return nil, err
+	}
+
 	payload := &moPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
+	err = handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
@@ -116,6 +127,50 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
 
+}
+
+func (h *handler) validateSignature(channel courier.Channel, r *http.Request) error {
+	actual := r.Header.Get(signatureHeader)
+	if actual == "" {
+		return fmt.Errorf("missing request signature")
+	}
+
+	confAuth := channel.ConfigForKey(courier.ConfigAuthToken, "")
+	authToken, isStr := confAuth.(string)
+	if !isStr || authToken == "" {
+		return fmt.Errorf("invalid or missing auth token in config")
+	}
+
+	expected, err := lineCalculateSignature(authToken, r)
+	if err != nil {
+		return err
+	}
+
+	// compare signatures in way that isn't sensitive to a timing attack
+	if !hmac.Equal(expected, []byte(actual)) {
+		return fmt.Errorf("invalid request signature")
+	}
+
+	return nil
+}
+
+// see https://developers.line.me/en/docs/messaging-api/reference/#signature-validation
+func lineCalculateSignature(authToken string, r *http.Request) ([]byte, error) {
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+
+	// hash with SHA1
+	mac := hmac.New(sha1.New, []byte(authToken))
+	mac.Write(body)
+	hash := mac.Sum(nil)
+
+	// encode with Base64
+	encoded := make([]byte, base64.StdEncoding.EncodedLen(len(hash)))
+	return encoded, nil
 }
 
 type mtMsg struct {
