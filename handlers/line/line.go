@@ -141,7 +141,7 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 		return fmt.Errorf("invalid or missing auth token in config")
 	}
 
-	expected, err := lineCalculateSignature(authToken, r)
+	expected, err := calculateSignature(authToken, r)
 	if err != nil {
 		return err
 	}
@@ -155,7 +155,7 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 }
 
 // see https://developers.line.me/en/docs/messaging-api/reference/#signature-validation
-func lineCalculateSignature(authToken string, r *http.Request) ([]byte, error) {
+func calculateSignature(authToken string, r *http.Request) ([]byte, error) {
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))

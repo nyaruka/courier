@@ -152,7 +152,7 @@ var handleTestCases = []ChannelHandleTestCase{
 }
 
 func addValidSignature(r *http.Request) {
-	sig, _ := lineCalculateSignature("AccessToken", r)
+	sig, _ := calculateSignature("AccessToken", r)
 	r.Header.Set(signatureHeader, string(sig))
 }
 
