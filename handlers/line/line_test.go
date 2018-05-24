@@ -129,7 +129,7 @@ var noEvent = `{
 var testChannels = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US",
 		map[string]interface{}{
-			"auth_token": "AccessToken",
+			"secret": "Secret",
 		}),
 }
 
@@ -152,7 +152,7 @@ var handleTestCases = []ChannelHandleTestCase{
 }
 
 func addValidSignature(r *http.Request) {
-	sig, _ := calculateSignature("AccessToken", r)
+	sig, _ := calculateSignature("Secret", r)
 	r.Header.Set(signatureHeader, string(sig))
 }
 

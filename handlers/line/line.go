@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -135,13 +135,13 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 		return fmt.Errorf("missing request signature")
 	}
 
-	confAuth := channel.ConfigForKey(courier.ConfigAuthToken, "")
-	authToken, isStr := confAuth.(string)
-	if !isStr || authToken == "" {
+	confSecret := channel.ConfigForKey(courier.ConfigSecret, "")
+	secret, isStr := confSecret.(string)
+	if !isStr || secret == "" {
 		return fmt.Errorf("invalid or missing auth token in config")
 	}
 
-	expected, err := calculateSignature(authToken, r)
+	expected, err := calculateSignature(secret, r)
 	if err != nil {
 		return err
 	}
@@ -155,7 +155,7 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 }
 
 // see https://developers.line.me/en/docs/messaging-api/reference/#signature-validation
-func calculateSignature(authToken string, r *http.Request) ([]byte, error) {
+func calculateSignature(secret string, r *http.Request) ([]byte, error) {
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
@@ -163,13 +163,14 @@ func calculateSignature(authToken string, r *http.Request) ([]byte, error) {
 		return nil, err
 	}
 
-	// hash with SHA1
-	mac := hmac.New(sha1.New, []byte(authToken))
+	// hash with SHA256
+	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write(body)
 	hash := mac.Sum(nil)
 
 	// encode with Base64
 	encoded := make([]byte, base64.StdEncoding.EncodedLen(len(hash)))
+	base64.StdEncoding.Encode(encoded, hash)
 	return encoded, nil
 }
 
