@@ -1,3 +1,7 @@
+v1.2.88
+----------
+ * set expiration of sent sets in redis
+
 v1.2.87
 ----------
  * update line channel to use v2 of API
