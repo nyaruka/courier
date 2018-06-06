@@ -3,7 +3,6 @@ package celery
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/satori/go.uuid"
@@ -12,14 +11,27 @@ import (
 // allows queuing a task to celery (with a redis backend)
 //
 // format to queue a new task to the queue named "handler" at normal priority is:
-//  "SADD" "_kombu.binding.handler" "handler\x06\x16\x06\x16handler"
-//  "LPUSH" "handler" "{\"body\": \"W1tdLCB7fSwgeyJjaG9yZCI6IG51bGwsICJjYWxsYmFja3MiOiBudWxsLCAiZXJyYmFja3MiOiBudWxsLCAiY2hhaW4iOiBudWxsfV0=\",
-//	  \"headers\": {\"origin\": \"gen15039@lagom.local\", \"root_id\": \"adc1f782-c356-4aa1-acc8-238c2b348cac\", \"expires\": null,
-//    \"id\": \"adc1f782-c356-4aa1-acc8-238c2b348cac\", \"kwargsrepr\": \"{}\", \"lang\": \"py\", \"retries\": 0, \"task\": \"handle_event_task\",
-//    \"group\": null, \"timelimit\": [null, null], \"parent_id\": null, \"argsrepr\": \"()\", \"eta\": null}, \"content-type\": \"application/json\",
-//    \"properties\": {\"priority\": 0, \"body_encoding\": \"base64\", \"correlation_id\": \"adc1f782-c356-4aa1-acc8-238c2b348cac\",
-//	  \"reply_to\": \"ec9440ce-1983-3e62-958b-65241f83235b\", \"delivery_info\": {\"routing_key\": \"handler\", \"exchange\": \"\"},
-//    \"delivery_mode\": 2, \"delivery_tag\": \"6e43def1-ed8e-4d06-93c5-9ec9a4695eb0\"}, \"content-encoding\": \"utf-8\"}"
+// "lpush" "handler" "{\"body\": \"W1tdLCB7fSwgeyJjYWxsYmFja3MiOiBudWxsLCAiZXJyYmFja3MiOiBudWxsLCAiY2hhaW4iOiBudWxsLCAiY2hvcmQiOiBudWxsfV0=\",
+//	\"content-encoding\": \"utf-8\", \"content-type\": \"application/json\", \"headers\": {\"lang\": \"py\", \"task\": \"handle_event_task\",
+//  \"id\": \"efca7c4e-952e-430f-87f7-c01c4652ed54\", \"eta\": null, \"expires\": null, \"group\": null, \"retries\": 0, \"timelimit\": [180, 120],
+// \"root_id\": \"efca7c4e-952e-430f-87f7-c01c4652ed54\", \"parent_id\": null, \"argsrepr\": \"()\", \"kwargsrepr\": \"{}\",
+// \"origin\": \"gen12382@ip-172-31-43-31\"}, \"properties\": {\"correlation_id\": \"efca7c4e-952e-430f-87f7-c01c4652ed54\",
+// \"reply_to\": \"59ad710c-7d28-37c2-a730-89048c13f030\", \"delivery_mode\": 2, \"delivery_info\": {\"exchange\": \"\",
+// \"routing_key\": \"handler\"}, \"priority\": 0, \"body_encoding\": \"base64\", \"delivery_tag\": \"bf838430-d01c-4550-b0a1-a6a309a28017\"}}"
+//
+// multi
+// "zadd" "unacked_index" "1526928218.953298" "bf838430-d01c-4550-b0a1-a6a309a28017"
+// "hset" "unacked" "bf838430-d01c-4550-b0a1-a6a309a28017" "[{\"body\":
+//	\"W1tdLCB7fSwgeyJjYWxsYmFja3MiOiBudWxsLCAiZXJyYmFja3MiOiBudWxsLCAiY2hhaW4iOiBudWxsLCAiY2hvcmQiOiBudWxsfV0=\",
+// \"content-encoding\": \"utf-8\", \"content-type\": \"application/json\", \"headers\": {\"lang\": \"py\", \"task\": \"handle_event_task\",
+// \"id\": \"efca7c4e-952e-430f-87f7-c01c4652ed54\", \"eta\": null, \"expires\": null, \"group\": null, \"retries\": 0, \"timelimit\":
+// [180, 120], \"root_id\": \"efca7c4e-952e-430f-87f7-c01c4652ed54\", \"parent_id\": null, \"argsrepr\": \"()\", \"kwargsrepr\": \"{}\",
+// \"origin\": \"gen12382@ip-172-31-43-31\"}, \"properties\": {\"correlation_id\": \"efca7c4e-952e-430f-87f7-c01c4652ed54\",
+// \"reply_to\": \"59ad710c-7d28-37c2-a730-89048c13f030\", \"delivery_mode\": 2, \"delivery_info\": {\"exchange\": \"\", \"routing_key\": \"handler\"},
+// \"priority\": 0, \"body_encoding\": \"base64\", \"delivery_tag\": \"bf838430-d01c-4550-b0a1-a6a309a28017\"}}, \"\", \"handler\"]"
+// exec
+//
+//
 
 const defaultBody = `[[], {}, {"chord": null, "callbacks": null, "errbacks": null, "chain": null}]`
 
@@ -27,6 +39,7 @@ const defaultBody = `[[], {}, {"chord": null, "callbacks": null, "errbacks": nul
 func QueueEmptyTask(rc redis.Conn, queueName string, taskName string) error {
 	body := base64.StdEncoding.EncodeToString([]byte(defaultBody))
 	taskUUID := uuid.NewV4().String()
+	deliveryTag := uuid.NewV4().String()
 
 	task := Task{
 		Body: body,
@@ -38,6 +51,12 @@ func QueueEmptyTask(rc redis.Conn, queueName string, taskName string) error {
 			"argsrepr":   "()",
 			"task":       taskName,
 			"expires":    nil,
+			"eta":        nil,
+			"group":      nil,
+			"origin":     "courier@localhost",
+			"parent_id":  nil,
+			"retries":    0,
+			"timelimit":  []int{180, 120},
 		},
 		ContentType: "application/json",
 		Properties: TaskProperties{
@@ -45,7 +64,7 @@ func QueueEmptyTask(rc redis.Conn, queueName string, taskName string) error {
 			CorrelationID: taskUUID,
 			ReplyTo:       uuid.NewV4().String(),
 			DeliveryMode:  2,
-			DeliveryTag:   uuid.NewV4().String(),
+			DeliveryTag:   deliveryTag,
 			DeliveryInfo: TaskDeliveryInfo{
 				RoutingKey: queueName,
 			},
@@ -58,7 +77,6 @@ func QueueEmptyTask(rc redis.Conn, queueName string, taskName string) error {
 		return err
 	}
 
-	rc.Send("sadd", fmt.Sprintf("_kombu.binding.%s", queueName), fmt.Sprintf("%s\x06\x16\x06\x16%s", queueName, queueName))
 	rc.Send("lpush", queueName, string(taskJSON))
 	return nil
 }
@@ -76,15 +94,15 @@ type Task struct {
 type TaskProperties struct {
 	BodyEncoding  string           `json:"body_encoding"`
 	CorrelationID string           `json:"correlation_id"`
-	ReplyTo       string           `json:"replay_to"`
+	ReplyTo       string           `json:"reply_to"`
 	DeliveryInfo  TaskDeliveryInfo `json:"delivery_info"`
 	DeliveryMode  int              `json:"delivery_mode"`
 	DeliveryTag   string           `json:"delivery_tag"`
+	Priority      int              `json:"priority"`
 }
 
 // TaskDeliveryInfo is the struct for a task's delivery information
 type TaskDeliveryInfo struct {
-	Priority   int    `json:"priority"`
 	RoutingKey string `json:"routing_key"`
 	Exchange   string `json:"exchange"`
 }

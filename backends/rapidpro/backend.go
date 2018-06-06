@@ -147,7 +147,12 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 	// mark as sent in redis as well if this was actually wired or sent
 	if status != nil && (status.Status() == courier.MsgSent || status.Status() == courier.MsgWired) {
 		dateKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
-		rc.Do("sadd", dateKey, msg.ID().String())
+		rc.Send("sadd", dateKey, msg.ID().String())
+		rc.Send("expire", dateKey, 60*60*24*2)
+		_, err := rc.Do("")
+		if err != nil {
+			logrus.WithError(err).WithField("sent_msgs_key", dateKey).Error("unable to add new unsent message")
+		}
 	}
 
 	// if this org has chatbase connected, notify chatbase

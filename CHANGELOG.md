@@ -1,3 +1,20 @@
+v1.2.88
+----------
+ * set expiration of sent sets in redis
+
+v1.2.87
+----------
+ * update line channel to use v2 of API
+ * add messangi channel
+
+v1.2.86
+----------
+ * remove unacked, that's part of celery's job
+
+v1.2.85
+----------
+ * update celery queuing to new kombu format
+
 v1.2.84
 ----------
  * write UUID fields for incoming messages
