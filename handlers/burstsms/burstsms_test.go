@@ -15,14 +15,14 @@ var testChannels = []courier.Channel{
 var (
 	receiveURL = "/c/bs/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 
-	validReceive  = "message=Msg&from=254791541111"
-	missingNumber = "message=Msg"
+	validReceive  = "response=Msg&mobile=254791541111"
+	missingNumber = "response=Msg"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
+	{Label: "Receive Valid", URL: receiveURL + "?" + validReceive, Status: 200, Response: "Message Accepted",
 		Text: Sp("Msg"), URN: Sp("tel:+254791541111")},
-	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, Status: 400, Response: "required field 'from'"},
+	{Label: "Receive Missing Number", URL: receiveURL + "?" + missingNumber, Status: 400, Response: "required field 'mobile'"},
 }
 
 func TestHandler(t *testing.T) {

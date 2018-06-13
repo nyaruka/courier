@@ -17,7 +17,10 @@ var (
 	sendURL      = "https://api.transmitsms.com/send-sms.json"
 	maxMsgLength = 612
 	statusMap    = map[string]courier.MsgStatusValue{
-		"S": courier.MsgSent,
+		"delivered":   courier.MsgDelivered,
+		"pending":     courier.MsgSent,
+		"soft-bounce": courier.MsgErrored,
+		"hard-bounce": courier.MsgFailed,
 	}
 )
 
@@ -36,13 +39,11 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	receiveHandler := handlers.NewTelReceiveHandler(&h.BaseHandler, "from", "message")
+	receiveHandler := handlers.NewTelReceiveHandler(&h.BaseHandler, "mobile", "response")
 	s.AddHandlerRoute(h, http.MethodGet, "receive", receiveHandler)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", receiveHandler)
 
-	statusHandler := handlers.NewExternalIDStatusHandler(&h.BaseHandler, statusMap, "id", "status")
+	statusHandler := handlers.NewExternalIDStatusHandler(&h.BaseHandler, statusMap, "message_id", "status")
 	s.AddHandlerRoute(h, http.MethodGet, "status", statusHandler)
-	s.AddHandlerRoute(h, http.MethodPost, "status", statusHandler)
 	return nil
 }
 
