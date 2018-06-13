@@ -16,6 +16,9 @@ import (
 var (
 	sendURL      = "https://api.transmitsms.com/send-sms.json"
 	maxMsgLength = 612
+	statusMap    = map[string]courier.MsgStatusValue{
+		"S": courier.MsgSent,
+	}
 )
 
 func init() {
@@ -36,6 +39,10 @@ func (h *handler) Initialize(s courier.Server) error {
 	receiveHandler := handlers.NewTelReceiveHandler(&h.BaseHandler, "from", "message")
 	s.AddHandlerRoute(h, http.MethodGet, "receive", receiveHandler)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", receiveHandler)
+
+	statusHandler := handlers.NewExternalIDStatusHandler(&h.BaseHandler, statusMap, "id", "status")
+	s.AddHandlerRoute(h, http.MethodGet, "status", statusHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "status", statusHandler)
 	return nil
 }
 
