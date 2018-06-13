@@ -1,3 +1,7 @@
+v1.2.89
+----------
+ * Add burst sms handler / sender (Australia / New Zealand)
+
 v1.2.88
 ----------
  * set expiration of sent sets in redis
