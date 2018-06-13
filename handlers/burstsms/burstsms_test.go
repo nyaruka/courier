@@ -17,12 +17,21 @@ var (
 
 	validReceive  = "response=Msg&mobile=254791541111"
 	missingNumber = "response=Msg"
+
+	statusURL = "/c/bs/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
+
+	validStatus   = "message_id=12345&status=pending"
+	invalidStatus = "message_id=12345&status=unknown"
 )
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL + "?" + validReceive, Status: 200, Response: "Message Accepted",
 		Text: Sp("Msg"), URN: Sp("tel:+254791541111")},
 	{Label: "Receive Missing Number", URL: receiveURL + "?" + missingNumber, Status: 400, Response: "required field 'mobile'"},
+
+	{Label: "Status Valid", URL: statusURL + "?" + validStatus, Status: 200, Response: "Status Update Accepted",
+		ExternalID: Sp("12345"), MsgStatus: Sp("S")},
+	{Label: "Receive Invalid Status", URL: statusURL + "?" + invalidStatus, Status: 400, Response: "unknown status value"},
 }
 
 func TestHandler(t *testing.T) {
