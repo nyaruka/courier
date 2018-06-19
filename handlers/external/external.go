@@ -20,10 +20,16 @@ import (
 )
 
 const (
-	contentURLEncoded = "application/x-www-form-urlencoded"
-	contentJSON       = "application/json"
-	contentXML        = "text/xml; charset=utf-8"
+	contentURLEncoded = "urlencoded"
+	contentJSON       = "json"
+	contentXML        = "xml"
 )
+
+var contentTypeMappings = map[string]string{
+	contentURLEncoded: "application/x-www-form-urlencoded",
+	contentJSON:       "application/json",
+	contentXML:        "text/xml; charset=utf-8",
+}
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -162,6 +168,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	sendMethod := msg.Channel().StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
 	sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
 	contentType := msg.Channel().StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
+	if contentTypeMappings[contentType] == "" {
+		return nil, fmt.Errorf("unknown content type: %s", contentType)
+	}
 
 	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, 160)
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
@@ -188,7 +197,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if err != nil {
 			return nil, err
 		}
-		req.Header.Set("Content-Type", contentType)
+		req.Header.Set("Content-Type", contentTypeMappings[contentType])
 
 		authorization := msg.Channel().StringConfigForKey(courier.ConfigSendAuthorization, "")
 		if authorization != "" {
