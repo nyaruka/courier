@@ -1,3 +1,9 @@
+v1.2.90
+----------
+ * reduce spacing between messages to 3 seconds
+ * add an address option to bind to a specific network interface address
+ * honor rapidpro constants for content-type
+
 v1.2.89
 ----------
  * Add burst sms handler / sender (Australia / New Zealand)
