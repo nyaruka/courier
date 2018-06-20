@@ -111,7 +111,7 @@ func (s *server) Start() error {
 
 	// configure timeouts on our server
 	s.httpServer = &http.Server{
-		Addr:         fmt.Sprintf(":%d", s.config.Port),
+		Addr:         fmt.Sprintf("%s:%d", s.config.Address, s.config.Port),
 		Handler:      s.router,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
