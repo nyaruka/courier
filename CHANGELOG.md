@@ -1,3 +1,7 @@
+v1.2.91
+----------
+ * update to latest phonenumbers, update tests
+
 v1.2.90
 ----------
  * reduce spacing between messages to 3 seconds
