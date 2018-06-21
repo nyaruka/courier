@@ -2,6 +2,7 @@ package urns
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -46,6 +47,9 @@ const (
 	// WhatsAppScheme is the scheme used for WhatsApp identifiers
 	WhatsAppScheme string = "whatsapp"
 
+	// WeChatScheme is the scheme used for WeChat identifiers
+	WeChatScheme string = "wechat"
+
 	// FacebookRefPrefix is the path prefix used for facebook referral URNs
 	FacebookRefPrefix string = "ref:"
 )
@@ -64,6 +68,7 @@ var ValidSchemes = map[string]bool{
 	TwitterScheme:   true,
 	ViberScheme:     true,
 	WhatsAppScheme:  true,
+	WeChatScheme:    true,
 }
 
 // IsValidScheme checks whether the provided scheme is valid
@@ -73,6 +78,7 @@ func IsValidScheme(scheme string) bool {
 }
 
 var nonTelCharsRegex = regexp.MustCompile(`[^0-9a-z]`)
+var telRegex = regexp.MustCompile(`^\+?[a-zA-Z0-9]{3,16}$`)
 var twitterHandleRegex = regexp.MustCompile(`^[a-zA-Z0-9_]{1,15}$`)
 var emailRegex = regexp.MustCompile(`^[^\s@]+@[^\s@]+$`)
 var viberRegex = regexp.MustCompile(`^[a-zA-Z0-9_=/+]{1,24}$`)
@@ -84,36 +90,43 @@ type URN string
 
 // NewTelURNForCountry returns a URN for the passed in telephone number and country code ("US")
 func NewTelURNForCountry(number string, country string) (URN, error) {
-	return NewURNFromParts(TelScheme, normalizeNumber(number, country), "")
+	return NewURNFromParts(TelScheme, normalizeNumber(number, country), "", "")
 }
 
 // NewTelegramURN returns a URN for the passed in telegram identifier
 func NewTelegramURN(identifier int64, display string) (URN, error) {
-	return NewURNFromParts(TelegramScheme, strconv.FormatInt(identifier, 10), display)
+	return NewURNFromParts(TelegramScheme, strconv.FormatInt(identifier, 10), "", display)
 }
 
 // NewWhatsAppURN returns a URN for the passed in whatsapp identifier
 func NewWhatsAppURN(identifier string) (URN, error) {
-	return NewURNFromParts(WhatsAppScheme, identifier, "")
+	return NewURNFromParts(WhatsAppScheme, identifier, "", "")
 }
 
 // NewFirebaseURN returns a URN for the passed in firebase identifier
 func NewFirebaseURN(identifier string) (URN, error) {
-	return NewURNFromParts(FCMScheme, identifier, "")
+	return NewURNFromParts(FCMScheme, identifier, "", "")
 }
 
 // NewFacebookURN returns a URN for the passed in facebook identifier
 func NewFacebookURN(identifier string) (URN, error) {
-	return NewURNFromParts(FacebookScheme, identifier, "")
+	return NewURNFromParts(FacebookScheme, identifier, "", "")
 }
 
-// NewURNFromParts returns a new URN for the given scheme, path and display
-func NewURNFromParts(scheme string, path string, display string) (URN, error) {
-	urnString := fmt.Sprintf("%s:%s", scheme, path)
-	if display != "" {
-		urnString = fmt.Sprintf("%s#%s", urnString, display)
+// returns a new URN for the given scheme, path, query and display
+func newURNFromParts(scheme string, path string, query string, display string) URN {
+	u := &parsedURN{
+		scheme:   scheme,
+		path:     path,
+		query:    query,
+		fragment: display,
 	}
-	urn := URN(urnString)
+	return URN(u.String())
+}
+
+// NewURNFromParts returns a validated URN for the given scheme, path, query and display
+func NewURNFromParts(scheme string, path string, query string, display string) (URN, error) {
+	urn := newURNFromParts(scheme, path, query, display)
 	err := urn.Validate()
 	if err != nil {
 		return NilURN, err
@@ -122,28 +135,18 @@ func NewURNFromParts(scheme string, path string, display string) (URN, error) {
 }
 
 // ToParts splits the URN into scheme, path and display parts
-func (u URN) ToParts() (string, string, string) {
-	parts := strings.SplitN(string(u), ":", 2)
-	if len(parts) != 2 {
-		return "", string(u), ""
+func (u URN) ToParts() (string, string, string, string) {
+	parsed, err := parseURN(string(u))
+	if err != nil {
+		return "", string(u), "", ""
 	}
 
-	scheme := parts[0]
-	path := parts[1]
-	display := ""
-
-	pathParts := strings.SplitN(path, "#", 2)
-	if len(pathParts) == 2 {
-		path = pathParts[0]
-		display = pathParts[1]
-	}
-
-	return scheme, path, display
+	return parsed.scheme, parsed.path, parsed.query, parsed.fragment
 }
 
 // Normalize normalizes the URN into it's canonical form and should be performed before URN comparisons
-func (u URN) Normalize(country string) (URN, error) {
-	scheme, path, display := u.ToParts()
+func (u URN) Normalize(country string) URN {
+	scheme, path, query, display := u.ToParts()
 	normPath := strings.TrimSpace(path)
 
 	switch scheme {
@@ -171,12 +174,16 @@ func (u URN) Normalize(country string) (URN, error) {
 		normPath = strings.ToLower(normPath)
 	}
 
-	return NewURNFromParts(scheme, normPath, display)
+	return newURNFromParts(scheme, normPath, query, display)
 }
 
 // Validate returns whether this URN is considered valid
 func (u URN) Validate() error {
-	scheme, path, display := u.ToParts()
+	scheme, path, _, display := u.ToParts()
+
+	if scheme == "" || path == "" {
+		return fmt.Errorf("scheme or path cannot be empty")
+	}
 	if !IsValidScheme(scheme) {
 		return fmt.Errorf("invalid scheme: '%s'", scheme)
 	}
@@ -184,10 +191,10 @@ func (u URN) Validate() error {
 	switch scheme {
 	case TelScheme:
 		// validate is possible phone number
-		_, err := phonenumbers.Parse(path, "")
-		if err != nil {
-			return err
+		if !telRegex.MatchString(path) {
+			return fmt.Errorf("invalid tel number: %s", path)
 		}
+
 	case TwitterScheme:
 		// validate twitter URNs look like handles
 		if !twitterHandleRegex.MatchString(path) {
@@ -244,43 +251,48 @@ func (u URN) Validate() error {
 		}
 	}
 
-	if path == "" {
-		return fmt.Errorf("invalid path: '%s'", path)
-	}
-
 	return nil // anything goes for external schemes
 }
 
 // Scheme returns the scheme portion for the URN
 func (u URN) Scheme() string {
-	scheme, _, _ := u.ToParts()
+	scheme, _, _, _ := u.ToParts()
 	return scheme
 }
 
 // Path returns the path portion for the URN
 func (u URN) Path() string {
-	_, path, _ := u.ToParts()
+	_, path, _, _ := u.ToParts()
 	return path
 }
 
 // Display returns the display portion for the URN (if any)
 func (u URN) Display() string {
-	_, _, display := u.ToParts()
+	_, _, _, display := u.ToParts()
 	return display
 }
 
-// Identity returns the URN with any display attributes stripped
-func (u URN) Identity() string {
-	parts := strings.SplitN(string(u), "#", 2)
-	if len(parts) == 2 {
-		return parts[0]
-	}
-	return string(u)
+// RawQuery returns the unparsed query portion for the URN (if any)
+func (u URN) RawQuery() string {
+	_, _, query, _ := u.ToParts()
+	return query
+}
+
+// Query returns the parsed query portion for the URN (if any)
+func (u URN) Query() (url.Values, error) {
+	_, _, query, _ := u.ToParts()
+	return url.ParseQuery(query)
+}
+
+// Identity returns the URN with any query or display attributes stripped
+func (u URN) Identity() URN {
+	scheme, path, _, _ := u.ToParts()
+	return newURNFromParts(scheme, path, "", "")
 }
 
 // Localize returns a new URN which is local to the given country
 func (u URN) Localize(country string) URN {
-	scheme, path, display := u.ToParts()
+	scheme, path, query, display := u.ToParts()
 
 	if scheme == TelScheme {
 		parsed, err := phonenumbers.Parse(path, country)
@@ -288,12 +300,7 @@ func (u URN) Localize(country string) URN {
 			path = strconv.FormatUint(parsed.GetNationalNumber(), 10)
 		}
 	}
-	urnString := fmt.Sprintf("%s:%s", scheme, path)
-	if display != "" {
-		urnString = fmt.Sprintf("%s#%s", urnString, display)
-	}
-
-	return URN(urnString)
+	return newURNFromParts(scheme, path, query, display)
 }
 
 // IsFacebookRef returns whether this URN is a facebook referral
@@ -309,28 +316,12 @@ func (u URN) FacebookRef() string {
 	return ""
 }
 
-// Resolve is called when a URN is part of an excellent expression
-func (u URN) Resolve(key string) interface{} {
-	switch key {
-	case "display":
-		return u.Display()
-	case "path":
-		return u.Path()
-	case "scheme":
-		return u.Scheme()
-	}
-	return fmt.Errorf("no field '%s' on URN", key)
-}
-
-// Default is called when a URN is part of an excellent expression
-func (u URN) Default() interface{} { return u }
-
 // String returns the string representation of this URN
 func (u URN) String() string { return string(u) }
 
 // Format formats this URN as a human friendly string
 func (u URN) Format() string {
-	scheme, path, display := u.ToParts()
+	scheme, path, _, display := u.ToParts()
 
 	if scheme == TelScheme {
 		parsed, err := phonenumbers.Parse(path, "")
