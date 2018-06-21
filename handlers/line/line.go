@@ -112,7 +112,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		// create our date from the timestamp (they give us millis, arg is nanos)
 		date := time.Unix(0, lineEvent.Timestamp*1000000).UTC()
 
-		urn, err := urns.NewURNFromParts(urns.LineScheme, lineEvent.Source.UserID, "")
+		urn, err := urns.NewURNFromParts(urns.LineScheme, lineEvent.Source.UserID, "", "")
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}

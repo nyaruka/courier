@@ -116,7 +116,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	date := time.Unix(payload.CreateTime/1000, payload.CreateTime%1000*1000000).UTC()
-	urn, err := urns.NewURNFromParts(urns.JiochatScheme, payload.FromUsername, "")
+	urn, err := urns.NewURNFromParts(urns.JiochatScheme, payload.FromUsername, "", "")
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
@@ -269,7 +269,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 		return nil, err
 	}
 
-	_, path, _ := urn.ToParts()
+	_, path, _, _ := urn.ToParts()
 
 	form := url.Values{
 		"openid": []string{path},
