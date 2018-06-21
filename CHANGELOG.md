@@ -1,3 +1,7 @@
+v1.2.92
+----------
+ * move to gocommon, honor e164 numbers handed to us
+
 v1.2.91
 ----------
  * update to latest phonenumbers, update tests
