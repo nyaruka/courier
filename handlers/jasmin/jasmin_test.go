@@ -31,7 +31,7 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Missing To", URL: receiveURL, Data: receiveMissingTo, Status: 400,
 		Response: "field 'to' required"},
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400,
-		Response: "phone number supplied was empty"},
+		Response: "phone number supplied is not a number"},
 	{Label: "Status Delivered", URL: statusURL, Data: statusDelivered, Status: 200, Response: "ACK/Jasmin",
 		MsgStatus: Sp("D"), ExternalID: Sp("external1")},
 	{Label: "Status Failed", URL: statusURL, Data: statusFailed, Status: 200, Response: "ACK/Jasmin",

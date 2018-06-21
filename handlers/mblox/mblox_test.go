@@ -66,7 +66,7 @@ var testCases = []ChannelHandleTestCase{
 		ExternalID: Sp("OzQ5UqIOdoY8")},
 
 	{Label: "Receive Missing Params", URL: receiveURL, Data: missingParamsRecieve, Status: 400, Response: "missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied was empty"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
 
 	{Label: "Status Valid", URL: receiveURL, Data: validStatus, Status: 200, Response: `"status":"D"`},
 	{Label: "Status Unknown", URL: receiveURL, Data: unknownStatus, Status: 400, Response: `unknown status 'INVALID'`},

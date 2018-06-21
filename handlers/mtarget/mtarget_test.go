@@ -33,7 +33,7 @@ var testChannels = []courier.Channel{
 var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, Status: 200, Response: "Accepted",
 		Text: Sp("hello world"), URN: Sp("tel:+923161909799")},
-	{Label: "Invalid URN", URL: receiveURL, Data: receiveInvalidURN, Status: 400, Response: "phone number supplied was empty"},
+	{Label: "Invalid URN", URL: receiveURL, Data: receiveInvalidURN, Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Receive Stop", URL: receiveURL, Data: receiveStop, Status: 200, Response: "Accepted",
 		URN: Sp("tel:+923161909799"), ChannelEvent: Sp("stop_contact")},
 	{Label: "Receive Missing From", URL: receiveURL, Data: receiveMissingFrom, Status: 400, Response: "missing required field 'Msisdn'"},

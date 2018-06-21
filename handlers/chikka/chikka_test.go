@@ -30,7 +30,7 @@ var testCases = []ChannelHandleTestCase{
 		Text: Sp("Hello World"), URN: Sp("tel:+639178020779"), ExternalID: Sp("4004"),
 		Date: Tp(time.Date(2016, 03, 11, 04, 20, 59, 690000128, time.UTC))},
 
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied was empty"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Receive Mising Params", URL: receiveURL, Data: missingParamsReceive, Status: 400, Response: "Field validation for 'RequestID' failed"},
 	{Label: "Ignore Invalid message_type", URL: receiveURL, Data: "message_type=invalid", Status: 200, Response: "unknown message_type request"},
 	{Label: "Status Sent Valid", URL: receiveURL, Data: validSentStatus, Status: 200, Response: `"status":"S"`},

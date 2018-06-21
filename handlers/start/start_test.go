@@ -81,7 +81,7 @@ var testCases = []ChannelHandleTestCase{
 		Text: Sp(""), URN: Sp("tel:+250788123123")},
 	{Label: "Receive Valid missing body", URL: receiveURL, Data: validMissingBody, Status: 200, Response: "<state>Accepted</state>",
 		Text: Sp(""), URN: Sp("tel:+250788123123")},
-	{Label: "Receive invalidURN", URL: receiveURL, Data: invalidURNReceive, Status: 400, Response: "phone number supplied was empty"},
+	{Label: "Receive invalidURN", URL: receiveURL, Data: invalidURNReceive, Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Receive missing Request ID", URL: receiveURL, Data: missingRequestID, Status: 400, Response: "Error"},
 	{Label: "Receive missing From", URL: receiveURL, Data: missingFrom, Status: 400, Response: "Error"},
 	{Label: "Receive missing To", URL: receiveURL, Data: missingTo, Status: 400, Response: "Error"},
