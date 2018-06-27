@@ -1,3 +1,7 @@
+v1.2.93
+----------
+ * Trim contact names at 127 characters
+
 v1.2.92
 ----------
  * move to gocommon, honor e164 numbers handed to us
