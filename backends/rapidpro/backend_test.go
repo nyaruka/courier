@@ -224,6 +224,17 @@ func (ts *BackendTestSuite) TestContact() {
 
 	ts.Equal("", contact.Name_.String)
 	ts.Equal("a984069d-0008-4d8c-a772-b14a8a6acccc", contact.UUID_.String())
+
+	urn, _ = urns.NewTelURNForCountry("12065551519", "US")
+
+	// long name are truncated
+
+	longName := "LongRandomNameHPGBRDjZvkz7y58jI2UPkio56IKGaMvaeDTvF74Q5SUkIHozFn1MLELfjX7vRrFto8YG2KPVaWzekgmFbkuxujIotFAgfhHqoHKW5c177FUtKf5YK9KbY8hp0x7PxIFY3MS5lMyMA5ELlqIgikThpr"
+	contact3, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", longName)
+	ts.NoError(err)
+
+	ts.Equal(longName[0:127], contact3.Name_.String)
+
 }
 
 func (ts *BackendTestSuite) TestContactURN() {
