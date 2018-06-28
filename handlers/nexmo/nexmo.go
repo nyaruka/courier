@@ -153,12 +153,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"type":              []string{textType},
 		}
 
-		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
 		var rr *utils.RequestResponse
 		var requestErr error
 		for i := 0; i < 3; i++ {
+			req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 			rr, requestErr = utils.MakeHTTPRequest(req)
 			matched := throttledRE.FindAllStringSubmatch(string([]byte(rr.Body)), -1)
 			if len(matched) > 0 && len(matched[0]) > 0 {
