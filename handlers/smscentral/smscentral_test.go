@@ -11,7 +11,7 @@ import (
 var (
 	receiveURL          = "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 	receiveValidMessage = "mobile=%2B2349067554729&message=Join"
-	invalidURN          = "mobile=MTN&message=Join"
+	invalidURN          = "mobile=MTN12345678901234567&message=Join"
 	receiveNoMessage    = "mobile=%2B2349067554729"
 	receiveNoParams     = "none"
 	receiveNoSender     = "message=Join"

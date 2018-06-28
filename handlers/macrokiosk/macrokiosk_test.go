@@ -18,7 +18,7 @@ var (
 	statusURL  = "/c/mk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 
 	validReceive         = "shortcode=2020&from=%2B60124361111&text=Hello&msgid=abc1234&time=2016-03-3019:33:06"
-	invalidURN           = "shortcode=2020&from=MTN&text=Hello&msgid=abc1234&time=2016-03-3019:33:06"
+	invalidURN           = "shortcode=2020&from=MTN12345678901234567&text=Hello&msgid=abc1234&time=2016-03-3019:33:06"
 	validLongcodeReceive = "longcode=2020&msisdn=%2B60124361111&text=Hello&msgid=abc1234&time=2016-03-3019:33:06"
 	missingParamsReceive = "from=%2B60124361111&text=Hello&msgid=abc1234&time=2016-03-3019:33:06"
 	invalidParamsReceive = "longcode=2020&from=%2B60124361111&text=Hello&msgid=abc1234&time=2016-03-3019:33:06"

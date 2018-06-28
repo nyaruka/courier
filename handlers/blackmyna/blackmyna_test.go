@@ -18,7 +18,7 @@ var (
 
 	emptyReceive = receiveURL + ""
 	validReceive = receiveURL + "?to=3344&smsc=ncell&from=%2B9779814641111&text=Msg"
-	invalidURN   = receiveURL + "?to=3344&smsc=ncell&from=MTN&text=Msg"
+	invalidURN   = receiveURL + "?to=3344&smsc=ncell&from=MTN12345678901234567&text=Msg"
 	missingText  = receiveURL + "?to=3344&smsc=ncell&from=%2B9779814641111"
 
 	missingStatus = statusURL + "?"

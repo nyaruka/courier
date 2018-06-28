@@ -81,7 +81,7 @@ var (
 
 	invalidURN = `{
 		"messageId":"1234",
-		"fromNumber": "MTN",
+		"fromNumber": "MTN12345678901234567",
 		"timestamp":1516217711000,
 		"text": "Hello World!",
 		"charset":"UTF-8"

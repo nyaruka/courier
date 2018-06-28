@@ -17,7 +17,7 @@ var (
 	statusURL  = "/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 
 	validReceive   = "To=2020&From=60124361111&TotalRate=0&Units=1&Text=Hello&TotalAmount=0&Type=sms&MessageUUID=abc1234"
-	invalidURN     = "To=2020&From=MTN&TotalRate=0&Units=1&Text=Hello&TotalAmount=0&Type=sms&MessageUUID=abc1234"
+	invalidURN     = "To=2020&From=MTN12345678901234567&TotalRate=0&Units=1&Text=Hello&TotalAmount=0&Type=sms&MessageUUID=abc1234"
 	invalidAddress = "To=1515&From=60124361111&TotalRate=0&Units=1&Text=Hello&TotalAmount=0&Type=sms&MessageUUID=abc1234"
 	missingParams  = "From=60124361111&TotalRate=0&Units=1&Text=Hello&TotalAmount=0&Type=sms&MessageUUID=abc1234"
 

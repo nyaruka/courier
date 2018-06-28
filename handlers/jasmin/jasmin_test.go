@@ -13,7 +13,7 @@ var (
 	receiveURL          = "/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	receiveValidMessage = "content=%05v%05nement&coding=0&From=2349067554729&To=2349067554711&id=1001"
 	receiveMissingTo    = "content=%05v%05nement&coding=0&From=2349067554729&id=1001"
-	invalidURN          = "content=%05v%05nement&coding=0&From=MTN&To=2349067554711&id=1001"
+	invalidURN          = "content=%05v%05nement&coding=0&From=MTN12345678901234567&To=2349067554711&id=1001"
 
 	statusURL       = "/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 	statusDelivered = "id=external1&dlvrd=1"

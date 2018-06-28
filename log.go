@@ -32,7 +32,7 @@ func LogMsgReceived(r *http.Request, msg Msg) {
 		"elapsed_ms":      getElapsedMS(r),
 		"msg_uuid":        msg.UUID(),
 		"msg_id":          msg.ID().Int64,
-		"msg_urn":         msg.URN().Identity(),
+		"msg_urn":         msg.URN().Identity().String(),
 		"msg_text":        msg.Text(),
 		"msg_attachments": msg.Attachments(),
 	}).Info("msg received")
@@ -45,7 +45,7 @@ func LogChannelEventReceived(r *http.Request, event ChannelEvent) {
 		"url":          r.Context().Value(contextRequestURL),
 		"elapsed_ms":   getElapsedMS(r),
 		"event_type":   event.EventType(),
-		"event_urn":    event.URN().Identity(),
+		"event_urn":    event.URN().Identity().String(),
 	}).Info("evt received")
 }
 

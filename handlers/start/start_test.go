@@ -27,7 +27,7 @@ var (
 
 	invalidURNReceive = `<message>
 	<service type="sms" timestamp="1450450974" auth="asdfasdf" request_id="msg1"/>
-	<from>MTN</from>
+	<from>MTN12345678901234567</from>
 	<to>1515</to>
 	<body content-type="content-type" encoding="utf8">Hello World</body>
 	</message>`

@@ -27,7 +27,7 @@ var (
 
 	invalidURN = `{
 		"id": "OzQ5UqIOdoY8",
-		"from": "MTN",
+		"from": "MTN12345678901234567",
 		"to": "18444651185",
 		"body": "Hello World",
 		"type": "mo_text",

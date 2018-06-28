@@ -62,9 +62,9 @@ WHERE u.identity = $1 AND u.contact_id = c.id AND u.org_id = $2 AND c.is_active 
 func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChannel, urn urns.URN, auth string, name string) (*DBContact, error) {
 	// try to look up our contact by URN
 	contact := &DBContact{}
-	err := b.db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
+	err := b.db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity().String(), org)
 	if err != nil && err != sql.ErrNoRows {
-		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
+		logrus.WithError(err).WithField("urn", urn.Identity().String()).WithField("org_id", org).Error("error looking up contact")
 		return nil, err
 	}
 
@@ -73,13 +73,13 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 		// insert it
 		tx, err := b.db.BeginTxx(ctx, nil)
 		if err != nil {
-			logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
+			logrus.WithError(err).WithField("urn", urn.Identity().String()).WithField("org_id", org).Error("error looking up contact")
 			return nil, err
 		}
 
 		err = setDefaultURN(tx, channel.ID(), contact, urn, auth)
 		if err != nil {
-			logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
+			logrus.WithError(err).WithField("urn", urn.Identity().String()).WithField("org_id", org).Error("error looking up contact")
 			tx.Rollback()
 			return nil, err
 		}

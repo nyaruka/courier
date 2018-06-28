@@ -42,7 +42,7 @@ var (
 				  "messageId":null,
 				  "message":"hello world",
 				  "resourceURL":null,
-				  "senderAddress":"tel:MTN"
+				  "senderAddress":"tel:MTN12345678901234567"
 			   }
 			 ],
 			 "numberOfMessagesInThisBatch":1,

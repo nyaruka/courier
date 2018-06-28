@@ -34,7 +34,7 @@ var (
 	`
 
 	invalidURN = `{
-		"from": "MTN",
+		"from": "MTN12345678901234567",
 		"timestamp": "2017-01-01 01:02:03.05",
 		"content": "hello world",
 		"to": "2020",

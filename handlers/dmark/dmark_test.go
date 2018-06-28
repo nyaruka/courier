@@ -19,7 +19,7 @@ var (
 
 	emptyReceive = "empty"
 	validReceive = "text=Msg&short_code=2020&tstamp=2017-10-26T15:51:32.906335%2B00:00&msisdn=254791541111"
-	invalidURN   = "text=Msg&short_code=2020&tstamp=2017-10-26T15:51:32.906335%2B00:00&msisdn=MTN"
+	invalidURN   = "text=Msg&short_code=2020&tstamp=2017-10-26T15:51:32.906335%2B00:00&msisdn=MTN12345678901234567"
 	missingText  = "short_code=2020&tstamp=2017-10-26T15:51:32.906335%2B00:00&msisdn=254791541111"
 	invalidTS    = "text=Msg&short_code=2020&tstamp=2017-10-26&msisdn=254791541111"
 

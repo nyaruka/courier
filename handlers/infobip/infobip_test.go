@@ -42,7 +42,7 @@ var invalidURN = `{
 	"results": [
 		{
 			"messageId": "817790313235066447",
-			"from": "MTN",
+			"from": "MTN12345678901234567",
 			"to": "385921004026",
 			"text": "QUIZ Correct answer is Paris",
 			"cleanText": "Correct answer is Paris",

@@ -70,7 +70,7 @@ var validReceive = `{
 var invalidURN = `{
     "callbackMoRequest": {
         "id": "20690090",
-        "mobile": "MTN",
+        "mobile": "MTN12345678901234567",
         "shortCode": "40001",
         "account": "zenvia.envio",
         "body": "Msg",

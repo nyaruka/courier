@@ -18,7 +18,7 @@ var (
 	statusURL  = "/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 
 	validReceive       = "FROM=+33610346460&TO=5151&MESSAGE=Hello+World&RECEPTION_DATE=2015-04-02T14%3A26%3A06"
-	invalidURN         = "FROM=MTN&TO=5151&MESSAGE=Hello+World&RECEPTION_DATE=2015-04-02T14%3A26%3A06"
+	invalidURN         = "FROM=MTN12345678901234567&TO=5151&MESSAGE=Hello+World&RECEPTION_DATE=2015-04-02T14%3A26%3A06"
 	invalidDateReceive = "FROM=+33610346460&TO=5151&MESSAGE=Hello+World&RECEPTION_DATE=2015-04-02T14:26"
 	validStatus        = statusURL + "?ret_id=12345&status=6"
 )

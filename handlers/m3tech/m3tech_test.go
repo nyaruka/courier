@@ -10,7 +10,7 @@ import (
 
 var (
 	receiveValidMessage = "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?from=+923161909799&text=hello+world"
-	receiveInvalidURN   = "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?from=MTN&text=hello+world"
+	receiveInvalidURN   = "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?from=MTN12345678901234567&text=hello+world"
 	receiveMissingFrom  = "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?text=hello"
 )
 
