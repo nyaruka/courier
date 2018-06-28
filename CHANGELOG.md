@@ -1,3 +1,7 @@
+v1.2.94
+----------
+ * proper backdown for Nexmo retries
+
 v1.2.93
 ----------
  * Trim contact names at 127 characters
