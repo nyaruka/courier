@@ -15,7 +15,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 )
 
 var idRegex = regexp.MustCompile(`Success \"(.*)\"`)
@@ -86,7 +85,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	}
 
 	// create our URN
-	urn, err := urns.NewTelURNForCountry(form.From, c.Country())
+	urn, err := handlers.StrictTelForCountry(form.From, c.Country())
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}

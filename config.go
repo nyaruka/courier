@@ -7,6 +7,7 @@ type Config struct {
 	Backend               string `help:"the backend that will be used by courier (currently only rapidpro is supported)"`
 	SentryDSN             string `help:"the DSN used for logging errors to Sentry"`
 	Domain                string `help:"the domain courier is exposed on"`
+	Address               string `help:"the network interface address courier will bind to"`
 	Port                  int    `help:"the port courier will listen on"`
 	DB                    string `help:"URL describing how to connect to the RapidPro database"`
 	Redis                 string `help:"URL describing how to connect to Redis"`
@@ -40,6 +41,7 @@ func NewConfig() *Config {
 	return &Config{
 		Backend:            "rapidpro",
 		Domain:             "localhost",
+		Address:            "",
 		Port:               8080,
 		DB:                 "postgres://courier@localhost/courier?sslmode=disable",
 		Redis:              "redis://localhost:6379/0",

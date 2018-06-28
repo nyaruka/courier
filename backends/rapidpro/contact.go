@@ -114,6 +114,10 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 		}
 
 		if name != "" {
+			if len(name) > 128 {
+				name = name[:127]
+			}
+
 			contact.Name_ = null.StringFrom(name)
 		}
 	}
