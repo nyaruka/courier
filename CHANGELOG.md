@@ -1,3 +1,7 @@
+v1.2.95
+----------
+ * use utf8 to shorten string so we don't end up with an invalid string
+
 v1.2.94
 ----------
  * proper backdown for Nexmo retries
