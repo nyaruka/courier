@@ -19,6 +19,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -82,7 +83,10 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	if encoded == form.Signature {
 		ResponseText = form.EchoStr
 		StatusCode = 200
-		go h.fetchAccessToken(channel)
+		go func() {
+			time.Sleep(fetchTimeout)
+			h.fetchAccessToken(ctx, channel)
+		}()
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -92,8 +96,9 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 }
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
-func (h *handler) fetchAccessToken(channel courier.Channel) error {
-	time.Sleep(fetchTimeout)
+func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel) error {
+	start := time.Now()
+	logs := make([]*courier.ChannelLog, 0, 1)
 
 	form := url.Values{
 		"grant_type": []string{"client_credential"},
@@ -109,14 +114,18 @@ func (h *handler) fetchAccessToken(channel courier.Channel) error {
 	req.Header.Set("Accept", "application/json")
 	rr, err := utils.MakeHTTPRequest(req)
 	if err != nil {
-		return err
+		duration := time.Now().Sub(start)
+		logs = append(logs, courier.NewChannelLogFromError("failed to fetch access token", channel, courier.NilMsgID, duration, err))
+		return h.Backend().WriteChannelLogs(ctx, logs)
 	}
 
-	accessToken, err := jsonparser.GetString([]byte(rr.Body), "access_token")
+	accessToken, err := jsonparser.GetString(rr.Body, "access_token")
 	if err != nil {
-		return err
+		duration := time.Now().Sub(start)
+		logs = append(logs, courier.NewChannelLogFromError("invalid json", channel, courier.NilMsgID, duration, err))
+		return h.Backend().WriteChannelLogs(ctx, logs)
 	}
-	expiration, err := jsonparser.GetInt([]byte(rr.Body), "expires_in")
+	expiration, err := jsonparser.GetInt(rr.Body, "expires_in")
 	if err != nil {
 		expiration = 7200
 	}
@@ -127,6 +136,9 @@ func (h *handler) fetchAccessToken(channel courier.Channel) error {
 	cacheKey := fmt.Sprintf("wechat_channel_access_token:%s", channel.UUID().String())
 	_, err = rc.Do("set", cacheKey, accessToken, expiration)
 
+	if err != nil {
+		logrus.WithError(err).Error("error setting the access token to redis")
+	}
 	return err
 }
 

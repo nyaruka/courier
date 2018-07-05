@@ -19,6 +19,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -84,7 +85,10 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	if encoded == form.Signature {
 		ResponseText = form.EchoStr
 		StatusCode = 200
-		go h.fetchAccessToken(channel)
+		go func() {
+			time.Sleep(fetchTimeout)
+			h.fetchAccessToken(ctx, channel)
+		}()
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -162,8 +166,9 @@ type fetchPayload struct {
 }
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
-func (h *handler) fetchAccessToken(channel courier.Channel) error {
-	time.Sleep(fetchTimeout)
+func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel) error {
+	start := time.Now()
+	logs := make([]*courier.ChannelLog, 0, 1)
 
 	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "auth/token.action"))
 
@@ -183,12 +188,16 @@ func (h *handler) fetchAccessToken(channel courier.Channel) error {
 	req.Header.Set("Accept", "application/json")
 	rr, err := utils.MakeHTTPRequest(req)
 	if err != nil {
-		return err
+		duration := time.Now().Sub(start)
+		logs = append(logs, courier.NewChannelLogFromError("failed to fetch access token", channel, courier.NilMsgID, duration, err))
+		return h.Backend().WriteChannelLogs(ctx, logs)
 	}
 
 	accessToken, err := jsonparser.GetString([]byte(rr.Body), "access_token")
 	if err != nil {
-		return err
+		duration := time.Now().Sub(start)
+		logs = append(logs, courier.NewChannelLogFromError("invalid json", channel, courier.NilMsgID, duration, err))
+		return h.Backend().WriteChannelLogs(ctx, logs)
 	}
 
 	rc := h.Backend().RedisPool().Get()
@@ -197,6 +206,9 @@ func (h *handler) fetchAccessToken(channel courier.Channel) error {
 	cacheKey := fmt.Sprintf("jiochat_channel_access_token:%s", channel.UUID().String())
 	_, err = rc.Do("set", cacheKey, accessToken, 7200)
 
+	if err != nil {
+		logrus.WithError(err).Error("error setting the access token to redis")
+	}
 	return err
 }
 
