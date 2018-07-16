@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
@@ -23,6 +24,10 @@ const (
 	contentURLEncoded = "urlencoded"
 	contentJSON       = "json"
 	contentXML        = "xml"
+
+	configEncoding  = "encoding"
+	encodingDefault = "D"
+	encodingSmart   = "S"
 )
 
 var contentTypeMappings = map[string]string{
@@ -165,6 +170,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no send url set for EX channel")
 	}
 
+	// figure out what encoding to tell kannel to send as
+	encoding := msg.Channel().StringConfigForKey(configEncoding, encodingDefault)
 	sendMethod := msg.Channel().StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
 	sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
 	contentType := msg.Channel().StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
@@ -185,6 +192,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"from":         msg.Channel().Address(),
 			"from_no_plus": strings.TrimPrefix(msg.Channel().Address(), "+"),
 			"channel":      msg.Channel().UUID().String(),
+		}
+
+		// if we are smart, first try to convert to GSM7 chars
+		if encoding == encodingSmart && sendMethod == http.MethodGet {
+			replaced := gsm7.ReplaceSubstitutions(part)
+			if gsm7.IsValid(replaced) {
+				form["text"] = replaced
+			}
 		}
 
 		url := replaceVariables(sendURL, form, contentURLEncoded)
