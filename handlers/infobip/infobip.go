@@ -18,6 +18,8 @@ import (
 
 var sendURL = "https://api.infobip.com/sms/1/text/advanced"
 
+const configTransliteration = "transliteration"
+
 func init() {
 	courier.RegisterHandler(newHandler())
 }
@@ -185,6 +187,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no password set for IB channel")
 	}
 
+	transliteration := msg.Channel().StringConfigForKey(configTransliteration, "")
+
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	statusURL := fmt.Sprintf("https://%s%s%s/delivered", callbackDomain, "/c/ib/", msg.Channel().UUID())
 
@@ -202,6 +206,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				NotifyContentType:  "application/json",
 				IntermediateReport: true,
 				NotifyURL:          statusURL,
+				Transliteration:    transliteration,
 			},
 		},
 	}
@@ -285,6 +290,7 @@ type mtMessage struct {
 	NotifyContentType  string          `json:"notifyContentType"`
 	IntermediateReport bool            `json:"intermediateReport"`
 	NotifyURL          string          `json:"notifyUrl"`
+	Transliteration    string          `json:"transliteration,omitempty"`
 }
 
 type mtDestination struct {
