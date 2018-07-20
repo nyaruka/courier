@@ -1,3 +1,8 @@
+v1.2.97
+----------
+ * add optional transliteration parameter for MT messages with infobip
+ * add support to use configured encoding for EX channels
+
 v1.2.96
 ----------
  * Add support for WeChat
