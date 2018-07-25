@@ -1,3 +1,8 @@
+v1.2.98
+----------
+ * treat empty content type as text
+ * updated go.mod and go.sum files for go modules support
+
 v1.2.97
 ----------
  * add optional transliteration parameter for MT messages with infobip
