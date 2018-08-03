@@ -178,16 +178,16 @@
   revision = "b12749342a72c772a96134ba3204d2c7ee2cee53"
 
 [[projects]]
-  branch = "master"
   name = "github.com/nyaruka/gocommon"
   packages = ["urns"]
-  revision = "d5464b95212020325f3d3ec985f3fc63a972f783"
+  revision = "bc2f2eb770fbf625b50efe550c9652b9291d8992"
+  version = "v0.2.0"
 
 [[projects]]
   name = "github.com/nyaruka/phonenumbers"
   packages = ["."]
-  revision = "655c1dd072852a36c55c60d5c7593d607f748b90"
-  version = "v0.1.891"
+  revision = "299b4a940ff8d539125644dd8398e34083c7724f"
+  version = "v1.0.22"
 
 [[projects]]
   branch = "master"

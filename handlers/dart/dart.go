@@ -69,9 +69,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn, err := urns.NewTelURNForCountry(form.Original, channel.Country())
+	urn, err := handlers.StrictTelForCountry(form.Original, channel.Country())
 	if err != nil {
-		urn, err = urns.NewURNFromParts(urns.ExternalScheme, form.Original, "")
+		urn, err = urns.NewURNFromParts(urns.ExternalScheme, form.Original, "", "")
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}

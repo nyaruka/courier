@@ -26,7 +26,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
 	{Label: "Receive No Message", URL: receiveURL, Data: receiveNoMessage, Status: 200, Response: "Accepted",
 		Text: Sp(""), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied was empty"},
+	{Label: "Receive invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Receive No Params", URL: receiveURL, Data: receiveNoParams, Status: 400, Response: "field 'mobile' required"},
 	{Label: "Receive No Sender", URL: receiveURL, Data: receiveNoSender, Status: 400, Response: "field 'mobile' required"},
 }

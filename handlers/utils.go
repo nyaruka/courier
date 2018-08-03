@@ -5,10 +5,12 @@ import (
 	"encoding/base64"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 // GetTextAndAttachments returns both the text of our message as well as any attachments, newline delimited
@@ -107,4 +109,30 @@ func SplitMsg(text string, max int) []string {
 	}
 
 	return parts
+}
+
+// StrictTelForCountry wraps urns.NewURNTelForCountry but is stricter in
+// what it accepts. Incoming tels must be numeric or we will return an
+// error. (IE, alphanumeric shortcodes are not ok)
+func StrictTelForCountry(number string, country string) (urns.URN, error) {
+	// first figure out if we are valid non-strictly
+	urn, err := urns.NewTelURNForCountry(number, country)
+	if err != nil {
+		return urns.NilURN, err
+	}
+
+	// then make sure our path is strictly numeric
+	_, err = strconv.Atoi(urn.Path())
+	if err != nil {
+		return urns.NilURN, fmt.Errorf("phone number supplied is not a number")
+	}
+
+	// finally if our original number started with a plus and is the same as our new number, use that
+	// as our URN. This deals with the case where a carrier is handing us an E164 number that
+	// the phonenumbers library doesn't know about yet
+	if fmt.Sprintf("+%s", urn.Path()) == number && len(number) > 7 {
+		urn = urns.URN(urns.TelScheme + ":" + number)
+	}
+
+	return urn, nil
 }

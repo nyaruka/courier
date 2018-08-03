@@ -33,7 +33,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC))},
 	{Label: "Receive Valid Message With Time", URL: receiveValidMessageWithTime, Data: "", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC))},
-	{Label: "Invalid URN", URL: receiveInvalidURN, Data: "", Status: 400, Response: "phone number supplied was empty"},
+	{Label: "Invalid URN", URL: receiveInvalidURN, Data: "", Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Receive No Params", URL: receiveNoParams, Data: "", Status: 400, Response: "must have one of 'sender' or 'from'"},
 	{Label: "Receive No Sender", URL: receiveNoSender, Data: "", Status: 400, Response: "must have one of 'sender' or 'from'"},
 	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "", Status: 400, Response: "invalid date format, must be RFC 3339"},

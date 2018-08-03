@@ -16,7 +16,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -107,7 +106,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn, err := urns.NewTelURNForCountry(form.From, channel.Country())
+	urn, err := handlers.StrictTelForCountry(form.From, channel.Country())
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
@@ -154,12 +153,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"type":              []string{textType},
 		}
 
-		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
 		var rr *utils.RequestResponse
 		var requestErr error
 		for i := 0; i < 3; i++ {
+			req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 			rr, requestErr = utils.MakeHTTPRequest(req)
 			matched := throttledRE.FindAllStringSubmatch(string([]byte(rr.Body)), -1)
 			if len(matched) > 0 && len(matched[0]) > 0 {

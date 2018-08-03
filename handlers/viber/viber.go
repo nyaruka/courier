@@ -102,7 +102,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		ContactName := payload.User.Name
 
 		// build the URN
-		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "")
+		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "", "")
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
@@ -121,7 +121,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		viberID := payload.UserID
 
 		// build the URN
-		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "")
+		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "", "")
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
@@ -154,7 +154,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		contactName := payload.Sender.Name
 
 		// create our URN
-		urn, err := urns.NewURNFromParts(urns.ViberScheme, sender, "")
+		urn, err := urns.NewURNFromParts(urns.ViberScheme, sender, "", "")
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}

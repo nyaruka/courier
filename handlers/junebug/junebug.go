@@ -12,7 +12,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -80,7 +79,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("unable to parse date: %s", payload.Timestamp))
 	}
 
-	urn, err := urns.NewTelURNForCountry(payload.From, c.Country())
+	urn, err := handlers.StrictTelForCountry(payload.From, c.Country())
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}

@@ -117,7 +117,8 @@ func newRRFromResponse(method string, requestTrace string, r *http.Response) (*R
 	// figure out if our Response is something that looks like text from our headers
 	isText := false
 	contentType := r.Header.Get("Content-Type")
-	if strings.Contains(contentType, "text") ||
+	if contentType == "" ||
+		strings.Contains(contentType, "text") ||
 		strings.Contains(contentType, "json") ||
 		strings.Contains(contentType, "javascript") ||
 		strings.Contains(contentType, "urlencoded") ||

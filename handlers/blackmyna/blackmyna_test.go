@@ -29,7 +29,7 @@ var (
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: validReceive, Status: 200, Response: "Message Accepted",
 		Text: Sp("Msg"), URN: Sp("tel:+9779814641111")},
-	{Label: "Invalid URN", URL: invalidURN, Status: 400, Response: "phone number supplied was empty"},
+	{Label: "Invalid URN", URL: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Receive Empty", URL: emptyReceive, Status: 400, Response: "field 'text' required"},
 	{Label: "Receive Missing Text", URL: missingText, Status: 400, Response: "field 'text' required"},
 

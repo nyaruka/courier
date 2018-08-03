@@ -12,7 +12,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 )
 
 var (
@@ -100,7 +99,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("invalid 'senderAddress' parameter"))
 		}
 
-		urn, err := urns.NewTelURNForCountry(glMsg.SenderAddress[4:], c.Country())
+		urn, err := handlers.StrictTelForCountry(glMsg.SenderAddress[4:], c.Country())
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}

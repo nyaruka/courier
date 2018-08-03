@@ -39,7 +39,7 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validLongcodeReceive, Status: 200, Response: "-1",
 		Text: Sp("Hello"), URN: Sp("tel:+60124361111"), Date: Tp(time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC)),
 		ExternalID: Sp("abc1234")},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied was empty"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Missing Params", URL: receiveURL, Data: missingParamsReceive, Status: 400, Response: "missing shortcode, longcode, from or msisdn parameters"},
 	{Label: "Invalid Params", URL: receiveURL, Data: invalidParamsReceive, Status: 400, Response: "missing shortcode, longcode, from or msisdn parameters"},
 	{Label: "Invalid Address Params", URL: receiveURL, Data: invalidAddress, Status: 400, Response: "invalid to number [1515], expecting [2020]"},

@@ -170,7 +170,7 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("unable to find user for id: %s", senderID))
 		}
 
-		urn, err := urns.NewURNFromParts(urns.TwitterIDScheme, user.ID, strings.ToLower(user.ScreenName))
+		urn, err := urns.NewURNFromParts(urns.TwitterIDScheme, user.ID, "", strings.ToLower(user.ScreenName))
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}

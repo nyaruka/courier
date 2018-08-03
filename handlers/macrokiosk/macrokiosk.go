@@ -14,7 +14,6 @@ import (
 	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 )
 
 const (
@@ -123,7 +122,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn, err := urns.NewTelURNForCountry(sender, channel.Country())
+	urn, err := handlers.StrictTelForCountry(sender, channel.Country())
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}

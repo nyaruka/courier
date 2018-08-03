@@ -47,7 +47,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC))},
 	{Label: "Receive Valid Message With Time", URL: receiveValidMessageWithTime, Data: "empty", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC))},
-	{Label: "Invalid URN", URL: invalidURN, Data: "empty", Status: 400, Response: "phone number supplied was empty"},
+	{Label: "Invalid URN", URL: invalidURN, Data: "empty", Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", Status: 400, Response: "field 'text' required"},
 	{Label: "Receive No Sender", URL: receiveNoSender, Data: "empty", Status: 400, Response: "must have one of 'sender' or 'from' set"},
 	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "empty", Status: 400, Response: "invalid date format, must be RFC 3339"},
@@ -84,30 +84,43 @@ var longSendTestCases = []ChannelSendTestCase{
 		SendPrep:  setSendURL},
 }
 
+var getSendSmartEncodingTestCases = []ChannelSendTestCase{
+	{Label: "Smart Encoding",
+		Text: "Fancy “Smart” Quotes", URN: "tel:+250788383383",
+		Status:       "W",
+		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
+		URLParams: map[string]string{"text": `Fancy "Smart" Quotes`, "to": "+250788383383", "from": "2020"},
+		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		SendPrep:  setSendURL},
+}
 var getSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "tel:+250788383383",
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		URLParams: map[string]string{"text": "Simple Message", "to": "+250788383383", "from": "2020"},
+		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:  setSendURL},
 	{Label: "Unicode Send",
 		Text: "☺", URN: "tel:+250788383383",
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		URLParams: map[string]string{"text": "☺", "to": "+250788383383", "from": "2020"},
+		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:  setSendURL},
 	{Label: "Error Sending",
 		Text: "Error Message", URN: "tel:+250788383383",
 		Status:       "E",
 		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
 		URLParams: map[string]string{"text": `Error Message`, "to": "+250788383383"},
+		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:  setSendURL},
 	{Label: "Send Attachment",
 		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status:       "W",
 		ResponseBody: `0: Accepted for delivery`, ResponseStatus: 200,
 		URLParams: map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "+250788383383", "from": "2020"},
+		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:  setSendURL},
 }
 
@@ -117,24 +130,28 @@ var postSendTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		PostParams: map[string]string{"text": "Simple Message", "to": "+250788383383", "from": "2020"},
+		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:   setSendURL},
 	{Label: "Unicode Send",
 		Text: "☺", URN: "tel:+250788383383",
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		PostParams: map[string]string{"text": "☺", "to": "+250788383383", "from": "2020"},
+		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:   setSendURL},
 	{Label: "Error Sending",
 		Text: "Error Message", URN: "tel:+250788383383",
 		Status:       "E",
 		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
 		PostParams: map[string]string{"text": `Error Message`, "to": "+250788383383"},
+		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:   setSendURL},
 	{Label: "Send Attachment",
 		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status:       "W",
 		ResponseBody: `0: Accepted for delivery`, ResponseStatus: 200,
 		PostParams: map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "+250788383383", "from": "2020"},
+		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:   setSendURL},
 }
 
@@ -144,28 +161,28 @@ var jsonSendTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		RequestBody: `{ "to":"+250788383383", "text":"Simple Message", "from":"2020" }`,
-		Headers:     map[string]string{"Authorization": "Token ABCDEF"},
+		Headers:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
 		SendPrep:    setSendURL},
 	{Label: "Unicode Send",
 		Text: `☺ "hi!"`, URN: "tel:+250788383383",
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		RequestBody: `{ "to":"+250788383383", "text":"☺ \"hi!\"", "from":"2020" }`,
-		Headers:     map[string]string{"Authorization": "Token ABCDEF"},
+		Headers:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
 		SendPrep:    setSendURL},
 	{Label: "Error Sending",
 		Text: "Error Message", URN: "tel:+250788383383",
 		Status:       "E",
 		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
 		RequestBody: `{ "to":"+250788383383", "text":"Error Message", "from":"2020" }`,
-		Headers:     map[string]string{"Authorization": "Token ABCDEF"},
+		Headers:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
 		SendPrep:    setSendURL},
 	{Label: "Send Attachment",
 		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status:       "W",
 		ResponseBody: `0: Accepted for delivery`, ResponseStatus: 200,
 		RequestBody: `{ "to":"+250788383383", "text":"My pic!\nhttps://foo.bar/image.jpg", "from":"2020" }`,
-		Headers:     map[string]string{"Authorization": "Token ABCDEF"},
+		Headers:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
 		SendPrep:    setSendURL},
 }
 
@@ -175,24 +192,28 @@ var xmlSendTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		RequestBody: `<msg><to>+250788383383</to><text>Simple Message</text><from>2020</from></msg>`,
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 		SendPrep:    setSendURL},
 	{Label: "Unicode Send",
 		Text: `☺`, URN: "tel:+250788383383",
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		RequestBody: `<msg><to>+250788383383</to><text>☺</text><from>2020</from></msg>`,
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 		SendPrep:    setSendURL},
 	{Label: "Error Sending",
 		Text: "Error Message", URN: "tel:+250788383383",
 		Status:       "E",
 		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
 		RequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from></msg>`,
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 		SendPrep:    setSendURL},
 	{Label: "Send Attachment",
 		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status:       "W",
 		ResponseBody: `0: Accepted for delivery`, ResponseStatus: 200,
 		RequestBody: `<msg><to>+250788383383</to><text>My pic!&#xA;https://foo.bar/image.jpg</text><from>2020</from></msg>`,
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 		SendPrep:    setSendURL},
 }
 
@@ -200,6 +221,12 @@ func TestSending(t *testing.T) {
 	var getChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		map[string]interface{}{
 			"send_path":              "?to={{to}}&text={{text}}&from={{from}}",
+			courier.ConfigSendMethod: http.MethodGet})
+
+	var getSmartChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
+		map[string]interface{}{
+			"send_path":              "?to={{to}}&text={{text}}&from={{from}}",
+			configEncoding:           encodingSmart,
 			courier.ConfigSendMethod: http.MethodGet})
 
 	var postChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
@@ -226,6 +253,8 @@ func TestSending(t *testing.T) {
 		})
 
 	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil)
+	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil)
+	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendSmartEncodingTestCases, nil)
 	RunChannelSendTestCases(t, postChannel, newHandler(), postSendTestCases, nil)
 	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil)
 	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil)
