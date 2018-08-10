@@ -141,7 +141,7 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 	}
 
 	// Ignore wrong status update for incoming messages
-	if err.Error() == "Incoming messages can only be PENDING or HANDLED" {
+	if err == courier.ErrWrongIncomingMsgStatus {
 		return nil
 	}
 
