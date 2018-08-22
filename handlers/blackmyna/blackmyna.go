@@ -11,7 +11,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -32,12 +31,9 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-
-	return s.AddHandlerRoute(h, http.MethodGet, "status", h.StatusMessage)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodGet, "status", h.StatusMessage)
+	return nil
 }
 
 type moForm struct {
@@ -56,16 +52,16 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn, err := urns.NewTelURNForCountry(form.From, channel.Country())
+	urn, err := handlers.StrictTelForCountry(form.From, channel.Country())
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text)
 
 	// and finally write our message
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 type statusForm struct {
@@ -91,7 +87,7 @@ func (h *handler) StatusMessage(ctx context.Context, channel courier.Channel, w 
 
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return nil, fmt.Errorf("unknown status '%d', must be one of 1, 2, 8 or 16", form.Status)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%d', must be one of 1, 2, 8 or 16", form.Status))
 	}
 
 	// write our status

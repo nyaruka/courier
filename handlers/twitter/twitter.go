@@ -54,18 +54,16 @@ func newHandler(channelType string, name string) courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveVerify)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveVerify)
+	return nil
 }
 
 // receiveVerify handles Twitter's webhook verification callback
 func (h *handler) receiveVerify(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	crcToken := r.URL.Query().Get("crc_token")
 	if crcToken == "" {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf(`missing required 'crc_token' query parameter`))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf(`missing required 'crc_token' query parameter`))
 	}
 
 	secret := c.StringConfigForKey("api_secret", "")
@@ -141,17 +139,16 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	// no direct message events? ignore
 	if len(payload.DirectMessageEvents) == 0 {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, c, "ignoring, no direct messages")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "ignoring, no direct messages")
 	}
 
 	// the list of messages we read
 	msgs := make([]courier.Msg, 0, 2)
-	events := make([]courier.Event, 0, 2)
 
 	// for each entry
 	for _, entry := range payload.DirectMessageEvents {
@@ -170,39 +167,36 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 		// look up the user for this sender
 		user, found := payload.Users[senderID]
 		if !found {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("unable to find user for id: %s", senderID))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("unable to find user for id: %s", senderID))
 		}
 
-		urn, err := urns.NewURNFromParts(urns.TwitterIDScheme, user.ID, strings.ToLower(user.ScreenName))
+		urn, err := urns.NewURNFromParts(urns.TwitterIDScheme, user.ID, "", strings.ToLower(user.ScreenName))
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
 		// create our date from the timestamp (they give us millis, arg is nanos)
 		ts, err := strconv.ParseInt(entry.CreatedTimestamp, 10, 64)
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("invalid timestamp: %s", entry.CreatedTimestamp))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("invalid timestamp: %s", entry.CreatedTimestamp))
 		}
 		date := time.Unix(0, ts*1000000).UTC()
 
+		// Twitter escapes & in HTML format, so replace &amp; with &
+		text := strings.Replace(entry.MessageCreate.MessageData.Text, "&amp;", "&", -1)
+
 		// create our message
-		msg := h.Backend().NewIncomingMsg(c, urn, entry.MessageCreate.MessageData.Text).WithExternalID(entry.ID).WithReceivedOn(date).WithContactName(user.Name)
+		msg := h.Backend().NewIncomingMsg(c, urn, text).WithExternalID(entry.ID).WithReceivedOn(date).WithContactName(user.Name)
 
 		// if we have an attachment, add that as well
 		if entry.MessageCreate.MessageData.Attachment != nil {
 			msg.WithAttachment(entry.MessageCreate.MessageData.Attachment.Media.MediaURLHTTPS)
 		}
 
-		err = h.Backend().WriteMsg(ctx, msg)
-		if err != nil {
-			return nil, err
-		}
-
 		msgs = append(msgs, msg)
-		events = append(events, msg)
 	}
 
-	return events, courier.WriteMsgSuccess(ctx, w, r, msgs)
+	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
 }
 
 // {

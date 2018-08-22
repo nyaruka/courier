@@ -13,7 +13,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 )
 
 var (
@@ -36,7 +35,8 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	return nil
 }
 
 type moForm struct {
@@ -60,7 +60,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := r.ParseForm()
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	messageType := r.Form.Get("message_type")
 
@@ -68,12 +68,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		form := &statusForm{}
 		err := handlers.DecodeAndValidateForm(form, r)
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
 		msgStatus, found := statusMapping[form.Status]
 		if !found {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf(`unknown status '%s', must be either 'SENT' or 'FAILED'`, form.Status))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf(`unknown status '%s', must be either 'SENT' or 'FAILED'`, form.Status))
 		}
 
 		// write our status
@@ -84,23 +84,23 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		form := &moForm{}
 		err := handlers.DecodeAndValidateForm(form, r)
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 		// create our date from the timestamp
 		date := time.Unix(0, int64(form.Timestamp*1000000000)).UTC()
 
 		// create our URN
-		urn, err := urns.NewTelURNForCountry(form.MobileNumber, channel.Country())
+		urn, err := handlers.StrictTelForCountry(form.MobileNumber, channel.Country())
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 		// build our msg
 		msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithExternalID(form.RequestID).WithReceivedOn(date)
 
 		// and finally write our message
-		return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 	} else {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "unknown message_type request")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "unknown message_type request")
 	}
 }
 

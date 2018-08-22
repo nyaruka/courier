@@ -123,7 +123,7 @@ var testCases = []ChannelHandleTestCase{
 		Text: Sp("Hello World!"), URN: Sp("tel:+250788383383"), ExternalID: Sp("1234"), Date: Tp(time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC))},
 	{Label: "Valid Receive ISO-8859-1", URL: receiveURL, Data: receiveValidMessageISO8859_1, Status: 200, Response: "Accepted",
 		Text: Sp(`hello!`), URN: Sp("tel:+250788383383"), ExternalID: Sp("1234"), Date: Tp(time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC))},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied was empty"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Error invalid JSON", URL: receiveURL, Data: "foo", Status: 400, Response: `unable to parse request JSON`},
 	{Label: "Error missing JSON", URL: receiveURL, Data: "{}", Status: 400, Response: `missing one of 'messageId`},
 	{Label: "Valid Receive UTF-16BE", URL: receiveURL, Data: receiveValidMessageUTF16BE, Status: 200, Response: "Accepted",

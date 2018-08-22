@@ -16,7 +16,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -48,15 +47,11 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-	err = s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, http.MethodGet, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodGet, "status", h.receiveStatus)
+	return nil
 }
 
 type statusForm struct {
@@ -81,12 +76,12 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	handlers.DecodeAndValidateForm(form, r)
 
 	if form.MessageID == "" {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "no messageId parameter, ignored")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no messageId parameter, ignored")
 	}
 
 	msgStatus, found := statusMappings[form.Status]
 	if !found {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring unknown status report")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring unknown status report")
 	}
 
 	status := h.Backend().NewMsgStatusForExternalID(channel, form.MessageID, msgStatus)
@@ -107,19 +102,19 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	handlers.DecodeAndValidateForm(form, r)
 
 	if form.To == "" {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "no to parameter, ignored")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no to parameter, ignored")
 	}
 
 	// create our URN
-	urn, err := urns.NewTelURNForCountry(form.From, channel.Country())
+	urn, err := handlers.StrictTelForCountry(form.From, channel.Country())
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text)
 	// and finally write our message
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error
@@ -158,12 +153,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"type":              []string{textType},
 		}
 
-		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
 		var rr *utils.RequestResponse
 		var requestErr error
 		for i := 0; i < 3; i++ {
+			req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 			rr, requestErr = utils.MakeHTTPRequest(req)
 			matched := throttledRE.FindAllStringSubmatch(string([]byte(rr.Body)), -1)
 			if len(matched) > 0 && len(matched[0]) > 0 {

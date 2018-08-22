@@ -2,20 +2,21 @@
 
 # About
 
-Courier is a messaging gateway for text-based messaging channels. It abstracts out various different texting mediums and providers, allowing
-applications to focus on the creation and processing of those messages.
+Courier is a messaging gateway for text-based messaging channels. It abstracts out various different
+texting mediums and providers, allowing applications to focus on the creation and processing of those messages.
 
-Current courier supports over 36 different channel types, ranging for SMS aggregators like Twilio to IP channels like Facebook and Telegram
-messenger. The goal is for Courier to support every popular messaging channels and aggregator and we are happy to accept pull requests
-to help accomplish that.
+Current courier supports over 36 different channel types, ranging for SMS aggregators like Twilio to
+IP channels like Facebook and Telegram messenger. The goal is for Courier to support every popular
+messaging channels and aggregator and we are happy to accept pull requests to help accomplish that.
 
-Courier is currently used to power [RapidPro](https://rapidpro.io) and [TextIt](https://textit.in) but the backend is pluggable, so you can
-add your own backend to read and write messages.
+Courier is currently used to power [RapidPro](https://rapidpro.io) and [TextIt](https://textit.in)
+but the backend is pluggable, so you can add your own backend to read and write messages.
 
 # Deploying
 
-As courier is a go application, it compiles to a binary and that binary along with the config file is all you need to run it on your server. You 
-can find bundles for each platform in the [releases directory](https://github.com/nyaruka/courier/releases). We recommend running Courier
+As courier is a go application, it compiles to a binary and that binary along with the config file is all
+you need to run it on your server. You can find bundles for each platform in the
+[releases directory](https://github.com/nyaruka/courier/releases). We recommend running Courier
 behind a reverse proxy such as nginx or Elastic Load Balancer that provides HTTPs encryption.
 
 # Configuration
@@ -25,8 +26,9 @@ Courier uses a tiered configuration system, each option takes precendence over t
  2. Environment variables starting with `COURIER_` 
  3. Command line parameters
 
-We recommend running courier with no changes to the configuration and no parameters, using only environment variables to configure it. You can
-use `% courier --help` to see a list of the environment variables and parameters and for more details on each option.
+We recommend running courier with no changes to the configuration and no parameters, using only
+environment variables to configure it. You can use `% courier --help` to see a list of the
+environment variables and parameters and for more details on each option.
 
 # RapidPro Configuration
 

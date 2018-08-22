@@ -21,9 +21,9 @@ import (
 
 // Endpoints we hit
 var (
-	sendURL      = "https://graph.facebook.com/v2.6/me/messages"
-	subscribeURL = "https://graph.facebook.com/v2.6/me/subscribed_apps"
-	graphURL     = "https://graph.facebook.com/v2.6/"
+	sendURL      = "https://graph.facebook.com/v2.12/me/messages"
+	subscribeURL = "https://graph.facebook.com/v2.12/me/subscribed_apps"
+	graphURL     = "https://graph.facebook.com/v2.12/"
 
 	// How long we want after the subscribe callback to register the page for events
 	subscribeTimeout = time.Second * 2
@@ -57,11 +57,9 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveVerify)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveVerify)
+	return nil
 }
 
 // receiveVerify handles Facebook's webhook verification callback
@@ -70,19 +68,19 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 
 	// this isn't a subscribe verification, that's an error
 	if mode != "subscribe" {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown request"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown request"))
 	}
 
 	// verify the token against our secret, if the same return the challenge FB sent us
 	secret := r.URL.Query().Get("hub.verify_token")
 	if secret != channel.StringConfigForKey(courier.ConfigSecret, "") {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("token does not match secret"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("token does not match secret"))
 	}
 
 	// make sure we have an auth token
 	authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
 	if authToken == "" {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing auth token for FB channel"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing auth token for FB channel"))
 	}
 
 	// everything looks good, we will subscribe to this page's messages asynchronously
@@ -188,17 +186,17 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// not a page object? ignore
 	if payload.Object != "page" {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring non-page request")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring non-page request")
 	}
 
 	// no entries? ignore this request
 	if len(payload.Entry) == 0 {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring request, no entries")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no entries")
 	}
 
 	// the list of events we deal with
@@ -226,9 +224,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		date := time.Unix(0, msg.Timestamp*1000000).UTC()
 
 		// create our URN
-		urn, err := urns.NewURNFromParts(urns.FacebookScheme, msg.Sender.ID, "")
+		urn, err := urns.NewFacebookURN(msg.Sender.ID)
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 		if msg.OptIn != nil {
 			// this is an opt in, if we have a user_ref, use that as our URN (this is a checkbox plugin)
@@ -238,9 +236,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			//    Right now that we even support this isn't documented and I don't think anybody uses it, so leaving that out.
 			//    (things will still work, we just will have dupe contacts, one with user_ref for the first contact, then with the real id when they reply)
 			if msg.OptIn.UserRef != "" {
-				urn, err = urns.NewURNFromParts(urns.FacebookScheme, urns.FacebookRefPrefix+msg.OptIn.UserRef, "")
+				urn, err = urns.NewFacebookURN(urns.FacebookRefPrefix + msg.OptIn.UserRef)
 				if err != nil {
-					return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+					return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 				}
 			}
 

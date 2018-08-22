@@ -15,7 +15,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 )
 
 var idRegex = regexp.MustCompile(`Success \"(.*)\"`)
@@ -35,11 +34,9 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	return nil
 }
 
 type statusForm struct {
@@ -53,7 +50,7 @@ func (h *handler) receiveStatus(ctx context.Context, c courier.Channel, w http.R
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	// should have either delivered or err
@@ -63,19 +60,11 @@ func (h *handler) receiveStatus(ctx context.Context, c courier.Channel, w http.R
 	} else if form.Err == 1 {
 		reqStatus = courier.MsgFailed
 	} else {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("must have either dlvrd or err set to 1"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("must have either dlvrd or err set to 1"))
 	}
 
 	status := h.Backend().NewMsgStatusForExternalID(c, form.ID, reqStatus)
-	err = h.Backend().WriteMsgStatus(ctx, status)
-	if err == courier.ErrMsgNotFound {
-		return nil, writeJasminACK(w)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return []courier.Event{status}, writeJasminACK(w)
+	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 }
 
 type moForm struct {
@@ -92,13 +81,13 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	// create our URN
-	urn, err := urns.NewTelURNForCountry(form.From, c.Country())
+	urn, err := handlers.StrictTelForCountry(form.From, c.Country())
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	// Decode from GSM7 if required
@@ -111,7 +100,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	msg := h.Backend().NewIncomingMsg(c, urn, text).WithExternalID(form.ID).WithReceivedOn(time.Now().UTC())
 
 	// and finally queue our message
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
@@ -119,6 +108,10 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 }
 
 func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []courier.MsgStatus) error {
+	return writeJasminACK(w)
+}
+
+func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, details string) error {
 	return writeJasminACK(w)
 }
 

@@ -14,6 +14,12 @@ import (
 
 const statusMsgNotFoundDetail = "message not found, ignored"
 
+// writeAndLogRequestError writes a JSON response for the passed in message and logs an info messages
+func writeAndLogRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
+	LogRequestError(r, c, err)
+	return WriteError(ctx, w, r, err)
+}
+
 // WriteError writes a JSON response for the passed in error
 func WriteError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error {
 	errors := []interface{}{NewErrorData(err.Error())}
@@ -27,15 +33,8 @@ func WriteError(ctx context.Context, w http.ResponseWriter, r *http.Request, err
 	return WriteDataResponse(ctx, w, http.StatusBadRequest, "Error", errors)
 }
 
-// WriteAndLogRequestError writes a JSON response for the passed in message and logs an info messages
-func WriteAndLogRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
-	LogRequestError(r, c, err)
-	return WriteError(ctx, w, r, err)
-}
-
-// WriteAndLogRequestIgnored writes a JSON response for the passed in message and logs an info message
-func WriteAndLogRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, details string) error {
-	LogRequestIgnored(r, c, details)
+// WriteIgnored writes a JSON response indicating that we ignored the request
+func WriteIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, details string) error {
 	return WriteDataResponse(ctx, w, http.StatusOK, "Ignored", []interface{}{NewInfoData(details)})
 }
 
@@ -43,18 +42,6 @@ func WriteAndLogRequestIgnored(ctx context.Context, w http.ResponseWriter, r *ht
 func WriteAndLogUnauthorized(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
 	LogRequestError(r, c, err)
 	return WriteDataResponse(ctx, w, http.StatusUnauthorized, "Unauthorized", []interface{}{NewErrorData(err.Error())})
-}
-
-// WriteAndLogStatusMsgNotFound writes a JSON response for the passed in message and logs an info message
-func WriteAndLogStatusMsgNotFound(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel) error {
-	LogRequestIgnored(r, c, statusMsgNotFoundDetail)
-	return WriteDataResponse(ctx, w, http.StatusOK, "Ignored", []interface{}{NewInfoData(statusMsgNotFoundDetail)})
-}
-
-// WriteAndLogRequestHandled writes a JSON response for the passed in message and logs an info message
-func WriteAndLogRequestHandled(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, details string) error {
-	LogRequestHandled(r, c, details)
-	return WriteDataResponse(ctx, w, http.StatusOK, "Handled", []interface{}{NewInfoData(details)})
 }
 
 // WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it

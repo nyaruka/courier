@@ -32,7 +32,8 @@ const (
 	configMessagingServiceSID = "messaging_service_sid"
 	configSendURL             = "send_url"
 
-	twSignatureHeader = "X-Twilio-Signature"
+	signatureHeader     = "X-Twilio-Signature"
+	forwardedPathHeader = "X-Forwarded-Path"
 )
 
 var (
@@ -56,7 +57,6 @@ func init() {
 	courier.RegisterHandler(newHandler("T", "Twilio"))
 	courier.RegisterHandler(newHandler("TMS", "Twilio Messaging Service"))
 	courier.RegisterHandler(newHandler("TW", "TwiML API"))
-
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -66,12 +66,9 @@ func (h *handler) Initialize(s courier.Server) error {
 	// save whether we should ignore delivery reports
 	h.ignoreDeliveryReports = s.Config().IgnoreDeliveryReports
 
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	return nil
 }
 
 type moForm struct {
@@ -103,20 +100,20 @@ var statusMapping = map[string]courier.MsgStatusValue{
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
-		return nil, err
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// get our params
 	form := &moForm{}
 	err = handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, err
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// create our URN
 	urn, err := urns.NewTelURNForCountry(form.From, form.FromCountry)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	if form.Body != "" {
@@ -132,7 +129,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		mediaURL := r.PostForm.Get(fmt.Sprintf("MediaUrl%d", i))
 		msg.WithAttachment(mediaURL)
 	}
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -146,17 +143,17 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	form := &statusForm{}
 	err = handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, err
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no msg status, ignoring")
 	}
 
 	msgStatus, found := statusMapping[form.MessageStatus]
 	if !found {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", form.MessageStatus))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", form.MessageStatus))
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on
 	if h.ignoreDeliveryReports && msgStatus != courier.MsgFailed {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring non error delivery report")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring non error delivery report")
 	}
 
 	// if the message id was passed explicitely, use that
@@ -270,17 +267,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	return status, nil
 }
 
-// Twilio expects Twiml from a message receive request
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
-	w.Header().Set("Content-Type", "text/xml")
-	w.WriteHeader(200)
-	_, err := fmt.Fprint(w, `<?xml version="1.0" encoding="UTF-8"?><Response/>`)
-	return err
-}
-
 // see https://www.twilio.com/docs/api/security
 func (h *handler) validateSignature(channel courier.Channel, r *http.Request) error {
-	actual := r.Header.Get(twSignatureHeader)
+	actual := r.Header.Get(signatureHeader)
 	if actual == "" {
 		return fmt.Errorf("missing request signature")
 	}
@@ -295,7 +284,13 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 		return fmt.Errorf("invalid or missing auth token in config")
 	}
 
-	url := fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI())
+	path := r.URL.RequestURI()
+	proxyPath := r.Header.Get(forwardedPathHeader)
+	if proxyPath != "" {
+		path = proxyPath
+	}
+
+	url := fmt.Sprintf("https://%s%s", r.Host, path)
 	expected, err := twCalculateSignature(url, r.PostForm, authToken)
 	if err != nil {
 		return err
@@ -337,4 +332,20 @@ func twCalculateSignature(url string, form url.Values, authToken string) ([]byte
 	base64.StdEncoding.Encode(encoded, hash)
 
 	return encoded, nil
+}
+
+// WriteMsgSuccessResponse writes our response in TWIML format
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+	w.Header().Set("Content-Type", "text/xml")
+	w.WriteHeader(200)
+	_, err := fmt.Fprint(w, `<?xml version="1.0" encoding="UTF-8"?><Response/>`)
+	return err
+}
+
+// WriteRequestIgnored writes our response in TWIML format
+func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, details string) error {
+	w.Header().Set("Content-Type", "text/xml")
+	w.WriteHeader(200)
+	_, err := fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?><!-- %s --><Response/>`, details)
+	return err
 }

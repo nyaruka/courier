@@ -10,7 +10,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -36,11 +35,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	return nil
 }
 
@@ -54,19 +49,19 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// create our URN
-	urn, err := urns.NewTelURNForCountry(form.Mobile, channel.Country())
+	urn, err := handlers.StrictTelForCountry(form.Mobile, channel.Country())
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message)
 	// and finally write our message
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error

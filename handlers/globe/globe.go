@@ -12,7 +12,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 )
 
 var (
@@ -41,7 +40,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	return nil
 }
 
 // {
@@ -78,14 +78,13 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	if len(payload.InboundSMSMessageList.InboundSMSMessage) == 0 {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, c, "no messages, ignored")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "no messages, ignored")
 	}
 
-	events := make([]courier.Event, 0, 1)
 	msgs := make([]courier.Msg, 0, 1)
 
 	// parse each inbound message
@@ -93,30 +92,23 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		// parse our date from format: "Fri Nov 22 2013 12:12:13 GMT+0000 (UTC)"
 		date, err := time.Parse("Mon Jan 2 2006 15:04:05 GMT+0000 (UTC)", glMsg.DateTime)
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
 		if !strings.HasPrefix(glMsg.SenderAddress, "tel:") {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("invalid 'senderAddress' parameter"))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("invalid 'senderAddress' parameter"))
 		}
 
-		urn, err := urns.NewTelURNForCountry(glMsg.SenderAddress[4:], c.Country())
+		urn, err := handlers.StrictTelForCountry(glMsg.SenderAddress[4:], c.Country())
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
 		msg := h.Backend().NewIncomingMsg(c, urn, glMsg.Message).WithExternalID(glMsg.MessageID).WithReceivedOn(date)
-
-		err = h.Backend().WriteMsg(ctx, msg)
-		if err != nil {
-			return nil, err
-		}
-
-		events = append(events, msg)
 		msgs = append(msgs, msg)
 	}
 
-	return events, courier.WriteMsgSuccess(ctx, w, r, msgs)
+	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
 }
 
 // {

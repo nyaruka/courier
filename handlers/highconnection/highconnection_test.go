@@ -27,7 +27,7 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: validReceive, Status: 200, Response: "Accepted",
 		Text: Sp("Hello World"), URN: Sp("tel:+33610346460"),
 		Date: Tp(time.Date(2015, 04, 02, 14, 26, 06, 0, time.UTC))},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied was empty"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Receive Missing Params", URL: receiveURL, Data: " ", Status: 400, Response: "validation for 'From' failed"},
 	{Label: "Receive Invalid Date", URL: receiveURL, Data: invalidDateReceive, Status: 400, Response: "cannot parse"},
 	{Label: "Status Missing Params", URL: statusURL, Status: 400, Response: "validation for 'Status' failed"},

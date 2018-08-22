@@ -69,7 +69,7 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Base64", URL: receiveURL, Data: receiveBase64, Status: 200, Response: "<Response/>",
 		Text: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
 		PrepRequest: addValidSignature},
-	{Label: "Status No Params", URL: statusURL, Data: " ", Status: 400, Response: "field 'messagestatus' required",
+	{Label: "Status No Params", URL: statusURL, Data: " ", Status: 200, Response: "no msg status, ignoring",
 		PrepRequest: addValidSignature},
 	{Label: "Status Invalid Status", URL: statusURL, Data: statusInvalid, Status: 400, Response: "unknown status 'huh'",
 		PrepRequest: addValidSignature},
@@ -104,7 +104,7 @@ var tmsTestCases = []ChannelHandleTestCase{
 		PrepRequest: addValidSignature},
 	{Label: "Status TMS extra", URL: tmsStatusURL, Data: tmsStatusExtra, Status: 200, Response: `"status":"S"`,
 		ExternalID: Sp("SM0b6e2697aae04182a9f5b5c7a8994c7f"), PrepRequest: addValidSignature},
-	{Label: "Status No Params", URL: tmsStatusURL, Data: " ", Status: 400, Response: "field 'messagestatus' required",
+	{Label: "Status No Params", URL: tmsStatusURL, Data: " ", Status: 200, Response: "no msg status, ignoring",
 		PrepRequest: addValidSignature},
 	{Label: "Status Invalid Status", URL: tmsStatusURL, Data: statusInvalid, Status: 400, Response: "unknown status 'huh'",
 		PrepRequest: addValidSignature},
@@ -120,6 +120,11 @@ var twTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: twReceiveURL, Data: receiveValid, Status: 200, Response: "<Response/>",
 		Text: Sp("Msg"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
 		PrepRequest: addValidSignature},
+	{Label: "Receive Forwarded Valid", URL: twReceiveURL, Data: receiveValid,
+		Headers: map[string]string{forwardedPathHeader: "/handlers/twilio/receive/8eb23e93-5ecb-45ba-b726-3b064e0c56ab"},
+		Status:  200, Response: "<Response/>",
+		Text: Sp("Msg"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
+		PrepRequest: addForwardSignature},
 	{Label: "Receive Invalid Signature", URL: twReceiveURL, Data: receiveValid, Status: 400, Response: "invalid request signature",
 		PrepRequest: addInvalidSignature},
 	{Label: "Receive Missing Signature", URL: twReceiveURL, Data: receiveValid, Status: 400, Response: "missing request signature"},
@@ -134,7 +139,7 @@ var twTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Base64", URL: twReceiveURL, Data: receiveBase64, Status: 200, Response: "<Response/>",
 		Text: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
 		PrepRequest: addValidSignature},
-	{Label: "Status No Params", URL: twStatusURL, Data: " ", Status: 400, Response: "field 'messagestatus' required",
+	{Label: "Status No Params", URL: twStatusURL, Data: " ", Status: 200, Response: "no msg status, ignoring",
 		PrepRequest: addValidSignature},
 	{Label: "Status Invalid Status", URL: twStatusURL, Data: statusInvalid, Status: 400, Response: "unknown status 'huh'",
 		PrepRequest: addValidSignature},
@@ -149,11 +154,18 @@ var twTestCases = []ChannelHandleTestCase{
 func addValidSignature(r *http.Request) {
 	r.ParseForm()
 	sig, _ := twCalculateSignature(fmt.Sprintf("%s://%s%s", r.URL.Scheme, r.Host, r.URL.RequestURI()), r.PostForm, "6789")
-	r.Header.Set(twSignatureHeader, string(sig))
+	r.Header.Set(signatureHeader, string(sig))
+}
+
+func addForwardSignature(r *http.Request) {
+	r.ParseForm()
+	path := r.Header.Get(forwardedPathHeader)
+	sig, _ := twCalculateSignature(fmt.Sprintf("%s://%s%s", r.URL.Scheme, r.Host, path), r.PostForm, "6789")
+	r.Header.Set(signatureHeader, string(sig))
 }
 
 func addInvalidSignature(r *http.Request) {
-	r.Header.Set(twSignatureHeader, "invalidsig")
+	r.Header.Set(signatureHeader, "invalidsig")
 }
 
 func TestHandler(t *testing.T) {

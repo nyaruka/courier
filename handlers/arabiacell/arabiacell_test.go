@@ -41,7 +41,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message ☺", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status: "W", ExternalID: "external1",
-		ResponseBody: `<response><code>204</code><text>success</text><message_id>external1</message_id></response>`, ResponseStatus: 200,
+		ResponseBody: `<response>
+		<code>204</code>
+		<text>MT is successfully sent</text>
+		<message_id>external1</message_id>
+</response>`, ResponseStatus: 200,
 		PostParams: map[string]string{
 			"userName":      "user1",
 			"password":      "pass1",

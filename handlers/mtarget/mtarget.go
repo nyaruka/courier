@@ -14,7 +14,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 )
 
 var (
@@ -46,21 +45,18 @@ var statusMapping = map[string]courier.MsgStatusValue{
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMsg)
 
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMsg)
-	if err != nil {
-		return nil
-	}
-
-	statusHandler := handlers.NewExternalIDStatusHandler(h.BaseHandler, statusMapping, "MsgId", "Status")
-	return s.AddHandlerRoute(h, http.MethodPost, "status", statusHandler)
+	statusHandler := handlers.NewExternalIDStatusHandler(&h.BaseHandler, statusMapping, "MsgId", "Status")
+	s.AddHandlerRoute(h, http.MethodPost, "status", statusHandler)
+	return nil
 }
 
 // ReceiveMsg handles both MO messages and Stop commands
 func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := r.ParseForm()
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	text := r.Form.Get("Content")
@@ -68,7 +64,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 	keyword := r.Form.Get("Keyword")
 
 	if from == "" {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("missing required field 'Msisdn'"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required field 'Msisdn'"))
 	}
 
 	// if we have a long message id, then this is part of a multipart message, we don't write the message until
@@ -79,11 +75,11 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 		longRef, _ := strconv.Atoi(r.Form.Get("msglong.msgref"))
 
 		if longCount == 0 || longRef == 0 {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("invalid or missing 'msglong.msgcount' or 'msglong.msgref' parameters"))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("invalid or missing 'msglong.msgcount' or 'msglong.msgref' parameters"))
 		}
 
 		if longRef < 1 || longRef > longCount {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, c, fmt.Errorf("'msglong.msgref' needs to be between 1 and 'msglong.msgcount' inclusive"))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("'msglong.msgref' needs to be between 1 and 'msglong.msgcount' inclusive"))
 		}
 
 		rc := h.Backend().RedisPool().Get()
@@ -107,7 +103,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 
 		// we don't have all the parts yet, say we received the message
 		if count != longCount {
-			return nil, courier.WriteAndLogRequestHandled(ctx, w, r, c, "Message part received")
+			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "Message part received")
 		}
 
 		// we have all our parts, grab them and put them together
@@ -131,9 +127,9 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 	}
 
 	// create our URN
-	urn, err := urns.NewTelURNForCountry(from, c.Country())
+	urn, err := handlers.StrictTelForCountry(from, c.Country())
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, c, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	// if this a stop command, shortcut stopping that contact
@@ -149,7 +145,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 	// otherwise, create our incoming message and write that
 	msg := h.Backend().NewIncomingMsg(c, urn, text).WithReceivedOn(time.Now().UTC())
 	// and finally write our message
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error

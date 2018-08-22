@@ -26,7 +26,7 @@ type ChannelHandler interface {
 	SendMsg(context.Context, Msg) (MsgStatus, error)
 }
 
-// URNDescriber is the interface handlers which can look up URN metadata for new contacts should satisfy
+// URNDescriber is the interface handlers which can look up URN metadata for new contacts should satisfy.
 type URNDescriber interface {
 	DescribeURN(context.Context, Channel, urns.URN) (map[string]string, error)
 }

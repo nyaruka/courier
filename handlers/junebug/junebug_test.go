@@ -97,7 +97,7 @@ var testCases = []ChannelHandleTestCase{
 		Date: Tp(time.Date(2017, 01, 01, 1, 2, 3, 50000000, time.UTC))},
 
 	{Label: "Invalid URN", URL: inboundURL, Data: invalidURN,
-		Status: 400, Response: "phone number supplied was empty"},
+		Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Invalid Timestamp", URL: inboundURL, Data: invalidTimestamp,
 		Status: 400, Response: "unable to parse date"},
 	{Label: "Missing Message ID", URL: inboundURL, Data: missingMessageID,

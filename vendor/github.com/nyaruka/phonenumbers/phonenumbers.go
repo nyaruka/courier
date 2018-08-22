@@ -1,18 +1,14 @@
 package phonenumbers
 
 import (
-	"compress/gzip"
 	"errors"
+	fmt "fmt"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"unicode"
-
-	"bytes"
-
-	"io/ioutil"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -304,7 +300,7 @@ var (
 	// We use this pattern to check if the phone number has at least three
 	// letters in it - if so, then we treat it as a number where some
 	// phone-number digits are represented by letters.
-	VALID_ALPHA_PHONE_PATTERN = regexp.MustCompile("(?:.*?[A-Za-z]){3}.*")
+	VALID_ALPHA_PHONE_PATTERN = regexp.MustCompile("^(?:.*?[A-Za-z]){3}.*$")
 
 	// Regular expression of viable phone numbers. This is location
 	// independent. Checks we have at least three leading digits, and
@@ -360,7 +356,7 @@ var (
 	// the unicode decomposed form with the combining acute accent.
 	EXTN_PATTERNS_FOR_PARSING = RFC3966_EXTN_PREFIX + CAPTURING_EXTN_DIGITS + "|" + "[ \u00A0\\t,]*" +
 		"(?:e?xt(?:ensi(?:o\u0301?|\u00F3))?n?|\uFF45?\uFF58\uFF54\uFF4E?|" +
-		"[,x\uFF58#\uFF03~\uFF5E]|int|anexo|\uFF49\uFF4E\uFF54)" +
+		"[;,x\uFF58#\uFF03~\uFF5E]|int|anexo|\uFF49\uFF4E\uFF54)" +
 		"[:\\.\uFF0E]?[ \u00A0\\t,-]*" + CAPTURING_EXTN_DIGITS + "#?|" +
 		"[- ]+(" + DIGITS + "{1,5})#"
 	EXTN_PATTERNS_FOR_MATCHING = RFC3966_EXTN_PREFIX + CAPTURING_EXTN_DIGITS + "|" + "[ \u00A0\\t,]*" +
@@ -377,7 +373,7 @@ var (
 	// valid phone number may have an extension prefix appended,
 	// followed by 1 or more digits.
 	VALID_PHONE_NUMBER_PATTERN = regexp.MustCompile(
-		VALID_PHONE_NUMBER + "(?:" + EXTN_PATTERNS_FOR_PARSING + ")?")
+		"^(" + VALID_PHONE_NUMBER + "(?:" + EXTN_PATTERNS_FOR_PARSING + ")?)$")
 
 	NON_DIGITS_PATTERN = regexp.MustCompile("(\\D+)")
 	DIGITS_PATTERN     = regexp.MustCompile("(\\d+)")
@@ -679,15 +675,13 @@ func MetadataCollection() (*PhoneMetadataCollection, error) {
 		return currMetadataColl, nil
 	}
 
-	var metadataCollection = &PhoneMetadataCollection{}
-
-	reader, err := gzip.NewReader(bytes.NewReader(MetaData))
+	rawBytes, err := decodeUnzipString(metadataData)
 	if err != nil {
-		return metadataCollection, err
+		return nil, err
 	}
-	metaBytes, err := ioutil.ReadAll(reader)
 
-	err = proto.Unmarshal(metaBytes, metadataCollection)
+	var metadataCollection = &PhoneMetadataCollection{}
+	err = proto.Unmarshal(rawBytes, metadataCollection)
 	reloadMetadata = false
 	return metadataCollection, err
 }
@@ -732,6 +726,7 @@ func isViablePhoneNumber(number string) bool {
 	if len(number) < MIN_LENGTH_FOR_NSN {
 		return false
 	}
+
 	return VALID_PHONE_NUMBER_PATTERN.MatchString(number)
 }
 
@@ -1313,8 +1308,7 @@ func FormatNumberForMobileDialing(
 			// is true for mobile numbers. As a result, we output them in
 			// the international format to make it work.
 			if regionCode == REGION_CODE_FOR_NON_GEO_ENTITY ||
-				((regionCode == "MX" ||
-					regionCode == "CL") &&
+				((regionCode == "MX" || regionCode == "CL" || regionCode == "UZ") &&
 					isFixedLineOrMobile) &&
 					canBeInternationallyDialled(numberNoExt) {
 				formattedNumber = Format(numberNoExt, INTERNATIONAL)
@@ -2734,14 +2728,14 @@ func maybeStripExtension(number *Builder) string {
 	ind := EXTN_PATTERN.FindStringIndex(numStr)
 	if len(ind) > 0 && isViablePhoneNumber(numStr[0:ind[0]]) {
 		// The numbers are captured into groups in the regular expression.
-		for _, extensionGroup := range EXTN_PATTERN.FindAllStringIndex(numStr, -1) {
-			if len(extensionGroup) == 0 {
+		for _, extension := range EXTN_PATTERN.FindStringSubmatch(numStr)[1:] {
+			if len(extension) == 0 {
 				continue
 			}
+
 			// We go through the capturing groups until we find one
 			// that captured some digits. If none did, then we will
 			// return the empty string.
-			extension := numStr[extensionGroup[0]:extensionGroup[1]]
 			number.ResetWithString(numStr[0:ind[0]])
 			return extension
 		}
@@ -2843,7 +2837,7 @@ func setItalianLeadingZerosForPhoneNumber(
 
 var (
 	ErrInvalidCountryCode = errors.New("invalid country code")
-	ErrNotANumber         = errors.New("The phone number supplied was empty.")
+	ErrNotANumber         = errors.New("The phone number supplied is not a number.")
 	ErrTooShortNSN        = errors.New("The string supplied is too short to be a phone number.")
 )
 
@@ -3230,9 +3224,16 @@ func IsMobileNumberPortableRegion(regionCode string) bool {
 }
 
 func init() {
-	err := loadMetadataFromFile("US", 1)
+	// load our regions
+	regionMap, err := loadIntStringArrayMap(regionMapData)
 	if err != nil {
-		// better to die on start up
+		panic(err)
+	}
+	CountryCodeToRegion = regionMap.Map
+
+	// then our metadata
+	err = loadMetadataFromFile("US", 1)
+	if err != nil {
 		panic(err)
 	}
 
@@ -3262,21 +3263,128 @@ func init() {
 	for _, val := range CountryCodeToRegion[NANPA_COUNTRY_CODE] {
 		writeToNanpaRegions(val, struct{}{})
 	}
+
+	// Create our sync.Onces for each of our languages for carriers
+	carrierOnces = make(map[string]*sync.Once)
+	carrierPrefixMap = make(map[string]*intStringMap)
+	for lang, _ := range carrierMapData {
+		carrierOnces[lang] = &sync.Once{}
+	}
+
+	geocodingOnces = make(map[string]*sync.Once)
+	geocodingPrefixMap = make(map[string]*intStringMap)
+	for lang, _ := range geocodingMapData {
+		geocodingOnces[lang] = &sync.Once{}
+	}
 }
 
-// Returns a slice of Timezones corresponding to the number passed
+var CountryCodeToRegion map[int][]string
+
+var timezoneOnce sync.Once
+var timezoneMap *intStringArrayMap
+
+// GetTimezonesForPrefix returns a slice of Timezones corresponding to the number passed
 // or error when it is impossible to convert the string to int
 // The algorythm tries to match the timezones starting from the maximum
 // number of phone number digits and decreasing until it finds one or reaches 0
 func GetTimezonesForPrefix(number string) ([]string, error) {
-	for i := MAX_PREFIX_LENGTH; i > 0; i-- {
+	var err error
+	timezoneOnce.Do(func() {
+		timezoneMap, err = loadIntStringArrayMap(timezoneMapData)
+	})
+
+	if timezoneMap == nil {
+		return nil, fmt.Errorf("error loading timezone map: %v", err)
+	}
+
+	// strip any leading +
+	number = strings.TrimLeft(number, "+")
+
+	for i := timezoneMap.MaxLength; i > 0; i-- {
 		index, err := strconv.Atoi(number[0:i])
 		if err != nil {
 			return nil, err
 		}
-		if PrefixToTimezone[index] != nil {
-			return PrefixToTimezone[index], nil
+		tzs, found := timezoneMap.Map[index]
+		if found {
+			return tzs, nil
 		}
 	}
 	return []string{UNKNOWN_TIMEZONE}, nil
+}
+
+func GetTimezonesForNumber(number *PhoneNumber) ([]string, error) {
+	e164 := Format(number, E164)
+	return GetTimezonesForPrefix(e164)
+}
+
+var carrierOnces map[string]*sync.Once
+var carrierPrefixMap map[string]*intStringMap
+
+var geocodingOnces map[string]*sync.Once
+var geocodingPrefixMap map[string]*intStringMap
+
+func getValueForNumber(onceMap map[string]*sync.Once, langMap map[string]*intStringMap, binMap map[string]string, language string, maxLength int, number *PhoneNumber) (string, error) {
+	// do we have data for this language
+	_, existing := binMap[language]
+	if !existing {
+		return "", nil
+	}
+
+	// load it into our map
+	onceMap[language].Do(func() {
+		prefixMap, err := loadPrefixMap(binMap[language])
+		if err == nil {
+			langMap[language] = prefixMap
+		}
+	})
+
+	// do we have a map for this language?
+	prefixMap, ok := langMap[language]
+	if !ok {
+		return "", fmt.Errorf("error loading language map for %s", language)
+	}
+
+	e164 := Format(number, E164)
+
+	l := len(e164)
+	if maxLength > l {
+		maxLength = l
+	}
+	for i := maxLength; i > 1; i-- {
+		index, err := strconv.Atoi(e164[0:i])
+		if err != nil {
+			return "", err
+		}
+		if value, has := prefixMap.Map[index]; has {
+			return value, nil
+		}
+	}
+	return "", nil
+}
+
+func GetCarrierForNumber(number *PhoneNumber, lang string) (string, error) {
+	carrier, err := getValueForNumber(carrierOnces, carrierPrefixMap, carrierMapData, lang, 10, number)
+	if err != nil {
+		return "", err
+	}
+	if carrier != "" {
+		return carrier, nil
+	}
+
+	// fallback to english
+	return getValueForNumber(carrierOnces, carrierPrefixMap, carrierMapData, "en", 10, number)
+}
+
+func GetGeocodingForNumber(number *PhoneNumber, lang string) (string, error) {
+	geocoding, err := getValueForNumber(geocodingOnces, geocodingPrefixMap, geocodingMapData, lang, 10, number)
+	if err != nil {
+		return "", err
+	}
+	if geocoding != "" {
+		return geocoding, nil
+	}
+
+	// fallback to english
+	return getValueForNumber(geocodingOnces, geocodingPrefixMap, geocodingMapData, "en", 10, number)
 }

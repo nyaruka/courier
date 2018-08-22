@@ -194,7 +194,7 @@ var testCases = []ChannelHandleTestCase{
 		Text: Sp("QUIZ Correct answer is Paris"), URN: Sp("tel:+385916242493"), ExternalID: Sp("817790313235066447"), Date: Tp(time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.FixedZone("", 0)))},
 	{Label: "Receive missing results key", URL: receiveURL, Data: missingResults, Status: 400, Response: "validation for 'Results' failed"},
 	{Label: "Receive missing text key", URL: receiveURL, Data: missingText, Status: 200, Response: "ignoring request, no message"},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied was empty"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Status report invalid JSON", URL: statusURL, Data: invalidJSONStatus, Status: 400, Response: "unable to parse request JSON"},
 	{Label: "Status report missing results key", URL: statusURL, Data: statusMissingResultsKey, Status: 400, Response: "Field validation for 'Results' failed"},
 	{Label: "Status delivered", URL: statusURL, Data: validStatusDelivered, Status: 200, Response: `"status":"D"`},
@@ -276,6 +276,20 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:    setSendURL},
 }
 
+var transSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "tel:+250788383383",
+		Status: "W", ExternalID: "12345",
+		ResponseBody: `{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`, ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+		},
+		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","transliteration":"COLOMBIAN"}]}`,
+		SendPrep:    setSendURL},
+}
+
 func TestSending(t *testing.T) {
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
 		map[string]interface{}{
@@ -284,4 +298,13 @@ func TestSending(t *testing.T) {
 		})
 
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+
+	var transChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
+		map[string]interface{}{
+			courier.ConfigPassword: "Password",
+			courier.ConfigUsername: "Username",
+			configTransliteration:  "COLOMBIAN",
+		})
+
+	RunChannelSendTestCases(t, transChannel, newHandler(), transSendTestCases, nil)
 }

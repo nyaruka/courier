@@ -1,6 +1,7 @@
 package line
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -126,17 +127,37 @@ var noEvent = `{
 }`
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US", nil),
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US",
+		map[string]interface{}{
+			"secret": "Secret",
+		}),
 }
 
 var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, Status: 200, Response: "Accepted",
-		Text: Sp("Hello, world"), URN: Sp("line:uabcdefghij"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+		Text: Sp("Hello, world"), URN: Sp("line:uabcdefghij"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessageLast, Status: 200, Response: "Accepted",
-		Text: Sp("Last event"), URN: Sp("line:uabcdefghij"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
-	{Label: "Missing message", URL: receiveURL, Data: missingMessage, Status: 200, Response: "ignoring request, no message"},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "invalid line id"},
-	{Label: "No event request", URL: receiveURL, Data: noEvent, Status: 200, Response: "ignoring request, no message"},
+		Text: Sp("Last event"), URN: Sp("line:uabcdefghij"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
+	{Label: "Missing message", URL: receiveURL, Data: missingMessage, Status: 200, Response: "ignoring request, no message",
+		PrepRequest: addValidSignature},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "invalid line id",
+		PrepRequest: addValidSignature},
+	{Label: "No event request", URL: receiveURL, Data: noEvent, Status: 200, Response: "ignoring request, no message",
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Valid Message Invalid signature", URL: receiveURL, Data: receiveValidMessage, Status: 400, Response: "invalid request signature",
+		PrepRequest: addInvalidSignature},
+}
+
+func addValidSignature(r *http.Request) {
+	sig, _ := calculateSignature("Secret", r)
+	r.Header.Set(signatureHeader, string(sig))
+}
+
+func addInvalidSignature(r *http.Request) {
+	r.Header.Set(signatureHeader, "invalidsig")
 }
 
 func TestHandler(t *testing.T) {
@@ -203,7 +224,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Status:       "E",
 		ResponseBody: `{"message": "Error"}`, ResponseStatus: 403,
 		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
-		Error:       "received non 200 status: 403",
 		SendPrep:    setSendURL},
 }
 

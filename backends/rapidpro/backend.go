@@ -99,11 +99,13 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
 		dbMsg := &DBMsg{}
 		err = json.Unmarshal([]byte(msgJSON), dbMsg)
 		if err != nil {
+			queue.MarkComplete(rc, msgQueueName, token)
 			return nil, fmt.Errorf("unable to unmarshal message '%s': %s", msgJSON, err)
 		}
 		// populate the channel on our db msg
 		channel, err := b.GetChannel(ctx, courier.AnyChannelType, dbMsg.ChannelUUID_)
 		if err != nil {
+			queue.MarkComplete(rc, msgQueueName, token)
 			return nil, err
 		}
 		dbMsg.channel = channel.(*DBChannel)
@@ -145,7 +147,12 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 	// mark as sent in redis as well if this was actually wired or sent
 	if status != nil && (status.Status() == courier.MsgSent || status.Status() == courier.MsgWired) {
 		dateKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
-		rc.Do("sadd", dateKey, msg.ID().String())
+		rc.Send("sadd", dateKey, msg.ID().String())
+		rc.Send("expire", dateKey, 60*60*24*2)
+		_, err := rc.Do("")
+		if err != nil {
+			logrus.WithError(err).WithField("sent_msgs_key", dateKey).Error("unable to add new unsent message")
+		}
 	}
 
 	// if this org has chatbase connected, notify chatbase
@@ -428,9 +435,9 @@ func (b *backend) Start() error {
 
 	// create our s3 client
 	s3Session, err := session.NewSession(&aws.Config{
-		Credentials: credentials.NewStaticCredentials(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, ""),
-		Endpoint:    aws.String(b.config.S3Endpoint),
-		Region:      aws.String(b.config.S3Region),
+		Credentials:      credentials.NewStaticCredentials(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, ""),
+		Endpoint:         aws.String(b.config.S3Endpoint),
+		Region:           aws.String(b.config.S3Region),
 		DisableSSL:       aws.Bool(b.config.S3DisableSSL),
 		S3ForcePathStyle: aws.Bool(b.config.S3ForcePathStyle),
 	})

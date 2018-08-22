@@ -43,7 +43,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
+	return nil
 }
 
 type eventPayload struct {
@@ -79,31 +80,31 @@ type eventPayload struct {
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	payload := &eventPayload{}
 	err = handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	event := payload.Event
 	switch event {
 	case "webhook":
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "webhook valid")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "webhook valid")
 
 	case "conversation_started":
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignored conversation start")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignored conversation start")
 
 	case "subscribed":
 		viberID := payload.User.ID
 		ContactName := payload.User.Name
 
 		// build the URN
-		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "")
+		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "", "")
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
 		// build the channel event
@@ -120,9 +121,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		viberID := payload.UserID
 
 		// build the URN
-		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "")
+		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "", "")
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
@@ -147,15 +148,15 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	case "message":
 		sender := payload.Sender.ID
 		if sender == "" {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing required sender id"))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing required sender id"))
 		}
 
 		contactName := payload.Sender.Name
 
 		// create our URN
-		urn, err := urns.NewURNFromParts(urns.ViberScheme, sender, "")
+		urn, err := urns.NewURNFromParts(urns.ViberScheme, sender, "", "")
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
 		text := payload.Message.Text
@@ -184,11 +185,11 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			text = payload.Message.Text
 
 		default:
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("unknown message type: %s", messageType))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown message type: %s", messageType))
 		}
 
 		if text == "" && mediaURL == "" {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("missing text or media in message in request body"))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing text or media in message in request body"))
 		}
 
 		// build our msg
@@ -197,7 +198,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			msg.WithAttachment(mediaURL)
 		}
 		// and finally write our message
-		return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 	}
 
 	return nil, courier.WriteError(ctx, w, r, fmt.Errorf("not handled, unknown event: %s", event))

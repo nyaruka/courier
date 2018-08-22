@@ -12,8 +12,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 const configIsShared = "is_shared"
@@ -43,11 +41,11 @@ type moForm struct {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	err := s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	if err != nil {
-		return err
-	}
-	return s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "callback", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "delivery", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	return nil
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
@@ -56,26 +54,26 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// create our date from the timestamp
 	// 2017-05-03T06:04:45Z
 	date, err := time.Parse("2006-01-02T15:04:05Z", form.Date)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, fmt.Errorf("invalid date format: %s", form.Date))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid date format: %s", form.Date))
 	}
 
 	// create our URN
-	urn, err := urns.NewTelURNForCountry(form.From, channel.Country())
+	urn, err := handlers.StrictTelForCountry(form.From, channel.Country())
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithExternalID(form.ID).WithReceivedOn(date)
 
 	// and finally write our message
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 type statusForm struct {
@@ -97,12 +95,12 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel,
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
 			fmt.Errorf("unknown status '%s', must be one of 'Success','Sent','Buffered','Rejected' or 'Failed'", form.Status))
 	}
 
@@ -154,7 +152,8 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 	// was this request successful?
 	msgStatus, _ := jsonparser.GetString([]byte(rr.Body), "SMSMessageData", "Recipients", "[0]", "status")
 	if msgStatus != "Success" {
-		return status, errors.Errorf("received non-success status '%s'", msgStatus)
+		status.SetStatus(courier.MsgErrored)
+		return status, nil
 	}
 
 	// grab the external id if we can

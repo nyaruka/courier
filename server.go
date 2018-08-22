@@ -26,7 +26,7 @@ import (
 type Server interface {
 	Config() *Config
 
-	AddHandlerRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelHandleFunc) error
+	AddHandlerRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelHandleFunc)
 
 	SendMsg(context.Context, Msg) (MsgStatus, error)
 
@@ -111,7 +111,7 @@ func (s *server) Start() error {
 
 	// configure timeouts on our server
 	s.httpServer = &http.Server{
-		Addr:         fmt.Sprintf(":%d", s.config.Port),
+		Addr:         fmt.Sprintf("%s:%d", s.config.Address, s.config.Port),
 		Handler:      s.router,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
@@ -270,7 +270,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		response := &bytes.Buffer{}
 		request, err := httputil.DumpRequest(r, true)
 		if err != nil {
-			WriteAndLogRequestError(ctx, w, r, channel, err)
+			writeAndLogRequestError(ctx, w, r, channel, err)
 			return
 		}
 		url := fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI())
@@ -287,12 +287,17 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		// if we received an error, write it out and report it
 		if err != nil {
 			logrus.WithError(err).WithField("channel_uuid", channel.UUID()).WithField("url", url).WithField("request", string(request)).Error("error handling request")
-			WriteAndLogRequestError(ctx, ww, r, channel, err)
+			writeAndLogRequestError(ctx, ww, r, channel, err)
+		}
 
-			// if no events were created we still want to log this to the channel, do so
-			if len(events) == 0 {
+		// if no events were created we still want to log this to the channel, do so
+		if len(events) == 0 {
+			if err != nil {
 				logs = append(logs, NewChannelLog("Channel Error", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
 				librato.Default.AddGauge(fmt.Sprintf("courier.channel_error_%s", channel.ChannelType()), secondDuration)
+			} else {
+				logs = append(logs, NewChannelLog("Request Ignored", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
+				librato.Default.AddGauge(fmt.Sprintf("courier.channel_ignored_%s", channel.ChannelType()), secondDuration)
 			}
 		}
 
@@ -324,7 +329,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 	}
 }
 
-func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelHandleFunc) error {
+func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelHandleFunc) {
 	method = strings.ToLower(method)
 	channelType := strings.ToLower(string(handler.ChannelType()))
 
@@ -334,7 +339,6 @@ func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action s
 	}
 	s.chanRouter.Method(method, path, s.channelHandleWrapper(handler, handlerFunc))
 	s.routes = append(s.routes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
-	return nil
 }
 
 func prependHeaders(body string, statusCode int, resp http.ResponseWriter) string {
@@ -362,7 +366,7 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
-	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "404").Error("not found")
+	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "404").Info("not found")
 	errors := []interface{}{NewErrorData(fmt.Sprintf("not found: %s", r.URL.String()))}
 	err := WriteDataResponse(context.Background(), w, http.StatusNotFound, "Not Found", errors)
 	if err != nil {
@@ -371,7 +375,7 @@ func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handle405(w http.ResponseWriter, r *http.Request) {
-	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "405").Error("invalid method")
+	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "405").Info("invalid method")
 	errors := []interface{}{NewErrorData(fmt.Sprintf("method not allowed: %s", r.Method))}
 	err := WriteDataResponse(context.Background(), w, http.StatusMethodNotAllowed, "Method Not Allowed", errors)
 	if err != nil {

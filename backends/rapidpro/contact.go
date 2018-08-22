@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	null "gopkg.in/guregu/null.v3"
 
@@ -114,6 +115,10 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 		}
 
 		if name != "" {
+			if utf8.RuneCountInString(name) > 128 {
+				name = string([]rune(name)[:127])
+			}
+
 			contact.Name_ = null.StringFrom(name)
 		}
 	}

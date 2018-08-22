@@ -32,7 +32,7 @@ var helloMsg = `{
 							},
 							"sender_id": "272953809",
 							"message_data": {
-									"text": "Hello World"
+									"text": "Hello World &amp; good wishes."
 							}
 					}
 			}
@@ -163,7 +163,7 @@ var notJSON = `blargh`
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Message", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, Status: 200, Response: "Accepted",
 		Name: Sp("Nicolas Pottier"), URN: Sp("twitterid:272953809#nicpottier"),
-		Text: Sp("Hello World"), ExternalID: Sp("958501034212564996"), Date: Tp(time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC))},
+		Text: Sp("Hello World & good wishes."), ExternalID: Sp("958501034212564996"), Date: Tp(time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC))},
 	{Label: "Receive Attachment", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: attachment, Status: 200, Response: "Accepted",
 		Text: Sp("Hello"), Attachments: []string{"https://image.foo.com/image.jpg"}, URN: Sp("twitterid:272953809#nicpottier"), ExternalID: Sp("958501034212564996"), Date: Tp(time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC))},
 	{Label: "Not JSON", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: notJSON, Status: 400, Response: "Error"},

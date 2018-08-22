@@ -3,8 +3,12 @@ package line
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -18,6 +22,8 @@ import (
 var (
 	sendURL      = "https://api.line.me/v2/bot/message/push"
 	maxMsgLength = 2000
+
+	signatureHeader = "X-Line-Signature"
 )
 
 func init() {
@@ -35,7 +41,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	return s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	return nil
 }
 
 // {
@@ -83,14 +90,18 @@ type moPayload struct {
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	payload := &moPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
+	err := h.validateSignature(channel, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, err
+	}
+
+	payload := &moPayload{}
+	err = handlers.DecodeAndValidateJSON(payload, r)
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	msgs := []courier.Msg{}
-	events := []courier.Event{}
 
 	for _, lineEvent := range payload.Events {
 		if (lineEvent.Source.Type == "" && lineEvent.Source.UserID == "") || (lineEvent.Message.Type == "" && lineEvent.Message.ID == "" && lineEvent.Message.Text == "") || lineEvent.Message.Type != "text" {
@@ -101,28 +112,66 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		// create our date from the timestamp (they give us millis, arg is nanos)
 		date := time.Unix(0, lineEvent.Timestamp*1000000).UTC()
 
-		urn, err := urns.NewURNFromParts(urns.LineScheme, lineEvent.Source.UserID, "")
+		urn, err := urns.NewURNFromParts(urns.LineScheme, lineEvent.Source.UserID, "", "")
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
 		msg := h.Backend().NewIncomingMsg(channel, urn, lineEvent.Message.Text).WithReceivedOn(date)
-
-		// and write it
-		err = h.Backend().WriteMsg(ctx, msg)
-		if err != nil {
-			return nil, err
-		}
 		msgs = append(msgs, msg)
-		events = append(events, msg)
 	}
 
 	if len(msgs) == 0 {
-		return nil, courier.WriteAndLogRequestIgnored(ctx, w, r, channel, "ignoring request, no message")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
 
-	return events, courier.WriteMsgSuccess(ctx, w, r, msgs)
+	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
 
+}
+
+func (h *handler) validateSignature(channel courier.Channel, r *http.Request) error {
+	actual := r.Header.Get(signatureHeader)
+	if actual == "" {
+		return fmt.Errorf("missing request signature")
+	}
+
+	confSecret := channel.ConfigForKey(courier.ConfigSecret, "")
+	secret, isStr := confSecret.(string)
+	if !isStr || secret == "" {
+		return fmt.Errorf("invalid or missing auth token in config")
+	}
+
+	expected, err := calculateSignature(secret, r)
+	if err != nil {
+		return err
+	}
+
+	// compare signatures in way that isn't sensitive to a timing attack
+	if !hmac.Equal(expected, []byte(actual)) {
+		return fmt.Errorf("invalid request signature")
+	}
+
+	return nil
+}
+
+// see https://developers.line.me/en/docs/messaging-api/reference/#signature-validation
+func calculateSignature(secret string, r *http.Request) ([]byte, error) {
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+
+	// hash with SHA256
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(body)
+	hash := mac.Sum(nil)
+
+	// encode with Base64
+	encoded := make([]byte, base64.StdEncoding.EncodedLen(len(hash)))
+	base64.StdEncoding.Encode(encoded, hash)
+	return encoded, nil
 }
 
 type mtMsg struct {
@@ -168,9 +217,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		// record our status and log
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 		status.AddLog(log)
-
 		if err != nil {
-			return status, err
+			return status, nil
 		}
 		status.SetStatus(courier.MsgWired)
 	}

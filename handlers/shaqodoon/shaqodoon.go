@@ -11,7 +11,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -51,7 +50,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// if we have a date, parse it
@@ -64,20 +63,20 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	if dateString != "" {
 		date, err = time.Parse(time.RFC3339Nano, dateString)
 		if err != nil {
-			return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, errors.New("invalid date format, must be RFC 3339"))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid date format, must be RFC 3339"))
 		}
 	}
 
 	// create our URN
-	urn, err := urns.NewTelURNForCountry(form.From, channel.Country())
+	urn, err := handlers.StrictTelForCountry(form.From, channel.Country())
 	if err != nil {
-		return nil, courier.WriteAndLogRequestError(ctx, w, r, channel, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithReceivedOn(date)
 	// and finally write our message
-	return handlers.WriteMsgAndResponse(ctx, h, msg, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error

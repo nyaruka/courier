@@ -32,7 +32,7 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
 		Text: Sp("Msg"), URN: Sp("tel:+254791541111"),
 		Date: Tp(time.Date(2017, 10, 26, 15, 51, 32, 906335000, time.UTC))},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied was empty"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Receive Empty", URL: receiveURL, Data: emptyReceive, Status: 400, Response: "field 'msisdn' required"},
 	{Label: "Receive Missing Text", URL: receiveURL, Data: missingText, Status: 400, Response: "field 'text' required"},
 	{Label: "Receive Invalid TS", URL: receiveURL, Data: invalidTS, Status: 400, Response: "invalid tstamp"},

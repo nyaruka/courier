@@ -224,6 +224,17 @@ func (ts *BackendTestSuite) TestContact() {
 
 	ts.Equal("", contact.Name_.String)
 	ts.Equal("a984069d-0008-4d8c-a772-b14a8a6acccc", contact.UUID_.String())
+
+	urn, _ = urns.NewTelURNForCountry("12065551519", "US")
+
+	// long name are truncated
+
+	longName := "LongRandomNameHPGBRDjZvkz7y58jI2UPkio56IKGaMvaeDTvF74Q5SUkIHozFn1MLELfjX7vRrFto8YG2KPVaWzekgmFbkuxujIotFAgfhHqoHKW5c177FUtKf5YK9KbY8hp0x7PxIFY3MS5lMyMA5ELlqIgikThpr"
+	contact3, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", longName)
+	ts.NoError(err)
+
+	ts.Equal(longName[0:127], contact3.Name_.String)
+
 }
 
 func (ts *BackendTestSuite) TestContactURN() {
@@ -548,6 +559,21 @@ func (ts *BackendTestSuite) TestChannel() {
 
 	val = knChannel.ConfigForKey("encoding", "default")
 	ts.Equal("smart", val)
+
+	val = knChannel.StringConfigForKey("encoding", "default")
+	ts.Equal("smart", val)
+
+	val = knChannel.StringConfigForKey("encoding_missing", "default")
+	ts.Equal("default", val)
+
+	val = knChannel.IntConfigForKey("max_length_int", -1)
+	ts.Equal(320, val)
+
+	val = knChannel.IntConfigForKey("max_length_str", -1)
+	ts.Equal(320, val)
+
+	val = knChannel.IntConfigForKey("max_length_missing", -1)
+	ts.Equal(-1, val)
 
 	// missing value
 	val = knChannel.ConfigForKey("missing", "missingValue")

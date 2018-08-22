@@ -27,7 +27,7 @@ func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID
 		OrgID:     org,
 		ChannelID: channelID,
 		ContactID: contactID,
-		Identity:  urn.Identity(),
+		Identity:  string(urn.Identity()),
 		Scheme:    urn.Scheme(),
 		Path:      urn.Path(),
 		Display:   utils.NullStringIfEmpty(urn.Display()),
@@ -84,7 +84,7 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 	}
 
 	// only a single URN and it is ours
-	if contactURNs[0].Identity == urn.Identity() {
+	if contactURNs[0].Identity == string(urn.Identity()) {
 		display := utils.NullStringIfEmpty(urn.Display())
 
 		// if display, channel id or auth changed, update them
@@ -106,7 +106,7 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 	currPriority := 50
 	for _, existing := range contactURNs {
 		// if this is current URN, make sure it has an updated auth as well
-		if existing.Identity == urn.Identity() {
+		if existing.Identity == string(urn.Identity()) {
 			existing.Priority = topPriority
 			existing.ChannelID = channelID
 			if auth != "" {
