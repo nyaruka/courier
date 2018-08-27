@@ -18,8 +18,8 @@ port = 8080
 # Our database connection string, right now only Postgres is supported
 db = "postgres://courier@localhost/courier?sslmode=disable"
 
-# Our redis connection string, path is our database
-redis = "redis://localhost:6379/0"
+# Our redis connection string, path is our database. Rapid Pro uses 15 for the database (or 10 when testing) 
+redis = "redis://localhost:6379/15"
 
 # Our spool directory for storing messages when Redis is down, this must exist and be writeable
 spool_dir = "/var/spool/courier"
