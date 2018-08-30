@@ -377,7 +377,7 @@ func (b *backend) Start() error {
 	err = b.db.PingContext(ctx)
 	cancel()
 	if err != nil {
-		log.WithError(err).Error("db not reachable!")
+		log.WithError(err).Error("db not reachable")
 	} else {
 		log.Info("db ok")
 	}
