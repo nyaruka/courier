@@ -16,14 +16,14 @@ var testChannels = []courier.Channel{
 var (
 	receiveURL = "/c/nv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 
-	validReceive  = "mo=Msg&mobile=18686846481"
+	validReceive  = "mo=Msg&from=18686846481"
 	missingNumber = "mo=Msg"
 )
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
 		Text: Sp("Msg"), URN: Sp("tel:+18686846481")},
-	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, Status: 400, Response: "required field 'mobile'"},
+	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, Status: 400, Response: "required field 'from'"},
 }
 
 func TestHandler(t *testing.T) {
@@ -61,7 +61,7 @@ var defaultSendTestCases = []ChannelSendTestCase {
 		SendPrep: setSendURL},
 	{Label: "Invalid Parameters",
 		Text: "Invalid Parameters", URN: "tel:+18686846481",
-		Status: "E",
+		Status: "F",
 		ResponseBody: `{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`,
 		ResponseStatus: 200,
 		SendPrep: setSendURL},
