@@ -16,8 +16,8 @@ var testChannels = []courier.Channel{
 var (
 	receiveURL = "/c/nv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 
-	validReceive  = "mo=Msg&from=18686846481"
-	missingNumber = "mo=Msg"
+	validReceive  = "text=Msg&from=18686846481"
+	missingNumber = "text=Msg"
 )
 
 var testCases = []ChannelHandleTestCase{
