@@ -6,7 +6,20 @@ import (
 	"regexp"
 	"strings"
 	"unicode/utf8"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 )
+
+// Encrypt value to HMAC256 by using a private key
+func SignHMAC256(privateKey string, value string) string {
+	hash := hmac.New(sha256.New, []byte(privateKey))
+	hash.Write([]byte(value))
+
+	signedParams := hex.EncodeToString(hash.Sum(nil))
+	return signedParams
+}
+
 
 // MapAsJSON serializes the given map as a JSON string
 func MapAsJSON(m map[string]string) []byte {
