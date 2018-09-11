@@ -1,3 +1,8 @@
+v1.2.100
+----------
+ * Accept AT requests with timestamps without Z
+ * Ignore status update for incoming messsages
+
 v1.2.99
 ----------
  * Support smart encoding for post requests on EX channels
