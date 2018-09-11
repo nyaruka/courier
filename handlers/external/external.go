@@ -195,7 +195,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		// if we are smart, first try to convert to GSM7 chars
-		if encoding == encodingSmart && sendMethod == http.MethodGet {
+		if encoding == encodingSmart {
 			replaced := gsm7.ReplaceSubstitutions(part)
 			if gsm7.IsValid(replaced) {
 				form["text"] = replaced
