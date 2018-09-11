@@ -1,3 +1,10 @@
+v1.2.99
+----------
+ * Support smart encoding for post requests on EX channels
+ * Add novo channel with send capability
+ * log the error when PQ fails to connect
+ * Changed the default redis database to match rapid pro redis database
+
 v1.2.98
 ----------
  * treat empty content type as text
