@@ -61,7 +61,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// 2017-05-03T06:04:45Z
 	date, err := time.Parse("2006-01-02T15:04:05Z", form.Date)
 	if err != nil {
-		date, err = time.Parse("2006-01-02T15:04:05", form.Date)
+		date, err = time.Parse("2006-01-02 15:04:05", form.Date)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid date format: %s", form.Date))
 		}
