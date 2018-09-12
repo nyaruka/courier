@@ -1,3 +1,7 @@
+v1.2.101
+----------
+ * AT date like 2006-01-02 15:04:05, without T nor Z
+
 v1.2.100
 ----------
  * Accept AT requests with timestamps without Z
