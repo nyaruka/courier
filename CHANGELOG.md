@@ -1,3 +1,7 @@
+v1.2.102
+----------
+ * clear dedupes on outgoing messages
+
 v1.2.101
 ----------
  * AT date like 2006-01-02 15:04:05, without T nor Z
