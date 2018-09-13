@@ -462,6 +462,49 @@ func (ts *BackendTestSuite) TestHealth() {
 	ts.Equal(ts.b.Health(), "")
 }
 
+func (ts *BackendTestSuite) TestDupes() {
+	ctx := context.Background()
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	urn, _ := urns.NewTelURNForCountry("12065551215", knChannel.Country())
+
+	msg := ts.b.NewIncomingMsg(knChannel, urn, "ping").(*DBMsg)
+	err := ts.b.WriteMsg(ctx, msg)
+	ts.NoError(err)
+
+	// grab our UUID
+	uuid1 := msg.UUID().String()
+
+	// trying again should lead to same UUID
+	msg = ts.b.NewIncomingMsg(knChannel, urn, "ping").(*DBMsg)
+	err = ts.b.WriteMsg(ctx, msg)
+	ts.NoError(err)
+
+	ts.Equal(uuid1, msg.UUID().String())
+
+	// different message should change that
+	msg = ts.b.NewIncomingMsg(knChannel, urn, "test").(*DBMsg)
+	err = ts.b.WriteMsg(ctx, msg)
+	ts.NoError(err)
+
+	ts.NotEqual(uuid1, msg.UUID().String())
+	uuid2 := msg.UUID().String()
+
+	// an outgoing message should clear things
+	dbMsg, err := readMsgFromDB(ts.b, courier.NewMsgID(10000))
+	dbMsg.URN_ = urn
+	dbMsg.channel = knChannel
+	dbMsg.ChannelUUID_ = knChannel.UUID()
+	dbMsg.Text_ = "test"
+	status := ts.b.NewMsgStatusForID(dbMsg.Channel(), dbMsg.ID(), courier.MsgWired)
+	ts.b.MarkOutgoingMsgComplete(ctx, dbMsg, status)
+
+	msg = ts.b.NewIncomingMsg(knChannel, urn, "test").(*DBMsg)
+	err = ts.b.WriteMsg(ctx, msg)
+	ts.NoError(err)
+
+	ts.NotEqual(uuid2, msg.UUID().String())
+}
+
 func (ts *BackendTestSuite) TestStatus() {
 	// our health should just contain the header
 	ts.True(strings.Contains(ts.b.Status(), "Channel"), ts.b.Status())
