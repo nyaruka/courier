@@ -142,6 +142,8 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 	defer rc.Close()
 
 	dbMsg := msg.(*DBMsg)
+
+	clearMsgSeen(rc, dbMsg)
 	queue.MarkComplete(rc, msgQueueName, dbMsg.workerToken)
 
 	// mark as sent in redis as well if this was actually wired or sent
