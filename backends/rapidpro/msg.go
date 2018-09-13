@@ -337,7 +337,7 @@ func checkMsgSeen(b *backend, msg *DBMsg) courier.MsgUUID {
 	// see if there were any messages received in the past 4 seconds
 	found, _ := redis.String(luaMsgSeen.Do(r, windowKey, prevWindowKey, urnFingerprint))
 
-	// if so, text whether the text it the same
+	// if so, test whether the text it the same
 	if found != "" {
 		prevText := found[37:]
 
