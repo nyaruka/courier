@@ -132,10 +132,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 	// first deal with any received messages
 	for _, msg := range payload.Messages {
-		// ignore it if we aren't text
-		if msg.Type != "text" {
-			continue
-		}
 
 		// create our date from the timestamp
 		ts, err := strconv.ParseInt(msg.Timestamp, 10, 64)
@@ -150,11 +146,37 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
-		// TODO: deal with media messages
-		// TODO: deal with location messages
+		text := ""
+		mediaURL := ""
+
+		if msg.Type == "text" {
+			text = msg.Text.Body
+		} else if msg.Type == "audio" {
+			mediaURL, err = resolveMediaURL(channel, msg.Audio.ID)
+		} else if msg.Type == "document" {
+			text = msg.Document.Caption
+			mediaURL, err = resolveMediaURL(channel, msg.Document.ID)
+		} else if msg.Type == "image" {
+			text = msg.Image.Caption
+			mediaURL, err = resolveMediaURL(channel, msg.Image.ID)
+		} else if msg.Type == "location" {
+			mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
+		} else if msg.Type == "video" {
+			mediaURL, err = resolveMediaURL(channel, msg.Video.ID)
+		} else if msg.Type == "voice" {
+			mediaURL, err = resolveMediaURL(channel, msg.Voice.ID)
+		} else {
+			// we received a message type we do not support.
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("Unsupported mesasge type %s", msg.Type))
+		}
 
 		// create our message
-		event := h.Backend().NewIncomingMsg(channel, urn, msg.Text.Body).WithReceivedOn(date).WithExternalID(msg.ID)
+		event := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(msg.ID)
+
+		if mediaURL != "" {
+			event.WithAttachment(mediaURL)
+		}
+
 		err = h.Backend().WriteMsg(ctx, event)
 		if err != nil {
 			return nil, err
@@ -189,6 +211,35 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	}
 
 	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
+}
+
+func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
+	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	if token == "" {
+		return "", fmt.Errorf("Missing token for WA channel")
+	}
+
+	urlStr := channel.StringConfigForKey(courier.ConfigBaseURL, "")
+	url, err := url.Parse(urlStr)
+	if err != nil {
+		return "", fmt.Errorf("invalid base url set for WA channel: %s", err)
+	}
+	sendPath, _ := url.Parse("/v1/messages")
+	sendURL := url.ResolveReference(sendPath).String()
+
+	fileURL := fmt.Sprintf("%s/v1/media/%s", sendURL, mediaID)
+
+	return fileURL, nil
+}
+
+// BuildDownloadMediaRequest to download media for message attachment with Bearer token set
+func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+
+	// first fetch our media
+	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	return req, nil
 }
 
 var waStatusMapping = map[string]courier.MsgStatusValue{
