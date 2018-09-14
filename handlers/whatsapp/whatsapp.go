@@ -170,6 +170,11 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("Unsupported message type %s", msg.Type))
 		}
 
+		// we had an error downloading media
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("Error while downloading media: %s", err))
+		}
+
 		// create our message
 		event := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(msg.ID)
 
@@ -222,12 +227,13 @@ func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
 	urlStr := channel.StringConfigForKey(courier.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
 	if err != nil {
-		return "", fmt.Errorf("invalid base url set for WA channel: %s", err)
+		return "", fmt.Errorf("Invalid base url set for WA channel: %s", err)
 	}
-	sendPath, _ := url.Parse("/v1/messages")
-	sendURL := url.ResolveReference(sendPath).String()
 
-	fileURL := fmt.Sprintf("%s/v1/media/%s", sendURL, mediaID)
+	mediaPath, _ := url.Parse("/v1/media")
+	mediaEndpoint := url.ResolveReference(mediaPath).String()
+
+	fileURL := fmt.Sprintf("%s/%s", mediaEndpoint, mediaID)
 
 	return fileURL, nil
 }

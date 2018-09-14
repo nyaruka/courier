@@ -16,7 +16,8 @@ var testChannels = []courier.Channel{
 		"250788383383",
 		"RW",
 		map[string]interface{}{
-			"base_url": "https://foo.bar/",
+			"auth_token": "the-auth-token",
+			"base_url":   "https://foo.bar/",
 		}),
 }
 
@@ -30,6 +31,104 @@ var helloMsg = `{
     },
     "type": "text"
   }]
+}`
+
+var audioMsg = `{
+	"messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"timestamp": "1454119029",
+		"type": "audio",
+		"audio": {
+			"file": "/path/to/v1/media/41",
+			"id": "41",
+			"link": "https://example.org/v1/media/41",
+			"mime_type": "text/plain",
+			"sha256": "the-sha-signature"
+		}
+	}]
+}`
+
+var documentMsg = `{
+	"messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"timestamp": "1454119029",
+		"type": "document",
+		"document": {
+			"file": "/path/to/v1/media/41",
+			"id": "41",
+			"link": "https://example.org/v1/media/41",
+			"mime_type": "text/plain",
+			"sha256": "the-sha-signature",
+			"caption": "the caption"
+		}
+	}]
+}`
+
+var imageMsg = `{
+	"messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"timestamp": "1454119029",
+		"type": "image",
+		"image": {
+			"file": "/path/to/v1/media/41",
+			"id": "41",
+			"link": "https://example.org/v1/media/41",
+			"mime_type": "text/plain",
+			"sha256": "the-sha-signature",
+			"caption": "the caption"
+		}
+	}]
+}`
+
+var locationMsg = `{
+	"messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"timestamp": "1454119029",
+		"type": "location",
+		"location": {
+			"address": "some address",
+			"latitude": 0.00,
+			"longitude": 1.00,
+			"name": "some name",
+			"url": "https://example.org/"
+		}
+	}]
+}`
+
+var videoMsg = `{
+	"messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"timestamp": "1454119029",
+		"type": "video",
+		"video": {
+			"file": "/path/to/v1/media/41",
+			"id": "41",
+			"link": "https://example.org/v1/media/41",
+			"mime_type": "text/plain",
+			"sha256": "the-sha-signature"
+		}
+	}]
+}`
+
+var voiceMsg = `{
+	"messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"timestamp": "1454119029",
+		"type": "voice",
+		"voice": {
+			"file": "/path/to/v1/media/41",
+			"id": "41",
+			"link": "https://example.org/v1/media/41",
+			"mime_type": "text/plain",
+			"sha256": "the-sha-signature"
+		}
+	}]
 }`
 
 var invalidFrom = `{
@@ -83,6 +182,18 @@ var invalidStatus = `
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, Status: 200, Response: `"type":"msg"`,
 		Text: Sp("hello world"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Audio Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: audioMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Document Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: documentMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp("the caption"), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Image Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: imageMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp("the caption"), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Location Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: locationMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp(""), Attachment: Sp("geo:0.000000,1.000000"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Video Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: videoMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Voice Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: voiceMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 	{Label: "Receive Invalid JSON", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidMsg, Status: 400, Response: "unable to parse"},
 	{Label: "Receive Invalid From", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidFrom, Status: 400, Response: "invalid whatsapp id"},
 	{Label: "Receive Invalid Timestamp", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTimestamp, Status: 400, Response: "invalid timestamp"},
