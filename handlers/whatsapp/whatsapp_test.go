@@ -1,12 +1,14 @@
 package whatsapp
 
 import (
+	"context"
 	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/stretchr/testify/assert"
 )
 
 var testChannels = []courier.Channel{
@@ -202,6 +204,15 @@ var testCases = []ChannelHandleTestCase{
 		MsgStatus: Sp("S"), ExternalID: Sp("9712A34B4A8B6AD50F")},
 	{Label: "Receive Invalid JSON", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: "not json", Status: 400, Response: "unable to parse"},
 	{Label: "Receive Invalid Status", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidStatus, Status: 400, Response: `"invalid status: in_orbit"`},
+}
+
+func TestBuildMediaRequest(t *testing.T) {
+	mb := courier.NewMockBackend()
+
+	handler := &handler{NewBaseHandler(courier.ChannelType("WA"), "WhatsApp")}
+	req, _ := handler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
+	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
+	assert.Equal(t, "Bearer the-auth-token", req.Header.Get("Authorization"))
 }
 
 func TestHandler(t *testing.T) {
