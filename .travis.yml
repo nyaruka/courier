@@ -19,7 +19,7 @@ before_script:
 - psql -U postgres -d courier_test -f backends/rapidpro/schema.sql
 
 script:
-- go test -p=1 -coverprofile=coverage.text -covermode=atomic github.com/smn/courier/...
+- go test -p=1 -coverprofile=coverage.text -covermode=atomic github.com/nyaruka/courier/...
 
 after_success:
 - bash <(curl -s https://codecov.io/bash)
