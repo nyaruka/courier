@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -258,17 +259,55 @@ var waStatusMapping = map[string]courier.MsgStatusValue{
 
 // {
 //   "to": "16315555555",
-//   "type": "text",
+//   "type": "text | audio | document | image",
 //   "text": {
 //     "body": "text message"
 //   }
+//	 "audio": {
+//	   "id": "the-audio-id"
+// 	 }
+//	 "document": {
+//	   "id": "the-document-id"
+//     "caption": "the optional document caption"
+// 	 }
+//	 "image": {
+//	   "id": "the-image-id"
+//     "caption": "the optional image caption"
+// 	 }
 // }
-type mtPayload struct {
+
+type mtTextPayload struct {
 	To   string `json:"to"    validate:"required"`
-	Type string `json:"type"`
+	Type string `json:"type"  validate:"required"`
 	Text struct {
-		Body string `json:"body"  validate:"required"`
+		Body string `json:"body" validate:"required"`
 	} `json:"text"`
+}
+
+type mtAudioPayload struct {
+	To    string `json:"to"    validate:"required"`
+	Type  string `json:"type"  validate:"required"`
+	Audio struct {
+		ID string `json:"id" validate:"required"`
+	} `json:"audio"`
+}
+
+type mtDocumentPayload struct {
+	To       string `json:"to"    validate:"required"`
+	Type     string `json:"type"  validate:"required"`
+	Document struct {
+		ID      string `json:"id" validate:"required"`
+		Caption string `json:"caption,omitempty"`
+	} `json:"document"`
+}
+
+type mtImagePayload struct {
+	To    string `json:"to"    validate:"required"`
+	Type  string `json:"type"  validate:"required"`
+	Image struct {
+		ID      string `json:"id" validate:"required"`
+		Caption string `json:"caption,omitempty"`
+	} `json:"image"`
 }
 
 // whatsapp only allows messages up to 4096 chars
@@ -276,6 +315,7 @@ const maxMsgLength = 4096
 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+	start := time.Now()
 	// get our token
 	token := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if token == "" {
@@ -290,55 +330,150 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	sendPath, _ := url.Parse("/v1/messages")
 	sendURL := url.ResolveReference(sendPath).String()
 
-	// TODO: figure out sending media
+	mediaPath, _ := url.Parse("/v1/media")
+	mediaURL := url.ResolveReference(mediaPath).String()
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
-	for i, part := range parts {
-		payload := mtPayload{
-			To:   msg.URN().Path(),
-			Type: "text",
-		}
-		payload.Text.Body = part
 
-		jsonBody, err := json.Marshal(payload)
+	// TODO: figure out sending media
+	if len(msg.Attachments()) > 1 {
+		duration := time.Now().Sub(start)
+		err = fmt.Errorf("Message has %d attachments", len(msg.Attachments()))
+		courier.NewChannelLogFromError("WhatsApp only allows for a single attachment to a message.", msg.Channel(), msg.ID(), duration, err)
+		return status, err
+
+	} else if len(msg.Attachments()) == 1 {
+
+		attachment := msg.Attachments()[0]
+		parts := strings.SplitN(attachment, ":", 2)
+		mimeType := parts[0]
+		s3url := parts[1]
+
+		// retrieve the media to be sent from S3
+		req, _ := http.NewRequest(http.MethodGet, s3url, nil)
+		s3rr, err := utils.MakeHTTPRequest(req)
 		if err != nil {
+			log := courier.NewChannelLogFromRR("Error downloading Media for sending", msg.Channel(), msg.ID(), s3rr).WithError("Message Send Error", err)
+			status.AddLog(log)
 			return status, err
 		}
 
-		req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonBody))
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json")
+		// upload it to WhatsApp in exchange for a media id
+		waReq, _ := http.NewRequest(http.MethodPost, mediaURL, bytes.NewReader(s3rr.Body))
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
+		req.Header.Set("Content-Type", mimeType)
+		wArr, err := utils.MakeHTTPRequest(waReq)
 		if err != nil {
-			return status, nil
+			log := courier.NewChannelLogFromRR("Error uploading Media for sending", msg.Channel(), msg.ID(), wArr).WithError("Message Send Error", err)
+			status.AddLog(log)
+			return status, err
 		}
+		fmt.Println(string(wArr.Body[:]))
 
-		// was this an error?
-		errorTitle, _ := jsonparser.GetString([]byte(rr.Body), "errors", "[0]", "title")
-		if errorTitle != "" {
-			log.WithError("Message Send Error", errors.Errorf("received error from send endpoint"))
-			return status, nil
-		}
-
-		// grab the id
-		externalID, err := jsonparser.GetString([]byte(rr.Body), "messages", "[0]", "id")
+		mediaID, err := jsonparser.GetString(wArr.Body, "media", "[0]", "id")
 		if err != nil {
-			log.WithError("Message Send Error", errors.Errorf("unable to get messages.0.id from body"))
-			return status, nil
+			log := courier.NewChannelLogFromRR("Unable to read Media ID from WhatsApp server response", msg.Channel(), msg.ID(), wArr).WithError("JSON error", err)
+			status.AddLog(log)
+			return status, err
 		}
 
-		// if this is our first message, record the external id
-		if i == 0 {
-			status.SetExternalID(externalID)
+		externalID := ""
+		if strings.HasPrefix(mimeType, "audio") {
+			payload := mtAudioPayload{
+				To:   msg.URN().Path(),
+				Type: "audio",
+			}
+			payload.Audio.ID = mediaID
+			externalID, err = sendWhatsAppMsg(sendURL, token, payload)
+
+		} else if strings.HasPrefix(mimeType, "application") {
+			payload := mtDocumentPayload{
+				To:   msg.URN().Path(),
+				Type: "document",
+			}
+			payload.Document.ID = mediaID
+			payload.Document.Caption = msg.Text()
+			externalID, err = sendWhatsAppMsg(sendURL, token, payload)
+
+		} else if strings.HasPrefix(mimeType, "image") {
+			payload := mtImagePayload{
+				To:   msg.URN().Path(),
+				Type: "image",
+			}
+			payload.Image.ID = mediaID
+			payload.Image.Caption = msg.Text()
+			externalID, err = sendWhatsAppMsg(sendURL, token, payload)
+
+		} else {
+			err = fmt.Errorf("Unknown attachment mime type: %s", mimeType)
 		}
+
+		if err != nil {
+			// record our status and log
+			duration := time.Now().Sub(start)
+			log := courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)
+			status.AddLog(log)
+			return status, err
+		}
+
+		status.SetExternalID(externalID)
+
+	} else {
+		parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
+		for i, part := range parts {
+			payload := mtTextPayload{
+				To:   msg.URN().Path(),
+				Type: "text",
+			}
+			payload.Text.Body = part
+
+			externalID, err := sendWhatsAppMsg(sendURL, token, payload)
+			if err != nil {
+				// record our status and log
+				duration := time.Now().Sub(start)
+				log := courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)
+				status.AddLog(log)
+				return status, err
+			}
+
+			// if this is our first message, record the external id
+			if i == 0 {
+				status.SetExternalID(externalID)
+			}
+		}
+
 	}
 
 	status.SetStatus(courier.MsgWired)
 	return status, nil
+}
+
+func sendWhatsAppMsg(url string, token string, payload interface{}) (string, error) {
+
+	jsonBody, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, url, bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	rr, err := utils.MakeHTTPRequest(req)
+
+	errorTitle, err := jsonparser.GetString(rr.Body, "errors", "[0]", "title")
+	if errorTitle != "" {
+		err = errors.Errorf("Received error from send endpoint: %s", errorTitle)
+		return "", err
+	}
+
+	// grab the id
+	externalID, err := jsonparser.GetString(rr.Body, "messages", "[0]", "id")
+	if err != nil {
+		fmt.Println(err)
+		err := errors.Errorf("Unable to get message id from response body")
+		return "", err
+	}
+
+	return externalID, err
 }

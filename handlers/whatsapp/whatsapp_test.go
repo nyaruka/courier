@@ -2,7 +2,11 @@ package whatsapp
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -180,7 +184,6 @@ var invalidStatus = `
   }]
 }
 `
-
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, Status: 200, Response: `"type":"msg"`,
 		Text: Sp("hello world"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
@@ -228,6 +231,22 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	c.(*courier.MockChannel).SetConfig("base_url", s.URL)
 }
 
+func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTestCase) []ChannelSendTestCase {
+	casesWithMockedUrls := make([]ChannelSendTestCase, len(testCases))
+	for i, testCase := range testCases {
+		mockedCase := testCase
+		for j, attachment := range testCase.Attachments {
+			parts := strings.SplitN(attachment, ":", 2)
+			mimeType := parts[0]
+			urlString := parts[1]
+			parsedURL, _ := url.Parse(urlString)
+			mockedCase.Attachments[j] = fmt.Sprintf("%s:%s%s", mimeType, mediaServer.URL, parsedURL.Path)
+		}
+		casesWithMockedUrls[i] = mockedCase
+	}
+	return casesWithMockedUrls
+}
+
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "whatsapp:250788123123",
@@ -244,21 +263,99 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Error",
 		Text: "Error", URN: "whatsapp:250788123123",
 		Status:       "E",
-		ResponseBody: `{ "errors": [{"title":"Error Sendind"}] }`, ResponseStatus: 403,
+		ResponseBody: `{ "errors": [{ "title": "Error Sending" }] }`, ResponseStatus: 403,
 		RequestBody: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
+		Error:       "Received error from send endpoint: Error Sending",
 		SendPrep:    setSendURL},
 	{Label: "No Message ID",
 		Text: "Error", URN: "whatsapp:250788123123",
 		Status:       "E",
 		ResponseBody: `{ "messages": [] }`, ResponseStatus: 200,
 		RequestBody: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
+		Error:       "Unable to get message id from response body",
 		SendPrep:    setSendURL},
 	{Label: "Error Field",
 		Text: "Error", URN: "whatsapp:250788123123",
 		Status:       "E",
-		ResponseBody: `{ "errors": [{"title":"Error Sendind"}] }`, ResponseStatus: 200,
+		ResponseBody: `{ "errors": [{"title":"Error Sending"}] }`, ResponseStatus: 200,
 		RequestBody: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
+		Error:       "Received error from send endpoint: Error Sending",
 		SendPrep:    setSendURL},
+	{Label: "Audio Send",
+		Text:   "audio has no caption",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Attachments: []string{"audio/mpeg:https://foo.bar/audio.mp3"},
+		ResponseBodies: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/media",
+				Body:   "media body",
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{"media": [{"id": "media-id"}]}`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/messages",
+				Body:   `{"to":"250788123123","type":"audio","audio":{"id":"media-id"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
+	{Label: "Document Send",
+		Text:   "document caption",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		ResponseBodies: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/media",
+				Body:   "media body",
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{"media": [{"id": "media-id"}]}`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/messages",
+				Body:   `{"to":"250788123123","type":"document","document":{"id":"media-id","caption":"document caption"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
+	{Label: "Image Send",
+		Text:   "document caption",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		ResponseBodies: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/media",
+				Body:   "media body",
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{"media": [{"id": "media-id"}]}`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/messages",
+				Body:   `{"to":"250788123123","type":"image","image":{"id":"media-id","caption":"document caption"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
@@ -268,5 +365,14 @@ func TestSending(t *testing.T) {
 			"base_url":   "https://foo.bar/",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	// fake media server that just replies with 200 and "media body for content"
+	mediaServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		defer req.Body.Close()
+		res.WriteHeader(200)
+		fmt.Println("returning 200 with media body")
+		res.Write([]byte("media body"))
+	}))
+
+	attachmentMockedSendTestCase := mockAttachmentURLs(mediaServer, defaultSendTestCases)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), attachmentMockedSendTestCase, nil)
 }
