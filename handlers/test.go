@@ -209,9 +209,6 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 					}
 				}
 				if (len(testCase.ResponseBodies)) == 0 {
-					fmt.Println("Did not match anything")
-					fmt.Println(r.URL)
-					fmt.Println(string(body)[:])
 					w.WriteHeader(testCase.ResponseStatus)
 					w.Write([]byte(testCase.ResponseBody))
 				}
