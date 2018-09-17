@@ -365,7 +365,7 @@ func TestSending(t *testing.T) {
 			"base_url":   "https://foo.bar/",
 		})
 
-	// fake media server that just replies with 200 and "media body for content"
+	// fake media server that just replies with 200 and "media body" for content
 	mediaServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
 		res.WriteHeader(200)
