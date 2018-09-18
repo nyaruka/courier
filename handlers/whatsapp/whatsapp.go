@@ -168,7 +168,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			mediaURL, err = resolveMediaURL(channel, msg.Voice.ID)
 		} else {
 			// we received a message type we do not support.
-			handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("Unsupported message type %s", msg.Type))
+			courier.LogRequestError(r, channel, fmt.Errorf("Unsupported message type %s", msg.Type))
 		}
 
 		// create our message
@@ -176,7 +176,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 		// we had an error downloading media
 		if err != nil {
-			handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			courier.LogRequestError(r, channel, err)
 		}
 
 		if mediaURL != "" {
