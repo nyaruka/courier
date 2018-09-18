@@ -286,7 +286,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		URN:    "whatsapp:250788123123",
 		Status: "W", ExternalID: "157b5e14568e8",
 		Attachments: []string{"audio/mpeg:https://foo.bar/audio.mp3"},
-		ResponseBodies: map[MockedRequest]MockedResponse{
+		Responses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/v1/media",
@@ -311,7 +311,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		URN:    "whatsapp:250788123123",
 		Status: "W", ExternalID: "157b5e14568e8",
 		Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
-		ResponseBodies: map[MockedRequest]MockedResponse{
+		Responses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/v1/media",
@@ -336,7 +336,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		URN:    "whatsapp:250788123123",
 		Status: "W", ExternalID: "157b5e14568e8",
 		Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ResponseBodies: map[MockedRequest]MockedResponse{
+		Responses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/v1/media",

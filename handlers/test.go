@@ -82,7 +82,7 @@ type ChannelSendTestCase struct {
 
 	ResponseStatus int
 	ResponseBody   string
-	ResponseBodies map[MockedRequest]MockedResponse
+	Responses      map[MockedRequest]MockedResponse
 
 	Path        string
 	URLParams   map[string]string
@@ -201,14 +201,14 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				body, _ := ioutil.ReadAll(r.Body)
 				testRequest = httptest.NewRequest(r.Method, r.URL.String(), bytes.NewBuffer(body))
 				testRequest.Header = r.Header
-				for mockRequest, mockResponse := range testCase.ResponseBodies {
+				for mockRequest, mockResponse := range testCase.Responses {
 					if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && mockRequest.Body == string(body)[:] {
 						w.WriteHeader(mockResponse.Status)
 						w.Write([]byte(mockResponse.Body))
 						break
 					}
 				}
-				if (len(testCase.ResponseBodies)) == 0 {
+				if (len(testCase.Responses)) == 0 {
 					w.WriteHeader(testCase.ResponseStatus)
 					w.Write([]byte(testCase.ResponseBody))
 				}
