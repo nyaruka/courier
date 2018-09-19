@@ -168,7 +168,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			mediaURL, err = resolveMediaURL(channel, msg.Voice.ID)
 		} else {
 			// we received a message type we do not support.
-			courier.LogRequestError(r, channel, fmt.Errorf("Unsupported message type %s", msg.Type))
+			courier.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", msg.Type))
 		}
 
 		// create our message
@@ -222,13 +222,13 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
 	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
 	if token == "" {
-		return "", fmt.Errorf("Missing token for WA channel")
+		return "", fmt.Errorf("missing token for WA channel")
 	}
 
 	urlStr := channel.StringConfigForKey(courier.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
 	if err != nil {
-		return "", fmt.Errorf("Invalid base url set for WA channel: %s", err)
+		return "", fmt.Errorf("invalid base url set for WA channel: %s", err)
 	}
 
 	mediaPath, _ := url.Parse("/v1/media")
@@ -243,7 +243,7 @@ func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
 func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
 	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
 	if token == "" {
-		return nil, fmt.Errorf("Missing token for WA channel")
+		return nil, fmt.Errorf("missing token for WA channel")
 	}
 
 	// set the access token as the authorization header
@@ -341,7 +341,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	// TODO: figure out sending media
 	if len(msg.Attachments()) > 1 {
 		duration := time.Now().Sub(start)
-		err = fmt.Errorf("Message has %d attachments", len(msg.Attachments()))
+		err = fmt.Errorf("message has %d attachments", len(msg.Attachments()))
 		courier.NewChannelLogFromError("WhatsApp only allows for a single attachment to a message.", msg.Channel(), msg.ID(), duration, err)
 		return status, err
 
@@ -408,7 +408,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			externalID, err = sendWhatsAppMsg(sendURL, token, payload)
 
 		} else {
-			err = fmt.Errorf("Unknown attachment mime type: %s", mimeType)
+			err = fmt.Errorf("unknown attachment mime type: %s", mimeType)
 		}
 
 		if err != nil {
@@ -466,7 +466,7 @@ func sendWhatsAppMsg(url string, token string, payload interface{}) (string, err
 
 	errorTitle, err := jsonparser.GetString(rr.Body, "errors", "[0]", "title")
 	if errorTitle != "" {
-		err = errors.Errorf("Received error from send endpoint: %s", errorTitle)
+		err = errors.Errorf("received error from send endpoint: %s", errorTitle)
 		return "", err
 	}
 
@@ -474,7 +474,7 @@ func sendWhatsAppMsg(url string, token string, payload interface{}) (string, err
 	externalID, err := jsonparser.GetString(rr.Body, "messages", "[0]", "id")
 	if err != nil {
 		fmt.Println(err)
-		err := errors.Errorf("Unable to get message id from response body")
+		err := errors.Errorf("unable to get message id from response body")
 		return "", err
 	}
 
