@@ -363,8 +363,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		// upload it to WhatsApp in exchange for a media id
 		waReq, _ := http.NewRequest(http.MethodPost, mediaURL, bytes.NewReader(s3rr.Body))
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-		req.Header.Set("Content-Type", mimeType)
+		waReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		waReq.Header.Set("Content-Type", mimeType)
 		wArr, err := utils.MakeHTTPRequest(waReq)
 		if err != nil {
 			log := courier.NewChannelLogFromRR("Error uploading Media for sending", msg.Channel(), msg.ID(), wArr).WithError("Message Send Error", err)
