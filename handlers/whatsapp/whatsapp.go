@@ -267,14 +267,14 @@ var waStatusMapping = map[string]courier.MsgStatusValue{
 //     "body": "text message"
 //   }
 //	 "audio": {
-//	   "id": "the-audio-id"
+//     "id": "the-audio-id"
 // 	 }
 //	 "document": {
-//	   "id": "the-document-id"
+//     "id": "the-document-id"
 //     "caption": "the optional document caption"
 // 	 }
 //	 "image": {
-//	   "id": "the-image-id"
+//     "id": "the-image-id"
 //     "caption": "the optional image caption"
 // 	 }
 // }
@@ -371,7 +371,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			status.AddLog(log)
 			return status, err
 		}
-		fmt.Println(string(wArr.Body[:]))
 
 		mediaID, err := jsonparser.GetString(wArr.Body, "media", "[0]", "id")
 		if err != nil {
@@ -473,7 +472,6 @@ func sendWhatsAppMsg(url string, token string, payload interface{}) (string, err
 	// grab the id
 	externalID, err := jsonparser.GetString(rr.Body, "messages", "[0]", "id")
 	if err != nil {
-		fmt.Println(err)
 		err := errors.Errorf("unable to get message id from response body")
 		return "", err
 	}
