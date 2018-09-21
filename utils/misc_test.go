@@ -7,6 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestSignHMAC256(t *testing.T) {
+	assert.Equal(t, "ce9a66626ee60f41beb538bbbafbf308cb8462a495c7abc6d04762ef9982f1e1",
+		SignHMAC256("DkGBlzdnzYeb2nm0", "valueToEncrypt"))
+	assert.Len(t, SignHMAC256("ZXwAumfRSejDxJGa", "newValueToEncrypt"), 64)
+}
+
 func TestMapAsJSON(t *testing.T) {
 	assert.Equal(t, "{}", string(MapAsJSON(map[string]string{})))
 	assert.Equal(t, "{\"foo\":\"bar\"}", string(MapAsJSON(map[string]string{"foo": "bar"})))

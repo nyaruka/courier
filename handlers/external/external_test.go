@@ -93,6 +93,17 @@ var getSendSmartEncodingTestCases = []ChannelSendTestCase{
 		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:  setSendURL},
 }
+
+var postSendSmartEncodingTestCases = []ChannelSendTestCase{
+	{Label: "Smart Encoding",
+		Text: "Fancy “Smart” Quotes", URN: "tel:+250788383383",
+		Status:       "W",
+		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
+		PostParams: map[string]string{"text": `Fancy "Smart" Quotes`, "to": "+250788383383", "from": "2020"},
+		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		SendPrep:   setSendURL},
+}
+
 var getSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "tel:+250788383383",
@@ -235,6 +246,13 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}",
 			courier.ConfigSendMethod: http.MethodPost})
 
+	var postSmartChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
+		map[string]interface{}{
+			"send_path":              "",
+			courier.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}",
+			configEncoding:           encodingSmart,
+			courier.ConfigSendMethod: http.MethodPost})
+
 	var jsonChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		map[string]interface{}{
 			"send_path":                     "",
@@ -256,6 +274,8 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil)
 	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendSmartEncodingTestCases, nil)
 	RunChannelSendTestCases(t, postChannel, newHandler(), postSendTestCases, nil)
+	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendTestCases, nil)
+	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendSmartEncodingTestCases, nil)
 	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil)
 	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil)
 

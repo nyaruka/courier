@@ -1,3 +1,23 @@
+v1.2.102
+----------
+ * clear dedupes on outgoing messages
+
+v1.2.101
+----------
+ * AT date like 2006-01-02 15:04:05, without T nor Z
+
+v1.2.100
+----------
+ * Accept AT requests with timestamps without Z
+ * Ignore status update for incoming messsages
+
+v1.2.99
+----------
+ * Support smart encoding for post requests on EX channels
+ * Add novo channel with send capability
+ * log the error when PQ fails to connect
+ * Changed the default redis database to match rapid pro redis database
+
 v1.2.98
 ----------
  * treat empty content type as text

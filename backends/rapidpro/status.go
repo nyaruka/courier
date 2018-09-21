@@ -140,6 +140,11 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 		return nil
 	}
 
+	// Ignore wrong status update for incoming messages
+	if err == courier.ErrWrongIncomingMsgStatus {
+		return nil
+	}
+
 	return err
 }
 
