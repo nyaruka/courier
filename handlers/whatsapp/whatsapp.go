@@ -282,30 +282,31 @@ type mtTextPayload struct {
 	} `json:"text"`
 }
 
+type mediaObject struct {
+	ID string `json:"id" validate:"required"`
+}
+
+type captionedMediaObject struct {
+	ID      string `json:"id" validate:"required"`
+	Caption string `json:"caption,omitempty"`
+}
+
 type mtAudioPayload struct {
-	To    string `json:"to"    validate:"required"`
-	Type  string `json:"type"  validate:"required"`
-	Audio struct {
-		ID string `json:"id" validate:"required"`
-	} `json:"audio"`
+	To    string       `json:"to"    validate:"required"`
+	Type  string       `json:"type"  validate:"required"`
+	Audio *mediaObject `json:"audio"`
 }
 
 type mtDocumentPayload struct {
-	To       string `json:"to"    validate:"required"`
-	Type     string `json:"type"  validate:"required"`
-	Document struct {
-		ID      string `json:"id" validate:"required"`
-		Caption string `json:"caption,omitempty"`
-	} `json:"document"`
+	To       string                `json:"to"    validate:"required"`
+	Type     string                `json:"type"  validate:"required"`
+	Document *captionedMediaObject `json:"document"`
 }
 
 type mtImagePayload struct {
-	To    string `json:"to"    validate:"required"`
-	Type  string `json:"type"  validate:"required"`
-	Image struct {
-		ID      string `json:"id" validate:"required"`
-		Caption string `json:"caption,omitempty"`
-	} `json:"image"`
+	To    string                `json:"to"    validate:"required"`
+	Type  string                `json:"type"  validate:"required"`
+	Image *captionedMediaObject `json:"image"`
 }
 
 // whatsapp only allows messages up to 4096 chars
@@ -337,8 +338,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		for attachmentCount, attachment := range msg.Attachments() {
 
 			mimeType, s3url := handlers.SplitAttachment(attachment)
+			fmt.Printf("sending %s\n", s3url)
 			mediaID, err := uploadMediaToWhatsApp(mediaURL, token, mimeType, s3url)
-
+			fmt.Printf("media ID! %s\n", mediaID)
 			if err != nil {
 				duration := time.Now().Sub(start)
 				log := courier.NewChannelLogFromError("Unable to upload media to WhatsApp server", msg.Channel(), msg.ID(), duration, err)
@@ -348,11 +350,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 			externalID := ""
 			if strings.HasPrefix(mimeType, "audio") {
+				fmt.Println("fetching audio")
 				payload := mtAudioPayload{
 					To:   msg.URN().Path(),
 					Type: "audio",
 				}
-				payload.Audio.ID = mediaID
+				payload.Audio = &mediaObject{ID: mediaID}
 				externalID, err = sendWhatsAppMsg(sendURL, token, payload)
 
 			} else if strings.HasPrefix(mimeType, "application") {
@@ -360,9 +363,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 					To:   msg.URN().Path(),
 					Type: "document",
 				}
-				payload.Document.ID = mediaID
+
 				if attachmentCount == 0 {
-					payload.Document.Caption = msg.Text()
+					payload.Document = &captionedMediaObject{ID: mediaID, Caption: msg.Text()}
+				} else {
+					payload.Document = &captionedMediaObject{ID: mediaID}
 				}
 				externalID, err = sendWhatsAppMsg(sendURL, token, payload)
 
@@ -371,9 +376,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 					To:   msg.URN().Path(),
 					Type: "image",
 				}
-				payload.Image.ID = mediaID
 				if attachmentCount == 0 {
-					payload.Image.Caption = msg.Text()
+					payload.Image = &captionedMediaObject{ID: mediaID, Caption: msg.Text()}
+				} else {
+					payload.Image = &captionedMediaObject{ID: mediaID}
 				}
 				externalID, err = sendWhatsAppMsg(sendURL, token, payload)
 
