@@ -338,12 +338,48 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
+<<<<<<< Updated upstream
+	// TODO: figure out sending media
+	if len(msg.Attachments()) > 1 {
+		duration := time.Now().Sub(start)
+		err = fmt.Errorf("message has %d attachments", len(msg.Attachments()))
+		courier.NewChannelLogFromError("WhatsApp only allows for a single attachment to a message.", msg.Channel(), msg.ID(), duration, err)
+		return status, err
+
+	} else if len(msg.Attachments()) == 1 {
+
+		attachment := msg.Attachments()[0]
+		parts := strings.SplitN(attachment, ":", 2)
+		mimeType := parts[0]
+		s3url := parts[1]
+
+		// retrieve the media to be sent from S3
+		req, _ := http.NewRequest(http.MethodGet, s3url, nil)
+		s3rr, err := utils.MakeHTTPRequest(req)
+		if err != nil {
+			log := courier.NewChannelLogFromRR("Error downloading Media for sending", msg.Channel(), msg.ID(), s3rr).WithError("Message Send Error", err)
+			status.AddLog(log)
+			return status, err
+		}
+
+		// upload it to WhatsApp in exchange for a media id
+		waReq, _ := http.NewRequest(http.MethodPost, mediaURL, bytes.NewReader(s3rr.Body))
+		waReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		waReq.Header.Set("Content-Type", mimeType)
+		wArr, err := utils.MakeHTTPRequest(waReq)
+		if err != nil {
+			log := courier.NewChannelLogFromRR("Error uploading Media for sending", msg.Channel(), msg.ID(), wArr).WithError("Message Send Error", err)
+			status.AddLog(log)
+			return status, err
+		}
+=======
 	if len(msg.Attachments()) > 0 {
-		for attachmentCount, attachment := range msg.Attachments() {
+		for _, attachment := range msg.Attachments() {
 
 			parts := strings.SplitN(attachment, ":", 2)
 			mimeType := parts[0]
 			s3url := parts[1]
+>>>>>>> Stashed changes
 
 			// retrieve the media to be sent from S3
 			req, _ := http.NewRequest(http.MethodGet, s3url, nil)
@@ -364,6 +400,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				status.AddLog(log)
 				return status, err
 			}
+			fmt.Println(string(wArr.Body[:]))
 
 			mediaID, err := jsonparser.GetString(wArr.Body, "media", "[0]", "id")
 			if err != nil {
@@ -387,9 +424,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 					Type: "document",
 				}
 				payload.Document.ID = mediaID
-				if attachmentCount == 0 {
-					payload.Document.Caption = msg.Text()
-				}
+				payload.Document.Caption = msg.Text()
 				externalID, err = sendWhatsAppMsg(sendURL, token, payload)
 
 			} else if strings.HasPrefix(mimeType, "image") {
@@ -398,15 +433,18 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 					Type: "image",
 				}
 				payload.Image.ID = mediaID
-				if attachmentCount == 0 {
-					payload.Image.Caption = msg.Text()
-				}
+				payload.Image.Caption = msg.Text()
 				externalID, err = sendWhatsAppMsg(sendURL, token, payload)
 
 			} else {
-				err = fmt.Errorf("unknown attachment mime type: %s", mimeType)
+				err = fmt.Errorf("Unknown attachment mime type: %s", mimeType)
 			}
 
+<<<<<<< Updated upstream
+		} else {
+			err = fmt.Errorf("unknown attachment mime type: %s", mimeType)
+		}
+=======
 			if err != nil {
 				// record our status and log
 				duration := time.Now().Sub(start)
@@ -414,6 +452,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				status.AddLog(log)
 				return status, err
 			}
+>>>>>>> Stashed changes
 
 			status.SetExternalID(externalID)
 
