@@ -201,16 +201,19 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				body, _ := ioutil.ReadAll(r.Body)
 				testRequest = httptest.NewRequest(r.Method, r.URL.String(), bytes.NewBuffer(body))
 				testRequest.Header = r.Header
-				for mockRequest, mockResponse := range testCase.Responses {
-					if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && mockRequest.Body == string(body)[:] {
-						w.WriteHeader(mockResponse.Status)
-						w.Write([]byte(mockResponse.Body))
-						break
-					}
-				}
 				if (len(testCase.Responses)) == 0 {
 					w.WriteHeader(testCase.ResponseStatus)
 					w.Write([]byte(testCase.ResponseBody))
+				} else {
+					require.Equal(testCase.ResponseStatus, "", "ResponseStatus should not be used when using testcase.Responses")
+					require.Equal(testCase.ResponseBody, "", "ResponseBody should not be used when using testcase.Responses")
+					for mockRequest, mockResponse := range testCase.Responses {
+						if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && mockRequest.Body == string(body)[:] {
+							w.WriteHeader(mockResponse.Status)
+							w.Write([]byte(mockResponse.Body))
+							break
+						}
+					}
 				}
 			}))
 			defer server.Close()
