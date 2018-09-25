@@ -220,11 +220,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 }
 
 func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
-	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
-	if token == "" {
-		return "", fmt.Errorf("missing token for WA channel")
-	}
-
 	urlStr := channel.StringConfigForKey(courier.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
 	if err != nil {
@@ -341,33 +336,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	if len(msg.Attachments()) > 0 {
 		for attachmentCount, attachment := range msg.Attachments() {
 
-			parts := strings.SplitN(attachment, ":", 2)
-			mimeType := parts[0]
-			s3url := parts[1]
+			mimeType, s3url := handlers.SplitAttachment(attachment)
+			mediaID, err := uploadMediaToWhatsApp(mediaURL, token, mimeType, s3url)
 
-			// retrieve the media to be sent from S3
-			req, _ := http.NewRequest(http.MethodGet, s3url, nil)
-			s3rr, err := utils.MakeHTTPRequest(req)
 			if err != nil {
-				log := courier.NewChannelLogFromRR("Error downloading Media for sending", msg.Channel(), msg.ID(), s3rr).WithError("Message Send Error", err)
-				status.AddLog(log)
-				return status, err
-			}
-
-			// upload it to WhatsApp in exchange for a media id
-			waReq, _ := http.NewRequest(http.MethodPost, mediaURL, bytes.NewReader(s3rr.Body))
-			waReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-			waReq.Header.Set("Content-Type", mimeType)
-			wArr, err := utils.MakeHTTPRequest(waReq)
-			if err != nil {
-				log := courier.NewChannelLogFromRR("Error uploading Media for sending", msg.Channel(), msg.ID(), wArr).WithError("Message Send Error", err)
-				status.AddLog(log)
-				return status, err
-			}
-
-			mediaID, err := jsonparser.GetString(wArr.Body, "media", "[0]", "id")
-			if err != nil {
-				log := courier.NewChannelLogFromRR("Unable to read Media ID from WhatsApp server response", msg.Channel(), msg.ID(), wArr).WithError("JSON error", err)
+				duration := time.Now().Sub(start)
+				log := courier.NewChannelLogFromError("Unable to upload media to WhatsApp server", msg.Channel(), msg.ID(), duration, err)
 				status.AddLog(log)
 				return status, err
 			}
@@ -447,6 +421,32 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	status.SetStatus(courier.MsgWired)
 	return status, nil
+}
+
+func uploadMediaToWhatsApp(url string, token string, attachmentMimeType string, attachmentURL string) (string, error) {
+
+	// retrieve the media to be sent from S3
+	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
+	s3rr, err := utils.MakeHTTPRequest(req)
+	if err != nil {
+		return "", err
+	}
+
+	// upload it to WhatsApp in exchange for a media id
+	waReq, _ := http.NewRequest(http.MethodPost, url, bytes.NewReader(s3rr.Body))
+	waReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	waReq.Header.Set("Content-Type", attachmentMimeType)
+	wArr, err := utils.MakeHTTPRequest(waReq)
+	if err != nil {
+		return "", err
+	}
+
+	mediaID, err := jsonparser.GetString(wArr.Body, "media", "[0]", "id")
+	if err != nil {
+		return "", err
+	}
+
+	return mediaID, nil
 }
 
 func sendWhatsAppMsg(url string, token string, payload interface{}) (string, error) {
