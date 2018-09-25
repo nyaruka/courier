@@ -64,14 +64,14 @@ type eventPayload struct {
 		Text      struct {
 			Body string `json:"body"`
 		} `json:"text"`
-		Audio struct {
+		Audio *struct {
 			File     string `json:"file"`
 			ID       string `json:"id"`
 			Link     string `json:"link"`
 			MimeType string `json:"mime_type"`
 			Sha256   string `json:"sha256"`
 		} `json:"audio"`
-		Document struct {
+		Document *struct {
 			File     string `json:"file"`
 			ID       string `json:"id"`
 			Link     string `json:"link"`
@@ -79,7 +79,7 @@ type eventPayload struct {
 			Sha256   string `json:"sha256"`
 			Caption  string `json:"caption"`
 		} `json:"document"`
-		Image struct {
+		Image *struct {
 			File     string `json:"file"`
 			ID       string `json:"id"`
 			Link     string `json:"link"`
@@ -87,21 +87,21 @@ type eventPayload struct {
 			Sha256   string `json:"sha256"`
 			Caption  string `json:"caption"`
 		} `json:"image"`
-		Location struct {
+		Location *struct {
 			Address   string  `json:"address"`
 			Latitude  float32 `json:"latitude"`
 			Longitude float32 `json:"longitude"`
 			Name      string  `json:"name"`
 			URL       string  `json:"url"`
 		} `json:"location"`
-		Video struct {
+		Video *struct {
 			File     string `json:"file"`
 			ID       string `json:"id"`
 			Link     string `json:"link"`
 			MimeType string `json:"mime_type"`
 			Sha256   string `json:"sha256"`
 		} `json:"video"`
-		Voice struct {
+		Voice *struct {
 			File     string `json:"file"`
 			ID       string `json:"id"`
 			Link     string `json:"link"`
