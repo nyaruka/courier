@@ -244,6 +244,7 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backe
 	// set the access token as the authorization header
 	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("User-Agent", utils.HTTPUserAgent)
 	return req, nil
 }
 
@@ -439,6 +440,7 @@ func uploadMediaToWhatsApp(url string, token string, attachmentMimeType string, 
 	waReq, _ := http.NewRequest(http.MethodPost, url, bytes.NewReader(s3rr.Body))
 	waReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	waReq.Header.Set("Content-Type", attachmentMimeType)
+	waReq.Header.Set("User-Agent", utils.HTTPUserAgent)
 	wArr, err := utils.MakeHTTPRequest(waReq)
 	if err != nil {
 		return "", err
@@ -463,6 +465,7 @@ func sendWhatsAppMsg(url string, token string, payload interface{}) (string, err
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("User-Agent", utils.HTTPUserAgent)
 	rr, err := utils.MakeHTTPRequest(req)
 
 	errorTitle, err := jsonparser.GetString(rr.Body, "errors", "[0]", "title")
