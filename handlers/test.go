@@ -205,8 +205,8 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 					w.WriteHeader(testCase.ResponseStatus)
 					w.Write([]byte(testCase.ResponseBody))
 				} else {
-					require.Equal(testCase.ResponseStatus, "", "ResponseStatus should not be used when using testcase.Responses")
-					require.Equal(testCase.ResponseBody, "", "ResponseBody should not be used when using testcase.Responses")
+					require.Zero(testCase.ResponseStatus, "ResponseStatus should not be used when using testcase.Responses")
+					require.Zero(testCase.ResponseBody, "ResponseBody should not be used when using testcase.Responses")
 					for mockRequest, mockResponse := range testCase.Responses {
 						if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && mockRequest.Body == string(body)[:] {
 							w.WriteHeader(mockResponse.Status)
