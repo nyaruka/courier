@@ -369,7 +369,6 @@ func TestSending(t *testing.T) {
 	mediaServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
 		res.WriteHeader(200)
-		fmt.Println("returning 200 with media body")
 		res.Write([]byte("media body"))
 	}))
 

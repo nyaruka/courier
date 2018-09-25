@@ -338,9 +338,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		for attachmentCount, attachment := range msg.Attachments() {
 
 			mimeType, s3url := handlers.SplitAttachment(attachment)
-			fmt.Printf("sending %s\n", s3url)
 			mediaID, err := uploadMediaToWhatsApp(mediaURL, token, mimeType, s3url)
-			fmt.Printf("media ID! %s\n", mediaID)
 			if err != nil {
 				duration := time.Now().Sub(start)
 				log := courier.NewChannelLogFromError("Unable to upload media to WhatsApp server", msg.Channel(), msg.ID(), duration, err)
@@ -350,7 +348,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 			externalID := ""
 			if strings.HasPrefix(mimeType, "audio") {
-				fmt.Println("fetching audio")
 				payload := mtAudioPayload{
 					To:   msg.URN().Path(),
 					Type: "audio",
