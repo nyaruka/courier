@@ -65,48 +65,48 @@ type eventPayload struct {
 			Body string `json:"body"`
 		} `json:"text"`
 		Audio *struct {
-			File     string `json:"file"`
-			ID       string `json:"id"`
+			File     string `json:"file"      validate:"required"`
+			ID       string `json:"id"        validate:"required"`
 			Link     string `json:"link"`
-			MimeType string `json:"mime_type"`
-			Sha256   string `json:"sha256"`
+			MimeType string `json:"mime_type" validate:"required"`
+			Sha256   string `json:"sha256"    validate:"required"`
 		} `json:"audio"`
 		Document *struct {
-			File     string `json:"file"`
-			ID       string `json:"id"`
+			File     string `json:"file"      validate:"required"`
+			ID       string `json:"id"        validate:"required"`
 			Link     string `json:"link"`
-			MimeType string `json:"mime_type"`
-			Sha256   string `json:"sha256"`
+			MimeType string `json:"mime_type" validate:"required"`
+			Sha256   string `json:"sha256"    validate:"required"`
 			Caption  string `json:"caption"`
 		} `json:"document"`
 		Image *struct {
-			File     string `json:"file"`
-			ID       string `json:"id"`
+			File     string `json:"file"      validate:"required"`
+			ID       string `json:"id"        validate:"required"`
 			Link     string `json:"link"`
-			MimeType string `json:"mime_type"`
-			Sha256   string `json:"sha256"`
+			MimeType string `json:"mime_type" validate:"required"`
+			Sha256   string `json:"sha256"    validate:"required"`
 			Caption  string `json:"caption"`
 		} `json:"image"`
 		Location *struct {
-			Address   string  `json:"address"`
-			Latitude  float32 `json:"latitude"`
-			Longitude float32 `json:"longitude"`
-			Name      string  `json:"name"`
-			URL       string  `json:"url"`
+			Address   string  `json:"address"   validate:"required"`
+			Latitude  float32 `json:"latitude"  validate:"required"`
+			Longitude float32 `json:"longitude" validate:"required"`
+			Name      string  `json:"name"      validate:"required"`
+			URL       string  `json:"url"       validate:"required"`
 		} `json:"location"`
 		Video *struct {
-			File     string `json:"file"`
-			ID       string `json:"id"`
+			File     string `json:"file"      validate:"required"`
+			ID       string `json:"id"        validate:"required"`
 			Link     string `json:"link"`
-			MimeType string `json:"mime_type"`
-			Sha256   string `json:"sha256"`
+			MimeType string `json:"mime_type" validate:"required"`
+			Sha256   string `json:"sha256"    validate:"required"`
 		} `json:"video"`
 		Voice *struct {
-			File     string `json:"file"`
-			ID       string `json:"id"`
+			File     string `json:"file"      validate:"required"`
+			ID       string `json:"id"        validate:"required"`
 			Link     string `json:"link"`
-			MimeType string `json:"mime_type"`
-			Sha256   string `json:"sha256"`
+			MimeType string `json:"mime_type" validate:"required"`
+			Sha256   string `json:"sha256"    validate:"required"`
 		} `json:"voice"`
 	} `json:"messages"`
 	Statuses []struct {
