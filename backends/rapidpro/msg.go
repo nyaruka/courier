@@ -117,9 +117,9 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 }
 
 const insertMsgSQL = `
-INSERT INTO msgs_msg(org_id, uuid, direction, text, attachments, msg_count, error_count, high_priority, status, 
+INSERT INTO msgs_msg(org_id, uuid, direction, text, attachments, msg_count, error_count, high_priority, status,
                      visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on)
-              VALUES(:org_id, :uuid, :direction, :text, :attachments, :msg_count, :error_count, :high_priority, :status, 
+              VALUES(:org_id, :uuid, :direction, :text, :attachments, :msg_count, :error_count, :high_priority, :status,
                      :visibility, :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :next_attempt, :queued_on, :sent_on)
 RETURNING id
 `
@@ -164,7 +164,7 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 }
 
 const selectMsgSQL = `
-SELECT org_id, direction, text, attachments, msg_count, error_count, high_priority, status, 
+SELECT org_id, direction, text, attachments, msg_count, error_count, high_priority, status,
        visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on
 FROM msgs_msg
 WHERE id = $1
@@ -195,7 +195,7 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 	if handler != nil {
 		builder, isBuilder := handler.(courier.MediaDownloadRequestBuilder)
 		if isBuilder {
-			req, err = builder.BuildDownloadMediaRequest(ctx, channel, parsedURL.String())
+			req, err = builder.BuildDownloadMediaRequest(ctx, b, channel, parsedURL.String())
 
 			// in the case of errors, we log the error but move onwards anyways
 			if err != nil {
@@ -313,10 +313,10 @@ var luaMsgSeen = redis.NewScript(3, `-- KEYS: [Window, PrevWindow, URNFingerprin
 	local found = redis.call("hget", KEYS[1], KEYS[3])
 
 	-- didn't find it, try in our previous window
-	if not found then 
+	if not found then
 		found = redis.call("hget", KEYS[2], KEYS[3])
 	end
-	
+
 	-- return the fingerprint found
 	return found
 `)
