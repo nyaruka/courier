@@ -1,3 +1,7 @@
+v1.2.103
+----------
+ * add media handling for whatsapp
+
 v1.2.102
 ----------
  * clear dedupes on outgoing messages
