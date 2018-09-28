@@ -1,3 +1,15 @@
+v1.2.105
+----------
+ * optimize writing message status for external case
+
+v1.2.104
+----------
+ * optimize status update when we know message id
+
+v1.2.103
+----------
+ * add media handling for whatsapp
+
 v1.2.102
 ----------
  * clear dedupes on outgoing messages

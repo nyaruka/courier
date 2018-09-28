@@ -54,6 +54,19 @@ type ChannelHandleTestCase struct {
 // SendPrepFunc allows test cases to modify the channel, msg or server before a message is sent
 type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, courier.Channel, courier.Msg)
 
+// MockedRequest is a fake HTTP request
+type MockedRequest struct {
+	Method string
+	Path   string
+	Body   string
+}
+
+// MockedResponse is a fake HTTP response
+type MockedResponse struct {
+	Status int
+	Body   string
+}
+
 // ChannelSendTestCase defines the test values for a particular test case
 type ChannelSendTestCase struct {
 	Label string
@@ -69,6 +82,7 @@ type ChannelSendTestCase struct {
 
 	ResponseStatus int
 	ResponseBody   string
+	Responses      map[MockedRequest]MockedResponse
 
 	Path        string
 	URLParams   map[string]string
@@ -187,8 +201,20 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				body, _ := ioutil.ReadAll(r.Body)
 				testRequest = httptest.NewRequest(r.Method, r.URL.String(), bytes.NewBuffer(body))
 				testRequest.Header = r.Header
-				w.WriteHeader(testCase.ResponseStatus)
-				w.Write([]byte(testCase.ResponseBody))
+				if (len(testCase.Responses)) == 0 {
+					w.WriteHeader(testCase.ResponseStatus)
+					w.Write([]byte(testCase.ResponseBody))
+				} else {
+					require.Zero(testCase.ResponseStatus, "ResponseStatus should not be used when using testcase.Responses")
+					require.Zero(testCase.ResponseBody, "ResponseBody should not be used when using testcase.Responses")
+					for mockRequest, mockResponse := range testCase.Responses {
+						if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && mockRequest.Body == string(body)[:] {
+							w.WriteHeader(mockResponse.Status)
+							w.Write([]byte(mockResponse.Body))
+							break
+						}
+					}
+				}
 			}))
 			defer server.Close()
 
