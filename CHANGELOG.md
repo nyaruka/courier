@@ -1,3 +1,7 @@
+v1.2.105
+----------
+ * optimize writing message status for external case
+
 v1.2.104
 ----------
  * optimize status update when we know message id
