@@ -74,11 +74,10 @@ UPDATE msgs_msg SET
 	sent_on = CASE WHEN :status = 'W' THEN NOW() ELSE sent_on END,
 	modified_on = :modified_on
 
-	WHERE msgs_msg.id IN
-		(SELECT msgs_msg.id 
-			FROM msgs_msg INNER JOIN channels_channel ON (msgs_msg.channel_id = channels_channel.id) 
-			WHERE (msgs_msg.id = :msg_id AND channels_channel.uuid = :channel_uuid)) 
-			RETURNING msgs_msg.id
+WHERE
+	msgs_msg.id = :msg_id
+RETURNING
+	msgs_msg.id
 `
 
 const updateMsgExternalID = `
