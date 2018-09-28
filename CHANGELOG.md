@@ -1,3 +1,7 @@
+v1.2.104
+----------
+ * optimize status update when we know message id
+
 v1.2.103
 ----------
  * add media handling for whatsapp
