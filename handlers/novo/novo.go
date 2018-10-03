@@ -11,6 +11,7 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"net/url"
 	"github.com/buger/jsonparser"
+	"time"
 )
 
 const (
@@ -38,9 +39,41 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	receiveHandler := handlers.NewTelReceiveHandler(&h.BaseHandler, "from", "text")
-	s.AddHandlerRoute(h, http.MethodPost, "receive", receiveHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	return nil
+}
+
+// receiveMessage is our HTTP handler function for incoming messages
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	// check authentication
+	secret := c.StringConfigForKey(courier.ConfigSecret, "")
+	if secret != "" {
+		authorization := r.Header.Get("Authorization")
+		if authorization != secret {
+			return nil, courier.WriteAndLogUnauthorized(ctx, w, r, c, fmt.Errorf("invalid Authorization header"))
+		}
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+	}
+
+	body := r.Form.Get("text")
+	from := r.Form.Get("from")
+	if from == "" {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required field 'from'"))
+	}
+
+	// create our URN
+	urn, err := handlers.StrictTelForCountry(from, c.Country())
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+	}
+
+	// build our msg
+	msg := h.Backend().NewIncomingMsg(c, urn, body).WithReceivedOn(time.Now().UTC())
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error
