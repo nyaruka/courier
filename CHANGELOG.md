@@ -1,3 +1,8 @@
+v1.2.106
+----------
+ * flush to librato every second
+ * Add authorization token requirement to receive messages on Novo Channel
+
 v1.2.105
 ----------
  * optimize writing message status for external case

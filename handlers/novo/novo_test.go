@@ -10,7 +10,11 @@ import (
 
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NV", "2020", "TT", nil),
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NV", "2020", "TT", map[string]interface{}{
+		"merchant_id": "my-merchant-id",
+		"merchant_secret": "my-merchant-secret",
+		"secret": "sesame",
+	}),
 }
 
 var (
@@ -22,8 +26,11 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
+		Text: Sp("Msg"), URN: Sp("tel:+18686846481"), Headers: map[string]string{"Authorization": "sesame"}},
+	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, Status: 400, Response: "required field 'from'",
+		Headers: map[string]string{"Authorization": "sesame"}},
+	{Label: "Receive Missing Authorization", URL: receiveURL, Data: validReceive, Status: 401, Response: "invalid Authorization header",
 		Text: Sp("Msg"), URN: Sp("tel:+18686846481")},
-	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, Status: 400, Response: "required field 'from'"},
 }
 
 func TestHandler(t *testing.T) {
@@ -79,6 +86,7 @@ func TestSending(t *testing.T) {
 		map[string]interface{}{
 			"merchant_id": "my-merchant-id",
 			"merchant_secret": "my-merchant-secret",
+			"secret": "sesame",
 		})
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 }
