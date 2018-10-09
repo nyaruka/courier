@@ -237,7 +237,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			if errorCode != 0 {
 				if errorCode == errorStopped {
 					status.SetStatus(courier.MsgFailed)
-					h.Backend().StopMsgContact(ctx, msg)
+
+					// create a stop channel event
+					channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
+					err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+					if err != nil {
+						return nil, err
+					}
 				}
 				log.WithError("Message Send Error", errors.Errorf("received error code from twilio '%d'", errorCode))
 				return status, nil

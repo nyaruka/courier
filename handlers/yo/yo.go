@@ -142,7 +142,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			createMessage, _ := responseQS["ybs_autocreate_message"]
 			if len(createMessage) > 0 && strings.Contains(createMessage[0], "BLACKLISTED") {
 				status.SetStatus(courier.MsgFailed)
-				h.Backend().StopMsgContact(ctx, msg)
+
+				// create a stop channel event
+				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
+				err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+				if err != nil {
+					return nil, err
+				}
+
 				return status, nil
 			}
 
