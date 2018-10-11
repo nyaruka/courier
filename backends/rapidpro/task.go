@@ -45,15 +45,6 @@ func queueMsgHandling(rc redis.Conn, orgID OrgID, contactID ContactID, msgID cou
 	return queueTask(rc, "handler", "handle_event_task", orgID, fmt.Sprintf("ch:%d", contactID.Int64), body)
 }
 
-func queueStopContact(rc redis.Conn, orgID OrgID, contactID ContactID) error {
-	body := map[string]interface{}{
-		"type":       "stop_contact",
-		"contact_id": contactID.Int64,
-	}
-
-	return queueTask(rc, "handler", "handle_event_task", orgID, "", body)
-}
-
 func queueChannelEvent(rc redis.Conn, orgID OrgID, contactID ContactID, eventID ChannelEventID) error {
 	body := map[string]interface{}{
 		"type":       "channel_event",

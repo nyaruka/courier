@@ -282,7 +282,9 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if testCase.Stopped {
-				require.Equal(msg, mb.GetLastStoppedMsgContact())
+				evt, err := mb.GetLastChannelEvent()
+				require.NoError(err)
+				require.Equal(courier.StopContact, evt.EventType())
 			}
 		})
 	}
