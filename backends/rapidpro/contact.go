@@ -35,8 +35,9 @@ func (c *ContactID) String() string {
 }
 
 const insertContactSQL = `
-INSERT INTO contacts_contact(org_id, is_active, is_blocked, is_test, is_stopped, uuid, created_on, modified_on, created_by_id, modified_by_id, name) 
-VALUES(:org_id, TRUE, FALSE, FALSE, FALSE, :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name)
+INSERT INTO 
+	contacts_contact(org_id, is_active, is_blocked, is_test, is_stopped, uuid, created_on, modified_on, created_by_id, modified_by_id, name) 
+              VALUES(:org_id, TRUE, FALSE, FALSE, FALSE, :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name)
 RETURNING id
 `
 
@@ -54,9 +55,23 @@ func insertContact(tx *sqlx.Tx, contact *DBContact) error {
 }
 
 const lookupContactFromURNSQL = `
-SELECT c.org_id, c.id, c.uuid, c.modified_on, c.created_on, c.name, u.id as "urn_id"
-FROM contacts_contact AS c, contacts_contacturn AS u 
-WHERE u.identity = $1 AND u.contact_id = c.id AND u.org_id = $2 AND c.is_active = TRUE AND c.is_test = FALSE
+SELECT 
+	c.org_id, 
+	c.id, 
+	c.uuid, 
+	c.modified_on, 
+	c.created_on, 
+	c.name, 
+	u.id as "urn_id"
+FROM 
+	contacts_contact AS c, 
+	contacts_contacturn AS u 
+WHERE 
+	u.identity = $1 AND 
+	u.contact_id = c.id AND 
+	u.org_id = $2 AND 
+	c.is_active = TRUE AND 
+	c.is_test = FALSE
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
