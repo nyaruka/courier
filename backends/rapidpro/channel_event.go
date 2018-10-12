@@ -177,12 +177,17 @@ type DBChannelEvent struct {
 	logs    []*courier.ChannelLog
 }
 
-func (e *DBChannelEvent) EventID() int64                      { return e.ID_.Int64 }
-func (e *DBChannelEvent) ChannelID() courier.ChannelID        { return e.ChannelID_ }
-func (e *DBChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.ChannelUUID_ }
-func (e *DBChannelEvent) ContactName() string                 { return e.ContactName_ }
-func (e *DBChannelEvent) URN() urns.URN                       { return e.URN_ }
-func (e *DBChannelEvent) Extra() map[string]interface{}       { return e.Extra_.Map }
+func (e *DBChannelEvent) EventID() int64                   { return e.ID_.Int64 }
+func (e *DBChannelEvent) ChannelID() courier.ChannelID     { return e.ChannelID_ }
+func (e *DBChannelEvent) ChannelUUID() courier.ChannelUUID { return e.ChannelUUID_ }
+func (e *DBChannelEvent) ContactName() string              { return e.ContactName_ }
+func (e *DBChannelEvent) URN() urns.URN                    { return e.URN_ }
+func (e *DBChannelEvent) Extra() map[string]interface{} {
+	if e.Extra != nil {
+		return e.Extra_.Map
+	}
+	return nil
+}
 func (e *DBChannelEvent) EventType() courier.ChannelEventType { return e.EventType_ }
 func (e *DBChannelEvent) OccurredOn() time.Time               { return e.OccurredOn_ }
 func (e *DBChannelEvent) CreatedOn() time.Time                { return e.CreatedOn_ }
