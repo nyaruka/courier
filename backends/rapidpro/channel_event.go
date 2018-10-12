@@ -183,7 +183,7 @@ func (e *DBChannelEvent) ChannelUUID() courier.ChannelUUID { return e.ChannelUUI
 func (e *DBChannelEvent) ContactName() string              { return e.ContactName_ }
 func (e *DBChannelEvent) URN() urns.URN                    { return e.URN_ }
 func (e *DBChannelEvent) Extra() map[string]interface{} {
-	if e.Extra != nil {
+	if e.Extra_ != nil {
 		return e.Extra_.Map
 	}
 	return nil

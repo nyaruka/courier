@@ -98,7 +98,7 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 				"extra":       e.Extra(),
 				"new_contact": c.IsNew_,
 			}
-			return queueMailroomTask(rc, "new_converation", e.OrgID_, e.ContactID_, body)
+			return queueMailroomTask(rc, "new_conversation", e.OrgID_, e.ContactID_, body)
 
 		default:
 			return fmt.Errorf("unknown event type: %s", e.EventType())
