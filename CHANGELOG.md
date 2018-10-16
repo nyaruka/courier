@@ -1,3 +1,7 @@
+v1.2.107
+----------
+ * queue tasks to mailroom for flow_server_enabled orgs, requires newest rapidpro
+
 v1.2.106
 ----------
  * flush to librato every second
