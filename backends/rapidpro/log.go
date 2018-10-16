@@ -11,8 +11,9 @@ import (
 )
 
 const insertLogSQL = `
-INSERT INTO channels_channellog("channel_id", "msg_id", "description", "is_error", "method", "url", "request", "response", "response_status", "created_on", "request_time")
-                         VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+INSERT INTO 
+	channels_channellog("channel_id", "msg_id", "description", "is_error", "method", "url", "request", "response", "response_status", "created_on", "request_time")
+                 VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 `
 
 // WriteChannelLog writes the passed in channel log to the database, we do not queue on errors but instead just throw away the log
