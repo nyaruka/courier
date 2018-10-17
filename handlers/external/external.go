@@ -259,13 +259,16 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log
-		status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
 		if err != nil {
 			return status, nil
 		}
 
 		if responseContent == "" || strings.Contains(string(rr.Body), responseContent) {
 			status.SetStatus(courier.MsgWired)
+		} else {
+			log.WithError("Message Send Error", fmt.Errorf("Received invalid response content: %s", string(rr.Body)))
 		}
 	}
 
