@@ -28,6 +28,9 @@ var (
 	invalidStatus               = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/wired/"
 	deliveredValid              = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?id=12345"
 	deliveredValidPost          = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/"
+	stoppedEvent                = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=%2B2349067554729"
+	stoppedEventPost            = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/"
+	stoppedEventInvalidURN      = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=MTN"
 )
 
 var testChannels = []courier.Channel{
@@ -57,6 +60,10 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Sent Valid", URL: sentValid, Status: 200, Response: `"status":"S"`},
 	{Label: "Delivered Valid", URL: deliveredValid, Status: 200, Data: "nothing", Response: `"status":"D"`},
 	{Label: "Delivered Valid Post", URL: deliveredValidPost, Data: "id=12345", Status: 200, Response: `"status":"D"`},
+	{Label: "Stopped Event", URL: stoppedEvent, Status: 200, Data: "nothing", Response: "Accepted"},
+	{Label: "Stopped Event Post", URL: stoppedEventPost, Data: "from=%2B2349067554729", Status: 200, Response: "Accepted"},
+	{Label: "Stopped Event Invalid URN", URL: stoppedEventInvalidURN, Data: "empty", Status: 400, Response: "phone number supplied is not a number"},
+	{Label: "Stopped event No Params", URL: stoppedEventPost, Status: 400, Response: "field 'from' required"},
 }
 
 func TestHandler(t *testing.T) {
