@@ -66,7 +66,42 @@ func (h *handler) Initialize(s courier.Server) error {
 	s.AddHandlerRoute(h, http.MethodGet, "failed", failedHandler)
 	s.AddHandlerRoute(h, http.MethodPost, "failed", failedHandler)
 
+	s.AddHandlerRoute(h, http.MethodPost, "stopped", h.receiveStopContact)
+	s.AddHandlerRoute(h, http.MethodGet, "stopped", h.receiveStopContact)
+
 	return nil
+}
+
+type stopContactForm struct {
+	From string `validate:"required" name:"from"`
+}
+
+func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	form := &stopContactForm{}
+	err := handlers.DecodeAndValidateForm(form, r)
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
+
+	// create our URN
+	urn := urns.NilURN
+	if channel.Schemes()[0] == urns.TelScheme {
+		urn, err = handlers.StrictTelForCountry(form.From, channel.Country())
+	} else {
+		urn, err = urns.NewURNFromParts(channel.Schemes()[0], form.From, "", "")
+	}
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
+	urn = urn.Normalize("")
+
+	// create a stop channel event
+	channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
+	err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+	if err != nil {
+		return nil, err
+	}
+	return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
 }
 
 type moForm struct {
