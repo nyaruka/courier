@@ -69,8 +69,8 @@ var handleTestCases = []ChannelHandleTestCase{
 var testSOAPReceiveChannels = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
-			configSOAPText:              "//content",
-			configSOAPFrom:              "//source",
+			configTextXPath:             "//content",
+			configFromXPath:             "//source",
 			configMOResponse:            "<?xml version=“1.0”?><return>0</return>",
 			configMOResponseContentType: "text/xml",
 		})}

@@ -27,8 +27,8 @@ const (
 	contentJSON       = "json"
 	contentXML        = "xml"
 
-	configSOAPFrom = "soap_from"
-	configSOAPText = "soap_text"
+	configFromXPath = "from_xpath"
+	configTextXPath = "text_xpath"
 
 	configMOResponseContentType = "mo_response_content_type"
 	configMOResponse            = "mo_response"
@@ -126,10 +126,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	var err error
 	form := &moForm{}
 
-	soapFrom := channel.StringConfigForKey(configSOAPFrom, "")
-	soapText := channel.StringConfigForKey(configSOAPText, "")
+	fromXPath := channel.StringConfigForKey(configFromXPath, "")
+	textXPath := channel.StringConfigForKey(configTextXPath, "")
 
-	if soapFrom != "" && soapText != "" {
+	if fromXPath != "" && textXPath != "" {
 		body, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
 		defer r.Body.Close()
 		if err != nil {
@@ -140,8 +140,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to parse request XML: %s", err))
 		}
-		senderNode := xmlquery.FindOne(doc, soapFrom)
-		textNode := xmlquery.FindOne(doc, soapText)
+		senderNode := xmlquery.FindOne(doc, fromXPath)
+		textNode := xmlquery.FindOne(doc, textXPath)
 		form.Sender = senderNode.InnerText()
 		form.Text = textNode.InnerText()
 	} else {
