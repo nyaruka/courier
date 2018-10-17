@@ -25,9 +25,10 @@ const (
 	contentJSON       = "json"
 	contentXML        = "xml"
 
-	configEncoding  = "encoding"
-	encodingDefault = "D"
-	encodingSmart   = "S"
+	configResponseContent = "response_content"
+	configEncoding        = "encoding"
+	encodingDefault       = "D"
+	encodingSmart         = "S"
 )
 
 var contentTypeMappings = map[string]string{
@@ -207,6 +208,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// figure out what encoding to tell kannel to send as
 	encoding := msg.Channel().StringConfigForKey(configEncoding, encodingDefault)
+	responseContent := msg.Channel().StringConfigForKey(configResponseContent, "")
 	sendMethod := msg.Channel().StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
 	sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
 	contentType := msg.Channel().StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
@@ -262,7 +264,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return status, nil
 		}
 
-		status.SetStatus(courier.MsgWired)
+		if responseContent == "" || strings.Contains(string(rr.Body), responseContent) {
+			status.SetStatus(courier.MsgWired)
+		}
 	}
 
 	return status, nil
