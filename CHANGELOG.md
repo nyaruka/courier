@@ -1,3 +1,7 @@
+v1.2.109
+----------
+ * Support receiving MO msgs in XML format
+
 v1.2.108
 ----------
  * Add channel log for when we fail to get the response expected
