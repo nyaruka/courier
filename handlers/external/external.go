@@ -7,12 +7,14 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
 
 	"strings"
 
+	"github.com/antchfx/xmlquery"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
@@ -24,6 +26,11 @@ const (
 	contentURLEncoded = "urlencoded"
 	contentJSON       = "json"
 	contentXML        = "xml"
+
+	configSOAPFrom = "soap_from"
+	configSOAPText = "soap_text"
+
+	configReceiveResponse = "receive_response"
 
 	configResponseContent = "response_content"
 	configEncoding        = "encoding"
@@ -115,12 +122,34 @@ type moForm struct {
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	var err error
 	form := &moForm{}
-	err := handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
 
+	soapFrom := channel.StringConfigForKey(configSOAPFrom, "")
+	soapText := channel.StringConfigForKey(configSOAPText, "")
+
+	if soapFrom != "" && soapText != "" {
+		body, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
+		defer r.Body.Close()
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to read request body: %s", err))
+		}
+
+		doc, err := xmlquery.Parse(strings.NewReader(string(body)))
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to parse request XML: %s", err))
+		}
+		senderNode := xmlquery.FindOne(doc, soapFrom)
+		textNode := xmlquery.FindOne(doc, soapText)
+		form.Sender = senderNode.InnerText()
+		form.Text = textNode.InnerText()
+	} else {
+		err := handlers.DecodeAndValidateForm(form, r)
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		}
+
+	}
 	// must have one of from or sender set, error if neither
 	sender := form.Sender
 	if sender == "" {
@@ -161,6 +190,17 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+}
+
+// WriteMsgSuccessResponse writes our response in TWIML format
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+	receiveResponse := msgs[0].Channel().StringConfigForKey(configReceiveResponse, "")
+	if receiveResponse == "" {
+		return courier.WriteMsgSuccess(ctx, w, r, msgs)
+	}
+	w.WriteHeader(200)
+	_, err := fmt.Fprint(w, receiveResponse)
+	return err
 }
 
 // buildStatusHandler deals with building a handler that takes what status is received in the URL

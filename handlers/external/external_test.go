@@ -66,12 +66,28 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Stopped event No Params", URL: stoppedEventPost, Status: 400, Response: "field 'from' required"},
 }
 
+var testSOAPReceiveChannels = []courier.Channel{
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+		map[string]interface{}{
+			configSOAPText:        "//content",
+			configSOAPFrom:        "//source",
+			configReceiveResponse: "<?xml version=“1.0”?><return>0</return>",
+		})}
+
+var handleSOAPReceiveTestCases = []ChannelHandleTestCase{
+	{Label: "Receive Valid Post SOAP", URL: receiveNoParams, Data: `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body><com:moRequest><source>2349067554729</source><content>Join</content></com:moRequest></soapenv:Body></soapenv:Envelope>`,
+		Status: 200, Response: "<?xml version=“1.0”?><return>0</return>",
+		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
+}
+
 func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
+	RunChannelTestCases(t, testSOAPReceiveChannels, newHandler(), handleSOAPReceiveTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
+	RunChannelBenchmarks(b, testSOAPReceiveChannels, newHandler(), handleSOAPReceiveTestCases)
 }
 
 // setSendURL takes care of setting the send_url to our test server host
