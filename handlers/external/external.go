@@ -30,9 +30,10 @@ const (
 	configSOAPFrom = "soap_from"
 	configSOAPText = "soap_text"
 
-	configReceiveResponse = "receive_response"
+	configMOResponseContentType = "mo_response_content_type"
+	configMOResponse            = "mo_response"
 
-	configResponseContent = "response_content"
+	configMTResponseCheck = "mt_response_check"
 	configEncoding        = "encoding"
 	encodingDefault       = "D"
 	encodingSmart         = "S"
@@ -194,12 +195,16 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 // WriteMsgSuccessResponse writes our response in TWIML format
 func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
-	receiveResponse := msgs[0].Channel().StringConfigForKey(configReceiveResponse, "")
-	if receiveResponse == "" {
+	moResponse := msgs[0].Channel().StringConfigForKey(configMOResponse, "")
+	if moResponse == "" {
 		return courier.WriteMsgSuccess(ctx, w, r, msgs)
 	}
+	moResponseContentType := msgs[0].Channel().StringConfigForKey(configMOResponseContentType, "")
+	if moResponseContentType != "" {
+		w.Header().Set("Content-Type", moResponseContentType)
+	}
 	w.WriteHeader(200)
-	_, err := fmt.Fprint(w, receiveResponse)
+	_, err := fmt.Fprint(w, moResponse)
 	return err
 }
 
@@ -248,7 +253,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// figure out what encoding to tell kannel to send as
 	encoding := msg.Channel().StringConfigForKey(configEncoding, encodingDefault)
-	responseContent := msg.Channel().StringConfigForKey(configResponseContent, "")
+	responseContent := msg.Channel().StringConfigForKey(configMTResponseCheck, "")
 	sendMethod := msg.Channel().StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
 	sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
 	contentType := msg.Channel().StringConfigForKey(courier.ConfigContentType, contentURLEncoded)

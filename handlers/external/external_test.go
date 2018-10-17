@@ -69,9 +69,10 @@ var handleTestCases = []ChannelHandleTestCase{
 var testSOAPReceiveChannels = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
-			configSOAPText:        "//content",
-			configSOAPFrom:        "//source",
-			configReceiveResponse: "<?xml version=“1.0”?><return>0</return>",
+			configSOAPText:              "//content",
+			configSOAPFrom:              "//source",
+			configMOResponse:            "<?xml version=“1.0”?><return>0</return>",
+			configMOResponseContentType: "text/xml",
 		})}
 
 var handleSOAPReceiveTestCases = []ChannelHandleTestCase{
@@ -335,7 +336,7 @@ func TestSending(t *testing.T) {
 		map[string]interface{}{
 			"send_path":               "",
 			courier.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from></msg>`,
-			configResponseContent:     "<return>0</return>",
+			configMTResponseCheck:     "<return>0</return>",
 			courier.ConfigContentType: contentXML,
 			courier.ConfigSendMethod:  http.MethodPut,
 		})
