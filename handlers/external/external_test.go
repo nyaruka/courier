@@ -235,6 +235,44 @@ var xmlSendTestCases = []ChannelSendTestCase{
 		SendPrep:    setSendURL},
 }
 
+var xmlSendWithResponseContentTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "tel:+250788383383",
+		Status:       "W",
+		ResponseBody: "<return>0</return>", ResponseStatus: 200,
+		RequestBody: `<msg><to>+250788383383</to><text>Simple Message</text><from>2020</from></msg>`,
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep:    setSendURL},
+	{Label: "Unicode Send",
+		Text: `☺`, URN: "tel:+250788383383",
+		Status:       "W",
+		ResponseBody: "<return>0</return>", ResponseStatus: 200,
+		RequestBody: `<msg><to>+250788383383</to><text>☺</text><from>2020</from></msg>`,
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep:    setSendURL},
+	{Label: "Error Sending",
+		Text: "Error Message", URN: "tel:+250788383383",
+		Status:       "E",
+		ResponseBody: "<return>0</return>", ResponseStatus: 401,
+		RequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from></msg>`,
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep:    setSendURL},
+	{Label: "Error Sending with 200 status code",
+		Text: "Error Message", URN: "tel:+250788383383",
+		Status:       "E",
+		ResponseBody: "<return>1</return>", ResponseStatus: 200,
+		RequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from></msg>`,
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep:    setSendURL},
+	{Label: "Send Attachment",
+		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Status:       "W",
+		ResponseBody: `<return>0</return>`, ResponseStatus: 200,
+		RequestBody: `<msg><to>+250788383383</to><text>My pic!&#xA;https://foo.bar/image.jpg</text><from>2020</from></msg>`,
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep:    setSendURL},
+}
+
 func TestSending(t *testing.T) {
 	var getChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		map[string]interface{}{
@@ -277,6 +315,15 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendMethod:  http.MethodPut,
 		})
 
+	var xmlChannelWithResponseContent = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
+		map[string]interface{}{
+			"send_path":               "",
+			courier.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from></msg>`,
+			configResponseContent:     "<return>0</return>",
+			courier.ConfigContentType: contentXML,
+			courier.ConfigSendMethod:  http.MethodPut,
+		})
+
 	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil)
 	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil)
 	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendSmartEncodingTestCases, nil)
@@ -285,6 +332,7 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendSmartEncodingTestCases, nil)
 	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil)
 	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil)
+	RunChannelSendTestCases(t, xmlChannelWithResponseContent, newHandler(), xmlSendWithResponseContentTestCases, nil)
 
 	var getChannel30IntLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		map[string]interface{}{

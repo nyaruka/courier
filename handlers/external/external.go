@@ -25,9 +25,10 @@ const (
 	contentJSON       = "json"
 	contentXML        = "xml"
 
-	configEncoding  = "encoding"
-	encodingDefault = "D"
-	encodingSmart   = "S"
+	configResponseContent = "response_content"
+	configEncoding        = "encoding"
+	encodingDefault       = "D"
+	encodingSmart         = "S"
 )
 
 var contentTypeMappings = map[string]string{
@@ -207,6 +208,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// figure out what encoding to tell kannel to send as
 	encoding := msg.Channel().StringConfigForKey(configEncoding, encodingDefault)
+	responseContent := msg.Channel().StringConfigForKey(configResponseContent, "")
 	sendMethod := msg.Channel().StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
 	sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
 	contentType := msg.Channel().StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
@@ -257,12 +259,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log
-		status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
 		if err != nil {
 			return status, nil
 		}
 
-		status.SetStatus(courier.MsgWired)
+		if responseContent == "" || strings.Contains(string(rr.Body), responseContent) {
+			status.SetStatus(courier.MsgWired)
+		} else {
+			log.WithError("Message Send Error", fmt.Errorf("Received invalid response content: %s", string(rr.Body)))
+		}
 	}
 
 	return status, nil
