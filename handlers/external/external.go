@@ -7,12 +7,14 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
 
 	"strings"
 
+	"github.com/antchfx/xmlquery"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
@@ -25,7 +27,13 @@ const (
 	contentJSON       = "json"
 	contentXML        = "xml"
 
-	configResponseContent = "response_content"
+	configFromXPath = "from_xpath"
+	configTextXPath = "text_xpath"
+
+	configMOResponseContentType = "mo_response_content_type"
+	configMOResponse            = "mo_response"
+
+	configMTResponseCheck = "mt_response_check"
 	configEncoding        = "encoding"
 	encodingDefault       = "D"
 	encodingSmart         = "S"
@@ -115,12 +123,34 @@ type moForm struct {
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	var err error
 	form := &moForm{}
-	err := handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
 
+	fromXPath := channel.StringConfigForKey(configFromXPath, "")
+	textXPath := channel.StringConfigForKey(configTextXPath, "")
+
+	if fromXPath != "" && textXPath != "" {
+		body, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
+		defer r.Body.Close()
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to read request body: %s", err))
+		}
+
+		doc, err := xmlquery.Parse(strings.NewReader(string(body)))
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to parse request XML: %s", err))
+		}
+		senderNode := xmlquery.FindOne(doc, fromXPath)
+		textNode := xmlquery.FindOne(doc, textXPath)
+		form.Sender = senderNode.InnerText()
+		form.Text = textNode.InnerText()
+	} else {
+		err := handlers.DecodeAndValidateForm(form, r)
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		}
+
+	}
 	// must have one of from or sender set, error if neither
 	sender := form.Sender
 	if sender == "" {
@@ -161,6 +191,21 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+}
+
+// WriteMsgSuccessResponse writes our response in TWIML format
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+	moResponse := msgs[0].Channel().StringConfigForKey(configMOResponse, "")
+	if moResponse == "" {
+		return courier.WriteMsgSuccess(ctx, w, r, msgs)
+	}
+	moResponseContentType := msgs[0].Channel().StringConfigForKey(configMOResponseContentType, "")
+	if moResponseContentType != "" {
+		w.Header().Set("Content-Type", moResponseContentType)
+	}
+	w.WriteHeader(200)
+	_, err := fmt.Fprint(w, moResponse)
+	return err
 }
 
 // buildStatusHandler deals with building a handler that takes what status is received in the URL
@@ -208,7 +253,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// figure out what encoding to tell kannel to send as
 	encoding := msg.Channel().StringConfigForKey(configEncoding, encodingDefault)
-	responseContent := msg.Channel().StringConfigForKey(configResponseContent, "")
+	responseContent := msg.Channel().StringConfigForKey(configMTResponseCheck, "")
 	sendMethod := msg.Channel().StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
 	sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
 	contentType := msg.Channel().StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
