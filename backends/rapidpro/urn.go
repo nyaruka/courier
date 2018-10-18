@@ -36,10 +36,21 @@ func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID
 }
 
 const selectContactURNs = `
-SELECT id, identity, scheme, display, auth, priority, contact_id, channel_id
-FROM contacts_contacturn
-WHERE contact_id = $1
-ORDER BY priority desc
+SELECT 
+	id, 
+	identity, 
+	scheme, 
+	display, 
+	auth, 
+	priority, 
+	contact_id, 
+	channel_id
+FROM 
+	contacts_contacturn
+WHERE 
+	contact_id = $1
+ORDER BY 
+	priority desc
 `
 
 // selectContactURNs returns all the ContactURNs for the passed in contact, sorted by priority
@@ -131,10 +142,25 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 }
 
 const selectOrgURN = `
-SELECT org_id, id, identity, scheme, path, display, auth, priority, channel_id, contact_id 
-FROM contacts_contacturn
-WHERE org_id = $1 AND identity = $2
-ORDER BY priority desc LIMIT 1
+SELECT 
+	org_id, 
+	id, 
+	identity, 
+	scheme, 
+	path, 
+	display, 
+	auth, 
+	priority, 
+	channel_id, 
+	contact_id 
+FROM 
+	contacts_contacturn
+WHERE 
+	org_id = $1 AND 
+	identity = $2
+ORDER BY 
+	priority desc 
+LIMIT 1
 `
 
 // contactURNForURN returns the ContactURN for the passed in org and URN, creating and associating
@@ -177,8 +203,9 @@ func contactURNForURN(db *sqlx.Tx, org OrgID, channelID courier.ChannelID, conta
 }
 
 const insertURN = `
-INSERT INTO contacts_contacturn(org_id, identity, path, scheme, display, auth, priority, channel_id, contact_id)
-VALUES(:org_id, :identity, :path, :scheme, :display, :auth, :priority, :channel_id, :contact_id)
+INSERT INTO 
+	contacts_contacturn(org_id, identity, path, scheme, display, auth, priority, channel_id, contact_id)
+                 VALUES(:org_id, :identity, :path, :scheme, :display, :auth, :priority, :channel_id, :contact_id)
 RETURNING id
 `
 
@@ -197,9 +224,16 @@ func insertContactURN(db *sqlx.Tx, urn *DBContactURN) error {
 }
 
 const updateURN = `
-UPDATE contacts_contacturn
-SET channel_id = :channel_id, contact_id = :contact_id, display = :display, auth = :auth, priority = :priority
-WHERE id = :id
+UPDATE 
+	contacts_contacturn
+SET 
+	channel_id = :channel_id, 
+	contact_id = :contact_id, 
+	display = :display, 
+	auth = :auth, 
+	priority = :priority
+WHERE 
+	id = :id
 `
 
 // UpdateContactURN updates the Channel and Contact on an existing URN

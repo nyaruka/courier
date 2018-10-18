@@ -28,6 +28,9 @@ var (
 	invalidStatus               = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/wired/"
 	deliveredValid              = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?id=12345"
 	deliveredValidPost          = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/"
+	stoppedEvent                = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=%2B2349067554729"
+	stoppedEventPost            = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/"
+	stoppedEventInvalidURN      = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=MTN"
 )
 
 var testChannels = []courier.Channel{
@@ -57,14 +60,35 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Sent Valid", URL: sentValid, Status: 200, Response: `"status":"S"`},
 	{Label: "Delivered Valid", URL: deliveredValid, Status: 200, Data: "nothing", Response: `"status":"D"`},
 	{Label: "Delivered Valid Post", URL: deliveredValidPost, Data: "id=12345", Status: 200, Response: `"status":"D"`},
+	{Label: "Stopped Event", URL: stoppedEvent, Status: 200, Data: "nothing", Response: "Accepted"},
+	{Label: "Stopped Event Post", URL: stoppedEventPost, Data: "from=%2B2349067554729", Status: 200, Response: "Accepted"},
+	{Label: "Stopped Event Invalid URN", URL: stoppedEventInvalidURN, Data: "empty", Status: 400, Response: "phone number supplied is not a number"},
+	{Label: "Stopped event No Params", URL: stoppedEventPost, Status: 400, Response: "field 'from' required"},
+}
+
+var testSOAPReceiveChannels = []courier.Channel{
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+		map[string]interface{}{
+			configTextXPath:             "//content",
+			configFromXPath:             "//source",
+			configMOResponse:            "<?xml version=“1.0”?><return>0</return>",
+			configMOResponseContentType: "text/xml",
+		})}
+
+var handleSOAPReceiveTestCases = []ChannelHandleTestCase{
+	{Label: "Receive Valid Post SOAP", URL: receiveNoParams, Data: `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body><com:moRequest><source>2349067554729</source><content>Join</content></com:moRequest></soapenv:Body></soapenv:Envelope>`,
+		Status: 200, Response: "<?xml version=“1.0”?><return>0</return>",
+		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
 }
 
 func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
+	RunChannelTestCases(t, testSOAPReceiveChannels, newHandler(), handleSOAPReceiveTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
+	RunChannelBenchmarks(b, testSOAPReceiveChannels, newHandler(), handleSOAPReceiveTestCases)
 }
 
 // setSendURL takes care of setting the send_url to our test server host
@@ -228,6 +252,44 @@ var xmlSendTestCases = []ChannelSendTestCase{
 		SendPrep:    setSendURL},
 }
 
+var xmlSendWithResponseContentTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "tel:+250788383383",
+		Status:       "W",
+		ResponseBody: "<return>0</return>", ResponseStatus: 200,
+		RequestBody: `<msg><to>+250788383383</to><text>Simple Message</text><from>2020</from></msg>`,
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep:    setSendURL},
+	{Label: "Unicode Send",
+		Text: `☺`, URN: "tel:+250788383383",
+		Status:       "W",
+		ResponseBody: "<return>0</return>", ResponseStatus: 200,
+		RequestBody: `<msg><to>+250788383383</to><text>☺</text><from>2020</from></msg>`,
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep:    setSendURL},
+	{Label: "Error Sending",
+		Text: "Error Message", URN: "tel:+250788383383",
+		Status:       "E",
+		ResponseBody: "<return>0</return>", ResponseStatus: 401,
+		RequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from></msg>`,
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep:    setSendURL},
+	{Label: "Error Sending with 200 status code",
+		Text: "Error Message", URN: "tel:+250788383383",
+		Status:       "E",
+		ResponseBody: "<return>1</return>", ResponseStatus: 200,
+		RequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from></msg>`,
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep:    setSendURL},
+	{Label: "Send Attachment",
+		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Status:       "W",
+		ResponseBody: `<return>0</return>`, ResponseStatus: 200,
+		RequestBody: `<msg><to>+250788383383</to><text>My pic!&#xA;https://foo.bar/image.jpg</text><from>2020</from></msg>`,
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep:    setSendURL},
+}
+
 func TestSending(t *testing.T) {
 	var getChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		map[string]interface{}{
@@ -270,6 +332,15 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendMethod:  http.MethodPut,
 		})
 
+	var xmlChannelWithResponseContent = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
+		map[string]interface{}{
+			"send_path":               "",
+			courier.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from></msg>`,
+			configMTResponseCheck:     "<return>0</return>",
+			courier.ConfigContentType: contentXML,
+			courier.ConfigSendMethod:  http.MethodPut,
+		})
+
 	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil)
 	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil)
 	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendSmartEncodingTestCases, nil)
@@ -278,6 +349,7 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendSmartEncodingTestCases, nil)
 	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil)
 	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil)
+	RunChannelSendTestCases(t, xmlChannelWithResponseContent, newHandler(), xmlSendWithResponseContentTestCases, nil)
 
 	var getChannel30IntLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		map[string]interface{}{

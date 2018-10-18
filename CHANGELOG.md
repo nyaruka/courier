@@ -1,3 +1,17 @@
+v1.2.109
+----------
+ * Support receiving MO msgs in XML format
+
+v1.2.108
+----------
+ * Add channel log for when we fail to get the response expected
+ * Support checking configured response content for EX channels
+ * Add stopped event handler for EX channels
+
+v1.2.107
+----------
+ * queue tasks to mailroom for flow_server_enabled orgs, requires newest rapidpro
+
 v1.2.106
 ----------
  * flush to librato every second

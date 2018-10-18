@@ -14,7 +14,7 @@ import (
 	"github.com/nyaruka/courier/utils"
 )
 
-// getChannelFromUUID will look up the channel with the passed in UUID and channel type.
+// getChannel will look up the channel with the passed in UUID and channel type.
 // It will return an error if the channel does not exist or is not active.
 func getChannel(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, channelUUID courier.ChannelUUID) (*DBChannel, error) {
 	// look for the channel locally
@@ -50,9 +50,25 @@ func getChannel(ctx context.Context, db *sqlx.DB, channelType courier.ChannelTyp
 }
 
 const lookupChannelFromUUIDSQL = `
-SELECT org_id, ch.id as id, ch.uuid as uuid, ch.name as name, channel_type, schemes, address, ch.country as country, ch.config as config, org.config as org_config, org.is_anon as org_is_anon
-FROM channels_channel ch, orgs_org org
-WHERE ch.uuid = $1 AND ch.is_active = true AND ch.org_id IS NOT NULL and ch.org_id = org.id`
+SELECT 
+	org_id, 
+	ch.id as id, 
+	ch.uuid as uuid, 
+	ch.name as name, 
+	channel_type, schemes, 
+	address, 
+	ch.country as country, 
+	ch.config as config, 
+	org.config as org_config, 
+	org.is_anon as org_is_anon, 
+	org.flow_server_enabled as org_flow_server_enabled
+FROM 
+	channels_channel ch
+	JOIN orgs_org org on ch.org_id = org.id
+WHERE 
+	ch.uuid = $1 AND 
+	ch.is_active = true AND 
+	ch.org_id IS NOT NULL`
 
 // ChannelForUUID attempts to look up the channel with the passed in UUID, returning it
 func loadChannelFromDB(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, uuid courier.ChannelUUID) (*DBChannel, error) {
@@ -140,8 +156,9 @@ type DBChannel struct {
 	Country_     sql.NullString      `db:"country"`
 	Config_      utils.NullMap       `db:"config"`
 
-	OrgConfig_ utils.NullMap `db:"org_config"`
-	OrgIsAnon_ bool          `db:"org_is_anon"`
+	OrgConfig_            utils.NullMap `db:"org_config"`
+	OrgIsAnon_            bool          `db:"org_is_anon"`
+	OrgFlowServerEnabled_ bool          `db:"org_flow_server_enabled"`
 
 	expiration time.Time
 }
@@ -151,6 +168,9 @@ func (c *DBChannel) OrgID() OrgID { return c.OrgID_ }
 
 // OrgIsAnon returns the org for this channel is anonymous
 func (c *DBChannel) OrgIsAnon() bool { return c.OrgIsAnon_ }
+
+// OrgFlowServerEnabled returns whether the org for this channel is using the flow server
+func (c *DBChannel) OrgFlowServerEnabled() bool { return c.OrgFlowServerEnabled_ }
 
 // ChannelType returns the type of this channel
 func (c *DBChannel) ChannelType() courier.ChannelType { return c.ChannelType_ }

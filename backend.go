@@ -66,9 +66,6 @@ type Backend interface {
 	// used to determine any sort of deduping of msg sends
 	MarkOutgoingMsgComplete(context.Context, Msg, MsgStatus)
 
-	// StopMsgContact marks the contact for the passed in msg as stopped
-	StopMsgContact(context.Context, Msg)
-
 	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string
 

@@ -168,15 +168,6 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 	}
 }
 
-// StopMsgContact marks the contact for the passed in msg as stopped, that is they no longer want to receive messages
-func (b *backend) StopMsgContact(ctx context.Context, m courier.Msg) {
-	rc := b.redisPool.Get()
-	defer rc.Close()
-
-	dbMsg := m.(*DBMsg)
-	queueStopContact(rc, dbMsg.OrgID_, dbMsg.ContactID_)
-}
-
 // WriteMsg writes the passed in message to our store
 func (b *backend) WriteMsg(ctx context.Context, m courier.Msg) error {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
