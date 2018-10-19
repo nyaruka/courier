@@ -19,10 +19,15 @@ const (
 	configUseNational = "use_national"
 	configEncoding    = "encoding"
 	configVerifySSL   = "verify_ssl"
+	configDLRMask     = "dlr_mask"
 
 	encodingDefault = "D"
 	encodingUnicode = "U"
 	encodingSmart   = "S"
+
+	// see: https://kannel.org/download/1.5.0/userguide-1.5.0/userguide.html#DELIVERY-REPORTS
+	// registers us for submit to smsc failure, submit to smsc success, delivery to handset success, delivery to handset failure
+	defaultDLRMask = "27"
 )
 
 func init() {
@@ -127,6 +132,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no send url set for KN channel")
 	}
 
+	dlrMask := msg.Channel().StringConfigForKey(configDLRMask, defaultDLRMask)
+
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	dlrURL := fmt.Sprintf("https://%s/c/kn/%s/status?id=%s&status=%%d", callbackDomain, msg.Channel().UUID(), msg.ID().String())
 
@@ -138,7 +145,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		"text":     []string{handlers.GetTextAndAttachments(msg)},
 		"to":       []string{msg.URN().Path()},
 		"dlr-url":  []string{dlrURL},
-		"dlr-mask": []string{"31"},
+		"dlr-mask": []string{dlrMask},
 	}
 
 	if msg.HighPriority() {
