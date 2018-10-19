@@ -1,3 +1,7 @@
+v1.2.110
+----------
+ * allow setting kannel dlr mask
+
 v1.2.109
 ----------
  * Support receiving MO msgs in XML format
