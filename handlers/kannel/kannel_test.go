@@ -98,7 +98,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text: "My pic!", URN: "tel:+250788383383", HighPriority: true, Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status:       "W",
 		ResponseBody: `0: Accepted for delivery`, ResponseStatus: 200,
-		URLParams: map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "+250788383383", "from": "2020"},
+		URLParams: map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "+250788383383", "from": "2020", "dlr-mask": "27"},
 		SendPrep:  setSendURL},
 }
 
@@ -107,7 +107,7 @@ var nationalSendTestCases = []ChannelSendTestCase{
 		Text: "success", URN: "tel:+250788383383", HighPriority: true,
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		URLParams: map[string]string{"text": "success", "to": "788383383", "coding": "", "priority": "1"},
+		URLParams: map[string]string{"text": "success", "to": "788383383", "coding": "", "priority": "1", "dlr-mask": "3"},
 		SendPrep:  setSendURL},
 }
 
@@ -123,6 +123,7 @@ func TestSending(t *testing.T) {
 			"username":     "Username",
 			"use_national": true,
 			"verify_ssl":   false,
+			"dlr_mask":     "3",
 		})
 
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
