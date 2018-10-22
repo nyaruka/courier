@@ -1,3 +1,7 @@
+v1.2.112
+----------
+ * return empty content when receiving i2sms messages
+
 v1.2.111
 ----------
  * add i2sms channel
