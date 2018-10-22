@@ -1,3 +1,7 @@
+v1.2.111
+----------
+ * add i2sms channel
+
 v1.2.110
 ----------
  * allow setting kannel dlr mask
