@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
@@ -37,9 +38,32 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	receiveHandler := handlers.NewTelReceiveHandler(&h.BaseHandler, "mobile", "message")
-	s.AddHandlerRoute(h, http.MethodPost, "receive", receiveHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receive)
 	return nil
+}
+
+// receive is our handler for MO messages
+func (h *handler) receive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	err := r.ParseForm()
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+	}
+
+	body := r.Form.Get("message")
+	from := r.Form.Get("mobile")
+	if from == "" {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required field 'mobile'"))
+	}
+
+	// create our URN
+	urn, err := handlers.StrictTelForCountry(from, c.Country())
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+	}
+
+	// build our msg
+	msg := h.Backend().NewIncomingMsg(c, urn, body).WithReceivedOn(time.Now().UTC())
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 // {
@@ -120,4 +144,12 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 	}
 
 	return status, nil
+}
+
+// WriteMsgSuccessResponse writes a success response for the messages, i2SMS expects an empty body in our response
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+	w.Header().Add("Content-type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write([]byte{})
+	return err
 }
