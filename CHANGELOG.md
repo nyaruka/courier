@@ -1,3 +1,8 @@
+v1.2.113
+----------
+ * prevent races in dupe detection by clearing before sending
+ * use URN identity for URN fingerprint
+
 v1.2.112
 ----------
  * return empty content when receiving i2sms messages
