@@ -110,6 +110,10 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
 		}
 		dbMsg.channel = channel.(*DBChannel)
 		dbMsg.workerToken = token
+
+		// clear out our seen incoming messages
+		clearMsgSeen(rc, dbMsg)
+
 		return dbMsg, nil
 	}
 
@@ -143,7 +147,6 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 
 	dbMsg := msg.(*DBMsg)
 
-	clearMsgSeen(rc, dbMsg)
 	queue.MarkComplete(rc, msgQueueName, dbMsg.workerToken)
 
 	// mark as sent in redis as well if this was actually wired or sent

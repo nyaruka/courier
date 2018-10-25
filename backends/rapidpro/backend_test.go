@@ -464,6 +464,9 @@ func (ts *BackendTestSuite) TestHealth() {
 }
 
 func (ts *BackendTestSuite) TestDupes() {
+	r := ts.b.redisPool.Get()
+	defer r.Close()
+
 	ctx := context.Background()
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	urn, _ := urns.NewTelURNForCountry("12065551215", knChannel.Country())
@@ -496,8 +499,15 @@ func (ts *BackendTestSuite) TestDupes() {
 	dbMsg.channel = knChannel
 	dbMsg.ChannelUUID_ = knChannel.UUID()
 	dbMsg.Text_ = "test"
-	status := ts.b.NewMsgStatusForID(dbMsg.Channel(), dbMsg.ID(), courier.MsgWired)
-	ts.b.MarkOutgoingMsgComplete(ctx, dbMsg, status)
+
+	msgJSON, err := json.Marshal([]interface{}{dbMsg})
+	ts.NoError(err)
+
+	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
+	ts.NoError(err)
+
+	_, err = ts.b.PopNextOutgoingMsg(ctx)
+	ts.NoError(err)
 
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "test").(*DBMsg)
 	err = ts.b.WriteMsg(ctx, msg)
