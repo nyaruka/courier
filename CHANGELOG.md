@@ -1,3 +1,7 @@
+v1.2.114
+----------
+ * Better channel logs support for WA channels
+
 v1.2.113
 ----------
  * prevent races in dupe detection by clearing before sending
