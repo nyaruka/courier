@@ -334,17 +334,16 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	mediaURL := url.ResolveReference(mediaPath).String()
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	var log *courier.ChannelLog
 
 	if len(msg.Attachments()) > 0 {
 		for attachmentCount, attachment := range msg.Attachments() {
-			var log *courier.ChannelLog
 
 			mimeType, s3url := handlers.SplitAttachment(attachment)
 			mediaID, log, err := uploadMediaToWhatsApp(msg, mediaURL, token, mimeType, s3url)
 			if err != nil {
 				log.WithError("Unable to upload media to WhatsApp server", err)
-				status.AddLog(log)
-				return status, err
+				break
 			}
 
 			externalID := ""
@@ -355,7 +354,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				}
 				payload.Audio = &mediaObject{ID: mediaID}
 				externalID, log, err = sendWhatsAppMsg(msg, sendURL, token, payload)
-				status.AddLog(log)
 
 			} else if strings.HasPrefix(mimeType, "application") {
 				payload := mtDocumentPayload{
@@ -369,7 +367,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 					payload.Document = &captionedMediaObject{ID: mediaID}
 				}
 				externalID, log, err = sendWhatsAppMsg(msg, sendURL, token, payload)
-				status.AddLog(log)
 
 			} else if strings.HasPrefix(mimeType, "image") {
 				payload := mtImagePayload{
@@ -382,7 +379,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 					payload.Image = &captionedMediaObject{ID: mediaID}
 				}
 				externalID, log, err = sendWhatsAppMsg(msg, sendURL, token, payload)
-				status.AddLog(log)
 
 			} else {
 				err = fmt.Errorf("unknown attachment mime type: %s", mimeType)
@@ -391,17 +387,18 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			if err != nil {
 				// record our status and log
 				duration := time.Now().Sub(start)
-				log := courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)
-				status.AddLog(log)
-				return status, err
+				log = courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)
+				break
 			}
 			if attachmentCount == 0 {
 				status.SetExternalID(externalID)
 			}
+			status.AddLog(log)
 		}
 
 	} else {
 		parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
+		externalID := ""
 		for i, part := range parts {
 			payload := mtTextPayload{
 				To:   msg.URN().Path(),
@@ -409,11 +406,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			}
 			payload.Text.Body = part
 
-			externalID, log, err := sendWhatsAppMsg(msg, sendURL, token, payload)
+			externalID, log, err = sendWhatsAppMsg(msg, sendURL, token, payload)
 			if err != nil {
 				log.WithError("Error sending message", err)
-				status.AddLog(log)
-				return status, err
+				break
 			}
 
 			// if this is our first message, record the external id
@@ -424,9 +420,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 	}
+	if err == nil {
+		status.SetStatus(courier.MsgWired)
+	} else {
+		status.AddLog(log)
+	}
 
-	status.SetStatus(courier.MsgWired)
-	return status, nil
+	return status, err
 }
 
 func uploadMediaToWhatsApp(msg courier.Msg, url string, token string, attachmentMimeType string, attachmentURL string) (string, *courier.ChannelLog, error) {
