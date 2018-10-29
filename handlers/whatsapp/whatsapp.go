@@ -340,7 +340,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		for attachmentCount, attachment := range msg.Attachments() {
 
 			mimeType, s3url := handlers.SplitAttachment(attachment)
-			mediaID, log, err := uploadMediaToWhatsApp(msg, mediaURL, token, mimeType, s3url)
+			mediaID := ""
+			mediaID, log, err = uploadMediaToWhatsApp(msg, mediaURL, token, mimeType, s3url)
+			status.AddLog(log)
+
 			if err != nil {
 				log.WithError("Unable to upload media to WhatsApp server", err)
 				break
@@ -381,19 +384,25 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				externalID, log, err = sendWhatsAppMsg(msg, sendURL, token, payload)
 
 			} else {
+				duration := time.Since(start)
 				err = fmt.Errorf("unknown attachment mime type: %s", mimeType)
+				log = courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)
 			}
 
+			// if we have a log, add it to our status
+			if log != nil {
+				status.AddLog(log)
+			}
+
+			// break out on errors
 			if err != nil {
-				// record our status and log
-				duration := time.Now().Sub(start)
-				log = courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)
 				break
 			}
+
+			// set our external id if we have one
 			if attachmentCount == 0 {
 				status.SetExternalID(externalID)
 			}
-			status.AddLog(log)
 		}
 
 	} else {
@@ -407,6 +416,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			payload.Text.Body = part
 
 			externalID, log, err = sendWhatsAppMsg(msg, sendURL, token, payload)
+			status.AddLog(log)
+
 			if err != nil {
 				log.WithError("Error sending message", err)
 				break
@@ -416,17 +427,16 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			if i == 0 {
 				status.SetExternalID(externalID)
 			}
-			status.AddLog(log)
 		}
 
 	}
+
+	// we are wired it there were no errors
 	if err == nil {
 		status.SetStatus(courier.MsgWired)
-	} else {
-		status.AddLog(log)
 	}
 
-	return status, err
+	return status, nil
 }
 
 func uploadMediaToWhatsApp(msg courier.Msg, url string, token string, attachmentMimeType string, attachmentURL string) (string, *courier.ChannelLog, error) {
