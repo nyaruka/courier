@@ -1,3 +1,7 @@
+v1.2.115
+----------
+ * do not return errors from whatsapp send during client errors
+
 v1.2.114
 ----------
  * Better channel logs support for WA channels
