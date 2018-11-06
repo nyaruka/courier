@@ -483,7 +483,7 @@ func (m *DBMsg) QuickReplies() []string {
 
 // fingerprint returns a fingerprint for this msg, suitable for figuring out if this is a dupe
 func (m *DBMsg) urnFingerprint() string {
-	return fmt.Sprintf("%s:%s", m.ChannelUUID_, m.URN_)
+	return fmt.Sprintf("%s:%s", m.ChannelUUID_, m.URN_.Identity())
 }
 
 // WithContactName can be used to set the contact name on a msg

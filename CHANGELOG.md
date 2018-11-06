@@ -1,3 +1,28 @@
+v1.2.115
+----------
+ * do not return errors from whatsapp send during client errors
+
+v1.2.114
+----------
+ * Better channel logs support for WA channels
+
+v1.2.113
+----------
+ * prevent races in dupe detection by clearing before sending
+ * use URN identity for URN fingerprint
+
+v1.2.112
+----------
+ * return empty content when receiving i2sms messages
+
+v1.2.111
+----------
+ * add i2sms channel
+
+v1.2.110
+----------
+ * allow setting kannel dlr mask
+
 v1.2.109
 ----------
  * Support receiving MO msgs in XML format
