@@ -1,3 +1,7 @@
+v1.2.117
+----------
+ * remove ipv6 binding for redis server
+
 v1.2.116
 ----------
  * add urn id to channel events
