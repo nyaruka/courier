@@ -72,26 +72,27 @@ type mtMessage struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	payload := &mtMessage{}
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	payload := &mtPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
-	if payload.Recipient == "" || payload.MessageID == "" || payload.SMS.Originator == "" || payload.SMS.Content.Text == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
-			fmt.Errorf("missing one of 'message-id', 'recipient', 'text' or 'originator' in request body"))
+	message := payload.Messages[0]
+
+	if message.Recipient == "" || message.MessageID == "" || message.SMS.Originator == "" || message.SMS.Content.Text == "" {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required fields recipient, message-id, originator or content"))
 	}
 
 	// create our URN
-	urn, err := handlers.StrictTelForCountry(payload.SMS.Originator, channel.Country())
+	urn, err := handlers.StrictTelForCountry(message.SMS.Originator, c.Country())
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.SMS.Content.Text).WithExternalID(payload.MessageID)
+	msg := h.Backend().NewIncomingMsg(c, urn, message.SMS.Content.Text).WithExternalID(message.MessageID)
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
@@ -100,17 +101,17 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(configUsername, "")
 	if username == "" {
-		return nil, fmt.Errorf("no username set for SC channel")
+		return nil, fmt.Errorf("no username set for PM channel")
 	}
 
 	password := msg.Channel().StringConfigForKey(configPassword, "")
 	if password == "" {
-		return nil, fmt.Errorf("no password set for SC channel")
+		return nil, fmt.Errorf("no password set for PM channel")
 	}
 
 	phoneSender := msg.Channel().StringConfigForKey(configPhoneSender, "")
 	if phoneSender == "" {
-		return nil, fmt.Errorf("no phone sender set for SC channel")
+		return nil, fmt.Errorf("no phone sender set for PM channel")
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
