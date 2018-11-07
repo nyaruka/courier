@@ -242,7 +242,9 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ctx := context.Background()
 
-	cURN, _ := urns.NewTelURNForCountry("+12067799192", "US")
+	cURN, err := urns.NewTelURNForCountry("+12067799192", "US")
+	ts.NoError(err)
+
 	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, cURN, "", "")
 	ts.NoError(err)
 	ts.NotNil(contact)
@@ -255,14 +257,23 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	ts.Equal(len(contactURNs), 1)
 
 	urn, _ := urns.NewTelURNForCountry("12065551518", "US")
-	ts.b.AddURNtoContact(ctx, knChannel, contact, urn)
+	addedURN, err := ts.b.AddURNtoContact(ctx, knChannel, contact, urn)
+	ts.NoError(err)
+	ts.NotNil(addedURN)
+
+	tx, err = ts.b.db.Beginx()
+	ts.NoError(err)
 
 	contactURNs, err = contactURNsForContact(tx, contact.ID_)
 	ts.NoError(err)
 	ts.Equal(len(contactURNs), 2)
 
-	ts.b.RemoveURNfromContact(ctx, knChannel, contact, urn)
+	removedURN, err := ts.b.RemoveURNfromContact(ctx, knChannel, contact, urn)
+	ts.NoError(err)
+	ts.NotNil(removedURN)
 
+	tx, err = ts.b.db.Beginx()
+	ts.NoError(err)
 	contactURNs, err = contactURNsForContact(tx, contact.ID_)
 	ts.NoError(err)
 	ts.Equal(len(contactURNs), 1)

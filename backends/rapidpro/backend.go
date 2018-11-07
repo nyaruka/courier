@@ -70,6 +70,11 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 	if err != nil {
 		return urns.NilURN, err
 	}
+	err = tx.Commit()
+	if err != nil {
+		return urns.NilURN, err
+	}
+
 	return urn, nil
 }
 
