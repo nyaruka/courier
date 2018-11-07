@@ -1,3 +1,11 @@
+v1.2.117
+----------
+ * remove ipv6 binding for redis server
+
+v1.2.116
+----------
+ * add urn id to channel events
+
 v1.2.115
 ----------
  * do not return errors from whatsapp send during client errors
