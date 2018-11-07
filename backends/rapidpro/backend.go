@@ -60,38 +60,38 @@ func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.UR
 }
 
 // AddURNtoContact adds a URN to the passed in contact
-func (b *backend) AddURNtoContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error) {
+func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
 	tx, err := b.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return urns.NilURN, err
 	}
 	dbChannel := c.(*DBChannel)
-	_, err = contactURNForURN(tx, dbChannel.OrgID_, dbChannel.ID(), contact.ID(), urn, "")
+	dbContact := contact.(*DBContact)
+	_, err = contactURNForURN(tx, dbChannel.OrgID(), dbChannel.ID(), dbContact.ID_, urn, "")
 	if err != nil {
-		return nil, err
+		return urns.NilURN, err
 	}
 	return urn, nil
 }
 
 // RemoveURNFromcontact removes a URN from the passed in contact
-func (b *backend) RemoveURNfromContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error) {
+func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
 	tx, err := b.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return urns.NilURN, err
 	}
-	contact, err := b.GetContact(ctx, channel, urn, "", "")
 	dbChannel := c.(*DBChannel)
-
-	contactURN := newDBContactURN(dbChannel.OrgID_, dbChannel.ID(), contact.ID(), urn, "")
-	err := db.Get(contactURN, selectOrgURN, org, urn.Identity())
+	dbContact := contact.(*DBContact)
+	contactURN := newDBContactURN(dbChannel.OrgID_, dbChannel.ID(), dbContact.ID_, urn, "")
+	err = b.db.Get(contactURN, selectOrgURN, dbChannel.OrgID_, urn.Identity())
 	if err != nil && err != sql.ErrNoRows {
-		return nil, err
+		return urns.NilURN, err
 	}
 
 	// we didn't find it, let's insert it
 	if err == sql.ErrNoRows {
 		if err != nil {
-			return nil, err
+			return urns.NilURN, err
 		}
 		return urn, nil
 	}
@@ -99,7 +99,7 @@ func (b *backend) RemoveURNfromContact(context context.Context, channel Channel,
 	contactURN.ContactID = NilContactID
 	err = updateContactURN(tx, contactURN)
 	if err != nil {
-		return nil, err
+		return urns.NilURN, err
 	}
 	return urn, nil
 }
