@@ -84,6 +84,7 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 			body := map[string]interface{}{
 				"org_id":      e.OrgID_.Int64,
 				"contact_id":  e.ContactID_.Int64,
+				"urn_id":      e.ContactURNID_.Int64,
 				"channel_id":  e.ChannelID_.Int64,
 				"extra":       e.Extra(),
 				"new_contact": c.IsNew_,
@@ -94,6 +95,7 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 			body := map[string]interface{}{
 				"org_id":      e.OrgID_.Int64,
 				"contact_id":  e.ContactID_.Int64,
+				"urn_id":      e.ContactURNID_.Int64,
 				"channel_id":  e.ChannelID_.Int64,
 				"extra":       e.Extra(),
 				"new_contact": c.IsNew_,
@@ -131,7 +133,7 @@ func queueMailroomTask(rc redis.Conn, taskType string, orgID OrgID, contactID Co
 
 	// create our org task
 	contactTask := mrTask{
-		Type:  "handle_event",
+		Type:  "handle_contact_event",
 		OrgID: orgID.Int64,
 		Task: mrContactTask{
 			ContactID: contactID.Int64,
