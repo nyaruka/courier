@@ -238,6 +238,36 @@ func (ts *BackendTestSuite) TestContact() {
 
 }
 
+func (ts *BackendTestSuite) TestAddAndRemovContactURN() {
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	ctx := context.Background()
+
+	cURN, _ := urns.NewTelURNForCountry("+12067799192", "US")
+	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, cURN, "", "")
+	ts.NoError(err)
+	ts.NotNil(contact)
+
+	tx, err := ts.b.db.Beginx()
+	ts.NoError(err)
+
+	contactURNs, err := contactURNsForContact(tx, contact.ID_)
+	ts.NoError(err)
+	ts.Equal(len(contactURNs), 1)
+
+	urn, _ := urns.NewTelURNForCountry("12065551518", "US")
+	ts.b.AddURNtoContact(ctx, knChannel, contact, urn)
+
+	contactURNs, err = contactURNsForContact(tx, contact.ID_)
+	ts.NoError(err)
+	ts.Equal(len(contactURNs), 2)
+
+	ts.b.RemoveURNfromContact(ctx, knChannel, contact, urn)
+
+	contactURNs, err = contactURNsForContact(tx, contact.ID_)
+	ts.NoError(err)
+	ts.Equal(len(contactURNs), 1)
+}
+
 func (ts *BackendTestSuite) TestContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")

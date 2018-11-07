@@ -3,7 +3,6 @@ package rapidpro
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -74,30 +73,20 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 	return urn, nil
 }
 
+const removeURNFromContact = `
+UPDATE
+	contacts_contacturn
+SET
+	contact_id = NULL
+WHERE
+	contact_id = $1 AND
+	identity = $2
+`
+
 // RemoveURNFromcontact removes a URN from the passed in contact
 func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
-	tx, err := b.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return urns.NilURN, err
-	}
-	dbChannel := c.(*DBChannel)
 	dbContact := contact.(*DBContact)
-	contactURN := newDBContactURN(dbChannel.OrgID_, dbChannel.ID(), dbContact.ID_, urn, "")
-	err = b.db.Get(contactURN, selectOrgURN, dbChannel.OrgID_, urn.Identity())
-	if err != nil && err != sql.ErrNoRows {
-		return urns.NilURN, err
-	}
-
-	// we didn't find it, let's insert it
-	if err == sql.ErrNoRows {
-		if err != nil {
-			return urns.NilURN, err
-		}
-		return urn, nil
-	}
-
-	contactURN.ContactID = NilContactID
-	err = updateContactURN(tx, contactURN)
+	_, err := b.db.ExecContext(ctx, removeURNFromContact, dbContact.ID_, urn.Identity().String())
 	if err != nil {
 		return urns.NilURN, err
 	}
