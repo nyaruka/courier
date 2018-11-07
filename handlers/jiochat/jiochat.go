@@ -297,11 +297,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	if err != nil {
 		return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
 	}
-	nickname, err := jsonparser.GetString(rr.Body, "nickname")
-	if err != nil {
-		return nil, err
-	}
-
+	nickname, _ := jsonparser.GetString(rr.Body, "nickname")
 	return map[string]string{"name": nickname}, nil
 }
 
