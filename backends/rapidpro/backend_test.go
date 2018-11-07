@@ -238,7 +238,7 @@ func (ts *BackendTestSuite) TestContact() {
 
 }
 
-func (ts *BackendTestSuite) TestAddAndRemovContactURN() {
+func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ctx := context.Background()
 
