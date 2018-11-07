@@ -3,6 +3,7 @@ package rapidpro
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -56,6 +57,51 @@ func (b *backend) GetChannel(ctx context.Context, ct courier.ChannelType, uuid c
 func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, auth string, name string) (courier.Contact, error) {
 	dbChannel := c.(*DBChannel)
 	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, auth, name)
+}
+
+// AddURNtoContact adds a URN to the passed in contact
+func (b *backend) AddURNtoContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error) {
+	tx, err := b.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	dbChannel := c.(*DBChannel)
+	_, err = contactURNForURN(tx, dbChannel.OrgID_, dbChannel.ID(), contact.ID(), urn, "")
+	if err != nil {
+		return nil, err
+	}
+	return urn, nil
+}
+
+// RemoveURNFromcontact removes a URN from the passed in contact
+func (b *backend) RemoveURNfromContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error) {
+	tx, err := b.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	contact, err := b.GetContact(ctx, channel, urn, "", "")
+	dbChannel := c.(*DBChannel)
+
+	contactURN := newDBContactURN(dbChannel.OrgID_, dbChannel.ID(), contact.ID(), urn, "")
+	err := db.Get(contactURN, selectOrgURN, org, urn.Identity())
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	// we didn't find it, let's insert it
+	if err == sql.ErrNoRows {
+		if err != nil {
+			return nil, err
+		}
+		return urn, nil
+	}
+
+	contactURN.ContactID = NilContactID
+	err = updateContactURN(tx, contactURN)
+	if err != nil {
+		return nil, err
+	}
+	return urn, nil
 }
 
 // NewIncomingMsg creates a new message from the given params
