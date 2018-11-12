@@ -58,6 +58,46 @@ func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.UR
 	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, auth, name)
 }
 
+// AddURNtoContact adds a URN to the passed in contact
+func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
+	tx, err := b.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return urns.NilURN, err
+	}
+	dbChannel := c.(*DBChannel)
+	dbContact := contact.(*DBContact)
+	_, err = contactURNForURN(tx, dbChannel.OrgID(), dbChannel.ID(), dbContact.ID_, urn, "")
+	if err != nil {
+		return urns.NilURN, err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return urns.NilURN, err
+	}
+
+	return urn, nil
+}
+
+const removeURNFromContact = `
+UPDATE
+	contacts_contacturn
+SET
+	contact_id = NULL
+WHERE
+	contact_id = $1 AND
+	identity = $2
+`
+
+// RemoveURNFromcontact removes a URN from the passed in contact
+func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
+	dbContact := contact.(*DBContact)
+	_, err := b.db.ExecContext(ctx, removeURNFromContact, dbContact.ID_, urn.Identity().String())
+	if err != nil {
+		return urns.NilURN, err
+	}
+	return urn, nil
+}
+
 // NewIncomingMsg creates a new message from the given params
 func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
 	// remove any control characters

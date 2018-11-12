@@ -241,6 +241,21 @@ func (mb *MockBackend) GetContact(ctx context.Context, channel Channel, urn urns
 	return contact, nil
 }
 
+// AddURNtoContact adds a URN to the passed in contact
+func (mb *MockBackend) AddURNtoContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error) {
+	mb.contacts[urn] = contact
+	return urn, nil
+}
+
+// RemoveURNFromcontact removes a URN from the passed in contact
+func (mb *MockBackend) RemoveURNfromContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error) {
+	contact, found := mb.contacts[urn]
+	if found {
+		delete(mb.contacts, urn)
+	}
+	return urn, nil
+}
+
 // AddChannel adds a test channel to the test server
 func (mb *MockBackend) AddChannel(channel Channel) {
 	mb.channels[channel.UUID()] = channel

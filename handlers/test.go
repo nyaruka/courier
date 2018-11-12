@@ -96,6 +96,8 @@ type ChannelSendTestCase struct {
 
 	Stopped bool
 
+	ContactURNs map[string]bool
+
 	SendPrep SendPrepFunc
 }
 
@@ -286,6 +288,23 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				require.NoError(err)
 				require.Equal(courier.StopContact, evt.EventType())
 			}
+
+			if testCase.ContactURNs != nil {
+				var contactUUID courier.ContactUUID
+				for urn, shouldBePresent := range testCase.ContactURNs {
+					contact, _ := mb.GetContact(ctx, channel, urns.URN(urn), "", "")
+					if contactUUID == courier.NilContactUUID && shouldBePresent {
+						contactUUID = contact.UUID()
+					}
+					if shouldBePresent {
+						require.Equal(contactUUID, contact.UUID())
+					} else {
+						require.NotEqual(contactUUID, contact.UUID())
+					}
+
+				}
+			}
+
 		})
 	}
 

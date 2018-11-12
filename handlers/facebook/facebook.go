@@ -503,6 +503,44 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		// if this is our first message, record the external id
 		if i == 0 {
 			status.SetExternalID(externalID)
+			if msg.URN().IsFacebookRef() {
+				recipientID, err := jsonparser.GetString(rr.Body, "recipient_id")
+				if err != nil {
+					log.WithError("Message Send Error", errors.Errorf("unable to get recipient_id from body"))
+					return status, nil
+				}
+
+				referralID := msg.URN().FacebookRef()
+
+				realIDURN, err := urns.NewFacebookURN(recipientID)
+				if err != nil {
+					log.WithError("Message Send Error", errors.Errorf("unable to make facebook urn from %s", recipientID))
+				}
+
+				contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), "", "")
+				if err != nil {
+					log.WithError("Message Send Error", errors.Errorf("unable to get contact for %s", msg.URN().String()))
+				}
+				realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN)
+				if err != nil {
+					log.WithError("Message Send Error", errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
+				}
+				referralIDExtURN, err := urns.NewURNFromParts(urns.ExternalScheme, referralID, "", "")
+				if err != nil {
+					log.WithError("Message Send Error", errors.Errorf("unable to make ext urn from %s", referralID))
+				}
+				extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN)
+				if err != nil {
+					log.WithError("Message Send Error", errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
+				}
+
+				referralFacebookURN, err := h.Backend().RemoveURNfromContact(ctx, msg.Channel(), contact, msg.URN())
+				if err != nil {
+					log.WithError("Message Send Error", errors.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
+				}
+
+			}
+
 		}
 
 		// this was wired successfully
