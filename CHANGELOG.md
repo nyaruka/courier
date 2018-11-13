@@ -1,3 +1,12 @@
+v1.2.118
+----------
+ * Commit transaction when adding URN to contact with success
+ * Fix typo
+ * Simply remove URNs by update query
+ * Fix params names
+ * Fix Facebook for contact duplicates when using referral, save the proper Facebook URN when we first successfully send to the referral contact URN
+ * Ignore error for Jiochat user name lookup
+
 v1.2.117
 ----------
  * remove ipv6 binding for redis server
