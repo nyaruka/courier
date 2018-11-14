@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"encoding/xml"
 	"strings"
 	"encoding/json"
 
@@ -71,28 +72,45 @@ type mtMessage struct {
 	} `json:"sms"`
 }
 
+// <sms-request version="1.0">
+//     <message id="1107962" msisdn="9989xxxxxxxx" submit-date="2016-11-22 15:10:32">
+//         <content type="text/plain">SMS Response</content>
+//     </message>
+// </sms-request>
+
+type mtResponse struct {
+	XMLName xml.Name `xml:"sms-request"`
+	Message struct {
+		ID         string `xml:"id,attr"`
+		MSIDSN     string `xml:"msisdn,attr"`
+		SubmitDate string `xml:"submit-date,attr"`
+		Content struct {
+			Text string `xml:",chardata"`
+		} `xml:"content"`
+	} `xml:"message"`
+}
+
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	payload := &mtPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
+	payload := &mtResponse{}
+	err := handlers.DecodeAndValidateXML(payload, r)
+
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
-	message := payload.Messages[0]
-
-	if message.Recipient == "" || message.MessageID == "" || message.SMS.Originator == "" || message.SMS.Content.Text == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required fields recipient, message-id, originator or content"))
+	if payload.Message.MSIDSN == "" || payload.Message.ID == "" {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required fields msidsn or id"))
 	}
 
 	// create our URN
-	urn, err := handlers.StrictTelForCountry(message.SMS.Originator, c.Country())
+	urn, err := handlers.StrictTelForCountry(payload.Message.MSIDSN, c.Country())
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(c, urn, message.SMS.Content.Text).WithExternalID(message.MessageID)
+	msg := h.Backend().NewIncomingMsg(c, urn, payload.Message.Content.Text).WithExternalID(payload.Message.ID)
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }

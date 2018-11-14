@@ -15,6 +15,14 @@ var testChannels = []courier.Channel{
 var (
 	receiveURL = "/c/pm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 
+	validReceive = `<sms-request><message id="1107962" msisdn="998999999999" submit-date="2016-11-22 15:10:32">
+	<content type="text/plain">SMS Response Accepted</content>
+	</message></sms-request>`
+
+	invalidReceive = `<sms-request><message id="" msisdn="" submit-date="2016-11-22 15:10:32">
+	<content type="text/plain">SMS Response Accepted</content>
+	</message></sms-request>`
+
 	validMessage = `{
 		"messages": [
 			{
@@ -60,11 +68,17 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validMessage, Response: "Message Accepted", 
+	{Label: "Receive Valid",
+		URL: receiveURL,
+		Data: validReceive,
+		Response: "Accepted",
 		Status: 200,
-		Text: Sp("Incoming Valid Message"),
-		URN: Sp("tel:99999999999")},
-	{Label: "Receive Missing Recipient", URL: receiveURL, Data: missingRecipient, Response: "missing required fields recipient, message-id, originator or content",
+		Text: Sp("SMS Response Accepted"),
+		URN: Sp("tel:+998999999999")},
+	{Label: "Receive Missing MSISDN",
+		URL: receiveURL,
+		Data: invalidReceive,
+		Response: "missing required fields msidsn or id",
 		Status: 400},
 }
 
