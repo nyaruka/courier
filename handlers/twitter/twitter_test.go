@@ -1,7 +1,11 @@
 package twitter
 
 import (
+	"fmt"
+	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -184,7 +188,7 @@ func BenchmarkHandler(b *testing.B) {
 
 // setSendURL takes care of setting the send_url to our test server host
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	sendURL = s.URL
+	apiURL = s.URL
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
@@ -200,6 +204,64 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ResponseBody: `{"event": { "id": "133"}}`, ResponseStatus: 200,
 		RequestBody: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"Are you happy?","quick_reply":{"type":"options","options":[{"label":"Yes"},{"label":"No, but a really long no that is unr"}]}}}}}`,
 		SendPrep:    setSendURL},
+	{Label: "Image Send",
+		Text:   "document caption",
+		URN:    "twitterid:12345",
+		Status: "W", ExternalID: "133",
+		Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/media/upload.json",
+				Body:   `command=INIT&media_category=dm_image&media_type=image%2Fjpeg&total_bytes=10`,
+			}: MockedResponse{
+				Status: 200,
+				Body: `{
+					"media_id": 710511363345354753,
+					"media_id_string": "710511363345354753",
+				  }`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/media/upload.json",
+				Body:   `command=APPEND&media_id=710511363345354753&segment_index=0`,
+			}: MockedResponse{
+				Status: 200,
+				Body: `{
+					"media_id": 710511363345354753,
+					"media_id_string": "710511363345354753",
+				  }`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/media/upload.json",
+				Body:   `command=FINALIZE&media_id=710511363345354753`,
+			}: MockedResponse{
+				Status: 200,
+				Body: `{
+					"media_id": 710511363345354753,
+					"media_id_string": "710511363345354753",
+				  }`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/direct_messages/events/new.json",
+				Body:   `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"document caption"}}}}`,
+			}: MockedResponse{
+				Status: 200,
+				Body:   `{"event": { "id": "133"}}`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/direct_messages/events/new.json",
+				Body:   `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"","attachment":{"type":"media","media":{"id":"710511363345354753"}}}}}}`,
+			}: MockedResponse{
+				Status: 200,
+				Body:   `{"event": { "id": "133"}}`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
 	{Label: "ID Error",
 		Text: "ID Error", URN: "twitterid:12345",
 		Status:       "E",
@@ -212,6 +274,29 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep: setSendURL},
 }
 
+func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTestCase) []ChannelSendTestCase {
+	casesWithMockedUrls := make([]ChannelSendTestCase, len(testCases))
+	for i, testCase := range testCases {
+		mockedCase := testCase
+		for j, attachment := range testCase.Attachments {
+			parts := strings.SplitN(attachment, ":", 2)
+			mimeType := parts[0]
+			urlString := parts[1]
+			parsedURL, _ := url.Parse(urlString)
+			mockedCase.Attachments[j] = fmt.Sprintf("%s:%s%s", mimeType, mediaServer.URL, parsedURL.Path)
+		}
+		casesWithMockedUrls[i] = mockedCase
+	}
+	return casesWithMockedUrls
+}
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler("TWT", "Twitter Activity"), defaultSendTestCases, nil)
+	// fake media server that just replies with 200 and "media body" for content
+	mediaServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		defer req.Body.Close()
+		res.WriteHeader(200)
+		res.Write([]byte("media body"))
+	}))
+
+	attachmentMockedSendTestCase := mockAttachmentURLs(mediaServer, defaultSendTestCases)
+	RunChannelSendTestCases(t, testChannels[0], newHandler("TWT", "Twitter Activity"), attachmentMockedSendTestCase, nil)
 }
