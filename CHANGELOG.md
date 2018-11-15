@@ -1,3 +1,7 @@
+v1.2.120
+----------
+ * Twitter media attachments
+
 v1.2.118
 ----------
  * Commit transaction when adding URN to contact with success
