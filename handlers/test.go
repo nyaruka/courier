@@ -186,6 +186,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 	handler.Initialize(s)
 
 	for _, testCase := range testCases {
+		mockRRCount := 0
 		t.Run(testCase.Label, func(t *testing.T) {
 			require := require.New(t)
 
@@ -213,6 +214,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 						if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && mockRequest.Body == string(body)[:] {
 							w.WriteHeader(mockResponse.Status)
 							w.Write([]byte(mockResponse.Body))
+							mockRRCount++
 							break
 						}
 					}
@@ -264,6 +266,10 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				require.NotNil(testRequest)
 				value, _ := ioutil.ReadAll(testRequest.Body)
 				require.Equal(testCase.RequestBody, strings.Trim(string(value), "\n"))
+			}
+
+			if (len(testCase.Responses)) != 0 {
+				require.Equal(mockRRCount, len(testCase.Responses))
 			}
 
 			if testCase.Headers != nil {

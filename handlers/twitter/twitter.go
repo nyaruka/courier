@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -23,7 +24,7 @@ import (
 )
 
 var (
-	sendURL      = "https://api.twitter.com/1.1/direct_messages/events/new.json"
+	apiURL       = "https://api.twitter.com/1.1"
 	maxMsgLength = 10000
 
 	// Labels in quick replies can't be more than 36 characters
@@ -226,8 +227,9 @@ type mtPayload struct {
 				RecipientID string `json:"recipient_id"`
 			} `json:"target"`
 			MessageData struct {
-				Text       string `json:"text"`
-				QuickReply *mtQR  `json:"quick_reply,omitempty"`
+				Text       string        `json:"text"`
+				QuickReply *mtQR         `json:"quick_reply,omitempty"`
+				Attachment *mtAttachment `json:"attachment,omitempty"`
 			} `json:"message_data"`
 		} `json:"message_create"`
 	} `json:"event"`
@@ -240,6 +242,13 @@ type mtQR struct {
 
 type mtQROption struct {
 	Label string `json:"label"`
+}
+
+type mtAttachment struct {
+	Type  string `json:"type"`
+	Media struct {
+		ID string `json:"id"`
+	} `json:"media"`
 }
 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
@@ -256,12 +265,51 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	token := oauth1.NewToken(accessToken, accessSecret)
 	client := config.Client(ctx, token)
 
+	url, err := url.Parse(apiURL)
+	sendPath, _ := url.Parse("direct_messages/events/new.json")
+	sendURL := url.ResolveReference(sendPath).String()
+
+	mediaPath, _ := url.Parse("media/upload.json")
+	mediaURL := url.ResolveReference(mediaPath).String()
+
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	for i, text := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
+	var log *courier.ChannelLog
+
+	msgParts := make([]string, 0)
+	if msg.Text() != "" {
+		msgParts = handlers.SplitMsg(msg.Text(), maxMsgLength)
+	}
+
+	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
 		payload := mtPayload{}
 		payload.Event.Type = "message_create"
 		payload.Event.MessageCreate.Target.RecipientID = msg.URN().Path()
-		payload.Event.MessageCreate.MessageData.Text = text
+
+		if i < len(msgParts) {
+			// this is still a msg part
+			payload.Event.MessageCreate.MessageData.Text = msgParts[i]
+		} else {
+			attachment := msg.Attachments()[i-len(msgParts)]
+			mimeType, s3url := handlers.SplitAttachment(attachment)
+			mediaID := ""
+			if strings.HasPrefix(mimeType, "image") || strings.HasPrefix(mimeType, "video") {
+				mediaID, log, err = uploadMediaToTwitter(msg, mediaURL, mimeType, s3url, client)
+				status.AddLog(log)
+				if err != nil {
+					log.WithError("Unable to upload media to Twitter server", err)
+				}
+			} else {
+				log.WithError("Unable to upload media, Unsupported Twitter attachment", err)
+			}
+
+			if mediaID != "" {
+				mtAttachment := &mtAttachment{}
+				mtAttachment.Type = "media"
+				mtAttachment.Media.ID = mediaID
+				payload.Event.MessageCreate.MessageData.Attachment = mtAttachment
+				payload.Event.MessageCreate.MessageData.Text = ""
+			}
+		}
 
 		// attach quick replies if we have them
 		if i == 0 && len(msg.QuickReplies()) > 0 {
@@ -304,8 +352,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			status.SetExternalID(externalID)
 		}
 
-		// this was wired successfully
-		status.SetStatus(courier.MsgWired)
+		if err == nil {
+			// this was wired successfully
+			status.SetStatus(courier.MsgWired)
+		}
 	}
 
 	return status, nil
@@ -316,4 +366,82 @@ func generateSignature(secret string, content string) string {
 	h := hmac.New(sha256.New, []byte(secret))
 	h.Write([]byte(content))
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
+}
+
+func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType string, attachmentURL string, client *http.Client) (string, *courier.ChannelLog, error) {
+	// retrieve the media to be sent from S3
+	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
+	s3rr, err := utils.MakeHTTPRequest(req)
+	if err != nil {
+		return "", courier.NewChannelLogFromRR("Media Fetch", msg.Channel(), msg.ID(), s3rr), err
+	}
+
+	mediaCategory := ""
+	if strings.HasPrefix(attachmentMimeType, "image") {
+		mediaCategory = "dm_image"
+	} else if strings.HasPrefix(attachmentMimeType, "video") {
+		mediaCategory = "dm_video"
+	}
+
+	// upload it to WhatsApp in exchange for a media id
+	form := url.Values{
+		"command":     []string{"INIT"},
+		"media_type":  []string{attachmentMimeType},
+		"total_bytes": []string{fmt.Sprintf("%d", len(s3rr.Body))},
+	}
+
+	if mediaCategory != "" {
+		form["media_category"] = []string{mediaCategory}
+	}
+
+	twReq, _ := http.NewRequest(http.MethodPost, mediaUrl, strings.NewReader(form.Encode()))
+	twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	twReq.Header.Set("Accept", "application/json")
+	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
+	twrr, err := utils.MakeHTTPRequestWithClient(twReq, client)
+	if err != nil {
+		return "", courier.NewChannelLogFromRR("Media Upload Error INIT", msg.Channel(), msg.ID(), twrr), err
+	}
+
+	mediaID, err := jsonparser.GetString(twrr.Body, "media_id_string")
+	if err != nil {
+		return "", courier.NewChannelLogFromRR("Media Upload Error", msg.Channel(), msg.ID(), twrr), err
+	}
+
+	form = url.Values{
+		"command":       []string{"APPEND"},
+		"media_id":      []string{mediaID},
+		"segment_index": []string{"0"},
+	}
+
+	twReq, _ = http.NewRequest(http.MethodPost, mediaUrl, strings.NewReader(form.Encode()))
+	twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	twReq.Header.Set("Accept", "application/json")
+	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
+	twrr, err = utils.MakeHTTPRequestWithClient(twReq, client)
+	if err != nil {
+		return "", courier.NewChannelLogFromRR("Media Upload Error APPEND", msg.Channel(), msg.ID(), twrr), err
+	}
+
+	form = url.Values{
+		"command":  []string{"FINALIZE"},
+		"media_id": []string{mediaID},
+	}
+
+	twReq, _ = http.NewRequest(http.MethodPost, mediaUrl, strings.NewReader(form.Encode()))
+	twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	twReq.Header.Set("Accept", "application/json")
+	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
+	twrr, err = utils.MakeHTTPRequestWithClient(twReq, client)
+	if err != nil {
+		return "", courier.NewChannelLogFromRR("Media Upload Error FINALIZE", msg.Channel(), msg.ID(), twrr), err
+	}
+
+	log := courier.NewChannelLogFromRR("Media Upload success", msg.Channel(), msg.ID(), twrr)
+
+	if err != nil {
+		return "", log, err
+	}
+
+	return mediaID, log, nil
 }
