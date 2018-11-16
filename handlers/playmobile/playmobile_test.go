@@ -91,7 +91,7 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	sendURL = s.URL
+	sendURL = s.URL + "?%s"
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
@@ -135,6 +135,7 @@ func TestSending(t *testing.T) {
 			"password": "Password",
 			"username": "Username",
 			"shortcode": "1122",
+			"base_url": "http://91.204.239.42",
 		})
 
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)

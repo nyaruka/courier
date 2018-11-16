@@ -15,14 +15,14 @@ import (
 )
 
 const (
-	configShortCode  = "shortcode"
+	configBaseURL  = "base_url"
 	configUsername = "username"
 	configPassword = "password"
 )
 
 var (
 	maxMsgLength = 160
-	sendURL      = "http://91.204.239.42:8083/broker-api/send"
+	sendURL = "%s/broker-api/send"
 )
 
 func init() {
@@ -138,12 +138,18 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		return nil, fmt.Errorf("no password set for PM channel")
 	}
 
-	shortCode := msg.Channel().StringConfigForKey(configShortCode, "")
+	shortCode := msg.Channel().Address()
 	if shortCode == "" {
 		return nil, fmt.Errorf("no phone sender set for PM channel")
 	}
 
+	baseURL := msg.Channel().StringConfigForKey(configBaseURL, "")
+	if baseURL == "" {
+		return nil, fmt.Errorf("no base url set for PM channel")
+	}
+
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+
 	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		payload := mtPayload{}
 		message := mtMessage{}
@@ -160,7 +166,7 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 			return status, err
 		}
 
-		req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonBody))
+		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, baseURL), bytes.NewReader(jsonBody))
 		req.SetBasicAuth(username, password)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
