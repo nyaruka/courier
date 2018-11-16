@@ -80,7 +80,7 @@ type mtMessage struct {
 
 type mtResponse struct {
 	XMLName xml.Name `xml:"sms-request"`
-	Message struct {
+	Message []struct {
 		ID         string `xml:"id,attr"`
 		MSIDSN     string `xml:"msisdn,attr"`
 		SubmitDate string `xml:"submit-date,attr"`
@@ -99,20 +99,31 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
-	if payload.Message.MSIDSN == "" || payload.Message.ID == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required fields msidsn or id"))
+	if len(payload.Message) == 0 {
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "no messages, ignored")
 	}
 
-	// create our URN
-	urn, err := handlers.StrictTelForCountry(payload.Message.MSIDSN, c.Country())
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+	msgs := make([]courier.Msg, 0, 1)
+
+	// parse each inbound message
+	for _, pmMsg := range payload.Message {
+		if pmMsg.MSIDSN == "" || pmMsg.ID == "" {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required fields msidsn or id"))
+		}
+
+		// create our URN
+		urn, err := handlers.StrictTelForCountry(pmMsg.MSIDSN, c.Country())
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+		}
+
+		// build our msg
+		msg := h.Backend().NewIncomingMsg(c, urn, pmMsg.Content.Text).WithExternalID(pmMsg.ID)
+		msgs = append(msgs, msg)
 	}
 
-	// build our msg
-	msg := h.Backend().NewIncomingMsg(c, urn, payload.Message.Content.Text).WithExternalID(payload.Message.ID)
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error
