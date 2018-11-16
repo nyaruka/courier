@@ -23,6 +23,10 @@ var (
 	<content type="text/plain">SMS Response Accepted</content>
 	</message></sms-request>`
 
+	invalidXML = ``
+
+	noMessages = `<sms-request></sms-request>`
+
 	validMessage = `{
 		"messages": [
 			{
@@ -80,6 +84,16 @@ var testCases = []ChannelHandleTestCase{
 		Data: invalidReceive,
 		Response: "missing required fields msidsn or id",
 		Status: 400},
+	{Label: "No Messages",
+		URL: receiveURL,
+		Data: noMessages,
+		Response: "no messages, ignored",
+		Status: 200},
+	{Label: "Invalid XML",
+		URL: receiveURL,
+		Data: invalidXML,
+		Response: "",
+		Status: 405},
 }
 
 func TestHandler(t *testing.T) {
