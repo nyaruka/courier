@@ -9,7 +9,7 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PM", "2020", "UZ", nil),
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PM", "1122", "UZ", nil),
 }
 
 var (
@@ -102,7 +102,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExternalID: "",
 		ResponseBody: "Request is received",
 		ResponseStatus: 200,
-		RequestBody: `{"messages":[{"recipient":"99999999999","message-id":"10","sms":{"originator":"2020","content":{"text":"Simple Message"}}}]}`,
+		RequestBody: `{"messages":[{"recipient":"99999999999","message-id":"10","sms":{"originator":"1122","content":{"text":"Simple Message"}}}]}`,
 		SendPrep:   setSendURL},
 	{Label: "Send Attachment",
 		Text: "My pic!",
@@ -130,11 +130,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PM", "2020", "UZ",
+	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PM", "1122", "UZ",
 		map[string]interface{}{
-			"auth_basic_password": "Password",
-			"auth_basic_username": "Username",
-			"phone_sender": "2020",
+			"password": "Password",
+			"username": "Username",
+			"shortcode": "1122",
 		})
 
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)

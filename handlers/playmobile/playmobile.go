@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	configPhoneSender  = "phone_sender"
-	configUsername = "auth_basic_username"
-	configPassword = "auth_basic_password"
+	configShortCode  = "shortcode"
+	configUsername = "username"
+	configPassword = "password"
 )
 
 var (
@@ -138,8 +138,8 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		return nil, fmt.Errorf("no password set for PM channel")
 	}
 
-	phoneSender := msg.Channel().StringConfigForKey(configPhoneSender, "")
-	if phoneSender == "" {
+	shortCode := msg.Channel().StringConfigForKey(configShortCode, "")
+	if shortCode == "" {
 		return nil, fmt.Errorf("no phone sender set for PM channel")
 	}
 
@@ -150,7 +150,7 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 
 		message.Recipient = strings.TrimLeft(msg.URN().Path(), "+")
 		message.MessageID = msg.ID().String()
-		message.SMS.Originator = phoneSender
+		message.SMS.Originator = shortCode
 		message.SMS.Content.Text = part
 
 		payload.Messages = append(payload.Messages, message)
