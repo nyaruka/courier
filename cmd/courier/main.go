@@ -39,6 +39,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/mtarget"
 	_ "github.com/nyaruka/courier/handlers/nexmo"
 	_ "github.com/nyaruka/courier/handlers/novo"
+	_ "github.com/nyaruka/courier/handlers/playmobile"
 	_ "github.com/nyaruka/courier/handlers/plivo"
 	_ "github.com/nyaruka/courier/handlers/redrabbit"
 	_ "github.com/nyaruka/courier/handlers/shaqodoon"
