@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"encoding/xml"
 	"strings"
-	"time"
 	"encoding/json"
 
 	"github.com/nyaruka/courier"
@@ -164,9 +163,7 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		jsonBody, err := json.Marshal(payload)
 
 		if err != nil {
-			log := courier.NewChannelLog("unable to build JSON body", msg.Channel(), msg.ID(), "", "", courier.NilStatusCode, "", "", time.Duration(0), err)
-			status.AddLog(log)
-			return status, nil
+			return nil, err
 		}
 
 		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, baseURL), bytes.NewReader(jsonBody))
