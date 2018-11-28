@@ -1,3 +1,7 @@
+v1.2.121
+----------
+ * fix twitter sending
+
 v1.2.120
 ----------
  * Twitter media attachments
