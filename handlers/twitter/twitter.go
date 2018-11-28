@@ -24,7 +24,9 @@ import (
 )
 
 var (
-	apiURL       = "https://api.twitter.com/1.1"
+	sendDomain   = "https://api.twitter.com"
+	uploadDomain = "https://upload.twitter.com"
+
 	maxMsgLength = 10000
 
 	// Labels in quick replies can't be more than 36 characters
@@ -265,15 +267,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	token := oauth1.NewToken(accessToken, accessSecret)
 	client := config.Client(ctx, token)
 
-	url, err := url.Parse(apiURL)
-	sendPath, _ := url.Parse("direct_messages/events/new.json")
-	sendURL := url.ResolveReference(sendPath).String()
-
-	mediaPath, _ := url.Parse("media/upload.json")
-	mediaURL := url.ResolveReference(mediaPath).String()
-
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	var log *courier.ChannelLog
+
+	// we build these as needed since our unit tests manipulate apiURL
+	sendURL := sendDomain + "/1.1/direct_messages/events/new.json"
+	mediaURL := uploadDomain + "/1.1/media/upload.json"
 
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
@@ -284,6 +283,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		payload := mtPayload{}
 		payload.Event.Type = "message_create"
 		payload.Event.MessageCreate.Target.RecipientID = msg.URN().Path()
+
+		var err error
 
 		if i < len(msgParts) {
 			// this is still a msg part
@@ -299,7 +300,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 					log.WithError("Unable to upload media to Twitter server", err)
 				}
 			} else {
-				log.WithError("Unable to upload media, Unsupported Twitter attachment", err)
+				log.WithError("Unable to upload media, Unsupported Twitter attachment", fmt.Errorf("unknown attachment type"))
 			}
 
 			if mediaID != "" {

@@ -188,13 +188,15 @@ func BenchmarkHandler(b *testing.B) {
 
 // setSendURL takes care of setting the send_url to our test server host
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	apiURL = s.URL
+	sendDomain = s.URL
+	uploadDomain = s.URL
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "twitterid:12345",
 		Status: "W", ExternalID: "133",
+		Path:         "/1.1/direct_messages/events/new.json",
 		ResponseBody: `{"event": { "id": "133"}}`, ResponseStatus: 200,
 		RequestBody: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"Simple Message"}}}}`,
 		SendPrep:    setSendURL},
@@ -212,7 +214,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Responses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method: "POST",
-				Path:   "/media/upload.json",
+				Path:   "/1.1/media/upload.json",
 				Body:   `command=INIT&media_category=dm_image&media_type=image%2Fjpeg&total_bytes=10`,
 			}: MockedResponse{
 				Status: 200,
@@ -223,7 +225,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			},
 			MockedRequest{
 				Method: "POST",
-				Path:   "/media/upload.json",
+				Path:   "/1.1/media/upload.json",
 				Body:   `command=APPEND&media_id=710511363345354753&segment_index=0`,
 			}: MockedResponse{
 				Status: 200,
@@ -234,7 +236,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			},
 			MockedRequest{
 				Method: "POST",
-				Path:   "/media/upload.json",
+				Path:   "/1.1/media/upload.json",
 				Body:   `command=FINALIZE&media_id=710511363345354753`,
 			}: MockedResponse{
 				Status: 200,
@@ -245,7 +247,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			},
 			MockedRequest{
 				Method: "POST",
-				Path:   "/direct_messages/events/new.json",
+				Path:   "/1.1/direct_messages/events/new.json",
 				Body:   `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"document caption"}}}}`,
 			}: MockedResponse{
 				Status: 200,
@@ -253,7 +255,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			},
 			MockedRequest{
 				Method: "POST",
-				Path:   "/direct_messages/events/new.json",
+				Path:   "/1.1/direct_messages/events/new.json",
 				Body:   `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"","attachment":{"type":"media","media":{"id":"710511363345354753"}}}}}}`,
 			}: MockedResponse{
 				Status: 200,
