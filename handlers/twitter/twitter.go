@@ -8,6 +8,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -409,14 +411,35 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 		return "", courier.NewChannelLogFromRR("Media Upload Error", msg.Channel(), msg.ID(), twrr), err
 	}
 
-	form = url.Values{
-		"command":       []string{"APPEND"},
-		"media_id":      []string{mediaID},
-		"segment_index": []string{"0"},
+	var body io.ReadWriter = bytes.NewBufferString("")
+	bodyMultipartWriter := multipart.NewWriter(body)
+
+	err = bodyMultipartWriter.WriteField("command", "APPEND")
+	if err != nil {
+		return "", courier.NewChannelLogFromRR("Media Upload Error APPEND", msg.Channel(), msg.ID(), twrr), err
 	}
 
-	twReq, _ = http.NewRequest(http.MethodPost, mediaUrl, strings.NewReader(form.Encode()))
-	twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	err = bodyMultipartWriter.WriteField("media_id", mediaID)
+	if err != nil {
+		return "", courier.NewChannelLogFromRR("Media Upload Error APPEND", msg.Channel(), msg.ID(), twrr), err
+	}
+
+	err = bodyMultipartWriter.WriteField("segment_index", "0")
+	if err != nil {
+		return "", courier.NewChannelLogFromRR("Media Upload Error APPEND", msg.Channel(), msg.ID(), twrr), err
+	}
+
+	mediaWriter, err := bodyMultipartWriter.CreateFormField("media")
+	if err != nil {
+		return "", courier.NewChannelLogFromRR("Media Upload Error APPEND", msg.Channel(), msg.ID(), twrr), err
+	}
+
+	mediaWriter.Write(s3rr.Body)
+	contentType := fmt.Sprintf("multipart/form-data;boundary=%v", bodyMultipartWriter.Boundary())
+	bodyMultipartWriter.Close()
+
+	twReq, _ = http.NewRequest(http.MethodPost, mediaUrl, body)
+	twReq.Header.Set("Content-Type", contentType)
 	twReq.Header.Set("Accept", "application/json")
 	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
 	twrr, err = utils.MakeHTTPRequestWithClient(twReq, client)

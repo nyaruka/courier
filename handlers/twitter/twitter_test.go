@@ -224,9 +224,9 @@ var defaultSendTestCases = []ChannelSendTestCase{
 				  }`,
 			},
 			MockedRequest{
-				Method: "POST",
-				Path:   "/1.1/media/upload.json",
-				Body:   `command=APPEND&media_id=710511363345354753&segment_index=0`,
+				Method:       "POST",
+				Path:         "/1.1/media/upload.json",
+				BodyContains: "APPEND",
 			}: MockedResponse{
 				Status: 200,
 				Body: `{
