@@ -50,6 +50,7 @@ func TestSubstitutions(t *testing.T) {
 		{" basic", " basic"},
 		{"êxtended", "extended"},
 		{"“quoted”", `"quoted"`},
+		{"\x09tab", " tab"},
 	}
 	for _, tc := range tcs {
 		assert.Equal(t, tc.exp, ReplaceSubstitutions(tc.str), tc.str)
