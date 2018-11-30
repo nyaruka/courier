@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -319,6 +318,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				payload.Event.MessageCreate.MessageData.Attachment = mtAttachment
 				payload.Event.MessageCreate.MessageData.Text = ""
 			}
+
+			if mediaID == "" && payload.Event.MessageCreate.MessageData.Text == "" {
+				duration := time.Now().Sub(start)
+				status.AddLog(courier.NewChannelLogFromError(fmt.Sprintf("Skipping attachment, %s", attachment), msg.Channel(), msg.ID(), duration, fmt.Errorf("failed to get media_id")))
+				continue
+			}
 		}
 
 		// attach quick replies if we have them
@@ -432,96 +437,53 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 		logs = append(logs, courier.NewChannelLogFromError("Media Upload media_id Error", msg.Channel(), msg.ID(), duration, err))
 		return "", logs, err
 	}
-
 	tokens := strings.Split(attachmentURL, "/")
 	fileName := tokens[len(tokens)-1]
 
-	fileReader := bytes.NewReader(s3rr.Body)
-	const fileChunk = 1024 * 1024
-	totalPartsNum := uint64(math.Ceil(float64(fileSize) / float64(fileChunk)))
+	var body bytes.Buffer
+	bodyMultipartWriter := multipart.NewWriter(&body)
 
-	for i := uint64(0); i < totalPartsNum; i++ {
-		var body bytes.Buffer
-		bodyMultipartWriter := multipart.NewWriter(&body)
+	params := map[string]string{"command": "APPEND", "media_id": mediaID, "segment_index": "0"}
 
-		params := map[string]string{"command": "APPEND", "media_id": mediaID, "segment_index": string(i)}
-
-		for k, v := range params {
-			fieldWriter, err := bodyMultipartWriter.CreateFormField(k)
-			if err != nil {
-				duration := time.Now().Sub(start)
-				logs = append(logs, courier.NewChannelLogFromError(fmt.Sprintf("Media Upload APPEND field %s Error", k), msg.Channel(), msg.ID(), duration, err))
-				return "", logs, err
-			}
-			_, err = fieldWriter.Write([]byte(v))
-			if err != nil {
-				duration := time.Now().Sub(start)
-				logs = append(logs, courier.NewChannelLogFromError(fmt.Sprintf("Media Upload APPEND field %s Error", k), msg.Channel(), msg.ID(), duration, err))
-				return "", logs, err
-			}
-
-		}
-		partSize := int(math.Min(fileChunk, float64(fileSize-int64(i*fileChunk))))
-		partBuffer := make([]byte, partSize)
-		fileReader.Read(partBuffer)
-
-		mediaWriter, err := bodyMultipartWriter.CreateFormFile("media", fileName)
-		_, err = io.Copy(mediaWriter, bytes.NewReader(partBuffer))
+	for k, v := range params {
+		fieldWriter, err := bodyMultipartWriter.CreateFormField(k)
 		if err != nil {
 			duration := time.Now().Sub(start)
-			logs = append(logs, courier.NewChannelLogFromError("Media Upload APPEND field media Error", msg.Channel(), msg.ID(), duration, err))
+			logs = append(logs, courier.NewChannelLogFromError(fmt.Sprintf("Media Upload APPEND field %s Error", k), msg.Channel(), msg.ID(), duration, err))
 			return "", logs, err
 		}
-
-		contentType := fmt.Sprintf("multipart/form-data;boundary=%v", bodyMultipartWriter.Boundary())
-		bodyMultipartWriter.Close()
-
-		twReq, _ = http.NewRequest(http.MethodPost, mediaUrl, bytes.NewReader(body.Bytes()))
-		twReq.Header.Set("Content-Type", contentType)
-		twReq.Header.Set("Accept", "application/json")
-		twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
-		twrr, err = utils.MakeHTTPRequestWithClient(twReq, client)
-		log = courier.NewChannelLogFromRR("Media Upload APPEND request", msg.Channel(), msg.ID(), twrr)
+		_, err = fieldWriter.Write([]byte(v))
 		if err != nil {
-			log = log.WithError("Media Upload APPEND request Error", err)
-			logs = append(logs, log)
+			duration := time.Now().Sub(start)
+			logs = append(logs, courier.NewChannelLogFromError(fmt.Sprintf("Media Upload APPEND field %s Error", k), msg.Channel(), msg.ID(), duration, err))
 			return "", logs, err
 		}
+
+	}
+
+	mediaWriter, err := bodyMultipartWriter.CreateFormFile("media", fileName)
+	_, err = io.Copy(mediaWriter, bytes.NewReader(s3rr.Body))
+	if err != nil {
+		duration := time.Now().Sub(start)
+		logs = append(logs, courier.NewChannelLogFromError("Media Upload APPEND field media Error", msg.Channel(), msg.ID(), duration, err))
+		return "", logs, err
+	}
+
+	contentType := fmt.Sprintf("multipart/form-data;boundary=%v", bodyMultipartWriter.Boundary())
+	bodyMultipartWriter.Close()
+
+	twReq, _ = http.NewRequest(http.MethodPost, mediaUrl, bytes.NewReader(body.Bytes()))
+	twReq.Header.Set("Content-Type", contentType)
+	twReq.Header.Set("Accept", "application/json")
+	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
+	twrr, err = utils.MakeHTTPRequestWithClient(twReq, client)
+	log = courier.NewChannelLogFromRR("Media Upload APPEND request", msg.Channel(), msg.ID(), twrr)
+	if err != nil {
+		log = log.WithError("Media Upload APPEND request Error", err)
 		logs = append(logs, log)
-
+		return "", logs, err
 	}
-
-	/* progressState := ""
-	for {
-		form = url.Values{
-			"command":  []string{"STATUS"},
-			"media_id": []string{mediaID},
-		}
-
-		twReq, _ = http.NewRequest(http.MethodPost, mediaUrl, strings.NewReader(form.Encode()))
-		twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		twReq.Header.Set("Accept", "application/json")
-		twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
-		twrr, err = utils.MakeHTTPRequestWithClient(twReq, client)
-		log = courier.NewChannelLogFromRR("Media Upload STATUS", msg.Channel(), msg.ID(), twrr)
-
-		if err != nil {
-			log.WithError("Media Upload STATUS Error", err)
-			logs = append(logs, log)
-			return "", logs, err
-		}
-
-		progressState, err = jsonparser.GetString(twrr.Body, "processing_info", "state")
-		if err != nil {
-			log.WithError("Media Upload STATUS failed parse JSON", err)
-			break
-		}
-		if progressState == "succeeded" || progressState == "failed" {
-			break
-		}
-
-	}
-	*/
+	logs = append(logs, log)
 	form = url.Values{
 		"command":  []string{"FINALIZE"},
 		"media_id": []string{mediaID},
