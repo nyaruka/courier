@@ -320,9 +320,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			}
 
 			if mediaID == "" && payload.Event.MessageCreate.MessageData.Text == "" {
-				duration := time.Now().Sub(start)
-				status.AddLog(courier.NewChannelLogFromError(fmt.Sprintf("Skipping attachment, %s", attachment), msg.Channel(), msg.ID(), duration, fmt.Errorf("failed to get media_id")))
-				continue
+				payload.Event.MessageCreate.MessageData.Text = s3url
 			}
 		}
 
@@ -502,7 +500,54 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 		logs = append(logs, log)
 		return "", logs, err
 	}
-
 	logs = append(logs, log)
+
+	progressState, err := jsonparser.GetString(twrr.Body, "processing_info", "state")
+	if err != nil {
+		return mediaID, logs, nil
+	}
+
+	for {
+
+		checkAfter, err := jsonparser.GetInt(twrr.Body, "processing_info", "check_after_secs")
+		if err != nil {
+			return "", logs, err
+
+		}
+		time.Sleep(time.Duration(checkAfter * int64(time.Second)))
+
+		form = url.Values{
+			"command":  []string{"STATUS"},
+			"media_id": []string{mediaID},
+		}
+
+		statusURL, _ := url.Parse(mediaUrl)
+		statusURL.RawQuery = form.Encode()
+
+		twReq, _ = http.NewRequest(http.MethodGet, statusURL.String(), nil)
+		twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		twReq.Header.Set("Accept", "application/json")
+		twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
+		twrr, err = utils.MakeHTTPRequestWithClient(twReq, client)
+		log = courier.NewChannelLogFromRR("Media Upload STATUS", msg.Channel(), msg.ID(), twrr)
+		if err != nil {
+			log.WithError("Media Upload STATUS Error", err)
+			logs = append(logs, log)
+			return "", logs, err
+		}
+		progressState, err = jsonparser.GetString(twrr.Body, "processing_info", "state")
+		if err != nil {
+			log.WithError("Media Upload STATUS failed parse JSON", err)
+			logs = append(logs, log)
+			break
+		}
+		if progressState == "succeeded" || progressState == "failed" {
+			logs = append(logs, log)
+			break
+		}
+		logs = append(logs, log)
+
+	}
+
 	return mediaID, logs, nil
 }
