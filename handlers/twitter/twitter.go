@@ -541,9 +541,13 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 			logs = append(logs, log)
 			break
 		}
-		if progressState == "succeeded" || progressState == "failed" {
+		if progressState == "succeeded" {
 			logs = append(logs, log)
 			break
+		}
+		if progressState == "failed" {
+			logs = append(logs, log)
+			return "", logs, err
 		}
 		logs = append(logs, log)
 
