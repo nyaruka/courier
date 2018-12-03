@@ -79,6 +79,8 @@ var handleSOAPReceiveTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Post SOAP", URL: receiveNoParams, Data: `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body><com:moRequest><source>2349067554729</source><content>Join</content></com:moRequest></soapenv:Body></soapenv:Envelope>`,
 		Status: 200, Response: "<?xml version=“1.0”?><return>0</return>",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
+	{Label: "Receive Invalid SOAP", URL: receiveNoParams, Data: `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body></soapenv:Body></soapenv:Envelope>`,
+		Status: 400, Response: "missing from"},
 }
 
 func TestHandler(t *testing.T) {
