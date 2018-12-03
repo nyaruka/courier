@@ -1,3 +1,9 @@
+v1.2.122
+----------
+ * Support using the custom configured content type for EX channels
+ * Fix panicr on parsing SOAP body for EX channels
+ * Support sending images and videos in Twitter
+
 v1.2.121
 ----------
  * fix twitter sending
