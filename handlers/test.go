@@ -56,9 +56,10 @@ type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, courier.Channel
 
 // MockedRequest is a fake HTTP request
 type MockedRequest struct {
-	Method string
-	Path   string
-	Body   string
+	Method       string
+	Path         string
+	Body         string
+	BodyContains string
 }
 
 // MockedResponse is a fake HTTP response
@@ -211,7 +212,8 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 					require.Zero(testCase.ResponseStatus, "ResponseStatus should not be used when using testcase.Responses")
 					require.Zero(testCase.ResponseBody, "ResponseBody should not be used when using testcase.Responses")
 					for mockRequest, mockResponse := range testCase.Responses {
-						if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && mockRequest.Body == string(body)[:] {
+						bodyStr := string(body)[:]
+						if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && (mockRequest.Body == bodyStr || (mockRequest.BodyContains != "" && strings.Contains(bodyStr, mockRequest.BodyContains))) {
 							w.WriteHeader(mockResponse.Status)
 							w.Write([]byte(mockResponse.Body))
 							mockRRCount++
