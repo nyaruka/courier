@@ -142,6 +142,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 		senderNode := xmlquery.FindOne(doc, fromXPath)
 		textNode := xmlquery.FindOne(doc, textXPath)
+		if senderNode == nil || textNode == nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing from at: %s or text at: %s node", fromXPath, textXPath))
+		}
+
 		form.Sender = senderNode.InnerText()
 		form.Text = textNode.InnerText()
 	} else {
