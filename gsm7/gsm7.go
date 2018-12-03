@@ -188,6 +188,7 @@ var gsm7Replacements = map[rune]rune{
 	'”':    '"',
 	'–':    '-',
 	'\xa0': ' ',
+	'\x09': ' ',
 }
 
 // esc is our escape byte for the extended charset
