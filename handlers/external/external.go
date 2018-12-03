@@ -23,9 +23,10 @@ import (
 )
 
 const (
-	contentURLEncoded = "urlencoded"
-	contentJSON       = "json"
-	contentXML        = "xml"
+	contentURLEncoded        = "urlencoded"
+	contentURLEncodedUnicode = "urlencoded_unicode"
+	contentJSON              = "json"
+	contentXML               = "xml"
 
 	configFromXPath = "from_xpath"
 	configTextXPath = "text_xpath"
@@ -40,9 +41,10 @@ const (
 )
 
 var contentTypeMappings = map[string]string{
-	contentURLEncoded: "application/x-www-form-urlencoded",
-	contentJSON:       "application/json",
-	contentXML:        "text/xml; charset=utf-8",
+	contentURLEncoded:        "application/x-www-form-urlencoded",
+	contentURLEncodedUnicode: "application/x-www-form-urlencoded; charset=utf-8",
+	contentJSON:              "application/json",
+	contentXML:               "text/xml; charset=utf-8",
 }
 
 func init() {
