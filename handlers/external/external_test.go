@@ -128,6 +128,16 @@ var postSendSmartEncodingTestCases = []ChannelSendTestCase{
 		SendPrep:   setSendURL},
 }
 
+var postSendWithCharsetTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "tel:+250788383383",
+		Status:       "W",
+		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
+		PostParams: map[string]string{"text": "Simple Message", "to": "+250788383383", "from": "2020"},
+		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
+		SendPrep:   setSendURL},
+}
+
 var getSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "tel:+250788383383",
@@ -341,11 +351,19 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendMethod:  http.MethodPut,
 		})
 
+	var postChannelWithCharset = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
+		map[string]interface{}{
+			"send_path":                      "",
+			courier.ConfigSendBody:           "to={{to}}&text={{text}}&from={{from}}",
+			courier.ConfigContentTypeCharset: "utf-8",
+			courier.ConfigSendMethod:         http.MethodPost})
+
 	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil)
 	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil)
 	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendSmartEncodingTestCases, nil)
 	RunChannelSendTestCases(t, postChannel, newHandler(), postSendTestCases, nil)
 	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendTestCases, nil)
+	RunChannelSendTestCases(t, postChannelWithCharset, newHandler(), postSendWithCharsetTestCases, nil)
 	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendSmartEncodingTestCases, nil)
 	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil)
 	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil)

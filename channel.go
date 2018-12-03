@@ -25,6 +25,9 @@ const (
 	// ConfigContentType is a constant key for channel configs
 	ConfigContentType = "content_type"
 
+	// ConfigContentTypeCharset is a constant key for channel configs
+	ConfigContentTypeCharset = "content_type_charset"
+
 	// ConfigMaxLength is the maximum size of a message in characters
 	ConfigMaxLength = "max_length"
 
