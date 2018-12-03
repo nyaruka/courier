@@ -23,10 +23,9 @@ import (
 )
 
 const (
-	contentURLEncoded        = "urlencoded"
-	contentURLEncodedUnicode = "urlencoded_unicode"
-	contentJSON              = "json"
-	contentXML               = "xml"
+	contentURLEncoded = "urlencoded"
+	contentJSON       = "json"
+	contentXML        = "xml"
 
 	configFromXPath = "from_xpath"
 	configTextXPath = "text_xpath"
@@ -41,10 +40,9 @@ const (
 )
 
 var contentTypeMappings = map[string]string{
-	contentURLEncoded:        "application/x-www-form-urlencoded",
-	contentURLEncodedUnicode: "application/x-www-form-urlencoded; charset=utf-8",
-	contentJSON:              "application/json",
-	contentXML:               "text/xml; charset=utf-8",
+	contentURLEncoded: "application/x-www-form-urlencoded",
+	contentJSON:       "application/json",
+	contentXML:        "text/xml; charset=utf-8",
 }
 
 func init() {
@@ -259,8 +257,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	sendMethod := msg.Channel().StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
 	sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
 	contentType := msg.Channel().StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
-	if contentTypeMappings[contentType] == "" {
-		return nil, fmt.Errorf("unknown content type: %s", contentType)
+	contentTypeHeader := contentTypeMappings[contentType]
+	if contentTypeHeader == "" {
+		contentTypeHeader = contentType
 	}
 
 	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, 160)
@@ -296,7 +295,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if err != nil {
 			return nil, err
 		}
-		req.Header.Set("Content-Type", contentTypeMappings[contentType])
+		req.Header.Set("Content-Type", contentTypeHeader)
 
 		authorization := msg.Channel().StringConfigForKey(courier.ConfigSendAuthorization, "")
 		if authorization != "" {
