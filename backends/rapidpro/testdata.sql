@@ -37,4 +37,10 @@ INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on",
 INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility",
                         "msg_count", "error_count", "next_attempt", "external_id", "channel_id", "contact_id", "contact_urn_id", "org_id")
               VALUES(10001, 'test message without external', True, now(), now(), now(), now(), 'O', 'W', 'V',
-                     1, 0, now(), 'ext1', 10, 100, 1000, 1);                     
+                     1, 0, now(), 'ext1', 10, 100, 1000, 1);
+
+/** Simple session */
+DELETE from flows_flowsession;
+INSERT INTO flows_flowsession("id", "status", "wait_started_on")
+                       VALUES(1, 'W', '2018-12-04 11:52:20.958955-08'),
+                             (2, 'C', '2018-12-04 11:52:20.958955-08');

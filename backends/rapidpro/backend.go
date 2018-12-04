@@ -198,6 +198,14 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 		if err != nil {
 			logrus.WithError(err).WithField("sent_msgs_key", dateKey).Error("unable to add new unsent message")
 		}
+
+		// if our msg has an associated session and timeout, update that
+		if dbMsg.SessionWaitStartedOn_ != nil {
+			err = updateSessionTimeout(ctx, b, dbMsg.SessionID_, *dbMsg.SessionWaitStartedOn_, dbMsg.SessionTimeout_)
+			if err != nil {
+				logrus.WithError(err).WithField("session_id", dbMsg.SessionID_).Error("unable to update session timeout")
+			}
+		}
 	}
 
 	// if this org has chatbase connected, notify chatbase
