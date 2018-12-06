@@ -896,6 +896,22 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 }
 
+func (ts *BackendTestSuite) TestSessionTimeout() {
+	ctx := context.Background()
+
+	// parse from an iso date
+	t, err := time.Parse("2006-01-02 15:04:05.000000-07", "2018-12-04 11:52:20.958955-08")
+	ts.NoError(err)
+
+	err = updateSessionTimeout(ctx, ts.b, SessionID(1), t, 300)
+	ts.NoError(err)
+
+	// make sure that took
+	count := 0
+	ts.b.db.Get(&count, "SELECT count(*) from flows_flowsession WHERE timeout_on > NOW()")
+	ts.Equal(1, count)
+}
+
 func (ts *BackendTestSuite) TestMailroomEvents() {
 	ctx := context.Background()
 

@@ -113,5 +113,13 @@ CREATE TABLE channels_channelevent (
     org_id integer NOT NULL references orgs_org(id) on delete cascade
 );
 
+DROP TABLE IF EXISTS flows_flowsession CASCADE;
+CREATE TABLE flows_flowsession (
+    id serial primary key,
+    status character varying(1) NOT NULL,
+    timeout_on timestamp with time zone NULL,
+    wait_started_on timestamp with time zone
+);
+
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO courier;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO courier;

@@ -439,6 +439,12 @@ type DBMsg struct {
 	QueuedOn_    time.Time `json:"queued_on"     db:"queued_on"`
 	SentOn_      time.Time `json:"sent_on"       db:"sent_on"`
 
+	// fields used only for mailroom enabled orgs.. these allow courier to update a session's timeout when
+	// a message is sent for correct and efficient timeout behavior
+	SessionID_            SessionID  `json:"session_id,omitempty"`
+	SessionTimeout_       int        `json:"session_timeout,omitempty"`
+	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on,omitempty"`
+
 	channel        *DBChannel
 	workerToken    queue.WorkerToken
 	alreadyWritten bool
