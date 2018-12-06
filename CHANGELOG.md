@@ -1,3 +1,7 @@
+v1.2.123
+----------
+ * set session timeouts when specified by mailroom
+
 v1.2.122
 ----------
  * Support using the custom configured content type for EX channels
