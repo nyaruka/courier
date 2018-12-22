@@ -1,3 +1,7 @@
+v1.2.124
+----------
+ * Updated Zenvia endpoint according to new API
+
 v1.2.123
 ----------
  * set session timeouts when specified by mailroom
