@@ -7,7 +7,10 @@ addons:
   postgresql: '9.3'
 
 go:
-- "1.10"
+- "1.11"
+
+env:
+- GO111MODULE=on
 
 before_install:
   - sudo sed -e 's/^bind.*/bind 127.0.0.1/' /etc/redis/redis.conf > redis.conf
