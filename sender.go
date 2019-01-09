@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/nyaruka/courier/librato"
+	"github.com/nyaruka/librato"
 	"github.com/sirupsen/logrus"
 )
 
@@ -201,10 +201,10 @@ func (w *Sender) sendMessage(msg Msg) {
 		// report to librato and log locally
 		if status.Status() == MsgErrored || status.Status() == MsgFailed {
 			msgLog.WithField("elapsed", duration).Warning("msg errored")
-			librato.Default.AddGauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
+			librato.Gauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
 		} else {
 			msgLog.WithField("elapsed", duration).Info("msg sent")
-			librato.Default.AddGauge(fmt.Sprintf("courier.msg_send_%s", msg.Channel().ChannelType()), secondDuration)
+			librato.Gauge(fmt.Sprintf("courier.msg_send_%s", msg.Channel().ChannelType()), secondDuration)
 		}
 	}
 
