@@ -1,3 +1,9 @@
+v1.2.125
+----------
+ * add support for Bongo Live channels
+ * Switch to use nyaruka/librato package
+ * Complete conversion to module
+
 v1.2.124
 ----------
  * Updated Zenvia endpoint according to new API
