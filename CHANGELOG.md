@@ -1,3 +1,7 @@
+v1.2.126
+----------
+ * Switch BL channels used API
+
 v1.2.125
 ----------
  * add support for Bongo Live channels
