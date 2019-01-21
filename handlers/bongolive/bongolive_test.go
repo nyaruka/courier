@@ -15,14 +15,22 @@ var testChannels = []courier.Channel{
 var (
 	receiveURL = "/c/bl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 
-	validReceive  = "message=Msg&org=254791541111"
-	missingNumber = "message=Msg"
+	statusURL = "/c/bl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
+
+	validReceive  = "id=12345678&message=Msg&sourceaddr=254791541111"
+	missingNumber = "id=12345679&message=Msg"
+
+	validStatus   = "id=12345&status=1"
+	invalidStatus = "id=12345&status=12"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "",
 		Text: Sp("Msg"), URN: Sp("tel:+254791541111")},
-	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, Status: 400, Response: "field 'from' required"},
+	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, Status: 400, Response: ""},
+	{Label: "Status No params", URL: statusURL, Data: "", Status: 400, Response: ""},
+	{Label: "Status invalid params", URL: statusURL, Data: invalidStatus, Status: 400, Response: ""},
+	{Label: "Status valid", URL: statusURL, Data: validStatus, Status: 200, Response: ""},
 }
 
 func TestHandler(t *testing.T) {
@@ -40,35 +48,24 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message ☺", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status: "W",
-		ResponseBody: `<response>
-		<code>1</code>
-		<text>MT is successfully sent</text>
-</response>`,
+		Status:         "W",
+		ResponseBody:   `status=0&msgid=123`,
 		ResponseStatus: 200,
 		URLParams: map[string]string{
 			"username":   "user1",
 			"password":   "pass1",
 			"apikey":     "api-key",
-			"sendername": "2020",
-			"destnum":    "+250788383383",
+			"sourceaddr": "2020",
+			"destaddr":   "250788383383",
+			"dlr":        "1",
+			"dlrid":      "10",
 			"message":    "Simple Message ☺\nhttps://foo.bar/image.jpg",
 		},
 		SendPrep: setSendURL},
-	{Label: "Invalid XML",
-		Text: "Invalid XML", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: `not xml`, ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Error Response",
+	{Label: "Error status 403",
 		Text: "Error Response", URN: "tel:+250788383383",
 		Status:       "F",
-		ResponseBody: `<response><code>-1</code><text>failure</text></response>`, ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Error Code not Int",
-		Text: "Error Response", URN: "tel:+250788383383",
-		Status:       "F",
-		ResponseBody: `<response><code>foo</code><text>failure</text></response>`, ResponseStatus: 200,
+		ResponseBody: `status=9&msgid=123`, ResponseStatus: 403,
 		SendPrep: setSendURL},
 	{Label: "Error Sending",
 		Text: "Error Message", URN: "tel:+250788383383",
