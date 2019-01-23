@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
@@ -15,7 +16,7 @@ import (
 )
 
 var (
-	sendURL      = "http://api.blsmsgw.com:8080/bin/send"
+	sendURL      = "http://api.blsmsgw.com:8080/bin/send.json"
 	maxMsgLength = 160
 )
 
@@ -35,41 +36,73 @@ func init() {
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
-
-	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
-	s.AddHandlerRoute(h, http.MethodGet, "status", h.receiveStatus)
 	return nil
 }
 
+var statusMapping = map[int]courier.MsgStatusValue{
+	1:  courier.MsgDelivered,
+	2:  courier.MsgSent,
+	3:  courier.MsgErrored,
+	4:  courier.MsgErrored,
+	5:  courier.MsgErrored,
+	6:  courier.MsgErrored,
+	7:  courier.MsgErrored,
+	8:  courier.MsgSent,
+	9:  courier.MsgErrored,
+	10: courier.MsgErrored,
+	11: courier.MsgErrored,
+}
+
 type moForm struct {
-	ID      string `name:"ID"`
+	ID      string `name:"ID" validate:"required"`
 	To      string `name:"DESTADDR"`
-	From    string `name:"SOURCEADDR" validate:"required"`
+	From    string `name:"SOURCEADDR" `
 	Message string `name:"MESSAGE"`
+	MsgType int    `name:"MSGTYPE" validate:"required"`
+	Status  int    `name:"status"`
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	var err error
 	form := &moForm{}
-
 	err = handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	if form.MsgType == 1 {
+
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		}
+
+		// create our URN
+		urn, err := handlers.StrictTelForCountry(form.From, channel.Country())
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		}
+
+		// build our msg
+		msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithExternalID(form.ID).WithReceivedOn(time.Now().UTC())
+
+		// and finally queue our message
+		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	} else if form.MsgType == 5 {
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		}
+
+		msgStatus, found := statusMapping[form.Status]
+		if !found {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%d', must be one of 1,2,3,4,5,6,7,8,9,10,11", form.Status))
+		}
+
+		// write our status
+		status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus)
+		err = h.Backend().WriteMsgStatus(ctx, status)
+		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
+
+	} else {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown msgtype received"))
 	}
 
-	// create our URN
-	urn, err := handlers.StrictTelForCountry(form.From, channel.Country())
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
-	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithExternalID(form.ID).WithReceivedOn(time.Now().UTC())
-
-	// and finally queue our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
 func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
@@ -90,45 +123,6 @@ func writeBongoLiveResponse(w http.ResponseWriter) error {
 	_, err := w.Write([]byte{})
 	return err
 
-}
-
-var statusMapping = map[int]courier.MsgStatusValue{
-	1:  courier.MsgDelivered,
-	2:  courier.MsgSent,
-	3:  courier.MsgErrored,
-	4:  courier.MsgErrored,
-	5:  courier.MsgErrored,
-	6:  courier.MsgErrored,
-	7:  courier.MsgErrored,
-	8:  courier.MsgSent,
-	9:  courier.MsgErrored,
-	10: courier.MsgErrored,
-	11: courier.MsgErrored,
-}
-
-type statusForm struct {
-	ID     courier.MsgID `validate:"required" name:"id"`
-	Status int           `validate:"required" name:"status"`
-}
-
-// receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	// get our params
-	form := &statusForm{}
-	err := handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
-	msgStatus, found := statusMapping[form.Status]
-	if !found {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%d', must be one of 1,2,3,4,5,6,7,8,9,10,11", form.Status))
-	}
-
-	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, form.ID, msgStatus)
-	err = h.Backend().WriteMsgStatus(ctx, status)
-	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // SendMsg sends the passed in message, returning any error
@@ -159,7 +153,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"destaddr":   []string{strings.TrimPrefix(msg.URN().Path(), "+")},
 			"message":    []string{part},
 			"dlr":        []string{"1"},
-			"dlrid":      []string{msg.ID().String()},
+			"udhi":       []string{"1"},
 		}
 
 		replaced := gsm7.ReplaceSubstitutions(part)
@@ -179,17 +173,20 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		// record our status and log
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Send Error", err)
 		status.AddLog(log)
-		if err == nil {
-			status.SetStatus(courier.MsgWired)
-		}
-
-		if rr.StatusCode == 403 {
-			status.SetStatus(courier.MsgFailed)
-		}
-
 		if err != nil {
 			return status, nil
 		}
+
+		// was this request successful?
+		msgStatus, _ := jsonparser.GetString([]byte(rr.Body), "results", "[0]", "status")
+		if msgStatus != "0" {
+			status.SetStatus(courier.MsgErrored)
+			return status, nil
+		}
+		// grab the external id if we can
+		externalID, _ := jsonparser.GetString([]byte(rr.Body), "results", "[0]", "msgid")
+		status.SetStatus(courier.MsgWired)
+		status.SetExternalID(externalID)
 
 	}
 	return status, nil
