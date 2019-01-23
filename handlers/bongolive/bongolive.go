@@ -54,11 +54,11 @@ var statusMapping = map[int]courier.MsgStatusValue{
 }
 
 type moForm struct {
-	ID      string `name:"ID" validate:"required"`
+	ID      string `name:"ID"            validate:"required"`
 	To      string `name:"DESTADDR"`
 	From    string `name:"SOURCEADDR" `
 	Message string `name:"MESSAGE"`
-	MsgType int    `name:"MSGTYPE" validate:"required"`
+	MsgType int    `name:"MSGTYPE"       validate:"required"`
 	Status  int    `name:"status"`
 }
 
@@ -137,18 +137,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no password set for %s channel", msg.Channel().ChannelType())
 	}
 
-	apiKey := msg.Channel().StringConfigForKey(courier.ConfigAPIKey, "")
-	if apiKey == "" {
-		return nil, fmt.Errorf("no api key set for %s channel", msg.Channel().ChannelType())
-	}
-
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
 			"username":   []string{username},
 			"password":   []string{password},
-			"apikey":     []string{apiKey},
 			"sourceaddr": []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
 			"destaddr":   []string{strings.TrimPrefix(msg.URN().Path(), "+")},
 			"message":    []string{part},
