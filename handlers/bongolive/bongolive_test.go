@@ -55,7 +55,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		URLParams: map[string]string{
 			"username":   "user1",
 			"password":   "pass1",
-			"apikey":     "api-key",
 			"sourceaddr": "2020",
 			"destaddr":   "250788383383",
 			"dlr":        "1",
@@ -72,7 +71,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		URLParams: map[string]string{
 			"username":   "user1",
 			"password":   "pass1",
-			"apikey":     "api-key",
 			"sourceaddr": "2020",
 			"destaddr":   "250788383383",
 			"dlr":        "1",
@@ -97,7 +95,6 @@ func TestSending(t *testing.T) {
 		map[string]interface{}{
 			courier.ConfigUsername: "user1",
 			courier.ConfigPassword: "pass1",
-			courier.ConfigAPIKey:   "api-key",
 		})
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 }
