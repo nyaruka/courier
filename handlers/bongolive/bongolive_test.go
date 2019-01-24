@@ -15,22 +15,23 @@ var testChannels = []courier.Channel{
 var (
 	receiveURL = "/c/bl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 
-	statusURL = "/c/bl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
+	validReceive  = "msgtype=1&id=12345678&message=Msg&sourceaddr=254791541111"
+	missingNumber = "msgtype=1&id=12345679&message=Msg"
 
-	validReceive  = "id=12345678&message=Msg&sourceaddr=254791541111"
-	missingNumber = "id=12345679&message=Msg"
+	validStatus   = "msgtype=5&id=12345&status=1"
+	invalidStatus = "msgtype=5&id=12345&status=12"
 
-	validStatus   = "id=12345&status=1"
-	invalidStatus = "id=12345&status=12"
+	invalidMsgType = "msgtype=3&id=12345&status=1"
 )
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "",
 		Text: Sp("Msg"), URN: Sp("tel:+254791541111")},
 	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, Status: 400, Response: ""},
-	{Label: "Status No params", URL: statusURL, Data: "", Status: 400, Response: ""},
-	{Label: "Status invalid params", URL: statusURL, Data: invalidStatus, Status: 400, Response: ""},
-	{Label: "Status valid", URL: statusURL, Data: validStatus, Status: 200, Response: ""},
+	{Label: "Status No params", URL: receiveURL, Data: "", Status: 405, Response: ""},
+	{Label: "Status invalid params", URL: receiveURL, Data: invalidStatus, Status: 400, Response: ""},
+	{Label: "Status valid", URL: receiveURL, Data: validStatus, Status: 200, Response: ""},
+	{Label: "Invalid Msg Type", URL: receiveURL, Data: invalidMsgType, Status: 400, Response: ""},
 }
 
 func TestHandler(t *testing.T) {
@@ -49,23 +50,38 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message ☺", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status:         "W",
-		ResponseBody:   `status=0&msgid=123`,
+		ResponseBody:   `{"results": [{"status": "0", "msgid": "123"}]}`,
 		ResponseStatus: 200,
 		URLParams: map[string]string{
-			"username":   "user1",
-			"password":   "pass1",
-			"apikey":     "api-key",
-			"sourceaddr": "2020",
-			"destaddr":   "250788383383",
-			"dlr":        "1",
-			"dlrid":      "10",
-			"message":    "Simple Message ☺\nhttps://foo.bar/image.jpg",
+			"USERNAME":   "user1",
+			"PASSWORD":   "pass1",
+			"SOURCEADDR": "2020",
+			"DESTADDR":   "250788383383",
+			"DLR":        "1",
+			"UDHI":       "1",
+			"MESSAGE":    "Simple Message ☺\nhttps://foo.bar/image.jpg",
+		},
+		ExternalID: "123",
+		SendPrep:   setSendURL},
+	{Label: "Bad Status",
+		Text: "Simple Message ☺", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Status:         "E",
+		ResponseBody:   `{"results": [{"status": "3"}]}`,
+		ResponseStatus: 200,
+		URLParams: map[string]string{
+			"USERNAME":   "user1",
+			"PASSWORD":   "pass1",
+			"SOURCEADDR": "2020",
+			"DESTADDR":   "250788383383",
+			"DLR":        "1",
+			"UDHI":       "1",
+			"MESSAGE":    "Simple Message ☺\nhttps://foo.bar/image.jpg",
 		},
 		SendPrep: setSendURL},
 	{Label: "Error status 403",
 		Text: "Error Response", URN: "tel:+250788383383",
-		Status:       "F",
-		ResponseBody: `status=9&msgid=123`, ResponseStatus: 403,
+		Status:       "E",
+		ResponseBody: `{"results": [{"status": "1", "msgid": "123"}]}`, ResponseStatus: 403,
 		SendPrep: setSendURL},
 	{Label: "Error Sending",
 		Text: "Error Message", URN: "tel:+250788383383",
@@ -79,7 +95,6 @@ func TestSending(t *testing.T) {
 		map[string]interface{}{
 			courier.ConfigUsername: "user1",
 			courier.ConfigPassword: "pass1",
-			courier.ConfigAPIKey:   "api-key",
 		})
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 }
