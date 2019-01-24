@@ -1,3 +1,8 @@
+v1.2.127
+----------
+ * Use UPPERCASE parameters for BL channels
+ * Migrate courier to PostgreSQL 10
+
 v1.2.126
 ----------
  * Switch BL channels used API
