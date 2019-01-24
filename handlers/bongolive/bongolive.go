@@ -59,7 +59,7 @@ type moForm struct {
 	From    string `name:"SOURCEADDR" `
 	Message string `name:"MESSAGE"`
 	MsgType int    `name:"MSGTYPE"       validate:"required"`
-	Status  int    `name:"status"`
+	Status  int    `name:"STATUS"`
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
@@ -141,20 +141,20 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
-			"username":   []string{username},
-			"password":   []string{password},
-			"sourceaddr": []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
-			"destaddr":   []string{strings.TrimPrefix(msg.URN().Path(), "+")},
-			"message":    []string{part},
-			"dlr":        []string{"1"},
-			"udhi":       []string{"1"},
+			"USERNAME":   []string{username},
+			"PASSWORD":   []string{password},
+			"SOURCEADDR": []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
+			"DESTADDR":   []string{strings.TrimPrefix(msg.URN().Path(), "+")},
+			"MESSAGE":    []string{part},
+			"DLR":        []string{"1"},
+			"UDHI":       []string{"1"},
 		}
 
 		replaced := gsm7.ReplaceSubstitutions(part)
 		if gsm7.IsValid(replaced) {
-			form["message"] = []string{replaced}
+			form["MESSAGE"] = []string{replaced}
 		} else {
-			form["charcode"] = []string{"2"}
+			form["CHARCODE"] = []string{"2"}
 		}
 
 		partSendURL, _ := url.Parse(sendURL)
