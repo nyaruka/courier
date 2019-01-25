@@ -1,3 +1,8 @@
+v1.2.128
+----------
+ * Load BL handler package
+ * Add support for Movile/Wavy channels, Thanks to MGov to fund the development of the integration
+
 v1.2.127
 ----------
  * Use UPPERCASE parameters for BL channels
