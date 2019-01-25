@@ -1,4 +1,8 @@
 github.com/BurntSushi/toml v0.3.0/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
+github.com/antchfx/xmlquery v0.0.0-20181223105952-355641961c92 h1:4EgP6xLAdrD/TRlbSw4n2W6h68K2P3+R7lKqFoL5U9Q=
+github.com/antchfx/xmlquery v0.0.0-20181223105952-355641961c92/go.mod h1:/+CnyD/DzHRnv2eRxrVbieRU/FIF6N0C+7oTtyUtCKk=
+github.com/antchfx/xpath v0.0.0-20181208024549-4bbdf6db12aa h1:lL66YnJWy1tHlhjSx8fXnpgmv8kQVYnI4ilbYpNB6Zs=
+github.com/antchfx/xpath v0.0.0-20181208024549-4bbdf6db12aa/go.mod h1:Yee4kTMuNiPYJ7nSNorELQMr1J33uOpXDMByNYhvtNk=
 github.com/aws/aws-sdk-go v1.13.3 h1:OIeAaQvcMvLp8kGPRRY5AKuAsJ5Rw0z6ueJsNsU3Hsk=
 github.com/aws/aws-sdk-go v1.13.3/go.mod h1:ZRmQr0FajVIyZ4ZzBYKG5P3ZqPz9IHG41ZoMu1ADI3k=
 github.com/buger/jsonparser v0.0.0-20180318095312-2cac668e8456 h1:SnUWpAH4lEUoS86woR12h21VMUbDe+DYp88V646wwMI=
@@ -69,6 +73,8 @@ golang.org/x/net v0.0.0-20180719180050-a680a1efc54d h1:i6RB+Qz1ug7TvJdY4zieRMpnL
 golang.org/x/net v0.0.0-20180719180050-a680a1efc54d/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/sys v0.0.0-20180222210305-c1138c84af3a h1:aYkcAGnj8Dyj+tDZu/Aa4CSPIxTf2yPKMiDerOdX5CI=
 golang.org/x/sys v0.0.0-20180222210305-c1138c84af3a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
+golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
+golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 gopkg.in/go-playground/validator.v9 v9.11.0 h1:ER548TqE6ZknRRDDo0/tP8I12UHYxNlIfss8tMd4iCo=
 gopkg.in/go-playground/validator.v9 v9.11.0/go.mod h1:+c9/zcJMFNgbLvly1L1V+PpxWdVbfP1avr/N00E2vyQ=
 gopkg.in/guregu/null.v3 v3.3.0 h1:8j3ggqq+NgKt/O7mbFVUFKUMWN+l1AmT5jQmJ6nPh2c=
