@@ -1,3 +1,18 @@
+v1.2.127
+----------
+ * Use UPPERCASE parameters for BL channels
+ * Migrate courier to PostgreSQL 10
+
+v1.2.126
+----------
+ * Switch BL channels used API
+
+v1.2.125
+----------
+ * add support for Bongo Live channels
+ * Switch to use nyaruka/librato package
+ * Complete conversion to module
+
 v1.2.124
 ----------
  * Updated Zenvia endpoint according to new API

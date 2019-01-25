@@ -1,7 +1,6 @@
 module github.com/nyaruka/courier
 
 require (
-	github.com/BurntSushi/toml v0.3.0
 	github.com/antchfx/xmlquery v0.0.0-20181223105952-355641961c92
 	github.com/antchfx/xpath v0.0.0-20181208024549-4bbdf6db12aa // indirect
 	github.com/aws/aws-sdk-go v1.13.3
@@ -10,34 +9,44 @@ require (
 	github.com/davecgh/go-spew v1.1.0 // indirect
 	github.com/dghubble/oauth1 v0.4.0
 	github.com/evalphobia/logrus_sentry v0.4.6
-	github.com/fatih/camelcase v0.0.0-20171027104257-44e46d280b43
-	github.com/fatih/structs v1.0.0
 	github.com/garyburd/redigo v1.5.0
 	github.com/getsentry/raven-go v0.0.0-20180517221441-ed7bcb39ff10 // indirect
-	github.com/go-chi/chi v0.0.0-20180202194135-e223a795a06a
+	github.com/go-chi/chi v3.3.3+incompatible
 	github.com/go-errors/errors v1.0.1
-	github.com/go-ini/ini v1.32.0
-	github.com/go-playground/locales v0.11.2
-	github.com/go-playground/universal-translator v0.16.0
+	github.com/go-ini/ini v1.32.0 // indirect
+	github.com/go-playground/locales v0.11.2 // indirect
+	github.com/go-playground/universal-translator v0.16.0 // indirect
+	github.com/go-sql-driver/mysql v1.4.1 // indirect
+	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/gorilla/schema v1.0.2
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
 	github.com/jmoiron/sqlx v0.0.0-20180614180643-0dae4fefe7c0
-	github.com/koding/multiconfig v0.0.0-20171124222453-69c27309b2d7
+	github.com/jtolds/gls v4.2.1+incompatible // indirect
+	github.com/kr/pretty v0.1.0 // indirect
+	github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348 // indirect
 	github.com/lib/pq v0.0.0-20180201184707-88edab080323
+	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/nyaruka/ezconf v0.2.1
 	github.com/nyaruka/gocommon v0.2.0
-	github.com/nyaruka/phonenumbers v1.0.24 // indirect
+	github.com/nyaruka/librato v0.0.0-20180827155909-cacc769357b8
+	github.com/nyaruka/phonenumbers v1.0.34 // indirect
+	github.com/onsi/ginkgo v1.7.0 // indirect
+	github.com/onsi/gomega v1.4.3 // indirect
 	github.com/pkg/errors v0.8.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.0.4
+	github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d // indirect
+	github.com/smartystreets/goconvey v0.0.0-20181108003508-044398e4856c // indirect
 	github.com/stretchr/testify v1.2.1
-	golang.org/x/crypto v0.0.0-20180222182404-49796115aa4b
-	golang.org/x/net v0.0.0-20180719180050-a680a1efc54d // indirect
-	golang.org/x/sys v0.0.0-20180222210305-c1138c84af3a
-	golang.org/x/text v0.3.0 // indirect
+	golang.org/x/crypto v0.0.0-20180222182404-49796115aa4b // indirect
+	google.golang.org/appengine v1.4.0 // indirect
+	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
+	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
+	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
+	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v9 v9.11.0
 	gopkg.in/guregu/null.v3 v3.3.0
 	gopkg.in/h2non/filetype.v1 v1.0.5
-	gopkg.in/yaml.v2 v2.0.0
+	gopkg.in/ini.v1 v1.41.0 // indirect
 )
