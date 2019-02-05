@@ -26,6 +26,7 @@ var (
 	sendURL              = "https://chatapi.viber.com/pa/send_message"
 	maxMsgLength         = 7000
 	quickReplyTextSize   = 36
+	descriptionMaxLength = 120
 )
 
 func init() {
@@ -289,8 +290,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		replies = &mtKeyboard{"keyboard", true, buttons}
 	}
-
 	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
+	if len(msg.Attachments()) > 0 && len(parts[0]) > descriptionMaxLength {
+		descriptionPart := handlers.SplitMsg(msg.Text(), descriptionMaxLength)[0]
+		others := handlers.SplitMsg(strings.TrimSpace(strings.Replace(msg.Text(), descriptionPart, "", 1)), maxMsgLength)
+		parts = []string{descriptionPart}
+		parts = append(parts, others...)
+	}
+
 	for i, part := range parts {
 		msgType := "text"
 		attSize := -1
