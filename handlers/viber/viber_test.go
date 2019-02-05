@@ -95,6 +95,17 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My pic!","type":"picture","tracking_data":"10","media":"{{ SERVER_URL }}/image.jpg"}`,
 		SendPrep:    setSendURL},
+	{Label: "Long Description with Attachment",
+		Text: "Text description is longer that 10 characters",
+		URN:  "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"image/jpeg:https://localhost/image.jpg"},
+		Status: "W", ResponseStatus: 200,
+		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+			"Accept":       "application/json",
+		},
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"description is longer that 10 characters","type":"text","tracking_data":"10"}`,
+		SendPrep:    setSendURL},
 	{Label: "Send Attachment Video",
 		Text: "My video!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"video/mp4:https://localhost/video.mp4"},
 		Status: "W", ResponseStatus: 200,
@@ -156,6 +167,7 @@ func TestSending(t *testing.T) {
 	defer attachmentService.Close()
 
 	maxMsgLength = 160
+	descriptionMaxLength = 10
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		map[string]interface{}{
 			courier.ConfigAuthToken: "Token",
