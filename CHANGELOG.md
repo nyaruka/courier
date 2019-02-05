@@ -1,3 +1,8 @@
+v1.2.129
+----------
+ * Make bongolive inbound msg type optional
+ * Properly handle long attachment description for Viber
+
 v1.2.128
 ----------
  * Load BL handler package
