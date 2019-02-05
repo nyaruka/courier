@@ -15,8 +15,9 @@ var testChannels = []courier.Channel{
 var (
 	receiveURL = "/c/bl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 
-	validReceive  = "msgtype=1&id=12345678&message=Msg&sourceaddr=254791541111"
-	missingNumber = "msgtype=1&id=12345679&message=Msg"
+	validReceive          = "msgtype=1&id=12345678&message=Msg&sourceaddr=254791541111"
+	validReceiveNoMsgType = "id=12345678&message=Msg&sourceaddr=254791541111"
+	missingNumber         = "msgtype=1&id=12345679&message=Msg"
 
 	validStatus   = "msgtype=5&id=12345&status=1"
 	invalidStatus = "msgtype=5&id=12345&status=12"
@@ -26,6 +27,8 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "",
+		Text: Sp("Msg"), URN: Sp("tel:+254791541111")},
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceiveNoMsgType, Status: 200, Response: "",
 		Text: Sp("Msg"), URN: Sp("tel:+254791541111")},
 	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, Status: 400, Response: ""},
 	{Label: "Status No params", URL: receiveURL, Data: "", Status: 405, Response: ""},

@@ -58,7 +58,7 @@ type moForm struct {
 	To      string `name:"DESTADDR"`
 	From    string `name:"SOURCEADDR" `
 	Message string `name:"MESSAGE"`
-	MsgType int    `name:"MSGTYPE"       validate:"required"`
+	MsgType int    `name:"MSGTYPE"`
 	Status  int    `name:"STATUS"`
 }
 
@@ -67,24 +67,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	var err error
 	form := &moForm{}
 	err = handlers.DecodeAndValidateForm(form, r)
-	if form.MsgType == 1 {
-
-		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-		}
-
-		// create our URN
-		urn, err := handlers.StrictTelForCountry(form.From, channel.Country())
-		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-		}
-
-		// build our msg
-		msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithExternalID(form.ID).WithReceivedOn(time.Now().UTC())
-
-		// and finally queue our message
-		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
-	} else if form.MsgType == 5 {
+	if form.MsgType == 5 {
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
@@ -99,9 +82,23 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		err = h.Backend().WriteMsgStatus(ctx, status)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
-	} else {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown msgtype received"))
 	}
+
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
+
+	// create our URN
+	urn, err := handlers.StrictTelForCountry(form.From, channel.Country())
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
+
+	// build our msg
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithExternalID(form.ID).WithReceivedOn(time.Now().UTC())
+
+	// and finally queue our message
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 
 }
 
