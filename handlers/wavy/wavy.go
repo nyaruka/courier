@@ -104,11 +104,11 @@ func (h *handler) deliveredStatusMessage(ctx context.Context, channel courier.Ch
 }
 
 type moPayload struct {
-	ID      string `json:"id"            validate:"required"`
-	From    string `json:"source"        validate:"required"`
-	To      string `json:"shortCode"     validate:"required"`
-	Message string `json:"messageText"   validate:"required"`
-	Date    string `json:"receivedDate"  validate:"required"`
+	ID        string `json:"id"            validate:"required"`
+	From      string `json:"source"        validate:"required"`
+	To        string `json:"shortCode"     validate:"required"`
+	Message   string `json:"messageText"   validate:"required"`
+	Timestamp int64  `json:"receivedAt"    validate:"required"`
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
@@ -119,10 +119,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	date, err := time.Parse("2006-01-02T15:04:05Z", payload.Date)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid date format: %s", payload.Date))
-	}
+	date := time.Unix(0, int64(payload.Timestamp*1000000)).UTC()
 
 	// create our URN
 	urn, err := handlers.StrictTelForCountry(payload.From, channel.Country())
