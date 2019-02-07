@@ -1,3 +1,7 @@
+v1.2.130
+----------
+ * Use unix timestamp for MO receive on WAVy channels
+
 v1.2.129
 ----------
  * Make bongolive inbound msg type optional
