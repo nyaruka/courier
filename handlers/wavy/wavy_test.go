@@ -27,27 +27,8 @@ var (
 		"source": "5516981562820",
 		"shortCode": "2020",
 		"messageText": "Eu quero pizza",
-		"receivedAt": 1473088405588,
+		"receivedAt": 1459991487970,
 		"receivedDate": "2016-09-05T12:13:25Z",
-		"mt": {
-			"id": "8be584fd-2554-439b-9ba9-aab507278992",
-			"correlationId": "1876",
-			"username": "iFoodCS",
-			"email": "customer.support@ifood.com"
-		}
-	}`
-
-	invalidDateFormat = `{
-		"id": "external_id",
-		"subAccount": "iFoodMarketing",
-		"campaignAlias": "iFoodPromo",
-		"carrierId": 1,
-		"carrierName": "VIVO",
-		"source": "5516981562820",
-		"shortCode": "2020",
-		"messageText": "Eu quero pizza",
-		"receivedAt": 1473088405588,
-		"receivedDate": "2016-09-05T12:13:25",
 		"mt": {
 			"id": "8be584fd-2554-439b-9ba9-aab507278992",
 			"correlationId": "1876",
@@ -98,8 +79,7 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Message", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Eu quero pizza"), URN: Sp("tel:+5516981562820"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 9, 5, 12, 13, 25, 0, time.UTC))},
-	{Label: "Invalid Date", URL: receiveURL, Data: invalidDateFormat, Status: 400, Response: "invalid date format"},
+		Text: Sp("Eu quero pizza"), URN: Sp("tel:+5516981562820"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
 	{Label: "Invalid JSON receive", URL: receiveURL, Data: notJSON, Status: 400, Response: "unable to parse request JSON"},
 	{Label: "Missing Keys receive", URL: receiveURL, Data: missingRequiredKeys, Status: 400, Response: "validation for 'ID' failed on the 'required'"},
 
