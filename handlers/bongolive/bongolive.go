@@ -54,7 +54,8 @@ var statusMapping = map[int]courier.MsgStatusValue{
 }
 
 type moForm struct {
-	ID      string `name:"ID"            validate:"required"`
+	ID      string `name:"ID"`
+	DLRID   string `name:"DLRID"`
 	To      string `name:"DESTADDR"`
 	From    string `name:"SOURCEADDR" `
 	Message string `name:"MESSAGE"`
@@ -67,6 +68,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	var err error
 	form := &moForm{}
 	err = handlers.DecodeAndValidateForm(form, r)
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
+
 	if form.MsgType == 5 {
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -78,14 +83,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus)
+		status := h.Backend().NewMsgStatusForExternalID(channel, form.DLRID, msgStatus)
 		err = h.Backend().WriteMsgStatus(ctx, status)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
-	}
-
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// create our URN
