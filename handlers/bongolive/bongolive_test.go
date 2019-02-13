@@ -19,8 +19,8 @@ var (
 	validReceiveNoMsgType = "id=12345678&message=Msg&sourceaddr=254791541111"
 	missingNumber         = "msgtype=1&id=12345679&message=Msg"
 
-	validStatus   = "msgtype=5&id=12345&status=1"
-	invalidStatus = "msgtype=5&id=12345&status=12"
+	validStatus   = "msgtype=5&dlrid=12345&status=1"
+	invalidStatus = "msgtype=5&dlrid=12345&status=12"
 
 	invalidMsgType = "msgtype=3&id=12345&status=1"
 )
