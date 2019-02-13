@@ -1,3 +1,7 @@
+v1.2.131
+----------
+ * Fix to use DLRID for Bongolive status reports
+
 v1.2.130
 ----------
  * Use unix timestamp for MO receive on WAVy channels
