@@ -451,25 +451,26 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		msgParts = handlers.SplitMsg(msg.Text(), maxMsgLength)
 	}
 
-	// send each part and each attachment separately
+	// send each part and each attachment separately. we send attachments first as otherwise quick replies
+	// attached to text messages get hidden when images get delivered
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
-		if i < len(msgParts) {
-			// this is still a msg part
-			payload.Message.Text = msgParts[i]
-			payload.Message.Attachment = nil
-		} else {
+		if i < len(msg.Attachments()) {
 			// this is an attachment
 			payload.Message.Attachment = &mtAttachment{}
-			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i-len(msgParts)])
+			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
 			attType = strings.Split(attType, "/")[0]
 			payload.Message.Attachment.Type = attType
 			payload.Message.Attachment.Payload.URL = attURL
 			payload.Message.Attachment.Payload.IsReusable = true
 			payload.Message.Text = ""
+		} else {
+			// this is still a msg part
+			payload.Message.Text = msgParts[i-len(msg.Attachments())]
+			payload.Message.Attachment = nil
 		}
 
-		// include any quick replies on the first piece we send
-		if i == 0 {
+		// include any quick replies on the last piece we send
+		if i == (len(msgParts)+len(msg.Attachments()))-1 {
 			for _, qr := range msg.QuickReplies() {
 				payload.Message.QuickReplies = append(payload.Message.QuickReplies, mtQuickReply{qr, qr, "text"})
 			}
