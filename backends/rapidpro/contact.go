@@ -18,6 +18,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// used by unit tests to slow down urn operations to test races
+var urnSleep bool
+
 // ContactID is our representation of our database contact id
 type ContactID struct {
 	null.Int
@@ -154,6 +157,11 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 		return nil, err
 	}
 
+	// used for unit testing contact races
+	if urnSleep {
+		time.Sleep(time.Millisecond * 50)
+	}
+
 	// associate our URN
 	// If we've inserted a duplicate URN then we'll get a uniqueness violation.
 	// That means this contact URN was written by someone else after we tried to look it up.
@@ -169,8 +177,8 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 		return nil, err
 	}
 
-	// if the returned URN is for a different contact, then we were in a race as well, rollback and start over
-	if contactURN.ContactID.Int64 != contact.ID_.Int64 {
+	// we stole the URN from another contact, roll back and start over
+	if contactURN.PrevContactID != NilContactID {
 		tx.Rollback()
 		return contactForURN(ctx, b, org, channel, urn, auth, name)
 	}
