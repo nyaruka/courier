@@ -184,6 +184,7 @@ func contactURNForURN(db *sqlx.Tx, org OrgID, channelID courier.ChannelID, conta
 
 	// make sure our contact URN is up to date
 	if contactURN.ChannelID != channelID || contactURN.ContactID != contactID || contactURN.Display != display {
+		contactURN.PrevContactID = contactURN.ContactID
 		contactURN.ChannelID = channelID
 		contactURN.ContactID = contactID
 		contactURN.Display = display
@@ -253,14 +254,15 @@ func updateContactURN(db *sqlx.Tx, urn *DBContactURN) error {
 
 // DBContactURN is our struct to map to database level URNs
 type DBContactURN struct {
-	OrgID     OrgID             `db:"org_id"`
-	ID        ContactURNID      `db:"id"`
-	Identity  string            `db:"identity"`
-	Scheme    string            `db:"scheme"`
-	Path      string            `db:"path"`
-	Display   null.String       `db:"display"`
-	Auth      null.String       `db:"auth"`
-	Priority  int               `db:"priority"`
-	ChannelID courier.ChannelID `db:"channel_id"`
-	ContactID ContactID         `db:"contact_id"`
+	OrgID         OrgID             `db:"org_id"`
+	ID            ContactURNID      `db:"id"`
+	Identity      string            `db:"identity"`
+	Scheme        string            `db:"scheme"`
+	Path          string            `db:"path"`
+	Display       null.String       `db:"display"`
+	Auth          null.String       `db:"auth"`
+	Priority      int               `db:"priority"`
+	ChannelID     courier.ChannelID `db:"channel_id"`
+	ContactID     ContactID         `db:"contact_id"`
+	PrevContactID ContactID
 }

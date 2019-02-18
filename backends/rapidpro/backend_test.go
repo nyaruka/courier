@@ -238,6 +238,33 @@ func (ts *BackendTestSuite) TestContact() {
 
 }
 
+func (ts *BackendTestSuite) TestContactRace() {
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	urn, _ := urns.NewTelURNForCountry("12065551518", "US")
+
+	urnSleep = true
+	defer func() { urnSleep = false }()
+
+	ctx := context.Background()
+
+	// create our contact twice
+	var contact1, contact2 *DBContact
+	var err1, err2 error
+
+	go func() {
+		contact1, err1 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Ryan Lewis")
+	}()
+	go func() {
+		contact2, err2 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Ryan Lewis")
+	}()
+
+	time.Sleep(time.Second)
+
+	ts.NoError(err1)
+	ts.NoError(err2)
+	ts.Equal(contact1.ID_, contact2.ID_)
+}
+
 func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ctx := context.Background()
