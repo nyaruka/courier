@@ -1,3 +1,7 @@
+v1.2.133
+----------
+ * fixes us creating an orphaned contact when we get two messages at the same instant
+
 v1.2.132
 ----------
  * send fb attachments first instead of last, add quick replies to last message instead of first
