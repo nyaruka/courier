@@ -1,3 +1,7 @@
+v1.2.134
+----------
+ * add queued_on to tasks sent to mailroom so we can calculate latency
+
 v1.2.133
 ----------
  * fixes us creating an orphaned contact when we get two messages at the same instant
