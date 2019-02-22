@@ -50,7 +50,6 @@ func queueMsgHandling(rc redis.Conn, c *DBContact, m *DBMsg) error {
 			"text":            m.Text(),
 			"attachments":     m.Attachments(),
 			"new_contact":     c.IsNew_,
-			"queued_on":       time.Now(),
 		}
 
 		return queueMailroomTask(rc, "msg_event", m.OrgID_, m.ContactID_, body)
@@ -78,7 +77,6 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 			body := map[string]interface{}{
 				"org_id":     e.OrgID_.Int64,
 				"contact_id": e.ContactID_.Int64,
-				"queued_on":  time.Now(),
 			}
 			return queueMailroomTask(rc, "stop_event", e.OrgID_, e.ContactID_, body)
 
@@ -90,7 +88,6 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 				"channel_id":  e.ChannelID_.Int64,
 				"extra":       e.Extra(),
 				"new_contact": c.IsNew_,
-				"queued_on":   time.Now(),
 			}
 			return queueMailroomTask(rc, "referral", e.OrgID_, e.ContactID_, body)
 
@@ -102,7 +99,6 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 				"channel_id":  e.ChannelID_.Int64,
 				"extra":       e.Extra(),
 				"new_contact": c.IsNew_,
-				"queued_on":   time.Now(),
 			}
 			return queueMailroomTask(rc, "new_conversation", e.OrgID_, e.ContactID_, body)
 
@@ -125,9 +121,10 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 func queueMailroomTask(rc redis.Conn, taskType string, orgID OrgID, contactID ContactID, body map[string]interface{}) (err error) {
 	// create our event task
 	eventTask := mrTask{
-		Type:  taskType,
-		OrgID: orgID.Int64,
-		Task:  body,
+		Type:     taskType,
+		OrgID:    orgID.Int64,
+		Task:     body,
+		QueuedOn: time.Now(),
 	}
 
 	eventJSON, err := json.Marshal(eventTask)
@@ -168,7 +165,8 @@ type mrContactTask struct {
 }
 
 type mrTask struct {
-	Type  string      `json:"type"`
-	OrgID int64       `json:"org_id"`
-	Task  interface{} `json:"task"`
+	Type     string      `json:"type"`
+	OrgID    int64       `json:"org_id"`
+	Task     interface{} `json:"task"`
+	QueuedOn time.Time   `json:"queued_on"`
 }
