@@ -1,3 +1,7 @@
+v1.2.136
+----------
+ * add queued on to all tasks
+
 v1.2.135
 ----------
  * move queued on to task level
