@@ -1,3 +1,7 @@
+v1.2.135
+----------
+ * move queued on to task level
+
 v1.2.134
 ----------
  * add queued_on to tasks sent to mailroom so we can calculate latency
