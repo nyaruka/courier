@@ -139,6 +139,7 @@ func queueMailroomTask(rc redis.Conn, taskType string, orgID OrgID, contactID Co
 		Task: mrContactTask{
 			ContactID: contactID.Int64,
 		},
+		QueuedOn: time.Now(),
 	}
 
 	contactJSON, err := json.Marshal(contactTask)
