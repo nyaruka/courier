@@ -78,6 +78,9 @@ type Backend interface {
 	// Status returns a string describing the current status, this can detail queue sizes or other attributes
 	Status() string
 
+	// Heartbeat is called every minute, it can be used by backends to log status to a dashboard such as librato
+	Heartbeat() error
+
 	// RedisPool returns the redisPool for this backend
 	RedisPool() *redis.Pool
 }

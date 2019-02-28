@@ -8,13 +8,12 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/satori/go.uuid"
-
 	"time"
 
 	"github.com/garyburd/redigo/redis"
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/gocommon/urns"
+	uuid "github.com/satori/go.uuid"
 )
 
 //-----------------------------------------------------------------------------
@@ -293,6 +292,11 @@ func (mb *MockBackend) Health() string {
 // Status returns a string describing the status of the service, queue size etc..
 func (mb *MockBackend) Status() string {
 	return ""
+}
+
+// Heartbeat is a noop for our mock backend
+func (mb *MockBackend) Heartbeat() error {
+	return nil
 }
 
 // RedisPool returns the redisPool for this backend

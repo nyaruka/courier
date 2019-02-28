@@ -131,6 +131,24 @@ func (s *server) Start() error {
 		}
 	}()
 
+	// start our heartbeat
+	go func() {
+		s.waitGroup.Add(1)
+		defer s.waitGroup.Done()
+
+		for !s.stopped {
+			select {
+			case <-s.stopChan:
+				return
+			case <-time.After(time.Minute):
+				err := s.backend.Heartbeat()
+				if err != nil {
+					logrus.WithError(err).Error("error running backend heartbeat")
+				}
+			}
+		}
+	}()
+
 	logrus.WithFields(logrus.Fields{
 		"comp":    "server",
 		"port":    s.config.Port,
