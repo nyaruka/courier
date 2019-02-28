@@ -23,6 +23,8 @@ import (
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/librato"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -315,6 +317,50 @@ func (b *backend) Health() string {
 	}
 
 	return health.String()
+}
+
+// Heartbeat is called every minute, we log our queue depth to librato
+func (b *backend) Heartbeat() error {
+	rc := b.redisPool.Get()
+	defer rc.Close()
+
+	active, err := redis.Strings(rc.Do("zrange", fmt.Sprintf("%s:active", msgQueueName), "0", "-1"))
+	if err != nil {
+		return errors.Wrapf(err, "error getting active queues")
+	}
+	throttled, err := redis.Strings(rc.Do("zrange", fmt.Sprintf("%s:throttled", msgQueueName), "0", "-1"))
+	if err != nil {
+		return errors.Wrapf(err, "error getting throttled queues")
+	}
+	queues := append(active, throttled...)
+
+	prioritySize := 0
+	bulkSize := 0
+	for _, q := range queues {
+		parts := strings.Split(q, "|")
+		queue := parts[0]
+
+		q = fmt.Sprintf("%s/1", queue)
+		count, err := redis.Int(rc.Do("zcard", q))
+		if err != nil {
+			return errors.Wrapf(err, "error getting size of priority queue: %s", q)
+		}
+		prioritySize += count
+
+		q = fmt.Sprintf("%s/0", queue)
+		count, err = redis.Int(rc.Do("zcard", q))
+		if err != nil {
+			return errors.Wrapf(err, "error getting size of bulk queue: %s", q)
+		}
+		bulkSize += count
+	}
+
+	// log our total
+	librato.Gauge("courier.bulk_queue", float64(bulkSize))
+	librato.Gauge("courier.priority_queue", float64(prioritySize))
+	logrus.WithField("bulk_queue", bulkSize).WithField("priorirty_queue", prioritySize).Info("heartbeat queue sizes calculated")
+
+	return nil
 }
 
 // Status returns information on our queue sizes, number of workers etc..

@@ -14,6 +14,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/librato"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -191,6 +192,9 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 
 	// store this URN on our contact
 	contact.URNID_ = contactURN.ID
+
+	// log that we created a new contact to librato
+	librato.Gauge("courier.new_contact", float64(1))
 
 	// and return it
 	return contact, nil
