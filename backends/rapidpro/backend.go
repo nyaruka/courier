@@ -336,11 +336,8 @@ func (b *backend) Heartbeat() error {
 
 	prioritySize := 0
 	bulkSize := 0
-	for _, q := range queues {
-		parts := strings.Split(q, "|")
-		queue := parts[0]
-
-		q = fmt.Sprintf("%s/1", queue)
+	for _, queue := range queues {
+		q := fmt.Sprintf("%s/1", queue)
 		count, err := redis.Int(rc.Do("zcard", q))
 		if err != nil {
 			return errors.Wrapf(err, "error getting size of priority queue: %s", q)
