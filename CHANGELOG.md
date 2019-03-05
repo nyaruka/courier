@@ -1,3 +1,7 @@
+v1.2.138
+----------
+ * proper name for queues to check size
+
 v1.2.137
 ----------
  * log queue sizes and new contact creations to librato
