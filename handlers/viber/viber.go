@@ -22,11 +22,12 @@ import (
 )
 
 var (
-	viberSignatureHeader = "X-Viber-Content-Signature"
-	sendURL              = "https://chatapi.viber.com/pa/send_message"
-	maxMsgLength         = 7000
-	quickReplyTextSize   = 36
-	descriptionMaxLength = 120
+	viberSignatureHeader      = "X-Viber-Content-Signature"
+	sendURL                   = "https://chatapi.viber.com/pa/send_message"
+	maxMsgLength              = 7000
+	quickReplyTextSize        = 36
+	descriptionMaxLength      = 120
+	configViberWelcomeMessage = "viber_welcome_message"
 )
 
 func init() {
@@ -77,6 +78,14 @@ type eventPayload struct {
 	} `json:"message"`
 }
 
+type welcomeMessagePayload struct {
+	AuthToken    string            `json:"auth_token"`
+	Text         string            `json:"text"`
+	Type         string            `json:"type"`
+	TrackingData string            `json:"tracking_data"`
+	Sender       map[string]string `json:"sender,omitempty"`
+}
+
 // receiveEvent is our HTTP handler function for incoming messages
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
@@ -96,7 +105,42 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "webhook valid")
 
 	case "conversation_started":
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignored conversation start")
+
+		msgText := channel.StringConfigForKey(configViberWelcomeMessage, "")
+		if msgText == "" {
+			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignored conversation start")
+		}
+
+		authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+
+		viberID := payload.User.ID
+		ContactName := payload.User.Name
+
+		// build the URN
+		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "", "")
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignored conversation start")
+		}
+		// build the channel event
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.WelcomeMessage, urn).WithContactName(ContactName)
+
+		err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+		if err != nil {
+			return nil, err
+		}
+		payload := welcomeMessagePayload{
+			AuthToken:    authToken,
+			Text:         msgText,
+			Type:         "text",
+			TrackingData: string(channelEvent.EventID()),
+		}
+
+		responseBody := &bytes.Buffer{}
+		err = json.NewEncoder(responseBody).Encode(payload)
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignored conversation start")
+		}
+		return []courier.Event{channelEvent}, writeViberWelcomeMessageResponse(w, responseBody.String())
 
 	case "subscribed":
 		viberID := payload.User.ID
@@ -203,6 +247,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	}
 
 	return nil, courier.WriteError(ctx, w, r, fmt.Errorf("not handled, unknown event: %s", event))
+}
+
+func writeViberWelcomeMessageResponse(w http.ResponseWriter, messageText string) error {
+	w.WriteHeader(200)
+	_, err := fmt.Fprint(w, messageText)
+	return err
 }
 
 // see https://developers.viber.com/docs/api/rest-bot-api/#callbacks
