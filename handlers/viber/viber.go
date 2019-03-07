@@ -27,7 +27,7 @@ var (
 	maxMsgLength              = 7000
 	quickReplyTextSize        = 36
 	descriptionMaxLength      = 120
-	configViberWelcomeMessage = "viber_welcome_message"
+	configViberWelcomeMessage = "welcome_message"
 )
 
 func init() {
@@ -105,13 +105,10 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "webhook valid")
 
 	case "conversation_started":
-
 		msgText := channel.StringConfigForKey(configViberWelcomeMessage, "")
 		if msgText == "" {
 			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignored conversation start")
 		}
-
-		authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
 
 		viberID := payload.User.ID
 		ContactName := payload.User.Name
@@ -128,19 +125,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		if err != nil {
 			return nil, err
 		}
-		payload := welcomeMessagePayload{
-			AuthToken:    authToken,
-			Text:         msgText,
-			Type:         "text",
-			TrackingData: string(channelEvent.EventID()),
-		}
 
-		responseBody := &bytes.Buffer{}
-		err = json.NewEncoder(responseBody).Encode(payload)
-		if err != nil {
-			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignored conversation start")
-		}
-		return []courier.Event{channelEvent}, writeViberWelcomeMessageResponse(w, responseBody.String())
+		return []courier.Event{channelEvent}, writeWelcomeMessageResponse(w, channel, channelEvent)
 
 	case "subscribed":
 		viberID := payload.User.ID
@@ -249,9 +235,25 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return nil, courier.WriteError(ctx, w, r, fmt.Errorf("not handled, unknown event: %s", event))
 }
 
-func writeViberWelcomeMessageResponse(w http.ResponseWriter, messageText string) error {
+func writeWelcomeMessageResponse(w http.ResponseWriter, channel courier.Channel, event courier.Event) error {
+
+	authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	msgText := channel.StringConfigForKey(configViberWelcomeMessage, "")
+	payload := welcomeMessagePayload{
+		AuthToken:    authToken,
+		Text:         msgText,
+		Type:         "text",
+		TrackingData: string(event.EventID()),
+	}
+
+	responseBody := &bytes.Buffer{}
+	err := json.NewEncoder(responseBody).Encode(payload)
+	if err != nil {
+		return nil
+	}
+
 	w.WriteHeader(200)
-	_, err := fmt.Fprint(w, messageText)
+	_, err = fmt.Fprint(w, responseBody)
 	return err
 }
 
