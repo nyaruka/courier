@@ -142,6 +142,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 		senderNode := xmlquery.FindOne(doc, fromXPath)
 		textNode := xmlquery.FindOne(doc, textXPath)
+		if senderNode == nil || textNode == nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing from at: %s or text at: %s node", fromXPath, textXPath))
+		}
+
 		form.Sender = senderNode.InnerText()
 		form.Text = textNode.InnerText()
 	} else {
@@ -257,8 +261,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	sendMethod := msg.Channel().StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
 	sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
 	contentType := msg.Channel().StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
-	if contentTypeMappings[contentType] == "" {
-		return nil, fmt.Errorf("unknown content type: %s", contentType)
+	contentTypeHeader := contentTypeMappings[contentType]
+	if contentTypeHeader == "" {
+		contentTypeHeader = contentType
 	}
 
 	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, 160)
@@ -294,7 +299,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if err != nil {
 			return nil, err
 		}
-		req.Header.Set("Content-Type", contentTypeMappings[contentType])
+		req.Header.Set("Content-Type", contentTypeHeader)
 
 		authorization := msg.Channel().StringConfigForKey(courier.ConfigSendAuthorization, "")
 		if authorization != "" {

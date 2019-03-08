@@ -23,6 +23,8 @@ import (
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/librato"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -56,6 +58,46 @@ func (b *backend) GetChannel(ctx context.Context, ct courier.ChannelType, uuid c
 func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, auth string, name string) (courier.Contact, error) {
 	dbChannel := c.(*DBChannel)
 	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, auth, name)
+}
+
+// AddURNtoContact adds a URN to the passed in contact
+func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
+	tx, err := b.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return urns.NilURN, err
+	}
+	dbChannel := c.(*DBChannel)
+	dbContact := contact.(*DBContact)
+	_, err = contactURNForURN(tx, dbChannel.OrgID(), dbChannel.ID(), dbContact.ID_, urn, "")
+	if err != nil {
+		return urns.NilURN, err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return urns.NilURN, err
+	}
+
+	return urn, nil
+}
+
+const removeURNFromContact = `
+UPDATE
+	contacts_contacturn
+SET
+	contact_id = NULL
+WHERE
+	contact_id = $1 AND
+	identity = $2
+`
+
+// RemoveURNFromcontact removes a URN from the passed in contact
+func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
+	dbContact := contact.(*DBContact)
+	_, err := b.db.ExecContext(ctx, removeURNFromContact, dbContact.ID_, urn.Identity().String())
+	if err != nil {
+		return urns.NilURN, err
+	}
+	return urn, nil
 }
 
 // NewIncomingMsg creates a new message from the given params
@@ -157,6 +199,14 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 		_, err := rc.Do("")
 		if err != nil {
 			logrus.WithError(err).WithField("sent_msgs_key", dateKey).Error("unable to add new unsent message")
+		}
+
+		// if our msg has an associated session and timeout, update that
+		if dbMsg.SessionWaitStartedOn_ != nil {
+			err = updateSessionTimeout(ctx, b, dbMsg.SessionID_, *dbMsg.SessionWaitStartedOn_, dbMsg.SessionTimeout_)
+			if err != nil {
+				logrus.WithError(err).WithField("session_id", dbMsg.SessionID_).Error("unable to update session timeout")
+			}
 		}
 	}
 
@@ -267,6 +317,47 @@ func (b *backend) Health() string {
 	}
 
 	return health.String()
+}
+
+// Heartbeat is called every minute, we log our queue depth to librato
+func (b *backend) Heartbeat() error {
+	rc := b.redisPool.Get()
+	defer rc.Close()
+
+	active, err := redis.Strings(rc.Do("zrange", fmt.Sprintf("%s:active", msgQueueName), "0", "-1"))
+	if err != nil {
+		return errors.Wrapf(err, "error getting active queues")
+	}
+	throttled, err := redis.Strings(rc.Do("zrange", fmt.Sprintf("%s:throttled", msgQueueName), "0", "-1"))
+	if err != nil {
+		return errors.Wrapf(err, "error getting throttled queues")
+	}
+	queues := append(active, throttled...)
+
+	prioritySize := 0
+	bulkSize := 0
+	for _, queue := range queues {
+		q := fmt.Sprintf("%s/1", queue)
+		count, err := redis.Int(rc.Do("zcard", q))
+		if err != nil {
+			return errors.Wrapf(err, "error getting size of priority queue: %s", q)
+		}
+		prioritySize += count
+
+		q = fmt.Sprintf("%s/0", queue)
+		count, err = redis.Int(rc.Do("zcard", q))
+		if err != nil {
+			return errors.Wrapf(err, "error getting size of bulk queue: %s", q)
+		}
+		bulkSize += count
+	}
+
+	// log our total
+	librato.Gauge("courier.bulk_queue", float64(bulkSize))
+	librato.Gauge("courier.priority_queue", float64(prioritySize))
+	logrus.WithField("bulk_queue", bulkSize).WithField("priorirty_queue", prioritySize).Info("heartbeat queue sizes calculated")
+
+	return nil
 }
 
 // Status returns information on our queue sizes, number of workers etc..

@@ -56,9 +56,10 @@ type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, courier.Channel
 
 // MockedRequest is a fake HTTP request
 type MockedRequest struct {
-	Method string
-	Path   string
-	Body   string
+	Method       string
+	Path         string
+	Body         string
+	BodyContains string
 }
 
 // MockedResponse is a fake HTTP response
@@ -95,6 +96,8 @@ type ChannelSendTestCase struct {
 	ExternalID string
 
 	Stopped bool
+
+	ContactURNs map[string]bool
 
 	SendPrep SendPrepFunc
 }
@@ -184,6 +187,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 	handler.Initialize(s)
 
 	for _, testCase := range testCases {
+		mockRRCount := 0
 		t.Run(testCase.Label, func(t *testing.T) {
 			require := require.New(t)
 
@@ -208,9 +212,11 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 					require.Zero(testCase.ResponseStatus, "ResponseStatus should not be used when using testcase.Responses")
 					require.Zero(testCase.ResponseBody, "ResponseBody should not be used when using testcase.Responses")
 					for mockRequest, mockResponse := range testCase.Responses {
-						if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && mockRequest.Body == string(body)[:] {
+						bodyStr := string(body)[:]
+						if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && (mockRequest.Body == bodyStr || (mockRequest.BodyContains != "" && strings.Contains(bodyStr, mockRequest.BodyContains))) {
 							w.WriteHeader(mockResponse.Status)
 							w.Write([]byte(mockResponse.Body))
+							mockRRCount++
 							break
 						}
 					}
@@ -264,6 +270,10 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				require.Equal(testCase.RequestBody, strings.Trim(string(value), "\n"))
 			}
 
+			if (len(testCase.Responses)) != 0 {
+				require.Equal(mockRRCount, len(testCase.Responses))
+			}
+
 			if testCase.Headers != nil {
 				require.NotNil(testRequest)
 				for k, v := range testCase.Headers {
@@ -286,6 +296,23 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				require.NoError(err)
 				require.Equal(courier.StopContact, evt.EventType())
 			}
+
+			if testCase.ContactURNs != nil {
+				var contactUUID courier.ContactUUID
+				for urn, shouldBePresent := range testCase.ContactURNs {
+					contact, _ := mb.GetContact(ctx, channel, urns.URN(urn), "", "")
+					if contactUUID == courier.NilContactUUID && shouldBePresent {
+						contactUUID = contact.UUID()
+					}
+					if shouldBePresent {
+						require.Equal(contactUUID, contact.UUID())
+					} else {
+						require.NotEqual(contactUUID, contact.UUID())
+					}
+
+				}
+			}
+
 		})
 	}
 

@@ -29,6 +29,12 @@ type Backend interface {
 	// GetContact returns (or creates) the contact for the passed in channel and URN
 	GetContact(context context.Context, channel Channel, urn urns.URN, auth string, name string) (Contact, error)
 
+	// AddURNtoContact adds a URN to the passed in contact
+	AddURNtoContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error)
+
+	// RemoveURNFromcontact removes a URN from the passed in contact
+	RemoveURNfromContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error)
+
 	// NewIncomingMsg creates a new message from the given params
 	NewIncomingMsg(channel Channel, urn urns.URN, text string) Msg
 
@@ -71,6 +77,9 @@ type Backend interface {
 
 	// Status returns a string describing the current status, this can detail queue sizes or other attributes
 	Status() string
+
+	// Heartbeat is called every minute, it can be used by backends to log status to a dashboard such as librato
+	Heartbeat() error
 
 	// RedisPool returns the redisPool for this backend
 	RedisPool() *redis.Pool

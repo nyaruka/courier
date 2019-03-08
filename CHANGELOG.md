@@ -1,3 +1,103 @@
+v1.2.138
+----------
+ * proper name for queues to check size
+
+v1.2.137
+----------
+ * log queue sizes and new contact creations to librato
+
+v1.2.136
+----------
+ * add queued on to all tasks
+
+v1.2.135
+----------
+ * move queued on to task level
+
+v1.2.134
+----------
+ * add queued_on to tasks sent to mailroom so we can calculate latency
+
+v1.2.133
+----------
+ * fixes us creating an orphaned contact when we get two messages at the same instant
+
+v1.2.132
+----------
+ * send fb attachments first instead of last, add quick replies to last message instead of first
+
+v1.2.131
+----------
+ * Fix to use DLRID for Bongolive status reports
+
+v1.2.130
+----------
+ * Use unix timestamp for MO receive on WAVy channels
+
+v1.2.129
+----------
+ * Make bongolive inbound msg type optional
+ * Properly handle long attachment description for Viber
+
+v1.2.128
+----------
+ * Load BL handler package
+ * Add support for Movile/Wavy channels, Thanks to MGov to fund the development of the integration
+
+v1.2.127
+----------
+ * Use UPPERCASE parameters for BL channels
+ * Migrate courier to PostgreSQL 10
+
+v1.2.126
+----------
+ * Switch BL channels used API
+
+v1.2.125
+----------
+ * add support for Bongo Live channels
+ * Switch to use nyaruka/librato package
+ * Complete conversion to module
+
+v1.2.124
+----------
+ * Updated Zenvia endpoint according to new API
+
+v1.2.123
+----------
+ * set session timeouts when specified by mailroom
+
+v1.2.122
+----------
+ * Support using the custom configured content type for EX channels
+ * Fix panicr on parsing SOAP body for EX channels
+ * Support sending images and videos in Twitter
+
+v1.2.121
+----------
+ * fix twitter sending
+
+v1.2.120
+----------
+ * Twitter media attachments
+
+v1.2.118
+----------
+ * Commit transaction when adding URN to contact with success
+ * Fix typo
+ * Simply remove URNs by update query
+ * Fix params names
+ * Fix Facebook for contact duplicates when using referral, save the proper Facebook URN when we first successfully send to the referral contact URN
+ * Ignore error for Jiochat user name lookup
+
+v1.2.117
+----------
+ * remove ipv6 binding for redis server
+
+v1.2.116
+----------
+ * add urn id to channel events
+
 v1.2.115
 ----------
  * do not return errors from whatsapp send during client errors
