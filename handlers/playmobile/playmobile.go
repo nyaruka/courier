@@ -150,12 +150,16 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
-	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
+	for i, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		payload := mtPayload{}
 		message := mtMessage{}
 
+		messageid := msg.ID().String()
+		if i > 0 {
+			messageid = fmt.Sprintf("%s.%d", msg.ID().String(), i+1)
+		}
+		message.MessageID = messageid
 		message.Recipient = strings.TrimLeft(msg.URN().Path(), "+")
-		message.MessageID = msg.ID().String()
 		message.SMS.Originator = shortCode
 		message.SMS.Content.Text = part
 
