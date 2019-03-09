@@ -154,13 +154,12 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		payload := mtPayload{}
 		message := mtMessage{}
 
-		message.Recipient = strings.TrimLeft(msg.URN().Path(), "+")
-
 		messageid := msg.ID().String()
 		if i > 0 {
 			messageid = fmt.Sprintf("%s.%d", msg.ID().String(), i+1)
 		}
 		message.MessageID = messageid
+		message.Recipient = strings.TrimLeft(msg.URN().Path(), "+")
 		message.SMS.Originator = shortCode
 		message.SMS.Content.Text = part
 
