@@ -21,13 +21,16 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	viberSignatureHeader      = "X-Viber-Content-Signature"
-	sendURL                   = "https://chatapi.viber.com/pa/send_message"
-	maxMsgLength              = 7000
-	quickReplyTextSize        = 36
-	descriptionMaxLength      = 120
+const (
 	configViberWelcomeMessage = "welcome_message"
+)
+
+var (
+	viberSignatureHeader = "X-Viber-Content-Signature"
+	sendURL              = "https://chatapi.viber.com/pa/send_message"
+	maxMsgLength         = 7000
+	quickReplyTextSize   = 36
+	descriptionMaxLength = 120
 )
 
 func init() {
@@ -116,14 +119,14 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		// build the URN
 		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "", "")
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignored conversation start")
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.WelcomeMessage, urn).WithContactName(ContactName)
 
 		err = h.Backend().WriteChannelEvent(ctx, channelEvent)
 		if err != nil {
-			return nil, err
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
 		return []courier.Event{channelEvent}, writeWelcomeMessageResponse(w, channel, channelEvent)
