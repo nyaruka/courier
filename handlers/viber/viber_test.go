@@ -180,7 +180,16 @@ func TestSending(t *testing.T) {
 }
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{"auth_token": "Token"}),
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{
+		courier.ConfigAuthToken: "Token",
+	}),
+}
+
+var testChannelsWithWelcomeMessage = []courier.Channel{
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{
+		courier.ConfigAuthToken:   "Token",
+		configViberWelcomeMessage: "Welcome to VP, Please subscribe here for more.",
+	}),
 }
 
 var (
@@ -454,6 +463,13 @@ var testCases = []ChannelHandleTestCase{
 		Attachment: Sp("geo:1.200000,-1.300000"), PrepRequest: addValidSignature},
 }
 
+var testWelcomeMessageCases = []ChannelHandleTestCase{
+	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, Status: 200, Response: "Accepted",
+		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+		PrepRequest: addValidSignature},
+	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, Status: 200, Response: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"\u0000"}`, PrepRequest: addValidSignature},
+}
+
 func addValidSignature(r *http.Request) {
 	body, _ := ioutil.ReadAll(r.Body)
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
@@ -478,8 +494,10 @@ func addInvalidSignature(r *http.Request) {
 
 func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+	RunChannelTestCases(t, testChannelsWithWelcomeMessage, newHandler(), testWelcomeMessageCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
+	RunChannelBenchmarks(b, testChannelsWithWelcomeMessage, newHandler(), testWelcomeMessageCases)
 }
