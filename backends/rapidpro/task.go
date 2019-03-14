@@ -80,6 +80,16 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 			}
 			return queueMailroomTask(rc, "stop_event", e.OrgID_, e.ContactID_, body)
 
+		case courier.WelcomeMessage:
+			body := map[string]interface{}{
+				"org_id":      e.OrgID_.Int64,
+				"contact_id":  e.ContactID_.Int64,
+				"urn_id":      e.ContactURNID_.Int64,
+				"channel_id":  e.ChannelID_.Int64,
+				"new_contact": c.IsNew_,
+			}
+			return queueMailroomTask(rc, "welcome_message", e.OrgID_, e.ContactID_, body)
+
 		case courier.Referral:
 			body := map[string]interface{}{
 				"org_id":      e.OrgID_.Int64,
