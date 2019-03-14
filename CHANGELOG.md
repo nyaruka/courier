@@ -1,3 +1,7 @@
+v1.2.140
+----------
+ * Queue welcome message event to be handle by mailroom
+
 v1.2.139
 ----------
  * add sub-message ids for long messages on play mobile
