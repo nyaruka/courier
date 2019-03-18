@@ -1,3 +1,12 @@
+v1.2.140
+----------
+ * Queue welcome message event to be handle by mailroom
+
+v1.2.139
+----------
+ * add sub-message ids for long messages on play mobile
+ * send configured welcome message on converssation started for Viber
+
 v1.2.138
 ----------
  * proper name for queues to check size
