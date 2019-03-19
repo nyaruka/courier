@@ -188,7 +188,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
-	urn = urn.Normalize("")
+	urn = urn.Normalize(channel.Country())
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithReceivedOn(date)

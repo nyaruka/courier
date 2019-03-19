@@ -37,6 +37,10 @@ var testChannels = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US", nil),
 }
 
+var gmChannels = []courier.Channel{
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "GM", nil),
+}
+
 var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
@@ -83,9 +87,15 @@ var handleSOAPReceiveTestCases = []ChannelHandleTestCase{
 		Status: 400, Response: "missing from"},
 }
 
+var gmTestCases = []ChannelHandleTestCase{
+	{Label: "Receive Non Plus Message", URL: "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=2207222333&text=Join", Data: "empty", Status: 200, Response: "Accepted",
+		Text: Sp("Join"), URN: Sp("tel:+2207222333")},
+}
+
 func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
 	RunChannelTestCases(t, testSOAPReceiveChannels, newHandler(), handleSOAPReceiveTestCases)
+	RunChannelTestCases(t, gmChannels, newHandler(), gmTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
