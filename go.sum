@@ -2,6 +2,7 @@ github.com/antchfx/xmlquery v0.0.0-20181223105952-355641961c92 h1:4EgP6xLAdrD/TR
 github.com/antchfx/xmlquery v0.0.0-20181223105952-355641961c92/go.mod h1:/+CnyD/DzHRnv2eRxrVbieRU/FIF6N0C+7oTtyUtCKk=
 github.com/antchfx/xpath v0.0.0-20181208024549-4bbdf6db12aa h1:lL66YnJWy1tHlhjSx8fXnpgmv8kQVYnI4ilbYpNB6Zs=
 github.com/antchfx/xpath v0.0.0-20181208024549-4bbdf6db12aa/go.mod h1:Yee4kTMuNiPYJ7nSNorELQMr1J33uOpXDMByNYhvtNk=
+github.com/aws/aws-lambda-go v1.8.1/go.mod h1:zUsUQhAUjYzR8AuduJPCfhBuKWUaDbQiPOG+ouzmE1A=
 github.com/aws/aws-sdk-go v1.13.3 h1:OIeAaQvcMvLp8kGPRRY5AKuAsJ5Rw0z6ueJsNsU3Hsk=
 github.com/aws/aws-sdk-go v1.13.3/go.mod h1:ZRmQr0FajVIyZ4ZzBYKG5P3ZqPz9IHG41ZoMu1ADI3k=
 github.com/buger/jsonparser v0.0.0-20180318095312-2cac668e8456 h1:SnUWpAH4lEUoS86woR12h21VMUbDe+DYp88V646wwMI=
@@ -71,6 +72,8 @@ github.com/nyaruka/librato v0.0.0-20180827155909-cacc769357b8 h1:TOvxy0u6LNTWP3g
 github.com/nyaruka/librato v0.0.0-20180827155909-cacc769357b8/go.mod h1:huVocfMEHkttMHD4hSr/wjWNyTx/YMzwwajVzV2bq+0=
 github.com/nyaruka/phonenumbers v1.0.34 h1:e1ydu+tsOB2ZNjgebZIRy65QpfADWmx6YBlBJWTtG/o=
 github.com/nyaruka/phonenumbers v1.0.34/go.mod h1:GQ0cTHlrxPrhoLwyQ1blyN1hO794ygt6FTHWrFB5SSc=
+github.com/nyaruka/phonenumbers v1.0.36 h1:NaQcpW0p4jojGXGvdfVXCeJKrI9gKerdctgbTHPRqyo=
+github.com/nyaruka/phonenumbers v1.0.36/go.mod h1:Hhae+eypC1YKMaQlBJUCGZDzBrIHHNWhJX1xG/8sOC8=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.7.0 h1:WSHQ+IS43OoUrWtD1/bbclrwK8TTH5hzp+umCiuxHgs=
 github.com/onsi/ginkgo v1.7.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
