@@ -50,6 +50,9 @@ type Backend interface {
 	// WriteMsgStatus writes the passed in status update to our backend
 	WriteMsgStatus(context.Context, MsgStatus) error
 
+	// CheckMsgExternalIDExistsInDB checks if a message exists with the given external ID
+	CheckMsgExternalIDExistsInDB(string) (int, error)
+
 	// NewChannelEvent creates a new channel event for the given channel and event type
 	NewChannelEvent(Channel, ChannelEventType, urns.URN) ChannelEvent
 

@@ -117,7 +117,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 }
 
 const insertMsgSQL = `
-INSERT INTO 
+INSERT INTO
 	msgs_msg(org_id, uuid, direction, text, attachments, msg_count, error_count, high_priority, status,
              visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on)
     VALUES(:org_id, :uuid, :direction, :text, :attachments, :msg_count, :error_count, :high_priority, :status,
@@ -165,28 +165,28 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 }
 
 const selectMsgSQL = `
-SELECT 
-	org_id, 
-	direction, 
-	text, 
-	attachments, 
-	msg_count, 
-	error_count, 
-	high_priority, 
+SELECT
+	org_id,
+	direction,
+	text,
+	attachments,
+	msg_count,
+	error_count,
+	high_priority,
 	status,
-	visibility, 
-	external_id, 
-	channel_id, 
-	contact_id, 
-	contact_urn_id, 
-	created_on, 
-	modified_on, 
-	next_attempt, 
-	queued_on, 
+	visibility,
+	external_id,
+	channel_id,
+	contact_id,
+	contact_urn_id,
+	created_on,
+	modified_on,
+	next_attempt,
+	queued_on,
 	sent_on
-FROM 
+FROM
 	msgs_msg
-WHERE 
+WHERE
 	id = $1
 `
 
@@ -197,6 +197,21 @@ func readMsgFromDB(b *backend, id courier.MsgID) (*DBMsg, error) {
 	}
 	err := b.db.Get(m, selectMsgSQL, id)
 	return m, err
+}
+
+const checkExternalIDExistsSQL = `
+SELECT
+	count(*)
+FROM
+	msgs_msg
+WHERE
+    external_id = $1
+`
+
+func checkMsgExternalIDExistsInDB(b *backend, externalID string) (int, error) {
+	count := 0
+	err := b.db.Get(&count, checkExternalIDExistsSQL, null.StringFrom(externalID))
+	return count, err
 }
 
 //-----------------------------------------------------------------------------

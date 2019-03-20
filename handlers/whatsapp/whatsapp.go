@@ -134,6 +134,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	// first deal with any received messages
 	for _, msg := range payload.Messages {
 
+		// check if we have this message already
+		count, err := h.Backend().CheckMsgExternalIDExistsInDB(msg.ID)
+		if count > 0 {
+			continue
+		}
+
 		// create our date from the timestamp
 		ts, err := strconv.ParseInt(msg.Timestamp, 10, 64)
 		if err != nil {

@@ -269,6 +269,11 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 	return nil
 }
 
+// CheckMsgExternalIDExistsInDB checks if a message exists with the given external ID
+func (b *backend) CheckMsgExternalIDExistsInDB(externalID string) (int, error) {
+	return checkMsgExternalIDExistsInDB(b, externalID)
+}
+
 // NewChannelEvent creates a new channel event with the passed in parameters
 func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN) courier.ChannelEvent {
 	return newChannelEvent(channel, eventType, urn)

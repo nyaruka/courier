@@ -201,6 +201,11 @@ func (mb *MockBackend) WriteMsgStatus(ctx context.Context, status MsgStatus) err
 	return nil
 }
 
+// CheckMsgExternalIDExistsInDB returns the length of the queue
+func (mb *MockBackend) CheckMsgExternalIDExistsInDB(externalID string) (int, error) {
+	return mb.LenQueuedMsgs(), nil
+}
+
 // NewChannelEvent creates a new channel event with the passed in parameters
 func (mb *MockBackend) NewChannelEvent(channel Channel, eventType ChannelEventType, urn urns.URN) ChannelEvent {
 	return &mockChannelEvent{

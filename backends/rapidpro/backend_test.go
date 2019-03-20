@@ -97,27 +97,27 @@ func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *DBChannel {
 
 func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	msgJSON := `{
-		"status": "P", 
-		"direction": "O", 
-		"attachments": ["https://foo.bar/image.jpg"], 
-		"queued_on": null, 
-		"text": "Test message 21", 
-		"contact_id": 30, 
-		"contact_urn_id": 14, 
-		"error_count": 0, 
-		"modified_on": "2017-07-21T19:22:23.254133Z", 
+		"status": "P",
+		"direction": "O",
+		"attachments": ["https://foo.bar/image.jpg"],
+		"queued_on": null,
+		"text": "Test message 21",
+		"contact_id": 30,
+		"contact_urn_id": 14,
+		"error_count": 0,
+		"modified_on": "2017-07-21T19:22:23.254133Z",
 		"id": 204,
-		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba", 
-		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f", 
-		"next_attempt": "2017-07-21T19:22:23.254182Z", 
+		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba",
+		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f",
+		"next_attempt": "2017-07-21T19:22:23.254182Z",
 		"urn": "telegram:3527065",
 		"urn_auth": "5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2",
-		"org_id": 1, 
-		"created_on": "2017-07-21T19:22:23.242757Z", 
-		"sent_on": null, 
+		"org_id": 1,
+		"created_on": "2017-07-21T19:22:23.242757Z",
+		"sent_on": null,
 		"high_priority": true,
-		"channel_id": 11, 
-		"response_to_id": 15, 
+		"channel_id": 11,
+		"response_to_id": 15,
 		"response_to_external_id": "external-id",
 		"external_id": null,
 		"metadata": {"quick_replies": ["Yes", "No"]}
@@ -137,26 +137,26 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.True(msg.HighPriority())
 
 	msgJSONNoQR := `{
-		"status": "P", 
-		"direction": "O", 
-		"attachments": ["https://foo.bar/image.jpg"], 
-		"queued_on": null, 
-		"text": "Test message 21", 
-		"contact_id": 30, 
-		"contact_urn_id": 14, 
-		"error_count": 0, 
-		"modified_on": "2017-07-21T19:22:23.254133Z", 
+		"status": "P",
+		"direction": "O",
+		"attachments": ["https://foo.bar/image.jpg"],
+		"queued_on": null,
+		"text": "Test message 21",
+		"contact_id": 30,
+		"contact_urn_id": 14,
+		"error_count": 0,
+		"modified_on": "2017-07-21T19:22:23.254133Z",
 		"id": 204,
-		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba", 
-		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f", 
-		"next_attempt": "2017-07-21T19:22:23.254182Z", 
-		"urn": "telegram:3527065", 
-		"org_id": 1, 
-		"created_on": "2017-07-21T19:22:23.242757Z", 
-		"sent_on": null, 
+		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba",
+		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f",
+		"next_attempt": "2017-07-21T19:22:23.254182Z",
+		"urn": "telegram:3527065",
+		"org_id": 1,
+		"created_on": "2017-07-21T19:22:23.242757Z",
+		"sent_on": null,
 		"high_priority": true,
-		"channel_id": 11, 
-		"response_to_id": null, 
+		"channel_id": 11,
+		"response_to_id": null,
 		"response_to_external_id": "",
 		"external_id": null,
 		"metadata": null
@@ -899,6 +899,33 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	count, err = redis.Int(rc.Do("LLEN", fmt.Sprintf("c:1:%d", msg.ContactID_.Int64)))
 	ts.NoError(err)
 	ts.Equal(1, count)
+}
+
+func (ts *BackendTestSuite) TestCheckExternalIdExistsInDB() {
+	ctx := context.Background()
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+
+	// have to round to microseconds because postgres can't store nanos
+	now := time.Now().Round(time.Microsecond).In(time.UTC)
+
+	// create a new courier msg
+	urn, _ := urns.NewTelURNForCountry("12065551313", knChannel.Country())
+	msg := ts.b.NewIncomingMsg(knChannel, urn, "test123").WithExternalID("ext123").WithReceivedOn(now).WithContactName("test contact").(*DBMsg)
+
+	// try to write it to our db
+	ts.b.WriteMsg(ctx, msg)
+
+	// try to find it by the external id
+	count, err := ts.b.CheckMsgExternalIDExistsInDB("ext123")
+
+	ts.NoError(err)
+	ts.Equal(count, 1)
+
+	// try to find it by a external id that doesn't exist
+	count2, err2 := ts.b.CheckMsgExternalIDExistsInDB("ext999")
+
+	ts.NoError(err2)
+	ts.Equal(count2, 0)
 }
 
 func (ts *BackendTestSuite) TestChannelEvent() {
