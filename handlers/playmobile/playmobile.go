@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	maxMsgLength = 160
+	maxMsgLength = 640
 	sendURL = "%s/broker-api/send"
 )
 
