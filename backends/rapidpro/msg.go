@@ -117,7 +117,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 }
 
 const insertMsgSQL = `
-INSERT INTO 
+INSERT INTO
 	msgs_msg(org_id, uuid, direction, text, attachments, msg_count, error_count, high_priority, status,
              visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on)
     VALUES(:org_id, :uuid, :direction, :text, :attachments, :msg_count, :error_count, :high_priority, :status,
@@ -165,28 +165,28 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 }
 
 const selectMsgSQL = `
-SELECT 
-	org_id, 
-	direction, 
-	text, 
-	attachments, 
-	msg_count, 
-	error_count, 
-	high_priority, 
+SELECT
+	org_id,
+	direction,
+	text,
+	attachments,
+	msg_count,
+	error_count,
+	high_priority,
 	status,
-	visibility, 
-	external_id, 
-	channel_id, 
-	contact_id, 
-	contact_urn_id, 
-	created_on, 
-	modified_on, 
-	next_attempt, 
-	queued_on, 
+	visibility,
+	external_id,
+	channel_id,
+	contact_id,
+	contact_urn_id,
+	created_on,
+	modified_on,
+	next_attempt,
+	queued_on,
 	sent_on
-FROM 
+FROM
 	msgs_msg
-WHERE 
+WHERE
 	id = $1
 `
 
@@ -399,6 +399,52 @@ func clearMsgSeen(rc redis.Conn, msg *DBMsg) {
 
 	rc.Send("hdel", windowKey, urnFingerprint)
 	rc.Do("hdel", prevWindowKey, urnFingerprint)
+}
+
+var luaExternalIDSeen = redis.NewScript(3, `-- KEYS: [Window, PrevWindow, ExternalID]
+	-- try to look up in window
+	local found = redis.call("hget", KEYS[1], KEYS[3])
+
+	-- didn't find it, try in our previous window
+	if not found then
+		found = redis.call("hget", KEYS[2], KEYS[3])
+	end
+
+	-- return the fingerprint found
+	return found
+`)
+
+func checkExternalIDSeen(b *backend, externalID string) bool {
+	r := b.redisPool.Get()
+	defer r.Close()
+
+	now := time.Now().In(time.UTC)
+	prev := now.Add(time.Hour * -24)
+	windowKey := fmt.Sprintf("seen:externalid:%s", now.Format("2006-01-02"))
+	prevWindowKey := fmt.Sprintf("seen:externalid:%s", prev.Format("2006-01-02"))
+
+	// see if there were any messages received in the past 24 hours
+	found, _ := redis.String(luaExternalIDSeen.Do(r, windowKey, prevWindowKey, externalID))
+
+	if found != "" {
+		return true
+	}
+	return false
+}
+
+var luaWriteExternalIDSeen = redis.NewScript(3, `-- KEYS: [Window, ExternalID, Seen]
+	redis.call("hset", KEYS[1], KEYS[2], KEYS[3])
+	redis.call("expire", KEYS[1], 86400)
+`)
+
+func writeExternalIDSeen(b *backend, externalID string) {
+	r := b.redisPool.Get()
+	defer r.Close()
+
+	now := time.Now().In(time.UTC)
+	windowKey := fmt.Sprintf("seen:externalid:%s", now.Format("2006-01-02"))
+
+	luaWriteExternalIDSeen.Do(r, windowKey, externalID, true)
 }
 
 //-----------------------------------------------------------------------------

@@ -333,6 +333,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 			require := require.New(t)
 
 			mb.ClearQueueMsgs()
+			mb.ClearSeenExternalIDs()
 
 			testHandlerRequest(t, s, testCase.URL, testCase.Headers, testCase.Data, testCase.Status, &testCase.Response, testCase.PrepRequest)
 
@@ -437,6 +438,7 @@ func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler cour
 
 	for _, testCase := range testCases {
 		mb.ClearQueueMsgs()
+		mb.ClearSeenExternalIDs()
 
 		b.Run(testCase.Label, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {

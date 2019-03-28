@@ -35,6 +35,8 @@ type MockBackend struct {
 
 	sentMsgs  map[MsgID]bool
 	redisPool *redis.Pool
+
+	seenExternalIDs []string
 }
 
 // NewMockBackend returns a new mock backend suitable for testing
@@ -279,9 +281,29 @@ func (mb *MockBackend) ClearQueueMsgs() {
 	mb.queueMsgs = nil
 }
 
+// ClearSeenExternalIDs clears our mock seen external ids
+func (mb *MockBackend) ClearSeenExternalIDs() {
+	mb.seenExternalIDs = nil
+}
+
 // LenQueuedMsgs Get the length of queued msgs
 func (mb *MockBackend) LenQueuedMsgs() int {
 	return len(mb.queueMsgs)
+}
+
+// CheckExternalIDSeen checks if external ID has been seen in a period
+func (mb *MockBackend) CheckExternalIDSeen(external_id string) bool {
+	for _, b := range mb.seenExternalIDs {
+		if b == external_id {
+			return true
+		}
+	}
+	return false
+}
+
+// WriteExternalIDSeen marks a external ID as seen for a period
+func (mb *MockBackend) WriteExternalIDSeen(external_id string) {
+	mb.seenExternalIDs = append(mb.seenExternalIDs, external_id)
 }
 
 // Health gives a string representing our health, empty for our mock

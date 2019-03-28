@@ -296,6 +296,16 @@ func (b *backend) WriteChannelLogs(ctx context.Context, logs []*courier.ChannelL
 	return nil
 }
 
+// Check if external ID has been seen in a period
+func (b *backend) CheckExternalIDSeen(externalID string) bool {
+	return checkExternalIDSeen(b, externalID)
+}
+
+// Mark a external ID as seen for a period
+func (b *backend) WriteExternalIDSeen(externalID string) {
+	writeExternalIDSeen(b, externalID)
+}
+
 // Health returns the health of this backend as a string, returning "" if all is well
 func (b *backend) Health() string {
 	// test redis

@@ -134,6 +134,13 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	// first deal with any received messages
 	for _, msg := range payload.Messages {
 
+		if msg.ID != "" {
+			seen := h.Backend().CheckExternalIDSeen(msg.ID)
+			if seen {
+				continue
+			}
+		}
+
 		// create our date from the timestamp
 		ts, err := strconv.ParseInt(msg.Timestamp, 10, 64)
 		if err != nil {
@@ -187,6 +194,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		if err != nil {
 			return nil, err
 		}
+
+		h.Backend().WriteExternalIDSeen(msg.ID)
 
 		events = append(events, event)
 		data = append(data, courier.NewMsgReceiveData(event))

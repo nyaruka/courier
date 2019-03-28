@@ -72,6 +72,12 @@ type Backend interface {
 	// used to determine any sort of deduping of msg sends
 	MarkOutgoingMsgComplete(context.Context, Msg, MsgStatus)
 
+	// Check if external ID has been seen in a period
+	CheckExternalIDSeen(string) bool
+
+	// Mark a external ID as seen for a period
+	WriteExternalIDSeen(string)
+
 	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string
 
