@@ -1,6 +1,7 @@
 package courier
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 	"time"
@@ -72,6 +73,7 @@ type Msg interface {
 	URNAuth() string
 	ContactName() string
 	QuickReplies() []string
+	Metadata() json.RawMessage
 	ResponseToID() MsgID
 	ResponseToExternalID() string
 
@@ -89,6 +91,7 @@ type Msg interface {
 	WithUUID(uuid MsgUUID) Msg
 	WithAttachment(url string) Msg
 	WithURNAuth(auth string) Msg
+	WithMetadata(metadata json.RawMessage) Msg
 
 	EventID() int64
 }

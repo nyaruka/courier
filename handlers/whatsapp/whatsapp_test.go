@@ -2,6 +2,7 @@ package whatsapp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -353,6 +354,20 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL,
 	},
+	{Label: "Template Send",
+		Text:   "templated message",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Metadata:     json.RawMessage(`{"template": { "name": "revive_issue", "language": "eng", "variables": ["Chef", "tomorrow"]}}`),
+		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 200,
+		RequestBody: `{"to":"250788123123","type":"hsm","hsm":{"namespace":"waba_namespace","element_name":"revive_issue","language":{"policy":"deterministic","code":"en"},"localizable_params":[{"default":"Chef"},{"default":"tomorrow"}]}}`,
+		SendPrep:    setSendURL,
+	},
+	{Label: "Template Invalid Language",
+		Text: "templated message", URN: "whatsapp:250788123123",
+		Error:    "unable to decode template: {\"template\": { \"name\": \"revive_issue\", \"language\": \"bnt\", \"variables\": [\"Chef\", \"tomorrow\"]}} for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c56ab: unable to find mapping for language: bnt",
+		Metadata: json.RawMessage(`{"template": { "name": "revive_issue", "language": "bnt", "variables": ["Chef", "tomorrow"]}}`),
+	},
 }
 
 func TestSending(t *testing.T) {
@@ -360,6 +375,7 @@ func TestSending(t *testing.T) {
 		map[string]interface{}{
 			"auth_token": "token123",
 			"base_url":   "https://foo.bar/",
+			"namespace":  "waba_namespace",
 		})
 
 	// fake media server that just replies with 200 and "media body" for content

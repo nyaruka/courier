@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -80,6 +81,7 @@ type ChannelSendTestCase struct {
 	HighPriority         bool
 	ResponseToID         int64
 	ResponseToExternalID string
+	Metadata             json.RawMessage
 
 	ResponseStatus int
 	ResponseBody   string
@@ -198,6 +200,9 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 			if testCase.URNAuth != "" {
 				msg.WithURNAuth(testCase.URNAuth)
+			}
+			if len(testCase.Metadata) > 0 {
+				msg.WithMetadata(testCase.Metadata)
 			}
 
 			var testRequest *http.Request
