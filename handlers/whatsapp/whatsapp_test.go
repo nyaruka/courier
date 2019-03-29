@@ -358,24 +358,24 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text:   "templated message",
 		URN:    "whatsapp:250788123123",
 		Status: "W", ExternalID: "157b5e14568e8",
-		Metadata:     json.RawMessage(`{"template": { "name": "revive_issue", "language": "eng", "variables": ["Chef", "tomorrow"]}}`),
+		Metadata:     json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "variables": ["Chef", "tomorrow"]}}`),
 		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 200,
 		RequestBody: `{"to":"250788123123","type":"hsm","hsm":{"namespace":"waba_namespace","element_name":"revive_issue","language":{"policy":"deterministic","code":"en"},"localizable_params":[{"default":"Chef"},{"default":"tomorrow"}]}}`,
 		SendPrep:    setSendURL,
 	},
 	{Label: "Template Invalid Language",
 		Text: "templated message", URN: "whatsapp:250788123123",
-		Error:    "unable to decode template: {\"template\": { \"name\": \"revive_issue\", \"language\": \"bnt\", \"variables\": [\"Chef\", \"tomorrow\"]}} for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c56ab: unable to find mapping for language: bnt",
-		Metadata: json.RawMessage(`{"template": { "name": "revive_issue", "language": "bnt", "variables": ["Chef", "tomorrow"]}}`),
+		Error:    `unable to decode template: {"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}} for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c56ab: unable to find mapping for language: bnt`,
+		Metadata: json.RawMessage(`{"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}}`),
 	},
 }
 
 func TestSending(t *testing.T) {
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WA", "250788383383", "US",
 		map[string]interface{}{
-			"auth_token": "token123",
-			"base_url":   "https://foo.bar/",
-			"namespace":  "waba_namespace",
+			"auth_token":   "token123",
+			"base_url":     "https://foo.bar/",
+			"fb_namespace": "waba_namespace",
 		})
 
 	// fake media server that just replies with 200 and "media body" for content

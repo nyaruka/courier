@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	configNamespace = "namespace"
+	configNamespace = "fb_namespace"
 )
 
 func init() {
@@ -429,13 +429,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	} else {
 		// do we have a template?
-		var template *MsgTemplate
-		template, err = h.getTemplate(msg)
+		var templating *MsgTemplating
+		templating, err = h.getTemplate(msg)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
 		}
 
-		if template != nil {
+		if templating != nil {
 			namespace := msg.Channel().StringConfigForKey(configNamespace, "")
 			if namespace == "" {
 				return nil, errors.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
@@ -446,10 +446,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				Type: "hsm",
 			}
 			payload.HSM.Namespace = namespace
-			payload.HSM.ElementName = template.Name
+			payload.HSM.ElementName = templating.Template.Name
 			payload.HSM.Language.Policy = "deterministic"
-			payload.HSM.Language.Code = template.Language
-			for _, v := range template.Variables {
+			payload.HSM.Language.Code = templating.Language
+			for _, v := range templating.Variables {
 				payload.HSM.LocalizableParams = append(payload.HSM.LocalizableParams, LocalizableParam{Default: v})
 			}
 
@@ -557,7 +557,7 @@ func sendWhatsAppMsg(msg courier.Msg, url string, token string, payload interfac
 	return externalID, log, err
 }
 
-func (h *handler) getTemplate(msg courier.Msg) (*MsgTemplate, error) {
+func (h *handler) getTemplate(msg courier.Msg) (*MsgTemplating, error) {
 	mdJSON := msg.Metadata()
 	if len(mdJSON) == 0 {
 		return nil, nil
@@ -567,28 +567,37 @@ func (h *handler) getTemplate(msg courier.Msg) (*MsgTemplate, error) {
 	if err != nil {
 		return nil, err
 	}
-	template := metadata.Template
-	if template == nil {
+	templating := metadata.Templating
+	if templating == nil {
 		return nil, nil
 	}
 
-	// map our language from iso639-3 to the WA country / iso638-2 pair
-	language, found := languageMap[template.Language]
-	if !found {
-		return nil, fmt.Errorf("unable to find mapping for language: %s", template.Language)
+	// check our template is valid
+	err = handlers.Validate(templating)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid templating definition")
 	}
-	template.Language = language
 
-	return template, err
+	// map our language from iso639-3 to the WA country / iso638-2 pair
+	language, found := languageMap[templating.Language]
+	if !found {
+		return nil, fmt.Errorf("unable to find mapping for language: %s", templating.Language)
+	}
+	templating.Language = language
+
+	return templating, err
 }
 
 type TemplateMetadata struct {
-	Template *MsgTemplate `json:"template"`
+	Templating *MsgTemplating `json:"templating"`
 }
 
-type MsgTemplate struct {
-	Name      string   `json:"name"`
-	Language  string   `json:"language"`
+type MsgTemplating struct {
+	Template struct {
+		Name string `json:"name" validate:"required"`
+		UUID string `json:"uuid" validate:"required"`
+	} `json:"template" validate:"required,dive"`
+	Language  string   `json:"language" validate:"required"`
 	Variables []string `json:"variables"`
 }
 
