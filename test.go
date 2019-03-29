@@ -165,6 +165,13 @@ func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 
 // WriteMsg queues the passed in message internally
 func (mb *MockBackend) WriteMsg(ctx context.Context, m Msg) error {
+	mock := m.(*mockMsg)
+
+	// this msg has already been written (we received it twice), we are a no op
+	if mock.alreadyWritten {
+		return nil
+	}
+
 	if mb.errorOnQueue {
 		return errors.New("unable to queue message")
 	}
@@ -292,18 +299,21 @@ func (mb *MockBackend) LenQueuedMsgs() int {
 }
 
 // CheckExternalIDSeen checks if external ID has been seen in a period
-func (mb *MockBackend) CheckExternalIDSeen(external_id string) bool {
+func (mb *MockBackend) CheckExternalIDSeen(msg Msg) Msg {
+	m := msg.(*mockMsg)
+
 	for _, b := range mb.seenExternalIDs {
-		if b == external_id {
-			return true
+		if b == msg.ExternalID() {
+			m.alreadyWritten = true
+			return m
 		}
 	}
-	return false
+	return m
 }
 
 // WriteExternalIDSeen marks a external ID as seen for a period
-func (mb *MockBackend) WriteExternalIDSeen(external_id string) {
-	mb.seenExternalIDs = append(mb.seenExternalIDs, external_id)
+func (mb *MockBackend) WriteExternalIDSeen(msg Msg) {
+	mb.seenExternalIDs = append(mb.seenExternalIDs, msg.ExternalID())
 }
 
 // Health gives a string representing our health, empty for our mock
@@ -469,6 +479,7 @@ type mockMsg struct {
 	quickReplies         []string
 	responseToID         MsgID
 	responseToExternalID string
+	alreadyWritten       bool
 
 	receivedOn *time.Time
 	sentOn     *time.Time

@@ -588,16 +588,20 @@ func (ts *BackendTestSuite) TestExternalIDDupes() {
 	r := ts.b.redisPool.Get()
 	defer r.Close()
 
-	var seen = ts.b.CheckExternalIDSeen("ext123")
-	ts.False(seen)
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	urn, _ := urns.NewTelURNForCountry("12065551215", knChannel.Country())
 
-	ts.b.WriteExternalIDSeen("ext123")
+	msg := newMsg(MsgIncoming, knChannel, urn, "ping")
 
-	seen = ts.b.CheckExternalIDSeen("ext123")
-	ts.True(seen)
+	var checkedMsg = ts.b.CheckExternalIDSeen(msg)
+	m := checkedMsg.(*DBMsg)
+	ts.False(m.alreadyWritten)
 
-	seen = ts.b.CheckExternalIDSeen("ext222")
-	ts.False(seen)
+	ts.b.WriteExternalIDSeen(msg)
+
+	checkedMsg = ts.b.CheckExternalIDSeen(msg)
+	m2 := checkedMsg.(*DBMsg)
+	ts.True(m2.alreadyWritten)
 }
 
 func (ts *BackendTestSuite) TestStatus() {

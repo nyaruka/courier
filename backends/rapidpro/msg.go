@@ -414,9 +414,11 @@ var luaExternalIDSeen = redis.NewScript(3, `-- KEYS: [Window, PrevWindow, Extern
 	return found
 `)
 
-func checkExternalIDSeen(b *backend, externalID string) bool {
+func checkExternalIDSeen(b *backend, msg courier.Msg) courier.MsgUUID {
 	r := b.redisPool.Get()
 	defer r.Close()
+
+	urnFingerprint := fmt.Sprintf("%s:%s|%s", msg.Channel().UUID(), msg.URN().Identity(), msg.ExternalID())
 
 	now := time.Now().In(time.UTC)
 	prev := now.Add(time.Hour * -24)
@@ -424,12 +426,18 @@ func checkExternalIDSeen(b *backend, externalID string) bool {
 	prevWindowKey := fmt.Sprintf("seen:externalid:%s", prev.Format("2006-01-02"))
 
 	// see if there were any messages received in the past 24 hours
-	found, _ := redis.String(luaExternalIDSeen.Do(r, windowKey, prevWindowKey, externalID))
+	found, _ := redis.String(luaExternalIDSeen.Do(r, windowKey, prevWindowKey, urnFingerprint))
 
+	// if so, test whether the text it the same
 	if found != "" {
-		return true
+		prevText := found[37:]
+
+		// if it is the same, return the UUID
+		if prevText == msg.Text() {
+			return courier.NewMsgUUIDFromString(found[:36])
+		}
 	}
-	return false
+	return courier.NilMsgUUID
 }
 
 var luaWriteExternalIDSeen = redis.NewScript(3, `-- KEYS: [Window, ExternalID, Seen]
@@ -437,14 +445,17 @@ var luaWriteExternalIDSeen = redis.NewScript(3, `-- KEYS: [Window, ExternalID, S
 	redis.call("expire", KEYS[1], 86400)
 `)
 
-func writeExternalIDSeen(b *backend, externalID string) {
+func writeExternalIDSeen(b *backend, msg courier.Msg) {
 	r := b.redisPool.Get()
 	defer r.Close()
+
+	urnFingerprint := fmt.Sprintf("%s:%s|%s", msg.Channel().UUID(), msg.URN().Identity(), msg.ExternalID())
+	uuidText := fmt.Sprintf("%s|%s", msg.UUID().String(), msg.Text())
 
 	now := time.Now().In(time.UTC)
 	windowKey := fmt.Sprintf("seen:externalid:%s", now.Format("2006-01-02"))
 
-	luaWriteExternalIDSeen.Do(r, windowKey, externalID, true)
+	luaWriteExternalIDSeen.Do(r, windowKey, urnFingerprint, uuidText)
 }
 
 //-----------------------------------------------------------------------------

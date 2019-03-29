@@ -73,10 +73,10 @@ type Backend interface {
 	MarkOutgoingMsgComplete(context.Context, Msg, MsgStatus)
 
 	// Check if external ID has been seen in a period
-	CheckExternalIDSeen(string) bool
+	CheckExternalIDSeen(Msg) Msg
 
 	// Mark a external ID as seen for a period
-	WriteExternalIDSeen(string)
+	WriteExternalIDSeen(Msg)
 
 	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string
