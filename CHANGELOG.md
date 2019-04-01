@@ -1,3 +1,7 @@
+v1.2.143
+----------
+ * deduplicate WA messages on external ID
+
 v1.2.142
 ----------
  * normalize TEL urns with the country

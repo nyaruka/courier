@@ -97,27 +97,27 @@ func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *DBChannel {
 
 func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	msgJSON := `{
-		"status": "P", 
-		"direction": "O", 
-		"attachments": ["https://foo.bar/image.jpg"], 
-		"queued_on": null, 
-		"text": "Test message 21", 
-		"contact_id": 30, 
-		"contact_urn_id": 14, 
-		"error_count": 0, 
-		"modified_on": "2017-07-21T19:22:23.254133Z", 
+		"status": "P",
+		"direction": "O",
+		"attachments": ["https://foo.bar/image.jpg"],
+		"queued_on": null,
+		"text": "Test message 21",
+		"contact_id": 30,
+		"contact_urn_id": 14,
+		"error_count": 0,
+		"modified_on": "2017-07-21T19:22:23.254133Z",
 		"id": 204,
-		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba", 
-		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f", 
-		"next_attempt": "2017-07-21T19:22:23.254182Z", 
+		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba",
+		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f",
+		"next_attempt": "2017-07-21T19:22:23.254182Z",
 		"urn": "telegram:3527065",
 		"urn_auth": "5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2",
-		"org_id": 1, 
-		"created_on": "2017-07-21T19:22:23.242757Z", 
-		"sent_on": null, 
+		"org_id": 1,
+		"created_on": "2017-07-21T19:22:23.242757Z",
+		"sent_on": null,
 		"high_priority": true,
-		"channel_id": 11, 
-		"response_to_id": 15, 
+		"channel_id": 11,
+		"response_to_id": 15,
 		"response_to_external_id": "external-id",
 		"external_id": null,
 		"metadata": {"quick_replies": ["Yes", "No"]}
@@ -137,26 +137,26 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.True(msg.HighPriority())
 
 	msgJSONNoQR := `{
-		"status": "P", 
-		"direction": "O", 
-		"attachments": ["https://foo.bar/image.jpg"], 
-		"queued_on": null, 
-		"text": "Test message 21", 
-		"contact_id": 30, 
-		"contact_urn_id": 14, 
-		"error_count": 0, 
-		"modified_on": "2017-07-21T19:22:23.254133Z", 
+		"status": "P",
+		"direction": "O",
+		"attachments": ["https://foo.bar/image.jpg"],
+		"queued_on": null,
+		"text": "Test message 21",
+		"contact_id": 30,
+		"contact_urn_id": 14,
+		"error_count": 0,
+		"modified_on": "2017-07-21T19:22:23.254133Z",
 		"id": 204,
-		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba", 
-		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f", 
-		"next_attempt": "2017-07-21T19:22:23.254182Z", 
-		"urn": "telegram:3527065", 
-		"org_id": 1, 
-		"created_on": "2017-07-21T19:22:23.242757Z", 
-		"sent_on": null, 
+		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba",
+		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f",
+		"next_attempt": "2017-07-21T19:22:23.254182Z",
+		"urn": "telegram:3527065",
+		"org_id": 1,
+		"created_on": "2017-07-21T19:22:23.242757Z",
+		"sent_on": null,
 		"high_priority": true,
-		"channel_id": 11, 
-		"response_to_id": null, 
+		"channel_id": 11,
+		"response_to_id": null,
 		"response_to_external_id": "",
 		"external_id": null,
 		"metadata": null
@@ -582,6 +582,26 @@ func (ts *BackendTestSuite) TestDupes() {
 	ts.NoError(err)
 
 	ts.NotEqual(uuid2, msg.UUID().String())
+}
+
+func (ts *BackendTestSuite) TestExternalIDDupes() {
+	r := ts.b.redisPool.Get()
+	defer r.Close()
+
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	urn, _ := urns.NewTelURNForCountry("12065551215", knChannel.Country())
+
+	msg := newMsg(MsgIncoming, knChannel, urn, "ping")
+
+	var checkedMsg = ts.b.CheckExternalIDSeen(msg)
+	m := checkedMsg.(*DBMsg)
+	ts.False(m.alreadyWritten)
+
+	ts.b.WriteExternalIDSeen(msg)
+
+	checkedMsg = ts.b.CheckExternalIDSeen(msg)
+	m2 := checkedMsg.(*DBMsg)
+	ts.True(m2.alreadyWritten)
 }
 
 func (ts *BackendTestSuite) TestStatus() {
