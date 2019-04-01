@@ -296,6 +296,23 @@ func (b *backend) WriteChannelLogs(ctx context.Context, logs []*courier.ChannelL
 	return nil
 }
 
+// Check if external ID has been seen in a period
+func (b *backend) CheckExternalIDSeen(msg courier.Msg) courier.Msg {
+	var prevUUID = checkExternalIDSeen(b, msg)
+	m := msg.(*DBMsg)
+	if prevUUID != courier.NilMsgUUID {
+		// if so, use its UUID and that we've been written
+		m.UUID_ = prevUUID
+		m.alreadyWritten = true
+	}
+	return m
+}
+
+// Mark a external ID as seen for a period
+func (b *backend) WriteExternalIDSeen(msg courier.Msg) {
+	writeExternalIDSeen(b, msg)
+}
+
 // Health returns the health of this backend as a string, returning "" if all is well
 func (b *backend) Health() string {
 	// test redis

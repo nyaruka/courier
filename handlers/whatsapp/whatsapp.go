@@ -133,7 +133,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 	// first deal with any received messages
 	for _, msg := range payload.Messages {
-
 		// create our date from the timestamp
 		ts, err := strconv.ParseInt(msg.Timestamp, 10, 64)
 		if err != nil {
@@ -172,7 +171,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// create our message
-		event := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(msg.ID)
+		ev := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(msg.ID)
+		event := h.Backend().CheckExternalIDSeen(ev)
 
 		// we had an error downloading media
 		if err != nil {
@@ -187,6 +187,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		if err != nil {
 			return nil, err
 		}
+
+		h.Backend().WriteExternalIDSeen(event)
 
 		events = append(events, event)
 		data = append(data, courier.NewMsgReceiveData(event))

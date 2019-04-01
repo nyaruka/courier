@@ -35,6 +35,8 @@ type MockBackend struct {
 
 	sentMsgs  map[MsgID]bool
 	redisPool *redis.Pool
+
+	seenExternalIDs []string
 }
 
 // NewMockBackend returns a new mock backend suitable for testing
@@ -163,6 +165,13 @@ func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 
 // WriteMsg queues the passed in message internally
 func (mb *MockBackend) WriteMsg(ctx context.Context, m Msg) error {
+	mock := m.(*mockMsg)
+
+	// this msg has already been written (we received it twice), we are a no op
+	if mock.alreadyWritten {
+		return nil
+	}
+
 	if mb.errorOnQueue {
 		return errors.New("unable to queue message")
 	}
@@ -279,9 +288,32 @@ func (mb *MockBackend) ClearQueueMsgs() {
 	mb.queueMsgs = nil
 }
 
+// ClearSeenExternalIDs clears our mock seen external ids
+func (mb *MockBackend) ClearSeenExternalIDs() {
+	mb.seenExternalIDs = nil
+}
+
 // LenQueuedMsgs Get the length of queued msgs
 func (mb *MockBackend) LenQueuedMsgs() int {
 	return len(mb.queueMsgs)
+}
+
+// CheckExternalIDSeen checks if external ID has been seen in a period
+func (mb *MockBackend) CheckExternalIDSeen(msg Msg) Msg {
+	m := msg.(*mockMsg)
+
+	for _, b := range mb.seenExternalIDs {
+		if b == msg.ExternalID() {
+			m.alreadyWritten = true
+			return m
+		}
+	}
+	return m
+}
+
+// WriteExternalIDSeen marks a external ID as seen for a period
+func (mb *MockBackend) WriteExternalIDSeen(msg Msg) {
+	mb.seenExternalIDs = append(mb.seenExternalIDs, msg.ExternalID())
 }
 
 // Health gives a string representing our health, empty for our mock
@@ -447,6 +479,7 @@ type mockMsg struct {
 	quickReplies         []string
 	responseToID         MsgID
 	responseToExternalID string
+	alreadyWritten       bool
 
 	receivedOn *time.Time
 	sentOn     *time.Time
