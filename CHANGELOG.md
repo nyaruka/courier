@@ -1,3 +1,7 @@
+v1.2.144
+----------
+ * include extra for channel events in response
+
 v1.2.143
 ----------
  * deduplicate WA messages on external ID
