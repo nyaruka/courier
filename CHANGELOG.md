@@ -1,3 +1,7 @@
+v1.2.145
+----------
+ * mark deleted WhatsApp messages as failed
+
 v1.2.144
 ----------
  * include extra for channel events in response
