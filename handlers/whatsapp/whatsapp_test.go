@@ -204,6 +204,18 @@ var invalidStatus = `
   }]
 }
 `
+
+var ignoreStatus = `
+{
+  "statuses": [{
+    "id": "9712A34B4A8B6AD50F",
+    "recipient_id": "16315555555",
+    "status": "deleted",
+    "timestamp": "1518694700"
+  }]
+}
+`
+
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, Status: 200, Response: `"type":"msg"`,
 		Text: Sp("hello world"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
@@ -228,7 +240,8 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Status", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: validStatus, Status: 200, Response: `"type":"status"`,
 		MsgStatus: Sp("S"), ExternalID: Sp("9712A34B4A8B6AD50F")},
 	{Label: "Receive Invalid JSON", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: "not json", Status: 400, Response: "unable to parse"},
-	{Label: "Receive Invalid Status", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidStatus, Status: 400, Response: `"invalid status: in_orbit"`},
+	{Label: "Receive Invalid Status", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidStatus, Status: 400, Response: `"unknown status: in_orbit"`},
+	{Label: "Receive Ignore Status", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: ignoreStatus, Status: 200, Response: `"ignoring status: deleted"`},
 }
 
 func TestBuildMediaRequest(t *testing.T) {

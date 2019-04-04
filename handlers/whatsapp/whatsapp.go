@@ -198,7 +198,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	for _, status := range payload.Statuses {
 		msgStatus, found := waStatusMapping[status.Status]
 		if !found {
-			handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid status: %s", status.Status))
+			if waIgnoreStatuses[status.Status] {
+				data = append(data, courier.NewInfoData(fmt.Sprintf("ignoring status: %s", status.Status)))
+			} else {
+				handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status: %s", status.Status))
+			}
+			continue
 		}
 
 		event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus)
@@ -256,7 +261,10 @@ var waStatusMapping = map[string]courier.MsgStatusValue{
 	"delivered": courier.MsgDelivered,
 	"read":      courier.MsgDelivered,
 	"failed":    courier.MsgFailed,
-	"deleted":   courier.MsgFailed,
+}
+
+var waIgnoreStatuses = map[string]bool{
+	"deleted": true,
 }
 
 // {
