@@ -1,3 +1,7 @@
+v1.2.146
+----------
+ * ignore deleted status for whatsapp
+
 v1.2.145
 ----------
  * mark deleted WhatsApp messages as failed
