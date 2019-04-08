@@ -255,6 +255,7 @@ var waStatusMapping = map[string]courier.MsgStatusValue{
 	"sent":      courier.MsgSent,
 	"delivered": courier.MsgDelivered,
 	"read":      courier.MsgDelivered,
+	"deleted":   courier.MsgDelivered,
 	"failed":    courier.MsgFailed,
 }
 
