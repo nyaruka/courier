@@ -42,6 +42,44 @@ var helloMsg = `{
 	}]
 }`
 
+var duplicateMsg = `{
+	"object":"page",
+	"entry": [{
+	  "id": "208685479508187",
+	  "messaging": [{
+			"message": {
+			  "text": "Hello World",
+			  "mid": "external_id"
+			},
+			"recipient": {
+			  "id": "1234"
+			},
+			"sender": {
+			  "id": "5678"
+			},
+			"timestamp": 1459991487970
+	  }],
+	  "time": 1459991487970
+	},
+	{
+	  "id": "208685479508187",
+	  "messaging": [{
+			"message": {
+			  "text": "Hello World",
+			  "mid": "external_id"
+			},
+			"recipient": {
+			  "id": "1234"
+			},
+			"sender": {
+			  "id": "5678"
+			},
+			"timestamp": 1459991487970
+	  }],
+	  "time": 1459991487970
+	}]
+}`
+
 var invalidURN = `{
 	"object":"page",
 	"entry": [{
@@ -325,6 +363,8 @@ var notJSON = `blargh`
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Message", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, Status: 200, Response: "Handled",
+		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+	{Label: "No Duplicate Receive Message", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: duplicateMsg, Status: 200, Response: "Handled",
 		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
 	{Label: "Receive Attachment", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: attachment, Status: 200, Response: "Handled",
 		Text: Sp(""), Attachments: []string{"https://image-url/foo.png"}, URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
