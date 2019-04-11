@@ -328,7 +328,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			}
 
 			// create our message
-			event := h.Backend().NewIncomingMsg(channel, urn, msg.Message.Text).WithExternalID(msg.Message.MID).WithReceivedOn(date)
+			ev := h.Backend().NewIncomingMsg(channel, urn, msg.Message.Text).WithExternalID(msg.Message.MID).WithReceivedOn(date)
+			event := h.Backend().CheckExternalIDSeen(ev)
 
 			// add any attachments
 			for _, att := range msg.Message.Attachments {
@@ -341,6 +342,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			if err != nil {
 				return nil, err
 			}
+
+			h.Backend().WriteExternalIDSeen(event)
 
 			events = append(events, event)
 			data = append(data, courier.NewMsgReceiveData(event))

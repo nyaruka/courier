@@ -77,7 +77,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg) error {
 	// fail? spool for later
 	if err != nil {
 		logrus.WithError(err).WithField("msg", m.UUID().String()).Error("error writing to db")
-		return courier.WriteToSpool(b.config.SpoolDir, "msgs", m)
+		err = courier.WriteToSpool(b.config.SpoolDir, "msgs", m)
 	}
 
 	// mark this msg as having been seen
