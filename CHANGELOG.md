@@ -1,3 +1,7 @@
+v1.2.147
+----------
+ * Prevent Facebook duplicate messages, dedupe in external id
+
 v1.2.146
 ----------
  * ignore deleted status for whatsapp
