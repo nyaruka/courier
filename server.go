@@ -98,7 +98,9 @@ func (s *server) Start() error {
 	}
 
 	// start our spool flushers
-	startSpoolFlushers(s)
+	if !s.config.Maintenance {
+		startSpoolFlushers(s)
+	}
 
 	// wire up our main pages
 	s.router.NotFound(s.handle404)

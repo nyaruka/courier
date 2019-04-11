@@ -51,12 +51,18 @@ func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType
 // writeChannelEvent writes the passed in event to the database, queueing it to our spool in case the database is down
 func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEvent) error {
 	dbEvent := event.(*DBChannelEvent)
+	var err error
 
-	err := writeChannelEventToDB(ctx, b, dbEvent)
+	if !b.config.Maintenance {
+		err = writeChannelEventToDB(ctx, b, dbEvent)
+	}
 
 	// failed writing, write to our spool instead
 	if err != nil {
 		logrus.WithError(err).WithField("channel_id", dbEvent.ChannelID_.Int64).WithField("event_type", dbEvent.EventType_).Error("error writing channel event to db")
+	}
+
+	if err != nil || b.config.Maintenance {
 		err = courier.WriteToSpool(b.config.SpoolDir, "events", dbEvent)
 	}
 

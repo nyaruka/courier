@@ -52,6 +52,7 @@ const (
 // WriteMsg creates a message given the passed in arguments
 func writeMsg(ctx context.Context, b *backend, msg courier.Msg) error {
 	m := msg.(*DBMsg)
+	var err error
 
 	// this msg has already been written (we received it twice), we are a no op
 	if m.alreadyWritten {
@@ -72,14 +73,19 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg) error {
 	}
 
 	// try to write it our db
-	err := writeMsgToDB(ctx, b, m)
-
-	// fail? spool for later
-	if err != nil {
-		logrus.WithError(err).WithField("msg", m.UUID().String()).Error("error writing to db")
-		err = courier.WriteToSpool(b.config.SpoolDir, "msgs", m)
+	if !b.config.Maintenance {
+		err = writeMsgToDB(ctx, b, m)
 	}
 
+	// fail? log
+	if err != nil {
+		logrus.WithError(err).WithField("msg", m.UUID().String()).Error("error writing to db")
+	}
+
+	// if we failed or in maintenance mode write to spool
+	if err != nil || b.config.Maintenance {
+		err = courier.WriteToSpool(b.config.SpoolDir, "msgs", m)
+	}
 	// mark this msg as having been seen
 	writeMsgSeen(b, m)
 	return err

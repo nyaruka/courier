@@ -30,14 +30,18 @@ func newMsgStatus(channel courier.Channel, id courier.MsgID, externalID string, 
 // writeMsgStatus writes the passed in status to the database, queueing it to our spool in case the database is down
 func writeMsgStatus(ctx context.Context, b *backend, status courier.MsgStatus) error {
 	dbStatus := status.(*DBMsgStatus)
+	var err error
 
-	err := writeMsgStatusToDB(ctx, b, dbStatus)
+	if !b.config.Maintenance {
+		err = writeMsgStatusToDB(ctx, b, dbStatus)
+	}
+
 	if err == courier.ErrMsgNotFound {
 		return err
 	}
 
-	// failed writing, write to our spool instead
-	if err != nil {
+	// failed writing or in maintenance, write to our spool instead
+	if err != nil || b.config.Maintenance {
 		err = courier.WriteToSpool(b.config.SpoolDir, "statuses", dbStatus)
 	}
 
