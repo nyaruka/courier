@@ -1032,14 +1032,14 @@ type ServerTestSuite struct {
 }
 
 func (ts *MaintenanceServerTestSuite) TestMaintenanceMode() {
-	config := &courier.Config{Maintenance: true}
+	config := &courier.Config{Redis: "redis://localhost:6379/0", Maintenance: true}
 	config.Backend = "rapidpro"
 	b := newBackend(config)
 	ts.b = b.(*backend)
 	err := b.Start()
 	ts.NoError(err)
 	ts.Nil(ts.b.db)
-	ts.Nil(ts.b.redisPool)
+	ts.NotNil(ts.b.redisPool)
 }
 
 func TestMaintenanceServerSuite(t *testing.T) {
