@@ -350,6 +350,10 @@ var luaMsgSeen = redis.NewScript(3, `-- KEYS: [Window, PrevWindow, URNFingerprin
 // checkMsgSeen tries to look up whether a msg with the fingerprint passed in was seen in window or prevWindow. If
 // found returns the UUID of that msg, if not returns empty string
 func checkMsgSeen(b *backend, msg *DBMsg) courier.MsgUUID {
+	if b.config.Maintenance {
+		return courier.NilMsgUUID
+	}
+
 	r := b.redisPool.Get()
 	defer r.Close()
 
@@ -383,6 +387,9 @@ var luaWriteMsgSeen = redis.NewScript(3, `-- KEYS: [Window, URNFingerprint, UUID
 // writeMsgSeen writes that the message with the passed in fingerprint and UUID was seen in the
 // passed in window
 func writeMsgSeen(b *backend, msg *DBMsg) {
+	if b.config.Maintenance {
+		return
+	}
 	r := b.redisPool.Get()
 	defer r.Close()
 
@@ -421,6 +428,10 @@ var luaExternalIDSeen = redis.NewScript(3, `-- KEYS: [Window, PrevWindow, Extern
 `)
 
 func checkExternalIDSeen(b *backend, msg courier.Msg) courier.MsgUUID {
+	if b.config.Maintenance {
+		return courier.NilMsgUUID
+	}
+
 	r := b.redisPool.Get()
 	defer r.Close()
 
@@ -452,6 +463,10 @@ var luaWriteExternalIDSeen = redis.NewScript(3, `-- KEYS: [Window, ExternalID, S
 `)
 
 func writeExternalIDSeen(b *backend, msg courier.Msg) {
+	if b.config.Maintenance {
+		return
+	}
+
 	r := b.redisPool.Get()
 	defer r.Close()
 

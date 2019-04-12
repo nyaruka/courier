@@ -1030,3 +1030,23 @@ func TestBackendSuite(t *testing.T) {
 type ServerTestSuite struct {
 	suite.Suite
 }
+
+func (ts *MaintenanceServerTestSuite) TestMaintenanceMode() {
+	config := &courier.Config{Maintenance: true}
+	config.Backend = "rapidpro"
+	b := newBackend(config)
+	ts.b = b.(*backend)
+	err := b.Start()
+	ts.NoError(err)
+	ts.Nil(ts.b.db)
+	ts.Nil(ts.b.redisPool)
+}
+
+func TestMaintenanceServerSuite(t *testing.T) {
+	suite.Run(t, new(MaintenanceServerTestSuite))
+}
+
+type MaintenanceServerTestSuite struct {
+	suite.Suite
+	b *backend
+}
