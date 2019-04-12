@@ -98,7 +98,9 @@ func (s *server) Start() error {
 	}
 
 	// start our spool flushers
-	startSpoolFlushers(s)
+	if !s.config.Maintenance {
+		startSpoolFlushers(s)
+	}
 
 	// wire up our main pages
 	s.router.NotFound(s.handle404)
@@ -158,7 +160,11 @@ func (s *server) Start() error {
 
 	// start our foreman for outgoing messages
 	s.foreman = NewForeman(s, s.config.MaxWorkers)
-	s.foreman.Start()
+
+	// Do not send in maintenance mode
+	if !s.config.Maintenance {
+		s.foreman.Start()
+	}
 
 	return nil
 }

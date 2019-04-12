@@ -455,37 +455,42 @@ func (b *backend) Start() error {
 	})
 	log.Info("starting backend")
 
-	// parse and test our db config
-	dbURL, err := url.Parse(b.config.DB)
-	if err != nil {
-		return fmt.Errorf("unable to parse DB URL '%s': %s", b.config.DB, err)
-	}
+	isMaintenance := b.config.Maintenance
 
-	if dbURL.Scheme != "postgres" {
-		return fmt.Errorf("invalid DB URL: '%s', only postgres is supported", b.config.DB)
-	}
-
-	// build our db
-	db, err := sqlx.Open("postgres", b.config.DB)
-	if err != nil {
-		return fmt.Errorf("unable to open DB with config: '%s': %s", b.config.DB, err)
-	}
-
-	// configure our pool
-	b.db = db
-	b.db.SetMaxIdleConns(4)
-	b.db.SetMaxOpenConns(16)
-
-	// try connecting
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	err = b.db.PingContext(ctx)
-	cancel()
-	if err != nil {
-		log.WithError(err).Error("db not reachable")
+	if isMaintenance {
+		log.Info("starting in maintenance mode, writing to spool only, no DB")
 	} else {
-		log.Info("db ok")
-	}
+		// parse and test our db config
+		dbURL, err := url.Parse(b.config.DB)
+		if err != nil {
+			return fmt.Errorf("unable to parse DB URL '%s': %s", b.config.DB, err)
+		}
 
+		if dbURL.Scheme != "postgres" {
+			return fmt.Errorf("invalid DB URL: '%s', only postgres is supported", b.config.DB)
+		}
+
+		// build our db
+		db, err := sqlx.Open("postgres", b.config.DB)
+		if err != nil {
+			return fmt.Errorf("unable to open DB with config: '%s': %s", b.config.DB, err)
+		}
+
+		// configure our pool
+		b.db = db
+		b.db.SetMaxIdleConns(4)
+		b.db.SetMaxOpenConns(16)
+
+		// try connecting
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		err = b.db.PingContext(ctx)
+		cancel()
+		if err != nil {
+			log.WithError(err).Error("db not reachable")
+		} else {
+			log.Info("db ok")
+		}
+	}
 	// parse and test our redis config
 	redisURL, err := url.Parse(b.config.Redis)
 	if err != nil {
