@@ -1,3 +1,7 @@
+v1.2.148
+----------
+ * Add maintenance mode to run without a DB and only spool inbound requests
+
 v1.2.147
 ----------
  * Prevent Facebook duplicate messages, dedupe in external id
