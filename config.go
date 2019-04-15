@@ -28,7 +28,6 @@ type Config struct {
 	LogLevel              string `help:"the logging level courier should use"`
 	IgnoreDeliveryReports bool   `help:"whether we ignore delivered status reports (errors will still be handled)"`
 	Version               string `help:"the version that will be used in request and response headers"`
-	Maintenance           bool   `help:"Whether we are in maintenance window (Write to spool only)"`
 
 	// IncludeChannels is the list of channels to enable, empty means include all
 	IncludeChannels []string
