@@ -547,6 +547,11 @@ func (m *DBMsg) QuickReplies() []string {
 	return m.quickReplies
 }
 
+// Metadata returns the metadata for this message
+func (m *DBMsg) Metadata() json.RawMessage {
+	return m.Metadata_
+}
+
 // fingerprint returns a fingerprint for this msg, suitable for figuring out if this is a dupe
 func (m *DBMsg) urnFingerprint() string {
 	return fmt.Sprintf("%s:%s", m.ChannelUUID_, m.URN_.Identity())
@@ -566,6 +571,9 @@ func (m *DBMsg) WithID(id courier.MsgID) courier.Msg { m.ID_ = id; return m }
 
 // WithUUID can be used to set the id on a msg in a chained call
 func (m *DBMsg) WithUUID(uuid courier.MsgUUID) courier.Msg { m.UUID_ = uuid; return m }
+
+// WithMetadata can be used to add metadata to a Msg
+func (m *DBMsg) WithMetadata(metadata json.RawMessage) courier.Msg { m.Metadata_ = metadata; return m }
 
 // WithAttachment can be used to append to the media urls for a message
 func (m *DBMsg) WithAttachment(url string) courier.Msg {

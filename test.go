@@ -2,6 +2,7 @@ package courier
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -479,6 +480,7 @@ type mockMsg struct {
 	quickReplies         []string
 	responseToID         MsgID
 	responseToExternalID string
+	metadata             json.RawMessage
 	alreadyWritten       bool
 
 	receivedOn *time.Time
@@ -500,18 +502,20 @@ func (m *mockMsg) HighPriority() bool           { return m.highPriority }
 func (m *mockMsg) QuickReplies() []string       { return m.quickReplies }
 func (m *mockMsg) ResponseToID() MsgID          { return m.responseToID }
 func (m *mockMsg) ResponseToExternalID() string { return m.responseToExternalID }
+func (m *mockMsg) Metadata() json.RawMessage    { return m.metadata }
 
 func (m *mockMsg) ReceivedOn() *time.Time { return m.receivedOn }
 func (m *mockMsg) SentOn() *time.Time     { return m.sentOn }
 func (m *mockMsg) WiredOn() *time.Time    { return m.wiredOn }
 
-func (m *mockMsg) WithContactName(name string) Msg   { m.contactName = name; return m }
-func (m *mockMsg) WithURNAuth(auth string) Msg       { m.urnAuth = auth; return m }
-func (m *mockMsg) WithReceivedOn(date time.Time) Msg { m.receivedOn = &date; return m }
-func (m *mockMsg) WithExternalID(id string) Msg      { m.externalID = id; return m }
-func (m *mockMsg) WithID(id MsgID) Msg               { m.id = id; return m }
-func (m *mockMsg) WithUUID(uuid MsgUUID) Msg         { m.uuid = uuid; return m }
-func (m *mockMsg) WithAttachment(url string) Msg     { m.attachments = append(m.attachments, url); return m }
+func (m *mockMsg) WithContactName(name string) Msg           { m.contactName = name; return m }
+func (m *mockMsg) WithURNAuth(auth string) Msg               { m.urnAuth = auth; return m }
+func (m *mockMsg) WithReceivedOn(date time.Time) Msg         { m.receivedOn = &date; return m }
+func (m *mockMsg) WithExternalID(id string) Msg              { m.externalID = id; return m }
+func (m *mockMsg) WithID(id MsgID) Msg                       { m.id = id; return m }
+func (m *mockMsg) WithUUID(uuid MsgUUID) Msg                 { m.uuid = uuid; return m }
+func (m *mockMsg) WithAttachment(url string) Msg             { m.attachments = append(m.attachments, url); return m }
+func (m *mockMsg) WithMetadata(metadata json.RawMessage) Msg { m.metadata = metadata; return m }
 
 //-----------------------------------------------------------------------------
 // Mock status implementation
