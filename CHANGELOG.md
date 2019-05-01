@@ -1,3 +1,7 @@
+v1.2.149
+----------
+* implement sending whatsapp templates
+
 v1.2.148
 ----------
  * Add maintenance mode to run without a DB and only spool inbound requests
