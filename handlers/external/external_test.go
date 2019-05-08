@@ -55,7 +55,7 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message With Time", URL: receiveValidMessageWithTime, Data: "empty", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC))},
 	{Label: "Invalid URN", URL: invalidURN, Data: "empty", Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", Status: 400, Response: "field 'text' required"},
+	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", Status: 400, Response: "must have one of 'sender' or 'from' set"},
 	{Label: "Receive No Sender", URL: receiveNoSender, Data: "empty", Status: 400, Response: "must have one of 'sender' or 'from' set"},
 	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "empty", Status: 400, Response: "invalid date format, must be RFC 3339"},
 	{Label: "Failed No Params", URL: failedNoParams, Status: 400, Response: "field 'id' required"},
@@ -92,10 +92,25 @@ var gmTestCases = []ChannelHandleTestCase{
 		Text: Sp("Join"), URN: Sp("tel:+2207222333")},
 }
 
+var customChannels = []courier.Channel{
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+		map[string]interface{}{
+			configMOFromField: "from_number",
+			configMODateField: "timestamp",
+			configMOTextField: "messageText",
+		})}
+
+var customTestCases = []ChannelHandleTestCase{
+	{Label: "Receive Custom Message", URL: "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from_number=12067799192&messageText=Join&timestamp=2017-06-23T12:30:00Z", Data: "empty", Status: 200, Response: "Accepted",
+		Text: Sp("Join"), URN: Sp("tel:+12067799192"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC))},
+	{Label: "Receive Custom Missing", URL: "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sent_from=12067799192&messageText=Join", Data: "empty", Status: 400, Response: "must have one of 'sender' or 'from' set"},
+}
+
 func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
 	RunChannelTestCases(t, testSOAPReceiveChannels, newHandler(), handleSOAPReceiveTestCases)
 	RunChannelTestCases(t, gmChannels, newHandler(), gmTestCases)
+	RunChannelTestCases(t, customChannels, newHandler(), customTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {

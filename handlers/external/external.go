@@ -20,6 +20,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -30,6 +31,10 @@ const (
 	configFromXPath = "from_xpath"
 	configTextXPath = "text_xpath"
 
+	configMOFromField = "mo_from_field"
+	configMOTextField = "mo_text_field"
+	configMODateField = "mo_date_field"
+
 	configMOResponseContentType = "mo_response_content_type"
 	configMOResponse            = "mo_response"
 
@@ -38,6 +43,10 @@ const (
 	encodingDefault       = "D"
 	encodingSmart         = "S"
 )
+
+var defaultFromFields = []string{"from", "sender"}
+var defaultTextFields = []string{"text"}
+var defaultDateFields = []string{"date", "time"}
 
 var contentTypeMappings = map[string]string{
 	contentURLEncoded: "application/x-www-form-urlencoded",
@@ -113,23 +122,37 @@ func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channe
 	return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
 }
 
-type moForm struct {
-	From   string `name:"from"`
-	Sender string `name:"sender"`
-	Text   string `validate:"required" name:"text"`
-	Date   string `name:"date"`
-	Time   string `name:"time"`
+// utility function to grab the form value for either the passed in name (if non-empty) or the first set
+// value from defaultNames
+func getFormField(form url.Values, defaultNames []string, name string) string {
+	if name != "" {
+		values, found := form[name]
+		if found {
+			return values[0]
+		}
+	}
+
+	for _, name := range defaultNames {
+		values, found := form[name]
+		if found {
+			return values[0]
+		}
+	}
+
+	return ""
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	var err error
-	form := &moForm{}
+
+	var from, dateString, text string
 
 	fromXPath := channel.StringConfigForKey(configFromXPath, "")
 	textXPath := channel.StringConfigForKey(configTextXPath, "")
 
 	if fromXPath != "" && textXPath != "" {
+		// we are reading from an XML body, pull out our fields
 		body, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
 		defer r.Body.Close()
 		if err != nil {
@@ -140,36 +163,32 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to parse request XML: %s", err))
 		}
-		senderNode := xmlquery.FindOne(doc, fromXPath)
+		fromNode := xmlquery.FindOne(doc, fromXPath)
 		textNode := xmlquery.FindOne(doc, textXPath)
-		if senderNode == nil || textNode == nil {
+		if fromNode == nil || textNode == nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing from at: %s or text at: %s node", fromXPath, textXPath))
 		}
 
-		form.Sender = senderNode.InnerText()
-		form.Text = textNode.InnerText()
+		from = fromNode.InnerText()
+		text = textNode.InnerText()
 	} else {
-		err := handlers.DecodeAndValidateForm(form, r)
+		// parse our form
+		err := r.ParseForm()
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.Wrapf(err, "invalid request"))
 		}
 
+		from = getFormField(r.Form, defaultFromFields, channel.StringConfigForKey(configMOFromField, ""))
+		text = getFormField(r.Form, defaultTextFields, channel.StringConfigForKey(configMOTextField, ""))
+		dateString = getFormField(r.Form, defaultDateFields, channel.StringConfigForKey(configMODateField, ""))
 	}
-	// must have one of from or sender set, error if neither
-	sender := form.Sender
-	if sender == "" {
-		sender = form.From
-	}
-	if sender == "" {
+
+	// must have from field
+	if from == "" {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("must have one of 'sender' or 'from' set"))
 	}
 
 	// if we have a date, parse it
-	dateString := form.Date
-	if dateString == "" {
-		dateString = form.Time
-	}
-
 	date := time.Now()
 	if dateString != "" {
 		date, err = time.Parse(time.RFC3339Nano, dateString)
@@ -181,9 +200,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// create our URN
 	urn := urns.NilURN
 	if channel.Schemes()[0] == urns.TelScheme {
-		urn, err = handlers.StrictTelForCountry(sender, channel.Country())
+		urn, err = handlers.StrictTelForCountry(from, channel.Country())
 	} else {
-		urn, err = urns.NewURNFromParts(channel.Schemes()[0], sender, "", "")
+		urn, err = urns.NewURNFromParts(channel.Schemes()[0], from, "", "")
 	}
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -191,7 +210,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	urn = urn.Normalize(channel.Country())
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
