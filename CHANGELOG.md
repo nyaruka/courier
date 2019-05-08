@@ -1,3 +1,7 @@
+v1.2.150
+----------
+ * allow configuring custom mo fields for external channels
+
 v1.2.149
 ----------
 * implement sending whatsapp templates
