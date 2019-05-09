@@ -1,3 +1,7 @@
+v1.2.151
+----------
+ * optimize sends via bulk inserts and updates
+
 v1.2.150
 ----------
  * allow configuring custom mo fields for external channels
