@@ -1,3 +1,8 @@
+v1.2.154
+----------
+ * have batch committer print when flushed
+ * move stopping of bulk committers to cleanup phase
+
 v1.2.153
 ----------
  * Switch to newer library for UUID generation
