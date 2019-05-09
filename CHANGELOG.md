@@ -1,3 +1,7 @@
+v1.2.152
+----------
+ * raise delay before bulk commits to 500ms
+
 v1.2.151
 ----------
  * optimize sends via bulk inserts and updates
