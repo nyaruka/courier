@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -307,7 +308,7 @@ func (s *DBMsgStatus) ID() courier.MsgID                { return s.ID_ }
 
 func (s *DBMsgStatus) RowID() string {
 	if s.ID_ != courier.NilMsgID {
-		return fmt.Sprintf("%d", s.ID_)
+		return strconv.FormatInt(int64(s.ID_), 10)
 	} else if s.ExternalID_ != "" {
 		return s.ExternalID_
 	}

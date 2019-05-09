@@ -33,7 +33,7 @@ type ChannelLog struct {
 
 // RowID satisfies our batch.Value interface, we are always inserting logs so we have no row id
 func (l *ChannelLog) RowID() string {
-	return "'"
+	return ""
 }
 
 // WriteChannelLog writes the passed in channel log to the database, we do not queue on errors but instead just throw away the log
