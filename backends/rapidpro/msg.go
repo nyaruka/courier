@@ -161,7 +161,7 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 	// if we had a problem queueing the handling, log it, but our message is written, it'll
 	// get picked up by our rapidpro catch-all after a period
 	if err != nil {
-		logrus.WithError(err).WithField("msg_id", m.ID).Error("error queueing msg handling")
+		logrus.WithError(err).WithField("msg_id", m.ID_).Error("error queueing msg handling")
 	}
 
 	return nil

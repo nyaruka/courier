@@ -101,4 +101,10 @@ func TestBatchUpdate(t *testing.T) {
 	label := ""
 	db.Get(&label, "SELECT label FROM labels WHERE id = 1;")
 	assert.Equal(t, "label001", label)
+
+	db.Get(&label, "SELECT label FROM labels WHERE id = 2;")
+	assert.Equal(t, "label02", label)
+
+	db.Get(&label, "SELECT label FROM labels WHERE id = 3;")
+	assert.Equal(t, "label03", label)
 }
