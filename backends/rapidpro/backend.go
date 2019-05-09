@@ -580,7 +580,7 @@ func (b *backend) Start() error {
 	}
 
 	// create our status committer and start it
-	b.statusCommitter = batch.NewCommitter("status committer", b.db, bulkUpdateMsgStatusSQL, time.Millisecond*500, b.waitGroup,
+	b.statusCommitter = batch.NewCommitter("status committer", b.db, bulkUpdateMsgStatusSQL, time.Millisecond*500, b.committerWG,
 		func(err error, value batch.Value) {
 			logrus.WithField("comp", "status committer").WithError(err).Error("error writing status")
 			err = courier.WriteToSpool(b.config.SpoolDir, "statuses", value)
@@ -591,7 +591,7 @@ func (b *backend) Start() error {
 	b.statusCommitter.Start()
 
 	// create our log committer and start it
-	b.logCommitter = batch.NewCommitter("log committer", b.db, insertLogSQL, time.Millisecond*500, b.waitGroup,
+	b.logCommitter = batch.NewCommitter("log committer", b.db, insertLogSQL, time.Millisecond*500, b.committerWG,
 		func(err error, value batch.Value) {
 			logrus.WithField("comp", "log committer").WithError(err).Error("error writing channel log")
 		})
@@ -615,6 +615,12 @@ func (b *backend) Stop() error {
 	// close our stop channel
 	close(b.stopChan)
 
+	// wait for our threads to exit
+	b.waitGroup.Wait()
+	return nil
+}
+
+func (b *backend) Cleanup() error {
 	// stop our status committer
 	if b.statusCommitter != nil {
 		b.statusCommitter.Stop()
@@ -625,12 +631,9 @@ func (b *backend) Stop() error {
 		b.logCommitter.Stop()
 	}
 
-	// wait for our threads to exit
-	b.waitGroup.Wait()
-	return nil
-}
+	// wait for them to flush fully
+	b.committerWG.Wait()
 
-func (b *backend) Cleanup() error {
 	// close our db and redis pool
 	if b.db != nil {
 		b.db.Close()
@@ -650,6 +653,8 @@ func newBackend(config *courier.Config) courier.Backend {
 
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},
+
+		committerWG: &sync.WaitGroup{},
 	}
 }
 
@@ -658,6 +663,7 @@ type backend struct {
 
 	statusCommitter batch.Committer
 	logCommitter    batch.Committer
+	committerWG     *sync.WaitGroup
 
 	db        *sqlx.DB
 	redisPool *redis.Pool

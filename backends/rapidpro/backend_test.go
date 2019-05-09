@@ -83,6 +83,7 @@ func (ts *BackendTestSuite) SetupSuite() {
 
 func (ts *BackendTestSuite) TearDownSuite() {
 	ts.b.Stop()
+	ts.b.Cleanup()
 }
 
 func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *DBChannel {
