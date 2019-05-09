@@ -41,7 +41,7 @@ func NewCommitter(label string, db *sqlx.DB, sql string, timeout time.Duration, 
 
 		wg:     wg,
 		stop:   make(chan bool),
-		buffer: make(chan Value, 10000),
+		buffer: make(chan Value, 1000),
 	}
 }
 

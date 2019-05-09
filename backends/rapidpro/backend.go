@@ -379,7 +379,7 @@ func (b *backend) Heartbeat() error {
 	// log our total
 	librato.Gauge("courier.bulk_queue", float64(bulkSize))
 	librato.Gauge("courier.priority_queue", float64(prioritySize))
-	logrus.WithField("bulk_queue", bulkSize).WithField("priorirty_queue", prioritySize).Info("heartbeat queue sizes calculated")
+	logrus.WithField("bulk_queue", bulkSize).WithField("priority_queue", prioritySize).Info("heartbeat queue sizes calculated")
 
 	return nil
 }
@@ -580,7 +580,7 @@ func (b *backend) Start() error {
 	}
 
 	// create our status committer and start it
-	b.statusCommitter = batch.NewCommitter("status committer", b.db, bulkUpdateMsgStatusSQL, time.Millisecond*250, b.waitGroup,
+	b.statusCommitter = batch.NewCommitter("status committer", b.db, bulkUpdateMsgStatusSQL, time.Millisecond*500, b.waitGroup,
 		func(err error, value batch.Value) {
 			logrus.WithField("comp", "status committer").WithError(err).Error("error writing status")
 			err = courier.WriteToSpool(b.config.SpoolDir, "statuses", value)
@@ -591,7 +591,7 @@ func (b *backend) Start() error {
 	b.statusCommitter.Start()
 
 	// create our log committer and start it
-	b.logCommitter = batch.NewCommitter("log committer", b.db, insertLogSQL, time.Millisecond*250, b.waitGroup,
+	b.logCommitter = batch.NewCommitter("log committer", b.db, insertLogSQL, time.Millisecond*500, b.waitGroup,
 		func(err error, value batch.Value) {
 			logrus.WithField("comp", "log committer").WithError(err).Error("error writing channel log")
 		})
