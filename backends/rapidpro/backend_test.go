@@ -449,23 +449,6 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 	ts.Equal(twChannel.ID(), urns[1].ChannelID)
 }
 
-func (ts *BackendTestSuite) TestMsgStatusPerformance() {
-	ctx := context.Background()
-	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	time.Sleep(2 * time.Millisecond)
-
-	start := time.Now()
-
-	for i := 0; i < 10000; i++ {
-		status := ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10001), courier.MsgWired)
-		status.SetExternalID("ext0")
-		err := ts.b.WriteMsgStatus(ctx, status)
-		ts.NoError(err)
-	}
-
-	fmt.Printf("Took: %s\n", time.Since(start))
-}
-
 func (ts *BackendTestSuite) TestMsgStatus() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
