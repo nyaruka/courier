@@ -1,3 +1,7 @@
+v1.2.153
+----------
+ * Switch to newer library for UUID generation
+
 v1.2.152
 ----------
  * raise delay before bulk commits to 500ms
