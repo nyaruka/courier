@@ -7,7 +7,7 @@ import (
 
 	"github.com/nyaruka/null"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 )
 
 const (

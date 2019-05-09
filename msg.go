@@ -9,8 +9,8 @@ import (
 
 	"github.com/nyaruka/null"
 
+	"github.com/gofrs/uuid"
 	"github.com/nyaruka/gocommon/urns"
-	uuid "github.com/satori/go.uuid"
 )
 
 // ErrMsgNotFound is returned when trying to queue the status for a Msg that doesn't exit
@@ -68,7 +68,8 @@ var NilMsgUUID = MsgUUID{uuid.Nil}
 
 // NewMsgUUID creates a new unique message UUID
 func NewMsgUUID() MsgUUID {
-	return MsgUUID{uuid.NewV4()}
+	u, _ := uuid.NewV4()
+	return MsgUUID{u}
 }
 
 // NewMsgUUIDFromString creates a new message UUID for the passed in string

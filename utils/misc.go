@@ -2,16 +2,19 @@ package utils
 
 import (
 	"bytes"
-	"encoding/json"
-	"regexp"
-	"strings"
-	"unicode/utf8"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"regexp"
+	"strings"
+	"unicode/utf8"
+
+	"github.com/gofrs/uuid"
 )
 
-// Encrypt value to HMAC256 by using a private key
+// SignHMAC256 encrypts value with HMAC256 by using a private key
 func SignHMAC256(privateKey string, value string) string {
 	hash := hmac.New(sha256.New, []byte(privateKey))
 	hash.Write([]byte(value))
@@ -20,6 +23,15 @@ func SignHMAC256(privateKey string, value string) string {
 	return signedParams
 }
 
+// NewUUID generates a new v4 UUID
+func NewUUID() string {
+	u, err := uuid.NewV4()
+	if err != nil {
+		// if we can't generate a UUID.. we're done
+		panic(fmt.Sprintf("unable to generate UUID: %s", err))
+	}
+	return u.String()
+}
 
 // MapAsJSON serializes the given map as a JSON string
 func MapAsJSON(m map[string]string) []byte {
