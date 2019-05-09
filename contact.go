@@ -3,7 +3,7 @@ package courier
 import (
 	"strings"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 )
 
 // ContactUUID is our typing of a contact's UUID

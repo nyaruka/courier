@@ -13,8 +13,8 @@ import (
 
 	"github.com/garyburd/redigo/redis"
 	_ "github.com/lib/pq" // postgres driver
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
-	uuid "github.com/satori/go.uuid"
 )
 
 //-----------------------------------------------------------------------------
@@ -243,7 +243,7 @@ func (mb *MockBackend) GetChannel(ctx context.Context, cType ChannelType, uuid C
 func (mb *MockBackend) GetContact(ctx context.Context, channel Channel, urn urns.URN, auth string, name string) (Contact, error) {
 	contact, found := mb.contacts[urn]
 	if !found {
-		uuid, _ := NewContactUUID(uuid.NewV4().String())
+		uuid, _ := NewContactUUID(utils.NewUUID())
 		contact = &mockContact{channel, urn, auth, uuid}
 		mb.contacts[urn] = contact
 	}

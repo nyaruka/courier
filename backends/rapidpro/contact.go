@@ -6,6 +6,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/null"
 
 	"database/sql"
@@ -16,7 +17,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/librato"
-	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -127,7 +127,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 
 	// didn't find it, we need to create it instead
 	contact.OrgID_ = org
-	contact.UUID_, _ = courier.NewContactUUID(uuid.NewV4().String())
+	contact.UUID_, _ = courier.NewContactUUID(utils.NewUUID())
 	contact.CreatedOn_ = time.Now()
 	contact.ModifiedOn_ = time.Now()
 	contact.IsNew_ = true
