@@ -2,24 +2,42 @@ package rapidpro
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 
-	null "gopkg.in/guregu/null.v3"
+	"github.com/nyaruka/null"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 )
 
 // ContactURNID represents a contact urn's id
-type ContactURNID struct {
-	null.Int
+type ContactURNID null.Int
+
+// NilContactURNID is our constant for a nil contact URN id
+const NilContactURNID = ContactURNID(0)
+
+// MarshalJSON marshals into JSON. 0 values will become null
+func (i ContactURNID) MarshalJSON() ([]byte, error) {
+	return null.Int(i).MarshalJSON()
 }
 
-// NilContactURNID is our nil value for ContactURNID
-var NilContactURNID = ContactURNID{null.NewInt(0, false)}
+// UnmarshalJSON unmarshals from JSON. null values become 0
+func (i *ContactURNID) UnmarshalJSON(b []byte) error {
+	return null.UnmarshalInt(b, (*null.Int)(i))
+}
+
+// Value returns the db value, null is returned for 0
+func (i ContactURNID) Value() (driver.Value, error) {
+	return null.Int(i).Value()
+}
+
+// Scan scans from the db value. null values become 0
+func (i *ContactURNID) Scan(value interface{}) error {
+	return null.ScanInt(value, (*null.Int)(i))
+}
 
 // NewDBContactURN returns a new ContactURN object for the passed in org, contact and string urn, this is not saved to the DB yet
 func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN, auth string) *DBContactURN {
@@ -30,8 +48,8 @@ func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID
 		Identity:  string(urn.Identity()),
 		Scheme:    urn.Scheme(),
 		Path:      urn.Path(),
-		Display:   utils.NullStringIfEmpty(urn.Display()),
-		Auth:      utils.NullStringIfEmpty(auth),
+		Display:   null.String(urn.Display()),
+		Auth:      null.String(auth),
 	}
 }
 
@@ -85,25 +103,25 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 	scheme := urn.Scheme()
 	contactURNs, err := contactURNsForContact(db, contact.ID_)
 	if err != nil {
-		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("channel_id", channelID.Int64).Error("error looking up contact urns")
+		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("channel_id", channelID).Error("error looking up contact urns")
 		return err
 	}
 
 	// no URNs? that's an error
 	if len(contactURNs) == 0 {
-		return fmt.Errorf("URN '%s' not present for contact %d", urn.Identity(), contact.ID_.Int64)
+		return fmt.Errorf("URN '%s' not present for contact %d", urn.Identity(), contact.ID_)
 	}
 
 	// only a single URN and it is ours
 	if contactURNs[0].Identity == string(urn.Identity()) {
-		display := utils.NullStringIfEmpty(urn.Display())
+		display := urn.Display()
 
 		// if display, channel id or auth changed, update them
-		if contactURNs[0].Display != display || contactURNs[0].ChannelID != channelID || (auth != "" && contactURNs[0].Auth.ValueOrZero() != auth) {
-			contactURNs[0].Display = display
+		if string(contactURNs[0].Display) != display || contactURNs[0].ChannelID != channelID || (auth != "" && string(contactURNs[0].Auth) != auth) {
+			contactURNs[0].Display = null.String(display)
 			contactURNs[0].ChannelID = channelID
 			if auth != "" {
-				contactURNs[0].Auth = null.StringFrom(auth)
+				contactURNs[0].Auth = null.String(auth)
 			}
 			return updateContactURN(db, contactURNs[0])
 		}
@@ -121,7 +139,7 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 			existing.Priority = topPriority
 			existing.ChannelID = channelID
 			if auth != "" {
-				existing.Auth = null.StringFrom(auth)
+				existing.Auth = null.String(auth)
 			}
 		} else {
 			existing.Priority = currPriority
@@ -180,7 +198,7 @@ func contactURNForURN(db *sqlx.Tx, org OrgID, channelID courier.ChannelID, conta
 		}
 	}
 
-	display := utils.NullStringIfEmpty(urn.Display())
+	display := null.String(urn.Display())
 
 	// make sure our contact URN is up to date
 	if contactURN.ChannelID != channelID || contactURN.ContactID != contactID || contactURN.Display != display {
@@ -195,8 +213,8 @@ func contactURNForURN(db *sqlx.Tx, org OrgID, channelID courier.ChannelID, conta
 	}
 
 	// update our auth if we have a value set
-	if auth != "" && auth != contactURN.Auth.String {
-		contactURN.Auth = null.NewString(auth, true)
+	if auth != "" && auth != string(contactURN.Auth) {
+		contactURN.Auth = null.String(auth)
 		err = updateContactURN(db, contactURN)
 	}
 
@@ -241,7 +259,7 @@ WHERE
 func updateContactURN(db *sqlx.Tx, urn *DBContactURN) error {
 	rows, err := db.NamedQuery(updateURN, urn)
 	if err != nil {
-		logrus.WithError(err).WithField("urn_id", urn.ID.Int64).Error("error updating contact urn")
+		logrus.WithError(err).WithField("urn_id", urn.ID).Error("error updating contact urn")
 		return err
 	}
 	defer rows.Close()

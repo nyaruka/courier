@@ -17,7 +17,7 @@ func LogMsgStatusReceived(r *http.Request, status MsgStatus) {
 	})
 
 	if status.ID() != NilMsgID {
-		log = log.WithField("msg_id", status.ID().Int64)
+		log = log.WithField("msg_id", status.ID())
 	} else {
 		log = log.WithField("msg_external_id", status.ExternalID())
 	}
@@ -31,7 +31,7 @@ func LogMsgReceived(r *http.Request, msg Msg) {
 		"url":             r.Context().Value(contextRequestURL),
 		"elapsed_ms":      getElapsedMS(r),
 		"msg_uuid":        msg.UUID(),
-		"msg_id":          msg.ID().Int64,
+		"msg_id":          msg.ID(),
 		"msg_urn":         msg.URN().Identity(),
 		"msg_text":        msg.Text(),
 		"msg_attachments": msg.Attachments(),

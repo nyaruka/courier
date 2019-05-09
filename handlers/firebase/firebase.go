@@ -161,7 +161,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		payload.Data.Type = "rapidpro"
 		payload.Data.Title = title
 		payload.Data.Message = part
-		payload.Data.MessageID = msg.ID().Int64
+		payload.Data.MessageID = int64(msg.ID())
 
 		payload.To = msg.URNAuth()
 		payload.Priority = "high"

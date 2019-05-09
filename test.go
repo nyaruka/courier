@@ -490,7 +490,7 @@ type mockMsg struct {
 
 func (m *mockMsg) Channel() Channel             { return m.channel }
 func (m *mockMsg) ID() MsgID                    { return m.id }
-func (m *mockMsg) EventID() int64               { return m.id.Int64 }
+func (m *mockMsg) EventID() int64               { return int64(m.id) }
 func (m *mockMsg) UUID() MsgUUID                { return m.uuid }
 func (m *mockMsg) Text() string                 { return m.text }
 func (m *mockMsg) Attachments() []string        { return m.attachments }
@@ -533,7 +533,7 @@ type mockMsgStatus struct {
 
 func (m *mockMsgStatus) ChannelUUID() ChannelUUID { return m.channel.UUID() }
 func (m *mockMsgStatus) ID() MsgID                { return m.id }
-func (m *mockMsgStatus) EventID() int64           { return m.id.Int64 }
+func (m *mockMsgStatus) EventID() int64           { return int64(m.id) }
 
 func (m *mockMsgStatus) ExternalID() string      { return m.externalID }
 func (m *mockMsgStatus) SetExternalID(id string) { m.externalID = id }

@@ -1,10 +1,11 @@
 package courier
 
 import (
+	"database/sql/driver"
 	"errors"
 	"strings"
 
-	null "gopkg.in/guregu/null.v3"
+	"github.com/nyaruka/null"
 
 	uuid "github.com/satori/go.uuid"
 )
@@ -78,17 +79,35 @@ func NewChannelUUID(u string) (ChannelUUID, error) {
 }
 
 // ChannelID is our SQL type for a channel's id
-type ChannelID struct {
-	null.Int
+type ChannelID null.Int
+
+// NilChannelID represents a nil channel id
+const NilChannelID = ChannelID(0)
+
+// MarshalJSON marshals into JSON. 0 values will become null
+func (i ChannelID) MarshalJSON() ([]byte, error) {
+	return null.Int(i).MarshalJSON()
+}
+
+// UnmarshalJSON unmarshals from JSON. null values become 0
+func (i *ChannelID) UnmarshalJSON(b []byte) error {
+	return null.UnmarshalInt(b, (*null.Int)(i))
+}
+
+// Value returns the db value, null is returned for 0
+func (i ChannelID) Value() (driver.Value, error) {
+	return null.Int(i).Value()
+}
+
+// Scan scans from the db value. null values become 0
+func (i *ChannelID) Scan(value interface{}) error {
+	return null.ScanInt(value, (*null.Int)(i))
 }
 
 // NewChannelID creates a new ChannelID for the passed in int64
 func NewChannelID(id int64) ChannelID {
-	return ChannelID{null.NewInt(id, true)}
+	return ChannelID(id)
 }
-
-// NilChannelID is our nil value for ChannelIDs
-var NilChannelID = ChannelID{null.NewInt(0, false)}
 
 // ErrChannelExpired is returned when our cached channel has outlived it's TTL
 var ErrChannelExpired = errors.New("channel expired")

@@ -66,7 +66,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 // WriteMsgSuccessResponse writes a success response for the messages
 func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
 	w.Header().Set("Content-Type", "application/json")
-	_, err := fmt.Fprintf(w, "SMS Accepted: %d", msgs[0].ID().Int64)
+	_, err := fmt.Fprintf(w, "SMS Accepted: %d", msgs[0].ID())
 	return err
 }
 
