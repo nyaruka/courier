@@ -57,6 +57,7 @@ func (c *committer) Start() {
 				for len(c.buffer) > 0 {
 					c.flush(batchSize)
 				}
+				logrus.WithField("label", c.label).Info("committer flushed and exiting")
 				return
 
 			case <-time.After(c.timeout):
