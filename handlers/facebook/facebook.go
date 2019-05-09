@@ -429,7 +429,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	payload := mtPayload{}
 
 	// set our message type
-	if msg.ResponseToID().IsZero() {
+	if msg.ResponseToID() == courier.NilMsgID {
 		payload.MessagingType = "NON_PROMOTIONAL_SUBSCRIPTION"
 	} else {
 		payload.MessagingType = "RESPONSE"

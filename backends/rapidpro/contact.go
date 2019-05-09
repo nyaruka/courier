@@ -6,9 +6,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	null "gopkg.in/guregu/null.v3"
+	"github.com/nyaruka/null"
 
 	"database/sql"
+	"database/sql/driver"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
@@ -23,17 +24,35 @@ import (
 var urnSleep bool
 
 // ContactID is our representation of our database contact id
-type ContactID struct {
-	null.Int
-}
+type ContactID null.Int
 
 // NilContactID represents our nil value for ContactID
-var NilContactID = ContactID{null.NewInt(0, false)}
+var NilContactID = ContactID(0)
 
-// String returns a string representation of this ContactID
-func (c *ContactID) String() string {
-	if c.Valid {
-		strconv.FormatInt(c.Int64, 10)
+// MarshalJSON marshals into JSON. 0 values will become null
+func (i ContactID) MarshalJSON() ([]byte, error) {
+	return null.Int(i).MarshalJSON()
+}
+
+// UnmarshalJSON unmarshals from JSON. null values become 0
+func (i *ContactID) UnmarshalJSON(b []byte) error {
+	return null.UnmarshalInt(b, (*null.Int)(i))
+}
+
+// Value returns the db value, null is returned for 0
+func (i ContactID) Value() (driver.Value, error) {
+	return null.Int(i).Value()
+}
+
+// Scan scans from the db value. null values become 0
+func (i *ContactID) Scan(value interface{}) error {
+	return null.ScanInt(value, (*null.Int)(i))
+}
+
+// String returns a string representation of the id
+func (i ContactID) String() string {
+	if i != NilContactID {
+		return strconv.FormatInt(int64(i), 10)
 	}
 	return "null"
 }
@@ -138,7 +157,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 				name = string([]rune(name)[:127])
 			}
 
-			contact.Name_ = null.StringFrom(name)
+			contact.Name_ = null.String(name)
 		}
 	}
 

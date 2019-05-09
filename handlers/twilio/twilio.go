@@ -179,7 +179,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	// build our callback URL
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
-	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?id=%d&action=callback", callbackDomain, strings.ToLower(msg.Channel().ChannelType().String()), msg.Channel().UUID(), msg.ID().Int64)
+	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?id=%d&action=callback", callbackDomain, strings.ToLower(msg.Channel().ChannelType().String()), msg.Channel().UUID(), msg.ID())
 
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	if accountSID == "" {

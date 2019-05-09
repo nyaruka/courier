@@ -392,7 +392,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 				}
 				if testCase.ID != 0 {
 					if status != nil {
-						require.Equal(testCase.ID, status.ID().Int64)
+						require.Equal(testCase.ID, int64(status.ID()))
 					} else {
 						require.Equal(testCase.ID, -1)
 					}

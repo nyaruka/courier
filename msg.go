@@ -1,12 +1,13 @@
 package courier
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"strconv"
 	"time"
 
-	null "gopkg.in/guregu/null.v3"
+	"github.com/nyaruka/null"
 
 	"github.com/nyaruka/gocommon/urns"
 	uuid "github.com/satori/go.uuid"
@@ -19,25 +20,43 @@ var ErrMsgNotFound = errors.New("message not found")
 var ErrWrongIncomingMsgStatus = errors.New("Incoming messages can only be PENDING or HANDLED")
 
 // MsgID is our typing of the db int type
-type MsgID struct {
-	null.Int
-}
+type MsgID null.Int
 
 // NewMsgID creates a new MsgID for the passed in int64
 func NewMsgID(id int64) MsgID {
-	return MsgID{null.NewInt(id, true)}
+	return MsgID(id)
 }
 
 // String satisfies the Stringer interface
 func (i MsgID) String() string {
-	if i.Valid {
-		return strconv.FormatInt(i.Int64, 10)
+	if i != NilMsgID {
+		return strconv.FormatInt(int64(i), 10)
 	}
 	return "null"
 }
 
+// MarshalJSON marshals into JSON. 0 values will become null
+func (i MsgID) MarshalJSON() ([]byte, error) {
+	return null.Int(i).MarshalJSON()
+}
+
+// UnmarshalJSON unmarshals from JSON. null values become 0
+func (i *MsgID) UnmarshalJSON(b []byte) error {
+	return null.UnmarshalInt(b, (*null.Int)(i))
+}
+
+// Value returns the db value, null is returned for 0
+func (i MsgID) Value() (driver.Value, error) {
+	return null.Int(i).Value()
+}
+
+// Scan scans from the db value. null values become 0
+func (i *MsgID) Scan(value interface{}) error {
+	return null.ScanInt(value, (*null.Int)(i))
+}
+
 // NilMsgID is our nil value for MsgID
-var NilMsgID = MsgID{null.NewInt(0, false)}
+var NilMsgID = MsgID(0)
 
 // MsgUUID is the UUID of a message which has been received
 type MsgUUID struct {

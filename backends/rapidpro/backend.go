@@ -19,6 +19,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/batch"
 	"github.com/nyaruka/courier/chatbase"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
@@ -244,9 +245,15 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	err := writeMsgStatus(timeout, b, status)
-	if err != nil {
-		return err
+	// if we have an ID, we can have our batch commit for us
+	if status.ID() != courier.NilMsgID {
+		b.statusCommitter.Queue(status.(*DBMsgStatus))
+	} else {
+		// otherwise, write normally (synchronously)
+		err := writeMsgStatus(timeout, b, status)
+		if err != nil {
+			return err
+		}
 	}
 
 	// if we have an id and are marking an outgoing msg as errored, then clear our sent flag
@@ -572,6 +579,24 @@ func (b *backend) Start() error {
 		log.Info("spool directories ok")
 	}
 
+	// create our status committer and start it
+	b.statusCommitter = batch.NewCommitter("status committer", b.db, bulkUpdateMsgStatusSQL, time.Millisecond*250, b.waitGroup,
+		func(err error, value batch.Value) {
+			logrus.WithField("comp", "status committer").WithError(err).Error("error writing status")
+			err = courier.WriteToSpool(b.config.SpoolDir, "statuses", value)
+			if err != nil {
+				logrus.WithField("comp", "status committer").WithError(err).Error("error writing status to spool")
+			}
+		})
+	b.statusCommitter.Start()
+
+	// create our log committer and start it
+	b.logCommitter = batch.NewCommitter("log committer", b.db, insertLogSQL, time.Millisecond*250, b.waitGroup,
+		func(err error, value batch.Value) {
+			logrus.WithField("comp", "log committer").WithError(err).Error("error writing channel log")
+		})
+	b.logCommitter.Start()
+
 	// register and start our spool flushers
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "msgs"), b.flushMsgFile)
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "statuses"), b.flushStatusFile)
@@ -589,6 +614,16 @@ func (b *backend) Start() error {
 func (b *backend) Stop() error {
 	// close our stop channel
 	close(b.stopChan)
+
+	// stop our status committer
+	if b.statusCommitter != nil {
+		b.statusCommitter.Stop()
+	}
+
+	// stop our log committer
+	if b.logCommitter != nil {
+		b.logCommitter.Stop()
+	}
 
 	// wait for our threads to exit
 	b.waitGroup.Wait()
@@ -620,6 +655,9 @@ func newBackend(config *courier.Config) courier.Backend {
 
 type backend struct {
 	config *courier.Config
+
+	statusCommitter batch.Committer
+	logCommitter    batch.Committer
 
 	db        *sqlx.DB
 	redisPool *redis.Pool

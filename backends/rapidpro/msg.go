@@ -24,8 +24,8 @@ import (
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/null"
 	"github.com/sirupsen/logrus"
-	null "gopkg.in/guregu/null.v3"
 	filetype "gopkg.in/h2non/filetype.v1"
 )
 
@@ -99,7 +99,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 		Direction_:    direction,
 		Status_:       courier.MsgPending,
 		Visibility_:   MsgVisible,
-		HighPriority_: null.NewBool(false, false),
+		HighPriority_: false,
 		Text_:         text,
 
 		ChannelID_:   dbChannel.ID(),
@@ -161,7 +161,7 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 	// if we had a problem queueing the handling, log it, but our message is written, it'll
 	// get picked up by our rapidpro catch-all after a period
 	if err != nil {
-		logrus.WithError(err).WithField("msg_id", m.ID_.Int64).Error("error queueing msg handling")
+		logrus.WithError(err).WithField("msg_id", m.ID).Error("error queueing msg handling")
 	}
 
 	return nil
@@ -283,7 +283,7 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 	if extension != "" {
 		filename = fmt.Sprintf("%s.%s", msgUUID, extension)
 	}
-	path := filepath.Join(b.config.S3MediaPrefix, strconv.FormatInt(orgID.Int64, 10), filename[:4], filename[4:8], filename)
+	path := filepath.Join(b.config.S3MediaPrefix, strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 	if !strings.HasPrefix(path, "/") {
 		path = fmt.Sprintf("/%s", path)
 	}
@@ -473,7 +473,7 @@ type DBMsg struct {
 	Direction_            MsgDirection           `json:"direction"       db:"direction"`
 	Status_               courier.MsgStatusValue `json:"status"          db:"status"`
 	Visibility_           MsgVisibility          `json:"visibility"      db:"visibility"`
-	HighPriority_         null.Bool              `json:"high_priority"   db:"high_priority"`
+	HighPriority_         bool                   `json:"high_priority"   db:"high_priority"`
 	URN_                  urns.URN               `json:"urn"`
 	URNAuth_              string                 `json:"urn_auth"`
 	Text_                 string                 `json:"text"            db:"text"`
@@ -512,15 +512,15 @@ type DBMsg struct {
 }
 
 func (m *DBMsg) ID() courier.MsgID            { return m.ID_ }
-func (m *DBMsg) EventID() int64               { return m.ID_.Int64 }
+func (m *DBMsg) EventID() int64               { return int64(m.ID_) }
 func (m *DBMsg) UUID() courier.MsgUUID        { return m.UUID_ }
 func (m *DBMsg) Text() string                 { return m.Text_ }
 func (m *DBMsg) Attachments() []string        { return []string(m.Attachments_) }
-func (m *DBMsg) ExternalID() string           { return m.ExternalID_.String }
+func (m *DBMsg) ExternalID() string           { return string(m.ExternalID_) }
 func (m *DBMsg) URN() urns.URN                { return m.URN_ }
 func (m *DBMsg) URNAuth() string              { return m.URNAuth_ }
 func (m *DBMsg) ContactName() string          { return m.ContactName_ }
-func (m *DBMsg) HighPriority() bool           { return m.HighPriority_.Valid && m.HighPriority_.Bool }
+func (m *DBMsg) HighPriority() bool           { return m.HighPriority_ }
 func (m *DBMsg) ReceivedOn() *time.Time       { return &m.SentOn_ }
 func (m *DBMsg) SentOn() *time.Time           { return &m.SentOn_ }
 func (m *DBMsg) ResponseToID() courier.MsgID  { return m.ResponseToID_ }
@@ -564,7 +564,7 @@ func (m *DBMsg) WithContactName(name string) courier.Msg { m.ContactName_ = name
 func (m *DBMsg) WithReceivedOn(date time.Time) courier.Msg { m.SentOn_ = date; return m }
 
 // WithExternalID can be used to set the external id on a msg in a chained call
-func (m *DBMsg) WithExternalID(id string) courier.Msg { m.ExternalID_ = null.StringFrom(id); return m }
+func (m *DBMsg) WithExternalID(id string) courier.Msg { m.ExternalID_ = null.String(id); return m }
 
 // WithID can be used to set the id on a msg in a chained call
 func (m *DBMsg) WithID(id courier.MsgID) courier.Msg { m.ID_ = id; return m }

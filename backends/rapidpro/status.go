@@ -224,6 +224,66 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 	return err
 }
 
+const bulkUpdateMsgStatusSQL = `
+UPDATE msgs_msg SET 
+	status = CASE 
+		WHEN 
+			s.status = 'E' 
+		THEN CASE 
+			WHEN 
+				error_count >= 2 OR msgs_msg.status = 'F' 
+			THEN 
+				'F' 
+			ELSE 
+				'E' 
+			END 
+		ELSE 
+			s.status 
+		END,
+	error_count = CASE 
+		WHEN 
+			s.status = 'E' 
+		THEN 
+			error_count + 1 
+		ELSE 
+			error_count 
+		END,
+	next_attempt = CASE 
+		WHEN 
+			s.status = 'E' 
+		THEN 
+			NOW() + (5 * (error_count+1) * interval '1 minutes') 
+		ELSE 
+			next_attempt 
+		END,
+	sent_on = CASE 
+		WHEN 
+			s.status = 'W' 
+		THEN 
+			NOW() 
+		ELSE 
+			sent_on 
+		END,
+	external_id = CASE
+		WHEN 
+			s.external_id != ''
+		THEN
+			s.external_id
+		ELSE
+			msgs_msg.external_id
+		END,
+	modified_on = NOW()
+FROM
+	(VALUES(:msg_id, :channel_id, :status, :external_id)) 
+AS 
+	s(msg_id, channel_id, status, external_id) 
+WHERE 
+	msgs_msg.id = s.msg_id::int AND
+	msgs_msg.channel_id = s.channel_id::int
+RETURNING 
+	msgs_msg.id
+`
+
 //-----------------------------------------------------------------------------
 // MsgStatusUpdate implementation
 //-----------------------------------------------------------------------------
@@ -240,10 +300,19 @@ type DBMsgStatus struct {
 	logs []*courier.ChannelLog
 }
 
-func (s *DBMsgStatus) EventID() int64 { return s.ID_.Int64 }
+func (s *DBMsgStatus) EventID() int64 { return int64(s.ID_) }
 
 func (s *DBMsgStatus) ChannelUUID() courier.ChannelUUID { return s.ChannelUUID_ }
 func (s *DBMsgStatus) ID() courier.MsgID                { return s.ID_ }
+
+func (s *DBMsgStatus) RowID() string {
+	if s.ID_ != courier.NilMsgID {
+		return fmt.Sprintf("%d", s.ID_)
+	} else if s.ExternalID_ != "" {
+		return s.ExternalID_
+	}
+	return ""
+}
 
 func (s *DBMsgStatus) ExternalID() string      { return s.ExternalID_ }
 func (s *DBMsgStatus) SetExternalID(id string) { s.ExternalID_ = id }
