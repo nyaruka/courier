@@ -34,7 +34,6 @@ require (
 	github.com/onsi/ginkgo v1.7.0 // indirect
 	github.com/onsi/gomega v1.4.3 // indirect
 	github.com/pkg/errors v0.8.0
-	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.0.4
 	github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d // indirect
 	github.com/smartystreets/goconvey v0.0.0-20181108003508-044398e4856c // indirect
@@ -46,7 +45,6 @@ require (
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v9 v9.11.0
-	gopkg.in/guregu/null.v3 v3.4.0 // indirect
 	gopkg.in/h2non/filetype.v1 v1.0.5
 	gopkg.in/ini.v1 v1.41.0 // indirect
 )
