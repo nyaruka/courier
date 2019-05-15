@@ -288,8 +288,8 @@ var waIgnoreStatuses = map[string]bool{
 //     "id": "the-image-id"
 //     "caption": "the optional image caption"
 // 	 }
-//   "video": {
-//	   "id": "the-video-id",
+//	 "video": {
+//     "id": "the-video-id"
 //     "caption": "the optional video caption"
 //   }
 // }
