@@ -389,6 +389,31 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL,
 	},
+	{Label: "Video Send",
+		Text:   "video caption",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Attachments: []string{"video/mp4:https://foo.bar/video.mp4"},
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/media",
+				Body:   "media body",
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{"media": [{"id": "media-id"}]}`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/messages",
+				Body:   `{"to":"250788123123","type":"video","video":{"id":"media-id","caption":"video caption"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
 	{Label: "Template Send",
 		Text:   "templated message",
 		URN:    "whatsapp:250788123123",
