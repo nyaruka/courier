@@ -288,6 +288,10 @@ var waIgnoreStatuses = map[string]bool{
 //     "id": "the-image-id"
 //     "caption": "the optional image caption"
 // 	 }
+//	 "video": {
+//     "id": "the-video-id"
+//     "caption": "the optional video caption"
+//   }
 // }
 
 type mtTextPayload struct {
@@ -341,6 +345,12 @@ type mtImagePayload struct {
 	To    string                `json:"to"    validate:"required"`
 	Type  string                `json:"type"  validate:"required"`
 	Image *captionedMediaObject `json:"image"`
+}
+
+type mtVideoPayload struct {
+	To    string                `json:"to" validate: "required"`
+	Type  string                `json:"type" validate: "required"`
+	Video *captionedMediaObject `json:"video"`
 }
 
 // whatsapp only allows messages up to 4096 chars
@@ -415,7 +425,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 					payload.Image = &captionedMediaObject{ID: mediaID}
 				}
 				externalID, log, err = sendWhatsAppMsg(msg, sendURL, token, payload)
-
+			} else if strings.HasPrefix(mimeType, "video") {
+				payload := mtVideoPayload{
+					To:   msg.URN().Path(),
+					Type: "video",
+				}
+				if attachmentCount == 0 {
+					payload.Video = &captionedMediaObject{ID: mediaID, Caption: msg.Text()}
+				} else {
+					payload.Video = &captionedMediaObject{ID: mediaID}
+				}
+				externalID, log, err = sendWhatsAppMsg(msg, sendURL, token, payload)
 			} else {
 				duration := time.Since(start)
 				err = fmt.Errorf("unknown attachment mime type: %s", mimeType)
