@@ -25,6 +25,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/firebase"
 	_ "github.com/nyaruka/courier/handlers/globe"
 	_ "github.com/nyaruka/courier/handlers/highconnection"
+	_ "github.com/nyaruka/courier/handlers/hormuud"
 	_ "github.com/nyaruka/courier/handlers/hub9"
 	_ "github.com/nyaruka/courier/handlers/i2sms"
 	_ "github.com/nyaruka/courier/handlers/infobip"
