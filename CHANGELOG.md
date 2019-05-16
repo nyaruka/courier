@@ -1,3 +1,8 @@
+v1.2.155
+----------
+ * new Hormuud channel for somalia
+ * add video support for WhatsApp
+
 v1.2.154
 ----------
  * have batch committer print when flushed
