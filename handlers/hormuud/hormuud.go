@@ -21,8 +21,8 @@ import (
 
 var (
 	maxMsgLength = 160
-	tokenURL     = "https:// smsapi.hormuud.com/token"
-	sendURL      = "https:// smsapi.hormuud.com/api/SendSMS"
+	tokenURL     = "https://smsapi.hormuud.com/token"
+	sendURL      = "https://smsapi.hormuud.com/api/SendSMS"
 )
 
 func init() {
