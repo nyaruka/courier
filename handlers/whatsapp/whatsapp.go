@@ -651,41 +651,41 @@ var languageMap = map[string]string{
 	"eng": "en", // English
 	// en_GB English (UK) (unsupported, use en)
 	// en_US English (US) (unsupported, use en)
-	"est": "et",    // Estonian
-	"fil": "fil",   // Filipino
-	"fin": "fi",    // Finnish
-	"fra": "fr",    // French
-	"deu": "de",    // German
-	"ell": "el",    // Greek
-	"gul": "gu",    // Gujarati
-	"enb": "he",    // Hebrew
-	"hin": "hi",    // Hindi
-	"hun": "hu",    // Hungarian
-	"ind": "id",    // Indonesian
-	"gle": "ga",    // Irish
-	"ita": "it",    // Italian
-	"jpn": "ja",    // Japanese
-	"kan": "kn",    // Kannada
-	"kaz": "kk",    // Kazakh
-	"kor": "ko",    // Korean
-	"lao": "lo",    // Lao
-	"jav": "lv",    // Latvian
-	"lit": "lt",    // Lithuanian
-	"mkd": "mk",    // Macedonian
-	"msa": "ms",    // Malay
-	"mar": "mr",    // Marathi
-	"nob": "nb",    // Norwegian
-	"fas": "fa",    // Persian
-	"pol": "pl",    // Polish
-	"por": "pt_BR", // Portuguese (BR)
-	// pt_PT Portuguese (POR) (unsupported, use pt_BR)
-	"pan": "pa", // Punjabi
-	"ron": "ro", // Romanian
-	"rus": "ru", // Russian
-	"srp": "sr", // Serbian
-	"slk": "sk", // Slovak
-	"slv": "sl", // Slovenian
-	"spa": "es", // Spanish
+	"est": "et",  // Estonian
+	"fil": "fil", // Filipino
+	"fin": "fi",  // Finnish
+	"fra": "fr",  // French
+	"deu": "de",  // German
+	"ell": "el",  // Greek
+	"gul": "gu",  // Gujarati
+	"enb": "he",  // Hebrew
+	"hin": "hi",  // Hindi
+	"hun": "hu",  // Hungarian
+	"ind": "id",  // Indonesian
+	"gle": "ga",  // Irish
+	"ita": "it",  // Italian
+	"jpn": "ja",  // Japanese
+	"kan": "kn",  // Kannada
+	"kaz": "kk",  // Kazakh
+	"kor": "ko",  // Korean
+	"lao": "lo",  // Lao
+	"jav": "lv",  // Latvian
+	"lit": "lt",  // Lithuanian
+	"mkd": "mk",  // Macedonian
+	"msa": "ms",  // Malay
+	"mar": "mr",  // Marathi
+	"nob": "nb",  // Norwegian
+	"fas": "fa",  // Persian
+	"pol": "pl",  // Polish
+	// "pt_BR" Portuguese (BR)  (unsupported, use pt_PT)
+	"por": "pt_PT", // Portuguese (POR)
+	"pan": "pa",    // Punjabi
+	"ron": "ro",    // Romanian
+	"rus": "ru",    // Russian
+	"srp": "sr",    // Serbian
+	"slk": "sk",    // Slovak
+	"slv": "sl",    // Slovenian
+	"spa": "es",    // Spanish
 	// es_AR Spanish (ARG) (unsupported, use es)
 	// es_ES Spanish (SPA) (unsupported, use es)
 	// es_MX Spanish (MEX) (unsupported, use es)
