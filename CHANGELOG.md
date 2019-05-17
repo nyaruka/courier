@@ -1,3 +1,7 @@
+v1.2.156
+----------
+ * update Portuguese mapping
+
 v1.2.155
 ----------
  * new Hormuud channel for somalia
