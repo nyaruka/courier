@@ -154,11 +154,11 @@ func GetHTTPClient() *http.Client {
 	once.Do(func() {
 		transport = &http.Transport{
 			MaxIdleConns:    10,
-			IdleConnTimeout: 30 * time.Second,
+			IdleConnTimeout: 60 * time.Second,
 		}
 		client = &http.Client{
 			Transport: transport,
-			Timeout:   30 * time.Second,
+			Timeout:   60 * time.Second,
 		}
 	})
 
@@ -170,12 +170,12 @@ func GetInsecureHTTPClient() *http.Client {
 	insecureOnce.Do(func() {
 		insecureTransport = &http.Transport{
 			MaxIdleConns:    10,
-			IdleConnTimeout: 30 * time.Second,
+			IdleConnTimeout: 60 * time.Second,
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		insecureClient = &http.Client{
 			Transport: insecureTransport,
-			Timeout:   30 * time.Second,
+			Timeout:   60 * time.Second,
 		}
 	})
 
