@@ -1,3 +1,7 @@
+v1.2.157
+----------
+ * increase http timeouts to 60 seconds for AfricasTalking, Hormuud token lasts 90 minutes
+
 v1.2.156
 ----------
  * update Portuguese mapping
