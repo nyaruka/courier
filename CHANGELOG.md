@@ -1,3 +1,7 @@
+v1.2.158
+----------
+ * add ClickSend channel
+
 v1.2.157
 ----------
  * increase http timeouts to 60 seconds for AfricasTalking, Hormuud token lasts 90 minutes
