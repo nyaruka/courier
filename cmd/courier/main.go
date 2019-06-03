@@ -18,6 +18,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/burstsms"
 	_ "github.com/nyaruka/courier/handlers/chikka"
 	_ "github.com/nyaruka/courier/handlers/clickatell"
+	_ "github.com/nyaruka/courier/handlers/clicksend"
 	_ "github.com/nyaruka/courier/handlers/dart"
 	_ "github.com/nyaruka/courier/handlers/dmark"
 	_ "github.com/nyaruka/courier/handlers/external"
