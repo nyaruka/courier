@@ -1,4 +1,4 @@
-package twilio
+package twiml
 
 import (
 	"net/http"
@@ -169,24 +169,24 @@ func addInvalidSignature(r *http.Request) {
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler("T", "Twilio"), testCases)
-	RunChannelTestCases(t, tmsTestChannels, newHandler("TMS", "Twilio Messaging Service"), tmsTestCases)
-	RunChannelTestCases(t, twTestChannels, newHandler("TW", "TwiML API"), twTestCases)
+	RunChannelTestCases(t, testChannels, newTWIMLHandler("T", "Twilio", true), testCases)
+	RunChannelTestCases(t, tmsTestChannels, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsTestCases)
+	RunChannelTestCases(t, twTestChannels, newTWIMLHandler("TW", "TwiML API", true), twTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler("T", "Twilio"), testCases)
-	RunChannelBenchmarks(b, tmsTestChannels, newHandler("TMS", "Twilio Messaging Service"), tmsTestCases)
-	RunChannelBenchmarks(b, twTestChannels, newHandler("TW", "TwiML API"), twTestCases)
+	RunChannelBenchmarks(b, testChannels, newTWIMLHandler("T", "Twilio", true), testCases)
+	RunChannelBenchmarks(b, tmsTestChannels, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsTestCases)
+	RunChannelBenchmarks(b, twTestChannels, newTWIMLHandler("TW", "TwiML API", true), twTestCases)
 }
 
 // setSendURL takes care of setting the send_url to our test server host
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
 
 	if c.ChannelType().String() == "TW" {
-		c.(*courier.MockChannel).SetConfig("send_url", s.URL+"/Account/")
+		c.(*courier.MockChannel).SetConfig("send_url", s.URL)
 	} else {
-		sendURL = s.URL + "/Account/"
+		twilioBaseURL = s.URL
 	}
 }
 
@@ -196,7 +196,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Status: "W", ExternalID: "1002",
 		ResponseBody: `{ "sid": "1002" }`, ResponseStatus: 200,
 		PostParams: map[string]string{"Body": "Simple Message ☺", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		Path:       "/Account/accountSID/Messages.json",
+		Path:       "/2010-04-01/Accounts/accountSID/Messages.json",
 		Headers:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		SendPrep:   setSendURL},
 	{Label: "Long Send",
@@ -205,7 +205,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Status: "W", ExternalID: "1002",
 		ResponseBody: `{ "sid": "1002" }`, ResponseStatus: 200,
 		PostParams: map[string]string{"Body": "I need to keep adding more things to make it work", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		Path:       "/Account/accountSID/Messages.json",
+		Path:       "/2010-04-01/Accounts/accountSID/Messages.json",
 		Headers:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		SendPrep:   setSendURL},
 	{Label: "Error Sending",
@@ -247,7 +247,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 		Status: "W", ExternalID: "1002",
 		ResponseBody: `{ "sid": "1002" }`, ResponseStatus: 200,
 		PostParams: map[string]string{"Body": "Simple Message ☺", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
-		Path:       "/Account/accountSID/Messages.json",
+		Path:       "/2010-04-01/Accounts/accountSID/Messages.json",
 		Headers:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		SendPrep:   setSendURL},
 	{Label: "Long Send",
@@ -256,7 +256,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 		Status: "W", ExternalID: "1002",
 		ResponseBody: `{ "sid": "1002" }`, ResponseStatus: 200,
 		PostParams: map[string]string{"Body": "I need to keep adding more things to make it work", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
-		Path:       "/Account/accountSID/Messages.json",
+		Path:       "/2010-04-01/Accounts/accountSID/Messages.json",
 		Headers:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		SendPrep:   setSendURL},
 	{Label: "Error Sending",
@@ -298,7 +298,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		Status: "W", ExternalID: "1002",
 		ResponseBody: `{ "sid": "1002" }`, ResponseStatus: 200,
 		PostParams: map[string]string{"Body": "Simple Message ☺", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		Path:       "/Account/accountSID/Messages.json",
+		Path:       "/2010-04-01/Accounts/accountSID/Messages.json",
 		Headers:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		SendPrep:   setSendURL},
 	{Label: "Long Send",
@@ -307,7 +307,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		Status: "W", ExternalID: "1002",
 		ResponseBody: `{ "sid": "1002" }`, ResponseStatus: 200,
 		PostParams: map[string]string{"Body": "I need to keep adding more things to make it work", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		Path:       "/Account/accountSID/Messages.json",
+		Path:       "/2010-04-01/Accounts/accountSID/Messages.json",
 		Headers:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		SendPrep:   setSendURL},
 	{Label: "Error Sending",
@@ -363,7 +363,7 @@ func TestSending(t *testing.T) {
 			configSendURL:           "SEND_URL",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler("T", "Twilio"), defaultSendTestCases, nil)
-	RunChannelSendTestCases(t, tmsDefaultChannel, newHandler("TMS", "Twilio Messaging Service"), tmsDefaultSendTestCases, nil)
-	RunChannelSendTestCases(t, twDefaultChannel, newHandler("TW", "TwiML"), twDefaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newTWIMLHandler("T", "Twilio", true), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, tmsDefaultChannel, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsDefaultSendTestCases, nil)
+	RunChannelSendTestCases(t, twDefaultChannel, newTWIMLHandler("TW", "TwiML", true), twDefaultSendTestCases, nil)
 }

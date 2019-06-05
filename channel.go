@@ -136,6 +136,7 @@ type Channel interface {
 
 	ConfigForKey(key string, defaultValue interface{}) interface{}
 	StringConfigForKey(key string, defaultValue string) string
+	BoolConfigForKey(key string, defaultValue bool) bool
 	IntConfigForKey(key string, defaultValue int) int
 	OrgConfigForKey(key string, defaultValue interface{}) interface{}
 }

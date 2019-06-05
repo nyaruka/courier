@@ -1,7 +1,7 @@
-package twilio
+package twiml
 
 /*
- * Handler for Twilio channels, see https://www.twilio.com/docs/api
+ * Handler for TWIML based channels
  */
 
 import (
@@ -27,18 +27,28 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Flavor defines the methods a flavor needs to implement for a TWIML channel
+type Flavor interface {
+	Name() string
+	ChannelType() courier.ChannelType
+	BaseURL() string
+	ValidateSignature(courier.Channel, *http.Request) error
+}
+
 const (
 	configAccountSID          = "account_sid"
 	configMessagingServiceSID = "messaging_service_sid"
 	configSendURL             = "send_url"
+	configBaseURL             = "base_url"
+	configIgnoreDLRs          = "ignore_dlrs"
 
 	signatureHeader     = "X-Twilio-Signature"
 	forwardedPathHeader = "X-Forwarded-Path"
 )
 
 var (
-	maxMsgLength = 1600
-	sendURL      = "https://api.twilio.com/2010-04-01/Accounts"
+	maxMsgLength  = 1600
+	twilioBaseURL = "https://api.twilio.com"
 )
 
 // error code twilio returns when a contact has sent "stop"
@@ -46,26 +56,23 @@ const errorStopped = 21610
 
 type handler struct {
 	handlers.BaseHandler
-	ignoreDeliveryReports bool
+	validateSignatures bool
 }
 
-func newHandler(channelType string, name string) courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType(channelType), name), false}
+func newTWIMLHandler(channelType courier.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandler(channelType, name), validateSignatures}
 }
 
 func init() {
-	courier.RegisterHandler(newHandler("T", "Twilio"))
-	courier.RegisterHandler(newHandler("TMS", "Twilio Messaging Service"))
-	courier.RegisterHandler(newHandler("TW", "TwiML API"))
+	courier.RegisterHandler(newTWIMLHandler("TW", "TWIML API", true))
+	courier.RegisterHandler(newTWIMLHandler("T", "Twilio", true))
+	courier.RegisterHandler(newTWIMLHandler("TMS", "Twilio Messaging Service", true))
+	courier.RegisterHandler(newTWIMLHandler("SW", "SignalWire", false))
 }
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-
-	// save whether we should ignore delivery reports
-	h.ignoreDeliveryReports = s.Config().IgnoreDeliveryReports
-
 	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
 	return nil
@@ -152,7 +159,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on
-	if h.ignoreDeliveryReports && msgStatus != courier.MsgFailed {
+	if channel.BoolConfigForKey(configIgnoreDLRs, false) && msgStatus != courier.MsgFailed {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring non error delivery report")
 	}
 
@@ -179,19 +186,21 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	// build our callback URL
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
-	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?id=%d&action=callback", callbackDomain, strings.ToLower(msg.Channel().ChannelType().String()), msg.Channel().UUID(), msg.ID())
+	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?id=%d&action=callback", callbackDomain, strings.ToLower(h.ChannelType().String()), msg.Channel().UUID(), msg.ID())
 
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	if accountSID == "" {
-		return nil, fmt.Errorf("missing account sid for twilio channel")
+		return nil, fmt.Errorf("missing account sid for %s channel", h.ChannelName())
 	}
 
 	accountToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if accountToken == "" {
-		return nil, fmt.Errorf("missing account auth token for twilio channel")
+		return nil, fmt.Errorf("missing account auth token for %s channel", h.ChannelName())
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	channel := msg.Channel()
+
+	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
 	for i, part := range parts {
 		// build our request
@@ -208,15 +217,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		// set our from, either as a messaging service or from our address
-		serviceSID := msg.Channel().StringConfigForKey(configMessagingServiceSID, "")
+		serviceSID := channel.StringConfigForKey(configMessagingServiceSID, "")
 		if serviceSID != "" {
 			form["MessagingServiceSid"] = []string{serviceSID}
 		} else {
-			form["From"] = []string{msg.Channel().Address()}
+			form["From"] = []string{channel.Address()}
 		}
 
-		baseSendURL := msg.Channel().StringConfigForKey(configSendURL, sendURL)
-		sendURL, err := utils.AddURLPath(baseSendURL, accountSID, "Messages.json")
+		// build our URL
+		sendURL, err := utils.AddURLPath(h.baseURL(channel), "2010-04-01", "Accounts", accountSID, "Messages.json")
 		if err != nil {
 			return nil, err
 		}
@@ -273,8 +282,16 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	return status, nil
 }
 
+func (h *handler) baseURL(c courier.Channel) string {
+	return c.StringConfigForKey(configSendURL, c.StringConfigForKey(configBaseURL, twilioBaseURL))
+}
+
 // see https://www.twilio.com/docs/api/security
-func (h *handler) validateSignature(channel courier.Channel, r *http.Request) error {
+func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
+	if !h.validateSignatures {
+		return nil
+	}
+
 	actual := r.Header.Get(signatureHeader)
 	if actual == "" {
 		return fmt.Errorf("missing request signature")
@@ -284,7 +301,7 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 		return err
 	}
 
-	confAuth := channel.ConfigForKey(courier.ConfigAuthToken, "")
+	confAuth := c.ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
 		return fmt.Errorf("invalid or missing auth token in config")

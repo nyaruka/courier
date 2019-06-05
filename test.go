@@ -411,6 +411,16 @@ func (c *MockChannel) StringConfigForKey(key string, defaultValue string) string
 	return str
 }
 
+// BoolConfigForKey returns the config value for the passed in key
+func (c *MockChannel) BoolConfigForKey(key string, defaultValue bool) bool {
+	val := c.ConfigForKey(key, defaultValue)
+	b, isBool := val.(bool)
+	if !isBool {
+		return defaultValue
+	}
+	return b
+}
+
 // IntConfigForKey returns the config value for the passed in key
 func (c *MockChannel) IntConfigForKey(key string, defaultValue int) int {
 	val := c.ConfigForKey(key, defaultValue)

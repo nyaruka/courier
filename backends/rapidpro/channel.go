@@ -241,6 +241,16 @@ func (c *DBChannel) StringConfigForKey(key string, defaultValue string) string {
 	return str
 }
 
+// BoolConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
+func (c *DBChannel) BoolConfigForKey(key string, defaultValue bool) bool {
+	val := c.ConfigForKey(key, defaultValue)
+	b, isBool := val.(bool)
+	if !isBool {
+		return defaultValue
+	}
+	return b
+}
+
 // IntConfigForKey returns the config value for the passed in key
 func (c *DBChannel) IntConfigForKey(key string, defaultValue int) int {
 	val := c.ConfigForKey(key, defaultValue)
