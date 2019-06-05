@@ -27,14 +27,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Flavor defines the methods a flavor needs to implement for a TWIML channel
-type Flavor interface {
-	Name() string
-	ChannelType() courier.ChannelType
-	BaseURL() string
-	ValidateSignature(courier.Channel, *http.Request) error
-}
-
 const (
 	configAccountSID          = "account_sid"
 	configMessagingServiceSID = "messaging_service_sid"
