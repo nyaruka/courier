@@ -222,7 +222,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return nil, fmt.Errorf("missing base URL for %s channel", h.ChannelName())
 		}
 
-		sendURL, err := utils.AddURLPath(h.baseURL(channel), "2010-04-01", "Accounts", accountSID, "Messages.json")
+		sendURL, err := utils.AddURLPath(baseURL, "2010-04-01", "Accounts", accountSID, "Messages.json")
 		if err != nil {
 			return nil, err
 		}
