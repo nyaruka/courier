@@ -23,6 +23,10 @@ var twTestChannels = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TW", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
 }
 
+var swTestChannels = []courier.Channel{
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
+}
+
 var (
 	receiveURL         = "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 	statusURL          = "/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"
@@ -38,6 +42,11 @@ var (
 	twStatusURL          = "/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"
 	twStatusIDURL        = "/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=12345"
 	twStatusInvalidIDURL = "/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=asdf"
+
+	swReceiveURL         = "/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
+	swStatusURL          = "/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"
+	swStatusIDURL        = "/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=12345"
+	swStatusInvalidIDURL = "/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=asdf"
 
 	receiveValid        = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=0&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&Body=Msg&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
 	receiveMedia        = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=2&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01&MediaUrl0=cat.jpg&MediaUrl1=dog.jpg"
@@ -151,6 +160,23 @@ var twTestCases = []ChannelHandleTestCase{
 		PrepRequest: addValidSignature},
 }
 
+var swTestCases = []ChannelHandleTestCase{
+	{Label: "Receive Valid", URL: swReceiveURL, Data: receiveValid, Status: 200, Response: "<Response/>",
+		Text: Sp("Msg"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b")},
+	{Label: "Receive No Params", URL: swReceiveURL, Data: " ", Status: 400, Response: "field 'messagesid' required"},
+	{Label: "Receive Media", URL: swReceiveURL, Data: receiveMedia, Status: 200, Response: "<Response/>",
+		URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"), Attachments: []string{"cat.jpg", "dog.jpg"}},
+	{Label: "Receive Media With Msg", URL: swReceiveURL, Data: receiveMediaWithMsg, Status: 200, Response: "<Response/>",
+		Text: Sp("Msg"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"), Attachments: []string{"cat.jpg", "dog.jpg"}},
+	{Label: "Receive Base64", URL: swReceiveURL, Data: receiveBase64, Status: 200, Response: "<Response/>",
+		Text: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b")},
+	{Label: "Status No Params", URL: swStatusURL, Data: " ", Status: 200, Response: "no msg status, ignoring"},
+	{Label: "Status Invalid Status", URL: swStatusURL, Data: statusInvalid, Status: 400, Response: "unknown status 'huh'"},
+	{Label: "Status Valid", URL: swStatusURL, Data: statusValid, Status: 200, Response: `"status":"D"`, ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b")},
+	{Label: "Status ID Valid", URL: swStatusIDURL, Data: statusValid, Status: 200, Response: `"status":"D"`, ID: 12345},
+	{Label: "Status ID Invalid", URL: swStatusInvalidIDURL, Data: statusValid, Status: 200, Response: `"status":"D"`, ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b")},
+}
+
 func addValidSignature(r *http.Request) {
 	r.ParseForm()
 	sig, _ := twCalculateSignature(fmt.Sprintf("%s://%s%s", r.URL.Scheme, r.Host, r.URL.RequestURI()), r.PostForm, "6789")
@@ -172,6 +198,7 @@ func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, testChannels, newTWIMLHandler("T", "Twilio", true), testCases)
 	RunChannelTestCases(t, tmsTestChannels, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsTestCases)
 	RunChannelTestCases(t, twTestChannels, newTWIMLHandler("TW", "TwiML API", true), twTestCases)
+	RunChannelTestCases(t, swTestChannels, newTWIMLHandler("SW", "SignalWire", false), swTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -182,8 +209,7 @@ func BenchmarkHandler(b *testing.B) {
 
 // setSendURL takes care of setting the send_url to our test server host
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-
-	if c.ChannelType().String() == "TW" {
+	if c.ChannelType().String() == "TW" || c.ChannelType().String() == "SW" {
 		c.(*courier.MockChannel).SetConfig("send_url", s.URL)
 	} else {
 		twilioBaseURL = s.URL
@@ -343,6 +369,57 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:   setSendURL},
 }
 
+var swSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message ☺", URN: "tel:+250788383383",
+		Status: "W", ExternalID: "1002",
+		ResponseBody: `{ "sid": "1002" }`, ResponseStatus: 200,
+		PostParams: map[string]string{"Body": "Simple Message ☺", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+		Path:       "/2010-04-01/Accounts/accountSID/Messages.json",
+		Headers:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		SendPrep:   setSendURL},
+	{Label: "Long Send",
+		Text:   "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		URN:    "tel:+250788383383",
+		Status: "W", ExternalID: "1002",
+		ResponseBody: `{ "sid": "1002" }`, ResponseStatus: 200,
+		PostParams: map[string]string{"Body": "I need to keep adding more things to make it work", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+		Path:       "/2010-04-01/Accounts/accountSID/Messages.json",
+		Headers:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		SendPrep:   setSendURL},
+	{Label: "Error Sending",
+		Text: "Error Message", URN: "tel:+250788383383",
+		Status:       "E",
+		ResponseBody: `{ "error": "out of credits" }`, ResponseStatus: 401,
+		PostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+		SendPrep:   setSendURL},
+	{Label: "Error Code",
+		Text: "Error Code", URN: "tel:+250788383383",
+		Status:       "E",
+		ResponseBody: `{ "code": 1001 }`, ResponseStatus: 200,
+		PostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+		SendPrep:   setSendURL},
+	{Label: "Stopped Contact Code",
+		Text: "Stopped Contact", URN: "tel:+250788383383",
+		Status:       "F",
+		ResponseBody: `{ "code": 21610 }`, ResponseStatus: 400,
+		PostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+		SendPrep:   setSendURL,
+		Stopped:    true},
+	{Label: "No SID",
+		Text: "No SID", URN: "tel:+250788383383",
+		Status:       "E",
+		ResponseBody: `{ }`, ResponseStatus: 200,
+		PostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+		SendPrep:   setSendURL},
+	{Label: "Send Attachment",
+		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Status:       "W",
+		ResponseBody: `{ "sid": "1002" }`, ResponseStatus: 200,
+		PostParams: map[string]string{"Body": "My pic!", "To": "+250788383383", "MediaUrl": "https://foo.bar/image.jpg", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+		SendPrep:   setSendURL},
+}
+
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US",
@@ -363,7 +440,15 @@ func TestSending(t *testing.T) {
 			configSendURL:           "SEND_URL",
 		})
 
+	var swChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US",
+	map[string]interface{}{
+			configAccountSID:        "accountSID",
+			courier.ConfigAuthToken: "authToken",
+			configSendURL:           "BASE_URL",
+		})
+
 	RunChannelSendTestCases(t, defaultChannel, newTWIMLHandler("T", "Twilio", true), defaultSendTestCases, nil)
 	RunChannelSendTestCases(t, tmsDefaultChannel, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsDefaultSendTestCases, nil)
 	RunChannelSendTestCases(t, twDefaultChannel, newTWIMLHandler("TW", "TwiML", true), twDefaultSendTestCases, nil)
+	RunChannelSendTestCases(t, swChannel, newTWIMLHandler("SW", "SignalWire", false), swSendTestCases, nil)
 }

@@ -225,6 +225,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		// build our URL
+		baseURL := h.baseURL(channel)
+		if baseURL == "" {
+			return nil, fmt.Errorf("missing base URL for %s channel", h.ChannelName())
+		}
+
 		sendURL, err := utils.AddURLPath(h.baseURL(channel), "2010-04-01", "Accounts", accountSID, "Messages.json")
 		if err != nil {
 			return nil, err
@@ -283,7 +288,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 }
 
 func (h *handler) baseURL(c courier.Channel) string {
-	return c.StringConfigForKey(configSendURL, c.StringConfigForKey(configBaseURL, twilioBaseURL))
+	// Twilio channels use the Twili base URL
+	if c.ChannelType() == "T" || c.ChannelType() == "TMS" {
+		return twilioBaseURL
+	}
+
+	return c.StringConfigForKey(configSendURL, c.StringConfigForKey(configBaseURL, ""))
 }
 
 // see https://www.twilio.com/docs/api/security
