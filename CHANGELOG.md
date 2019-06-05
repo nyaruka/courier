@@ -1,3 +1,9 @@
+v1.2.159
+----------
+ * add SignalWire handler (https://www.signalwire.com)
+ * refactor twilio->twiml
+ * remove ignore DLR global config, make per channel for TWIML channels
+
 v1.2.158
 ----------
  * add ClickSend channel
