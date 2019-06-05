@@ -249,7 +249,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if testCase.Path != "" {
-				require.NotNil(testRequest)
+				require.NotNil(testRequest, "path should not be nil")
 				require.Equal(testCase.Path, testRequest.URL.Path)
 			}
 
@@ -262,7 +262,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if testCase.PostParams != nil {
-				require.NotNil(testRequest)
+				require.NotNil(testRequest, "post body should not be nil")
 				for k, v := range testCase.PostParams {
 					value := testRequest.PostFormValue(k)
 					require.Equal(v, value)
@@ -270,7 +270,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if testCase.RequestBody != "" {
-				require.NotNil(testRequest)
+				require.NotNil(testRequest, "request body should not be nil")
 				value, _ := ioutil.ReadAll(testRequest.Body)
 				require.Equal(testCase.RequestBody, strings.Trim(string(value), "\n"))
 			}
@@ -280,7 +280,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if testCase.Headers != nil {
-				require.NotNil(testRequest)
+				require.NotNil(testRequest, "headers should not be nil")
 				for k, v := range testCase.Headers {
 					value := testRequest.Header.Get(k)
 					require.Equal(v, value)
@@ -292,7 +292,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if testCase.Status != "" {
-				require.NotNil(status)
+				require.NotNil(status, "status should not be nil")
 				require.Equal(testCase.Status, string(status.Status()))
 			}
 
