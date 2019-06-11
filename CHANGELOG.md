@@ -1,3 +1,7 @@
+v1.2.160
+----------
+ * add bearer before auth token for Hormuud
+
 v1.2.159
 ----------
  * add SignalWire handler (https://www.signalwire.com)
