@@ -60,8 +60,7 @@ SELECT
 	ch.country as country, 
 	ch.config as config, 
 	org.config as org_config, 
-	org.is_anon as org_is_anon, 
-	org.flow_server_enabled as org_flow_server_enabled
+	org.is_anon as org_is_anon
 FROM 
 	channels_channel ch
 	JOIN orgs_org org on ch.org_id = org.id
@@ -156,9 +155,8 @@ type DBChannel struct {
 	Country_     sql.NullString      `db:"country"`
 	Config_      utils.NullMap       `db:"config"`
 
-	OrgConfig_            utils.NullMap `db:"org_config"`
-	OrgIsAnon_            bool          `db:"org_is_anon"`
-	OrgFlowServerEnabled_ bool          `db:"org_flow_server_enabled"`
+	OrgConfig_ utils.NullMap `db:"org_config"`
+	OrgIsAnon_ bool          `db:"org_is_anon"`
 
 	expiration time.Time
 }
@@ -168,9 +166,6 @@ func (c *DBChannel) OrgID() OrgID { return c.OrgID_ }
 
 // OrgIsAnon returns the org for this channel is anonymous
 func (c *DBChannel) OrgIsAnon() bool { return c.OrgIsAnon_ }
-
-// OrgFlowServerEnabled returns whether the org for this channel is using the flow server
-func (c *DBChannel) OrgFlowServerEnabled() bool { return c.OrgFlowServerEnabled_ }
 
 // ChannelType returns the type of this channel
 func (c *DBChannel) ChannelType() courier.ChannelType { return c.ChannelType_ }

@@ -915,8 +915,6 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	defer rc.Close()
 	rc.Do("DEL", "handler:1", "handler:active", fmt.Sprintf("c:1:%d", msg.ContactID_))
 
-	// test queuing to mailroom
-	knChannel.OrgFlowServerEnabled_ = true
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "hello 1 2 3").(*DBMsg)
 	err = writeMsgToDB(ctx, ts.b, msg)
 	ts.NoError(err)
@@ -977,10 +975,9 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 
 	rc := ts.b.redisPool.Get()
 	defer rc.Close()
-	rc.Do("DEL", "handler:1", "handler:active")
+	rc.Do("FLUSHDB")
 
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	channel.OrgFlowServerEnabled_ = true
 	urn, _ := urns.NewTelURNForCountry("12065551616", channel.Country())
 	event := ts.b.NewChannelEvent(channel, courier.Referral, urn).WithExtra(map[string]interface{}{"ref_id": "12345"}).WithContactName("kermit frog")
 	err := ts.b.WriteChannelEvent(ctx, event)
