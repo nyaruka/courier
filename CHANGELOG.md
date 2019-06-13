@@ -1,3 +1,8 @@
+v2.0.0
+----------
+ * ignore flow server enabled attribute on orgs
+ * stop looking / writing is_test on contact
+
 v1.2.160
 ----------
  * add bearer before auth token for Hormuud
