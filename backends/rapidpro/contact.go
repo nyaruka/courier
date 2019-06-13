@@ -59,8 +59,8 @@ func (i ContactID) String() string {
 
 const insertContactSQL = `
 INSERT INTO 
-	contacts_contact(org_id, is_active, is_blocked, is_test, is_stopped, uuid, created_on, modified_on, created_by_id, modified_by_id, name) 
-              VALUES(:org_id, TRUE, FALSE, FALSE, FALSE, :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name)
+	contacts_contact(org_id, is_active, is_blocked, is_stopped, uuid, created_on, modified_on, created_by_id, modified_by_id, name) 
+              VALUES(:org_id, TRUE, FALSE, FALSE, :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name)
 RETURNING id
 `
 
@@ -93,8 +93,7 @@ WHERE
 	u.identity = $1 AND 
 	u.contact_id = c.id AND 
 	u.org_id = $2 AND 
-	c.is_active = TRUE AND 
-	c.is_test = FALSE
+	c.is_active = TRUE
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one

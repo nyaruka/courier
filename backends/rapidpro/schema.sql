@@ -32,7 +32,6 @@ CREATE TABLE contacts_contact (
     uuid character varying(36) NOT NULL,
     name character varying(128),
     is_blocked boolean NOT NULL,
-    is_test boolean NOT NULL,
     is_stopped boolean NOT NULL,
     language character varying(3),
     created_by_id integer NOT NULL,
