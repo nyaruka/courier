@@ -188,6 +188,11 @@ func (c *DBChannel) Address() string { return c.Address_.String }
 // Country returns the country code for this channel if any
 func (c *DBChannel) Country() string { return c.Country_.String }
 
+// IsScheme returns whether this channel serves only the passed in scheme
+func (c *DBChannel) IsScheme(scheme string) bool {
+	return len(c.Schemes_) == 1 && c.Schemes_[0] == scheme
+}
+
 // ConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
 func (c *DBChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
 	// no value, return our default value
