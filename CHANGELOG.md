@@ -1,3 +1,7 @@
+v2.0.1
+----------
+ * add WhatsApp scheme support for TWIML channels
+
 v2.0.0
 ----------
  * ignore flow server enabled attribute on orgs
