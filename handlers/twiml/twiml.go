@@ -110,7 +110,17 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn, err := urns.NewTelURNForCountry(form.From, form.FromCountry)
+	var urn urns.URN
+	if channel.IsScheme(urns.WhatsAppScheme) {
+		// Twilio Whatsapp from is in the form: whatsapp:+12211414154
+		parts := strings.Split(form.From, ":")
+
+		// trim off left +, official whatsapp IDs dont have that
+		urn, err = urns.NewWhatsAppURN(strings.TrimLeft(parts[1], "+"))
+	} else {
+		urn, err = urns.NewTelURNForCountry(form.From, form.FromCountry)
+	}
+
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
@@ -214,6 +224,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			form["MessagingServiceSid"] = []string{serviceSID}
 		} else {
 			form["From"] = []string{channel.Address()}
+		}
+
+		// for whatsapp channels, we have to prepend whatsapp to the To and From
+		if channel.IsScheme(urns.WhatsAppScheme) {
+			form["To"][0] = fmt.Sprintf("%s:+%s", urns.WhatsAppScheme, form["To"][0])
+			form["From"][0] = fmt.Sprintf("%s:%s", urns.WhatsAppScheme, form["From"][0])
 		}
 
 		// build our URL

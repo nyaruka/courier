@@ -369,8 +369,16 @@ func (c *MockChannel) Name() string { return fmt.Sprintf("Channel: %s", c.uuid.S
 // ChannelType returns the type of this channel
 func (c *MockChannel) ChannelType() ChannelType { return c.channelType }
 
+// SetScheme sets the scheme for this channel
+func (c *MockChannel) SetScheme(scheme string) { c.schemes = []string{scheme} }
+
 // Schemes returns the schemes for this channel
 func (c *MockChannel) Schemes() []string { return c.schemes }
+
+// IsScheme returns whether the passed in scheme is the scheme for this channel
+func (c *MockChannel) IsScheme(scheme string) bool {
+	return len(c.schemes) == 1 && c.schemes[0] == scheme
+}
 
 // Address returns the address of this channel
 func (c *MockChannel) Address() string { return c.address }
@@ -457,7 +465,7 @@ func (c *MockChannel) OrgConfigForKey(key string, defaultValue interface{}) inte
 }
 
 // NewMockChannel creates a new mock channel for the passed in type, address, country and config
-func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}) Channel {
+func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}) *MockChannel {
 	cUUID, _ := NewChannelUUID(uuid)
 
 	channel := &MockChannel{

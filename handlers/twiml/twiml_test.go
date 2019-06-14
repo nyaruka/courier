@@ -9,6 +9,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var testChannels = []courier.Channel{
@@ -58,6 +59,8 @@ var (
 
 	tmsStatusExtra  = "SmsStatus=sent&MessageStatus=sent&To=2021&MessagingServiceSid=MGdb23ec0f89ee2632e46e91d8128f5e2b&MessageSid=SM0b6e2697aae04182a9f5b5c7a8994c7f&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
 	tmsReceiveExtra = "ToCountry=US&ToState=&SmsMessageSid=SMbbf29aeb9d380ce2a1c0ae4635ff9dab&NumMedia=0&ToCity=&FromZip=27609&SmsSid=SMbbf29aeb9d380ce2a1c0ae4635ff9dab&FromState=NC&SmsStatus=received&FromCity=RALEIGH&Body=John+Cruz&FromCountry=US&To=384387&ToZip=&NumSegments=1&MessageSid=SMbbf29aeb9d380ce2a1c0ae4635ff9dab&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
+
+	waReceiveValid = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=0&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&Body=Msg&FromCountry=US&To=whatsapp:%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=whatsapp:%2B14133881111&ApiVersion=2010-04-01"
 )
 
 var testCases = []ChannelHandleTestCase{
@@ -177,6 +180,12 @@ var swTestCases = []ChannelHandleTestCase{
 	{Label: "Status ID Invalid", URL: swStatusInvalidIDURL, Data: statusValid, Status: 200, Response: `"status":"D"`, ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b")},
 }
 
+var waTestCases = []ChannelHandleTestCase{
+	{Label: "Receive Valid", URL: receiveURL, Data: waReceiveValid, Status: 200, Response: "<Response/>",
+		Text: Sp("Msg"), URN: Sp("whatsapp:14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
+		PrepRequest: addValidSignature},
+}
+
 func addValidSignature(r *http.Request) {
 	r.ParseForm()
 	sig, _ := twCalculateSignature(fmt.Sprintf("%s://%s%s", r.URL.Scheme, r.Host, r.URL.RequestURI()), r.PostForm, "6789")
@@ -199,6 +208,15 @@ func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, tmsTestChannels, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsTestCases)
 	RunChannelTestCases(t, twTestChannels, newTWIMLHandler("TW", "TwiML API", true), twTestCases)
 	RunChannelTestCases(t, swTestChannels, newTWIMLHandler("SW", "SignalWire", false), swTestCases)
+
+	waChannel := courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
+		map[string]interface{}{
+			configAccountSID:        "accountSID",
+			courier.ConfigAuthToken: "6789",
+		},
+	)
+	waChannel.SetScheme(urns.WhatsAppScheme)
+	RunChannelTestCases(t, []courier.Channel{waChannel}, newTWIMLHandler("T", "TwilioWhatsApp", true), waTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -420,6 +438,16 @@ var swSendTestCases = []ChannelSendTestCase{
 		SendPrep:   setSendURL},
 }
 
+var waSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message ☺", URN: "whatsapp:250788383383",
+		Status: "W", ExternalID: "1002",
+		ResponseBody: `{ "sid": "1002" }`, ResponseStatus: 200,
+		PostParams: map[string]string{"Body": "Simple Message ☺", "To": "whatsapp:+250788383383", "From": "whatsapp:+12065551212", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+		Headers:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		SendPrep:   setSendURL},
+}
+
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US",
@@ -441,7 +469,7 @@ func TestSending(t *testing.T) {
 		})
 
 	var swChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US",
-	map[string]interface{}{
+		map[string]interface{}{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken",
 			configSendURL:           "BASE_URL",
@@ -451,4 +479,14 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, tmsDefaultChannel, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsDefaultSendTestCases, nil)
 	RunChannelSendTestCases(t, twDefaultChannel, newTWIMLHandler("TW", "TwiML", true), twDefaultSendTestCases, nil)
 	RunChannelSendTestCases(t, swChannel, newTWIMLHandler("SW", "SignalWire", false), swSendTestCases, nil)
+
+	waChannel := courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
+		map[string]interface{}{
+			configAccountSID:        "accountSID",
+			courier.ConfigAuthToken: "authToken",
+		},
+	)
+	waChannel.SetScheme(urns.WhatsAppScheme)
+
+	RunChannelSendTestCases(t, waChannel, newTWIMLHandler("T", "Twilio Whatsapp", true), waSendTestCases, nil)
 }
