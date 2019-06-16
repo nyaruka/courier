@@ -1,3 +1,8 @@
+v2.0.2
+----------
+0;95;0c# Enter any comments for inclusion in the CHANGELOG on this revision below, you can use markdown
+ * ignore viber dlrs as they are sent for both in and out
+
 v2.0.1
 ----------
  * add WhatsApp scheme support for TWIML channels
