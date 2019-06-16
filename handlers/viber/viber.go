@@ -174,10 +174,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "delivered":
-		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), courier.MsgDelivered)
-
-		err = h.Backend().WriteMsgStatus(ctx, msgStatus)
-		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
+		// we ignore delivered events for viber as they send these for incoming messages too and its not worth the db hit to verify that
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring delivered status")
 
 	case "message":
 		sender := payload.Sender.ID
