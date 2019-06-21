@@ -80,7 +80,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	urnparts.WriteString(payload.Data.Message.ChannelID)
 	urnparts.WriteString("/")
 	urnparts.WriteString(payload.Data.Message.ActorID)
-	urn, err = urns.NewURNFromParts(channel.Schemes()[0], urnparts.String(), "", "")
+	urn, err = urns.NewURNFromParts("freshchat", urnparts.String(), "", "")
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
@@ -201,9 +201,12 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 
 	var b64Sig = []byte(actual)
 	block, _ := pem.Decode(rsaPubKey)
+	if err != nil {
+		return fmt.Errorf("failed to decode public key, %s", err.Error())
+	}
 	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
-		panic("failed to parse DER encoded public key: " + err.Error())
+		return fmt.Errorf("failed to parse DER encoded public key, %s", err.Error())
 	}
 	hash := sha256.New()
 	if _, err := bytes.NewReader(token).WriteTo(hash); err != nil {
