@@ -1,7 +1,6 @@
 package freshchat
 
 import (
-	// "net/http/httptest"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -12,9 +11,9 @@ import (
 
 var testChannels = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FC", "2020", "US", map[string]interface{}{
-		"username":   "c8fddfaf-622a-4a0e-b060-4f3ccbeab606", //agent_id
-		"password":   cert,                                   // public_key for sig
-		"auth_token": "authtoken",                            //API bearer token
+		"agent_id":    "c8fddfaf-622a-4a0e-b060-4f3ccbeab606", //agent_id
+		"webhook_key": cert,                                   // public_key for sig
+		"auth_token":  "authtoken",                            //API bearer token
 	}),
 	// author-id
 }
@@ -124,9 +123,9 @@ var defaultSendTestCases = []ChannelSendTestCase{
 
 func TestSending(t *testing.T) {
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FC", "2020", "US", map[string]interface{}{
-		"username":   "c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
-		"password":   cert,
-		"auth_token": "enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
+		"agent_id":    "c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
+		"webhook_key": cert,
+		"auth_token":  "enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 	})
 	RunChannelSendTestCases(t, defaultChannel, newHandler("FC", "FreshChat", false), defaultSendTestCases, nil)
 }

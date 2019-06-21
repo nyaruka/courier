@@ -19,7 +19,6 @@ import (
 	"strings"
 	"time"
 
-	//"github.com/go-errors/errors"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
@@ -76,11 +75,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// create our URN
 	urn := urns.NilURN
-	var urnparts strings.Builder
-	urnparts.WriteString(payload.Data.Message.ChannelID)
-	urnparts.WriteString("/")
-	urnparts.WriteString(payload.Data.Message.ActorID)
-	urn, err = urns.NewURNFromParts("freshchat", urnparts.String(), "", "")
+	urnstring := fmt.Sprintf("%s/%s", payload.Data.Message.ChannelID, payload.Data.Message.ActorID)
+	urn, err = urns.NewURNFromParts("freshchat", urnstring, "", "")
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
@@ -108,7 +104,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 
-	agentID := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
+	agentID := msg.Channel().StringConfigForKey("agent_id", "")
 	if agentID == "" {
 		return nil, fmt.Errorf("missing 'agent_id' config for FC channel")
 	}
@@ -118,7 +114,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("missing 'auth_token' config for FC channel")
 	}
 
-	user := strings.Split(fmt.Sprintf("%v", msg.URN().Path()), "/")
+	user := strings.Split(msg.URN().Path(), "/")
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	url := apiURL + "/conversations"
 
@@ -141,7 +137,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	if len(msg.Text()) > 0 {
 		text := msg.Text()
-		var msgtext = new(MessageParts)
+		msgtext := &MessageParts{}
 		msgtext.Text = &Text{Content: text}
 		payload.Messages[0].MessageParts = append(payload.Messages[0].MessageParts, *msgtext)
 	}
@@ -184,7 +180,7 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if !h.validateSignatures {
 		return nil
 	}
-	var rsaPubKey = []byte(c.StringConfigForKey(courier.ConfigPassword, ""))
+	var rsaPubKey = []byte(c.StringConfigForKey("webhook_key", ""))
 
 	actual := r.Header.Get(signatureHeader)
 	if actual == "" {
