@@ -25,6 +25,10 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
+const (
+	configFCWebhookKey = "webhook_key"
+)
+
 var (
 	apiURL          = "https://api.freshchat.com/v2"
 	signatureHeader = "X-FreshChat-Signature"
@@ -180,7 +184,11 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if !h.validateSignatures {
 		return nil
 	}
-	var rsaPubKey = []byte(c.StringConfigForKey("webhook_key", ""))
+	//x509 parser needs newlines for valid key- RP stores config strings without them.
+	// this puts them back in
+	key := strings.Replace(c.StringConfigForKey(configFCWebhookKey, ""), "- ", "-\n", 1)
+	key = strings.Replace(key, " -", "\n-", 1)
+	var rsaPubKey = []byte(key)
 
 	actual := r.Header.Get(signatureHeader)
 	if actual == "" {
