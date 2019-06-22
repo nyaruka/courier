@@ -26,7 +26,8 @@ import (
 )
 
 const (
-	configFCWebhookKey = "webhook_key"
+	configFCWebhookKey = "secret"
+	configFCAgentID    = "username"
 )
 
 var (
@@ -108,7 +109,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 
-	agentID := msg.Channel().StringConfigForKey("agent_id", "")
+	agentID := msg.Channel().StringConfigForKey(configFCAgentID, "")
 	if agentID == "" {
 		return nil, fmt.Errorf("missing 'agent_id' config for FC channel")
 	}
@@ -184,9 +185,13 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if !h.validateSignatures {
 		return nil
 	}
+	key := c.StringConfigForKey(configFCWebhookKey, "")
+	if key == "" {
+		return fmt.Errorf("missing 'webhook_key' config for FC channel")
+	}
 	//x509 parser needs newlines for valid key- RP stores config strings without them.
 	// this puts them back in
-	key := strings.Replace(c.StringConfigForKey(configFCWebhookKey, ""), "- ", "-\n", 1)
+	key = strings.Replace(key, "- ", "-\n", 1)
 	key = strings.Replace(key, " -", "\n-", 1)
 	var rsaPubKey = []byte(key)
 
