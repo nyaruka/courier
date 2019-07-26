@@ -25,11 +25,6 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-const (
-	configFCWebhookKey = "secret"
-	configFCAgentID    = "username"
-)
-
 var (
 	apiURL          = "https://api.freshchat.com/v2"
 	signatureHeader = "X-FreshChat-Signature"
@@ -109,7 +104,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 
-	agentID := msg.Channel().StringConfigForKey(configFCAgentID, "")
+	agentID := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if agentID == "" {
 		return nil, fmt.Errorf("missing 'agent_id' config for FC channel")
 	}
@@ -185,7 +180,7 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if !h.validateSignatures {
 		return nil
 	}
-	key := c.StringConfigForKey(configFCWebhookKey, "")
+	key := c.StringConfigForKey(courier.ConfigSecret, "")
 	if key == "" {
 		return fmt.Errorf("missing 'webhook_key' config for FC channel")
 	}
