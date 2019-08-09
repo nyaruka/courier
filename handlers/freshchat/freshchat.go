@@ -182,7 +182,7 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	}
 	key := c.StringConfigForKey(courier.ConfigSecret, "")
 	if key == "" {
-		return fmt.Errorf("missing 'webhook_key' config for FC channel")
+		return fmt.Errorf("missing config secret for FC channel")
 	}
 	//x509 parser needs newlines for valid key- RP stores config strings without them.
 	// this puts them back in

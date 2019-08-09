@@ -76,7 +76,6 @@ github.com/nyaruka/librato v0.0.0-20180827155909-cacc769357b8 h1:TOvxy0u6LNTWP3g
 github.com/nyaruka/librato v0.0.0-20180827155909-cacc769357b8/go.mod h1:huVocfMEHkttMHD4hSr/wjWNyTx/YMzwwajVzV2bq+0=
 github.com/nyaruka/null v1.1.1 h1:kRy1Luj7jUHWEFqc2J6VXrKYi/beLEZdS1C7rA6vqTE=
 github.com/nyaruka/null v1.1.1/go.mod h1:HSAFbLNOaEhHnoU0VCveCPz0GDtJ3GEtFWhvnBNkhPE=
-github.com/nyaruka/phonenumbers v1.0.34/go.mod h1:GQ0cTHlrxPrhoLwyQ1blyN1hO794ygt6FTHWrFB5SSc=
 github.com/nyaruka/phonenumbers v1.0.36 h1:NaQcpW0p4jojGXGvdfVXCeJKrI9gKerdctgbTHPRqyo=
 github.com/nyaruka/phonenumbers v1.0.36/go.mod h1:Hhae+eypC1YKMaQlBJUCGZDzBrIHHNWhJX1xG/8sOC8=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
