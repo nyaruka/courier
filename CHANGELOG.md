@@ -1,3 +1,7 @@
+v2.0.3
+----------
+ * Fix sending for ClickSend
+
 v2.0.2
 ----------
 0;95;0c# Enter any comments for inclusion in the CHANGELOG on this revision below, you can use markdown
