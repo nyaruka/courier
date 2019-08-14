@@ -9,6 +9,12 @@
 #
 #-------------------------------------------------------------------------------------
 
+# Adress to listen on. Use "0.0.0.0" to listen on all NICs.
+adress = "0.0.0.0"
+
+# Domain or IP the server is exposed on
+domain = "your-domain.com"
+
 # What backend to use for looking up and writing data
 backend = "rapidpro"
 
