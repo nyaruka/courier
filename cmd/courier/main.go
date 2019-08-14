@@ -24,6 +24,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/external"
 	_ "github.com/nyaruka/courier/handlers/facebook"
 	_ "github.com/nyaruka/courier/handlers/firebase"
+	_ "github.com/nyaruka/courier/handlers/freshchat"
 	_ "github.com/nyaruka/courier/handlers/globe"
 	_ "github.com/nyaruka/courier/handlers/highconnection"
 	_ "github.com/nyaruka/courier/handlers/hormuud"
