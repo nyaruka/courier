@@ -1,3 +1,8 @@
+v2.0.4
+----------
+ * Add FreshChat channel type
+ * Latest phonenumbers library
+
 v2.0.3
 ----------
  * Fix sending for ClickSend
