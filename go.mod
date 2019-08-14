@@ -30,7 +30,7 @@ require (
 	github.com/nyaruka/gocommon v1.1.0
 	github.com/nyaruka/librato v0.0.0-20180827155909-cacc769357b8
 	github.com/nyaruka/null v1.1.1
-	github.com/nyaruka/phonenumbers v1.0.36 // indirect
+	github.com/nyaruka/phonenumbers v1.0.44 // indirect
 	github.com/onsi/ginkgo v1.7.0 // indirect
 	github.com/onsi/gomega v1.4.3 // indirect
 	github.com/pkg/errors v0.8.0
