@@ -1,3 +1,7 @@
+v2.0.7
+----------
+ * Tweak lua script for checking loops, add more tests
+
 v2.0.6
 ----------
  * Make sure we never overflow our count when considering loops
