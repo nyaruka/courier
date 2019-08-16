@@ -1,3 +1,7 @@
+v2.0.6
+----------
+ * Make sure we never overflow our count when considering loops
+
 v2.0.5
 ----------
  * Check whether outgoing message is in a loop before sending
