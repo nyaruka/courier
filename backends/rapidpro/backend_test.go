@@ -618,6 +618,30 @@ func (ts *BackendTestSuite) TestExternalIDDupes() {
 	ts.True(m2.alreadyWritten)
 }
 
+func (ts *BackendTestSuite) TestLoop() {
+	ctx := context.Background()
+	dbMsg, err := readMsgFromDB(ts.b, courier.NewMsgID(10000))
+	ts.NoError(err)
+
+	dbMsg.ResponseToID_ = courier.MsgID(5)
+
+	loop, err := ts.b.IsMsgLoop(ctx, dbMsg)
+	ts.NoError(err)
+	ts.False(loop)
+
+	// call it 18 times more, no loop still
+	for i := 0; i < 18; i++ {
+		loop, err = ts.b.IsMsgLoop(ctx, dbMsg)
+		ts.NoError(err)
+		ts.False(loop)
+	}
+
+	// last one should make us a loop
+	loop, err = ts.b.IsMsgLoop(ctx, dbMsg)
+	ts.NoError(err)
+	ts.True(loop)
+}
+
 func (ts *BackendTestSuite) TestStatus() {
 	// our health should just contain the header
 	ts.True(strings.Contains(ts.b.Status(), "Channel"), ts.b.Status())
