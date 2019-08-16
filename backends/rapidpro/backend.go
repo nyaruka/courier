@@ -208,6 +208,9 @@ var luaMsgLoop = redis.NewScript(3, `-- KEYS: [key, contact_id, text]
 	-- write our new record witn updated count
 	redis.call("hset", key, contact_id, record)
 
+	-- sets its expiration
+	redis.call("expire", key, 300)
+
 	return count
 `)
 
