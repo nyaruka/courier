@@ -1,3 +1,7 @@
+v2.0.5
+----------
+ * Check whether outgoing message is in a loop before sending
+
 v2.0.4
 ----------
  * Add FreshChat channel type
