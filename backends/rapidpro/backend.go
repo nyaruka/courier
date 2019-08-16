@@ -199,7 +199,9 @@ var luaMsgLoop = redis.NewScript(3, `-- KEYS: [key, contact_id, text]
 		local record_text = string.sub(record, 4, -1)
 
 		if record_text == text then 
-			count = tonumber(record_count) + 1
+			if count < 99 then
+				count = tonumber(record_count) + 1
+			end
 		else
 			count = 1
 		end		
