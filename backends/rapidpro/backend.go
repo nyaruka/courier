@@ -43,6 +43,9 @@ const chatbaseMessageType = "msg"
 // our timeout for backend operations
 const backendTimeout = time.Second * 20
 
+// number of messages for loop detection
+const msgLoopThreshold = 20
+
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
 }
@@ -205,7 +208,7 @@ var luaMsgLoop = redis.NewScript(3, `-- KEYS: [key, contact_id, text]
 	-- create our new record with our updated count
 	record = string.format("%02d:%s", count, text)
 
-	-- write our new record witn updated count
+	-- write our new record with updated count
 	redis.call("hset", key, contact_id, record)
 
 	-- sets its expiration
@@ -234,7 +237,7 @@ func (b *backend) IsMsgLoop(ctx context.Context, msg courier.Msg) (bool, error) 
 		return false, errors.Wrapf(err, "error while checking for msg loop")
 	}
 
-	if count >= 20 {
+	if count >= msgLoopThreshold {
 		return true, nil
 	}
 	return false, nil

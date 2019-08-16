@@ -177,7 +177,7 @@ func (w *Sender) sendMessage(msg Msg) {
 
 	// failing on a lookup isn't a halting problem but we should log it
 	if err != nil {
-		log.WithError(err).Warning("error looking up msg was sent")
+		log.WithError(err).Error("error looking up msg was sent")
 	}
 
 	// is this msg in a loop?
@@ -185,7 +185,7 @@ func (w *Sender) sendMessage(msg Msg) {
 
 	// failing on loop lookup isn't permanent, but log
 	if err != nil {
-		log.WithError(err).Warning("error looking up msg loop")
+		log.WithError(err).Error("error looking up msg loop")
 	}
 
 	if sent {
