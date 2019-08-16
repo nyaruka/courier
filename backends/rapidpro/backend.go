@@ -195,13 +195,11 @@ var luaMsgLoop = redis.NewScript(3, `-- KEYS: [key, contact_id, text]
     -- try to look up in window
 	local record = redis.call("hget", key, contact_id)
 	if record then
-		local record_count = string.sub(record, 1, 2)
+		local record_count = tonumber(string.sub(record, 1, 2))
 		local record_text = string.sub(record, 4, -1)
 
 		if record_text == text then 
-			if count < 99 then
-				count = tonumber(record_count) + 1
-			end
+			count = math.min(record_count + 1, 99)
 		else
 			count = 1
 		end		

@@ -640,6 +640,13 @@ func (ts *BackendTestSuite) TestLoop() {
 	loop, err = ts.b.IsMsgLoop(ctx, dbMsg)
 	ts.NoError(err)
 	ts.True(loop)
+
+	// make sure this keeps working even in hundreds of loops
+	for i := 0; i < 100; i++ {
+		loop, err = ts.b.IsMsgLoop(ctx, dbMsg)
+		ts.NoError(err)
+		ts.True(loop)
+	}
 }
 
 func (ts *BackendTestSuite) TestStatus() {
