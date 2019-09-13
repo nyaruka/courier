@@ -30,6 +30,13 @@ var (
 
 	// Facebook API says 640 is max for the body
 	maxMsgLength = 640
+
+	// Sticker ID substitutions
+	stickerIDToEmoji = map[int64]string{
+		369239263222822: "👍", // small
+		369239343222814: "👍", // medium
+		369239383222810: "👍", // big
+	}
 )
 
 // keys for extra in channel events
@@ -164,6 +171,7 @@ type moPayload struct {
 				IsEcho      bool   `json:"is_echo"`
 				MID         string `json:"mid"`
 				Text        string `json:"text"`
+				StickerID   int64  `json:"sticker_id"`
 				Attachments []struct {
 					Type    string `json:"type"`
 					Payload *struct {
@@ -327,14 +335,24 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 				continue
 			}
 
+			text := msg.Message.Text
+
+			// if we have a sticker ID, use that as our text
+			stickerText := stickerIDToEmoji[msg.Message.StickerID]
+			if stickerText != "" {
+				text = stickerText
+			}
+
 			// create our message
-			ev := h.Backend().NewIncomingMsg(channel, urn, msg.Message.Text).WithExternalID(msg.Message.MID).WithReceivedOn(date)
+			ev := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(msg.Message.MID).WithReceivedOn(date)
 			event := h.Backend().CheckExternalIDSeen(ev)
 
-			// add any attachments
-			for _, att := range msg.Message.Attachments {
-				if att.Payload != nil && att.Payload.URL != "" {
-					event.WithAttachment(att.Payload.URL)
+			// add any attachments if this wasn't a sticker
+			if stickerText == "" {
+				for _, att := range msg.Message.Attachments {
+					if att.Payload != nil && att.Payload.URL != "" {
+						event.WithAttachment(att.Payload.URL)
+					}
 				}
 			}
 
