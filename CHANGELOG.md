@@ -1,3 +1,7 @@
+v2.0.8
+----------
+ * turn thumbs up stickers into thumbs up emoji
+
 v2.0.7
 ----------
  * Tweak lua script for checking loops, add more tests
