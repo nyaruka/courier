@@ -127,6 +127,30 @@ var attachment = `{
 	}]
 }`
 
+var thumbsUp = `{
+	"object":"page",
+	"entry":[{
+		"id":"208685479508187",
+		"time":1459991487970,
+		"messaging":[{
+			"sender":{"id":"5678"},
+			"recipient":{"id":"1234"},
+			"timestamp":1459991487970,
+			"message":{
+				"mid":"external_id",
+				"attachments":[{
+					"type":"image",
+					"payload":{
+						"url":"https://scontent.xx.fbcdn.net/v/arst",
+						"sticker_id":369239263222822
+					}
+				}],
+				"sticker_id":369239263222822
+			}
+		}]
+	}]
+}`
+
 var differentPage = `{
 	"object":"page",
 	"entry": [{
@@ -368,6 +392,8 @@ var testCases = []ChannelHandleTestCase{
 		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
 	{Label: "Receive Attachment", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: attachment, Status: 200, Response: "Handled",
 		Text: Sp(""), Attachments: []string{"https://image-url/foo.png"}, URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+	{Label: "Receive Thumbs Up", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: thumbsUp, Status: 200, Response: "Handled",
+		Text: Sp("👍"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
 
 	{Label: "Receive OptIn UserRef", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: optInUserRef, Status: 200, Response: "Handled",
 		URN: Sp("facebook:ref:optin_user_ref"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
