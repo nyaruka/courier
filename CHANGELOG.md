@@ -1,3 +1,7 @@
+v2.0.9
+----------
+ * Add thinq handler
+
 v2.0.8
 ----------
  * turn thumbs up stickers into thumbs up emoji
