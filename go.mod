@@ -48,3 +48,5 @@ require (
 	gopkg.in/h2non/filetype.v1 v1.0.5
 	gopkg.in/ini.v1 v1.41.0 // indirect
 )
+
+go 1.13
