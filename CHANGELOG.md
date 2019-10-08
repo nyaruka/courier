@@ -1,3 +1,7 @@
+v2.0.10
+----------
+ * Use multipart form encoding for thinQ
+
 v2.0.9
 ----------
  * Add thinq handler
