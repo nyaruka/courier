@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"mime/multipart"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/buger/jsonparser"
@@ -151,14 +151,15 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 	for _, a := range msg.Attachments() {
 		_, u := handlers.SplitAttachment(a)
 
-		form := url.Values{
-			"from_did":  []string{strings.TrimLeft(msg.Channel().Address(), "+")[1:]},
-			"to_did":    []string{strings.TrimLeft(msg.URN().Path(), "+")[1:]},
-			"media_url": []string{u},
-		}
+		data := bytes.NewBuffer(nil)
+		form := multipart.NewWriter(data)
+		form.WriteField("from_did", strings.TrimLeft(msg.Channel().Address(), "+")[1:])
+		form.WriteField("to_did", strings.TrimLeft(msg.URN().Path(), "+")[1:])
+		form.WriteField("media_url", u)
+		form.Close()
 
-		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf(sendMMSURL, accountID), strings.NewReader(form.Encode()))
-		req.Header.Set("Content-Type", "multipart/form-data")
+		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf(sendMMSURL, accountID), data)
+		req.Header.Set("Content-Type", form.FormDataContentType())
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(tokenUser, token)
 		rr, err := utils.MakeHTTPRequest(req)
@@ -171,44 +172,48 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		}
 
 		// try to get our external id
-		_, err = jsonparser.GetString([]byte(rr.Body), "guid")
+		externalID, err := jsonparser.GetString([]byte(rr.Body), "guid")
 		if err != nil {
 			log.WithError("Unable to read external ID", err)
 			return status, nil
 		}
-	}
-
-	// now send our text
-	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
-	for _, part := range parts {
-		body := mtMessage{
-			FromDID: strings.TrimLeft(msg.Channel().Address(), "+")[1:],
-			ToDID:   strings.TrimLeft(msg.URN().Path(), "+")[1:],
-			Message: part,
-		}
-		bodyJSON, _ := json.Marshal(body)
-		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, accountID), bytes.NewBuffer(bodyJSON))
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json")
-		req.SetBasicAuth(tokenUser, token)
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
-			return status, nil
-		}
-
-		// get our external id
-		externalID, err := jsonparser.GetString([]byte(rr.Body), "guid")
-		if err != nil {
-			log.WithError("Unable to read external ID from guid field", err)
-			return status, nil
-		}
-
 		status.SetStatus(courier.MsgWired)
 		status.SetExternalID(externalID)
+	}
+
+	// now send our text if we have any
+	if msg.Text() != "" {
+		parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
+		for _, part := range parts {
+			body := mtMessage{
+				FromDID: strings.TrimLeft(msg.Channel().Address(), "+")[1:],
+				ToDID:   strings.TrimLeft(msg.URN().Path(), "+")[1:],
+				Message: part,
+			}
+			bodyJSON, _ := json.Marshal(body)
+			req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, accountID), bytes.NewBuffer(bodyJSON))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Accept", "application/json")
+			req.SetBasicAuth(tokenUser, token)
+			rr, err := utils.MakeHTTPRequest(req)
+
+			// record our status and log
+			log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+			status.AddLog(log)
+			if err != nil {
+				return status, nil
+			}
+
+			// get our external id
+			externalID, err := jsonparser.GetString([]byte(rr.Body), "guid")
+			if err != nil {
+				log.WithError("Unable to read external ID from guid field", err)
+				return status, nil
+			}
+
+			status.SetStatus(courier.MsgWired)
+			status.SetExternalID(externalID)
+		}
 	}
 
 	return status, nil
