@@ -153,8 +153,10 @@ func newRRFromResponse(method string, requestTrace string, r *http.Response) (*R
 func GetHTTPClient() *http.Client {
 	once.Do(func() {
 		transport = &http.Transport{
-			MaxIdleConns:    10,
-			IdleConnTimeout: 60 * time.Second,
+			MaxIdleConns:        64,
+			MaxIdleConnsPerHost: 64,
+			MaxConnsPerHost:     64,
+			IdleConnTimeout:     60 * time.Second,
 		}
 		client = &http.Client{
 			Transport: transport,
@@ -169,9 +171,11 @@ func GetHTTPClient() *http.Client {
 func GetInsecureHTTPClient() *http.Client {
 	insecureOnce.Do(func() {
 		insecureTransport = &http.Transport{
-			MaxIdleConns:    10,
-			IdleConnTimeout: 60 * time.Second,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			MaxIdleConns:        64,
+			MaxIdleConnsPerHost: 64,
+			MaxConnsPerHost:     64,
+			IdleConnTimeout:     60 * time.Second,
+			TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
 		}
 		insecureClient = &http.Client{
 			Transport: insecureTransport,
