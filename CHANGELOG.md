@@ -1,3 +1,8 @@
+v2.0.11
+----------
+n
+ * tune HTTPClient settings to better deal with slow hosts
+
 v2.0.10
 ----------
  * Use multipart form encoding for thinQ
