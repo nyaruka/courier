@@ -1,3 +1,7 @@
+v2.0.12
+----------
+ * tune HTTP transport settings
+
 v2.0.11
 ----------
 n
