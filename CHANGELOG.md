@@ -1,3 +1,7 @@
+v2.0.14
+----------
+ * properly log connection errors for whatsapp
+
 v2.0.13
 ----------
  * use latest librato library
