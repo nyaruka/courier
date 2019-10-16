@@ -1,3 +1,7 @@
+v2.0.13
+----------
+ * use latest librato library
+
 v2.0.12
 ----------
  * tune HTTP transport settings
