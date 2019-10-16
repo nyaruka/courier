@@ -484,15 +484,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				payload.HSM.LocalizableParams = append(payload.HSM.LocalizableParams, LocalizableParam{Default: v})
 			}
 
-			externalID, log, err := sendWhatsAppMsg(msg, sendURL, token, payload)
+			externalID := ""
+			externalID, log, err = sendWhatsAppMsg(msg, sendURL, token, payload)
 			status.AddLog(log)
 
 			if err != nil {
 				log.WithError("Error sending message", err)
-				return status, nil
+			} else {
+				status.SetExternalID(externalID)
 			}
-
-			status.SetExternalID(externalID)
 		} else {
 			parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
 			externalID := ""
@@ -569,8 +569,10 @@ func sendWhatsAppMsg(msg courier.Msg, url string, token string, payload interfac
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	req.Header.Set("User-Agent", utils.HTTPUserAgent)
 	rr, err := utils.MakeHTTPRequest(req)
-
 	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+	if err != nil {
+		return "", log, err
+	}
 
 	errorTitle, err := jsonparser.GetString(rr.Body, "errors", "[0]", "title")
 	if errorTitle != "" {
