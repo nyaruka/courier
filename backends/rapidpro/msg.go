@@ -239,8 +239,8 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 	if err != nil {
 		return "", err
 	}
-	body, err := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
