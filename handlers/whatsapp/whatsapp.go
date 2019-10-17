@@ -68,6 +68,7 @@ type eventPayload struct {
 		Text      struct {
 			Body string `json:"body"`
 		} `json:"text"`
+		SenderID string `json:"sender_id"     validate:"required"`
 		Audio *struct {
 			File     string `json:"file"      validate:"required"`
 			ID       string `json:"id"        validate:"required"`
@@ -119,7 +120,13 @@ type eventPayload struct {
 		Timestamp   string `json:"timestamp"    validate:"required"`
 		Status      string `json:"status"       validate:"required"`
 	} `json:"statuses"`
+	Contacts map[string]moUser `json:"contacts"`
 }
+
+type moUser struct {
+		Name			string `json:Name"		validate:"required"`
+}
+
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
@@ -172,6 +179,14 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		} else {
 			// we received a message type we do not support.
 			courier.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", msg.Type))
+		}
+
+		senderID := msg.Messages.SenderID
+		
+		//Look up the user for this sender
+		user, found := payload.Contacts[senderID]
+		if !found {
+				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to find user id: %s", senderID))
 		}
 
 		// create our message
