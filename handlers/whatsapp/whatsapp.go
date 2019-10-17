@@ -238,7 +238,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		data = append(data, courier.NewStatusData(event))
 	}
 
-
 	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
 }
 
