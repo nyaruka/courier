@@ -65,7 +65,7 @@ type eventPayload struct {
 			Name string `json:"name"`
 		} `json:"profile"`
 		WaID string `json:"wa_id"`
-	}`json:"contacts"`
+	} `json:"contacts"`
 	Messages []struct {
 		From      string `json:"from"      validate:"required"`
 		ID        string `json:"id"        validate:"required"`
