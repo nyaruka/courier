@@ -60,6 +60,12 @@ func (h *handler) Initialize(s courier.Server) error {
 //   }]
 // }
 type eventPayload struct {
+	Contacts []struct {
+		Profile struct {
+			Name string `json:"name"`
+		} `json:"profile"`
+		WaID string `json:"wa_id"`
+	}
 	Messages []struct {
 		From      string `json:"from"      validate:"required"`
 		ID        string `json:"id"        validate:"required"`
@@ -68,7 +74,6 @@ type eventPayload struct {
 		Text      struct {
 			Body string `json:"body"`
 		} `json:"text"`
-		SenderID string `json:"sender_id"     validate:"required"`
 		Audio *struct {
 			File     string `json:"file"      validate:"required"`
 			ID       string `json:"id"        validate:"required"`
@@ -120,13 +125,7 @@ type eventPayload struct {
 		Timestamp   string `json:"timestamp"    validate:"required"`
 		Status      string `json:"status"       validate:"required"`
 	} `json:"statuses"`
-	Contacts map[string]moUser `json:"contacts"`
 }
-
-type moUser struct {
-		Name			string `json:Name"		validate:"required"`
-}
-
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
@@ -141,6 +140,11 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 	// the list of data we will return in our response
 	data := make([]interface{}, 0, 2)
+
+	var contactNames = make(map[string]string)
+    for _, contact := range payload.Contacts {
+        contactNames[contact.WaID] = contact.Profile.Name
+    }
 
 	// first deal with any received messages
 	for _, msg := range payload.Messages {
@@ -181,16 +185,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			courier.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", msg.Type))
 		}
 
-		senderID := msg.Messages.SenderID
-		
-		//Look up the user for this sender
-		user, found := payload.Contacts[senderID]
-		if !found {
-				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to find user id: %s", senderID))
-		}
-
 		// create our message
-		ev := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(msg.ID)
+		ev := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(msg.ID).WithContactName(contactNames[msg.From])
 		event := h.Backend().CheckExternalIDSeen(ev)
 
 		// we had an error downloading media
@@ -241,6 +237,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		events = append(events, event)
 		data = append(data, courier.NewStatusData(event))
 	}
+
 
 	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
 }
