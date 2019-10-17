@@ -60,6 +60,12 @@ func (h *handler) Initialize(s courier.Server) error {
 //   }]
 // }
 type eventPayload struct {
+	Contacts []struct {
+		Profile struct {
+			Name string `json:"name"`
+		} `json:"profile"`
+		WaID string `json:"wa_id"`
+	} `json:"contacts"`
 	Messages []struct {
 		From      string `json:"from"      validate:"required"`
 		ID        string `json:"id"        validate:"required"`
@@ -135,6 +141,11 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	// the list of data we will return in our response
 	data := make([]interface{}, 0, 2)
 
+	var contactNames = make(map[string]string)
+    for _, contact := range payload.Contacts {
+        contactNames[contact.WaID] = contact.Profile.Name
+    }
+
 	// first deal with any received messages
 	for _, msg := range payload.Messages {
 		// create our date from the timestamp
@@ -175,7 +186,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// create our message
-		ev := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(msg.ID)
+		ev := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(msg.ID).WithContactName(contactNames[msg.From])
 		event := h.Backend().CheckExternalIDSeen(ev)
 
 		// we had an error downloading media

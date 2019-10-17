@@ -29,6 +29,12 @@ var testChannels = []courier.Channel{
 }
 
 var helloMsg = `{
+	"contacts":[{
+		"profile": {
+			"name": "Jerry Cooney"
+		},
+		"wa_id": "250788123123"
+	}],
   "messages": [{
     "from": "250788123123",
     "id": "41",
@@ -37,7 +43,7 @@ var helloMsg = `{
       "body": "hello world"
     },
     "type": "text"
-  }]
+   }]
 }`
 
 var duplicateMsg = `{
@@ -58,7 +64,7 @@ var duplicateMsg = `{
 	  },
 	  "type": "text"
 	}]
-  }`
+}`
 
 var audioMsg = `{
 	"messages": [{
@@ -194,7 +200,6 @@ var validStatus = `
   }]
 }
 `
-
 var invalidStatus = `
 {
   "statuses": [{
@@ -205,7 +210,6 @@ var invalidStatus = `
   }]
 }
 `
-
 var ignoreStatus = `
 {
   "statuses": [{
@@ -219,7 +223,7 @@ var ignoreStatus = `
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, Status: 200, Response: `"type":"msg"`,
-		Text: Sp("hello world"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+		Name: Sp("Jerry Cooney"), Text: Sp("hello world"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 	{Label: "Receive Duplicate Valid Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: duplicateMsg, Status: 200, Response: `"type":"msg"`,
 		Text: Sp("hello world"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 	{Label: "Receive Valid Audio Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: audioMsg, Status: 200, Response: `"type":"msg"`,
