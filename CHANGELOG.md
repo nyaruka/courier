@@ -1,3 +1,7 @@
+v2.0.15
+----------
+ * Derive contact name for new WhatsApp contacts (thanks @devchima)
+
 v2.0.14
 ----------
  * properly log connection errors for whatsapp
