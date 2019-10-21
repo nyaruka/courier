@@ -4,7 +4,7 @@ go:
   - "1.13"
 
 matrix:
-  - include:
+  include:
     - name: "Postgres 11"
       env:
         - PGDB=11
