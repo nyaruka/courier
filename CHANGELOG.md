@@ -1,3 +1,7 @@
+v2.0.17
+----------
+ * Test deploying with matrix build
+
 v2.0.16
 ----------
  * test releasing only on pg10
