@@ -3,21 +3,22 @@ language: go
 go:
   - "1.13"
 
+matrix:
+  - include:
+    - name: "Postgres 11"
+      env:
+        - PGDB=11
+    - name: "Postgres 10"
+      env:
+        - PGDB=10
+        - RELEASE=true
+    - name: "Postgres 9.6"
+      env:
+       - PGDB=9.6
+
 env:
   global:
     - GO111MODULE=on
-  matrix:
-    - include:
-      - name: "Postgres 11"
-        env:
-          - PGDB=11
-      - name: "Postgres 10"
-        env:
-          - PGDB=10
-          - RELEASE=true
-      - name: "Postgres 9.6"
-        env:
-          - PGDB=9.6
 
 services:
   - redis-server
