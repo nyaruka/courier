@@ -7,7 +7,7 @@ env:
   global:
     - GO111MODULE=on
   matrix:
-    - include
+    - include:
       - name: "Postgres 11"
         env:
           - PGDB=11
