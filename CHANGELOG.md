@@ -1,3 +1,7 @@
+v2.0.18
+----------
+ * Test matrix release
+
 v2.0.17
 ----------
  * Test deploying with matrix build
