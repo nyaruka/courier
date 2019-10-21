@@ -1,3 +1,7 @@
+v2.0.16
+----------
+ * test releasing only on pg10
+
 v2.0.15
 ----------
  * Derive contact name for new WhatsApp contacts (thanks @devchima)
