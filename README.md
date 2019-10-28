@@ -1,6 +1,6 @@
 # Courier [![Build Status](https://travis-ci.org/nyaruka/courier.svg?branch=master)](https://travis-ci.org/nyaruka/courier) [![codecov](https://codecov.io/gh/nyaruka/courier/branch/master/graph/badge.svg)](https://codecov.io/gh/nyaruka/courier) [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/courier)](https://goreportcard.com/report/github.com/nyaruka/courier) 
 
-# About
+# About 
 
 Courier is a messaging gateway for text-based messaging channels. It abstracts out various different
 texting mediums and providers, allowing applications to focus on the creation and processing of those messages.
