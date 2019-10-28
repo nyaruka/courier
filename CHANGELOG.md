@@ -1,3 +1,7 @@
+v5.2.0
+----------
+ * Sync version with RapidPro 5.2
+
 v2.0.18
 ----------
  * Test matrix release
