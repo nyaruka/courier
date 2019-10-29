@@ -3,11 +3,7 @@ package whatsapp
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"strings"
 	"testing"
 	"time"
 
@@ -271,22 +267,6 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	c.(*courier.MockChannel).SetConfig("base_url", s.URL)
 }
 
-func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTestCase) []ChannelSendTestCase {
-	casesWithMockedUrls := make([]ChannelSendTestCase, len(testCases))
-	for i, testCase := range testCases {
-		mockedCase := testCase
-		for j, attachment := range testCase.Attachments {
-			parts := strings.SplitN(attachment, ":", 2)
-			mimeType := parts[0]
-			urlString := parts[1]
-			parsedURL, _ := url.Parse(urlString)
-			mockedCase.Attachments[j] = fmt.Sprintf("%s:%s%s", mimeType, mediaServer.URL, parsedURL.Path)
-		}
-		casesWithMockedUrls[i] = mockedCase
-	}
-	return casesWithMockedUrls
-}
-
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "whatsapp:250788123123",
@@ -326,16 +306,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Responses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method: "POST",
-				Path:   "/v1/media",
-				Body:   "media body",
-			}: MockedResponse{
-				Status: 201,
-				Body:   `{"media": [{"id": "media-id"}]}`,
-			},
-			MockedRequest{
-				Method: "POST",
 				Path:   "/v1/messages",
-				Body:   `{"to":"250788123123","type":"audio","audio":{"id":"media-id"}}`,
+				Body:   `{"to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -351,16 +323,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Responses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method: "POST",
-				Path:   "/v1/media",
-				Body:   "media body",
-			}: MockedResponse{
-				Status: 201,
-				Body:   `{"media": [{"id": "media-id"}]}`,
-			},
-			MockedRequest{
-				Method: "POST",
 				Path:   "/v1/messages",
-				Body:   `{"to":"250788123123","type":"document","document":{"id":"media-id","caption":"document caption"}}`,
+				Body:   `{"to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -376,16 +340,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Responses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method: "POST",
-				Path:   "/v1/media",
-				Body:   "media body",
-			}: MockedResponse{
-				Status: 201,
-				Body:   `{"media": [{"id": "media-id"}]}`,
-			},
-			MockedRequest{
-				Method: "POST",
 				Path:   "/v1/messages",
-				Body:   `{"to":"250788123123","type":"image","image":{"id":"media-id","caption":"document caption"}}`,
+				Body:   `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg","caption":"document caption"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -401,16 +357,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Responses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method: "POST",
-				Path:   "/v1/media",
-				Body:   "media body",
-			}: MockedResponse{
-				Status: 201,
-				Body:   `{"media": [{"id": "media-id"}]}`,
-			},
-			MockedRequest{
-				Method: "POST",
 				Path:   "/v1/messages",
-				Body:   `{"to":"250788123123","type":"video","video":{"id":"media-id","caption":"video caption"}}`,
+				Body:   `{"to":"250788123123","type":"video","video":{"link":"https://foo.bar/video.mp4","caption":"video caption"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -442,13 +390,5 @@ func TestSending(t *testing.T) {
 			"fb_namespace": "waba_namespace",
 		})
 
-	// fake media server that just replies with 200 and "media body" for content
-	mediaServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		defer req.Body.Close()
-		res.WriteHeader(200)
-		res.Write([]byte("media body"))
-	}))
-
-	attachmentMockedSendTestCase := mockAttachmentURLs(mediaServer, defaultSendTestCases)
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), attachmentMockedSendTestCase, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 }
