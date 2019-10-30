@@ -205,7 +205,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		responseMsgStatus, _ := jsonparser.GetString(rr.Body, "sendSmsResponse", "statusCode")
 		msgStatus, found := statusMapping[responseMsgStatus]
 		if msgStatus == courier.MsgErrored || !found {
-			return status, errors.Errorf("received non-success response from Zenvia '%s'", responseMsgStatus)
+			log.WithError("Message Send Error", errors.Errorf("received non-success response from Zenvia '%s'", responseMsgStatus))
+			return status, nil
 		}
 
 		status.SetStatus(courier.MsgWired)
