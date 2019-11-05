@@ -1,6 +1,8 @@
 v5.3.0
 ----------
-
+ * Send WhatsApp media via URL
+ * Log Zenvia errors to ChannelLog instead of Sentry
+ * Ignore status updates for incoming messages	
 
 v5.2.0
 ----------
