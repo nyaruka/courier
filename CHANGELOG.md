@@ -1,3 +1,7 @@
+v5.3.0
+----------
+
+
 v5.2.0
 ----------
  * Sync version with RapidPro 5.2
