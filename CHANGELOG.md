@@ -1,3 +1,7 @@
+v5.3.1
+----------
+ * update changelog for v5.3
+
 v5.3.0
 ----------
  * Send WhatsApp media via URL
