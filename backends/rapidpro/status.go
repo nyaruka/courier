@@ -47,10 +47,10 @@ func writeMsgStatus(ctx context.Context, b *backend, status courier.MsgStatus) e
 }
 
 const selectMsgIDForID = `
-SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (m."id" = $1 AND c."uuid" = $2)`
+SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (m."id" = $1 AND c."uuid" = $2 AND m."direction" = 'O')`
 
 const selectMsgIDForExternalID = `
-SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (m."external_id" = $1 AND c."uuid" = $2)`
+SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (m."external_id" = $1 AND c."uuid" = $2 AND m."direction" = 'O')`
 
 func checkMsgExists(b *backend, status courier.MsgStatus) (err error) {
 	var id int64
@@ -121,7 +121,8 @@ UPDATE msgs_msg SET
 	modified_on = :modified_on
 WHERE 
 	msgs_msg.id = :msg_id AND
-	msgs_msg.channel_id = :channel_id
+	msgs_msg.channel_id = :channel_id AND 
+	msgs_msg.direction = 'O'
 RETURNING 
 	msgs_msg.id
 `
@@ -168,7 +169,7 @@ UPDATE msgs_msg SET
 		END,
 	modified_on = :modified_on
 WHERE 
-	msgs_msg.id = (SELECT msgs_msg.id FROM msgs_msg WHERE msgs_msg.external_id = :external_id AND msgs_msg.channel_id = :channel_id LIMIT 1)
+	msgs_msg.id = (SELECT msgs_msg.id FROM msgs_msg WHERE msgs_msg.external_id = :external_id AND msgs_msg.channel_id = :channel_id AND msgs_msg.direction = 'O' LIMIT 1)
 RETURNING 
 	msgs_msg.id
 `
@@ -280,7 +281,8 @@ AS
 	s(msg_id, channel_id, status, external_id) 
 WHERE 
 	msgs_msg.id = s.msg_id::int AND
-	msgs_msg.channel_id = s.channel_id::int
+	msgs_msg.channel_id = s.channel_id::int AND 
+	msgs_msg.direction = 'O'
 RETURNING 
 	msgs_msg.id
 `
