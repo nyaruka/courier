@@ -183,8 +183,16 @@ func (ts *BackendTestSuite) TestCheckMsgExists() {
 	err = checkMsgExists(ts.b, ts.b.NewMsgStatusForID(knChannel, courier.NewMsgID(10000), courier.MsgStatusValue("S")))
 	ts.Nil(err)
 
+	// only outgoing messages are matched
+	err = checkMsgExists(ts.b, ts.b.NewMsgStatusForID(knChannel, courier.NewMsgID(10002), courier.MsgStatusValue("S")))
+	ts.Equal(err, courier.ErrMsgNotFound)
+
 	// check with invalid external id
 	err = checkMsgExists(ts.b, ts.b.NewMsgStatusForExternalID(knChannel, "ext-invalid", courier.MsgStatusValue("S")))
+	ts.Equal(err, courier.ErrMsgNotFound)
+
+	// only outgoing messages are matched
+	err = checkMsgExists(ts.b, ts.b.NewMsgStatusForExternalID(knChannel, "ext2", courier.MsgStatusValue("S")))
 	ts.Equal(err, courier.ErrMsgNotFound)
 
 	// check with valid external id
@@ -476,6 +484,21 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.NoError(err)
 	time.Sleep(time.Second)
 
+	// no change for incoming messages
+	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10002))
+	ts.NoError(err)
+	ts.Equal(m.Status_, courier.MsgPending)
+	ts.Equal(m.ExternalID_, null.String("ext2"))
+
+	status = ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10002), courier.MsgSent)
+	err = ts.b.WriteMsgStatus(ctx, status)
+	ts.NoError(err)
+	time.Sleep(time.Second)
+	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10002))
+	ts.NoError(err)
+	ts.Equal(m.Status_, courier.MsgPending)
+	ts.Equal(m.ExternalID_, null.String("ext2"))
+
 	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10001))
 	ts.NoError(err)
 	ts.Equal(m.Status_, courier.MsgSent)
@@ -492,8 +515,13 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(m.Status_, courier.MsgFailed)
 	ts.True(m.ModifiedOn_.After(now))
 
-	// no such external id
+	// no such external id for outgoing message
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext2", courier.MsgSent)
+	err = ts.b.WriteMsgStatus(ctx, status)
+	ts.Error(err)
+
+	// no such external id
+	status = ts.b.NewMsgStatusForExternalID(channel, "ext3", courier.MsgSent)
 	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.Error(err)
 

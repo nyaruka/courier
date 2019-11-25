@@ -49,6 +49,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/shaqodoon"
 	_ "github.com/nyaruka/courier/handlers/smscentral"
 	_ "github.com/nyaruka/courier/handlers/start"
+	_ "github.com/nyaruka/courier/handlers/thinq"
 	_ "github.com/nyaruka/courier/handlers/telegram"
 	_ "github.com/nyaruka/courier/handlers/twiml"
 	_ "github.com/nyaruka/courier/handlers/twitter"

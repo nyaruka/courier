@@ -1,3 +1,62 @@
+v5.3.1
+----------
+ * update changelog for v5.3
+
+v5.3.0
+----------
+ * Send WhatsApp media via URL
+ * Log Zenvia errors to ChannelLog instead of Sentry
+ * Ignore status updates for incoming messages	
+
+v5.2.0
+----------
+ * Sync version with RapidPro 5.2
+
+v2.0.18
+----------
+ * Test matrix release
+
+v2.0.17
+----------
+ * Test deploying with matrix build
+
+v2.0.16
+----------
+ * test releasing only on pg10
+
+v2.0.15
+----------
+ * Derive contact name for new WhatsApp contacts (thanks @devchima)
+
+v2.0.14
+----------
+ * properly log connection errors for whatsapp
+
+v2.0.13
+----------
+ * use latest librato library
+
+v2.0.12
+----------
+ * tune HTTP transport settings
+
+v2.0.11
+----------
+n
+ * tune HTTPClient settings to better deal with slow hosts
+
+v2.0.10
+----------
+ * Use multipart form encoding for thinQ
+
+v2.0.9
+----------
+ * Add thinq handler
+
+v2.0.8
+----------
+ * turn thumbs up stickers into thumbs up emoji
+
 v2.0.7
 ----------
  * Tweak lua script for checking loops, add more tests
