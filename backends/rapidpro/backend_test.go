@@ -122,7 +122,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"response_to_id": 15,
 		"response_to_external_id": "external-id",
 		"external_id": null,
-		"metadata": {"quick_replies": ["Yes", "No"]}
+		"metadata": {"quick_replies": ["Yes", "No"], "topic": "event"}
 	}`
 
 	msg := DBMsg{}
@@ -134,6 +134,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal(msg.URNAuth_, "5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2")
 	ts.Equal(msg.ExternalID(), "")
 	ts.Equal([]string{"Yes", "No"}, msg.QuickReplies())
+	ts.Equal("event", msg.Topic())
 	ts.Equal(courier.NewMsgID(15), msg.ResponseToID())
 	ts.Equal("external-id", msg.ResponseToExternalID())
 	ts.True(msg.HighPriority())
@@ -168,6 +169,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	err = json.Unmarshal([]byte(msgJSONNoQR), &msg)
 	ts.NoError(err)
 	ts.Equal([]string{}, msg.QuickReplies())
+	ts.Equal("", msg.Topic())
 	ts.Equal(courier.NilMsgID, msg.ResponseToID())
 	ts.Equal("", msg.ResponseToExternalID())
 }
