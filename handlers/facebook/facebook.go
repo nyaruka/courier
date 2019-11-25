@@ -37,6 +37,14 @@ var (
 		369239343222814: "👍", // medium
 		369239383222810: "👍", // big
 	}
+
+	tagByTopic = map[string]string{
+		"":         "ACCOUNT_UPDATE",
+		"event":    "CONFIRMED_EVENT_UPDATE",
+		"purchase": "POST_PURCHASE_UPDATE",
+		"account":  "ACCOUNT_UPDATE",
+		"agent":    "HUMAN_AGENT",
+	}
 )
 
 // keys for extra in channel events
@@ -412,6 +420,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 // }
 type mtPayload struct {
 	MessagingType string `json:"messaging_type"`
+	Tag           string `json:"tag,omitempty"`
 	Recipient     struct {
 		UserRef string `json:"user_ref,omitempty"`
 		ID      string `json:"id,omitempty"`
@@ -447,10 +456,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	payload := mtPayload{}
 
 	// set our message type
-	if msg.ResponseToID() == courier.NilMsgID {
-		payload.MessagingType = "NON_PROMOTIONAL_SUBSCRIPTION"
-	} else {
+	if msg.ResponseToID() != courier.NilMsgID {
 		payload.MessagingType = "RESPONSE"
+	} else {
+		payload.MessagingType = "MESSAGE_TAG"
+		payload.Tag = tagByTopic[msg.Topic()]
 	}
 
 	// build our recipient

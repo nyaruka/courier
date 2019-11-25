@@ -547,6 +547,14 @@ func (m *DBMsg) QuickReplies() []string {
 	return m.quickReplies
 }
 
+func (m *DBMsg) Topic() string {
+	if m.Metadata_ == nil {
+		return ""
+	}
+	topic, _, _, _ := jsonparser.Get(m.Metadata_, "topic")
+	return string(topic)
+}
+
 // Metadata returns the metadata for this message
 func (m *DBMsg) Metadata() json.RawMessage {
 	return m.Metadata_
