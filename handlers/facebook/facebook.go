@@ -39,7 +39,6 @@ var (
 	}
 
 	tagByTopic = map[string]string{
-		"":         "ACCOUNT_UPDATE",
 		"event":    "CONFIRMED_EVENT_UPDATE",
 		"purchase": "POST_PURCHASE_UPDATE",
 		"account":  "ACCOUNT_UPDATE",
@@ -453,14 +452,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("missing access token")
 	}
 
+	topic := msg.Topic()
 	payload := mtPayload{}
 
 	// set our message type
 	if msg.ResponseToID() != courier.NilMsgID {
 		payload.MessagingType = "RESPONSE"
-	} else {
+	} else if topic != "" {
 		payload.MessagingType = "MESSAGE_TAG"
-		payload.Tag = tagByTopic[msg.Topic()]
+		payload.Tag = tagByTopic[topic]
+	} else {
+		payload.MessagingType = "NON_PROMOTIONAL_SUBSCRIPTION" // only allowed until Jan 15, 2020
 	}
 
 	// build our recipient
