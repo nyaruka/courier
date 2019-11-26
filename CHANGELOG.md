@@ -1,3 +1,7 @@
+v5.3.2
+----------
+ * Set Facebook message type tag when topic is set on message
+
 v5.3.1
 ----------
  * update changelog for v5.3
