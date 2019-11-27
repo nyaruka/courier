@@ -45,7 +45,7 @@ func (m *mockS3Client) HeadBucket(*s3.HeadBucketInput) (*s3.HeadBucketOutput, er
 
 func testConfig() *courier.Config {
 	config := courier.NewConfig()
-	config.DB = "postgres://courier@localhost/courier_test?sslmode=disable"
+	config.DB = "postgres://courier:courier@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
 	return config
 }
@@ -64,6 +64,13 @@ func (ts *BackendTestSuite) SetupSuite() {
 	if err != nil {
 		log.Fatalf("unable to start backend for testing: %v", err)
 	}
+
+	// read our schema sql
+	sqlSchema, err := ioutil.ReadFile("schema.sql")
+	if err != nil {
+		panic(fmt.Errorf("Unable to read schema.sql: %s", err))
+	}
+	ts.b.db.MustExec(string(sqlSchema))
 
 	// read our testdata sql
 	sql, err := ioutil.ReadFile("testdata.sql")
@@ -1079,7 +1086,7 @@ var invalidConfigTestCases = []struct {
 }{
 	{config: courier.Config{DB: ":foo"}, expectedError: "unable to parse DB URL"},
 	{config: courier.Config{DB: "mysql:test"}, expectedError: "only postgres is supported"},
-	{config: courier.Config{DB: "postgres://courier@localhost/courier", Redis: ":foo"}, expectedError: "unable to parse Redis URL"},
+	{config: courier.Config{DB: "postgres://courier:courier@localhost:5432/courier", Redis: ":foo"}, expectedError: "unable to parse Redis URL"},
 }
 
 func (ts *ServerTestSuite) TestInvalidConfigs() {
