@@ -34,6 +34,9 @@ jobs:
 
     - name: Run tests
       run: go test -p=1 -coverprofile=coverage.text -covermode=atomic ./...
+      env:
+        COURIER_AWS_ACCESS_KEY_ID: ${{ secrets.COURIER_AWS_ACCESS_KEY_ID }}
+        COURIER_AWS_SECRET_ACCESS_KEY: ${{ secrets.COURIER_AWS_SECRET_ACCESS_KEY }}
 
     - name: Upload coverage
       if: success()
