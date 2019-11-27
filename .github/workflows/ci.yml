@@ -24,9 +24,6 @@ jobs:
         postgresql user: courier
         postgresql password: courier
 
-    - name: Install Linux packages
-      run: sudo apt install -y --no-install-recommends postgresql-client
-
     - name: Install Go
       uses: actions/setup-go@v1
       with:
