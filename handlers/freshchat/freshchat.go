@@ -141,12 +141,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		msgtext.Text = &Text{Content: text}
 		payload.Messages[0].MessageParts = append(payload.Messages[0].MessageParts, *msgtext)
 	}
-
-	if len(msg.Attachments()) > 0 {
-		mediaURL := msg.Attachments()[0]
-		var msgimage = new(MessageParts)
-		msgimage.Image = &Image{URL: mediaURL}
-		payload.Messages[0].MessageParts = append(payload.Messages[0].MessageParts, *msgimage)
+	for _, attachment := range msg.Attachments() {
+		mediaType, mediaURL := handlers.SplitAttachment(attachment)
+		switch strings.Split(mediaType, "/")[0] {
+		case "image":
+			var msgimage = new(MessageParts)
+			msgimage.Image = &Image{URL: mediaURL}
+			payload.Messages[0].MessageParts = append(payload.Messages[0].MessageParts, *msgimage)
+		default:
+			status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
+				"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
+		}
 	}
 
 	jsonBody, err := json.Marshal(payload)
