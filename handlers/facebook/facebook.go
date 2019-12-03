@@ -30,6 +30,20 @@ var (
 
 	// Facebook API says 640 is max for the body
 	maxMsgLength = 640
+
+	// Sticker ID substitutions
+	stickerIDToEmoji = map[int64]string{
+		369239263222822: "👍", // small
+		369239343222814: "👍", // medium
+		369239383222810: "👍", // big
+	}
+
+	tagByTopic = map[string]string{
+		"event":    "CONFIRMED_EVENT_UPDATE",
+		"purchase": "POST_PURCHASE_UPDATE",
+		"account":  "ACCOUNT_UPDATE",
+		"agent":    "HUMAN_AGENT",
+	}
 )
 
 // keys for extra in channel events
@@ -164,6 +178,7 @@ type moPayload struct {
 				IsEcho      bool   `json:"is_echo"`
 				MID         string `json:"mid"`
 				Text        string `json:"text"`
+				StickerID   int64  `json:"sticker_id"`
 				Attachments []struct {
 					Type    string `json:"type"`
 					Payload *struct {
@@ -327,14 +342,24 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 				continue
 			}
 
+			text := msg.Message.Text
+
+			// if we have a sticker ID, use that as our text
+			stickerText := stickerIDToEmoji[msg.Message.StickerID]
+			if stickerText != "" {
+				text = stickerText
+			}
+
 			// create our message
-			ev := h.Backend().NewIncomingMsg(channel, urn, msg.Message.Text).WithExternalID(msg.Message.MID).WithReceivedOn(date)
+			ev := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(msg.Message.MID).WithReceivedOn(date)
 			event := h.Backend().CheckExternalIDSeen(ev)
 
-			// add any attachments
-			for _, att := range msg.Message.Attachments {
-				if att.Payload != nil && att.Payload.URL != "" {
-					event.WithAttachment(att.Payload.URL)
+			// add any attachments if this wasn't a sticker
+			if stickerText == "" {
+				for _, att := range msg.Message.Attachments {
+					if att.Payload != nil && att.Payload.URL != "" {
+						event.WithAttachment(att.Payload.URL)
+					}
 				}
 			}
 
@@ -394,6 +419,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 // }
 type mtPayload struct {
 	MessagingType string `json:"messaging_type"`
+	Tag           string `json:"tag,omitempty"`
 	Recipient     struct {
 		UserRef string `json:"user_ref,omitempty"`
 		ID      string `json:"id,omitempty"`
@@ -426,13 +452,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("missing access token")
 	}
 
+	topic := msg.Topic()
 	payload := mtPayload{}
 
 	// set our message type
-	if msg.ResponseToID() == courier.NilMsgID {
-		payload.MessagingType = "NON_PROMOTIONAL_SUBSCRIPTION"
-	} else {
+	if msg.ResponseToID() != courier.NilMsgID {
 		payload.MessagingType = "RESPONSE"
+	} else if topic != "" {
+		payload.MessagingType = "MESSAGE_TAG"
+		payload.Tag = tagByTopic[topic]
+	} else {
+		payload.MessagingType = "NON_PROMOTIONAL_SUBSCRIPTION" // only allowed until Jan 15, 2020
 	}
 
 	// build our recipient

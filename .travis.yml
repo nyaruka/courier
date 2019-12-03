@@ -1,14 +1,24 @@
 language: go
 
 go:
-  - "1.11"
+  - "1.13"
+
+matrix:
+  include:
+    - name: "Postgres 11"
+      env:
+        - PGDB=11
+    - name: "Postgres 10"
+      env:
+        - PGDB=10
+        - RELEASE=true
+    - name: "Postgres 9.6"
+      env:
+       - PGDB=9.6
 
 env:
   global:
     - GO111MODULE=on
-  matrix:
-    - PGDB=10
-    - PGDB=9.6
 
 services:
   - redis-server
@@ -41,4 +51,11 @@ script:
 after_success:
   - bash <(curl -s https://codecov.io/bash)
   - rm coverage.text
-  - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
+
+deploy:
+  - provider: script
+    skip_cleanup: true
+    script: curl -sL https://git.io/goreleaser | bash
+    on:
+      tags: true
+      condition: $RELEASE = true  

@@ -239,8 +239,8 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 	if err != nil {
 		return "", err
 	}
-	body, err := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -545,6 +545,14 @@ func (m *DBMsg) QuickReplies() []string {
 		},
 		"quick_replies")
 	return m.quickReplies
+}
+
+func (m *DBMsg) Topic() string {
+	if m.Metadata_ == nil {
+		return ""
+	}
+	topic, _, _, _ := jsonparser.Get(m.Metadata_, "topic")
+	return string(topic)
 }
 
 // Metadata returns the metadata for this message

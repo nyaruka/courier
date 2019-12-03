@@ -43,6 +43,9 @@ const chatbaseMessageType = "msg"
 // our timeout for backend operations
 const backendTimeout = time.Second * 20
 
+// number of messages for loop detection
+const msgLoopThreshold = 20
+
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
 }
@@ -164,7 +167,7 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
 }
 
 var luaSent = redis.NewScript(3,
-	`-- KEYS: [TodayKey, YesterdayKey, MsgId]
+	`-- KEYS: [TodayKey, YesterdayKey, MsgID]
      local found = redis.call("sismember", KEYS[1], KEYS[3])
      if found == 1 then
 	   return 1
@@ -181,6 +184,63 @@ func (b *backend) WasMsgSent(ctx context.Context, msg courier.Msg) (bool, error)
 	todayKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
 	yesterdayKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).UTC().Format("2006_01_02"))
 	return redis.Bool(luaSent.Do(rc, todayKey, yesterdayKey, msg.ID().String()))
+}
+
+var luaMsgLoop = redis.NewScript(3, `-- KEYS: [key, contact_id, text]
+	local key = KEYS[1]
+	local contact_id = KEYS[2]
+	local text = KEYS[3]
+	local count = 1
+
+    -- try to look up in window
+	local record = redis.call("hget", key, contact_id)
+	if record then
+		local record_count = tonumber(string.sub(record, 1, 2))
+		local record_text = string.sub(record, 4, -1)
+
+		if record_text == text then 
+			count = math.min(record_count + 1, 99)
+		else
+			count = 1
+		end		
+	end
+
+	-- create our new record with our updated count
+	record = string.format("%02d:%s", count, text)
+
+	-- write our new record with updated count
+	redis.call("hset", key, contact_id, record)
+
+	-- sets its expiration
+	redis.call("expire", key, 300)
+
+	return count
+`)
+
+// IsMsgLoop checks whether the passed in message is part of a loop
+func (b *backend) IsMsgLoop(ctx context.Context, msg courier.Msg) (bool, error) {
+	m := msg.(*DBMsg)
+
+	// things that aren't replies can't be loops, neither do we count retries
+	if m.ResponseToID_ == courier.NilMsgID || m.ErrorCount_ > 0 {
+		return false, nil
+	}
+
+	// otherwise run our script to check whether this is a loop in the past 5 minutes
+	rc := b.redisPool.Get()
+	defer rc.Close()
+
+	keyTime := time.Now().UTC().Round(time.Minute * 5)
+	key := fmt.Sprintf(sentSetName, fmt.Sprintf("loop_msgs:%s", keyTime.Format("2006-01-02-15:04")))
+	count, err := redis.Int(luaMsgLoop.Do(rc, key, m.ContactID_, m.Text_))
+	if err != nil {
+		return false, errors.Wrapf(err, "error while checking for msg loop")
+	}
+
+	if count >= msgLoopThreshold {
+		return true, nil
+	}
+	return false, nil
 }
 
 // MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel

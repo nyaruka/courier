@@ -106,12 +106,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	agentID := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if agentID == "" {
-		return nil, fmt.Errorf("missing config Username for FC channel")
+		return nil, fmt.Errorf("missing config 'username' for FC channel")
 	}
 
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if authToken == "" {
-		return nil, fmt.Errorf("missing config AuthToken for FC channel")
+		return nil, fmt.Errorf("missing config 'auth_token' for FC channel")
 	}
 
 	user := strings.Split(msg.URN().Path(), "/")
@@ -182,7 +182,7 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	}
 	key := c.StringConfigForKey(courier.ConfigSecret, "")
 	if key == "" {
-		return fmt.Errorf("missing config Secret for FC channel")
+		return fmt.Errorf("missing config 'secret' for FC channel")
 	}
 	//x509 parser needs newlines for valid key- RP stores config strings without them.
 	// this puts them back in
