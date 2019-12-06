@@ -1,3 +1,7 @@
+v5.3.3
+----------
+ * Fix freshchat image handing
+
 v5.3.2
 ----------
  * Set Facebook message type tag when topic is set on message
