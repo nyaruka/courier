@@ -288,16 +288,36 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, 160)
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength)
-	for _, part := range parts {
+	for i, part := range parts {
 		// build our request
 		form := map[string]string{
-			"id":           msg.ID().String(),
-			"text":         part,
-			"to":           msg.URN().Path(),
-			"to_no_plus":   strings.TrimPrefix(msg.URN().Path(), "+"),
-			"from":         msg.Channel().Address(),
-			"from_no_plus": strings.TrimPrefix(msg.Channel().Address(), "+"),
-			"channel":      msg.Channel().UUID().String(),
+			"id":            msg.ID().String(),
+			"text":          part,
+			"to":            msg.URN().Path(),
+			"to_no_plus":    strings.TrimPrefix(msg.URN().Path(), "+"),
+			"from":          msg.Channel().Address(),
+			"from_no_plus":  strings.TrimPrefix(msg.Channel().Address(), "+"),
+			"channel":       msg.Channel().UUID().String(),
+			"quick_replies": "",
+		}
+
+		// put quick replies on last message part, converting from array to string
+		if i == len(parts) - 1 {
+			var quickReplies, format, separator string
+
+			if sendMethod == http.MethodGet {
+				quickReplies = ""
+				format = "%s"
+				separator = "&"
+			} else {
+				quickReplies = "[]"
+				format = "[\"%s\"]"
+				separator = "\",\""
+			}
+			if len(msg.QuickReplies()) > 0 {
+				quickReplies = fmt.Sprintf(format, strings.Join(msg.QuickReplies(), separator))
+			}
+			form["quick_replies"] = quickReplies
 		}
 
 		// if we are smart, first try to convert to GSM7 chars
@@ -305,6 +325,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			replaced := gsm7.ReplaceSubstitutions(part)
 			if gsm7.IsValid(replaced) {
 				form["text"] = replaced
+			}
+
+			if form["quick_replies"] != "" && form["quick_replies"] != "[]" {
+				replaced := gsm7.ReplaceSubstitutions(form["quick_replies"])
+				if gsm7.IsValid(replaced) {
+					form["quick_replies"] = replaced
+				}
 			}
 		}
 
@@ -349,8 +376,10 @@ func replaceVariables(text string, variables map[string]string, contentType stri
 		// encode according to our content type
 		switch contentType {
 		case contentJSON:
-			marshalled, _ := json.Marshal(v)
-			v = string(marshalled)
+			if !(len(v) > 1 && v[0] == '[' && v[len(v) - 1] == ']') {
+				marshalled, _ := json.Marshal(v)
+				v = string(marshalled)
+			}
 
 		case contentURLEncoded:
 			v = url.QueryEscape(v)
