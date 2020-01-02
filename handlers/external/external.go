@@ -291,33 +291,18 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	for i, part := range parts {
 		// build our request
 		form := map[string]string{
-			"id":            msg.ID().String(),
-			"text":          part,
-			"to":            msg.URN().Path(),
-			"to_no_plus":    strings.TrimPrefix(msg.URN().Path(), "+"),
-			"from":          msg.Channel().Address(),
-			"from_no_plus":  strings.TrimPrefix(msg.Channel().Address(), "+"),
-			"channel":       msg.Channel().UUID().String(),
-			"quick_replies": "",
+			"id":           msg.ID().String(),
+			"text":         part,
+			"to":           msg.URN().Path(),
+			"to_no_plus":   strings.TrimPrefix(msg.URN().Path(), "+"),
+			"from":         msg.Channel().Address(),
+			"from_no_plus": strings.TrimPrefix(msg.Channel().Address(), "+"),
+			"channel":      msg.Channel().UUID().String(),
 		}
 
 		// put quick replies on last message part, converting from array to string
 		if i == len(parts) - 1 {
-			var quickReplies, format, separator string
-
-			if sendMethod == http.MethodGet {
-				quickReplies = ""
-				format = "%s"
-				separator = "&"
-			} else {
-				quickReplies = "[]"
-				format = "[\"%s\"]"
-				separator = "\",\""
-			}
-			if len(msg.QuickReplies()) > 0 {
-				quickReplies = fmt.Sprintf(format, strings.Join(msg.QuickReplies(), separator))
-			}
-			form["quick_replies"] = quickReplies
+			form["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentType)
 		}
 
 		// if we are smart, first try to convert to GSM7 chars
@@ -327,7 +312,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				form["text"] = replaced
 			}
 
-			if form["quick_replies"] != "" && form["quick_replies"] != "[]" {
+			if len(msg.QuickReplies()) > 0 {
 				replaced := gsm7.ReplaceSubstitutions(form["quick_replies"])
 				if gsm7.IsValid(replaced) {
 					form["quick_replies"] = replaced
@@ -369,6 +354,32 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	return status, nil
+}
+
+func buildQuickRepliesResponse(quickReplies []string, sendMethod string, contentType string) string {
+	var response, format, separator string
+
+	switch {
+	case (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentJSON:
+		response = "[]"
+		format = "[\"%s\"]"
+		separator = "\",\""
+
+	case (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentXML:
+		response = ""
+		format = "<item>%s</item>"
+		separator = "</item><item>"
+
+	default:
+		response = ""
+		format = "%s"
+		separator = "\\,"
+	}
+
+	if len(quickReplies) > 0 {
+		response = fmt.Sprintf(format, strings.Join(quickReplies, separator))
+	}
+	return response
 }
 
 func replaceVariables(text string, variables map[string]string, contentType string) string {
