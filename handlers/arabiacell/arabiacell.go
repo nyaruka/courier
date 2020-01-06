@@ -20,7 +20,7 @@ const (
 
 var (
 	sendURL      = "https://acsdp.arabiacell.net"
-	maxMsgLength = 1530
+	maxMsgLength = 670
 )
 
 func init() {
