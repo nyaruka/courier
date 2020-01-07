@@ -151,7 +151,7 @@ var getSendSmartEncodingTestCases = []ChannelSendTestCase{
 			"text": `Some message`,
 			"to": "+250788383383",
 			"from": "2020",
-			"quick_replies": `"Smart"\,"Quotes"`,
+			"quick_replies": `“Smart”\,“Quotes”`,
 		},
 		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:  setSendURL},
@@ -244,10 +244,10 @@ var postSendTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		PostParams: map[string]string{
-		"text": "Some message",
-		"to": "+250788383383",
-		"from": "2020",
-		"quick_replies": `One\,Two\,Three`,
+			"text": "Some message",
+			"to": "+250788383383",
+			"from": "2020",
+			"quick_replies": `One\,Two\,Three`,
 		},
 		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:   setSendURL},
@@ -259,6 +259,18 @@ var postSendCustomContentTypeTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		PostParams: map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020"},
+		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
+		SendPrep:   setSendURL},
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "tel:+250788383383", QuickReplies: []string{"One", "Two", "Three"},
+		Status:       "W",
+		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
+		PostParams: map[string]string{
+			"text": "Simple Message",
+			"to": "250788383383",
+			"from": "2020",
+			"quick_replies": `One\,Two\,Three`,
+		},
 		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
 		SendPrep:   setSendURL},
 }
@@ -336,7 +348,7 @@ var xmlSendTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		RequestBody: "<msg><to>+250788383383</to><text>Some message</text><from>2020</from>" +
-					"<quick_replies>&lt;item&gt;One&lt;/item&gt;&lt;item&gt;Two&lt;/item&gt;&lt;item&gt;Three&lt;/item&gt;</quick_replies></msg>",
+					"<quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>",
 		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 		SendPrep:    setSendURL},
 }
@@ -383,7 +395,7 @@ var xmlSendWithResponseContentTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: "<return>0</return>", ResponseStatus: 200,
 		RequestBody: `<msg><to>+250788383383</to><text>Some message</text><from>2020</from>` +
-					`<quick_replies>&lt;item&gt;One&lt;/item&gt;&lt;item&gt;Two&lt;/item&gt;&lt;item&gt;Three&lt;/item&gt;</quick_replies></msg>`,
+					`<quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>`,
 		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 		SendPrep:    setSendURL},
 }
@@ -409,7 +421,7 @@ func TestSending(t *testing.T) {
 	var postChannelCustomContentType = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":               "",
-			courier.ConfigSendBody:    "to={{to_no_plus}}&text={{text}}&from={{from_no_plus}}",
+			courier.ConfigSendBody:    "to={{to_no_plus}}&text={{text}}&from={{from_no_plus}}&quick_replies={{quick_replies}}",
 			courier.ConfigContentType: "application/x-www-form-urlencoded; charset=utf-8",
 			courier.ConfigSendMethod:  http.MethodPost})
 

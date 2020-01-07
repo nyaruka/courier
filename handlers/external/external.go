@@ -300,30 +300,30 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"channel":      msg.Channel().UUID().String(),
 		}
 
-		// put quick replies on last message part, converting from array to string
-		if i == len(parts) - 1 {
-			form["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentType)
-		}
-
 		// if we are smart, first try to convert to GSM7 chars
 		if encoding == encodingSmart {
 			replaced := gsm7.ReplaceSubstitutions(part)
 			if gsm7.IsValid(replaced) {
 				form["text"] = replaced
 			}
-
-			if len(msg.QuickReplies()) > 0 {
-				replaced := gsm7.ReplaceSubstitutions(form["quick_replies"])
-				if gsm7.IsValid(replaced) {
-					form["quick_replies"] = replaced
-				}
-			}
 		}
 
-		url := replaceVariables(sendURL, form, contentURLEncoded)
+		formEncoded := encodeVariables(form, contentURLEncoded)
+
+		// put quick replies on last message part
+		if i == len(parts) - 1 {
+			formEncoded["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentURLEncoded)
+		}
+		url := replaceVariables(sendURL, formEncoded)
+
 		var body io.Reader
 		if sendMethod == http.MethodPost || sendMethod == http.MethodPut {
-			body = strings.NewReader(replaceVariables(sendBody, form, contentType))
+			formEncoded = encodeVariables(form, contentType)
+
+			if i == len(parts) - 1 {
+				formEncoded["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentType)
+			}
+			body = strings.NewReader(replaceVariables(sendBody, formEncoded))
 		}
 
 		req, err := http.NewRequest(sendMethod, url, body)
@@ -357,40 +357,39 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 }
 
 func buildQuickRepliesResponse(quickReplies []string, sendMethod string, contentType string) string {
-	var response, format, separator string
-
+	if quickReplies == nil {
+		quickReplies = []string{}
+	}
 	switch {
 	case (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentJSON:
-		response = "[]"
-		format = "[\"%s\"]"
-		separator = "\",\""
+		marshalled, _ := json.Marshal(quickReplies)
+		return string(marshalled)
 
 	case (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentXML:
-		response = ""
-		format = "<item>%s</item>"
-		separator = "</item><item>"
+		responseBuf := bytes.Buffer{}
+
+		for _, v := range quickReplies {
+			buf := &bytes.Buffer{}
+			xml.EscapeText(buf, []byte(v))
+			v = buf.String()
+			responseBuf.WriteString(fmt.Sprintf("<item>%s</item>", v))
+		}
+		return responseBuf.String()
 
 	default:
-		response = ""
-		format = "%s"
-		separator = "\\,"
+		return url.QueryEscape(strings.Join(quickReplies, `\,`))
 	}
-
-	if len(quickReplies) > 0 {
-		response = fmt.Sprintf(format, strings.Join(quickReplies, separator))
-	}
-	return response
 }
 
-func replaceVariables(text string, variables map[string]string, contentType string) string {
+func encodeVariables(variables map[string]string, contentType string) map[string]string {
+	encoded := make(map[string]string)
+
 	for k, v := range variables {
 		// encode according to our content type
 		switch contentType {
 		case contentJSON:
-			if !(len(v) > 1 && v[0] == '[' && v[len(v) - 1] == ']') {
-				marshalled, _ := json.Marshal(v)
-				v = string(marshalled)
-			}
+			marshalled, _ := json.Marshal(v)
+			v = string(marshalled)
 
 		case contentURLEncoded:
 			v = url.QueryEscape(v)
@@ -400,7 +399,13 @@ func replaceVariables(text string, variables map[string]string, contentType stri
 			xml.EscapeText(buf, []byte(v))
 			v = buf.String()
 		}
+		encoded[k] = v
+	}
+	return encoded
+}
 
+func replaceVariables(text string, variables map[string]string) string {
+	for k, v := range variables {
 		text = strings.Replace(text, fmt.Sprintf("{{%s}}", k), v, -1)
 	}
 	return text
