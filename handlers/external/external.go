@@ -360,24 +360,30 @@ func buildQuickRepliesResponse(quickReplies []string, sendMethod string, content
 	if quickReplies == nil {
 		quickReplies = []string{}
 	}
-	switch {
-	case (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentJSON:
+	if (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentJSON {
 		marshalled, _ := json.Marshal(quickReplies)
 		return string(marshalled)
+	} else if (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentXML {
+		response := bytes.Buffer{}
 
-	case (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentXML:
-		responseBuf := bytes.Buffer{}
-
-		for _, v := range quickReplies {
+		for _, reply := range quickReplies {
 			buf := &bytes.Buffer{}
-			xml.EscapeText(buf, []byte(v))
-			v = buf.String()
-			responseBuf.WriteString(fmt.Sprintf("<item>%s</item>", v))
-		}
-		return responseBuf.String()
+			err := xml.EscapeText(buf, []byte(reply))
 
-	default:
-		return url.QueryEscape(strings.Join(quickReplies, `\,`))
+			if err == nil {
+				reply = buf.String()
+				response.WriteString(fmt.Sprintf("<item>%s</item>", reply))
+			}
+		}
+		return response.String()
+	} else {
+		response := bytes.Buffer{}
+
+		for _, reply := range quickReplies {
+			reply = url.QueryEscape(reply)
+			response.WriteString(fmt.Sprintf("&quick_reply=%s", reply))
+		}
+		return response.String()
 	}
 }
 

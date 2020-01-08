@@ -143,18 +143,6 @@ var getSendSmartEncodingTestCases = []ChannelSendTestCase{
 		URLParams: map[string]string{"text": `Fancy "Smart" Quotes`, "to": "+250788383383", "from": "2020"},
 		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:  setSendURL},
-	{Label: "Send Quick Replies",
-		Text: "Some message", URN: "tel:+250788383383", QuickReplies: []string{"“Smart”", "“Quotes”"},
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		URLParams: map[string]string{
-			"text": `Some message`,
-			"to": "+250788383383",
-			"from": "2020",
-			"quick_replies": `“Smart”\,“Quotes”`,
-		},
-		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		SendPrep:  setSendURL},
 }
 
 var postSendSmartEncodingTestCases = []ChannelSendTestCase{
@@ -196,18 +184,6 @@ var getSendTestCases = []ChannelSendTestCase{
 		URLParams: map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "+250788383383", "from": "2020"},
 		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:  setSendURL},
-	{Label: "Send Quick Replies",
-		Text: "Some message", URN: "tel:+250788383383", QuickReplies: []string{"One", "Two", "Three"},
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		URLParams: map[string]string{
-			"text": "Some message",
-			"to": "+250788383383",
-			"from": "2020",
-			"quick_replies": `One\,Two\,Three`,
-		},
-		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		SendPrep:  setSendURL},
 }
 
 var postSendTestCases = []ChannelSendTestCase{
@@ -239,18 +215,6 @@ var postSendTestCases = []ChannelSendTestCase{
 		PostParams: map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "+250788383383", "from": "2020"},
 		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:   setSendURL},
-	{Label: "Send Quick Replies",
-		Text: "Some message", URN: "tel:+250788383383", QuickReplies: []string{"One", "Two", "Three"},
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		PostParams: map[string]string{
-			"text": "Some message",
-			"to": "+250788383383",
-			"from": "2020",
-			"quick_replies": `One\,Two\,Three`,
-		},
-		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		SendPrep:   setSendURL},
 }
 
 var postSendCustomContentTypeTestCases = []ChannelSendTestCase{
@@ -259,18 +223,6 @@ var postSendCustomContentTypeTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		PostParams: map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020"},
-		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
-		SendPrep:   setSendURL},
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383", QuickReplies: []string{"One", "Two", "Three"},
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		PostParams: map[string]string{
-			"text": "Simple Message",
-			"to": "250788383383",
-			"from": "2020",
-			"quick_replies": `One\,Two\,Three`,
-		},
 		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
 		SendPrep:   setSendURL},
 }
@@ -403,32 +355,32 @@ var xmlSendWithResponseContentTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	var getChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
-			"send_path":              "?to={{to}}&text={{text}}&from={{from}}&quick_replies={{quick_replies}}",
+			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			courier.ConfigSendMethod: http.MethodGet})
 
 	var getSmartChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
-			"send_path":              "?to={{to}}&text={{text}}&from={{from}}&quick_replies={{quick_replies}}",
+			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			configEncoding:           encodingSmart,
 			courier.ConfigSendMethod: http.MethodGet})
 
 	var postChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":              "",
-			courier.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}&quick_replies={{quick_replies}}",
+			courier.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			courier.ConfigSendMethod: http.MethodPost})
 
 	var postChannelCustomContentType = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":               "",
-			courier.ConfigSendBody:    "to={{to_no_plus}}&text={{text}}&from={{from_no_plus}}&quick_replies={{quick_replies}}",
+			courier.ConfigSendBody:    "to={{to_no_plus}}&text={{text}}&from={{from_no_plus}}{{quick_replies}}",
 			courier.ConfigContentType: "application/x-www-form-urlencoded; charset=utf-8",
 			courier.ConfigSendMethod:  http.MethodPost})
 
 	var postSmartChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":              "",
-			courier.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}&quick_replies={{quick_replies}}",
+			courier.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			configEncoding:           encodingSmart,
 			courier.ConfigSendMethod: http.MethodPost})
 
