@@ -356,6 +356,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	return status, nil
 }
 
+type quickReplyXMLItem struct {
+	XMLName xml.Name `xml:"item"`
+	Value   string   `xml:",chardata"`
+}
+
 func buildQuickRepliesResponse(quickReplies []string, sendMethod string, contentType string) string {
 	if quickReplies == nil {
 		quickReplies = []string{}
@@ -364,18 +369,13 @@ func buildQuickRepliesResponse(quickReplies []string, sendMethod string, content
 		marshalled, _ := json.Marshal(quickReplies)
 		return string(marshalled)
 	} else if (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentXML {
-		response := bytes.Buffer{}
+		items := make([]quickReplyXMLItem, len(quickReplies))
 
-		for _, reply := range quickReplies {
-			buf := &bytes.Buffer{}
-			err := xml.EscapeText(buf, []byte(reply))
-
-			if err == nil {
-				reply = buf.String()
-				response.WriteString(fmt.Sprintf("<item>%s</item>", reply))
-			}
+		for i, v := range quickReplies {
+			items[i] = quickReplyXMLItem{Value: v}
 		}
-		return response.String()
+		marshalled, _ := xml.Marshal(items)
+		return string(marshalled)
 	} else {
 		response := bytes.Buffer{}
 
