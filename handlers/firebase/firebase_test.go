@@ -80,7 +80,7 @@ var sendTestCases = []ChannelSendTestCase{
 		Status: "W", ExternalID: "123456",
 		ResponseBody: `{"success":1, "multicast_id": 123456}`, ResponseStatus: 200,
 		Headers:     map[string]string{"Authorization": "key=FCMKey"},
-		RequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":10},"quick_replies":["yes", "no"],"content_available":false,"to":"auth1","priority":"high"}`,
+		RequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":10},"quick_replies":["yes","no"],"content_available":false,"to":"auth1","priority":"high"}`,
 		SendPrep:    setSendURL},
 	{Label: "Error",
 		Text: "Error", URN: "fcm:250788123123", URNAuth: "auth1",
