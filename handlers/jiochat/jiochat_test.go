@@ -249,7 +249,7 @@ func newServer(backend courier.Backend) courier.Server {
 	logger.Out = ioutil.Discard
 	logrus.SetOutput(ioutil.Discard)
 	config := courier.NewConfig()
-	config.DB = "postgres://courier@localhost/courier_test?sslmode=disable"
+	config.DB = "postgres://courier:courier@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
 	return courier.NewServerWithLogger(config, backend, logger)
 }

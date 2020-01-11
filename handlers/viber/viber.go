@@ -21,11 +21,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	configViberWelcomeMessage = "welcome_message"
+)
+
 var (
 	viberSignatureHeader = "X-Viber-Content-Signature"
 	sendURL              = "https://chatapi.viber.com/pa/send_message"
 	maxMsgLength         = 7000
 	quickReplyTextSize   = 36
+	descriptionMaxLength = 120
 )
 
 func init() {
@@ -76,6 +81,14 @@ type eventPayload struct {
 	} `json:"message"`
 }
 
+type welcomeMessagePayload struct {
+	AuthToken    string            `json:"auth_token"`
+	Text         string            `json:"text"`
+	Type         string            `json:"type"`
+	TrackingData string            `json:"tracking_data"`
+	Sender       map[string]string `json:"sender,omitempty"`
+}
+
 // receiveEvent is our HTTP handler function for incoming messages
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
@@ -95,7 +108,28 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "webhook valid")
 
 	case "conversation_started":
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignored conversation start")
+		msgText := channel.StringConfigForKey(configViberWelcomeMessage, "")
+		if msgText == "" {
+			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignored conversation start")
+		}
+
+		viberID := payload.User.ID
+		ContactName := payload.User.Name
+
+		// build the URN
+		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "", "")
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		}
+		// build the channel event
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.WelcomeMessage, urn).WithContactName(ContactName)
+
+		err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		}
+
+		return []courier.Event{channelEvent}, writeWelcomeMessageResponse(w, channel, channelEvent)
 
 	case "subscribed":
 		viberID := payload.User.ID
@@ -140,10 +174,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "delivered":
-		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), courier.MsgDelivered)
-
-		err = h.Backend().WriteMsgStatus(ctx, msgStatus)
-		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
+		// we ignore delivered events for viber as they send these for incoming messages too and its not worth the db hit to verify that
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring delivered status")
 
 	case "message":
 		sender := payload.Sender.ID
@@ -202,6 +234,28 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	}
 
 	return nil, courier.WriteError(ctx, w, r, fmt.Errorf("not handled, unknown event: %s", event))
+}
+
+func writeWelcomeMessageResponse(w http.ResponseWriter, channel courier.Channel, event courier.Event) error {
+
+	authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	msgText := channel.StringConfigForKey(configViberWelcomeMessage, "")
+	payload := welcomeMessagePayload{
+		AuthToken:    authToken,
+		Text:         msgText,
+		Type:         "text",
+		TrackingData: string(event.EventID()),
+	}
+
+	responseBody := &bytes.Buffer{}
+	err := json.NewEncoder(responseBody).Encode(payload)
+	if err != nil {
+		return nil
+	}
+
+	w.WriteHeader(200)
+	_, err = fmt.Fprint(w, responseBody)
+	return err
 }
 
 // see https://developers.viber.com/docs/api/rest-bot-api/#callbacks
@@ -289,8 +343,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		replies = &mtKeyboard{"keyboard", true, buttons}
 	}
-
 	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
+	if len(msg.Attachments()) > 0 && len(parts[0]) > descriptionMaxLength {
+		descriptionPart := handlers.SplitMsg(msg.Text(), descriptionMaxLength)[0]
+		others := handlers.SplitMsg(strings.TrimSpace(strings.Replace(msg.Text(), descriptionPart, "", 1)), maxMsgLength)
+		parts = []string{descriptionPart}
+		parts = append(parts, others...)
+	}
+
 	for i, part := range parts {
 		msgType := "text"
 		attSize := -1

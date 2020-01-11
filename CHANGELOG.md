@@ -1,3 +1,283 @@
+v5.3.4
+----------
+ * Change Arabia Cell max length to 670, fixes #274
+ * Add support for Twilio Whatsapp channel type
+ * Convert to use Github actions for CI
+
+v5.3.3
+----------
+ * Fix freshchat image handing
+
+v5.3.2
+----------
+ * Set Facebook message type tag when topic is set on message
+
+v5.3.1
+----------
+ * update changelog for v5.3
+
+v5.3.0
+----------
+ * Send WhatsApp media via URL
+ * Log Zenvia errors to ChannelLog instead of Sentry
+ * Ignore status updates for incoming messages	
+
+v5.2.0
+----------
+ * Sync version with RapidPro 5.2
+
+v2.0.18
+----------
+ * Test matrix release
+
+v2.0.17
+----------
+ * Test deploying with matrix build
+
+v2.0.16
+----------
+ * test releasing only on pg10
+
+v2.0.15
+----------
+ * Derive contact name for new WhatsApp contacts (thanks @devchima)
+
+v2.0.14
+----------
+ * properly log connection errors for whatsapp
+
+v2.0.13
+----------
+ * use latest librato library
+
+v2.0.12
+----------
+ * tune HTTP transport settings
+
+v2.0.11
+----------
+n
+ * tune HTTPClient settings to better deal with slow hosts
+
+v2.0.10
+----------
+ * Use multipart form encoding for thinQ
+
+v2.0.9
+----------
+ * Add thinq handler
+
+v2.0.8
+----------
+ * turn thumbs up stickers into thumbs up emoji
+
+v2.0.7
+----------
+ * Tweak lua script for checking loops, add more tests
+
+v2.0.6
+----------
+ * Make sure we never overflow our count when considering loops
+
+v2.0.5
+----------
+ * Check whether outgoing message is in a loop before sending
+
+v2.0.4
+----------
+ * Add FreshChat channel type
+ * Latest phonenumbers library
+
+v2.0.3
+----------
+ * Fix sending for ClickSend
+
+v2.0.2
+----------
+0;95;0c# Enter any comments for inclusion in the CHANGELOG on this revision below, you can use markdown
+ * ignore viber dlrs as they are sent for both in and out
+
+v2.0.1
+----------
+ * add WhatsApp scheme support for TWIML channels
+
+v2.0.0
+----------
+ * ignore flow server enabled attribute on orgs
+ * stop looking / writing is_test on contact
+
+v1.2.160
+----------
+ * add bearer before auth token for Hormuud
+
+v1.2.159
+----------
+ * add SignalWire handler (https://www.signalwire.com)
+ * refactor twilio->twiml
+ * remove ignore DLR global config, make per channel for TWIML channels
+
+v1.2.158
+----------
+ * add ClickSend channel
+
+v1.2.157
+----------
+ * increase http timeouts to 60 seconds for AfricasTalking, Hormuud token lasts 90 minutes
+
+v1.2.156
+----------
+ * update Portuguese mapping
+
+v1.2.155
+----------
+ * new Hormuud channel for somalia
+ * add video support for WhatsApp
+
+v1.2.154
+----------
+ * have batch committer print when flushed
+ * move stopping of bulk committers to cleanup phase
+
+v1.2.153
+----------
+ * Switch to newer library for UUID generation
+
+v1.2.152
+----------
+ * raise delay before bulk commits to 500ms
+
+v1.2.151
+----------
+ * optimize sends via bulk inserts and updates
+
+v1.2.150
+----------
+ * allow configuring custom mo fields for external channels
+
+v1.2.149
+----------
+* implement sending whatsapp templates
+
+v1.2.148
+----------
+ * Add maintenance mode to run without a DB and only spool inbound requests
+
+v1.2.147
+----------
+ * Prevent Facebook duplicate messages, dedupe in external id
+
+v1.2.146
+----------
+ * ignore deleted status for whatsapp
+
+v1.2.145
+----------
+ * mark deleted WhatsApp messages as failed
+
+v1.2.144
+----------
+ * include extra for channel events in response
+
+v1.2.143
+----------
+ * deduplicate WA messages on external ID
+
+v1.2.142
+----------
+ * normalize TEL urns with the country
+
+v1.2.141
+----------
+ * latest phonenumbers
+
+v1.2.140
+----------
+ * Queue welcome message event to be handle by mailroom
+
+v1.2.139
+----------
+ * add sub-message ids for long messages on play mobile
+ * send configured welcome message on converssation started for Viber
+
+v1.2.138
+----------
+ * proper name for queues to check size
+
+v1.2.137
+----------
+ * log queue sizes and new contact creations to librato
+
+v1.2.136
+----------
+ * add queued on to all tasks
+
+v1.2.135
+----------
+ * move queued on to task level
+
+v1.2.134
+----------
+ * add queued_on to tasks sent to mailroom so we can calculate latency
+
+v1.2.133
+----------
+ * fixes us creating an orphaned contact when we get two messages at the same instant
+
+v1.2.132
+----------
+ * send fb attachments first instead of last, add quick replies to last message instead of first
+
+v1.2.131
+----------
+ * Fix to use DLRID for Bongolive status reports
+
+v1.2.130
+----------
+ * Use unix timestamp for MO receive on WAVy channels
+
+v1.2.129
+----------
+ * Make bongolive inbound msg type optional
+ * Properly handle long attachment description for Viber
+
+v1.2.128
+----------
+ * Load BL handler package
+ * Add support for Movile/Wavy channels, Thanks to MGov to fund the development of the integration
+
+v1.2.127
+----------
+ * Use UPPERCASE parameters for BL channels
+ * Migrate courier to PostgreSQL 10
+
+v1.2.126
+----------
+ * Switch BL channels used API
+
+v1.2.125
+----------
+ * add support for Bongo Live channels
+ * Switch to use nyaruka/librato package
+ * Complete conversion to module
+
+v1.2.124
+----------
+ * Updated Zenvia endpoint according to new API
+
+v1.2.123
+----------
+ * set session timeouts when specified by mailroom
+
+v1.2.122
+----------
+ * Support using the custom configured content type for EX channels
+ * Fix panicr on parsing SOAP body for EX channels
+ * Support sending images and videos in Twitter
+
+v1.2.121
+----------
+ * fix twitter sending
+
 v1.2.120
 ----------
  * Twitter media attachments

@@ -102,11 +102,12 @@ func NewMsgReceiveData(msg Msg) MsgReceiveData {
 
 // EventReceiveData is our response payload for a channel event
 type EventReceiveData struct {
-	Type        string           `json:"type"`
-	ChannelUUID ChannelUUID      `json:"channel_uuid"`
-	EventType   ChannelEventType `json:"event_type"`
-	URN         urns.URN         `json:"urn"`
-	ReceivedOn  time.Time        `json:"received_on"`
+	Type        string                 `json:"type"`
+	ChannelUUID ChannelUUID            `json:"channel_uuid"`
+	EventType   ChannelEventType       `json:"event_type"`
+	URN         urns.URN               `json:"urn"`
+	ReceivedOn  time.Time              `json:"received_on"`
+	Extra       map[string]interface{} `json:"extra,omitempty"`
 }
 
 // NewEventReceiveData creates a new receive data for the passed in event
@@ -117,6 +118,7 @@ func NewEventReceiveData(event ChannelEvent) EventReceiveData {
 		event.EventType(),
 		event.URN(),
 		event.OccurredOn(),
+		event.Extra(),
 	}
 }
 
