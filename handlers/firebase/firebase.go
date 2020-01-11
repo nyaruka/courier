@@ -117,13 +117,13 @@ func (h *handler) registerContact(ctx context.Context, channel courier.Channel, 
 
 type mtPayload struct {
 	Data struct {
-		Type      string `json:"type"`
-		Title     string `json:"title"`
-		Message   string `json:"message"`
-		MessageID int64  `json:"message_id"`
+		Type         string   `json:"type"`
+		Title        string   `json:"title"`
+		Message      string   `json:"message"`
+		MessageID    int64    `json:"message_id"`
+		QuickReplies []string `json:"quick_replies,omitempty"`
 	} `json:"data"`
 	Notification     *mtNotification `json:"notification,omitempty"`
-	QuickReplies     []mtQuickReply  `json:"quick_replies,omitempty"`
 	ContentAvailable bool            `json:"content_available"`
 	To               string          `json:"to"`
 	Priority         string          `json:"priority"`
@@ -132,11 +132,6 @@ type mtPayload struct {
 type mtNotification struct {
 	Title string `json:"title"`
 	Body  string `json:"body"`
-}
-
-type mtQuickReply struct {
-	Title   string `json:"title"`
-	Payload string `json:"payload"`
 }
 
 // SendMsg sends the passed in message, returning any error
@@ -161,7 +156,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		payload.Data.Type = "rapidpro"
 		payload.Data.Title = title
 		payload.Data.Message = part
-		payload.Data.MessageID = msg.ID().Int64
+		payload.Data.MessageID = int64(msg.ID())
+		payload.Data.QuickReplies = msg.QuickReplies()
 
 		payload.To = msg.URNAuth()
 		payload.Priority = "high"
@@ -172,15 +168,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				Body:  part,
 			}
 			payload.ContentAvailable = true
-		}
-
-		if len(msg.QuickReplies()) > 0 {
-			quickReplies := make([]mtQuickReply, len(msg.QuickReplies()))
-			for i, qr := range msg.QuickReplies() {
-				quickReplies[i].Title = qr
-				quickReplies[i].Payload = qr
-			}
-			payload.QuickReplies = quickReplies
 		}
 
 		jsonPayload, err := json.Marshal(payload)
