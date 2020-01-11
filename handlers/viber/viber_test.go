@@ -95,6 +95,17 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My pic!","type":"picture","tracking_data":"10","media":"{{ SERVER_URL }}/image.jpg"}`,
 		SendPrep:    setSendURL},
+	{Label: "Long Description with Attachment",
+		Text: "Text description is longer that 10 characters",
+		URN:  "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"image/jpeg:https://localhost/image.jpg"},
+		Status: "W", ResponseStatus: 200,
+		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+			"Accept":       "application/json",
+		},
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"description is longer that 10 characters","type":"text","tracking_data":"10"}`,
+		SendPrep:    setSendURL},
 	{Label: "Send Attachment Video",
 		Text: "My video!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"video/mp4:https://localhost/video.mp4"},
 		Status: "W", ResponseStatus: 200,
@@ -156,6 +167,7 @@ func TestSending(t *testing.T) {
 	defer attachmentService.Close()
 
 	maxMsgLength = 160
+	descriptionMaxLength = 10
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		map[string]interface{}{
 			courier.ConfigAuthToken: "Token",
@@ -168,7 +180,16 @@ func TestSending(t *testing.T) {
 }
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{"auth_token": "Token"}),
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{
+		courier.ConfigAuthToken: "Token",
+	}),
+}
+
+var testChannelsWithWelcomeMessage = []courier.Channel{
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{
+		courier.ConfigAuthToken:   "Token",
+		configViberWelcomeMessage: "Welcome to VP, Please subscribe here for more.",
+	}),
 }
 
 var (
@@ -418,7 +439,7 @@ var testCases = []ChannelHandleTestCase{
 		PrepRequest: addValidSignature},
 	{Label: "Webhook validation", URL: receiveURL, Data: webhookCheck, Status: 200, Response: "webhook valid", PrepRequest: addValidSignature},
 	{Label: "Failed Status Report", URL: receiveURL, Data: failedStatusReport, Status: 200, Response: `"status":"F"`, PrepRequest: addValidSignature},
-	{Label: "Delivered Status Report", URL: receiveURL, Data: deliveredStatusReport, Status: 200, Response: `"status":"D"`, PrepRequest: addValidSignature},
+	{Label: "Delivered Status Report", URL: receiveURL, Data: deliveredStatusReport, Status: 200, Response: `Ignored`, PrepRequest: addValidSignature},
 	{Label: "Subcribe", URL: receiveURL, Data: validSubscribed, Status: 200, Response: "Accepted", PrepRequest: addValidSignature},
 	{Label: "Subcribe Invalid URN", URL: receiveURL, Data: invalidURNSubscribed, Status: 400, Response: "invalid viber id", PrepRequest: addValidSignature},
 	{Label: "Unsubcribe", URL: receiveURL, Data: validUnsubscribed, Status: 200, Response: "Accepted", ChannelEvent: Sp(string(courier.StopContact)), PrepRequest: addValidSignature},
@@ -440,6 +461,13 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Valid Location receive", URL: receiveURL, Data: validReceiveLocation, Status: 200, Response: "Accepted",
 		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
 		Attachment: Sp("geo:1.200000,-1.300000"), PrepRequest: addValidSignature},
+}
+
+var testWelcomeMessageCases = []ChannelHandleTestCase{
+	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, Status: 200, Response: "Accepted",
+		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+		PrepRequest: addValidSignature},
+	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, Status: 200, Response: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"\u0000"}`, PrepRequest: addValidSignature},
 }
 
 func addValidSignature(r *http.Request) {
@@ -466,8 +494,10 @@ func addInvalidSignature(r *http.Request) {
 
 func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+	RunChannelTestCases(t, testChannelsWithWelcomeMessage, newHandler(), testWelcomeMessageCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
+	RunChannelBenchmarks(b, testChannelsWithWelcomeMessage, newHandler(), testWelcomeMessageCases)
 }

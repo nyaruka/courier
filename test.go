@@ -2,18 +2,18 @@ package courier
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"strconv"
 	"sync"
 
-	"github.com/satori/go.uuid"
-
 	"time"
 
 	"github.com/garyburd/redigo/redis"
 	_ "github.com/lib/pq" // postgres driver
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -36,6 +36,8 @@ type MockBackend struct {
 
 	sentMsgs  map[MsgID]bool
 	redisPool *redis.Pool
+
+	seenExternalIDs []string
 }
 
 // NewMockBackend returns a new mock backend suitable for testing
@@ -105,13 +107,13 @@ func (mb *MockBackend) NewIncomingMsg(channel Channel, urn urns.URN, text string
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool, replies []string, responseToID int64, responseToExternalID string) Msg {
+func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool, quickReplies []string, topic string, responseToID int64, responseToExternalID string) Msg {
 	msgResponseToID := NilMsgID
 	if responseToID != 0 {
 		msgResponseToID = NewMsgID(responseToID)
 	}
 
-	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority, quickReplies: replies, responseToID: msgResponseToID, responseToExternalID: responseToExternalID}
+	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority, quickReplies: quickReplies, topic: topic, responseToID: msgResponseToID, responseToExternalID: responseToExternalID}
 }
 
 // PushOutgoingMsg is a test method to add a message to our queue of messages to send
@@ -144,6 +146,11 @@ func (mb *MockBackend) WasMsgSent(ctx context.Context, msg Msg) (bool, error) {
 	return mb.sentMsgs[msg.ID()], nil
 }
 
+// IsMsgLoop returns whether the passed in msg is a loop
+func (mb *MockBackend) IsMsgLoop(ctx context.Context, msg Msg) (bool, error) {
+	return false, nil
+}
+
 // MarkOutgoingMsgComplete marks the passed msg as having been dealt with
 func (mb *MockBackend) MarkOutgoingMsgComplete(ctx context.Context, msg Msg, s MsgStatus) {
 	mb.mutex.Lock()
@@ -164,6 +171,13 @@ func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 
 // WriteMsg queues the passed in message internally
 func (mb *MockBackend) WriteMsg(ctx context.Context, m Msg) error {
+	mock := m.(*mockMsg)
+
+	// this msg has already been written (we received it twice), we are a no op
+	if mock.alreadyWritten {
+		return nil
+	}
+
 	if mb.errorOnQueue {
 		return errors.New("unable to queue message")
 	}
@@ -234,7 +248,7 @@ func (mb *MockBackend) GetChannel(ctx context.Context, cType ChannelType, uuid C
 func (mb *MockBackend) GetContact(ctx context.Context, channel Channel, urn urns.URN, auth string, name string) (Contact, error) {
 	contact, found := mb.contacts[urn]
 	if !found {
-		uuid, _ := NewContactUUID(uuid.NewV4().String())
+		uuid, _ := NewContactUUID(utils.NewUUID())
 		contact = &mockContact{channel, urn, auth, uuid}
 		mb.contacts[urn] = contact
 	}
@@ -280,9 +294,32 @@ func (mb *MockBackend) ClearQueueMsgs() {
 	mb.queueMsgs = nil
 }
 
+// ClearSeenExternalIDs clears our mock seen external ids
+func (mb *MockBackend) ClearSeenExternalIDs() {
+	mb.seenExternalIDs = nil
+}
+
 // LenQueuedMsgs Get the length of queued msgs
 func (mb *MockBackend) LenQueuedMsgs() int {
 	return len(mb.queueMsgs)
+}
+
+// CheckExternalIDSeen checks if external ID has been seen in a period
+func (mb *MockBackend) CheckExternalIDSeen(msg Msg) Msg {
+	m := msg.(*mockMsg)
+
+	for _, b := range mb.seenExternalIDs {
+		if b == msg.ExternalID() {
+			m.alreadyWritten = true
+			return m
+		}
+	}
+	return m
+}
+
+// WriteExternalIDSeen marks a external ID as seen for a period
+func (mb *MockBackend) WriteExternalIDSeen(msg Msg) {
+	mb.seenExternalIDs = append(mb.seenExternalIDs, msg.ExternalID())
 }
 
 // Health gives a string representing our health, empty for our mock
@@ -293,6 +330,11 @@ func (mb *MockBackend) Health() string {
 // Status returns a string describing the status of the service, queue size etc..
 func (mb *MockBackend) Status() string {
 	return ""
+}
+
+// Heartbeat is a noop for our mock backend
+func (mb *MockBackend) Heartbeat() error {
+	return nil
 }
 
 // RedisPool returns the redisPool for this backend
@@ -332,8 +374,16 @@ func (c *MockChannel) Name() string { return fmt.Sprintf("Channel: %s", c.uuid.S
 // ChannelType returns the type of this channel
 func (c *MockChannel) ChannelType() ChannelType { return c.channelType }
 
+// SetScheme sets the scheme for this channel
+func (c *MockChannel) SetScheme(scheme string) { c.schemes = []string{scheme} }
+
 // Schemes returns the schemes for this channel
 func (c *MockChannel) Schemes() []string { return c.schemes }
+
+// IsScheme returns whether the passed in scheme is the scheme for this channel
+func (c *MockChannel) IsScheme(scheme string) bool {
+	return len(c.schemes) == 1 && c.schemes[0] == scheme
+}
 
 // Address returns the address of this channel
 func (c *MockChannel) Address() string { return c.address }
@@ -374,6 +424,16 @@ func (c *MockChannel) StringConfigForKey(key string, defaultValue string) string
 	return str
 }
 
+// BoolConfigForKey returns the config value for the passed in key
+func (c *MockChannel) BoolConfigForKey(key string, defaultValue bool) bool {
+	val := c.ConfigForKey(key, defaultValue)
+	b, isBool := val.(bool)
+	if !isBool {
+		return defaultValue
+	}
+	return b
+}
+
 // IntConfigForKey returns the config value for the passed in key
 func (c *MockChannel) IntConfigForKey(key string, defaultValue int) int {
 	val := c.ConfigForKey(key, defaultValue)
@@ -410,7 +470,7 @@ func (c *MockChannel) OrgConfigForKey(key string, defaultValue interface{}) inte
 }
 
 // NewMockChannel creates a new mock channel for the passed in type, address, country and config
-func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}) Channel {
+func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}) *MockChannel {
 	cUUID, _ := NewChannelUUID(uuid)
 
 	channel := &MockChannel{
@@ -441,8 +501,11 @@ type mockMsg struct {
 	contactName          string
 	highPriority         bool
 	quickReplies         []string
+	topic                string
 	responseToID         MsgID
 	responseToExternalID string
+	metadata             json.RawMessage
+	alreadyWritten       bool
 
 	receivedOn *time.Time
 	sentOn     *time.Time
@@ -451,7 +514,7 @@ type mockMsg struct {
 
 func (m *mockMsg) Channel() Channel             { return m.channel }
 func (m *mockMsg) ID() MsgID                    { return m.id }
-func (m *mockMsg) EventID() int64               { return m.id.Int64 }
+func (m *mockMsg) EventID() int64               { return int64(m.id) }
 func (m *mockMsg) UUID() MsgUUID                { return m.uuid }
 func (m *mockMsg) Text() string                 { return m.text }
 func (m *mockMsg) Attachments() []string        { return m.attachments }
@@ -461,20 +524,23 @@ func (m *mockMsg) URNAuth() string              { return m.urnAuth }
 func (m *mockMsg) ContactName() string          { return m.contactName }
 func (m *mockMsg) HighPriority() bool           { return m.highPriority }
 func (m *mockMsg) QuickReplies() []string       { return m.quickReplies }
+func (m *mockMsg) Topic() string                { return m.topic }
 func (m *mockMsg) ResponseToID() MsgID          { return m.responseToID }
 func (m *mockMsg) ResponseToExternalID() string { return m.responseToExternalID }
+func (m *mockMsg) Metadata() json.RawMessage    { return m.metadata }
 
 func (m *mockMsg) ReceivedOn() *time.Time { return m.receivedOn }
 func (m *mockMsg) SentOn() *time.Time     { return m.sentOn }
 func (m *mockMsg) WiredOn() *time.Time    { return m.wiredOn }
 
-func (m *mockMsg) WithContactName(name string) Msg   { m.contactName = name; return m }
-func (m *mockMsg) WithURNAuth(auth string) Msg       { m.urnAuth = auth; return m }
-func (m *mockMsg) WithReceivedOn(date time.Time) Msg { m.receivedOn = &date; return m }
-func (m *mockMsg) WithExternalID(id string) Msg      { m.externalID = id; return m }
-func (m *mockMsg) WithID(id MsgID) Msg               { m.id = id; return m }
-func (m *mockMsg) WithUUID(uuid MsgUUID) Msg         { m.uuid = uuid; return m }
-func (m *mockMsg) WithAttachment(url string) Msg     { m.attachments = append(m.attachments, url); return m }
+func (m *mockMsg) WithContactName(name string) Msg           { m.contactName = name; return m }
+func (m *mockMsg) WithURNAuth(auth string) Msg               { m.urnAuth = auth; return m }
+func (m *mockMsg) WithReceivedOn(date time.Time) Msg         { m.receivedOn = &date; return m }
+func (m *mockMsg) WithExternalID(id string) Msg              { m.externalID = id; return m }
+func (m *mockMsg) WithID(id MsgID) Msg                       { m.id = id; return m }
+func (m *mockMsg) WithUUID(uuid MsgUUID) Msg                 { m.uuid = uuid; return m }
+func (m *mockMsg) WithAttachment(url string) Msg             { m.attachments = append(m.attachments, url); return m }
+func (m *mockMsg) WithMetadata(metadata json.RawMessage) Msg { m.metadata = metadata; return m }
 
 //-----------------------------------------------------------------------------
 // Mock status implementation
@@ -492,7 +558,7 @@ type mockMsgStatus struct {
 
 func (m *mockMsgStatus) ChannelUUID() ChannelUUID { return m.channel.UUID() }
 func (m *mockMsgStatus) ID() MsgID                { return m.id }
-func (m *mockMsgStatus) EventID() int64           { return m.id.Int64 }
+func (m *mockMsgStatus) EventID() int64           { return int64(m.id) }
 
 func (m *mockMsgStatus) ExternalID() string      { return m.externalID }
 func (m *mockMsgStatus) SetExternalID(id string) { m.externalID = id }

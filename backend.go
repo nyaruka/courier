@@ -67,16 +67,29 @@ type Backend interface {
 	// a backend wants to implement a failsafe against double sending messages (say if they were double queued)
 	WasMsgSent(context.Context, Msg) (bool, error)
 
+	// IsMsgLoop returns whether the passed in message is part of a message loop, possibly with another bot. Backends should
+	// implement their own logic to implement this.
+	IsMsgLoop(ctx context.Context, msg Msg) (bool, error)
+
 	// MarkOutgoingMsgComplete marks the passed in message as having been processed. Note this should be called even in the case
 	// of errors during sending as it will manage the number of active workers per channel. The optional status parameter can be
 	// used to determine any sort of deduping of msg sends
 	MarkOutgoingMsgComplete(context.Context, Msg, MsgStatus)
+
+	// Check if external ID has been seen in a period
+	CheckExternalIDSeen(Msg) Msg
+
+	// Mark a external ID as seen for a period
+	WriteExternalIDSeen(Msg)
 
 	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string
 
 	// Status returns a string describing the current status, this can detail queue sizes or other attributes
 	Status() string
+
+	// Heartbeat is called every minute, it can be used by backends to log status to a dashboard such as librato
+	Heartbeat() error
 
 	// RedisPool returns the redisPool for this backend
 	RedisPool() *redis.Pool

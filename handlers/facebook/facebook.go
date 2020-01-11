@@ -30,6 +30,20 @@ var (
 
 	// Facebook API says 640 is max for the body
 	maxMsgLength = 640
+
+	// Sticker ID substitutions
+	stickerIDToEmoji = map[int64]string{
+		369239263222822: "👍", // small
+		369239343222814: "👍", // medium
+		369239383222810: "👍", // big
+	}
+
+	tagByTopic = map[string]string{
+		"event":    "CONFIRMED_EVENT_UPDATE",
+		"purchase": "POST_PURCHASE_UPDATE",
+		"account":  "ACCOUNT_UPDATE",
+		"agent":    "HUMAN_AGENT",
+	}
 )
 
 // keys for extra in channel events
@@ -164,6 +178,7 @@ type moPayload struct {
 				IsEcho      bool   `json:"is_echo"`
 				MID         string `json:"mid"`
 				Text        string `json:"text"`
+				StickerID   int64  `json:"sticker_id"`
 				Attachments []struct {
 					Type    string `json:"type"`
 					Payload *struct {
@@ -327,13 +342,24 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 				continue
 			}
 
-			// create our message
-			event := h.Backend().NewIncomingMsg(channel, urn, msg.Message.Text).WithExternalID(msg.Message.MID).WithReceivedOn(date)
+			text := msg.Message.Text
 
-			// add any attachments
-			for _, att := range msg.Message.Attachments {
-				if att.Payload != nil && att.Payload.URL != "" {
-					event.WithAttachment(att.Payload.URL)
+			// if we have a sticker ID, use that as our text
+			stickerText := stickerIDToEmoji[msg.Message.StickerID]
+			if stickerText != "" {
+				text = stickerText
+			}
+
+			// create our message
+			ev := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(msg.Message.MID).WithReceivedOn(date)
+			event := h.Backend().CheckExternalIDSeen(ev)
+
+			// add any attachments if this wasn't a sticker
+			if stickerText == "" {
+				for _, att := range msg.Message.Attachments {
+					if att.Payload != nil && att.Payload.URL != "" {
+						event.WithAttachment(att.Payload.URL)
+					}
 				}
 			}
 
@@ -341,6 +367,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			if err != nil {
 				return nil, err
 			}
+
+			h.Backend().WriteExternalIDSeen(event)
 
 			events = append(events, event)
 			data = append(data, courier.NewMsgReceiveData(event))
@@ -391,6 +419,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 // }
 type mtPayload struct {
 	MessagingType string `json:"messaging_type"`
+	Tag           string `json:"tag,omitempty"`
 	Recipient     struct {
 		UserRef string `json:"user_ref,omitempty"`
 		ID      string `json:"id,omitempty"`
@@ -423,13 +452,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("missing access token")
 	}
 
+	topic := msg.Topic()
 	payload := mtPayload{}
 
 	// set our message type
-	if msg.ResponseToID().IsZero() {
-		payload.MessagingType = "NON_PROMOTIONAL_SUBSCRIPTION"
-	} else {
+	if msg.ResponseToID() != courier.NilMsgID {
 		payload.MessagingType = "RESPONSE"
+	} else if topic != "" {
+		payload.MessagingType = "MESSAGE_TAG"
+		payload.Tag = tagByTopic[topic]
+	} else {
+		payload.MessagingType = "NON_PROMOTIONAL_SUBSCRIPTION" // only allowed until Jan 15, 2020
 	}
 
 	// build our recipient
@@ -451,25 +484,26 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		msgParts = handlers.SplitMsg(msg.Text(), maxMsgLength)
 	}
 
-	// send each part and each attachment separately
+	// send each part and each attachment separately. we send attachments first as otherwise quick replies
+	// attached to text messages get hidden when images get delivered
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
-		if i < len(msgParts) {
-			// this is still a msg part
-			payload.Message.Text = msgParts[i]
-			payload.Message.Attachment = nil
-		} else {
+		if i < len(msg.Attachments()) {
 			// this is an attachment
 			payload.Message.Attachment = &mtAttachment{}
-			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i-len(msgParts)])
+			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
 			attType = strings.Split(attType, "/")[0]
 			payload.Message.Attachment.Type = attType
 			payload.Message.Attachment.Payload.URL = attURL
 			payload.Message.Attachment.Payload.IsReusable = true
 			payload.Message.Text = ""
+		} else {
+			// this is still a msg part
+			payload.Message.Text = msgParts[i-len(msg.Attachments())]
+			payload.Message.Attachment = nil
 		}
 
-		// include any quick replies on the first piece we send
-		if i == 0 {
+		// include any quick replies on the last piece we send
+		if i == (len(msgParts)+len(msg.Attachments()))-1 {
 			for _, qr := range msg.QuickReplies() {
 				payload.Message.QuickReplies = append(payload.Message.QuickReplies, mtQuickReply{qr, qr, "text"})
 			}

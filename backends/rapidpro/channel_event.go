@@ -2,6 +2,7 @@ package rapidpro
 
 import (
 	"context"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	null "gopkg.in/guregu/null.v3"
+	"github.com/nyaruka/null"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils"
@@ -18,14 +19,34 @@ import (
 )
 
 // ChannelEventID is the type of our channel event ids
-type ChannelEventID struct {
-	null.Int
+type ChannelEventID null.Int
+
+const NilChannelEventID = ChannelEventID(0)
+
+// MarshalJSON marshals into JSON. 0 values will become null
+func (i ChannelEventID) MarshalJSON() ([]byte, error) {
+	return null.Int(i).MarshalJSON()
+}
+
+// UnmarshalJSON unmarshals from JSON. null values become 0
+func (i *ChannelEventID) UnmarshalJSON(b []byte) error {
+	return null.UnmarshalInt(b, (*null.Int)(i))
+}
+
+// Value returns the db value, null is returned for 0
+func (i ChannelEventID) Value() (driver.Value, error) {
+	return null.Int(i).Value()
+}
+
+// Scan scans from the db value. null values become 0
+func (i *ChannelEventID) Scan(value interface{}) error {
+	return null.ScanInt(value, (*null.Int)(i))
 }
 
 // String satisfies the Stringer interface
 func (i ChannelEventID) String() string {
-	if i.Valid {
-		return strconv.FormatInt(i.Int64, 10)
+	if i != NilChannelEventID {
+		return strconv.FormatInt(int64(i), 10)
 	}
 	return "null"
 }
@@ -56,7 +77,10 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 
 	// failed writing, write to our spool instead
 	if err != nil {
-		logrus.WithError(err).WithField("channel_id", dbEvent.ChannelID_.Int64).WithField("event_type", dbEvent.EventType_).Error("error writing channel event to db")
+		logrus.WithError(err).WithField("channel_id", dbEvent.ChannelID).WithField("event_type", dbEvent.EventType_).Error("error writing channel event to db")
+	}
+
+	if err != nil {
 		err = courier.WriteToSpool(b.config.SpoolDir, "events", dbEvent)
 	}
 
@@ -100,7 +124,7 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *DBChannelEvent) e
 	// if we had a problem queueing the event, log it
 	err = queueChannelEvent(rc, contact, e)
 	if err != nil {
-		logrus.WithError(err).WithField("evt_id", e.ID_.Int64).Error("error queueing channel event")
+		logrus.WithError(err).WithField("evt_id", e.ID_).Error("error queueing channel event")
 	}
 
 	return nil
@@ -177,7 +201,7 @@ type DBChannelEvent struct {
 	logs    []*courier.ChannelLog
 }
 
-func (e *DBChannelEvent) EventID() int64                   { return e.ID_.Int64 }
+func (e *DBChannelEvent) EventID() int64                   { return int64(e.ID_) }
 func (e *DBChannelEvent) ChannelID() courier.ChannelID     { return e.ChannelID_ }
 func (e *DBChannelEvent) ChannelUUID() courier.ChannelUUID { return e.ChannelUUID_ }
 func (e *DBChannelEvent) ContactName() string              { return e.ContactName_ }

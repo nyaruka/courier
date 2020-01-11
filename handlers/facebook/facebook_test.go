@@ -42,6 +42,44 @@ var helloMsg = `{
 	}]
 }`
 
+var duplicateMsg = `{
+	"object":"page",
+	"entry": [{
+	  "id": "208685479508187",
+	  "messaging": [{
+			"message": {
+			  "text": "Hello World",
+			  "mid": "external_id"
+			},
+			"recipient": {
+			  "id": "1234"
+			},
+			"sender": {
+			  "id": "5678"
+			},
+			"timestamp": 1459991487970
+	  }],
+	  "time": 1459991487970
+	},
+	{
+	  "id": "208685479508187",
+	  "messaging": [{
+			"message": {
+			  "text": "Hello World",
+			  "mid": "external_id"
+			},
+			"recipient": {
+			  "id": "1234"
+			},
+			"sender": {
+			  "id": "5678"
+			},
+			"timestamp": 1459991487970
+	  }],
+	  "time": 1459991487970
+	}]
+}`
+
 var invalidURN = `{
 	"object":"page",
 	"entry": [{
@@ -86,6 +124,30 @@ var attachment = `{
 				"timestamp": 1459991487970
 	    }],
 	  	"time": 1459991487970
+	}]
+}`
+
+var thumbsUp = `{
+	"object":"page",
+	"entry":[{
+		"id":"208685479508187",
+		"time":1459991487970,
+		"messaging":[{
+			"sender":{"id":"5678"},
+			"recipient":{"id":"1234"},
+			"timestamp":1459991487970,
+			"message":{
+				"mid":"external_id",
+				"attachments":[{
+					"type":"image",
+					"payload":{
+						"url":"https://scontent.xx.fbcdn.net/v/arst",
+						"sticker_id":369239263222822
+					}
+				}],
+				"sticker_id":369239263222822
+			}
+		}]
 	}]
 }`
 
@@ -326,8 +388,12 @@ var notJSON = `blargh`
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Message", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, Status: 200, Response: "Handled",
 		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+	{Label: "No Duplicate Receive Message", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: duplicateMsg, Status: 200, Response: "Handled",
+		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
 	{Label: "Receive Attachment", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: attachment, Status: 200, Response: "Handled",
 		Text: Sp(""), Attachments: []string{"https://image-url/foo.png"}, URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+	{Label: "Receive Thumbs Up", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: thumbsUp, Status: 200, Response: "Handled",
+		Text: Sp("👍"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
 
 	{Label: "Receive OptIn UserRef", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: optInUserRef, Status: 200, Response: "Handled",
 		URN: Sp("facebook:ref:optin_user_ref"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
@@ -346,7 +412,7 @@ var testCases = []ChannelHandleTestCase{
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
 		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"}},
 
-	{Label: "Receive Referral", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: referral, Status: 200, Response: "Handled",
+	{Label: "Receive Referral", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: referral, Status: 200, Response: `"referrer_id":"referral id"`,
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
 		ChannelEventExtra: map[string]interface{}{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"}},
 
@@ -467,6 +533,12 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
 		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		SendPrep:    setSendURL},
+	{Label: "Plain Response",
+		Text: "Simple Message", URN: "facebook:12345",
+		Status: "W", ExternalID: "mid.133", ResponseToID: 23526,
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"RESPONSE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
+		SendPrep:    setSendURL},
 	{Label: "Plain Send using ref URN",
 		Text: "Simple Message", URN: "facebook:ref:67890",
 		ContactURNs: map[string]bool{"facebook:12345": true, "ext:67890": true, "facebook:ref:67890": false},
@@ -482,16 +554,24 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:    setSendURL},
 	{Label: "Long Message",
 		Text: "This is a long message which spans more than one part, what will actually be sent in the end if we exceed the max length?",
-		URN:  "facebook:12345", QuickReplies: []string{"Yes", "No"},
+		URN:  "facebook:12345", QuickReplies: []string{"Yes", "No"}, Topic: "account",
 		Status: "W", ExternalID: "mid.133",
 		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
-		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"we exceed the max length?"}}`,
+		RequestBody: `{"messaging_type":"MESSAGE_TAG","tag":"ACCOUNT_UPDATE","recipient":{"id":"12345"},"message":{"text":"we exceed the max length?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 		SendPrep:    setSendURL},
 	{Label: "Send Photo",
 		URN: "facebook:12345", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status: "W", ExternalID: "mid.133",
 		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
 		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
+		SendPrep:    setSendURL},
+	{Label: "Send caption and photo with Quick Reply",
+		Text: "This is some text.",
+		URN:  "facebook:12345", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		QuickReplies: []string{"Yes", "No"}, Topic: "event",
+		Status: "W", ExternalID: "mid.133",
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"MESSAGE_TAG","tag":"CONFIRMED_EVENT_UPDATE","recipient":{"id":"12345"},"message":{"text":"This is some text.","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 		SendPrep:    setSendURL},
 	{Label: "ID Error",
 		Text: "ID Error", URN: "facebook:12345",

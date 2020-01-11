@@ -4,7 +4,6 @@ CREATE TABLE orgs_org (
     name character varying(255) NOT NULL,
     language character varying(64),
     is_anon boolean NOT NULL,
-    flow_server_enabled boolean NOT NULL DEFAULT FALSE,
     config text NULL
 );
 
@@ -33,7 +32,6 @@ CREATE TABLE contacts_contact (
     uuid character varying(36) NOT NULL,
     name character varying(128),
     is_blocked boolean NOT NULL,
-    is_test boolean NOT NULL,
     is_stopped boolean NOT NULL,
     language character varying(3),
     created_by_id integer NOT NULL,
@@ -111,6 +109,14 @@ CREATE TABLE channels_channelevent (
     contact_id integer NOT NULL references contacts_contact(id) on delete cascade,
     contact_urn_id integer NOT NULL references contacts_contacturn(id) on delete cascade,
     org_id integer NOT NULL references orgs_org(id) on delete cascade
+);
+
+DROP TABLE IF EXISTS flows_flowsession CASCADE;
+CREATE TABLE flows_flowsession (
+    id serial primary key,
+    status character varying(1) NOT NULL,
+    timeout_on timestamp with time zone NULL,
+    wait_started_on timestamp with time zone
 );
 
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO courier;

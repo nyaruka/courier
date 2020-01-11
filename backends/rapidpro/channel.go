@@ -60,8 +60,7 @@ SELECT
 	ch.country as country, 
 	ch.config as config, 
 	org.config as org_config, 
-	org.is_anon as org_is_anon, 
-	org.flow_server_enabled as org_flow_server_enabled
+	org.is_anon as org_is_anon
 FROM 
 	channels_channel ch
 	JOIN orgs_org org on ch.org_id = org.id
@@ -156,9 +155,8 @@ type DBChannel struct {
 	Country_     sql.NullString      `db:"country"`
 	Config_      utils.NullMap       `db:"config"`
 
-	OrgConfig_            utils.NullMap `db:"org_config"`
-	OrgIsAnon_            bool          `db:"org_is_anon"`
-	OrgFlowServerEnabled_ bool          `db:"org_flow_server_enabled"`
+	OrgConfig_ utils.NullMap `db:"org_config"`
+	OrgIsAnon_ bool          `db:"org_is_anon"`
 
 	expiration time.Time
 }
@@ -168,9 +166,6 @@ func (c *DBChannel) OrgID() OrgID { return c.OrgID_ }
 
 // OrgIsAnon returns the org for this channel is anonymous
 func (c *DBChannel) OrgIsAnon() bool { return c.OrgIsAnon_ }
-
-// OrgFlowServerEnabled returns whether the org for this channel is using the flow server
-func (c *DBChannel) OrgFlowServerEnabled() bool { return c.OrgFlowServerEnabled_ }
 
 // ChannelType returns the type of this channel
 func (c *DBChannel) ChannelType() courier.ChannelType { return c.ChannelType_ }
@@ -192,6 +187,11 @@ func (c *DBChannel) Address() string { return c.Address_.String }
 
 // Country returns the country code for this channel if any
 func (c *DBChannel) Country() string { return c.Country_.String }
+
+// IsScheme returns whether this channel serves only the passed in scheme
+func (c *DBChannel) IsScheme(scheme string) bool {
+	return len(c.Schemes_) == 1 && c.Schemes_[0] == scheme
+}
 
 // ConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
 func (c *DBChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
@@ -239,6 +239,16 @@ func (c *DBChannel) StringConfigForKey(key string, defaultValue string) string {
 		return defaultValue
 	}
 	return str
+}
+
+// BoolConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
+func (c *DBChannel) BoolConfigForKey(key string, defaultValue bool) bool {
+	val := c.ConfigForKey(key, defaultValue)
+	b, isBool := val.(bool)
+	if !isBool {
+		return defaultValue
+	}
+	return b
 }
 
 // IntConfigForKey returns the config value for the passed in key
