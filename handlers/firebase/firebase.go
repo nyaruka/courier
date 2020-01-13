@@ -149,15 +149,24 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	configNotification := msg.Channel().ConfigForKey(configNotification, false)
 	notification, _ := configNotification.(bool)
 
+	msgParts := make([]string, 0)
+	if msg.Text() != "" {
+		msgParts = handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgSize)
+	}
+
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	for i, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgSize) {
+	for i, part := range msgParts {
 		payload := mtPayload{}
 
 		payload.Data.Type = "rapidpro"
 		payload.Data.Title = title
 		payload.Data.Message = part
 		payload.Data.MessageID = int64(msg.ID())
-		payload.Data.QuickReplies = msg.QuickReplies()
+
+		// include any quick replies on the last piece we send
+		if i == len(msgParts)-1 {
+			payload.Data.QuickReplies = msg.QuickReplies()
+		}
 
 		payload.To = msg.URNAuth()
 		payload.Priority = "high"
