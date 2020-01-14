@@ -1,3 +1,7 @@
+v5.3.6
+----------
+ * Allow configuring and sending of quick replies for external channels
+
 v5.3.5
 ----------
  * Refactor FMC channel to support the fixed quick replies structure
