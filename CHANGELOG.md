@@ -1,3 +1,17 @@
+v5.3.6
+----------
+ * Allow configuring and sending of quick replies for external channels
+
+v5.3.5
+----------
+ * Refactor FMC channel to support the fixed quick replies structure
+
+v5.3.4
+----------
+ * Change Arabia Cell max length to 670, fixes #274
+ * Add support for Twilio Whatsapp channel type
+ * Convert to use Github actions for CI
+
 v5.3.3
 ----------
  * Fix freshchat image handing

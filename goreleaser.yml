@@ -8,8 +8,8 @@ build:
   goarch:
     - amd64
 
-archive:
-  files:
+archives:
+  - files:
     - LICENSE
     - README.md
     - courier.toml
