@@ -314,7 +314,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if i == len(parts) - 1 {
 			formEncoded["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentURLEncoded)
 		} else {
-			formEncoded["quick_replies"] = buildQuickRepliesResponse([]string{}, sendMethod, contentType)
+			formEncoded["quick_replies"] = buildQuickRepliesResponse([]string{}, sendMethod, contentURLEncoded)
 		}
 		url := replaceVariables(sendURL, formEncoded)
 

@@ -129,9 +129,10 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 var longSendTestCases = []ChannelSendTestCase{
 	{Label: "Long Send",
 		Text: "This is a long message that will be longer than 30....... characters", URN: "tel:+250788383383",
+		QuickReplies: []string{"One"},
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		URLParams: map[string]string{"text": "characters", "to": "+250788383383", "from": "2020"},
+		URLParams: map[string]string{"text": "characters", "to": "+250788383383", "from": "2020", "quick_reply": "One"},
 		SendPrep:  setSendURL},
 }
 
@@ -447,13 +448,13 @@ func TestSending(t *testing.T) {
 	var getChannel30IntLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"max_length":             30,
-			"send_path":              "?to={{to}}&text={{text}}&from={{from}}",
+			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			courier.ConfigSendMethod: http.MethodGet})
 
 	var getChannel30StrLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"max_length":             "30",
-			"send_path":              "?to={{to}}&text={{text}}&from={{from}}",
+			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			courier.ConfigSendMethod: http.MethodGet})
 
 	var jsonChannel30IntLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
