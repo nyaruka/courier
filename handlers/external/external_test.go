@@ -267,7 +267,7 @@ var jsonSendTestCases = []ChannelSendTestCase{
 }
 
 var jsonLongSendTestCases = []ChannelSendTestCase{
-	{Label: "Long Send",
+	{Label: "Send Quick Replies",
 		Text: "This is a long message that will be longer than 30....... characters", URN: "tel:+250788383383",
 		QuickReplies: []string{"One", "Two", "Three"},
 		Status:       "W",
