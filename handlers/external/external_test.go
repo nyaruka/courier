@@ -265,6 +265,17 @@ var jsonSendTestCases = []ChannelSendTestCase{
 		SendPrep:    setSendURL},
 }
 
+var jsonLongSendTestCases = []ChannelSendTestCase{
+	{Label: "Long Send",
+		Text: "This is a long message that will be longer than 30....... characters", URN: "tel:+250788383383",
+		QuickReplies: []string{"One", "Two", "Three"},
+		Status:       "W",
+		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
+		RequestBody: `{ "to":"+250788383383", "text":"characters", "from":"2020", "quick_replies":["One","Two","Three"] }`,
+		Headers:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
+		SendPrep:  setSendURL},
+}
+
 var xmlSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "tel:+250788383383",
@@ -301,6 +312,18 @@ var xmlSendTestCases = []ChannelSendTestCase{
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		RequestBody: "<msg><to>+250788383383</to><text>Some message</text><from>2020</from>" +
 					"<quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>",
+		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep:    setSendURL},
+}
+
+var xmlLongSendTestCases = []ChannelSendTestCase{
+	{Label: "Send Quick Replies",
+		Text: "This is a long message that will be longer than 30....... characters", URN: "tel:+250788383383",
+		QuickReplies: []string{"One", "Two", "Three"},
+		Status:       "W",
+		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
+		RequestBody: "<msg><to>+250788383383</to><text>characters</text><from>2020</from>" +
+			"<quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>",
 		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 		SendPrep:    setSendURL},
 }
@@ -433,6 +456,28 @@ func TestSending(t *testing.T) {
 			"send_path":              "?to={{to}}&text={{text}}&from={{from}}",
 			courier.ConfigSendMethod: http.MethodGet})
 
+	var jsonChannel30IntLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+		map[string]interface{}{
+			"send_path":                     "",
+			"max_length":                    30,
+			courier.ConfigSendBody:          `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
+			courier.ConfigContentType:       contentJSON,
+			courier.ConfigSendMethod:        http.MethodPost,
+			courier.ConfigSendAuthorization: "Token ABCDEF",
+		})
+
+	var xmlChannel30IntLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+		map[string]interface{}{
+			"send_path":                     "",
+			"max_length":                    30,
+			courier.ConfigSendBody:          `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
+			courier.ConfigContentType:       contentXML,
+			courier.ConfigSendMethod:        http.MethodPost,
+			courier.ConfigSendAuthorization: "Token ABCDEF",
+		})
+
 	RunChannelSendTestCases(t, getChannel30IntLength, newHandler(), longSendTestCases, nil)
 	RunChannelSendTestCases(t, getChannel30StrLength, newHandler(), longSendTestCases, nil)
+	RunChannelSendTestCases(t, jsonChannel30IntLength, newHandler(), jsonLongSendTestCases, nil)
+	RunChannelSendTestCases(t, xmlChannel30IntLength, newHandler(), xmlLongSendTestCases, nil)
 }
