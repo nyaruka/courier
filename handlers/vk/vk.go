@@ -5,13 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/buger/jsonparser"
 	"github.com/go-errors/errors"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -24,7 +27,16 @@ const (
 
 	configServerVerificationString = "callback_check_string"
 
-	responseRequest = "ok"
+	responseIncomingMessage = "ok"
+	responseKeyOutgoingMessage = "response"
+
+	sendMessageURL   = "https://api.vk.com/method/messages.send.json"
+	apiVersion       = "5.103"
+	paramApiVersion  = "v"
+	paramAccessToken = "access_token"
+	paramUserId      = "user_id"
+	paramMessage     = "message"
+	paramRandomId    = "random_id"
 )
 
 func init() {
@@ -47,27 +59,25 @@ func (h *handler) Initialize(s courier.Server) error {
 
 // base request body
 type moPayload struct {
-	Type      string `json:"type"`
-	SecretKey string `json:"secret"`
+	Type      string `json:"type"   validate:"required"`
+	SecretKey string `json:"secret" validate:"required"`
 }
 
 // request body to VK's server verification
 type moServerVerificationPayload struct {
-	Type        string `json:"type"`
-	CommunityId int64  `json:"group_id"`
+	CommunityId int64  `json:"group_id" validate:"required"`
 }
 
 // request body to new message
 type moNewMessagePayload struct {
-	Type   string `json:"type"`
 	Object struct {
 		Message struct {
-			Id     int64  `json:"id"`
-			Date   int64  `json:"date"`
-			UserId int64  `json:"from_id"`
-			Text   string `json:"text"`
-		} `json:"message"`
-	} `json:"object"`
+			Id     int64  `json:"id"      validate:"required"`
+			Date   int64  `json:"date"    validate:"required"`
+			UserId int64  `json:"from_id" validate:"required"`
+			Text   string `json:"text"    validate:"required"`
+		} `json:"message" validate:"required"`
+	} `json:"object" validate:"required"`
 }
 
 // receiveEvent handles request event type
@@ -87,8 +97,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	}
 	// check auth token before proceed
 	secret := channel.StringConfigForKey(courier.ConfigSecret, "")
-
-	fmt.Println(secret, payload.SecretKey)
 
 	if payload.SecretKey != secret {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("Wrong auth token"))
@@ -131,7 +139,6 @@ func (h *handler) verifyServer(ctx context.Context, channel courier.Channel, w h
 
 // receiveMessage handles new message event
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moNewMessagePayload) ([]courier.Event, error) {
-	// TODO: fix "hardcoded" urn
 	urn := urns.URN(fmt.Sprintf("%s:%d", scheme, payload.Object.Message.UserId))
 	date := time.Unix(payload.Object.Message.Date, 0).UTC()
 	text := payload.Object.Message.Text
@@ -143,11 +150,44 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// write required response
-	_, err := fmt.Fprint(w, responseRequest)
+	_, err := fmt.Fprint(w, responseIncomingMessage)
 
 	return []courier.Event{msg}, err
 }
 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	return nil, nil
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+
+	// build request parameters
+	params := url.Values{
+		paramApiVersion:  []string{apiVersion},
+		paramAccessToken: []string{msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")},
+		paramUserId:      []string{msg.URN().Path()},
+		paramMessage:     []string{msg.Text()},
+		paramRandomId:    []string{msg.ID().String()},
+	}
+	req, err := http.NewRequest(http.MethodPost, sendMessageURL, nil)
+
+	if err != nil {
+		fmt.Println(err)
+		return status, errors.New("Cannot create send message request")
+	}
+	req.URL.RawQuery = params.Encode()
+	res, err := utils.MakeHTTPRequest(req)
+
+	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), res).WithError("Message Send Error", err)
+	status.AddLog(log)
+
+	if err != nil {
+		return status, err
+	}
+	externalMsgId, err := jsonparser.GetInt(res.Body, responseKeyOutgoingMessage)
+
+	if err != nil {
+		return status, errors.Errorf("no '%s'", responseKeyOutgoingMessage)
+	}
+	status.SetExternalID(strconv.FormatInt(externalMsgId, 10))
+	status.SetStatus(courier.MsgSent)
+
+	return status, nil
 }
