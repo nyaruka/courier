@@ -11,6 +11,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -22,21 +23,30 @@ import (
 const (
 	scheme = "vk"
 
+	// callback API events
 	eventTypeServerVerification = "confirmation"
 	eventTypeNewMessage         = "message_new"
-
 	configServerVerificationString = "callback_check_string"
 
-	responseIncomingMessage = "ok"
-	responseKeyOutgoingMessage = "response"
+	// response check values
+	responseIncomingMessage    = "ok"
+	responseOutgoingMessageKey = "response"
 
-	sendMessageURL   = "https://api.vk.com/method/messages.send.json"
+	// base API values
+	apiBaseURL       = "https://api.vk.com/method"
 	apiVersion       = "5.103"
 	paramApiVersion  = "v"
 	paramAccessToken = "access_token"
-	paramUserId      = "user_id"
-	paramMessage     = "message"
-	paramRandomId    = "random_id"
+
+	// get userPayload
+	URLGetUser   = apiBaseURL + "/users.get.json"
+	paramUserIds = "user_ids"
+
+	// send message
+	URLSendMessage = apiBaseURL + "/messages.send.json"
+	paramUserId    = "user_id"
+	paramMessage   = "message"
+	paramRandomId  = "random_id"
 )
 
 func init() {
@@ -57,18 +67,18 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// base request body
+// base body of callback API event
 type moPayload struct {
 	Type      string `json:"type"   validate:"required"`
 	SecretKey string `json:"secret" validate:"required"`
 }
 
-// request body to VK's server verification
+// body to server verification event
 type moServerVerificationPayload struct {
 	CommunityId int64  `json:"group_id" validate:"required"`
 }
 
-// request body to new message
+// body to new message event
 type moNewMessagePayload struct {
 	Object struct {
 		Message struct {
@@ -78,6 +88,13 @@ type moNewMessagePayload struct {
 			Text   string `json:"text"    validate:"required"`
 		} `json:"message" validate:"required"`
 	} `json:"object" validate:"required"`
+}
+
+// body to get user request
+type userPayload struct {
+	Id        int64  `json:"id"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
 }
 
 // receiveEvent handles request event type
@@ -95,12 +112,13 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	if err := json.Unmarshal(bodyBytes, payload); err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
-	// check auth token before proceed
+	// check shared secret key before proceed
 	secret := channel.StringConfigForKey(courier.ConfigSecret, "")
 
 	if payload.SecretKey != secret {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("Wrong auth token"))
 	}
+	// check event type and decode body to correspondent struct
 	switch payload.Type {
 	case eventTypeServerVerification:
 		serverVerificationPayload := &moServerVerificationPayload{}
@@ -139,39 +157,87 @@ func (h *handler) verifyServer(ctx context.Context, channel courier.Channel, w h
 
 // receiveMessage handles new message event
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moNewMessagePayload) ([]courier.Event, error) {
+	// get userPayload to set contact name
+	userId := payload.Object.Message.UserId
+	user, err := retrieveUser(channel, userId)
+	contactName := ""
+
+	if err != nil {
+		logrus.WithField("channel_uuid", channel.UUID()).WithField("userPayload id", userId).Error("error getting VK userPayload", err)
+	} else {
+		contactName = fmt.Sprintf("%s %s", user.FirstName, user.LastName)
+	}
 	urn := urns.URN(fmt.Sprintf("%s:%d", scheme, payload.Object.Message.UserId))
 	date := time.Unix(payload.Object.Message.Date, 0).UTC()
 	text := payload.Object.Message.Text
 	externalId := strconv.FormatInt(payload.Object.Message.Id, 10)
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(externalId)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithContactName(contactName).WithExternalID(externalId)
 
 	// save message to our backend
 	if err := h.Backend().WriteMsg(ctx, msg); err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// write required response
-	_, err := fmt.Fprint(w, responseIncomingMessage)
+	_, err = fmt.Fprint(w, responseIncomingMessage)
 
 	return []courier.Event{msg}, err
 }
 
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-
-	// build request parameters
-	params := url.Values{
+// buildApiBaseParams builds required params to VK API requests
+func buildApiBaseParams(channel courier.Channel) url.Values {
+	return url.Values{
 		paramApiVersion:  []string{apiVersion},
-		paramAccessToken: []string{msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")},
-		paramUserId:      []string{msg.URN().Path()},
-		paramMessage:     []string{msg.Text()},
-		paramRandomId:    []string{msg.ID().String()},
+		paramAccessToken: []string{channel.StringConfigForKey(courier.ConfigAuthToken, "")},
 	}
-	req, err := http.NewRequest(http.MethodPost, sendMessageURL, nil)
+}
+
+// retrieveUser retrieves VK userPayload
+func retrieveUser(channel courier.Channel, userId int64) (*userPayload, error) {
+	req, err := http.NewRequest(http.MethodPost, URLGetUser, nil)
 
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
+	}
+	params := buildApiBaseParams(channel)
+	params.Set(paramUserIds, strconv.FormatInt(userId, 10))
+
+	req.URL.RawQuery = params.Encode()
+	res, err := utils.MakeHTTPRequest(req)
+
+	if err != nil {
+		return nil, err
+	}
+	// parsing response
+	type usersResponse struct {
+		Users []userPayload `json:"response" validate:"required"`
+	}
+	payload := &usersResponse{}
+	err = json.Unmarshal(res.Body, payload)
+
+	if err != nil {
+		return nil, err
+	}
+	// get first and check if has user
+	user := &payload.Users[0]
+
+	if user == nil {
+		return nil, errors.New("no user in response")
+	}
+	return user, nil
+}
+
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	req, err := http.NewRequest(http.MethodPost, URLSendMessage, nil)
+
+	if err != nil {
 		return status, errors.New("Cannot create send message request")
 	}
+	params := buildApiBaseParams(msg.Channel())
+	params.Set(paramUserId, msg.URN().Path())
+	params.Set(paramMessage, msg.Text())
+	params.Set(paramRandomId, msg.ID().String())
+
 	req.URL.RawQuery = params.Encode()
 	res, err := utils.MakeHTTPRequest(req)
 
@@ -181,10 +247,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	if err != nil {
 		return status, err
 	}
-	externalMsgId, err := jsonparser.GetInt(res.Body, responseKeyOutgoingMessage)
+	externalMsgId, err := jsonparser.GetInt(res.Body, responseOutgoingMessageKey)
 
 	if err != nil {
-		return status, errors.Errorf("no '%s'", responseKeyOutgoingMessage)
+		return status, errors.Errorf("no '%s' value in response", responseOutgoingMessageKey)
 	}
 	status.SetExternalID(strconv.FormatInt(externalMsgId, 10))
 	status.SetStatus(courier.MsgSent)
