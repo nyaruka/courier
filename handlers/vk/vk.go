@@ -29,6 +29,13 @@ const (
 
 	configServerVerificationString = "callback_check_string"
 
+	attachmentTypePhoto    = "photo"
+	attachmentTypeGraffiti = "graffiti"
+	attachmentTypeSticker  = "sticker"
+	attachmentTypeVideo    = "video"
+	attachmentTypeAudio    = "audio_message"
+	attachmentTypeDoc      = "doc"
+
 	// response check values
 	responseIncomingMessage    = "ok"
 	responseOutgoingMessageKey = "response"
@@ -205,11 +212,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 // verifyServer handles VK's callback verification
 func (h *handler) verifyServer(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moServerVerificationPayload) ([]courier.Event, error) {
-	communityId, _ := strconv.ParseInt(channel.Address(), 10, 64)
-
-	if payload.CommunityId != communityId {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("wrong community id"))
-	}
 	verificationString := channel.StringConfigForKey(configServerVerificationString, "")
 	// write required response
 	_, err := fmt.Fprint(w, verificationString)
@@ -248,19 +250,16 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return []courier.Event{msg}, err
 }
 
-// takeFirstAttachmentUrl
+// takeFirstAttachmentUrl tries to take first attachment url, otherwise tries geolocation
 func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 	jsonBytes, err := payload.Object.Message.Attachments.MarshalJSON()
-	jsonString := ""
-
 	// check if is json array
 	if err != nil || !isArrayJson(jsonBytes) {
 		return ""
 	}
-	jsonString = string(jsonBytes)
 	attachments := &[]moAttachment{}
 
-	if err = json.Unmarshal([]byte(jsonString), attachments); err != nil || len(*attachments) == 0 {
+	if err = json.Unmarshal(jsonBytes, attachments); err != nil || len(*attachments) == 0 {
 		// try take geolocation
 		lat := payload.Object.Message.Geo.Coords.Lat
 		lng := payload.Object.Message.Geo.Coords.Lng
@@ -271,10 +270,9 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 		return ""
 	}
 	switch (*attachments)[0].Type {
-	case "photo":
+	case attachmentTypePhoto:
 		photos := &[]moPhoto{}
-
-		if err = json.Unmarshal([]byte(jsonString), photos); err == nil {
+		if err = json.Unmarshal(jsonBytes, photos); err == nil {
 			photoUrl := ""
 			// search by image size "x"
 			for _, size := range (*photos)[0].Photo.Sizes {
@@ -287,22 +285,19 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 			return photoUrl
 		}
 
-	case "graffiti":
+	case attachmentTypeGraffiti:
 		graffiti := &[]moGraffiti{}
-
-		if err = json.Unmarshal([]byte(jsonString), graffiti); err == nil {
+		if err = json.Unmarshal(jsonBytes, graffiti); err == nil {
 			return (*graffiti)[0].Graffiti.Url
 		}
 
-	case "sticker":
+	case attachmentTypeSticker:
 		stickers := &[]moSticker{}
 		// search by image with 128px width/height
-		if err = json.Unmarshal([]byte(jsonString), stickers); err == nil {
+		if err = json.Unmarshal(jsonBytes, stickers); err == nil {
 			stickerUrl := ""
-
 			for _, image := range (*stickers)[0].Sticker.Images {
 				stickerUrl = image.Url
-
 				if image.Width == 128 {
 					break
 				}
@@ -310,30 +305,28 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 			return stickerUrl
 		}
 
-	case "video":
+	case attachmentTypeVideo:
 		videos := &[]moVideo{}
-
-		if err = json.Unmarshal([]byte(jsonString), videos); err == nil {
+		if err = json.Unmarshal(jsonBytes, videos); err == nil {
 			return (*videos)[0].Video.AccessKey
 		}
 
-	case "audio_message":
+	case attachmentTypeAudio:
 		audios := &[]moAudio{}
-
-		if err = json.Unmarshal([]byte(jsonString), audios); err == nil {
+		if err = json.Unmarshal(jsonBytes, audios); err == nil {
 			return (*audios)[0].Audio.Link
 		}
 
-	case "doc":
+	case attachmentTypeDoc:
 		docs := &[]moDoc{}
-
-		if err = json.Unmarshal([]byte(jsonString), docs); err == nil {
+		if err = json.Unmarshal(jsonBytes, docs); err == nil {
 			return (*docs)[0].Doc.Url
 		}
 	}
 	return ""
 }
 
+// isArrayJson checks if given bytes is a json array
 func isArrayJson(bytes []byte) bool {
 	length := len(bytes)
 
