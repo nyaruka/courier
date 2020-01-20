@@ -26,6 +26,7 @@ const (
 	// callback API events
 	eventTypeServerVerification = "confirmation"
 	eventTypeNewMessage         = "message_new"
+
 	configServerVerificationString = "callback_check_string"
 
 	// response check values
@@ -75,19 +76,80 @@ type moPayload struct {
 
 // body to server verification event
 type moServerVerificationPayload struct {
-	CommunityId int64  `json:"group_id" validate:"required"`
+	CommunityId int64 `json:"group_id" validate:"required"`
 }
 
 // body to new message event
 type moNewMessagePayload struct {
 	Object struct {
 		Message struct {
-			Id     int64  `json:"id"      validate:"required"`
-			Date   int64  `json:"date"    validate:"required"`
-			UserId int64  `json:"from_id" validate:"required"`
-			Text   string `json:"text"    validate:"required"`
+			Id          int64           `json:"id" validate:"required"`
+			Date        int64           `json:"date" validate:"required"`
+			UserId      int64           `json:"from_id" validate:"required"`
+			Text        string          `json:"text"`
+			Attachments json.RawMessage `json:"attachments"`
+			Geo         struct {
+				Coords struct {
+					Lat float64 `json:"latitude"`
+					Lng float64 `json:"longitude"`
+				} `json:"coordinates"`
+			} `json:"geo"`
 		} `json:"message" validate:"required"`
 	} `json:"object" validate:"required"`
+}
+
+type moAttachment struct {
+	Type string `json:"type"`
+}
+
+type moPhoto struct {
+	Photo struct {
+		Sizes []struct {
+			Type   string `json:"type"`
+			Url    string `json:"url"`
+			Width  int    `json:"width"`
+			Height int    `json:"height"`
+		} `json:"sizes"`
+	} `json:"photo"`
+}
+
+type moGraffiti struct {
+	Graffiti struct {
+		Id        int64  `json:"id"`
+		Url       string `json:"url"`
+		AccessKey string `json:"access_key"`
+	} `json:"graffiti"`
+}
+
+type moSticker struct {
+	Sticker struct {
+		Images []struct {
+			Url    string `json:"url"`
+			Width  int    `json:"width"`
+			Height int    `json:"height"`
+		}
+	} `json:"sticker"`
+}
+
+type moVideo struct {
+	Video struct {
+		Id        int64  `json:"id"`
+		AccessKey string `json:"access_key"`
+	} `json:"video"`
+}
+
+type moAudio struct {
+	Audio struct {
+		Link string `json:"link_mp3"`
+	} `json:"audio_message"`
+}
+
+type moDoc struct {
+	Doc struct {
+		Id        int64  `json:"id"`
+		Url       string `json:"url"`
+		AccessKey string `json:"access_key"`
+	} `json:"doc"`
 }
 
 // body to get user request
@@ -112,32 +174,32 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	if err := json.Unmarshal(bodyBytes, payload); err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
-	// check shared secret key before proceed
+	// check shared secret key before proceeding
 	secret := channel.StringConfigForKey(courier.ConfigSecret, "")
 
 	if payload.SecretKey != secret {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("Wrong auth token"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("wrong auth token"))
 	}
 	// check event type and decode body to correspondent struct
 	switch payload.Type {
 	case eventTypeServerVerification:
-		serverVerificationPayload := &moServerVerificationPayload{}
+		serverVerification := &moServerVerificationPayload{}
 
-		if err := handlers.DecodeAndValidateJSON(serverVerificationPayload, r); err != nil {
+		if err := handlers.DecodeAndValidateJSON(serverVerification, r); err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
-		return h.verifyServer(ctx, channel, w, r, serverVerificationPayload)
+		return h.verifyServer(ctx, channel, w, r, serverVerification)
 
 	case eventTypeNewMessage:
-		newMessagePayload := &moNewMessagePayload{}
+		newMessage := &moNewMessagePayload{}
 
-		if err := handlers.DecodeAndValidateJSON(newMessagePayload, r); err != nil {
+		if err := handlers.DecodeAndValidateJSON(newMessage, r); err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
-		return h.receiveMessage(ctx, channel, w, r, newMessagePayload)
+		return h.receiveMessage(ctx, channel, w, r, newMessage)
 
 	default:
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message or server verification event")
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message or server verification event")
 	}
 }
 
@@ -146,7 +208,7 @@ func (h *handler) verifyServer(ctx context.Context, channel courier.Channel, w h
 	communityId, _ := strconv.ParseInt(channel.Address(), 10, 64)
 
 	if payload.CommunityId != communityId {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("Wrong community id"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("wrong community id"))
 	}
 	verificationString := channel.StringConfigForKey(configServerVerificationString, "")
 	// write required response
@@ -173,6 +235,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	externalId := strconv.FormatInt(payload.Object.Message.Id, 10)
 	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithContactName(contactName).WithExternalID(externalId)
 
+	if attachment := takeFirstAttachmentUrl(*payload); attachment != "" {
+		msg = msg.WithAttachment(attachment)
+	}
 	// save message to our backend
 	if err := h.Backend().WriteMsg(ctx, msg); err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -181,6 +246,101 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	_, err = fmt.Fprint(w, responseIncomingMessage)
 
 	return []courier.Event{msg}, err
+}
+
+// takeFirstAttachmentUrl
+func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
+	jsonBytes, err := payload.Object.Message.Attachments.MarshalJSON()
+	jsonString := ""
+
+	// check if is json array
+	if err != nil || !isArrayJson(jsonBytes) {
+		return ""
+	}
+	jsonString = string(jsonBytes)
+	attachments := &[]moAttachment{}
+
+	if err = json.Unmarshal([]byte(jsonString), attachments); err != nil || len(*attachments) == 0 {
+		// try take geolocation
+		lat := payload.Object.Message.Geo.Coords.Lat
+		lng := payload.Object.Message.Geo.Coords.Lng
+
+		if lat != 0 && lng != 0 {
+			return fmt.Sprintf("geo:%f,%f", lat, lng)
+		}
+		return ""
+	}
+	switch (*attachments)[0].Type {
+	case "photo":
+		photos := &[]moPhoto{}
+
+		if err = json.Unmarshal([]byte(jsonString), photos); err == nil {
+			photoUrl := ""
+			// search by image size "x"
+			for _, size := range (*photos)[0].Photo.Sizes {
+				photoUrl = size.Url
+
+				if size.Type == "x" {
+					break
+				}
+			}
+			return photoUrl
+		}
+
+	case "graffiti":
+		graffiti := &[]moGraffiti{}
+
+		if err = json.Unmarshal([]byte(jsonString), graffiti); err == nil {
+			return (*graffiti)[0].Graffiti.Url
+		}
+
+	case "sticker":
+		stickers := &[]moSticker{}
+		// search by image with 128px width/height
+		if err = json.Unmarshal([]byte(jsonString), stickers); err == nil {
+			stickerUrl := ""
+
+			for _, image := range (*stickers)[0].Sticker.Images {
+				stickerUrl = image.Url
+
+				if image.Width == 128 {
+					break
+				}
+			}
+			return stickerUrl
+		}
+
+	case "video":
+		videos := &[]moVideo{}
+
+		if err = json.Unmarshal([]byte(jsonString), videos); err == nil {
+			return (*videos)[0].Video.AccessKey
+		}
+
+	case "audio_message":
+		audios := &[]moAudio{}
+
+		if err = json.Unmarshal([]byte(jsonString), audios); err == nil {
+			return (*audios)[0].Audio.Link
+		}
+
+	case "doc":
+		docs := &[]moDoc{}
+
+		if err = json.Unmarshal([]byte(jsonString), docs); err == nil {
+			return (*docs)[0].Doc.Url
+		}
+	}
+	return ""
+}
+
+func isArrayJson(bytes []byte) bool {
+	length := len(bytes)
+
+	if length >= 2 && bytes[0] == '[' && bytes[length-1] == ']' {
+		return true
+	}
+	return false
 }
 
 // buildApiBaseParams builds required params to VK API requests
