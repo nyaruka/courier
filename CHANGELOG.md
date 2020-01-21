@@ -1,3 +1,7 @@
+v5.3.8
+----------
+ * Fix Chatbase request body
+
 v5.3.7
 ----------
  * Fix quick replies variable replacement on external channel long msg
