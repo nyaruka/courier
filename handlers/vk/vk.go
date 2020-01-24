@@ -15,7 +15,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strconv"
 	"time"
 )
@@ -27,18 +26,7 @@ const (
 	eventTypeServerVerification = "confirmation"
 	eventTypeNewMessage         = "message_new"
 
-	configServerVerificationString = "callback_check_string"
-
-	attachmentTypePhoto    = "photo"
-	attachmentTypeGraffiti = "graffiti"
-	attachmentTypeSticker  = "sticker"
-	attachmentTypeVideo    = "video"
-	attachmentTypeAudio    = "audio_message"
-	attachmentTypeDoc      = "doc"
-
-	// response check values
-	responseIncomingMessage    = "ok"
-	responseOutgoingMessageKey = "response"
+	configServerVerificationString = "callback_verification_string"
 
 	// base API values
 	apiBaseURL       = "https://api.vk.com/method"
@@ -46,15 +34,16 @@ const (
 	paramApiVersion  = "v"
 	paramAccessToken = "access_token"
 
-	// get userPayload
-	URLGetUser   = apiBaseURL + "/users.get.json"
-	paramUserIds = "user_ids"
+	// response check values
+	responseIncomingMessage    = "ok"
+	responseOutgoingMessageKey = "response"
 
 	// send message
-	URLSendMessage = apiBaseURL + "/messages.send.json"
-	paramUserId    = "user_id"
-	paramMessage   = "message"
-	paramRandomId  = "random_id"
+	URLSendMessage   = apiBaseURL + "/messages.send.json"
+	paramUserId      = "user_id"
+	paramMessage     = "message"
+	paramAttachments = "attachment"
+	paramRandomId    = "random_id"
 )
 
 func init() {
@@ -81,11 +70,6 @@ type moPayload struct {
 	SecretKey string `json:"secret" validate:"required"`
 }
 
-// body to server verification event
-type moServerVerificationPayload struct {
-	CommunityId int64 `json:"group_id" validate:"required"`
-}
-
 // body to new message event
 type moNewMessagePayload struct {
 	Object struct {
@@ -103,67 +87,6 @@ type moNewMessagePayload struct {
 			} `json:"geo"`
 		} `json:"message" validate:"required"`
 	} `json:"object" validate:"required"`
-}
-
-type moAttachment struct {
-	Type string `json:"type"`
-}
-
-type moPhoto struct {
-	Photo struct {
-		Sizes []struct {
-			Type   string `json:"type"`
-			Url    string `json:"url"`
-			Width  int    `json:"width"`
-			Height int    `json:"height"`
-		} `json:"sizes"`
-	} `json:"photo"`
-}
-
-type moGraffiti struct {
-	Graffiti struct {
-		Id        int64  `json:"id"`
-		Url       string `json:"url"`
-		AccessKey string `json:"access_key"`
-	} `json:"graffiti"`
-}
-
-type moSticker struct {
-	Sticker struct {
-		Images []struct {
-			Url    string `json:"url"`
-			Width  int    `json:"width"`
-			Height int    `json:"height"`
-		}
-	} `json:"sticker"`
-}
-
-type moVideo struct {
-	Video struct {
-		Id        int64  `json:"id"`
-		AccessKey string `json:"access_key"`
-	} `json:"video"`
-}
-
-type moAudio struct {
-	Audio struct {
-		Link string `json:"link_mp3"`
-	} `json:"audio_message"`
-}
-
-type moDoc struct {
-	Doc struct {
-		Id        int64  `json:"id"`
-		Url       string `json:"url"`
-		AccessKey string `json:"access_key"`
-	} `json:"doc"`
-}
-
-// body to get user request
-type userPayload struct {
-	Id        int64  `json:"id"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
 }
 
 // receiveEvent handles request event type
@@ -185,17 +108,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	secret := channel.StringConfigForKey(courier.ConfigSecret, "")
 
 	if payload.SecretKey != secret {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("wrong auth token"))
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("wrong secret key"))
 	}
 	// check event type and decode body to correspondent struct
 	switch payload.Type {
 	case eventTypeServerVerification:
-		serverVerification := &moServerVerificationPayload{}
-
-		if err := handlers.DecodeAndValidateJSON(serverVerification, r); err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-		}
-		return h.verifyServer(ctx, channel, w, r, serverVerification)
+		return h.verifyServer(channel, w)
 
 	case eventTypeNewMessage:
 		newMessage := &moNewMessagePayload{}
@@ -211,7 +129,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 }
 
 // verifyServer handles VK's callback verification
-func (h *handler) verifyServer(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moServerVerificationPayload) ([]courier.Event, error) {
+func (h *handler) verifyServer(channel courier.Channel, w http.ResponseWriter) ([]courier.Event, error) {
 	verificationString := channel.StringConfigForKey(configServerVerificationString, "")
 	// write required response
 	_, err := fmt.Fprint(w, verificationString)
@@ -250,135 +168,6 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return []courier.Event{msg}, err
 }
 
-// takeFirstAttachmentUrl tries to take first attachment url, otherwise tries geolocation
-func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
-	jsonBytes, err := payload.Object.Message.Attachments.MarshalJSON()
-	// check if is json array
-	if err != nil || !isArrayJson(jsonBytes) {
-		return ""
-	}
-	attachments := &[]moAttachment{}
-
-	if err = json.Unmarshal(jsonBytes, attachments); err != nil || len(*attachments) == 0 {
-		// try take geolocation
-		lat := payload.Object.Message.Geo.Coords.Lat
-		lng := payload.Object.Message.Geo.Coords.Lng
-
-		if lat != 0 && lng != 0 {
-			return fmt.Sprintf("geo:%f,%f", lat, lng)
-		}
-		return ""
-	}
-	switch (*attachments)[0].Type {
-	case attachmentTypePhoto:
-		photos := &[]moPhoto{}
-		if err = json.Unmarshal(jsonBytes, photos); err == nil {
-			photoUrl := ""
-			// search by image size "x"
-			for _, size := range (*photos)[0].Photo.Sizes {
-				photoUrl = size.Url
-
-				if size.Type == "x" {
-					break
-				}
-			}
-			return photoUrl
-		}
-
-	case attachmentTypeGraffiti:
-		graffiti := &[]moGraffiti{}
-		if err = json.Unmarshal(jsonBytes, graffiti); err == nil {
-			return (*graffiti)[0].Graffiti.Url
-		}
-
-	case attachmentTypeSticker:
-		stickers := &[]moSticker{}
-		// search by image with 128px width/height
-		if err = json.Unmarshal(jsonBytes, stickers); err == nil {
-			stickerUrl := ""
-			for _, image := range (*stickers)[0].Sticker.Images {
-				stickerUrl = image.Url
-				if image.Width == 128 {
-					break
-				}
-			}
-			return stickerUrl
-		}
-
-	case attachmentTypeVideo:
-		videos := &[]moVideo{}
-		if err = json.Unmarshal(jsonBytes, videos); err == nil {
-			return (*videos)[0].Video.AccessKey
-		}
-
-	case attachmentTypeAudio:
-		audios := &[]moAudio{}
-		if err = json.Unmarshal(jsonBytes, audios); err == nil {
-			return (*audios)[0].Audio.Link
-		}
-
-	case attachmentTypeDoc:
-		docs := &[]moDoc{}
-		if err = json.Unmarshal(jsonBytes, docs); err == nil {
-			return (*docs)[0].Doc.Url
-		}
-	}
-	return ""
-}
-
-// isArrayJson checks if given bytes is a json array
-func isArrayJson(bytes []byte) bool {
-	length := len(bytes)
-
-	if length >= 2 && bytes[0] == '[' && bytes[length-1] == ']' {
-		return true
-	}
-	return false
-}
-
-// buildApiBaseParams builds required params to VK API requests
-func buildApiBaseParams(channel courier.Channel) url.Values {
-	return url.Values{
-		paramApiVersion:  []string{apiVersion},
-		paramAccessToken: []string{channel.StringConfigForKey(courier.ConfigAuthToken, "")},
-	}
-}
-
-// retrieveUser retrieves VK userPayload
-func retrieveUser(channel courier.Channel, userId int64) (*userPayload, error) {
-	req, err := http.NewRequest(http.MethodPost, URLGetUser, nil)
-
-	if err != nil {
-		return nil, err
-	}
-	params := buildApiBaseParams(channel)
-	params.Set(paramUserIds, strconv.FormatInt(userId, 10))
-
-	req.URL.RawQuery = params.Encode()
-	res, err := utils.MakeHTTPRequest(req)
-
-	if err != nil {
-		return nil, err
-	}
-	// parsing response
-	type usersResponse struct {
-		Users []userPayload `json:"response" validate:"required"`
-	}
-	payload := &usersResponse{}
-	err = json.Unmarshal(res.Body, payload)
-
-	if err != nil {
-		return nil, err
-	}
-	// get first and check if has user
-	user := &payload.Users[0]
-
-	if user == nil {
-		return nil, errors.New("no user in response")
-	}
-	return user, nil
-}
-
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	req, err := http.NewRequest(http.MethodPost, URLSendMessage, nil)
@@ -390,6 +179,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	params.Set(paramUserId, msg.URN().Path())
 	params.Set(paramMessage, msg.Text())
 	params.Set(paramRandomId, msg.ID().String())
+
+	// TODO
+	attachmentsParam, _ := buildMsgAttachmentsParam(msg)
+	params.Set(paramAttachments, attachmentsParam)
 
 	req.URL.RawQuery = params.Encode()
 	res, err := utils.MakeHTTPRequest(req)
