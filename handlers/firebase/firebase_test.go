@@ -20,6 +20,20 @@ var (
 	missingURN    = "fcm_token=token&name=fred"
 )
 
+var longMsg = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis augue vel placerat congue.
+Etiam nec tempus enim. Cras placerat at est vel suscipit. Duis quis faucibus metus, non elementum tortor.
+Pellentesque posuere ullamcorper metus auctor venenatis. Proin eget hendrerit dui. Sed eget massa nec mauris consequat pretium.
+Praesent mattis arcu tortor, ac aliquet turpis tincidunt eu.
+
+Fusce ut lacinia augue. Vestibulum felis nisi, porta ut est condimentum, condimentum volutpat libero.
+Suspendisse a elit venenatis, condimentum sem at, ultricies mauris. Morbi interdum sem id tempor tristique.
+Ut tincidunt massa eu purus lacinia sodales a volutpat neque. Cras dolor quam, eleifend a rhoncus quis, sodales nec purus.
+Vivamus justo dolor, gravida at quam eu, hendrerit rutrum justo. Sed hendrerit nisi vitae nisl ornare tristique.
+Proin vulputate id justo non aliquet.
+
+Duis eu arcu pharetra, laoreet nunc at, pharetra sapien. Nulla eu libero diam.
+Donec euismod dapibus ligula, sit amet hendrerit neque vulputate ac.`
+
 var testChannels = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCM", "1234", "",
 		map[string]interface{}{
@@ -75,12 +89,20 @@ var sendTestCases = []ChannelSendTestCase{
 		Headers:     map[string]string{"Authorization": "key=FCMKey"},
 		RequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10},"content_available":false,"to":"auth1","priority":"high"}`,
 		SendPrep:    setSendURL},
+	{Label: "Long Message",
+		Text: longMsg,
+		URN: "fcm:250788123123", URNAuth: "auth1",
+		Status: "W", ExternalID: "123456",
+		ResponseBody: `{"success":1, "multicast_id": 123456}`, ResponseStatus: 200,
+		Headers:     map[string]string{"Authorization": "key=FCMKey"},
+		RequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"ate ac.","message_id":10},"content_available":false,"to":"auth1","priority":"high"}`,
+		SendPrep:    setSendURL},
 	{Label: "Quick Reply",
 		Text: "Simple Message", URN: "fcm:250788123123", URNAuth: "auth1", QuickReplies: []string{"yes", "no"}, Attachments: []string{"image/jpeg:https://foo.bar"},
 		Status: "W", ExternalID: "123456",
 		ResponseBody: `{"success":1, "multicast_id": 123456}`, ResponseStatus: 200,
 		Headers:     map[string]string{"Authorization": "key=FCMKey"},
-		RequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":10},"quick_replies":[{"title":"yes","payload":"yes"},{"title":"no","payload":"no"}],"content_available":false,"to":"auth1","priority":"high"}`,
+		RequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":10,"quick_replies":["yes","no"]},"content_available":false,"to":"auth1","priority":"high"}`,
 		SendPrep:    setSendURL},
 	{Label: "Error",
 		Text: "Error", URN: "fcm:250788123123", URNAuth: "auth1",

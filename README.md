@@ -1,4 +1,4 @@
-# Courier [![Build Status](https://travis-ci.org/nyaruka/courier.svg?branch=master)](https://travis-ci.org/nyaruka/courier) [![codecov](https://codecov.io/gh/nyaruka/courier/branch/master/graph/badge.svg)](https://codecov.io/gh/nyaruka/courier) [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/courier)](https://goreportcard.com/report/github.com/nyaruka/courier) 
+# Courier [![Build Status](https://github.com/nyaruka/courier/workflows/CI/badge.svg)] [![codecov](https://codecov.io/gh/nyaruka/courier/branch/master/graph/badge.svg)](https://codecov.io/gh/nyaruka/courier) [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/courier)](https://goreportcard.com/report/github.com/nyaruka/courier) 
 
 # About 
 

@@ -93,6 +93,7 @@ type Msg interface {
 	URNAuth() string
 	ContactName() string
 	QuickReplies() []string
+	Topic() string
 	Metadata() json.RawMessage
 	ResponseToID() MsgID
 	ResponseToExternalID() string

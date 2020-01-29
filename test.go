@@ -107,13 +107,13 @@ func (mb *MockBackend) NewIncomingMsg(channel Channel, urn urns.URN, text string
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool, replies []string, responseToID int64, responseToExternalID string) Msg {
+func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool, quickReplies []string, topic string, responseToID int64, responseToExternalID string) Msg {
 	msgResponseToID := NilMsgID
 	if responseToID != 0 {
 		msgResponseToID = NewMsgID(responseToID)
 	}
 
-	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority, quickReplies: replies, responseToID: msgResponseToID, responseToExternalID: responseToExternalID}
+	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority, quickReplies: quickReplies, topic: topic, responseToID: msgResponseToID, responseToExternalID: responseToExternalID}
 }
 
 // PushOutgoingMsg is a test method to add a message to our queue of messages to send
@@ -501,6 +501,7 @@ type mockMsg struct {
 	contactName          string
 	highPriority         bool
 	quickReplies         []string
+	topic                string
 	responseToID         MsgID
 	responseToExternalID string
 	metadata             json.RawMessage
@@ -523,6 +524,7 @@ func (m *mockMsg) URNAuth() string              { return m.urnAuth }
 func (m *mockMsg) ContactName() string          { return m.contactName }
 func (m *mockMsg) HighPriority() bool           { return m.highPriority }
 func (m *mockMsg) QuickReplies() []string       { return m.quickReplies }
+func (m *mockMsg) Topic() string                { return m.topic }
 func (m *mockMsg) ResponseToID() MsgID          { return m.responseToID }
 func (m *mockMsg) ResponseToExternalID() string { return m.responseToExternalID }
 func (m *mockMsg) Metadata() json.RawMessage    { return m.metadata }
