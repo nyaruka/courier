@@ -2,8 +2,6 @@ package vk
 
 import (
 	"context"
-	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -12,6 +10,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/nyaruka/courier"
+	. "github.com/nyaruka/courier/handlers"
 )
 
 const (
@@ -32,51 +33,6 @@ var testChannels = []courier.Channel{
 		}),
 }
 
-/*const eventWithSecret = `{
-  "type": "some_event",
-  "object": {},
-  "secret": "abc123xyz"
-}`
-const eventWithoutSecret = `{
-  "type": "some_event",
-  "object": {}
-}`
-
-func TestCheckSecret(t *testing.T) {
-	testCases := []handlers.ChannelHandleTestCase{
-		{
-Label: "Validate secret",
-URL: receiveURL,
-Data: eventWithSecret,
-Status: 200,
-Response: "no message or server verification event"},
-		{
-Label: "Invalidate secret",
-URL: receiveURL,
-Data: eventWithoutSecret,
-Status: 400,
-Response: "wrong secret key"},
-	}
-	handlers.RunChannelTestCases(t, testChannels, newHandler(), testCases)
-}
-
-const eventServerVerification = `{
-  "type": "confirmation",
-  "secret": "abc123xyz"
-}`
-
-func TestServerVerification(t *testing.T) {
-	testCases := []handlers.ChannelHandleTestCase{
-		{
-Label: "Verify server",
-URL: receiveURL,
-Data: eventServerVerification,
-Status: 200,
-Response: "a1b2c3"},
-	}
-	handlers.RunChannelTestCases(t, testChannels, newHandler(), testCases)
-}*/
-
 const msgHelloWorld = `{
   "type": "message_new",
   "object": {
@@ -90,7 +46,6 @@ const msgHelloWorld = `{
   },
   "secret": "abc123xyz"
 }`
-
 const msgEmpty = `{
   "type": "message_new",
   "object": {
@@ -104,7 +59,6 @@ const msgEmpty = `{
   },
   "secret": "abc123xyz"
 }`
-
 const msgFirstPhotoAttachment = `{
   "type": "message_new",
   "object": {
@@ -134,7 +88,6 @@ const msgFirstPhotoAttachment = `{
   },
   "secret": "abc123xyz"
 }`
-
 const msgFirstGraffitiAttachment = `{
   "type": "message_new",
   "object": {
@@ -157,7 +110,6 @@ const msgFirstGraffitiAttachment = `{
   },
   "secret": "abc123xyz"
 }`
-
 const msgFirstStickerAttachment = `{
   "type": "message_new",
   "object": {
@@ -186,7 +138,6 @@ const msgFirstStickerAttachment = `{
   },
   "secret": "abc123xyz"
 }`
-
 const msgFirstAudioAttachment = `{
   "type": "message_new",
   "object": {
@@ -209,7 +160,6 @@ const msgFirstAudioAttachment = `{
   },
   "secret": "abc123xyz"
 }`
-
 const msgFirstDocAttachment = `{
   "type": "message_new",
   "object": {
@@ -232,7 +182,6 @@ const msgFirstDocAttachment = `{
   },
   "secret": "abc123xyz"
 }`
-
 const msgGeolocationOnly = `{
   "type": "message_new",
   "object": {
@@ -247,17 +196,30 @@ const msgGeolocationOnly = `{
   },
   "secret": "abc123xyz"
 }`
+const eventWithSecret = `{
+  "type": "some_event",
+  "object": {},
+  "secret": "abc123xyz"
+}`
+const eventWithoutSecret = `{
+  "type": "some_event",
+  "object": {}
+}`
+const eventServerVerification = `{
+  "type": "confirmation",
+  "secret": "abc123xyz"
+}`
 
-var testCases = []handlers.ChannelHandleTestCase{
+var testCases = []ChannelHandleTestCase{
 	{
 		Label:      "Receive Message",
 		URL:        receiveURL,
 		Data:       msgHelloWorld,
 		Status:     200,
 		Response:   "ok",
-		URN:        handlers.Sp("vk:123456"),
-		ExternalID: handlers.Sp("1"),
-		Date:       handlers.Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)),
+		URN:        Sp("vk:123456"),
+		ExternalID: Sp("1"),
+		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)),
 	},
 	{
 		Label:      "Receive Empty Message",
@@ -265,9 +227,9 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Data:       msgEmpty,
 		Status:     400,
 		Response:   "no text or attachment",
-		URN:        handlers.Sp("vk:123456"),
-		ExternalID: handlers.Sp("1"),
-		Date:       handlers.Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)),
+		URN:        Sp("vk:123456"),
+		ExternalID: Sp("1"),
+		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)),
 	},
 	{
 		Label:      "Receive First Photo Attachment",
@@ -275,9 +237,9 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Data:       msgFirstPhotoAttachment,
 		Status:     200,
 		Response:   "ok",
-		URN:        handlers.Sp("vk:123456"),
-		ExternalID: handlers.Sp("1"),
-		Date:       handlers.Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/x-photo.jpg"},
+		URN:        Sp("vk:123456"),
+		ExternalID: Sp("1"),
+		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/x-photo.jpg"},
 	},
 	{
 		Label:      "Receive First Graffiti Attachment",
@@ -285,9 +247,9 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Data:       msgFirstGraffitiAttachment,
 		Status:     200,
 		Response:   "ok",
-		URN:        handlers.Sp("vk:123456"),
-		ExternalID: handlers.Sp("1"),
-		Date:       handlers.Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/graffiti.png"},
+		URN:        Sp("vk:123456"),
+		ExternalID: Sp("1"),
+		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/graffiti.png"},
 	},
 	{
 		Label:      "Receive First Sticker Attachment",
@@ -295,9 +257,9 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Data:       msgFirstStickerAttachment,
 		Status:     200,
 		Response:   "ok",
-		URN:        handlers.Sp("vk:123456"),
-		ExternalID: handlers.Sp("1"),
-		Date:       handlers.Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/128x128_sticker.png"},
+		URN:        Sp("vk:123456"),
+		ExternalID: Sp("1"),
+		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/128x128_sticker.png"},
 	},
 	{
 		Label:      "Receive First Audio Attachment",
@@ -305,9 +267,9 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Data:       msgFirstAudioAttachment,
 		Status:     200,
 		Response:   "ok",
-		URN:        handlers.Sp("vk:123456"),
-		ExternalID: handlers.Sp("1"),
-		Date:       handlers.Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/audio.mp3"},
+		URN:        Sp("vk:123456"),
+		ExternalID: Sp("1"),
+		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/audio.mp3"},
 	},
 	{
 		Label:      "Receive First Audio Attachment",
@@ -315,9 +277,9 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Data:       msgFirstDocAttachment,
 		Status:     200,
 		Response:   "ok",
-		URN:        handlers.Sp("vk:123456"),
-		ExternalID: handlers.Sp("1"),
-		Date:       handlers.Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/doc.pdf"},
+		URN:        Sp("vk:123456"),
+		ExternalID: Sp("1"),
+		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/doc.pdf"},
 	},
 	{
 		Label:      "Receive Geolocation Attachment",
@@ -325,17 +287,38 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Data:       msgGeolocationOnly,
 		Status:     200,
 		Response:   "ok",
-		URN:        handlers.Sp("vk:123456"),
-		ExternalID: handlers.Sp("1"),
-		Date:       handlers.Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"geo:-9.652278,-35.701095"},
+		URN:        Sp("vk:123456"),
+		ExternalID: Sp("1"),
+		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"geo:-9.652278,-35.701095"},
+	},
+	{
+		Label:    "Validate secret",
+		URL:      receiveURL,
+		Data:     eventWithSecret,
+		Status:   200,
+		Response: "no message or server verification event",
+	},
+	{
+		Label:    "Invalidate secret",
+		URL:      receiveURL,
+		Data:     eventWithoutSecret,
+		Status:   400,
+		Response: "wrong secret key",
+	},
+	{
+		Label:    "Verify server",
+		URL:      receiveURL,
+		Data:     eventServerVerification,
+		Status:   200,
+		Response: "a1b2c3",
 	},
 }
 
-func TestNewMessage(t *testing.T) {
-	handlers.RunChannelTestCases(t, testChannels, newHandler(), testCases)
+func TestHandler(t *testing.T) {
+	RunChannelTestCases(t, testChannels, newHandler(), testCases)
 }
 
-func buildMockVKService(testCases []handlers.ChannelHandleTestCase) *httptest.Server {
+func buildMockVKService(testCases []ChannelHandleTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, actionGetUser) {
 			userId := r.URL.Query()["user_ids"][0]
@@ -352,7 +335,7 @@ func buildMockVKService(testCases []handlers.ChannelHandleTestCase) *httptest.Se
 }
 
 func TestDescribe(t *testing.T) {
-	server := buildMockVKService([]handlers.ChannelHandleTestCase{})
+	server := buildMockVKService([]ChannelHandleTestCase{})
 	defer server.Close()
 
 	handler := newHandler().(courier.URNDescriber)
@@ -373,7 +356,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	URLPhotoUploadServer = s.URL + "/upload/photo"
 }
 
-var sendTestCases = []handlers.ChannelSendTestCase{
+var sendTestCases = []ChannelSendTestCase{
 	{
 		Label:      "Send simple message",
 		MsgID:      1,
@@ -382,8 +365,8 @@ var sendTestCases = []handlers.ChannelSendTestCase{
 		Status:     "S",
 		SendPrep:   setSendURL,
 		ExternalID: "1",
-		Responses: map[handlers.MockedRequest]handlers.MockedResponse{
-			handlers.MockedRequest{
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=&message=Simple+message&random_id=1&user_id=123456789&v=5.103",
@@ -402,8 +385,8 @@ var sendTestCases = []handlers.ChannelSendTestCase{
 		Status:      "S",
 		SendPrep:    setSendURL,
 		ExternalID:  "1",
-		Responses: map[handlers.MockedRequest]handlers.MockedResponse{
-			handlers.MockedRequest{
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
 				Method:       "POST",
 				Path:         "/upload/photo",
 				BodyContains: `media body`,
@@ -411,7 +394,7 @@ var sendTestCases = []handlers.ChannelSendTestCase{
 				Status: 200,
 				Body:   `{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`,
 			},
-			handlers.MockedRequest{
+			MockedRequest{
 				Method:   "POST",
 				Path:     actionSaveUploadedPhotoInfo,
 				RawQuery: "access_token=token123xyz&hash=zxc987qwe&photo=...&server=109876&v=5.103",
@@ -419,7 +402,7 @@ var sendTestCases = []handlers.ChannelSendTestCase{
 				Status: 200,
 				Body:   `{"response": [{"id": 1, "owner_id": 1901234}]}`,
 			},
-			handlers.MockedRequest{
+			MockedRequest{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=&random_id=1&user_id=123456789&v=5.103",
@@ -438,8 +421,8 @@ var sendTestCases = []handlers.ChannelSendTestCase{
 		Status:      "S",
 		SendPrep:    setSendURL,
 		ExternalID:  "1",
-		Responses: map[handlers.MockedRequest]handlers.MockedResponse{
-			handlers.MockedRequest{
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
 				Method:       "POST",
 				Path:         "/upload/photo",
 				BodyContains: `media body`,
@@ -447,7 +430,7 @@ var sendTestCases = []handlers.ChannelSendTestCase{
 				Status: 200,
 				Body:   `{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`,
 			},
-			handlers.MockedRequest{
+			MockedRequest{
 				Method:   "POST",
 				Path:     actionSaveUploadedPhotoInfo,
 				RawQuery: "access_token=token123xyz&hash=zxc987qwe&photo=...&server=109876&v=5.103",
@@ -455,7 +438,7 @@ var sendTestCases = []handlers.ChannelSendTestCase{
 				Status: 200,
 				Body:   `{"response": [{"id": 1, "owner_id": 1901234}]}`,
 			},
-			handlers.MockedRequest{
+			MockedRequest{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=Attachments" + url.QueryEscape("\n\nhttps://foo.bar/audio.mp3") + "&random_id=1&user_id=123456789&v=5.103",
@@ -467,14 +450,14 @@ var sendTestCases = []handlers.ChannelSendTestCase{
 	},
 }
 
-func mockAttachmentURLs(mediaServer *httptest.Server, testCases []handlers.ChannelSendTestCase) []handlers.ChannelSendTestCase {
-	casesWithMockedUrls := make([]handlers.ChannelSendTestCase, len(testCases))
+func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTestCase) []ChannelSendTestCase {
+	casesWithMockedUrls := make([]ChannelSendTestCase, len(testCases))
 
 	for i, testCase := range testCases {
 		mockedCase := testCase
 
 		for j, attachment := range testCase.Attachments {
-			prefix, _ := handlers.SplitAttachment(attachment)
+			prefix, _ := SplitAttachment(attachment)
 			if mediaType := strings.Split(prefix, "/")[0]; mediaType != "image" {
 				continue
 			}
@@ -492,5 +475,5 @@ func TestSendMsg(t *testing.T) {
 		res.Write([]byte("media body"))
 	}))
 	mockedSendTestCases := mockAttachmentURLs(mediaServer, sendTestCases)
-	handlers.RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, nil)
 }

@@ -91,7 +91,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// base body of callback API event
+// base body to callback API event
 type moPayload struct {
 	Type      string `json:"type"   validate:"required"`
 	SecretKey string `json:"secret" validate:"required"`
@@ -196,7 +196,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to read request body: %s", err))
 	}
-	// restore body to its original state
+	// restore body to its original value
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 	payload := &moPayload{}
 
