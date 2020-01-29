@@ -38,7 +38,7 @@ const sentSetName = "msgs_sent_%s"
 // constants used in org configs for chatbase
 const chatbaseAPIKey = "CHATBASE_API_KEY"
 const chatbaseVersion = "CHATBASE_VERSION"
-const chatbaseMessageType = "msg"
+const chatbaseMessageType = "agent"
 
 // our timeout for backend operations
 const backendTimeout = time.Second * 20
