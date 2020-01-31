@@ -248,22 +248,24 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	text := payload.Object.Message.Text
 	externalId := strconv.FormatInt(payload.Object.Message.Id, 10)
 	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(externalId)
+	event := h.Backend().CheckExternalIDSeen(msg)
 
 	if attachment := takeFirstAttachmentUrl(*payload); attachment != "" {
-		msg.WithAttachment(attachment)
+		event.WithAttachment(attachment)
 	}
 	// check for empty content
-	if msg.Text() == "" && len(msg.Attachments()) == 0 {
+	if event.Text() == "" && len(event.Attachments()) == 0 {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("no text or attachment"))
 	}
 	// save message to our backend
-	if err := h.Backend().WriteMsg(ctx, msg); err != nil {
+	if err := h.Backend().WriteMsg(ctx, event); err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
+	h.Backend().WriteExternalIDSeen(event)
 	// write required response
 	_, err = fmt.Fprint(w, responseIncomingMessage)
 
-	return []courier.Event{msg}, err
+	return []courier.Event{event}, err
 }
 
 // DescribeURN handles VK contact details
