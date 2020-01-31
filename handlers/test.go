@@ -74,7 +74,6 @@ type MockedResponse struct {
 type ChannelSendTestCase struct {
 	Label string
 
-	MsgID                courier.MsgID
 	Text                 string
 	URN                  string
 	URNAuth              string
@@ -196,7 +195,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 		t.Run(testCase.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			msg := mb.NewOutgoingMsg(channel, testCase.MsgID, urns.URN(testCase.URN), testCase.Text, testCase.HighPriority, testCase.QuickReplies, testCase.Topic, testCase.ResponseToID, testCase.ResponseToExternalID)
+			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(testCase.URN), testCase.Text, testCase.HighPriority, testCase.QuickReplies, testCase.Topic, testCase.ResponseToID, testCase.ResponseToExternalID)
 
 			for _, a := range testCase.Attachments {
 				msg.WithAttachment(a)

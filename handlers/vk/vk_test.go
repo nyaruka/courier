@@ -359,7 +359,6 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 var sendTestCases = []ChannelSendTestCase{
 	{
 		Label:      "Send simple message",
-		MsgID:      1,
 		Text:       "Simple message",
 		URN:        "vk:123456789",
 		Status:     "S",
@@ -369,7 +368,7 @@ var sendTestCases = []ChannelSendTestCase{
 			MockedRequest{
 				Method:   "POST",
 				Path:     actionSendMessage,
-				RawQuery: "access_token=token123xyz&attachment=&message=Simple+message&random_id=1&user_id=123456789&v=5.103",
+				RawQuery: "access_token=token123xyz&attachment=&message=Simple+message&random_id=10&user_id=123456789&v=5.103",
 			}: {
 				Status: 200,
 				Body:   `{"response": 1}`,
@@ -378,7 +377,6 @@ var sendTestCases = []ChannelSendTestCase{
 	},
 	{
 		Label:       "Send photo attachment",
-		MsgID:       1,
 		Text:        "",
 		URN:         "vk:123456789",
 		Attachments: []string{"image/png:https://foo.bar/image.png"},
@@ -405,7 +403,7 @@ var sendTestCases = []ChannelSendTestCase{
 			MockedRequest{
 				Method:   "POST",
 				Path:     actionSendMessage,
-				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=&random_id=1&user_id=123456789&v=5.103",
+				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=&random_id=10&user_id=123456789&v=5.103",
 			}: {
 				Status: 200,
 				Body:   `{"response": 1}`,
@@ -414,7 +412,6 @@ var sendTestCases = []ChannelSendTestCase{
 	},
 	{
 		Label:       "Send photo and another attachment type",
-		MsgID:       1,
 		Text:        "Attachments",
 		URN:         "vk:123456789",
 		Attachments: []string{"image/png:https://foo.bar/image.png", "audio/mp3:https://foo.bar/audio.mp3"},
@@ -441,7 +438,7 @@ var sendTestCases = []ChannelSendTestCase{
 			MockedRequest{
 				Method:   "POST",
 				Path:     actionSendMessage,
-				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=Attachments" + url.QueryEscape("\n\nhttps://foo.bar/audio.mp3") + "&random_id=1&user_id=123456789&v=5.103",
+				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=Attachments" + url.QueryEscape("\n\nhttps://foo.bar/audio.mp3") + "&random_id=10&user_id=123456789&v=5.103",
 			}: {
 				Status: 200,
 				Body:   `{"response": 1}`,
