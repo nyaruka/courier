@@ -311,41 +311,6 @@ func buildApiBaseParams(channel courier.Channel) url.Values {
 	}
 }
 
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	req, err := http.NewRequest(http.MethodPost, apiBaseURL + actionSendMessage, nil)
-
-	if err != nil {
-		return status, errors.New("Cannot create send message request")
-	}
-	params := buildApiBaseParams(msg.Channel())
-	params.Set(paramUserId, msg.URN().Path())
-	params.Set(paramRandomId, msg.ID().String())
-
-	text, attachments, _ := buildTextAndAttachmentParams(msg)
-	params.Set(paramMessage, text)
-	params.Set(paramAttachments, attachments)
-
-	req.URL.RawQuery = params.Encode()
-	res, err := utils.MakeHTTPRequest(req)
-
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), res).WithError("Message Send Error", err)
-	status.AddLog(log)
-
-	if err != nil {
-		return status, err
-	}
-	externalMsgId, err := jsonparser.GetInt(res.Body, responseOutgoingMessageKey)
-
-	if err != nil {
-		return status, errors.Errorf("no '%s' value in response", responseOutgoingMessageKey)
-	}
-	status.SetExternalID(strconv.FormatInt(externalMsgId, 10))
-	status.SetStatus(courier.MsgSent)
-
-	return status, nil
-}
-
 // takeFirstAttachmentUrl tries to take first attachment url, otherwise tries geolocation
 func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 	jsonBytes, err := payload.Object.Message.Attachments.MarshalJSON()
@@ -416,15 +381,50 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 	return ""
 }
 
+func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	req, err := http.NewRequest(http.MethodPost, apiBaseURL + actionSendMessage, nil)
+
+	if err != nil {
+		return status, errors.New("Cannot create send message request")
+	}
+	params := buildApiBaseParams(msg.Channel())
+	params.Set(paramUserId, msg.URN().Path())
+	params.Set(paramRandomId, msg.ID().String())
+
+	text, attachments := buildTextAndAttachmentParams(msg, status)
+	params.Set(paramMessage, text)
+	params.Set(paramAttachments, attachments)
+
+	req.URL.RawQuery = params.Encode()
+	res, err := utils.MakeHTTPRequest(req)
+
+	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), res).WithError("Message Send Error", err)
+	status.AddLog(log)
+
+	if err != nil {
+		return status, err
+	}
+	externalMsgId, err := jsonparser.GetInt(res.Body, responseOutgoingMessageKey)
+
+	if err != nil {
+		return status, errors.Errorf("no '%s' value in response", responseOutgoingMessageKey)
+	}
+	status.SetExternalID(strconv.FormatInt(externalMsgId, 10))
+	status.SetStatus(courier.MsgSent)
+
+	return status, nil
+}
+
 // buildTextAndAttachmentParams builds msg text with attachment links (if needed) and attachments list param, also returns the errors that occurred
-func buildTextAndAttachmentParams(msg courier.Msg) (string, string, []error) {
+func buildTextAndAttachmentParams(msg courier.Msg, status courier.MsgStatus) (string, string) {
 	var msgAttachments []string
-	var errs []error
 
 	textBuf := bytes.Buffer{}
 	textBuf.WriteString(msg.Text())
 
 	for _, attachment := range msg.Attachments() {
+		start := time.Now()
 		// handle attachment type
 		mediaPrefix, mediaURL := handlers.SplitAttachment(attachment)
 		mediaPrefixParts := strings.Split(mediaPrefix, "/")
@@ -439,7 +439,9 @@ func buildTextAndAttachmentParams(msg courier.Msg) (string, string, []error) {
 			if attachment, err := handleMediaUploadAndGetAttachment(msg.Channel(), mediaTypeImage, mediaExt, mediaURL); err == nil {
 				msgAttachments = append(msgAttachments, attachment)
 			} else {
-				errs = append(errs, err)
+				duration := time.Now().Sub(start)
+				log := courier.NewChannelLogFromError("Unable to upload photo attachment", msg.Channel(), msg.ID(), duration, err)
+				status.AddLog(log)
 			}
 
 		default:
@@ -447,7 +449,7 @@ func buildTextAndAttachmentParams(msg courier.Msg) (string, string, []error) {
 			textBuf.WriteString(mediaURL)
 		}
 	}
-	return textBuf.String(), strings.Join(msgAttachments, ","), errs
+	return textBuf.String(), strings.Join(msgAttachments, ",")
 }
 
 // handleMediaUploadAndGetAttachment handles media downloading, uploading, saving information and returns the attachment string
@@ -465,7 +467,7 @@ func handleMediaUploadAndGetAttachment(channel courier.Channel, mediaType, media
 		download, err := downloadMedia(mediaURL)
 
 		if err != nil {
-			return "", nil
+			return "", err
 		}
 		uploadResponse, err := uploadMedia(URLPhotoUploadServer, uploadKey, mediaExt, download)
 
