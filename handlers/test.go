@@ -59,6 +59,7 @@ type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, courier.Channel
 type MockedRequest struct {
 	Method       string
 	Path         string
+	RawQuery     string
 	Body         string
 	BodyContains string
 }
@@ -219,7 +220,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 					require.Zero(testCase.ResponseBody, "ResponseBody should not be used when using testcase.Responses")
 					for mockRequest, mockResponse := range testCase.Responses {
 						bodyStr := string(body)[:]
-						if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && (mockRequest.Body == bodyStr || (mockRequest.BodyContains != "" && strings.Contains(bodyStr, mockRequest.BodyContains))) {
+						if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && mockRequest.RawQuery == r.URL.RawQuery && (mockRequest.Body == bodyStr || (mockRequest.BodyContains != "" && strings.Contains(bodyStr, mockRequest.BodyContains))) {
 							w.WriteHeader(mockResponse.Status)
 							w.Write([]byte(mockResponse.Body))
 							mockRRCount++

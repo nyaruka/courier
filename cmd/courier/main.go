@@ -54,6 +54,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/twiml"
 	_ "github.com/nyaruka/courier/handlers/twitter"
 	_ "github.com/nyaruka/courier/handlers/viber"
+	_ "github.com/nyaruka/courier/handlers/vk"
 	_ "github.com/nyaruka/courier/handlers/wavy"
 	_ "github.com/nyaruka/courier/handlers/wechat"
 	_ "github.com/nyaruka/courier/handlers/whatsapp"

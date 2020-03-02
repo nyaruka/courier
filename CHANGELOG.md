@@ -1,3 +1,11 @@
+v5.4.0
+----------
+ * touch README for 5.4 release
+
+v5.3.9
+----------
+ * Add VK Channel
+
 v5.3.8
 ----------
  * Fix Chatbase request body
