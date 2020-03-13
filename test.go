@@ -32,6 +32,7 @@ type MockBackend struct {
 	outgoingMsgs    []Msg
 	msgStatuses     []MsgStatus
 	channelEvents   []ChannelEvent
+	channelLogs     []*ChannelLog
 	lastContactName string
 
 	sentMsgs  map[MsgID]bool
@@ -86,6 +87,14 @@ func (mb *MockBackend) GetLastChannelEvent() (ChannelEvent, error) {
 		return nil, errors.New("no channel events")
 	}
 	return mb.channelEvents[len(mb.channelEvents)-1], nil
+}
+
+// GetLastChannelLog returns the last channel log written to the server
+func (mb *MockBackend) GetLastChannelLog() (*ChannelLog, error) {
+	if len(mb.channelLogs) == 0 {
+		return nil, errors.New("no channel logs")
+	}
+	return mb.channelLogs[len(mb.channelLogs)-1], nil
 }
 
 // GetLastMsgStatus returns the last status written to the server
@@ -161,6 +170,12 @@ func (mb *MockBackend) MarkOutgoingMsgComplete(ctx context.Context, msg Msg, s M
 
 // WriteChannelLogs writes the passed in channel logs to the DB
 func (mb *MockBackend) WriteChannelLogs(ctx context.Context, logs []*ChannelLog) error {
+	mb.mutex.Lock()
+	defer mb.mutex.Unlock()
+
+	for _, log := range logs {
+		mb.channelLogs = append(mb.channelLogs, log)
+	}
 	return nil
 }
 
