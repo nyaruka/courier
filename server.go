@@ -286,6 +286,9 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 
 		// read the bytes from our body so we can create a channel log for this request
 		response := &bytes.Buffer{}
+
+		// Trim out cookie header, should never be part of authentication and can leak auth to channel logs
+		r.Header.Del("Cookie")
 		request, err := httputil.DumpRequest(r, true)
 		if err != nil {
 			writeAndLogRequestError(ctx, w, r, channel, err)
