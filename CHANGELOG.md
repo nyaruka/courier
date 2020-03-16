@@ -1,3 +1,7 @@
+v5.5.0
+----------
+ * add fabric to gitignore
+
 v5.6.0
 ----------
  * add fabric to gitignore
