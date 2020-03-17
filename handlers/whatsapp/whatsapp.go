@@ -542,14 +542,8 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 		log := courier.NewChannelLogFromError("unable to build JSON body", msg.Channel(), msg.ID(), elapsed, err)
 		return "", []*courier.ChannelLog{log}, err
 	}
-	header := http.Header{
-		"Content-Type":  []string{"application/json"},
-		"Accept":        []string{"application/json"},
-		"Authorization": []string{fmt.Sprintf("Bearer %s", token)},
-		"User-Agent":    []string{utils.HTTPUserAgent},
-	}
 	req, _ := http.NewRequest(http.MethodPost, sendPath.String(), bytes.NewReader(jsonBody))
-	req.Header = header
+	req.Header = buildWhatsAppRequestHeader(token)
 	rr, err := utils.MakeHTTPRequest(req)
 	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 	errPayload := &mtErrorPayload{}
@@ -576,7 +570,7 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 		}
 		// try send msg again
 		reqRetry, _ := http.NewRequest(http.MethodPost, sendPath.String(), bytes.NewReader(jsonBody))
-		reqRetry.Header = header
+		reqRetry.Header = buildWhatsAppRequestHeader(token)
 		rrRetry, err := utils.MakeHTTPRequest(reqRetry)
 		retryLog := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 
@@ -588,6 +582,16 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 	}
 	externalID, err := getSendWhatsAppMsgId(rr)
 	return externalID, []*courier.ChannelLog{log}, err
+}
+
+func buildWhatsAppRequestHeader(token string) http.Header {
+	header := http.Header{
+		"Content-Type":  []string{"application/json"},
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{fmt.Sprintf("Bearer %s", token)},
+		"User-Agent":    []string{utils.HTTPUserAgent},
+	}
+	return header
 }
 
 func hasWhatsAppContactError(payload mtErrorPayload) bool {
@@ -626,15 +630,13 @@ func checkWhatsAppContact(baseURL string, token string, urn urns.URN) (*utils.Re
 	}
 	sendURL := fmt.Sprintf("%s/v1/contacts", baseURL)
 	req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(reqBody))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	req.Header.Set("User-Agent", utils.HTTPUserAgent)
+	req.Header = buildWhatsAppRequestHeader(token)
 	rr, err := utils.MakeHTTPRequest(req)
 
 	if err != nil {
 		return rr, err
 	}
+	// check contact status
 	if status, err := jsonparser.GetString(rr.Body, "contacts", "[0]", "status"); err == nil {
 		if status == "valid" {
 			return rr, nil
