@@ -552,10 +552,6 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 	req.Header = header
 	rr, err := utils.MakeHTTPRequest(req)
 	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-
-	if err != nil {
-		return "", []*courier.ChannelLog{log}, err
-	}
 	errPayload := &mtErrorPayload{}
 
 	// handle send msg errors
@@ -643,7 +639,7 @@ func checkWhatsAppContact(baseURL string, token string, urn urns.URN) (*utils.Re
 		if status == "valid" {
 			return rr, nil
 		} else {
-			return rr, errors.Errorf(`contact status "%s"`, status)
+			return rr, errors.Errorf(`contact status is "%s"`, status)
 		}
 	} else {
 		return rr, err
