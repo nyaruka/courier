@@ -1,3 +1,7 @@
+v5.5.2
+----------
+ * Send msg in batches and add image msg type in the LINE channel
+
 v5.5.1
 ----------
  * Add contacts not already present for WhatsApp when sending error detected (thanks @koallann)
