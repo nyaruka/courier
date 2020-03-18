@@ -22,6 +22,9 @@ import (
 const (
 	configNamespace = "fb_namespace"
 )
+var (
+	retryParam = ""
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -547,9 +550,10 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 	rr, err := utils.MakeHTTPRequest(req)
 	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 	errPayload := &mtErrorPayload{}
+	err = json.Unmarshal(rr.Body, errPayload)
 
 	// handle send msg errors
-	if err = json.Unmarshal(rr.Body, errPayload); err == nil && len(errPayload.Errors) > 0 {
+	if err == nil && len(errPayload.Errors) > 0 {
 		if !hasWhatsAppContactError(*errPayload) {
 			err := errors.Errorf("received error from send endpoint: %s", errPayload.Errors[0].Title)
 			return "", []*courier.ChannelLog{log}, err
@@ -571,6 +575,10 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 		// try send msg again
 		reqRetry, _ := http.NewRequest(http.MethodPost, sendPath.String(), bytes.NewReader(jsonBody))
 		reqRetry.Header = buildWhatsAppRequestHeader(token)
+
+		if retryParam != "" {
+			reqRetry.URL.RawQuery = fmt.Sprintf("%s=1", retryParam)
+		}
 		rrRetry, err := utils.MakeHTTPRequest(reqRetry)
 		retryLog := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 
