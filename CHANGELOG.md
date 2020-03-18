@@ -1,3 +1,7 @@
+v5.5.1
+----------
+ * Add retry messaging test case to WhatsApp channel
+
 v5.5.0
 ----------
  * add fabric to gitignore
