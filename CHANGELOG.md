@@ -1,6 +1,6 @@
 v5.5.1
 ----------
- * Add retry messaging test case to WhatsApp channel
+ * Add contacts not already present for WhatsApp when sending error detected (thanks @koallann)
 
 v5.5.0
 ----------
