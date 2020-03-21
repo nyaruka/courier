@@ -22,6 +22,7 @@ import (
 const (
 	configNamespace = "fb_namespace"
 )
+
 var (
 	retryParam = ""
 )
@@ -169,19 +170,19 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 		if msg.Type == "text" {
 			text = msg.Text.Body
-		} else if msg.Type == "audio" {
+		} else if msg.Type == "audio" && msg.Audio != nil {
 			mediaURL, err = resolveMediaURL(channel, msg.Audio.ID)
-		} else if msg.Type == "document" {
+		} else if msg.Type == "document" && msg.Document != nil {
 			text = msg.Document.Caption
 			mediaURL, err = resolveMediaURL(channel, msg.Document.ID)
-		} else if msg.Type == "image" {
+		} else if msg.Type == "image" && msg.Image != nil {
 			text = msg.Image.Caption
 			mediaURL, err = resolveMediaURL(channel, msg.Image.ID)
-		} else if msg.Type == "location" {
+		} else if msg.Type == "location" && msg.Location != nil {
 			mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
-		} else if msg.Type == "video" {
+		} else if msg.Type == "video" && msg.Video != nil {
 			mediaURL, err = resolveMediaURL(channel, msg.Video.ID)
-		} else if msg.Type == "voice" {
+		} else if msg.Type == "voice" && msg.Voice != nil {
 			mediaURL, err = resolveMediaURL(channel, msg.Voice.ID)
 		} else {
 			// we received a message type we do not support.
@@ -364,7 +365,7 @@ type mtVideoPayload struct {
 }
 
 type mtErrorPayload struct {
-	Errors []struct{
+	Errors []struct {
 		Code    int    `json:"code"`
 		Title   string `json:"title"`
 		Details string `json:"details"`
