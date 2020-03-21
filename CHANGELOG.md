@@ -1,3 +1,7 @@
+v5.5.4
+----------
+ * handle error cases for whatsapp callbacks
+
 v5.5.3
 ----------
  * add native panic handling
