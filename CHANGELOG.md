@@ -1,3 +1,7 @@
+v5.5.3
+----------
+ * add native panic handling
+
 v5.5.2
 ----------
  * Send msg in batches and add image msg type in the LINE channel
