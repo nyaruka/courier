@@ -16,7 +16,7 @@ backend = "rapidpro"
 port = 8080
 
 # Our database connection string, right now only Postgres is supported
-db = "postgres://courier@localhost/courier?sslmode=disable"
+db = "postgres://temba:temba@localhost/temba?sslmode=disable"
 
 # Our redis connection string, path is our database. Rapid Pro uses 15 for the database (or 10 when testing) 
 redis = "redis://localhost:6379/15"

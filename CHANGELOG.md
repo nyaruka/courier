@@ -1,3 +1,31 @@
+v5.5.4
+----------
+ * handle error cases for whatsapp callbacks
+
+v5.5.3
+----------
+ * add native panic handling
+
+v5.5.2
+----------
+ * Send msg in batches and add image msg type in the LINE channel
+
+v5.5.1
+----------
+ * Add contacts not already present for WhatsApp when sending error detected (thanks @koallann)
+
+v5.5.0
+----------
+ * add fabric to gitignore
+
+v5.6.0
+----------
+ * add fabric to gitignore
+
+v5.4.1
+----------
+ * Strip cookie from incoming requests
+
 v5.4.0
 ----------
  * touch README for 5.4 release

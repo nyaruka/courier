@@ -3,6 +3,7 @@
 *.a
 *.so
 *~
+fabric
 fabfile.py
 fabfile.pyc
 fabconfig.py
