@@ -573,6 +573,44 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 		if err != nil {
 			return "", []*courier.ChannelLog{log, checkLog}, err
 		}
+		// update request destiny with returned wpp id
+		wppID, err := jsonparser.GetString(rrCheck.Body, "contacts", "[0]", "wa_id")
+
+		if err == nil {
+			var updatedPayload interface{}
+
+			// handle msg type casting
+			if text, ok := payload.(mtTextPayload); ok {
+				text.To = wppID
+				updatedPayload = text
+			} else if image, ok := payload.(mtImagePayload); ok {
+				image.To = wppID
+				updatedPayload = image
+			} else if video, ok := payload.(mtVideoPayload); ok {
+				video.To = wppID
+				updatedPayload = video
+			} else if audio, ok := payload.(mtAudioPayload); ok {
+				audio.To = wppID
+				updatedPayload = audio
+			} else if document, ok := payload.(mtDocumentPayload); ok {
+				document.To = wppID
+				updatedPayload = document
+			} else if hsm, ok := payload.(hsmPayload); ok {
+				hsm.To = wppID
+				updatedPayload = hsm
+			}
+			// marshal updated payload
+			if updatedPayload != nil {
+				payload = updatedPayload
+				jsonBody, err = json.Marshal(payload)
+
+				if err != nil {
+					elapsed := time.Now().Sub(start)
+					log := courier.NewChannelLogFromError("unable to build JSON body", msg.Channel(), msg.ID(), elapsed, err)
+					return "", []*courier.ChannelLog{log, checkLog}, err
+				}
+			}
+		}
 		// try send msg again
 		reqRetry, _ := http.NewRequest(http.MethodPost, sendPath.String(), bytes.NewReader(jsonBody))
 		reqRetry.Header = buildWhatsAppRequestHeader(token)
@@ -581,7 +619,7 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 			reqRetry.URL.RawQuery = fmt.Sprintf("%s=1", retryParam)
 		}
 		rrRetry, err := utils.MakeHTTPRequest(reqRetry)
-		retryLog := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		retryLog := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rrRetry).WithError("Message Send Error", err)
 
 		if err != nil {
 			return "", []*courier.ChannelLog{log, checkLog, retryLog}, err

@@ -436,6 +436,38 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL,
 	},
+	{Label: "Try Messaging Again After WhatsApp Contact Check With Returned WhatsApp ID",
+		Text: "try again", URN: "whatsapp:5582999887766",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/messages",
+				Body:   `{"to":"5582999887766","type":"text","text":{"body":"try again"}}`,
+			}: MockedResponse{
+				Status: 404,
+				Body:   `{"errors": [{"code": 1006, "title": "Resource not found", "details": "unknown contact"}]}`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/contacts",
+				Body:   `{"blocking":"wait","contacts":["+5582999887766"],"force_check":true}`,
+			}: MockedResponse{
+				Status: 200,
+				Body:   `{"contacts": [{"input": "+5582999887766", "status": "valid", "wa_id": "558299887766"}]}`,
+			},
+			MockedRequest{
+				Method:   "POST",
+				Path:     "/v1/messages",
+				RawQuery: "retry=1",
+				Body:     `{"to":"558299887766","type":"text","text":{"body":"try again"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{"messages": [{"id": "157b5e14568e8"}]}`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
