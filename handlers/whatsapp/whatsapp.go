@@ -406,7 +406,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 					Type: "audio",
 				}
 				payload.Audio = &mediaObject{Link: s3url}
-				externalID, logs, err = sendWhatsAppMsg(msg, sendPath, token, payload)
+				externalID, logs, err = h.sendWhatsAppMsg(ctx, msg, sendPath, token, payload)
 
 			} else if strings.HasPrefix(mimeType, "application") {
 				payload := mtDocumentPayload{
@@ -419,7 +419,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				} else {
 					payload.Document = &mediaObject{Link: s3url}
 				}
-				externalID, logs, err = sendWhatsAppMsg(msg, sendPath, token, payload)
+				externalID, logs, err = h.sendWhatsAppMsg(ctx, msg, sendPath, token, payload)
 
 			} else if strings.HasPrefix(mimeType, "image") {
 				payload := mtImagePayload{
@@ -431,7 +431,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				} else {
 					payload.Image = &mediaObject{Link: s3url}
 				}
-				externalID, logs, err = sendWhatsAppMsg(msg, sendPath, token, payload)
+				externalID, logs, err = h.sendWhatsAppMsg(ctx, msg, sendPath, token, payload)
 			} else if strings.HasPrefix(mimeType, "video") {
 				payload := mtVideoPayload{
 					To:   msg.URN().Path(),
@@ -442,7 +442,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				} else {
 					payload.Video = &mediaObject{Link: s3url}
 				}
-				externalID, logs, err = sendWhatsAppMsg(msg, sendPath, token, payload)
+				externalID, logs, err = h.sendWhatsAppMsg(ctx, msg, sendPath, token, payload)
 			} else {
 				duration := time.Since(start)
 				err = fmt.Errorf("unknown attachment mime type: %s", mimeType)
@@ -492,7 +492,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			}
 
 			externalID := ""
-			externalID, logs, err = sendWhatsAppMsg(msg, sendPath, token, payload)
+			externalID, logs, err = h.sendWhatsAppMsg(ctx, msg, sendPath, token, payload)
 
 			// add logs to our status
 			for _, log := range logs {
@@ -511,7 +511,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 					Type: "text",
 				}
 				payload.Text.Body = part
-				externalID, logs, err = sendWhatsAppMsg(msg, sendPath, token, payload)
+				externalID, logs, err = h.sendWhatsAppMsg(ctx, msg, sendPath, token, payload)
 
 				// add logs to our status
 				for _, log := range logs {
@@ -537,7 +537,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	return status, nil
 }
 
-func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload interface{}) (string, []*courier.ChannelLog, error) {
+func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.Msg, sendPath *url.URL, token string, payload interface{}) (string, []*courier.ChannelLog, error) {
 	start := time.Now()
 	jsonBody, err := json.Marshal(payload)
 
@@ -573,10 +573,18 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 		if err != nil {
 			return "", []*courier.ChannelLog{log, checkLog}, err
 		}
-		// update request destiny with returned wpp id
+		// update contact URN and msg destiny with returned wpp id
 		wppID, err := jsonparser.GetString(rrCheck.Body, "contacts", "[0]", "wa_id")
 
 		if err == nil {
+			// retrieve contact
+			urn, _ := urns.NewWhatsAppURN(msg.URN().Path())
+			contact, _ := h.Backend().GetContact(ctx, msg.Channel(), urn, "", "")
+			// update URN
+			h.Backend().RemoveURNfromContact(ctx, msg.Channel(), contact, urn)
+			urn, _ = urns.NewWhatsAppURN(wppID)
+			h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, urn)
+
 			var updatedPayload interface{}
 
 			// handle msg type casting
