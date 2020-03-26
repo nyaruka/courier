@@ -1,0 +1,61 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    name: Test
+    strategy:
+      matrix:
+        pg-version: ['10', '11']
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v1
+
+    - name: Install Redis
+      uses: zhulik/redis-action@v1.0.0
+      with:
+        redis version: '5'
+
+    - name: Install PostgreSQL
+      uses: harmon758/postgresql-action@v1
+      with:
+        postgresql version: ${{ matrix.pg-version }}
+        postgresql db: courier_test
+        postgresql user: courier
+        postgresql password: courier
+
+    - name: Install Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13.x
+
+    - name: Run tests
+      run: go test -p=1 -coverprofile=coverage.text -covermode=atomic ./...
+
+    - name: Upload coverage
+      if: success()
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+  
+  release:
+    name: Release
+    needs: [test]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v1
+
+    - name: Install Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13.x
+
+    - name: Publish release
+      uses: goreleaser/goreleaser-action@v1
+      with:
+        version: latest
+        args: release --rm-dist
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

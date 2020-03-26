@@ -51,4 +51,14 @@ func TestChatbase(t *testing.T) {
 	statusCode = 500
 	err = SendChatbaseMessage("apiKey", "apiVersion", "messageType", "userID", "platform", "message", now)
 	assert.Error(t, err)
+
+	// simulate error when messageType is invalid
+	statusCode = 400
+	err = SendChatbaseMessage("apiKey", "apiVersion", "msg", "userID", "platform", "message", now)
+	assert.Error(t, err)
+
+	bytes, err = ioutil.ReadAll(testRequest.Body)
+	str, err = jsonparser.GetString(bytes, "type")
+	assert.NoError(t, err)
+	assert.Equal(t, "msg", str)
 }
