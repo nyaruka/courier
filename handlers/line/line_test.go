@@ -173,6 +173,17 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL
 }
 
+const tooLongMsg = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis augue vel placerat congue.
+Etiam nec tempus enim. Cras placerat at est vel suscipit. Duis quis faucibus metus, non elementum tortor.
+Pellentesque posuere ullamcorper metus auctor venenatis. Proin eget hendrerit dui. Sed eget massa nec mauris consequat pretium.
+Praesent mattis arcu tortor, ac aliquet turpis tincidunt eu.
+
+Fusce ut lacinia augue. Vestibulum felis nisi, porta ut est condimentum, condimentum volutpat libero.
+Suspendisse a elit venenatis, condimentum sem at, ultricies mauris. Morbi interdum sem id tempor tristique.
+Ut tincidunt massa eu purus lacinia sodales a volutpat neque. Cras dolor quam, eleifend a rhoncus quis, sodales nec purus.
+Vivamus justo dolor, gravida at quam eu, hendrerit rutrum justo. Sed hendrerit nisi vitae nisl ornare tristique.
+Proin vulputate id justo non aliquet.`
+
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "line:uabcdefghij",
@@ -206,9 +217,9 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":        "application/json",
 			"Authorization": "Bearer AccessToken",
 		},
-		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"I need to keep adding more things to make it work"}]}`,
+		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"},{"type":"text","text":"I need to keep adding more things to make it work"}]}`,
 		SendPrep:    setSendURL},
-	{Label: "Send Attachment",
+	{Label: "Send Image Attachment",
 		Text: "My pic!", URN: "line:uabcdefghij", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status:       "W",
 		ResponseBody: `{}`, ResponseStatus: 200,
@@ -217,7 +228,30 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":        "application/json",
 			"Authorization": "Bearer AccessToken",
 		},
-		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"My pic!\nhttps://foo.bar/image.jpg"}]}`,
+		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"My pic!"},{"type":"image","originalContentUrl":"https://foo.bar/image.jpg","previewImageUrl":"https://foo.bar/image.jpg"}]}`,
+		SendPrep:    setSendURL},
+	{Label: "Send Other Attachment",
+		Text: "My video!", URN: "line:uabcdefghij", Attachments: []string{"video/mp4:https://foo.bar/video.mp4"},
+		Status:       "W",
+		ResponseBody: `{}`, ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Bearer AccessToken",
+		},
+		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"My video!"},{"type":"text","text":"https://foo.bar/video.mp4"}]}`,
+		SendPrep:    setSendURL},
+	{Label: "Send Message Batches",
+		Text:         tooLongMsg,
+		URN:          "line:uabcdefghij",
+		Status:       "W",
+		ResponseBody: `{}`, ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Bearer AccessToken",
+		},
+		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Sed hendrerit nisi vitae nisl ornare tristique.\nProin vulputate id justo non aliquet."}]}`,
 		SendPrep:    setSendURL},
 	{Label: "Error Sending",
 		Text: "Error Sending", URN: "line:uabcdefghij",

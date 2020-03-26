@@ -162,12 +162,12 @@ func (w *Sender) sendMessage(msg Msg) {
 	sendCTX, cancel := context.WithTimeout(context.Background(), time.Second*35)
 	defer cancel()
 
-	msgLog := log.WithField("msg_id", msg.ID().String()).WithField("msg_text", msg.Text()).WithField("msg_urn", msg.URN().Identity())
+	log = log.WithField("msg_id", msg.ID().String()).WithField("msg_text", msg.Text()).WithField("msg_urn", msg.URN().Identity())
 	if len(msg.Attachments()) > 0 {
-		msgLog = msgLog.WithField("attachments", msg.Attachments())
+		log = log.WithField("attachments", msg.Attachments())
 	}
 	if len(msg.QuickReplies()) > 0 {
-		msgLog = msgLog.WithField("quick_replies", msg.QuickReplies())
+		log = log.WithField("quick_replies", msg.QuickReplies())
 	}
 
 	start := time.Now()
@@ -177,13 +177,26 @@ func (w *Sender) sendMessage(msg Msg) {
 
 	// failing on a lookup isn't a halting problem but we should log it
 	if err != nil {
-		msgLog.WithError(err).Warning("error looking up msg was sent")
+		log.WithError(err).Error("error looking up msg was sent")
+	}
+
+	// is this msg in a loop?
+	loop, err := backend.IsMsgLoop(sendCTX, msg)
+
+	// failing on loop lookup isn't permanent, but log
+	if err != nil {
+		log.WithError(err).Error("error looking up msg loop")
 	}
 
 	if sent {
 		// if this message was already sent, create a wired status for it
 		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired)
-		msgLog.Warning("duplicate send, marking as wired")
+		log.Warning("duplicate send, marking as wired")
+	} else if loop {
+		// if this contact is in a loop, fail the message immediately without sending
+		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgFailed)
+		status.AddLog(NewChannelLogFromError("Message Loop", msg.Channel(), msg.ID(), 0, fmt.Errorf("message loop detected, failing message without send")))
+		log.Error("message loop detected, failing message")
 	} else {
 		// send our message
 		status, err = server.SendMsg(sendCTX, msg)
@@ -191,7 +204,7 @@ func (w *Sender) sendMessage(msg Msg) {
 		secondDuration := float64(duration) / float64(time.Second)
 
 		if err != nil {
-			msgLog.WithError(err).WithField("elapsed", duration).Error("error sending message")
+			log.WithError(err).WithField("elapsed", duration).Error("error sending message")
 			if status == nil {
 				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
 				status.AddLog(NewChannelLogFromError("Sending Error", msg.Channel(), msg.ID(), duration, err))
@@ -200,10 +213,10 @@ func (w *Sender) sendMessage(msg Msg) {
 
 		// report to librato and log locally
 		if status.Status() == MsgErrored || status.Status() == MsgFailed {
-			msgLog.WithField("elapsed", duration).Warning("msg errored")
+			log.WithField("elapsed", duration).Warning("msg errored")
 			librato.Gauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
 		} else {
-			msgLog.WithField("elapsed", duration).Info("msg sent")
+			log.WithField("elapsed", duration).Info("msg sent")
 			librato.Gauge(fmt.Sprintf("courier.msg_send_%s", msg.Channel().ChannelType()), secondDuration)
 		}
 	}
@@ -214,13 +227,13 @@ func (w *Sender) sendMessage(msg Msg) {
 
 	err = backend.WriteMsgStatus(writeCTX, status)
 	if err != nil {
-		msgLog.WithError(err).Info("error writing msg status")
+		log.WithError(err).Info("error writing msg status")
 	}
 
 	// write our logs as well
 	err = backend.WriteChannelLogs(writeCTX, status.Logs())
 	if err != nil {
-		msgLog.WithError(err).Info("error writing msg logs")
+		log.WithError(err).Info("error writing msg logs")
 	}
 
 	// mark our send task as complete

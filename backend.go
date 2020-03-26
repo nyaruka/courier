@@ -67,6 +67,10 @@ type Backend interface {
 	// a backend wants to implement a failsafe against double sending messages (say if they were double queued)
 	WasMsgSent(context.Context, Msg) (bool, error)
 
+	// IsMsgLoop returns whether the passed in message is part of a message loop, possibly with another bot. Backends should
+	// implement their own logic to implement this.
+	IsMsgLoop(ctx context.Context, msg Msg) (bool, error)
+
 	// MarkOutgoingMsgComplete marks the passed in message as having been processed. Note this should be called even in the case
 	// of errors during sending as it will manage the number of active workers per channel. The optional status parameter can be
 	// used to determine any sort of deduping of msg sends

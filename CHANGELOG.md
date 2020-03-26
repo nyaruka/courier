@@ -1,3 +1,149 @@
+v5.5.4
+----------
+ * handle error cases for whatsapp callbacks
+
+v5.5.3
+----------
+ * add native panic handling
+
+v5.5.2
+----------
+ * Send msg in batches and add image msg type in the LINE channel
+
+v5.5.1
+----------
+ * Add contacts not already present for WhatsApp when sending error detected (thanks @koallann)
+
+v5.5.0
+----------
+ * add fabric to gitignore
+
+v5.6.0
+----------
+ * add fabric to gitignore
+
+v5.4.1
+----------
+ * Strip cookie from incoming requests
+
+v5.4.0
+----------
+ * touch README for 5.4 release
+
+v5.3.9
+----------
+ * Add VK Channel
+
+v5.3.8
+----------
+ * Fix Chatbase request body
+
+v5.3.7
+----------
+ * Fix quick replies variable replacement on external channel long msg
+
+v5.3.6
+----------
+ * Allow configuring and sending of quick replies for external channels
+
+v5.3.5
+----------
+ * Refactor FMC channel to support the fixed quick replies structure
+
+v5.3.4
+----------
+ * Change Arabia Cell max length to 670, fixes #274
+ * Add support for Twilio Whatsapp channel type
+ * Convert to use Github actions for CI
+
+v5.3.3
+----------
+ * Fix freshchat image handing
+
+v5.3.2
+----------
+ * Set Facebook message type tag when topic is set on message
+
+v5.3.1
+----------
+ * update changelog for v5.3
+
+v5.3.0
+----------
+ * Send WhatsApp media via URL
+ * Log Zenvia errors to ChannelLog instead of Sentry
+ * Ignore status updates for incoming messages	
+
+v5.2.0
+----------
+ * Sync version with RapidPro 5.2
+
+v2.0.18
+----------
+ * Test matrix release
+
+v2.0.17
+----------
+ * Test deploying with matrix build
+
+v2.0.16
+----------
+ * test releasing only on pg10
+
+v2.0.15
+----------
+ * Derive contact name for new WhatsApp contacts (thanks @devchima)
+
+v2.0.14
+----------
+ * properly log connection errors for whatsapp
+
+v2.0.13
+----------
+ * use latest librato library
+
+v2.0.12
+----------
+ * tune HTTP transport settings
+
+v2.0.11
+----------
+n
+ * tune HTTPClient settings to better deal with slow hosts
+
+v2.0.10
+----------
+ * Use multipart form encoding for thinQ
+
+v2.0.9
+----------
+ * Add thinq handler
+
+v2.0.8
+----------
+ * turn thumbs up stickers into thumbs up emoji
+
+v2.0.7
+----------
+ * Tweak lua script for checking loops, add more tests
+
+v2.0.6
+----------
+ * Make sure we never overflow our count when considering loops
+
+v2.0.5
+----------
+ * Check whether outgoing message is in a loop before sending
+
+v2.0.4
+----------
+ * Add FreshChat channel type
+ * Latest phonenumbers library
+
+v2.0.3
+----------
+ * Fix sending for ClickSend
+
 v2.0.2
 ----------
 0;95;0c# Enter any comments for inclusion in the CHANGELOG on this revision below, you can use markdown
