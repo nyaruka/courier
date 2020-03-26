@@ -34,3 +34,5 @@ _testmain.go
 dist/
 .envrc
 courier
+
+.idea/
