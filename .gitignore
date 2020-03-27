@@ -34,5 +34,6 @@ _testmain.go
 dist/
 .envrc
 courier
+courier.toml
 
 .idea/
