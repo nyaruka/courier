@@ -1,5 +1,7 @@
 package courier
 
+import "github.com/nyaruka/gocommon/urns"
+
 // MsgStatusValue is the status of a message
 type MsgStatusValue string
 
@@ -25,6 +27,11 @@ type MsgStatus interface {
 
 	ChannelUUID() ChannelUUID
 	ID() MsgID
+
+	OldURN() urns.URN
+	SetOldURN(urns.URN)
+	NewURN() urns.URN
+	SetNewURN(urns.URN)
 
 	ExternalID() string
 	SetExternalID(string)

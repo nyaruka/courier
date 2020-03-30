@@ -564,6 +564,8 @@ func (m *mockMsg) WithMetadata(metadata json.RawMessage) Msg { m.metadata = meta
 type mockMsgStatus struct {
 	channel    Channel
 	id         MsgID
+	oldURN     urns.URN
+	newURN     urns.URN
 	externalID string
 	status     MsgStatusValue
 	createdOn  time.Time
@@ -574,6 +576,11 @@ type mockMsgStatus struct {
 func (m *mockMsgStatus) ChannelUUID() ChannelUUID { return m.channel.UUID() }
 func (m *mockMsgStatus) ID() MsgID                { return m.id }
 func (m *mockMsgStatus) EventID() int64           { return int64(m.id) }
+
+func (m *mockMsgStatus) OldURN() urns.URN       { return m.oldURN }
+func (m *mockMsgStatus) SetOldURN(urn urns.URN) { m.oldURN = urn }
+func (m *mockMsgStatus) NewURN() urns.URN       { return m.newURN }
+func (m *mockMsgStatus) SetNewURN(urn urns.URN) { m.newURN = urn }
 
 func (m *mockMsgStatus) ExternalID() string      { return m.externalID }
 func (m *mockMsgStatus) SetExternalID(id string) { m.externalID = id }

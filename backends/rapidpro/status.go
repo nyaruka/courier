@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/nyaruka/gocommon/urns"
 	"log"
 	"os"
 	"strconv"
@@ -22,6 +23,8 @@ func newMsgStatus(channel courier.Channel, id courier.MsgID, externalID string, 
 		ChannelUUID_: channel.UUID(),
 		ChannelID_:   dbChannel.ID(),
 		ID_:          id,
+		OldURN_:      urns.NilURN,
+		NewURN_:      urns.NilURN,
 		ExternalID_:  externalID,
 		Status_:      status,
 		ModifiedOn_:  time.Now().In(time.UTC),
@@ -296,6 +299,8 @@ type DBMsgStatus struct {
 	ChannelUUID_ courier.ChannelUUID    `json:"channel_uuid"             db:"channel_uuid"`
 	ChannelID_   courier.ChannelID      `json:"channel_id"               db:"channel_id"`
 	ID_          courier.MsgID          `json:"msg_id,omitempty"         db:"msg_id"`
+	OldURN_      urns.URN               `json:"old_urn"                  db:"old_urn"`
+	NewURN_      urns.URN               `json:"new_urn"                  db:"new_urn"`
 	ExternalID_  string                 `json:"external_id,omitempty"    db:"external_id"`
 	Status_      courier.MsgStatusValue `json:"status"                   db:"status"`
 	ModifiedOn_  time.Time              `json:"modified_on"              db:"modified_on"`
@@ -316,6 +321,11 @@ func (s *DBMsgStatus) RowID() string {
 	}
 	return ""
 }
+
+func (s *DBMsgStatus) OldURN() urns.URN       { return s.OldURN_ }
+func (s *DBMsgStatus) SetOldURN(urn urns.URN) { s.OldURN_ = urn }
+func (s *DBMsgStatus) NewURN() urns.URN       { return s.NewURN_ }
+func (s *DBMsgStatus) SetNewURN(urn urns.URN) { s.NewURN_ = urn }
 
 func (s *DBMsgStatus) ExternalID() string      { return s.ExternalID_ }
 func (s *DBMsgStatus) SetExternalID(id string) { s.ExternalID_ = id }

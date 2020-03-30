@@ -3,6 +3,7 @@ package rapidpro
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -305,6 +306,10 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
+	err := b.handleContactURNUpdate(ctx, status)
+	if err != nil {
+		return errors.Wrap(err, "error on update contact URN")
+	}
 	// if we have an ID, we can have our batch commit for us
 	if status.ID() != courier.NilMsgID {
 		b.statusCommitter.Queue(status.(*DBMsgStatus))
@@ -334,6 +339,71 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 	}
 
 	return nil
+}
+
+// handleContactURNUpdate handles updating contact URN according to the old URN and the new URN from status
+func (b *backend) handleContactURNUpdate(ctx context.Context, status courier.MsgStatus) error {
+	// both URNs must have the same scheme
+	if status.OldURN().Scheme() != status.NewURN().Scheme() {
+		return errors.New("cannot update contact URN to a different URN scheme")
+	}
+	// ignore update if we have the same URN path
+	if status.OldURN().Path() == status.NewURN().Path() {
+		return nil
+	}
+
+	// retrieve channel
+	channel, err := b.GetChannel(ctx, courier.AnyChannelType, status.ChannelUUID())
+	if err != nil {
+		return err
+	}
+	dbChannel := channel.(*DBChannel)
+	tx, err := b.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	// retrieve the old URN
+	oldContactURN, err := selectContactURN(tx, dbChannel.OrgID(), status.OldURN())
+	if err != nil {
+		return err
+	}
+	// retrieve the new URN
+	newContactURN, err := selectContactURN(tx, dbChannel.OrgID(), status.NewURN())
+	if err != nil {
+		// only update the old URN path if the new URN doesn't exist
+		if err == sql.ErrNoRows {
+			oldContactURN.Path = status.NewURN().Path()
+			oldContactURN.Identity = string(status.NewURN().Identity())
+
+			err = updateContactURN(tx, oldContactURN)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+			return tx.Commit()
+		}
+		return err
+	}
+
+	// only update the new URN if it doesn't have an associated contact
+	if newContactURN.ContactID == NilContactID {
+		newContactURN.ContactID = oldContactURN.ContactID
+	}
+	// remove contact association from old URN
+	oldContactURN.ContactID = NilContactID
+
+	// update URNs
+	err = updateContactURN(tx, newContactURN)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = updateContactURN(tx, oldContactURN)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters

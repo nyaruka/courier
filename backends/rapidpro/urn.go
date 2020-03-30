@@ -181,6 +181,17 @@ ORDER BY
 LIMIT 1
 `
 
+// selectContactURN returns the ContactURN for the passed in org and URN
+func selectContactURN(db *sqlx.Tx, org OrgID, urn urns.URN) (*DBContactURN, error) {
+	contactURN := newDBContactURN(org, courier.NilChannelID, NilContactID, urn, "")
+	err := db.Get(contactURN, selectOrgURN, org, urn.Identity())
+
+	if err != nil {
+		return nil, err
+	}
+	return contactURN, nil
+}
+
 // contactURNForURN returns the ContactURN for the passed in org and URN, creating and associating
 // it with the passed in contact if necessary
 func contactURNForURN(db *sqlx.Tx, org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN, auth string) (*DBContactURN, error) {
@@ -248,6 +259,8 @@ UPDATE
 SET 
 	channel_id = :channel_id, 
 	contact_id = :contact_id, 
+	identity = :identity, 
+	path = :path, 
 	display = :display, 
 	auth = :auth, 
 	priority = :priority
