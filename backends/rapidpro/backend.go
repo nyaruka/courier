@@ -306,9 +306,11 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	err := b.handleContactURNUpdate(ctx, status)
-	if err != nil {
-		return errors.Wrap(err, "error updating contact URN")
+	if status.HasUpdatedURN() {
+		err := b.updateContactURN(ctx, status)
+		if err != nil {
+			return errors.Wrap(err, "error updating contact URN")
+		}
 	}
 	// if we have an ID, we can have our batch commit for us
 	if status.ID() != courier.NilMsgID {
@@ -341,18 +343,9 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 	return nil
 }
 
-// handleContactURNUpdate handles updating contact URN according to the old URN and the new URN from status
-func (b *backend) handleContactURNUpdate(ctx context.Context, status courier.MsgStatus) error {
-	oldURN, newURN := status.UpdatedURN()
-
-	// both URNs must have the same scheme
-	if oldURN.Scheme() != newURN.Scheme() {
-		return errors.New("cannot update contact URN to a different URN scheme")
-	}
-	// ignore update if we have the same URN path
-	if oldURN.Path() == newURN.Path() {
-		return nil
-	}
+// updateContactURN updates contact URN according to the old/new URNs from status
+func (b *backend) updateContactURN(ctx context.Context, status courier.MsgStatus) error {
+	old, new := status.UpdatedURN()
 
 	// retrieve channel
 	channel, err := b.GetChannel(ctx, courier.AnyChannelType, status.ChannelUUID())
@@ -364,18 +357,18 @@ func (b *backend) handleContactURNUpdate(ctx context.Context, status courier.Msg
 	if err != nil {
 		return err
 	}
-	// retrieve the oldURN URN
-	oldContactURN, err := selectContactURN(tx, dbChannel.OrgID(), oldURN)
+	// retrieve the old URN
+	oldContactURN, err := selectContactURN(tx, dbChannel.OrgID(), old)
 	if err != nil {
 		return errors.Wrap(err, "error retrieving old contact URN")
 	}
-	// retrieve the newURN URN
-	newContactURN, err := selectContactURN(tx, dbChannel.OrgID(), newURN)
+	// retrieve the new URN
+	newContactURN, err := selectContactURN(tx, dbChannel.OrgID(), new)
 	if err != nil {
-		// only update the oldURN URN path if the newURN URN doesn't exist
+		// only update the old URN path if the new URN doesn't exist
 		if err == sql.ErrNoRows {
-			oldContactURN.Path = newURN.Path()
-			oldContactURN.Identity = string(newURN.Identity())
+			oldContactURN.Path = new.Path()
+			oldContactURN.Identity = string(new.Identity())
 
 			err = fullyUpdateContactURN(tx, oldContactURN)
 			if err != nil {
@@ -387,11 +380,11 @@ func (b *backend) handleContactURNUpdate(ctx context.Context, status courier.Msg
 		return errors.Wrap(err, "error retrieving new contact URN")
 	}
 
-	// only update the newURN URN if it doesn't have an associated contact
+	// only update the new URN if it doesn't have an associated contact
 	if newContactURN.ContactID == NilContactID {
 		newContactURN.ContactID = oldContactURN.ContactID
 	}
-	// remove contact association from oldURN URN
+	// remove contact association from old URN
 	oldContactURN.ContactID = NilContactID
 
 	// update URNs

@@ -535,7 +535,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	if err == nil {
 		if wppID != "" {
 			newURN, _ := urns.NewWhatsAppURN(wppID)
-			status.SetUpdatedURN(msg.URN(), newURN)
+			err = status.SetUpdatedURN(msg.URN(), newURN)
+
+			if err != nil {
+				elapsed := time.Now().Sub(start)
+				log := courier.NewChannelLogFromError("unable to update contact URN", msg.Channel(), msg.ID(), elapsed, err)
+				status.AddLog(log)
+			}
 		}
 		status.SetStatus(courier.MsgWired)
 	}
