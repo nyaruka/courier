@@ -575,6 +575,97 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.NoError(err)
 	ts.Equal(m.Status_, courier.MsgFailed)
 	ts.Equal(m.ErrorCount_, 3)
+
+	// don't update URN for different URN schemes
+	status = ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10000), courier.MsgSent)
+	oldURN, _ := urns.NewTelURNForCountry("12065551518", "US")
+	newURN, _ := urns.NewWhatsAppURN("12065551518")
+	status.SetUpdatedURN(oldURN, newURN)
+
+	ts.Error(ts.b.WriteMsgStatus(ctx, status))
+
+	// don't update URN for equal status URNs
+	tx, _ := ts.b.db.BeginTxx(ctx, nil)
+	oldURN, _ = urns.NewTelURNForCountry("12065551520", "US")
+	_ = insertContactURN(tx, newDBContactURN(channel.OrgID_, channel.ID_, NilContactID, oldURN, ""))
+
+	ts.NoError(tx.Commit())
+
+	status = ts.b.NewMsgStatusForID(channel, courier.MsgID(10000), courier.MsgSent)
+	status.SetUpdatedURN(oldURN, oldURN)
+
+	ts.NoError(ts.b.WriteMsgStatus(ctx, status))
+
+	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	contactURN, err := selectContactURN(tx, channel.OrgID_, oldURN)
+
+	ts.NoError(err)
+	ts.Equal(contactURN.Identity, oldURN.Identity().String())
+	ts.NoError(tx.Commit())
+
+	// update URN when the new doesn't exist
+	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	oldURN, _ = urns.NewWhatsAppURN("55988776655")
+	_ = insertContactURN(tx, newDBContactURN(channel.OrgID_, channel.ID_, NilContactID, oldURN, ""))
+
+	ts.NoError(tx.Commit())
+
+	newURN, _ = urns.NewWhatsAppURN("5588776655")
+	status = ts.b.NewMsgStatusForID(channel, courier.MsgID(10000), courier.MsgSent)
+	status.SetUpdatedURN(oldURN, newURN)
+
+	ts.NoError(ts.b.WriteMsgStatus(ctx, status))
+
+	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	contactURN, err = selectContactURN(tx, channel.OrgID_, newURN)
+
+	ts.NoError(err)
+	ts.Equal(contactURN.Identity, newURN.Identity().String())
+	ts.NoError(tx.Commit())
+
+	// new URN already exits but don't have an associated contact
+	oldURN, _ = urns.NewWhatsAppURN("55999887766")
+	newURN, _ = urns.NewWhatsAppURN("5599887766")
+	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	contact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, "", "")
+	_ = insertContactURN(tx, newDBContactURN(channel.OrgID_, channel.ID_, NilContactID, newURN, ""))
+
+	ts.NoError(tx.Commit())
+
+	status = ts.b.NewMsgStatusForID(channel, courier.MsgID(10007), courier.MsgSent)
+	status.SetUpdatedURN(oldURN, newURN)
+
+	ts.NoError(ts.b.WriteMsgStatus(ctx, status))
+
+	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	newContactURN, _ := selectContactURN(tx, channel.OrgID_, newURN)
+	oldContactURN, _ := selectContactURN(tx, channel.OrgID_, oldURN)
+
+	ts.Equal(newContactURN.ContactID, contact.ID_)
+	ts.Equal(oldContactURN.ContactID, NilContactID)
+	ts.NoError(tx.Commit())
+
+	// new URN already exits and have an associated contact
+	oldURN, _ = urns.NewWhatsAppURN("55988776655")
+	newURN, _ = urns.NewWhatsAppURN("5588776655")
+	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	_, _ = contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, "", "")
+	otherContact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, newURN, "", "")
+
+	ts.NoError(tx.Commit())
+
+	status = ts.b.NewMsgStatusForID(channel, courier.MsgID(10007), courier.MsgSent)
+	status.SetUpdatedURN(oldURN, newURN)
+
+	ts.NoError(ts.b.WriteMsgStatus(ctx, status))
+
+	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	oldContactURN, _ = selectContactURN(tx, channel.OrgID_, oldURN)
+	newContactURN, _ = selectContactURN(tx, channel.OrgID_, newURN)
+
+	ts.Equal(oldContactURN.ContactID, NilContactID)
+	ts.Equal(newContactURN.ContactID, otherContact.ID_)
+	ts.NoError(tx.Commit())
 }
 
 func (ts *BackendTestSuite) TestHealth() {
