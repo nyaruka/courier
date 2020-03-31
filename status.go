@@ -28,10 +28,8 @@ type MsgStatus interface {
 	ChannelUUID() ChannelUUID
 	ID() MsgID
 
-	OldURN() urns.URN
-	SetOldURN(urns.URN)
-	NewURN() urns.URN
-	SetNewURN(urns.URN)
+	SetUpdatedURN(old, new urns.URN)
+	UpdatedURN() (old, new urns.URN)
 
 	ExternalID() string
 	SetExternalID(string)

@@ -577,10 +577,13 @@ func (m *mockMsgStatus) ChannelUUID() ChannelUUID { return m.channel.UUID() }
 func (m *mockMsgStatus) ID() MsgID                { return m.id }
 func (m *mockMsgStatus) EventID() int64           { return int64(m.id) }
 
-func (m *mockMsgStatus) OldURN() urns.URN       { return m.oldURN }
-func (m *mockMsgStatus) SetOldURN(urn urns.URN) { m.oldURN = urn }
-func (m *mockMsgStatus) NewURN() urns.URN       { return m.newURN }
-func (m *mockMsgStatus) SetNewURN(urn urns.URN) { m.newURN = urn }
+func (m *mockMsgStatus) SetUpdatedURN(old, new urns.URN) {
+	m.oldURN = old
+	m.newURN = new
+}
+func (m *mockMsgStatus) UpdatedURN() (urns.URN, urns.URN) {
+	return m.oldURN, m.newURN
+}
 
 func (m *mockMsgStatus) ExternalID() string      { return m.externalID }
 func (m *mockMsgStatus) SetExternalID(id string) { m.externalID = id }

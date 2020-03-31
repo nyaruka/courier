@@ -322,10 +322,13 @@ func (s *DBMsgStatus) RowID() string {
 	return ""
 }
 
-func (s *DBMsgStatus) OldURN() urns.URN       { return s.OldURN_ }
-func (s *DBMsgStatus) SetOldURN(urn urns.URN) { s.OldURN_ = urn }
-func (s *DBMsgStatus) NewURN() urns.URN       { return s.NewURN_ }
-func (s *DBMsgStatus) SetNewURN(urn urns.URN) { s.NewURN_ = urn }
+func (s *DBMsgStatus) SetUpdatedURN(old, new urns.URN) {
+	s.OldURN_ = old
+	s.NewURN_ = new
+}
+func (s *DBMsgStatus) UpdatedURN() (urns.URN, urns.URN) {
+	return s.OldURN_, s.NewURN_
+}
 
 func (s *DBMsgStatus) ExternalID() string      { return s.ExternalID_ }
 func (s *DBMsgStatus) SetExternalID(id string) { s.ExternalID_ = id }

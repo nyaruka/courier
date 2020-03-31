@@ -259,6 +259,18 @@ UPDATE
 SET 
 	channel_id = :channel_id, 
 	contact_id = :contact_id, 
+	display = :display, 
+	auth = :auth, 
+	priority = :priority
+WHERE 
+	id = :id
+`
+const fullyUpdateURN = `
+UPDATE 
+	contacts_contacturn
+SET 
+	channel_id = :channel_id, 
+	contact_id = :contact_id, 
 	identity = :identity, 
 	path = :path, 
 	display = :display, 
@@ -271,6 +283,21 @@ WHERE
 // UpdateContactURN updates the Channel and Contact on an existing URN
 func updateContactURN(db *sqlx.Tx, urn *DBContactURN) error {
 	rows, err := db.NamedQuery(updateURN, urn)
+	if err != nil {
+		logrus.WithError(err).WithField("urn_id", urn.ID).Error("error updating contact urn")
+		return err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		err = rows.Scan(&urn.ID)
+	}
+	return err
+}
+
+// FullyUpdateContactURN updates the Identity, Channel and Contact on an existing URN
+func fullyUpdateContactURN(db *sqlx.Tx, urn *DBContactURN) error {
+	rows, err := db.NamedQuery(fullyUpdateURN, urn)
 	if err != nil {
 		logrus.WithError(err).WithField("urn_id", urn.ID).Error("error updating contact urn")
 		return err
