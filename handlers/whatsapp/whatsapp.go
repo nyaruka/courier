@@ -481,7 +481,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				return nil, errors.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
 			}
 
-			payload := &hsmPayload{
+			payload := hsmPayload{
 				To:   msg.URN().Path(),
 				Type: "hsm",
 			}
