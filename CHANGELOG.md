@@ -1,3 +1,7 @@
+v5.5.7
+----------
+ * slow queuing before reaching our max batch size
+
 v5.5.6
 ----------
  * Slow queuing into a batch when batches are full
