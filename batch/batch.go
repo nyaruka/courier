@@ -75,6 +75,9 @@ func (c *committer) Queue(value Value) {
 	// our buffer is full, log an error but continue
 	if len(c.buffer) >= cap(c.buffer) {
 		logrus.WithField("label", c.label).Error("buffer full, you may want to decrease your timeout")
+
+		// slow our queuing a bit, we don't want our queue growing unbounded
+		time.Sleep(time.Millisecond * 100)
 	}
 
 	c.buffer <- value
