@@ -72,12 +72,14 @@ func (c *committer) Start() {
 
 // Queue will queue the passed in value to committed. This will block in cases where our buffer is full
 func (c *committer) Queue(value Value) {
-	// our buffer is full, log an error but continue
+	// our buffer is full, log an error but continue (our channel will block)
 	if len(c.buffer) >= cap(c.buffer) {
 		logrus.WithField("label", c.label).Error("buffer full, you may want to decrease your timeout")
-
-		// slow our queuing a bit, we don't want our queue growing unbounded
-		time.Sleep(time.Millisecond * 100)
+	} else {
+		// we are approaching our max size, start slowing down queueing so we can catch up
+		if len(c.buffer) > int(float64(cap(c.buffer))*.90) {
+			time.Sleep(50 * time.Millisecond)
+		}
 	}
 
 	c.buffer <- value
