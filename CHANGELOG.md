@@ -1,3 +1,7 @@
+v5.5.8
+----------
+ * More tweaks to slowing down batching of status commits when approaching max queue size
+
 v5.5.7
 ----------
  * slow queuing before reaching our max batch size
