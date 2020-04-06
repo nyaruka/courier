@@ -75,10 +75,11 @@ func (c *committer) Queue(value Value) {
 	// our buffer is full, log an error but continue (our channel will block)
 	if len(c.buffer) >= cap(c.buffer) {
 		logrus.WithField("label", c.label).Error("buffer full, you may want to decrease your timeout")
+		time.Sleep(250 * time.Millisecond)
 	} else {
 		// we are approaching our max size, start slowing down queueing so we can catch up
 		if len(c.buffer) > int(float64(cap(c.buffer))*.90) {
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 
