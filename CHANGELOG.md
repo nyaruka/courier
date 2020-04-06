@@ -1,3 +1,8 @@
+v5.5.5
+----------
+ * Increase buffer size
+ * Add support for Viber stickers as image attachments for incoming messages
+
 v5.5.4
 ----------
  * handle error cases for whatsapp callbacks
