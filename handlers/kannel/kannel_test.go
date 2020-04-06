@@ -17,11 +17,17 @@ var (
 	receiveEmptyMessage = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B2349067554729&message=&ts=1493735509&id=asdf-asdf&to=24453"
 	statusNoParams      = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 	statusInvalidStatus = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=66"
-	statusValid         = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=4"
+	statusWired         = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=4"
+	statusSent          = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=8"
+	statusDelivered     = "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=1"
 )
 
 var testChannels = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US", nil),
+}
+
+var ignoreChannels = []courier.Channel{
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US", map[string]interface{}{"ignore_sent": true}),
 }
 
 var handleTestCases = []ChannelHandleTestCase{
@@ -35,11 +41,20 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Invalid URN", URL: receiveInvalidURN, Data: "empty", Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Status No Params", URL: statusNoParams, Status: 400, Response: "field 'status' required"},
 	{Label: "Status Invalid Status", URL: statusInvalidStatus, Status: 400, Response: "unknown status '66', must be one of 1,2,4,8,16"},
-	{Label: "Status Valid", URL: statusValid, Status: 200, Response: `"status":"S"`},
+	{Label: "Status Valid", URL: statusWired, Status: 200, Response: `"status":"S"`},
+}
+
+var ignoreTestCases = []ChannelHandleTestCase{
+	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", Status: 200, Response: "Accepted",
+		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), ExternalID: Sp("asdf-asdf"), Date: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
+	{Label: "Write Status Delivered", URL: statusDelivered, Status: 200, Response: `"status":"D"`},
+	{Label: "Ignore Status Wired", URL: statusWired, Status: 200, Response: `ignoring sent report`},
+	{Label: "Ignore Status Sent", URL: statusSent, Status: 200, Response: `ignoring sent report`},
 }
 
 func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
+	RunChannelTestCases(t, ignoreChannels, newHandler(), ignoreTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
