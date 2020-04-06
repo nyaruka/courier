@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const batchSize = 100
+const batchSize = 1000
 
 // Committer commits items in a background thread
 type Committer interface {
