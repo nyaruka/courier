@@ -1,3 +1,7 @@
+v5.5.9
+----------
+ * Add option for Kannel channels to ignore duplicative sent status
+
 v5.5.8
 ----------
  * More tweaks to slowing down batching of status commits when approaching max queue size
