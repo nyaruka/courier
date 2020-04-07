@@ -373,7 +373,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Status: "W", ExternalID: "157b5e14568e8",
 		Metadata:     json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "variables": ["Chef", "tomorrow"]}}`),
 		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 200,
-		RequestBody: `{"to":"250788123123","type":"hsm","hsm":{"namespace":"waba_namespace","element_name":"revive_issue","language":{"policy":"deterministic","code":"en"},"localizable_params":[{"default":"Chef"},{"default":"tomorrow"}]}}`,
+		RequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		SendPrep:    setSendURL,
 	},
 	{Label: "Template Invalid Language",
@@ -438,6 +438,18 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
+var hsmSupportSendTestCases = []ChannelSendTestCase{
+	{Label: "Template Send",
+		Text:   "templated message",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Metadata:     json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "variables": ["Chef", "tomorrow"]}}`),
+		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 200,
+		RequestBody: `{"to":"250788123123","type":"hsm","hsm":{"namespace":"waba_namespace","element_name":"revive_issue","language":{"policy":"deterministic","code":"en"},"localizable_params":[{"default":"Chef"},{"default":"tomorrow"}]}}`,
+		SendPrep:    setSendURL,
+	},
+}
+
 func TestSending(t *testing.T) {
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WA", "250788383383", "US",
 		map[string]interface{}{
@@ -446,5 +458,14 @@ func TestSending(t *testing.T) {
 			"fb_namespace": "waba_namespace",
 		})
 
+	var hsmSupportChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WA", "250788383383", "US",
+		map[string]interface{}{
+			"auth_token":   "token123",
+			"base_url":     "https://foo.bar/",
+			"fb_namespace": "waba_namespace",
+			"hsm_support":  true,
+		})
+
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, hsmSupportChannel, newHandler(), hsmSupportSendTestCases, nil)
 }
