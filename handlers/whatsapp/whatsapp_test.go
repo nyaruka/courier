@@ -463,7 +463,7 @@ func TestSending(t *testing.T) {
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",
 			"fb_namespace": "waba_namespace",
-			"hsm_support":  "true",
+			"hsm_support":  true,
 		})
 
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)

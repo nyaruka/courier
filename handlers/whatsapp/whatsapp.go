@@ -504,10 +504,22 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				return nil, errors.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
 			}
 
-			hsmSupport := msg.Channel().StringConfigForKey(configHSMSupport, "")
-
 			externalID := ""
-			if hsmSupport == "" {
+			if msg.Channel().BoolConfigForKey(configHSMSupport, false) {
+				payload := &hsmPayload{
+					To:   msg.URN().Path(),
+					Type: "hsm",
+				}
+				payload.HSM.Namespace = namespace
+				payload.HSM.ElementName = templating.Template.Name
+				payload.HSM.Language.Policy = "deterministic"
+				payload.HSM.Language.Code = templating.Language
+				for _, v := range templating.Variables {
+					payload.HSM.LocalizableParams = append(payload.HSM.LocalizableParams, LocalizableParam{Default: v})
+				}
+				externalID, logs, err = sendWhatsAppMsg(msg, sendPath, token, payload)
+			} else {
+
 				payload := &templatePayload{
 					To:   msg.URN().Path(),
 					Type: "template",
@@ -524,19 +536,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				}
 				payload.Template.Components = append(payload.Template.Components, *component)
 
-				externalID, logs, err = sendWhatsAppMsg(msg, sendPath, token, payload)
-			} else {
-				payload := &hsmPayload{
-					To:   msg.URN().Path(),
-					Type: "hsm",
-				}
-				payload.HSM.Namespace = namespace
-				payload.HSM.ElementName = templating.Template.Name
-				payload.HSM.Language.Policy = "deterministic"
-				payload.HSM.Language.Code = templating.Language
-				for _, v := range templating.Variables {
-					payload.HSM.LocalizableParams = append(payload.HSM.LocalizableParams, LocalizableParam{Default: v})
-				}
 				externalID, logs, err = sendWhatsAppMsg(msg, sendPath, token, payload)
 			}
 
