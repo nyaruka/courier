@@ -326,6 +326,30 @@ type LocalizableParam struct {
 	Default string `json:"default"`
 }
 
+type Param struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+type Component struct {
+	Type       string  `json:"type"`
+	Parameters []Param `json:"parameters"`
+}
+
+type templatePayload struct {
+	To       string `json:"to"`
+	Type     string `json:"type"`
+	Template struct {
+		Namespace string `json:"namespace"`
+		Name      string `json:"name"`
+		Language  struct {
+			Policy string `json:"policy"`
+			Code   string `json:"code"`
+		} `json:"language"`
+		Components []Component `json:"components"`
+	} `json:"template"`
+}
+
 type hsmPayload struct {
 	To   string `json:"to"`
 	Type string `json:"type"`
@@ -479,17 +503,21 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				return nil, errors.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
 			}
 
-			payload := &hsmPayload{
+			payload := &templatePayload{
 				To:   msg.URN().Path(),
-				Type: "hsm",
+				Type: "template",
 			}
-			payload.HSM.Namespace = namespace
-			payload.HSM.ElementName = templating.Template.Name
-			payload.HSM.Language.Policy = "deterministic"
-			payload.HSM.Language.Code = templating.Language
+			payload.Template.Namespace = namespace
+			payload.Template.Name = templating.Template.Name
+			payload.Template.Language.Policy = "deterministic"
+			payload.Template.Language.Code = templating.Language
+
+			component := &Component{Type: "body"}
+
 			for _, v := range templating.Variables {
-				payload.HSM.LocalizableParams = append(payload.HSM.LocalizableParams, LocalizableParam{Default: v})
+				component.Parameters = append(component.Parameters, Param{Type: "text", Text: v})
 			}
+			payload.Template.Components = append(payload.Template.Components, *component)
 
 			externalID := ""
 			externalID, logs, err = sendWhatsAppMsg(msg, sendPath, token, payload)
