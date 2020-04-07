@@ -20,7 +20,8 @@ import (
 )
 
 const (
-	configNamespace = "fb_namespace"
+	configNamespace  = "fb_namespace"
+	configHSMSupport = "hsm_support"
 )
 
 var (
@@ -503,24 +504,41 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				return nil, errors.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
 			}
 
-			payload := &templatePayload{
-				To:   msg.URN().Path(),
-				Type: "template",
-			}
-			payload.Template.Namespace = namespace
-			payload.Template.Name = templating.Template.Name
-			payload.Template.Language.Policy = "deterministic"
-			payload.Template.Language.Code = templating.Language
-
-			component := &Component{Type: "body"}
-
-			for _, v := range templating.Variables {
-				component.Parameters = append(component.Parameters, Param{Type: "text", Text: v})
-			}
-			payload.Template.Components = append(payload.Template.Components, *component)
+			hsmSupport := msg.Channel().StringConfigForKey(configHSMSupport, "")
 
 			externalID := ""
-			externalID, logs, err = sendWhatsAppMsg(msg, sendPath, token, payload)
+			if hsmSupport == "" {
+				payload := &templatePayload{
+					To:   msg.URN().Path(),
+					Type: "template",
+				}
+				payload.Template.Namespace = namespace
+				payload.Template.Name = templating.Template.Name
+				payload.Template.Language.Policy = "deterministic"
+				payload.Template.Language.Code = templating.Language
+
+				component := &Component{Type: "body"}
+
+				for _, v := range templating.Variables {
+					component.Parameters = append(component.Parameters, Param{Type: "text", Text: v})
+				}
+				payload.Template.Components = append(payload.Template.Components, *component)
+
+				externalID, logs, err = sendWhatsAppMsg(msg, sendPath, token, payload)
+			} else {
+				payload := &hsmPayload{
+					To:   msg.URN().Path(),
+					Type: "hsm",
+				}
+				payload.HSM.Namespace = namespace
+				payload.HSM.ElementName = templating.Template.Name
+				payload.HSM.Language.Policy = "deterministic"
+				payload.HSM.Language.Code = templating.Language
+				for _, v := range templating.Variables {
+					payload.HSM.LocalizableParams = append(payload.HSM.LocalizableParams, LocalizableParam{Default: v})
+				}
+				externalID, logs, err = sendWhatsAppMsg(msg, sendPath, token, payload)
+			}
 
 			// add logs to our status
 			for _, log := range logs {
