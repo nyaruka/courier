@@ -1,3 +1,7 @@
+v5.5.10
+----------
+ * Fix sending WA template messages on new WhatsApp docker
+
 v5.5.9
 ----------
  * Add option for Kannel channels to ignore duplicative sent status
