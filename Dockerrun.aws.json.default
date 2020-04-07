@@ -1,7 +1,7 @@
 {
   "AWSEBDockerrunVersion": "1",
   "Image": {
-    "Name": "greatnonprofits/courier:dev-BUILD_NUMBER",
+    "Name": "greatnonprofits/courier:BUILD_VERSION_NAME",
     "Update": "true"
   },
   "Ports": [
