@@ -20,6 +20,7 @@ const (
 	configEncoding    = "encoding"
 	configVerifySSL   = "verify_ssl"
 	configDLRMask     = "dlr_mask"
+	configIgnoreSent  = "ignore_sent"
 
 	encodingDefault = "D"
 	encodingUnicode = "U"
@@ -107,6 +108,11 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%d', must be one of 1,2,4,8,16", form.Status))
+	}
+
+	// if we are ignoring delivery reports and this isn't failed then move on
+	if channel.BoolConfigForKey(configIgnoreSent, false) && msgStatus == courier.MsgSent {
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring sent report (message aready wired)")
 	}
 
 	// write our status

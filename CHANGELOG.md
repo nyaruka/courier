@@ -1,3 +1,28 @@
+v5.5.10
+----------
+ * Fix sending WA template messages on new WhatsApp docker
+
+v5.5.9
+----------
+ * Add option for Kannel channels to ignore duplicative sent status
+
+v5.5.8
+----------
+ * More tweaks to slowing down batching of status commits when approaching max queue size
+
+v5.5.7
+----------
+ * slow queuing before reaching our max batch size
+
+v5.5.6
+----------
+ * Slow queuing into a batch when batches are full
+
+v5.5.5
+----------
+ * Increase buffer size
+ * Add support for Viber stickers as image attachments for incoming messages
+
 v5.5.4
 ----------
  * handle error cases for whatsapp callbacks

@@ -68,6 +68,7 @@ type eventPayload struct {
 	Message struct {
 		Text    string `json:"text"`
 		Media   string `json:"media"`
+		StickerID string `json:"sticker_id"`
 		Contact struct {
 			Name        string `json:"name"`
 			PhoneNumber string `json:"phone_number"`
@@ -203,6 +204,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 		case "video":
 			mediaURL = payload.Message.Media
+
+		case "sticker":
+			mediaURL = fmt.Sprintf("https://viber.github.io/docs/img/stickers/%s.png", payload.Message.StickerID)
 
 		case "contact":
 			text = fmt.Sprintf("%s: %s", payload.Message.Contact.Name, payload.Message.Contact.PhoneNumber)
