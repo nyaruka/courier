@@ -508,7 +508,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 			externalID := ""
 			if msg.Channel().BoolConfigForKey(configHSMSupport, false) {
-				payload := &hsmPayload{
+				payload := hsmPayload{
 					To:   msg.URN().Path(),
 					Type: "hsm",
 				}
@@ -522,7 +522,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, token, payload)
 			} else {
 
-				payload := &templatePayload{
+				payload := templatePayload{
 					To:   msg.URN().Path(),
 					Type: "template",
 				}
@@ -652,6 +652,9 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 			} else if document, ok := payload.(mtDocumentPayload); ok {
 				document.To = wppID
 				updatedPayload = document
+			} else if template, ok := payload.(templatePayload); ok {
+				template.To = wppID
+				updatedPayload = template
 			} else if hsm, ok := payload.(hsmPayload); ok {
 				hsm.To = wppID
 				updatedPayload = hsm
