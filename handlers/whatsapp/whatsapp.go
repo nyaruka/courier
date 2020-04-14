@@ -637,27 +637,28 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 			var updatedPayload interface{}
 
 			// handle msg type casting
-			if text, ok := payload.(mtTextPayload); ok {
-				text.To = wppID
-				updatedPayload = text
-			} else if image, ok := payload.(mtImagePayload); ok {
-				image.To = wppID
-				updatedPayload = image
-			} else if video, ok := payload.(mtVideoPayload); ok {
-				video.To = wppID
-				updatedPayload = video
-			} else if audio, ok := payload.(mtAudioPayload); ok {
-				audio.To = wppID
-				updatedPayload = audio
-			} else if document, ok := payload.(mtDocumentPayload); ok {
-				document.To = wppID
-				updatedPayload = document
-			} else if template, ok := payload.(templatePayload); ok {
-				template.To = wppID
-				updatedPayload = template
-			} else if hsm, ok := payload.(hsmPayload); ok {
-				hsm.To = wppID
-				updatedPayload = hsm
+			switch v := payload.(type) {
+			case mtTextPayload:
+				v.To = wppID
+				updatedPayload = v
+			case mtImagePayload:
+				v.To = wppID
+				updatedPayload = v
+			case mtVideoPayload:
+				v.To = wppID
+				updatedPayload = v
+			case mtAudioPayload:
+				v.To = wppID
+				updatedPayload = v
+			case mtDocumentPayload:
+				v.To = wppID
+				updatedPayload = v
+			case templatePayload:
+				v.To = wppID
+				updatedPayload = v
+			case hsmPayload:
+				v.To = wppID
+				updatedPayload = v
 			}
 			// marshal updated payload
 			if updatedPayload != nil {
