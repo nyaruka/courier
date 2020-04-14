@@ -1,3 +1,7 @@
+v5.5.11
+----------
+ * Retry WhatsApp channel messaging after contact check with returned WhatsApp ID
+
 v5.5.10
 ----------
  * Fix sending WA template messages on new WhatsApp docker
