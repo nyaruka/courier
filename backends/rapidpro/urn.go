@@ -181,6 +181,17 @@ ORDER BY
 LIMIT 1
 `
 
+// selectContactURN returns the ContactURN for the passed in org and URN
+func selectContactURN(db *sqlx.Tx, org OrgID, urn urns.URN) (*DBContactURN, error) {
+	contactURN := newDBContactURN(org, courier.NilChannelID, NilContactID, urn, "")
+	err := db.Get(contactURN, selectOrgURN, org, urn.Identity())
+
+	if err != nil {
+		return nil, err
+	}
+	return contactURN, nil
+}
+
 // contactURNForURN returns the ContactURN for the passed in org and URN, creating and associating
 // it with the passed in contact if necessary
 func contactURNForURN(db *sqlx.Tx, org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN, auth string) (*DBContactURN, error) {
@@ -254,10 +265,39 @@ SET
 WHERE 
 	id = :id
 `
+const fullyUpdateURN = `
+UPDATE 
+	contacts_contacturn
+SET 
+	channel_id = :channel_id, 
+	contact_id = :contact_id, 
+	identity = :identity, 
+	path = :path, 
+	display = :display, 
+	auth = :auth, 
+	priority = :priority
+WHERE 
+	id = :id
+`
 
 // UpdateContactURN updates the Channel and Contact on an existing URN
 func updateContactURN(db *sqlx.Tx, urn *DBContactURN) error {
 	rows, err := db.NamedQuery(updateURN, urn)
+	if err != nil {
+		logrus.WithError(err).WithField("urn_id", urn.ID).Error("error updating contact urn")
+		return err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		err = rows.Scan(&urn.ID)
+	}
+	return err
+}
+
+// FullyUpdateContactURN updates the Identity, Channel and Contact on an existing URN
+func fullyUpdateContactURN(db *sqlx.Tx, urn *DBContactURN) error {
+	rows, err := db.NamedQuery(fullyUpdateURN, urn)
 	if err != nil {
 		logrus.WithError(err).WithField("urn_id", urn.ID).Error("error updating contact urn")
 		return err
