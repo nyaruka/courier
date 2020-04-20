@@ -1,3 +1,7 @@
+v5.5.12
+----------
+ * Increase ArabiaCell max length to 1530
+
 v5.5.11
 ----------
  * Retry WhatsApp channel messaging after contact check with returned WhatsApp ID
