@@ -150,10 +150,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	if password == "" {
 		return nil, fmt.Errorf("no password set for %s channel", msg.Channel().ChannelType())
 	}
-	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, h.maxLength)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength)
+	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), h.maxLength)
 	for i, part := range parts {
 		form := url.Values{
 			"userid":   []string{username},

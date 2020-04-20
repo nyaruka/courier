@@ -133,10 +133,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no password set for ST channel: %s", msg.Channel().UUID())
 	}
 
-	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
-
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength)
+	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for i, part := range parts {
 
 		payload := mtPayload{

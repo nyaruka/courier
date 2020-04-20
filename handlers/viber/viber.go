@@ -66,10 +66,10 @@ type eventPayload struct {
 		Name string `json:"name"`
 	} `json:"user"`
 	Message struct {
-		Text      string `json:"text"`
-		Media     string `json:"media"`
+		Text    string `json:"text"`
+		Media   string `json:"media"`
 		StickerID string `json:"sticker_id"`
-		Contact   struct {
+		Contact struct {
 			Name        string `json:"name"`
 			PhoneNumber string `json:"phone_number"`
 		}
@@ -347,13 +347,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		replies = &mtKeyboard{"keyboard", true, buttons}
 	}
-
-	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
-
-	parts := handlers.SplitMsg(msg.Text(), maxLength)
+	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
 	if len(msg.Attachments()) > 0 && len(parts[0]) > descriptionMaxLength {
 		descriptionPart := handlers.SplitMsg(msg.Text(), descriptionMaxLength)[0]
-		others := handlers.SplitMsg(strings.TrimSpace(strings.Replace(msg.Text(), descriptionPart, "", 1)), maxLength)
+		others := handlers.SplitMsg(strings.TrimSpace(strings.Replace(msg.Text(), descriptionPart, "", 1)), maxMsgLength)
 		parts = []string{descriptionPart}
 		parts = append(parts, others...)
 	}

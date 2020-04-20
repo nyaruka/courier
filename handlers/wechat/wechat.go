@@ -249,10 +249,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	partSendURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "message/custom/send"))
 	partSendURL.RawQuery = form.Encode()
 
-	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
-
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength)
+	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		wcMsg := &mtPayload{}
 		wcMsg.MsgType = "text"

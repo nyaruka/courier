@@ -6,12 +6,11 @@ import (
 	"net/http"
 	"strings"
 
-	"encoding/base64"
-	"encoding/xml"
-
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"encoding/base64"
 	"github.com/nyaruka/courier/utils"
+	"encoding/xml"
 )
 
 const (
@@ -52,9 +51,9 @@ func (h *handler) Initialize(s courier.Server) error {
 //	<description>Completed</description>
 //</response>
 type mtResponse struct {
-	Input       string `xml:"input"`
-	Status      string `xml:"status"`
-	Description string `xml:"description"`
+	Input		string `xml:"input"`
+	Status		string `xml:"status"`
+	Description	string `xml:"description"`
 }
 
 // SendMsg sends the passed in message, returning any error
@@ -79,17 +78,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no carrier_id set for MG channel")
 	}
 
-	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
-
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength)
+	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
-		shortcode := strings.TrimPrefix(msg.Channel().Address(), "+")
-		to := strings.TrimPrefix(msg.URN().Path(), "+")
+		shortcode  := strings.TrimPrefix(msg.Channel().Address(), "+")
+		to         := strings.TrimPrefix(msg.URN().Path(), "+")
 		textBase64 := base64.RawURLEncoding.EncodeToString([]byte(part))
-		params := fmt.Sprintf("%d/%s/%d/%s/%s", instanceId, shortcode, carrierId, to, textBase64)
-		signature := utils.SignHMAC256(privateKey, params)
-		fullURL := fmt.Sprintf("%s/%s/%s/%s", sendURL, params, publicKey, signature)
+		params     := fmt.Sprintf("%d/%s/%d/%s/%s", instanceId, shortcode, carrierId, to, textBase64)
+		signature  := utils.SignHMAC256(privateKey, params)
+		fullURL    := fmt.Sprintf("%s/%s/%s/%s", sendURL, params, publicKey, signature)
 
 		req, _ := http.NewRequest(http.MethodGet, fullURL, nil)
 		rr, err := utils.MakeHTTPRequest(req)

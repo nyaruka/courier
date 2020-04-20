@@ -181,11 +181,9 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		status.SetExternalID(externalID)
 	}
 
-	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
-
 	// now send our text if we have any
 	if msg.Text() != "" {
-		parts := handlers.SplitMsg(msg.Text(), maxLength)
+		parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
 		for _, part := range parts {
 			body := mtMessage{
 				FromDID: strings.TrimLeft(msg.Channel().Address(), "+")[1:],

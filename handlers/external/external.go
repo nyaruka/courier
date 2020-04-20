@@ -311,7 +311,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		formEncoded := encodeVariables(form, contentURLEncoded)
 
 		// put quick replies on last message part
-		if i == len(parts)-1 {
+		if i == len(parts) - 1 {
 			formEncoded["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentURLEncoded)
 		} else {
 			formEncoded["quick_replies"] = buildQuickRepliesResponse([]string{}, sendMethod, contentURLEncoded)
@@ -322,7 +322,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if sendMethod == http.MethodPost || sendMethod == http.MethodPut {
 			formEncoded = encodeVariables(form, contentType)
 
-			if i == len(parts)-1 {
+			if i == len(parts) - 1 {
 				formEncoded["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentType)
 			} else {
 				formEncoded["quick_replies"] = buildQuickRepliesResponse([]string{}, sendMethod, contentType)

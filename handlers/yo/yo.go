@@ -109,12 +109,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no password set for YO channel")
 	}
 
-	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
-
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	var err error
 
-	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength) {
+	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		form := url.Values{
 			"origin":       []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
 			"sms_content":  []string{part},

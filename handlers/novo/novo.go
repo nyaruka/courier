@@ -6,13 +6,12 @@ import (
 	"net/http"
 	"strings"
 
-	"net/url"
-	"time"
-
-	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"net/url"
+	"github.com/buger/jsonparser"
+	"time"
 )
 
 const (
@@ -89,13 +88,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no merchant_secret set for NV channel")
 	}
 
-	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
-
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength)
+	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		from := strings.TrimPrefix(msg.Channel().Address(), "+")
-		to := strings.TrimPrefix(msg.URN().Path(), "+")
+		to   := strings.TrimPrefix(msg.URN().Path(), "+")
 
 		form := url.Values{
 			"from": []string{from},

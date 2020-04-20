@@ -8,12 +8,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/nyaruka/courier/utils"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/nyaruka/courier/utils"
 
 	"github.com/nyaruka/gocommon/urns"
 
@@ -199,17 +198,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	if authToken == "" {
 		return nil, fmt.Errorf("no auth token set for LN channel: %s", msg.Channel().UUID())
 	}
-
-	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
-
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
 	// all msg parts in JSON
 	var jsonMsgs []string
-	parts := handlers.SplitMsg(msg.Text(), maxLength)
+	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
 	// fill all msg parts with text parts
 	for _, part := range parts {
-		if jsonMsg, err := json.Marshal(mtTextMsg{Type: "text", Text: part}); err == nil {
+		if jsonMsg, err := json.Marshal(mtTextMsg{ Type: "text", Text: part }); err == nil {
 			jsonMsgs = append(jsonMsgs, string(jsonMsg))
 		}
 	}
@@ -222,9 +218,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		switch mediaType := strings.Split(prefix, "/")[0]; mediaType {
 		case "image":
-			jsonMsg, err = json.Marshal(mtImageMsg{Type: "image", URL: url, PreviewURL: url})
+			jsonMsg, err = json.Marshal(mtImageMsg{ Type: "image", URL: url, PreviewURL: url })
 		default:
-			jsonMsg, err = json.Marshal(mtTextMsg{Type: "text", Text: url})
+			jsonMsg, err = json.Marshal(mtTextMsg{ Type: "text", Text: url })
 		}
 		if err == nil {
 			jsonMsgs = append(jsonMsgs, string(jsonMsg))
@@ -238,7 +234,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		batch = append(batch, jsonMsg)
 		batchCount++
 
-		if batchCount == maxMsgSend || (i == len(jsonMsgs)-1) {
+		if batchCount == maxMsgSend || (i == len(jsonMsgs) - 1) {
 			if req, err := buildSendMsgRequest(authToken, msg.URN().Path(), batch); err == nil {
 				rr, err := utils.MakeHTTPRequest(req)
 				log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
@@ -266,7 +262,7 @@ func buildSendMsgRequest(authToken, to string, jsonMsgs []string) (*http.Request
 	for i, msgJson := range jsonMsgs {
 		rawJsonMsgs.WriteString(msgJson)
 
-		if i < len(jsonMsgs)-1 {
+		if i < len(jsonMsgs) - 1 {
 			rawJsonMsgs.WriteString(",")
 		}
 	}
