@@ -416,6 +416,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 	sendPath, _ := url.Parse("/v1/messages")
 
+	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
 	var wppID string
@@ -550,7 +551,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				status.SetExternalID(externalID)
 			}
 		} else {
-			parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
+
+			parts := handlers.SplitMsg(msg.Text(), maxLength)
 			externalID := ""
 			for i, part := range parts {
 				payload := mtTextPayload{

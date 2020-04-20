@@ -139,8 +139,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		textType = "unicode"
 	}
 
+	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
+
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(text, maxMsgLength)
+	parts := handlers.SplitMsg(text, maxLength)
 	for _, part := range parts {
 		form := url.Values{
 			"api_key":           []string{nexmoAPIKey},

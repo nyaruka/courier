@@ -118,8 +118,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	dlrURL := fmt.Sprintf("https://%s%s%s/status?id=%s&status=%%s", callbackDomain, "/c/dk/", msg.Channel().UUID(), msg.ID().String())
 
+	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
+
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
+	parts := handlers.SplitMsg(msg.Text(), maxLength)
 	for i, part := range parts {
 		form := url.Values{
 			"sender":   []string{strings.TrimLeft(msg.Channel().Address(), "+")},

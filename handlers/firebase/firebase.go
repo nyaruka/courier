@@ -23,8 +23,8 @@ const (
 )
 
 var (
-	sendURL    = "https://fcm.googleapis.com/fcm/send"
-	maxMsgSize = 1024
+	sendURL      = "https://fcm.googleapis.com/fcm/send"
+	maxMsgLength = 1024
 )
 
 func init() {
@@ -149,9 +149,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	configNotification := msg.Channel().ConfigForKey(configNotification, false)
 	notification, _ := configNotification.(bool)
 
+	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
+
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
-		msgParts = handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgSize)
+		msgParts = handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength)
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)

@@ -172,8 +172,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	eventURL := fmt.Sprintf("https://%s/c/jn/%s/event", callbackDomain, msg.Channel().UUID())
 
+	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
+
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	for i, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
+	for i, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength) {
 		payload := mtPayload{
 			EventURL: eventURL,
 			Content:  part,

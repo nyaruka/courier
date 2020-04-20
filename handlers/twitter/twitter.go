@@ -276,9 +276,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	sendURL := sendDomain + "/1.1/direct_messages/events/new.json"
 	mediaURL := uploadDomain + "/1.1/media/upload.json"
 
+	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
+
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
-		msgParts = handlers.SplitMsg(msg.Text(), maxMsgLength)
+		msgParts = handlers.SplitMsg(msg.Text(), maxLength)
 	}
 
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {

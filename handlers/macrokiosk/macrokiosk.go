@@ -168,8 +168,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		encoding = "5"
 	}
 
+	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
+
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(text, maxMsgLength)
+	parts := handlers.SplitMsg(text, maxLength)
 	for i, part := range parts {
 		payload := &mtPayload{
 			From:   senderID,

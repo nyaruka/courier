@@ -100,8 +100,10 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		return nil, fmt.Errorf("no channel_hash set for I2 channel")
 	}
 
+	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
+
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
+	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength) {
 		form := url.Values{
 			"action":  []string{"send_single"},
 			"mobile":  []string{strings.TrimLeft(msg.URN().Path(), "+")},

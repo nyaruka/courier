@@ -115,9 +115,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	if password == "" {
 		return nil, fmt.Errorf("no password set for CK channel")
 	}
+	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
+	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength)
 	for _, part := range parts {
 		// build our request
 		form := url.Values{

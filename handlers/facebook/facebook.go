@@ -476,12 +476,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	query := url.Values{}
 	query.Set("access_token", accessToken)
 	msgURL.RawQuery = query.Encode()
+	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
-		msgParts = handlers.SplitMsg(msg.Text(), maxMsgLength)
+		msgParts = handlers.SplitMsg(msg.Text(), maxLength)
 	}
 
 	// send each part and each attachment separately. we send attachments first as otherwise quick replies

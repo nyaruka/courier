@@ -77,7 +77,8 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
+	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
+	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength) {
 		form := url.Values{
 			"userName":      []string{username},
 			"password":      []string{password},

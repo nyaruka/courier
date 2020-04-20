@@ -143,8 +143,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("Missing 'passphrase' config for GL channel")
 	}
 
+	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, maxMsgLength)
+
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
+	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength)
 	for _, part := range parts {
 		payload := &mtPayload{}
 		payload.Address = strings.TrimPrefix(msg.URN().Path(), "+")
