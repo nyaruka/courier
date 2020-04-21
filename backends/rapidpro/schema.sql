@@ -33,6 +33,7 @@ CREATE TABLE contacts_contact (
     name character varying(128),
     is_blocked boolean NOT NULL,
     is_stopped boolean NOT NULL,
+    is_paused boolean NOT NULL,
     language character varying(3),
     created_by_id integer NOT NULL,
     modified_by_id integer NOT NULL,
