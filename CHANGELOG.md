@@ -1,3 +1,7 @@
+v5.5.13
+----------
+ * Use Channel specific max_length config value if set
+
 v5.5.12
 ----------
  * Increase ArabiaCell max length to 1530
