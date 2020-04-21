@@ -100,7 +100,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return status, nil
 	}
 
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
+	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for i, part := range parts {
 		payload := &mtPayload{}
 		payload.Mobile = strings.TrimPrefix(msg.URN().Path(), "+")

@@ -550,7 +550,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				status.SetExternalID(externalID)
 			}
 		} else {
-			parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
+			parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 			externalID := ""
 			for i, part := range parts {
 				payload := mtTextPayload{

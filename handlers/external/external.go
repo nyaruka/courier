@@ -287,7 +287,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, 160)
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength)
+	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxLength)
 	for i, part := range parts {
 		// build our request
 		form := map[string]string{
@@ -311,7 +311,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		formEncoded := encodeVariables(form, contentURLEncoded)
 
 		// put quick replies on last message part
-		if i == len(parts) - 1 {
+		if i == len(parts)-1 {
 			formEncoded["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentURLEncoded)
 		} else {
 			formEncoded["quick_replies"] = buildQuickRepliesResponse([]string{}, sendMethod, contentURLEncoded)
@@ -322,7 +322,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if sendMethod == http.MethodPost || sendMethod == http.MethodPut {
 			formEncoded = encodeVariables(form, contentType)
 
-			if i == len(parts) - 1 {
+			if i == len(parts)-1 {
 				formEncoded["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentType)
 			} else {
 				formEncoded["quick_replies"] = buildQuickRepliesResponse([]string{}, sendMethod, contentType)
