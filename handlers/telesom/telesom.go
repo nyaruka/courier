@@ -97,13 +97,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"msg":      []string{part},
 		}
 
-		date := dates.Now().UTC().Format("02-01-2006")
+		date := dates.Now().UTC().Format("02/01/2006")
 
 		hasher := md5.New()
-		hasher.Write([]byte(username + "|" + password + "|" + from + "|" + to + "|" + part + "|" + date + "|" + privateKey))
+		hasher.Write([]byte(username + "|" + password + "|" + to + "|" + part + "|" + from + "|" + date + "|" + privateKey))
 		hash := hex.EncodeToString(hasher.Sum(nil))
 
-		form["key"] = []string{hash}
+		form["key"] = []string{strings.ToUpper(hash)}
 		encodedForm := form.Encode()
 		sendURL = fmt.Sprintf("%s?%s", sendURL, encodedForm)
 
