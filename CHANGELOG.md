@@ -1,3 +1,7 @@
+v5.5.14
+----------
+ * Add Telesom channel type support
+
 v5.5.13
 ----------
  * Use Channel specific max_length config value if set
