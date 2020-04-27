@@ -1,3 +1,7 @@
+v5.5.15
+----------
+ * Support using national number for EX channel if configured so
+
 v5.5.14
 ----------
  * Add Telesom channel type support
