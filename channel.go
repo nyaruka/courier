@@ -49,6 +49,9 @@ const (
 
 	// ConfigUsername is a constant key for channel configs
 	ConfigUsername = "username"
+
+	// ConfigUseNational is a constant key for channel configs
+	ConfigUseNational = "use_national"
 )
 
 // ChannelType is our typing of the two char channel types

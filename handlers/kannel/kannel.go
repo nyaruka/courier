@@ -16,11 +16,10 @@ import (
 )
 
 const (
-	configUseNational = "use_national"
-	configEncoding    = "encoding"
-	configVerifySSL   = "verify_ssl"
-	configDLRMask     = "dlr_mask"
-	configIgnoreSent  = "ignore_sent"
+	configEncoding   = "encoding"
+	configVerifySSL  = "verify_ssl"
+	configDLRMask    = "dlr_mask"
+	configIgnoreSent = "ignore_sent"
 
 	encodingDefault = "D"
 	encodingUnicode = "U"
@@ -158,7 +157,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		form["priority"] = []string{"1"}
 	}
 
-	useNationalStr := msg.Channel().ConfigForKey(configUseNational, false)
+	useNationalStr := msg.Channel().ConfigForKey(courier.ConfigUseNational, false)
 	useNational, _ := useNationalStr.(bool)
 
 	// if we are meant to use national formatting (no country code) pull that out

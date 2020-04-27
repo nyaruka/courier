@@ -299,6 +299,16 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"channel":      msg.Channel().UUID().String(),
 		}
 
+		useNationalStr := msg.Channel().ConfigForKey(courier.ConfigUseNational, false)
+		useNational, _ := useNationalStr.(bool)
+
+		// if we are meant to use national formatting (no country code) pull that out
+		if useNational {
+			nationalTo := msg.URN().Localize(msg.Channel().Country())
+			form["to"] = nationalTo.Path()
+			form["to_no_plus"] = nationalTo.Path()
+		}
+
 		// if we are smart, first try to convert to GSM7 chars
 		if encoding == encodingSmart {
 			replaced := gsm7.ReplaceSubstitutions(part)
