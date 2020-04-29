@@ -169,7 +169,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(text, maxMsgLength)
+	parts := handlers.SplitMsgByChannel(msg.Channel(), text, maxMsgLength)
 	for i, part := range parts {
 		payload := &mtPayload{
 			From:   senderID,

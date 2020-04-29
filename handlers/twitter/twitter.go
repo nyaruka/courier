@@ -278,7 +278,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
-		msgParts = handlers.SplitMsg(msg.Text(), maxMsgLength)
+		msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	}
 
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {

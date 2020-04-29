@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	configUseNational = "use_national"
-	configEncoding    = "encoding"
-	configVerifySSL   = "verify_ssl"
-	configDLRMask     = "dlr_mask"
+	configEncoding   = "encoding"
+	configVerifySSL  = "verify_ssl"
+	configDLRMask    = "dlr_mask"
+	configIgnoreSent = "ignore_sent"
 
 	encodingDefault = "D"
 	encodingUnicode = "U"
@@ -109,6 +109,11 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%d', must be one of 1,2,4,8,16", form.Status))
 	}
 
+	// if we are ignoring delivery reports and this isn't failed then move on
+	if channel.BoolConfigForKey(configIgnoreSent, false) && msgStatus == courier.MsgSent {
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring sent report (message aready wired)")
+	}
+
 	// write our status
 	status := h.Backend().NewMsgStatusForID(channel, form.ID, msgStatus)
 	err = h.Backend().WriteMsgStatus(ctx, status)
@@ -152,7 +157,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		form["priority"] = []string{"1"}
 	}
 
-	useNationalStr := msg.Channel().ConfigForKey(configUseNational, false)
+	useNationalStr := msg.Channel().ConfigForKey(courier.ConfigUseNational, false)
 	useNational, _ := useNationalStr.(bool)
 
 	// if we are meant to use national formatting (no country code) pull that out

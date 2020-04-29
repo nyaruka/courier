@@ -205,7 +205,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	channel := msg.Channel()
 
 	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
+	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	for i, part := range parts {
 		// build our request
 		form := url.Values{

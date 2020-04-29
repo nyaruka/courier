@@ -88,6 +88,13 @@ func DecodePossibleBase64(original string) string {
 	return decoded
 }
 
+// SplitMsgByChannel splits the passed in string into segments that are at most channel config max length or type max length
+func SplitMsgByChannel(channel courier.Channel, text string, maxLength int) []string {
+	max := channel.IntConfigForKey(courier.ConfigMaxLength, maxLength)
+
+	return SplitMsg(text, max)
+}
+
 // SplitMsg splits the passed in string into segments that are at most max length
 func SplitMsg(text string, max int) []string {
 	// smaller than our max, just return it

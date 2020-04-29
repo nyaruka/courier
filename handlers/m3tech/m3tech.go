@@ -91,7 +91,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// send our message
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	for _, part := range handlers.SplitMsg(text, maxMsgLength) {
+	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), text, maxMsgLength) {
 		// build our request
 		params := url.Values{
 			"AuthKey":     []string{"m3-Tech"},

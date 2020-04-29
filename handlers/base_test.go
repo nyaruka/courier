@@ -3,6 +3,7 @@ package handlers
 import (
 	"testing"
 
+	"github.com/nyaruka/courier"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,4 +43,32 @@ func TestSplitMsg(t *testing.T) {
 	assert.Equal([]string{"This is a message", "longer than 10"}, SplitMsg("This is a message longer than 10", 20))
 	assert.Equal([]string{" "}, SplitMsg(" ", 20))
 	assert.Equal([]string{"This is a message", "longer than 10"}, SplitMsg("This is a message   longer than 10", 20))
+}
+
+func TestSplitMsgByChannel(t *testing.T) {
+	assert := assert.New(t)
+	var channelWithMaxLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US",
+		map[string]interface{}{
+			courier.ConfigUsername:  "user1",
+			courier.ConfigPassword:  "pass1",
+			courier.ConfigMaxLength: 25,
+		})
+	var channelWithoutMaxLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US",
+		map[string]interface{}{
+			courier.ConfigUsername: "user1",
+			courier.ConfigPassword: "pass1",
+		})
+
+	assert.Equal([]string{""}, SplitMsgByChannel(channelWithoutMaxLength, "", 160))
+	assert.Equal([]string{"Simple message"}, SplitMsgByChannel(channelWithoutMaxLength, "Simple message", 160))
+	assert.Equal([]string{"This is a message", "longer than 10"}, SplitMsgByChannel(channelWithoutMaxLength, "This is a message longer than 10", 20))
+	assert.Equal([]string{" "}, SplitMsgByChannel(channelWithoutMaxLength, " ", 20))
+	assert.Equal([]string{"This is a message", "longer than 10"}, SplitMsgByChannel(channelWithoutMaxLength, "This is a message   longer than 10", 20))
+
+	// Max length should be the one configured on the channel
+	assert.Equal([]string{""}, SplitMsgByChannel(channelWithMaxLength, "", 160))
+	assert.Equal([]string{"Simple message"}, SplitMsgByChannel(channelWithMaxLength, "Simple message", 160))
+	assert.Equal([]string{"This is a message longer", "than 10"}, SplitMsgByChannel(channelWithMaxLength, "This is a message longer than 10", 20))
+	assert.Equal([]string{" "}, SplitMsgByChannel(channelWithMaxLength, " ", 20))
+	assert.Equal([]string{"This is a message", "longer than 10"}, SplitMsgByChannel(channelWithMaxLength, "This is a message   longer than 10", 20))
 }
