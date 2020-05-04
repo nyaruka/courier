@@ -487,13 +487,13 @@ var testCases = []ChannelHandleTestCase{
 
 	{Label: "Receive Empty", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, Status: 200, Response: "Ignoring"},
 
-	{Label: "Receive Invalid FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: invalidFileID, Status: 400, Response: "error retrieving media"},
+	{Label: "Receive Invalid FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: invalidFileID, Status: 200, Response: "unable to resolve file"},
 
-	{Label: "Receive NoOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noOkFile, Status: 400, Response: "no 'ok' in response"},
+	{Label: "Receive NoOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noOkFile, Status: 200, Response: "no 'ok' in response"},
 
-	{Label: "Receive NotOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: notOkFile, Status: 400, Response: "not present"},
+	{Label: "Receive NotOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: notOkFile, Status: 200, Response: "not present"},
 
-	{Label: "Receive No FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noFile, Status: 400, Response: "result.file_path"},
+	{Label: "Receive No FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noFile, Status: 200, Response: "result.file_path"},
 }
 
 func buildMockTelegramService(testCases []ChannelHandleTestCase) *httptest.Server {
