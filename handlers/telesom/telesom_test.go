@@ -45,7 +45,9 @@ func BenchmarkHandler(b *testing.B) {
 
 // setSendURL takes care of setting the sendURL to call
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+	c.(*courier.MockChannel).SetConfig(courier.ConfigSendURL, s.URL)
 	sendURL = s.URL
+
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
@@ -85,6 +87,7 @@ func TestSending(t *testing.T) {
 			"password": "Password",
 			"username": "Username",
 			"secret":   "secret",
+			"send_url": "SendURL",
 		},
 	)
 

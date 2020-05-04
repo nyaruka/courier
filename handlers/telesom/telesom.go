@@ -69,18 +69,20 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
-		return nil, fmt.Errorf("no username set for Telesom channel")
+		return nil, fmt.Errorf("no username set for TS channel")
 	}
 
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	if password == "" {
-		return nil, fmt.Errorf("no password set for Telesom channel")
+		return nil, fmt.Errorf("no password set for TS channel")
 	}
 
 	privateKey := msg.Channel().StringConfigForKey(courier.ConfigSecret, "")
 	if privateKey == "" {
-		return nil, fmt.Errorf("no private key set for Telesom channel")
+		return nil, fmt.Errorf("no private key set for TS channel")
 	}
+
+	tsSendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, sendURL)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
@@ -105,9 +107,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		form["key"] = []string{strings.ToUpper(hash)}
 		encodedForm := form.Encode()
-		sendURL = fmt.Sprintf("%s?%s", sendURL, encodedForm)
+		tsSendURL = fmt.Sprintf("%s?%s", tsSendURL, encodedForm)
 
-		req, _ := http.NewRequest(http.MethodGet, sendURL, nil)
+		req, _ := http.NewRequest(http.MethodGet, tsSendURL, nil)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		rr, err := utils.MakeInsecureHTTPRequest(req)
 
