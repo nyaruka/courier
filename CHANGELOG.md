@@ -1,3 +1,8 @@
+v5.5.16
+----------
+ * Add option for Telesom Send URL
+ * Ignore received message request in Telegram handler when a file cannot be resolved
+
 v5.5.15
 ----------
  * Support using national number for EX channel if configured so
