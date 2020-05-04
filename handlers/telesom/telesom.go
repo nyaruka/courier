@@ -82,10 +82,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no private key set for TS channel")
 	}
 
-	tsSendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
-	if tsSendURL == "" {
-		tsSendURL = sendURL
-	}
+	tsSendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, sendURL)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
