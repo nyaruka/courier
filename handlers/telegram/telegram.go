@@ -254,6 +254,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			hasError = err != nil
 			status.AddLog(log)
 
+		case "application":
+			form := url.Values{
+				"chat_id":  []string{msg.URN().Path()},
+				"document": []string{mediaURL},
+				"caption":  []string{caption},
+			}
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendDocument", form, replies)
+			status.SetExternalID(externalID)
+			hasError = err != nil
+			status.AddLog(log)
+
 		default:
 			status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
 				"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
