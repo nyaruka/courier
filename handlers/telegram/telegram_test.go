@@ -614,7 +614,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
 		PostParams: map[string]string{"caption": "My audio!", "chat_id": "12345", "audio": "https://foo.bar/audio.mp3"},
 		SendPrep:   setSendURL},
-	{Label: "Send Documend",
+	{Label: "Send Document",
 		Text: "My document!", URN: "telegram:12345", Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
 		Status:       "W",
 		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
