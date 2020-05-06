@@ -1,3 +1,7 @@
+v5.5.17
+----------
+ * Support sending document attachments for Telegram
+
 v5.5.16
 ----------
  * Add option for Telesom Send URL
