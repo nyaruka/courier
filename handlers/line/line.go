@@ -22,7 +22,8 @@ import (
 )
 
 var (
-	sendURL      = "https://api.line.me/v2/bot/message/push"
+	replySendURL = "https://api.line.me/v2/bot/message/reply"
+	pushSendURL  = "https://api.line.me/v2/bot/message/push"
 	maxMsgLength = 2000
 	maxMsgSend   = 5
 
@@ -77,9 +78,10 @@ func (h *handler) Initialize(s courier.Server) error {
 // }
 type moPayload struct {
 	Events []struct {
-		Type      string `json:"type"`
-		Timestamp int64  `json:"timestamp"`
-		Source    struct {
+		ReplyToken string `json:"replyToken"`
+		Type       string `json:"type"`
+		Timestamp  int64  `json:"timestamp"`
+		Source     struct {
 			Type   string `json:"type"`
 			UserID string `json:"userId"`
 		} `json:"source"`
@@ -107,8 +109,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	msgs := []courier.Msg{}
 
 	for _, lineEvent := range payload.Events {
-		if (lineEvent.Source.Type == "" && lineEvent.Source.UserID == "") || (lineEvent.Message.Type == "" && lineEvent.Message.ID == "" && lineEvent.Message.Text == "") || lineEvent.Message.Type != "text" {
-
+		if lineEvent.ReplyToken == "" || (lineEvent.Source.Type == "" && lineEvent.Source.UserID == "") || (lineEvent.Message.Type == "" && lineEvent.Message.ID == "" && lineEvent.Message.Text == "") || lineEvent.Message.Type != "text" {
 			continue
 		}
 
@@ -120,7 +121,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
-		msg := h.Backend().NewIncomingMsg(channel, urn, lineEvent.Message.Text).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(channel, urn, lineEvent.Message.Text).WithExternalID(lineEvent.ReplyToken).WithReceivedOn(date)
 		msgs = append(msgs, msg)
 	}
 
@@ -189,7 +190,8 @@ type mtImageMsg struct {
 }
 
 type mtPayload struct {
-	To       string          `json:"to"`
+	To         string        `json:"to,omitempty"`
+	ReplyToken string        `json:"replyToken,omitempty"`
 	Messages json.RawMessage `json:"messages"`
 }
 
@@ -236,7 +238,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		batchCount++
 
 		if batchCount == maxMsgSend || (i == len(jsonMsgs)-1) {
-			if req, err := buildSendMsgRequest(authToken, msg.URN().Path(), batch); err == nil {
+			if req, err := buildSendMsgRequest(authToken, msg.URN().Path(), msg.ResponseToExternalID(), batch); err == nil {
 				rr, err := utils.MakeHTTPRequest(req)
 				log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 				status.AddLog(log)
@@ -255,7 +257,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	return status, nil
 }
 
-func buildSendMsgRequest(authToken, to string, jsonMsgs []string) (*http.Request, error) {
+func buildSendMsgRequest(authToken, to string, replyToken string, jsonMsgs []string) (*http.Request, error) {
 	// convert from string slice to bytes JSON
 	rawJsonMsgs := bytes.Buffer{}
 	rawJsonMsgs.WriteString("[")
@@ -268,10 +270,16 @@ func buildSendMsgRequest(authToken, to string, jsonMsgs []string) (*http.Request
 		}
 	}
 	rawJsonMsgs.WriteString("]")
+	payload := mtPayload{Messages: rawJsonMsgs.Bytes()}
+	sendURL := ""
 
-	payload := mtPayload{
-		To:       to,
-		Messages: rawJsonMsgs.Bytes(),
+	// check if this sending is a response to user
+	if replyToken != "" {
+		sendURL = replySendURL
+		payload.ReplyToken = replyToken
+	} else {
+		sendURL = pushSendURL
+		payload.To = to
 	}
 	body := &bytes.Buffer{}
 

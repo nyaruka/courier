@@ -170,7 +170,11 @@ func BenchmarkHandler(b *testing.B) {
 
 // setSendURL takes care of setting the send_url to our test server host
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	sendURL = s.URL
+	if m.ResponseToExternalID() != "" {
+		replySendURL = s.URL
+	} else {
+		pushSendURL = s.URL
+	}
 }
 
 const tooLongMsg = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis augue vel placerat congue.
@@ -252,6 +256,17 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Bearer AccessToken",
 		},
 		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Sed hendrerit nisi vitae nisl ornare tristique.\nProin vulputate id justo non aliquet."}]}`,
+		SendPrep:    setSendURL},
+	{Label: "Send As Reply Message",
+		Text: "Simple Message", URN: "line:uabcdefghij", ResponseToExternalID: "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
+		Status:       "W",
+		ResponseBody: `{}`, ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Bearer AccessToken",
+		},
+		RequestBody: `{"replyToken":"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA","messages":[{"type":"text","text":"Simple Message"}]}`,
 		SendPrep:    setSendURL},
 	{Label: "Error Sending",
 		Text: "Error Sending", URN: "line:uabcdefghij",
