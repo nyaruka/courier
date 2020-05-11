@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	receiveValidMessage = "/c/ts/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=%2B2349067554729&msg=Join"
+	receiveValidMessage = "/c/ts/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?mobile=%2B2349067554729&msg=Join"
 	receiveNoParams     = "/c/ts/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-	invalidURN          = "/c/ts/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=MTN&msg=Join"
+	invalidURN          = "/c/ts/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?mobile=MTN&msg=Join"
 	receiveNoSender     = "/c/ts/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?msg=Join"
 )
 
@@ -25,14 +25,14 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
 	{Label: "Invalid URN", URL: invalidURN, Data: "", Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive No Params", URL: receiveNoParams, Data: "", Status: 400, Response: "field 'from' required"},
-	{Label: "Receive No Sender", URL: receiveNoSender, Data: "", Status: 400, Response: "field 'from' required"},
+	{Label: "Receive No Params", URL: receiveNoParams, Data: "", Status: 400, Response: "field 'mobile' required"},
+	{Label: "Receive No Sender", URL: receiveNoSender, Data: "", Status: 400, Response: "field 'mobile' required"},
 
-	{Label: "Receive Valid Message", URL: receiveNoParams, Data: "from=%2B2349067554729&msg=Join", Status: 200, Response: "Accepted",
+	{Label: "Receive Valid Message", URL: receiveNoParams, Data: "mobile=%2B2349067554729&msg=Join", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Invalid URN", URL: receiveNoParams, Data: "from=MTN&msg=Join", Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", Status: 400, Response: "field 'from' required"},
-	{Label: "Receive No Sender", URL: receiveNoParams, Data: "msg=Join", Status: 400, Response: "field 'from' required"},
+	{Label: "Invalid URN", URL: receiveNoParams, Data: "mobile=MTN&msg=Join", Status: 400, Response: "phone number supplied is not a number"},
+	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", Status: 400, Response: "field 'mobile' required"},
+	{Label: "Receive No Sender", URL: receiveNoParams, Data: "msg=Join", Status: 400, Response: "field 'mobile' required"},
 }
 
 func TestHandler(t *testing.T) {
