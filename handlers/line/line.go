@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/buger/jsonparser"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -244,6 +245,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				status.AddLog(log)
 
 				if err != nil {
+					msg, err := jsonparser.GetString(rr.Body, "message")
+					// don't retry messages for invalid reply token
+					if err == nil && msg == "Invalid reply token" {
+						status.SetStatus(courier.MsgFailed)
+					}
 					return status, nil
 				}
 				batch = []string{}
