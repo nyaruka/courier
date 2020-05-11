@@ -1,3 +1,7 @@
+v5.5.18
+----------
+ * TS sends should use mobile instead of from
+
 v5.5.17
 ----------
  * Support sending document attachments for Telegram
