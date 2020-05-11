@@ -40,7 +40,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type moForm struct {
-	From    string `name:"from" validate:"required"`
+	Mobile  string `name:"mobile" validate:"required"`
 	Message string `name:"msg" validate:"required"`
 }
 
@@ -52,7 +52,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// create our URN
-	urn, err := handlers.StrictTelForCountry(form.From, channel.Country())
+	urn, err := handlers.StrictTelForCountry(form.Mobile, channel.Country())
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
