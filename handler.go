@@ -23,6 +23,7 @@ type ChannelHandler interface {
 	Initialize(Server) error
 	ChannelType() ChannelType
 	ChannelName() string
+	GetChannel(context.Context, *http.Request) (Channel, error)
 	SendMsg(context.Context, Msg) (MsgStatus, error)
 }
 

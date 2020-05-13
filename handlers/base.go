@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/go-chi/chi"
 	"github.com/nyaruka/courier"
 )
 
@@ -44,6 +45,16 @@ func (h *BaseHandler) ChannelType() courier.ChannelType {
 // ChannelName returns the name of the channel this handler deals with
 func (h *BaseHandler) ChannelName() string {
 	return h.name
+}
+
+// GetChannel returns the channel
+func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
+	uuid, err := courier.NewChannelUUID(chi.URLParam(r, "uuid"))
+	if err != nil {
+		return nil, err
+	}
+
+	return h.backend.GetChannel(ctx, h.ChannelType(), uuid)
 }
 
 // WriteStatusSuccessResponse writes a success response for the statuses

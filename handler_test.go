@@ -29,6 +29,11 @@ func NewHandler() ChannelHandler {
 func (h *dummyHandler) ChannelName() string      { return "Dummy Handler" }
 func (h *dummyHandler) ChannelType() ChannelType { return ChannelType("DM") }
 
+func (h *dummyHandler) GetChannel(ctx context.Context, r *http.Request) (Channel, error) {
+	dmChannel := NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "DM", "2020", "US", map[string]interface{}{})
+	return dmChannel, nil
+}
+
 // Initialize is called by the engine once everything is loaded
 func (h *dummyHandler) Initialize(s Server) error {
 	h.server = s

@@ -272,13 +272,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		ctx, cancel := context.WithTimeout(baseCtx, time.Second*30)
 		defer cancel()
 
-		uuid, err := NewChannelUUID(chi.URLParam(r, "uuid"))
-		if err != nil {
-			WriteError(ctx, w, r, err)
-			return
-		}
-
-		channel, err := s.backend.GetChannel(ctx, handler.ChannelType(), uuid)
+		channel, err := handler.GetChannel(ctx, r)
 		if err != nil {
 			WriteError(ctx, w, r, err)
 			return
