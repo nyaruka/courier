@@ -21,9 +21,9 @@ import (
 
 // Endpoints we hit
 var (
-	sendURL      = "https://graph.facebook.com/v2.12/me/messages"
-	subscribeURL = "https://graph.facebook.com/v2.12/me/subscribed_apps"
-	graphURL     = "https://graph.facebook.com/v2.12/"
+	sendURL      = "https://graph.facebook.com/v3.3/me/messages"
+	subscribeURL = "https://graph.facebook.com/v3.3/me/subscribed_apps"
+	graphURL     = "https://graph.facebook.com/v3.3/"
 
 	// How long we want after the subscribe callback to register the page for events
 	subscribeTimeout = time.Second * 2
