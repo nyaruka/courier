@@ -1,3 +1,7 @@
+v5.5.19
+----------
+ * Upgrade FB graph API to 3.3
+
 v5.5.18
 ----------
  * TS sends should use mobile instead of from
