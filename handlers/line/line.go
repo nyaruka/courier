@@ -239,21 +239,32 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		batchCount++
 
 		if batchCount == maxMsgSend || (i == len(jsonMsgs)-1) {
-			if req, err := buildSendMsgRequest(authToken, msg.URN().Path(), msg.ResponseToExternalID(), batch); err == nil {
-				rr, err := utils.MakeHTTPRequest(req)
-				log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-				status.AddLog(log)
+			req, err := buildSendMsgRequest(authToken, msg.URN().Path(), msg.ResponseToExternalID(), batch)
+			if err != nil {
+				return status, err
+			}
+			rr, err := utils.MakeHTTPRequest(req)
+			log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+			status.AddLog(log)
 
-				if err != nil {
-					msg, err := jsonparser.GetString(rr.Body, "message")
-					// don't retry messages for invalid reply token
-					if err == nil && msg == "Invalid reply token" {
-						status.SetStatus(courier.MsgFailed)
-					}
-					return status, nil
-				}
+			if err == nil {
 				batch = []string{}
 				batchCount = 0
+				continue
+			}
+			// retry without the reply token if it's invalid
+			errMsg, err := jsonparser.GetString(rr.Body, "message")
+			if err == nil && errMsg == "Invalid reply token" {
+				req, err = buildSendMsgRequest(authToken, msg.URN().Path(), "", batch)
+				if err != nil {
+					return status, err
+				}
+				rr, err = utils.MakeHTTPRequest(req)
+				log = courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+				status.AddLog(log)
+				if err != nil {
+					return status, err
+				}
 			} else {
 				return status, err
 			}
