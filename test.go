@@ -285,6 +285,11 @@ func (mb *MockBackend) RemoveURNfromContact(context context.Context, channel Cha
 	return urn, nil
 }
 
+// AddLanguageToContact adds a URN to the passed in contact
+func (mb *MockBackend) AddLanguageToContact(ctx context.Context, channel Channel, language string, contact Contact) (Contact, error) {
+	return contact, nil
+}
+
 // AddChannel adds a test channel to the test server
 func (mb *MockBackend) AddChannel(channel Channel) {
 	mb.channels[channel.UUID()] = channel

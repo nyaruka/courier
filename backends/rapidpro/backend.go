@@ -104,6 +104,26 @@ func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, c
 	return urn, nil
 }
 
+const updateContactLang = `
+UPDATE
+	contacts_contact
+SET
+	language = $1
+WHERE
+	id = $2 AND
+	org_id = $3
+`
+
+// AddLanguageToContact adds a language to the passed in contact
+func (b *backend) AddLanguageToContact(ctx context.Context, c courier.Channel, language string, contact courier.Contact) (courier.Contact, error) {
+	dbContact := contact.(*DBContact)
+	_, err := b.db.ExecContext(ctx, updateContactLang, language, dbContact.ID_, dbContact.OrgID_)
+	if err != nil {
+		return contact, err
+	}
+	return contact, nil
+}
+
 // NewIncomingMsg creates a new message from the given params
 func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
 	// remove any control characters
