@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -52,6 +53,13 @@ func DecodeAndValidateForm(form interface{}, r *http.Request) error {
 // DecodeAndValidateJSON takes the passed in envelope and tries to unmarshal it from the body
 // of the passed in request, then validating it
 func DecodeAndValidateJSON(envelope interface{}, r *http.Request) error {
+	bodyBytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return fmt.Errorf("unable to read request body: %s", err)
+	}
+	// And now set a new body, which will simulate the same data we read:
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
 	// read our body
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
 	defer r.Body.Close()
@@ -76,6 +84,13 @@ func DecodeAndValidateJSON(envelope interface{}, r *http.Request) error {
 // DecodeAndValidateXML takes the passed in envelope and tries to unmarshal it from the body
 // of the passed in request, then validating it
 func DecodeAndValidateXML(envelope interface{}, r *http.Request) error {
+	bodyBytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return fmt.Errorf("unable to read request body: %s", err)
+	}
+	// And now set a new body, which will simulate the same data we read:
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
 	// read our body
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
 	defer r.Body.Close()

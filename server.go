@@ -361,6 +361,10 @@ func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action s
 	channelType := strings.ToLower(string(handler.ChannelType()))
 
 	path := fmt.Sprintf("/%s/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", channelType)
+	if !handler.UseChannelRouteUUID() {
+		path = fmt.Sprintf("/%s", channelType)
+	}
+
 	if action != "" {
 		path = fmt.Sprintf("%s/%s", path, action)
 	}
