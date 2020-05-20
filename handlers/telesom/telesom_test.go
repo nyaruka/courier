@@ -18,7 +18,7 @@ var (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TS", "2020", "US", nil),
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TS", "2020", "SO", nil),
 }
 
 var handleTestCases = []ChannelHandleTestCase{
@@ -52,31 +52,31 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
+		Text: "Simple Message", URN: "tel:+252788383383",
 		Status:       "W",
 		ResponseBody: "<return>Success</return>", ResponseStatus: 200,
-		URLParams: map[string]string{"msg": "Simple Message", "to": "250788383383", "from": "2020", "username": "Username", "password": "Password", "key": "702FDCC27F2FF04CEB6EF4E1545B8C94"},
+		URLParams: map[string]string{"msg": "Simple Message", "to": "0788383383", "from": "2020", "username": "Username", "password": "Password", "key": "D69BB824F88F20482B94ECF3822EBD84"},
 		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:  setSendURL},
 	{Label: "Unicode Send",
-		Text: "☺", URN: "tel:+250788383383",
+		Text: "☺", URN: "tel:+252788383383",
 		Status:       "W",
 		ResponseBody: "<return>Success</return>", ResponseStatus: 200,
-		URLParams: map[string]string{"msg": "☺", "to": "250788383383", "from": "2020", "username": "Username", "password": "Password", "key": "B9C70F93DAE834477E107A128FEA04D4"},
+		URLParams: map[string]string{"msg": "☺", "to": "0788383383", "from": "2020", "username": "Username", "password": "Password", "key": "60421A7D99BD79FE02697D567315AD0E"},
 		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:  setSendURL},
 	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383",
+		Text: "Error Message", URN: "tel:+252788383383",
 		Status:       "E",
 		ResponseBody: "<return>error</return>", ResponseStatus: 401,
-		URLParams: map[string]string{"msg": `Error Message`, "to": "250788383383", "from": "2020", "username": "Username", "password": "Password", "key": "C9F78FC4CC9A416C57AB0A3F208EDF49"},
+		URLParams: map[string]string{"msg": `Error Message`, "to": "0788383383", "from": "2020", "username": "Username", "password": "Password", "key": "3F1E492B2186551570F24C2F07D5D7E2"},
 		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:  setSendURL},
 	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Text: "My pic!", URN: "tel:+252788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status:       "W",
 		ResponseBody: `<return>Success</return>`, ResponseStatus: 200,
-		URLParams: map[string]string{"msg": "My pic!\nhttps://foo.bar/image.jpg", "to": "250788383383", "from": "2020", "username": "Username", "password": "Password", "key": "1D7100B3F9D3249D1A92A0841AD8F543"},
+		URLParams: map[string]string{"msg": "My pic!\nhttps://foo.bar/image.jpg", "to": "0788383383", "from": "2020", "username": "Username", "password": "Password", "key": "DBE569579FD899628C17254ECCE15DB7"},
 		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		SendPrep:  setSendURL},
 }

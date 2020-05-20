@@ -88,7 +88,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		from := strings.TrimPrefix(msg.Channel().Address(), "+")
-		to := strings.TrimPrefix(msg.URN().Path(), "+")
+		to := fmt.Sprintf("0%s", strings.TrimPrefix(msg.URN().Localize(msg.Channel().Country()).Path(), "0"))
 
 		// build our request
 		form := url.Values{
