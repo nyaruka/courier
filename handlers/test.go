@@ -180,7 +180,11 @@ func newServer(backend courier.Backend) courier.Server {
 	logger.Out = ioutil.Discard
 	logrus.SetOutput(ioutil.Discard)
 
-	return courier.NewServerWithLogger(courier.NewConfig(), backend, logger)
+	config := courier.NewConfig()
+	config.FacebookWebhookSecret = "mysecret"
+
+	return courier.NewServerWithLogger(config, backend, logger)
+
 }
 
 // RunChannelSendTestCases runs all the passed in test cases against the channel
