@@ -20,6 +20,7 @@ type Config struct {
 	S3ForcePathStyle      bool   `help:"whether we force S3 path style. Should generally need to default to False unless you're hosting an S3 compatible service"`
 	AWSAccessKeyID        string `help:"the access key id to use when authenticating S3"`
 	AWSSecretAccessKey    string `help:"the secret access key id to use when authenticating S3"`
+	FacebookAppSecret     string `help:"the Facebook app secret"`
 	FacebookWebhookSecret string `help:"the secret for Facebook webhook URL verification"`
 	MaxWorkers            int    `help:"the maximum number of go routines that will be used for sending (set to 0 to disable sending)"`
 	LibratoUsername       string `help:"the username that will be used to authenticate to Librato"`
@@ -54,6 +55,7 @@ func NewConfig() *Config {
 		S3ForcePathStyle:      false,
 		AWSAccessKeyID:        "missing_aws_access_key_id",
 		AWSSecretAccessKey:    "missing_aws_secret_access_key",
+		FacebookAppSecret:     "missing_facebook_app_secret",
 		FacebookWebhookSecret: "missing_facebook_webhook_secret",
 		MaxWorkers:            32,
 		LogLevel:              "error",

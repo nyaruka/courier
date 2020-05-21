@@ -181,7 +181,8 @@ func newServer(backend courier.Backend) courier.Server {
 	logrus.SetOutput(ioutil.Discard)
 
 	config := courier.NewConfig()
-	config.FacebookWebhookSecret = "mysecret"
+	config.FacebookWebhookSecret = "fb_webhook_secret"
+	config.FacebookAppSecret = "fb_app_secret"
 
 	return courier.NewServerWithLogger(config, backend, logger)
 

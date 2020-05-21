@@ -3,10 +3,14 @@ package facebook2
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,8 +24,10 @@ import (
 
 // Endpoints we hit
 var (
-	sendURL  = "https://graph.facebook.com/v2.12/me/messages"
-	graphURL = "https://graph.facebook.com/v2.12/"
+	sendURL  = "https://graph.facebook.com/v7.0/me/messages"
+	graphURL = "https://graph.facebook.com/v7.0/"
+
+	signatureHeader = "X-Hub-Signature"
 
 	// Facebook API says 640 is max for the body
 	maxMsgLength = 640
@@ -71,6 +77,11 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
+type fbSender struct {
+	ID      string `json:"id"`
+	UserRef string `json:"user_ref"`
+}
+
 type fbUser struct {
 	ID string `json:"id"`
 }
@@ -98,9 +109,9 @@ type moPayload struct {
 		ID        string `json:"id"`
 		Time      int64  `json:"time"`
 		Messaging []struct {
-			Sender    fbUser `json:"sender"`
-			Recipient fbUser `json:"recipient"`
-			Timestamp int64  `json:"timestamp"`
+			Sender    fbSender `json:"sender"`
+			Recipient fbUser   `json:"recipient"`
+			Timestamp int64    `json:"timestamp"`
 
 			OptIn *struct {
 				Ref     string `json:"ref"`
@@ -128,11 +139,15 @@ type moPayload struct {
 				IsEcho      bool   `json:"is_echo"`
 				MID         string `json:"mid"`
 				Text        string `json:"text"`
-				StickerID   int64  `json:"sticker_id"`
 				Attachments []struct {
 					Type    string `json:"type"`
 					Payload *struct {
-						URL string `json:"url"`
+						URL         string `json:"url"`
+						StickerID   int64  `json:"sticker_id"`
+						Coordinates *struct {
+							lat  float64 `json:"lat"`
+							long float64 `json:"long"`
+						} `json:"coordinates"`
 					}
 				} `json:"attachments"`
 			} `json:"message"`
@@ -140,7 +155,6 @@ type moPayload struct {
 			Delivery *struct {
 				MIDs      []string `json:"mids"`
 				Watermark int64    `json:"watermark"`
-				Seq       int      `json:"seq"`
 			} `json:"delivery"`
 		} `json:"messaging"`
 	} `json:"entry"`
@@ -194,8 +208,13 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 
 // receiveEvent is our HTTP handler function for incoming messages and status updates
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	err := h.validateSignature(r)
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
+
 	payload := &moPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
+	err = handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
@@ -234,8 +253,13 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		// create our date from the timestamp (they give us millis, arg is nanos)
 		date := time.Unix(0, msg.Timestamp*1000000).UTC()
 
+		sender := msg.Sender.UserRef
+		if sender == "" {
+			sender = msg.Sender.ID
+		}
+
 		// create our URN
-		urn, err := urns.NewFacebookURN(msg.Sender.ID)
+		urn, err := urns.NewFacebookURN(sender)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
@@ -340,23 +364,32 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 			text := msg.Message.Text
 
+			attachmentURLs := make([]string, 0, 2)
+
 			// if we have a sticker ID, use that as our text
-			stickerText := stickerIDToEmoji[msg.Message.StickerID]
-			if stickerText != "" {
-				text = stickerText
+			for _, att := range msg.Message.Attachments {
+				if att.Type == "image" && att.Payload != nil && att.Payload.StickerID != 0 {
+					text = stickerIDToEmoji[att.Payload.StickerID]
+				}
+
+				if att.Type == "location" {
+					// TODO: better handle locations
+					text = fmt.Sprintf("%f,%f", att.Payload.Coordinates.lat, att.Payload.Coordinates.long)
+				}
+
+				if att.Payload != nil && att.Payload.URL != "" {
+					attachmentURLs = append(attachmentURLs, att.Payload.URL)
+				}
+
 			}
 
 			// create our message
 			ev := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(msg.Message.MID).WithReceivedOn(date)
 			event := h.Backend().CheckExternalIDSeen(ev)
 
-			// add any attachments if this wasn't a sticker
-			if stickerText == "" {
-				for _, att := range msg.Message.Attachments {
-					if att.Payload != nil && att.Payload.URL != "" {
-						event.WithAttachment(att.Payload.URL)
-					}
-				}
+			// add any attachment URL found
+			for _, attURL := range attachmentURLs {
+				event.WithAttachment(attURL)
 			}
 
 			err := h.Backend().WriteMsg(ctx, event)
@@ -612,4 +645,48 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	lastName, _ := jsonparser.GetString(rr.Body, "last_name")
 
 	return map[string]string{"name": utils.JoinNonEmpty(" ", firstName, lastName)}, nil
+}
+
+// see https://developers.facebook.com/docs/messenger-platform/webhook#security
+func (h *handler) validateSignature(r *http.Request) error {
+	headerSignature := r.Header.Get(signatureHeader)
+	if headerSignature == "" {
+		return fmt.Errorf("missing request signature")
+	}
+	appSecret := h.Server().Config().FacebookAppSecret
+
+	expectedSignature, err := fbCalculateSignature(appSecret, r)
+	if err != nil {
+		return err
+	}
+
+	signature := ""
+	if len(headerSignature) == 45 && strings.HasPrefix(headerSignature, "sha1=") {
+		signature = strings.TrimLeft(headerSignature, "sha1=")
+	}
+
+	// compare signatures in way that isn't sensitive to a timing attack
+	if !hmac.Equal([]byte(expectedSignature), []byte(signature)) {
+		return fmt.Errorf("invalid request signature")
+	}
+
+	return nil
+}
+
+func fbCalculateSignature(appSecret string, r *http.Request) (string, error) {
+	rawPostData, err := handlers.ReadBody(r, 100000)
+	if err != nil {
+		return "", fmt.Errorf("unable to read request body: %s", err)
+	}
+
+	escapedRawData := []byte(strconv.QuoteToASCII(string(rawPostData)))
+
+	var buffer bytes.Buffer
+	buffer.Write(escapedRawData)
+
+	// hash with SHA1
+	mac := hmac.New(sha1.New, []byte(appSecret))
+	mac.Write(buffer.Bytes())
+
+	return hex.EncodeToString(mac.Sum(nil)), nil
 }

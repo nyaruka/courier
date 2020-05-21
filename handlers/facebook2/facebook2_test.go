@@ -2,6 +2,7 @@ package facebook2
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -138,11 +139,10 @@ var thumbsUp = `{
 				"attachments":[{
 					"type":"image",
 					"payload":{
-						"url":"https://scontent.xx.fbcdn.net/v/arst",
-						"sticker_id":369239263222822
+						"sticker_id": 369239263222822,
+						"url":"https://scontent.xx.fbcdn.net/v/arst"
 					}
-				}],
-				"sticker_id":369239263222822
+				}]
 			}
 		}]
 	}]
@@ -182,7 +182,8 @@ var echo = `{
 			},
 			"timestamp": 1459991487970,
 			"message": {
-				"is_echo": true
+				"is_echo": true,
+				"mid": "qT7ywaK"
 			}
 		}]
 	}]
@@ -317,7 +318,8 @@ var referral = `{
 			  "id": "1234"
 			},
 			"sender": {
-			  "id": "5678"
+			  "id": "5678",
+			  "user_ref: "5678"
 			},
 			"timestamp": 1459991487970
 	  }],
@@ -384,46 +386,69 @@ var notJSON = `blargh`
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Message", URL: "/c/fb2/receive", Data: helloMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Invalid Signature", URL: "/c/fb2/receive", Data: helloMsg, Status: 400, Response: "invalid request signature", PrepRequest: addInvalidSignature},
+
 	{Label: "No Duplicate Receive Message", URL: "/c/fb2/receive", Data: duplicateMsg, Status: 200, Response: "Handled",
-		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
 	{Label: "Receive Attachment", URL: "/c/fb2/receive", Data: attachment, Status: 200, Response: "Handled",
-		Text: Sp(""), Attachments: []string{"https://image-url/foo.png"}, URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+		Text: Sp(""), Attachments: []string{"https://image-url/foo.png"}, URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
 	{Label: "Receive Thumbs Up", URL: "/c/fb2/receive", Data: thumbsUp, Status: 200, Response: "Handled",
-		Text: Sp("👍"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+		Text: Sp("👍"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
 
 	{Label: "Receive OptIn UserRef", URL: "/c/fb2/receive", Data: optInUserRef, Status: 200, Response: "Handled",
 		URN: Sp("facebook:ref:optin_user_ref"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
-		ChannelEvent: Sp(courier.Referral), ChannelEventExtra: map[string]interface{}{"referrer_id": "optin_ref"}},
+		ChannelEvent: Sp(courier.Referral), ChannelEventExtra: map[string]interface{}{"referrer_id": "optin_ref"},
+		PrepRequest: addValidSignature},
 	{Label: "Receive OptIn", URL: "/c/fb2/receive", Data: optIn, Status: 200, Response: "Handled",
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
-		ChannelEvent: Sp(courier.Referral), ChannelEventExtra: map[string]interface{}{"referrer_id": "optin_ref"}},
+		ChannelEvent: Sp(courier.Referral), ChannelEventExtra: map[string]interface{}{"referrer_id": "optin_ref"},
+		PrepRequest: addValidSignature},
 
 	{Label: "Receive Get Started", URL: "/c/fb2/receive", Data: postbackGetStarted, Status: 200, Response: "Handled",
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.NewConversation),
-		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started"}},
+		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started"},
+		PrepRequest:       addValidSignature},
 	{Label: "Receive Referral Postback", URL: "/c/fb2/receive", Data: postback, Status: 200, Response: "Handled",
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
-		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"}},
+		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"},
+		PrepRequest:       addValidSignature},
 	{Label: "Receive Referral", URL: "/c/fb2/receive", Data: postbackReferral, Status: 200, Response: "Handled",
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
-		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"}},
+		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"},
+		PrepRequest:       addValidSignature},
 
 	{Label: "Receive Referral", URL: "/c/fb2/receive", Data: referral, Status: 200, Response: `"referrer_id":"referral id"`,
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
-		ChannelEventExtra: map[string]interface{}{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"}},
+		ChannelEventExtra: map[string]interface{}{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"},
+		PrepRequest:       addValidSignature},
 
 	{Label: "Receive DLR", URL: "/c/fb2/receive", Data: dlr, Status: 200, Response: "Handled",
-		Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), MsgStatus: Sp(courier.MsgDelivered), ExternalID: Sp("mid.1458668856218:ed81099e15d3f4f233")},
+		Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), MsgStatus: Sp(courier.MsgDelivered), ExternalID: Sp("mid.1458668856218:ed81099e15d3f4f233"),
+		PrepRequest: addValidSignature},
 
-	{Label: "Different Page", URL: "/c/fb2/receive", Data: differentPage, Status: 200, Response: `"data":[]`},
-	{Label: "Echo", URL: "/c/fb2/receive", Data: echo, Status: 200, Response: `ignoring echo`},
-	{Label: "Not Page", URL: "/c/fb2/receive", Data: notPage, Status: 400, Response: "expected 'page', found notpage"},
-	{Label: "No Entries", URL: "/c/fb2/receive", Data: noEntries, Status: 400, Response: "no entries found"},
-	{Label: "No Messaging Entries", URL: "/c/fb2/receive", Data: noMessagingEntries, Status: 200, Response: "Handled"},
-	{Label: "Unknown Messaging Entry", URL: "/c/fb2/receive", Data: unkownMessagingEntry, Status: 200, Response: "Handled"},
-	{Label: "Not JSON", URL: "/c/fb2/receive", Data: notJSON, Status: 400, Response: "Error"},
-	{Label: "Invalid URN", URL: "/c/fb2/receive", Data: invalidURN, Status: 400, Response: "invalid facebook id"},
+	{Label: "Different Page", URL: "/c/fb2/receive", Data: differentPage, Status: 200, Response: `"data":[]`, PrepRequest: addValidSignature},
+	{Label: "Echo", URL: "/c/fb2/receive", Data: echo, Status: 200, Response: `ignoring echo`, PrepRequest: addValidSignature},
+	{Label: "Not Page", URL: "/c/fb2/receive", Data: notPage, Status: 400, Response: "expected 'page', found notpage", PrepRequest: addValidSignature},
+	{Label: "No Entries", URL: "/c/fb2/receive", Data: noEntries, Status: 400, Response: "no entries found", PrepRequest: addValidSignature},
+	{Label: "No Messaging Entries", URL: "/c/fb2/receive", Data: noMessagingEntries, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
+	{Label: "Unknown Messaging Entry", URL: "/c/fb2/receive", Data: unkownMessagingEntry, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
+	{Label: "Not JSON", URL: "/c/fb2/receive", Data: notJSON, Status: 400, Response: "Error", PrepRequest: addValidSignature},
+	{Label: "Invalid URN", URL: "/c/fb2/receive", Data: invalidURN, Status: 400, Response: "invalid facebook id", PrepRequest: addValidSignature},
+}
+
+func addValidSignature(r *http.Request) {
+	sig, _ := fbCalculateSignature("fb_app_secret", r)
+	r.Header.Set(signatureHeader, fmt.Sprintf("sha1=%s", string(sig)))
+}
+
+func addInvalidSignature(r *http.Request) {
+	r.Header.Set(signatureHeader, "invalidsig")
 }
 
 // mocks the call to the Facebook graph API
@@ -483,12 +508,12 @@ func BenchmarkHandler(b *testing.B) {
 func TestVerify(t *testing.T) {
 
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
-		{Label: "Valid Secret", URL: "/c/fb2/receive?hub.mode=subscribe&hub.verify_token=mysecret&hub.challenge=yarchallenge", Status: 200,
+		{Label: "Valid Secret", URL: "/c/fb2/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge", Status: 200,
 			Response: "yarchallenge", NoQueueErrorCheck: true, NoInvalidChannelCheck: true},
 		{Label: "Verify No Mode", URL: "/c/fb2/receive", Status: 400, Response: "unknown request"},
 		{Label: "Verify No Secret", URL: "/c/fb2/receive?hub.mode=subscribe", Status: 400, Response: "token does not match secret"},
 		{Label: "Invalid Secret", URL: "/c/fb2/receive?hub.mode=subscribe&hub.verify_token=blah", Status: 400, Response: "token does not match secret"},
-		{Label: "Valid Secret", URL: "/c/fb2/receive?hub.mode=subscribe&hub.verify_token=mysecret&hub.challenge=yarchallenge", Status: 200, Response: "yarchallenge"},
+		{Label: "Valid Secret", URL: "/c/fb2/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge", Status: 200, Response: "yarchallenge"},
 	})
 
 }
