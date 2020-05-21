@@ -319,7 +319,7 @@ var referral = `{
 			},
 			"sender": {
 			  "id": "5678",
-			  "user_ref: "5678"
+			  "user_ref": "5678"
 			},
 			"timestamp": 1459991487970
 	  }],
