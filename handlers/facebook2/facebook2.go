@@ -145,8 +145,8 @@ type moPayload struct {
 						URL         string `json:"url"`
 						StickerID   int64  `json:"sticker_id"`
 						Coordinates *struct {
-							lat  float64 `json:"lat"`
-							long float64 `json:"long"`
+							Lat  float64 `json:"lat"`
+							Long float64 `json:"long"`
 						} `json:"coordinates"`
 					}
 				} `json:"attachments"`
@@ -373,8 +373,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 				}
 
 				if att.Type == "location" {
-					// TODO: better handle locations
-					text = fmt.Sprintf("%f,%f", att.Payload.Coordinates.lat, att.Payload.Coordinates.long)
+					attachmentURLs = append(attachmentURLs, fmt.Sprintf("geo:%f,%f", att.Payload.Coordinates.Lat, att.Payload.Coordinates.Long))
 				}
 
 				if att.Payload != nil && att.Payload.URL != "" {

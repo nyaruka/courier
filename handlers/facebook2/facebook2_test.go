@@ -125,6 +125,35 @@ var attachment = `{
 	}]
 }`
 
+var locationAttachment = `{
+	"object":"page",
+	"entry": [{
+	  	"id": "1234",
+	  	"messaging": [{
+				"message": {
+		  			"mid": "external_id",
+		  			"attachments":[{
+						"type":"location",
+      	      			"payload":{
+							"coordinates": {
+								"lat": 1.2,
+								"long": -1.3
+							}
+						}
+					}]
+				},
+				"recipient": {
+					"id": "1234"
+				},
+				"sender": {
+					"id": "5678"
+				},
+				"timestamp": 1459991487970
+	    }],
+	  	"time": 1459991487970
+	}]
+}`
+
 var thumbsUp = `{
 	"object":"page",
 	"entry":[{
@@ -396,6 +425,10 @@ var testCases = []ChannelHandleTestCase{
 		PrepRequest: addValidSignature},
 	{Label: "Receive Attachment", URL: "/c/fb2/receive", Data: attachment, Status: 200, Response: "Handled",
 		Text: Sp(""), Attachments: []string{"https://image-url/foo.png"}, URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Location", URL: "/c/fb2/receive", Data: locationAttachment, Status: 200, Response: "Handled",
+		Text: Sp(""), Attachments: []string{"geo:1.200000,-1.300000"}, URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Thumbs Up", URL: "/c/fb2/receive", Data: thumbsUp, Status: 200, Response: "Handled",
 		Text: Sp("👍"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
