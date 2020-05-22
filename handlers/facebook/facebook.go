@@ -182,7 +182,12 @@ type moPayload struct {
 				Attachments []struct {
 					Type    string `json:"type"`
 					Payload *struct {
-						URL string `json:"url"`
+						URL         string `json:"url"`
+						StickerID   int64  `json:"sticker_id"`
+						Coordinates *struct {
+							Lat  float64 `json:"lat"`
+							Long float64 `json:"long"`
+						} `json:"coordinates"`
 					}
 				} `json:"attachments"`
 			} `json:"message"`
@@ -344,6 +349,25 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 			text := msg.Message.Text
 
+			attachmentURLs := make([]string, 0, 2)
+
+			// loop on our attachments
+			for _, att := range msg.Message.Attachments {
+				// if we have a sticker ID, use that as our text
+				if att.Type == "image" && att.Payload != nil && att.Payload.StickerID != 0 {
+					text = stickerIDToEmoji[att.Payload.StickerID]
+				}
+
+				if att.Type == "location" {
+					attachmentURLs = append(attachmentURLs, fmt.Sprintf("geo:%f,%f", att.Payload.Coordinates.Lat, att.Payload.Coordinates.Long))
+				}
+
+				if att.Payload != nil && att.Payload.URL != "" {
+					attachmentURLs = append(attachmentURLs, att.Payload.URL)
+				}
+
+			}
+
 			// if we have a sticker ID, use that as our text
 			stickerText := stickerIDToEmoji[msg.Message.StickerID]
 			if stickerText != "" {
@@ -354,13 +378,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			ev := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(msg.Message.MID).WithReceivedOn(date)
 			event := h.Backend().CheckExternalIDSeen(ev)
 
-			// add any attachments if this wasn't a sticker
-			if stickerText == "" {
-				for _, att := range msg.Message.Attachments {
-					if att.Payload != nil && att.Payload.URL != "" {
-						event.WithAttachment(att.Payload.URL)
-					}
-				}
+			// add any attachment URL found
+			for _, attURL := range attachmentURLs {
+				event.WithAttachment(attURL)
 			}
 
 			err := h.Backend().WriteMsg(ctx, event)
