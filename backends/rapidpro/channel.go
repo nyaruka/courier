@@ -151,12 +151,12 @@ func getChannelByAddress(ctx context.Context, db *sqlx.DB, channelType courier.C
 	}
 
 	// look in our database instead
-	channel, dbErr := loadChannelByAdrressFromDB(ctx, db, channelType, address)
+	channel, dbErr := loadChannelByAddressFromDB(ctx, db, channelType, address)
 
 	// if it wasn't found in the DB, clear our cache and return that it wasn't found
 	if dbErr == courier.ErrChannelNotFound {
 		clearLocalChannelByAddress(address)
-		return cachedChannel, fmt.Errorf("unable to find channel with type: %s and uuid: %s", channelType.String(), address.String())
+		return cachedChannel, fmt.Errorf("unable to find channel with type: %s and address: %s", channelType.String(), address.String())
 	}
 
 	// if we had some other db error, return it if our cached channel was only just expired
@@ -194,8 +194,8 @@ WHERE
        ch.is_active = true AND
        ch.org_id IS NOT NULL`
 
-// ChannelForUUID attempts to look up the channel with the passed in UUID, returning it
-func loadChannelByAdrressFromDB(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, address courier.ChannelAddress) (*DBChannel, error) {
+// loadChannelByAddressFromDB get the channel with the passed in channel type and address from the DB, returning it
+func loadChannelByAddressFromDB(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, address courier.ChannelAddress) (*DBChannel, error) {
 	channel := &DBChannel{Address_: address}
 
 	// select just the fields we need

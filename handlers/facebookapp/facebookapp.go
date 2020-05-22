@@ -1,4 +1,4 @@
-package facebook2
+package facebookapp
 
 import (
 	"bytes"
@@ -66,7 +66,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandlerWithParams(courier.ChannelType("FB2"), "Facebook", false)}
+	return &handler{handlers.NewBaseHandlerWithParams(courier.ChannelType("FBA"), "Facebook", false)}
 }
 
 // Initialize is called by the engine once everything is loaded
