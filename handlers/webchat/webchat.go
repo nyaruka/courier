@@ -89,33 +89,15 @@ func (h *handler) receiveMessage(ctx context.Context, channel Channel, w http.Re
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 	}
 
-	// the list of events we deal with
-	events := make([]Event, 0, 2)
-
-	// the list of data we will return in our response
-	data := make([]interface{}, 0, 2)
-
 	urn, errURN := urns.NewURNFromParts(channel.Schemes()[0], payload.From, "", "")
 	if errURN != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errURN)
 	}
 	text := payload.Text
 
-	// build our msg
-	ev := h.Backend().NewIncomingMsg(channel, urn, text)
-	event := h.Backend().CheckExternalIDSeen(ev)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text)
 
-	errMsg := h.Backend().WriteMsg(ctx, event)
-	if errMsg != nil {
-		return nil, errMsg
-	}
-
-	h.Backend().WriteExternalIDSeen(event)
-
-	events = append(events, event)
-	data = append(data, NewMsgReceiveData(event))
-
-	return events, WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
+	return handlers.WriteMsgsAndResponse(ctx, h, []Msg{msg}, w, r)
 }
 
 func (h *handler) sendMsgPart(msg Msg, apiURL string, payload *dataPayload) (string, *ChannelLog, error) {
