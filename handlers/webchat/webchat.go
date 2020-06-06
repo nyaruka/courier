@@ -135,8 +135,15 @@ func (h *handler) SendMsg(ctx context.Context, msg Msg) (MsgStatus, error) {
 	}
 
 	if len(msg.QuickReplies()) > 0 {
+		buildQuickReplies := make([]string, 0)
+		for _, item := range msg.QuickReplies() {
+			item = strings.ReplaceAll(item, "\\/", "/")
+			item = strings.ReplaceAll(item, "\\\"", "\"")
+			item = strings.ReplaceAll(item, "\\\\", "\\")
+			buildQuickReplies = append(buildQuickReplies, item)
+		}
 		quickReplies := make(map[string][]string, 0)
-		quickReplies["quick_replies"] = msg.QuickReplies()
+		quickReplies["quick_replies"] = buildQuickReplies
 		data.Metadata = quickReplies
 	}
 
