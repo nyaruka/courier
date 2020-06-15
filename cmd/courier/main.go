@@ -57,6 +57,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/vk"
 	_ "github.com/nyaruka/courier/handlers/wavy"
 	_ "github.com/nyaruka/courier/handlers/wechat"
+	_ "github.com/nyaruka/courier/handlers/webchat"
 	_ "github.com/nyaruka/courier/handlers/whatsapp"
 	_ "github.com/nyaruka/courier/handlers/yo"
 	_ "github.com/nyaruka/courier/handlers/zenvia"
