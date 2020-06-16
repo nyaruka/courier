@@ -1,3 +1,11 @@
+v5.5.22
+----------
+ * User reply endpoint when possible for LINE messages
+
+v5.5.21
+----------
+ * Fix FB location attachment to be handled at geo attachment
+
 v5.5.20
 ----------
  * TS expects national numbers only
