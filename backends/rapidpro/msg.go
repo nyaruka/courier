@@ -279,9 +279,9 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 	}
 
 	// create our filename
-	filename := msgUUID.String()
+	filename := utils.NewUUID()
 	if extension != "" {
-		filename = fmt.Sprintf("%s.%s", msgUUID, extension)
+		filename = fmt.Sprintf("%s.%s", filename, extension)
 	}
 	path := filepath.Join(b.config.S3MediaPrefix, strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 	if !strings.HasPrefix(path, "/") {
