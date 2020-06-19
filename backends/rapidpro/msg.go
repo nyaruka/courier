@@ -292,23 +292,25 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 		file := bytes.NewReader(body)
 		img, _, _ := image.Decode(file)
 
-		resized := resize.Thumbnail(1920, 1920, img, resize.NearestNeighbor)
-		tmpImageName := fmt.Sprintf("/tmp/%s.%s", filename, extension)
-		outResized, _ := os.Create(tmpImageName)
+		if img != nil {
+			resized := resize.Thumbnail(1920, 1920, img, resize.NearestNeighbor)
+			tmpImageName := fmt.Sprintf("/tmp/%s.%s", filename, extension)
+			outResized, _ := os.Create(tmpImageName)
 
-		defer outResized.Close()
+			defer outResized.Close()
 
-		// write new image to file
-		if strings.ToLower(extension) == "png" {
-			png.Encode(outResized, resized)
-		} else {
-			jpeg.Encode(outResized, resized, nil)
+			// write new image to file
+			if strings.ToLower(extension) == "png" {
+				png.Encode(outResized, resized)
+			} else {
+				jpeg.Encode(outResized, resized, nil)
+			}
+
+			body, _ = ioutil.ReadFile(tmpImageName)
+
+			// Removing the file created on /tmp directory
+			os.Remove(tmpImageName)
 		}
-
-		body, _ = ioutil.ReadFile(tmpImageName)
-
-		// Removing the file created on /tmp directory
-		os.Remove(tmpImageName)
 	}
 
 	if extension != "" {
