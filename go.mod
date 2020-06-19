@@ -26,6 +26,7 @@ require (
 	github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348 // indirect
 	github.com/lib/pq v1.0.0
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/nyaruka/ezconf v0.2.1
 	github.com/nyaruka/gocommon v1.2.0
 	github.com/nyaruka/librato v1.0.0
