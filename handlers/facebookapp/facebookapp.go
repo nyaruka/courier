@@ -612,7 +612,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	return status, nil
 }
 
-// ReceiveVerify handles Facebook's webhook verification callback
+// DescribeURN looks up URN metadata for new contacts
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
 	// can't do anything with facebook refs, ignore them
 	if urn.IsFacebookRef() {

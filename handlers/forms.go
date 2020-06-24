@@ -98,7 +98,6 @@ func DecodeAndValidateXML(envelope interface{}, r *http.Request) error {
 func ReadBody(r *http.Request, limit int64) ([]byte, error) {
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, limit))
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-	defer r.Body.Close()
 	return body, err
 
 }
