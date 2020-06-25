@@ -1,3 +1,7 @@
+v5.5.23
+----------
+ * Add support for FBA channel type
+
 v5.5.22
 ----------
  * User reply endpoint when possible for LINE messages
