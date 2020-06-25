@@ -834,9 +834,14 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 }
 
 func (ts *BackendTestSuite) TestChannel() {
+	noAddress := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c99a")
+	ts.Equal("US", noAddress.Country())
+	ts.Equal(courier.NilChannelAddress, noAddress.ChannelAddress())
+
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
 	ts.Equal("2500", knChannel.Address())
+	ts.Equal(courier.ChannelAddress("2500"), knChannel.ChannelAddress())
 	ts.Equal("RW", knChannel.Country())
 
 	// assert our config values
