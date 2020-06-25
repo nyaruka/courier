@@ -4,20 +4,27 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/go-chi/chi"
 	"github.com/nyaruka/courier"
 )
 
 // BaseHandler is the base class for most handlers, it just stored the server, name and channel type for the handler
 type BaseHandler struct {
-	channelType courier.ChannelType
-	name        string
-	server      courier.Server
-	backend     courier.Backend
+	channelType         courier.ChannelType
+	name                string
+	server              courier.Server
+	backend             courier.Backend
+	useChannelRouteUUID bool
 }
 
 // NewBaseHandler returns a newly constructed BaseHandler with the passed in parameters
 func NewBaseHandler(channelType courier.ChannelType, name string) BaseHandler {
-	return BaseHandler{channelType: channelType, name: name}
+	return NewBaseHandlerWithParams(channelType, name, true)
+}
+
+// NewBaseHandlerWithParams returns a newly constructed BaseHandler with the passed in parameters
+func NewBaseHandlerWithParams(channelType courier.ChannelType, name string, useChannelRouteUUID bool) BaseHandler {
+	return BaseHandler{channelType: channelType, name: name, useChannelRouteUUID: useChannelRouteUUID}
 }
 
 // SetServer can be used to change the server on a BaseHandler
@@ -44,6 +51,21 @@ func (h *BaseHandler) ChannelType() courier.ChannelType {
 // ChannelName returns the name of the channel this handler deals with
 func (h *BaseHandler) ChannelName() string {
 	return h.name
+}
+
+// UseChannelRouteUUID returns whether the router should use the channel UUID in the URL path
+func (h *BaseHandler) UseChannelRouteUUID() bool {
+	return h.useChannelRouteUUID
+}
+
+// GetChannel returns the channel
+func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
+	uuid, err := courier.NewChannelUUID(chi.URLParam(r, "uuid"))
+	if err != nil {
+		return nil, err
+	}
+
+	return h.backend.GetChannel(ctx, h.ChannelType(), uuid)
 }
 
 // WriteStatusSuccessResponse writes a success response for the statuses

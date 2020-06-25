@@ -1,12 +1,16 @@
-package facebook
+package facebookapp
 
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,17 +20,14 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Endpoints we hit
 var (
-	sendURL      = "https://graph.facebook.com/v3.3/me/messages"
-	subscribeURL = "https://graph.facebook.com/v3.3/me/subscribed_apps"
-	graphURL     = "https://graph.facebook.com/v3.3/"
+	sendURL  = "https://graph.facebook.com/v7.0/me/messages"
+	graphURL = "https://graph.facebook.com/v7.0/"
 
-	// How long we want after the subscribe callback to register the page for events
-	subscribeTimeout = time.Second * 2
+	signatureHeader = "X-Hub-Signature"
 
 	// Facebook API says 640 is max for the body
 	maxMsgLength = 640
@@ -65,60 +66,20 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("FB"), "Facebook")}
+	return &handler{handlers.NewBaseHandlerWithParams(courier.ChannelType("FBA"), "Facebook", false)}
 }
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
 	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveVerify)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
 	return nil
 }
 
-// receiveVerify handles Facebook's webhook verification callback
-func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	mode := r.URL.Query().Get("hub.mode")
-
-	// this isn't a subscribe verification, that's an error
-	if mode != "subscribe" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown request"))
-	}
-
-	// verify the token against our secret, if the same return the challenge FB sent us
-	secret := r.URL.Query().Get("hub.verify_token")
-	if secret != channel.StringConfigForKey(courier.ConfigSecret, "") {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("token does not match secret"))
-	}
-
-	// make sure we have an auth token
-	authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
-	if authToken == "" {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing auth token for FB channel"))
-	}
-
-	// everything looks good, we will subscribe to this page's messages asynchronously
-	go func() {
-		// wait a bit for Facebook to handle this response
-		time.Sleep(subscribeTimeout)
-
-		// subscribe to messaging events for this page
-		form := url.Values{}
-		form.Set("access_token", authToken)
-		req, _ := http.NewRequest(http.MethodPost, subscribeURL, strings.NewReader(form.Encode()))
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// log if we get any kind of error
-		success, _ := jsonparser.GetBoolean([]byte(rr.Body), "success")
-		if err != nil || !success {
-			logrus.WithField("channel_uuid", channel.UUID()).WithField("response", rr.Response).Error("error subscribing to Facebook page events")
-		}
-	}()
-
-	// and respond with the challenge token
-	_, err := fmt.Fprint(w, r.URL.Query().Get("hub.challenge"))
-	return nil, err
+type fbSender struct {
+	ID      string `json:"id"`
+	UserRef string `json:"user_ref"`
 }
 
 type fbUser struct {
@@ -148,9 +109,9 @@ type moPayload struct {
 		ID        string `json:"id"`
 		Time      int64  `json:"time"`
 		Messaging []struct {
-			Sender    fbUser `json:"sender"`
-			Recipient fbUser `json:"recipient"`
-			Timestamp int64  `json:"timestamp"`
+			Sender    fbSender `json:"sender"`
+			Recipient fbUser   `json:"recipient"`
+			Timestamp int64    `json:"timestamp"`
 
 			OptIn *struct {
 				Ref     string `json:"ref"`
@@ -178,7 +139,6 @@ type moPayload struct {
 				IsEcho      bool   `json:"is_echo"`
 				MID         string `json:"mid"`
 				Text        string `json:"text"`
-				StickerID   int64  `json:"sticker_id"`
 				Attachments []struct {
 					Type    string `json:"type"`
 					Payload *struct {
@@ -195,16 +155,66 @@ type moPayload struct {
 			Delivery *struct {
 				MIDs      []string `json:"mids"`
 				Watermark int64    `json:"watermark"`
-				Seq       int      `json:"seq"`
 			} `json:"delivery"`
 		} `json:"messaging"`
 	} `json:"entry"`
 }
 
-// receiveEvent is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+// GetChannel returns the channel
+func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
+	if r.Method == http.MethodGet {
+		return nil, nil
+	}
+
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
+	if err != nil {
+		return nil, err
+	}
+
+	// not a page object? ignore
+	if payload.Object != "page" {
+		return nil, fmt.Errorf("object expected 'page', found %s", payload.Object)
+	}
+
+	// no entries? ignore this request
+	if len(payload.Entry) == 0 {
+		return nil, fmt.Errorf("no entries found")
+	}
+
+	pageID := payload.Entry[0].ID
+
+	return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("FB2"), courier.ChannelAddress(pageID))
+}
+
+// receiveVerify handles Facebook's webhook verification callback
+func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	mode := r.URL.Query().Get("hub.mode")
+
+	// this isn't a subscribe verification, that's an error
+	if mode != "subscribe" {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown request"))
+	}
+
+	// verify the token against our server facebook webhook secret, if the same return the challenge FB sent us
+	secret := r.URL.Query().Get("hub.verify_token")
+	if secret != h.Server().Config().FacebookWebhookSecret {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("token does not match secret"))
+	}
+	// and respond with the challenge token
+	_, err := fmt.Fprint(w, r.URL.Query().Get("hub.challenge"))
+	return nil, err
+}
+
+// receiveEvent is our HTTP handler function for incoming messages and status updates
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	err := h.validateSignature(r)
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
+
+	payload := &moPayload{}
+	err = handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
@@ -243,8 +253,13 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		// create our date from the timestamp (they give us millis, arg is nanos)
 		date := time.Unix(0, msg.Timestamp*1000000).UTC()
 
+		sender := msg.Sender.UserRef
+		if sender == "" {
+			sender = msg.Sender.ID
+		}
+
 		// create our URN
-		urn, err := urns.NewFacebookURN(msg.Sender.ID)
+		urn, err := urns.NewFacebookURN(sender)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
@@ -351,9 +366,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 			attachmentURLs := make([]string, 0, 2)
 
-			// loop on our attachments
+			// if we have a sticker ID, use that as our text
 			for _, att := range msg.Message.Attachments {
-				// if we have a sticker ID, use that as our text
 				if att.Type == "image" && att.Payload != nil && att.Payload.StickerID != 0 {
 					text = stickerIDToEmoji[att.Payload.StickerID]
 				}
@@ -366,12 +380,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 					attachmentURLs = append(attachmentURLs, att.Payload.URL)
 				}
 
-			}
-
-			// if we have a sticker ID, use that as our text
-			stickerText := stickerIDToEmoji[msg.Message.StickerID]
-			if stickerText != "" {
-				text = stickerText
 			}
 
 			// create our message
@@ -636,4 +644,48 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	lastName, _ := jsonparser.GetString(rr.Body, "last_name")
 
 	return map[string]string{"name": utils.JoinNonEmpty(" ", firstName, lastName)}, nil
+}
+
+// see https://developers.facebook.com/docs/messenger-platform/webhook#security
+func (h *handler) validateSignature(r *http.Request) error {
+	headerSignature := r.Header.Get(signatureHeader)
+	if headerSignature == "" {
+		return fmt.Errorf("missing request signature")
+	}
+	appSecret := h.Server().Config().FacebookAppSecret
+
+	expectedSignature, err := fbCalculateSignature(appSecret, r)
+	if err != nil {
+		return err
+	}
+
+	signature := ""
+	if len(headerSignature) == 45 && strings.HasPrefix(headerSignature, "sha1=") {
+		signature = strings.TrimLeft(headerSignature, "sha1=")
+	}
+
+	// compare signatures in way that isn't sensitive to a timing attack
+	if !hmac.Equal([]byte(expectedSignature), []byte(signature)) {
+		return fmt.Errorf("invalid request signature")
+	}
+
+	return nil
+}
+
+func fbCalculateSignature(appSecret string, r *http.Request) (string, error) {
+	rawPostData, err := handlers.ReadBody(r, 100000)
+	if err != nil {
+		return "", fmt.Errorf("unable to read request body: %s", err)
+	}
+
+	escapedRawData := []byte(strconv.QuoteToASCII(string(rawPostData)))
+
+	var buffer bytes.Buffer
+	buffer.Write(escapedRawData)
+
+	// hash with SHA1
+	mac := hmac.New(sha1.New, []byte(appSecret))
+	mac.Write(buffer.Bytes())
+
+	return hex.EncodeToString(mac.Sum(nil)), nil
 }

@@ -49,6 +49,9 @@ type ChannelHandleTestCase struct {
 	ExternalID *string
 	ID         int64
 
+	NoQueueErrorCheck     bool
+	NoInvalidChannelCheck bool
+
 	PrepRequest RequestPrepFunc
 }
 
@@ -177,7 +180,12 @@ func newServer(backend courier.Backend) courier.Server {
 	logger.Out = ioutil.Discard
 	logrus.SetOutput(ioutil.Discard)
 
-	return courier.NewServerWithLogger(courier.NewConfig(), backend, logger)
+	config := courier.NewConfig()
+	config.FacebookWebhookSecret = "fb_webhook_secret"
+	config.FacebookAppSecret = "fb_app_secret"
+
+	return courier.NewServerWithLogger(config, backend, logger)
+
 }
 
 // RunChannelSendTestCases runs all the passed in test cases against the channel
@@ -421,16 +429,20 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 	// check non-channel specific error conditions against first test case
 	validCase := testCases[0]
 
-	t.Run("Queue Error", func(t *testing.T) {
-		mb.SetErrorOnQueue(true)
-		defer mb.SetErrorOnQueue(false)
-		testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, 400, Sp("unable to queue message"), validCase.PrepRequest)
-	})
+	if !validCase.NoQueueErrorCheck {
+		t.Run("Queue Error", func(t *testing.T) {
+			mb.SetErrorOnQueue(true)
+			defer mb.SetErrorOnQueue(false)
+			testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, 400, Sp("unable to queue message"), validCase.PrepRequest)
+		})
+	}
 
-	t.Run("Receive With Invalid Channel", func(t *testing.T) {
-		mb.ClearChannels()
-		testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, 400, Sp("channel not found"), validCase.PrepRequest)
-	})
+	if !validCase.NoInvalidChannelCheck {
+		t.Run("Receive With Invalid Channel", func(t *testing.T) {
+			mb.ClearChannels()
+			testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, 400, Sp("channel not found"), validCase.PrepRequest)
+		})
+	}
 }
 
 // RunChannelBenchmarks runs all the passed in test cases for the passed in channels
