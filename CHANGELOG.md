@@ -1,3 +1,7 @@
+v5.5.24
+----------
+ * Support loading channels with null address
+
 v5.5.23
 ----------
  * Add support for FBA channel type
