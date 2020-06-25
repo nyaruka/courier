@@ -227,7 +227,8 @@ func getCachedChannelByAddress(channelType courier.ChannelType, address courier.
 	channel, found := channelByAddressCache[address]
 	cacheByAddressMutex.RUnlock()
 
-	if found {
+	// do not consider the cache for empty addresses
+	if found && address != courier.NilChannelAddress {
 		// if it was found but the type is wrong, that's an error
 		if channelType != courier.AnyChannelType && channel.ChannelType() != channelType {
 			return nil, courier.ErrChannelWrongType
@@ -246,6 +247,11 @@ func getCachedChannelByAddress(channelType courier.ChannelType, address courier.
 
 func cacheChannelByAddress(channel *DBChannel) {
 	channel.expiration = time.Now().Add(localTTL)
+
+	// never cache if the address is nil or empty
+	if channel.ChannelAddress() != courier.NilChannelAddress {
+		return
+	}
 
 	cacheByAddressMutex.Lock()
 	channelByAddressCache[channel.ChannelAddress()] = channel
