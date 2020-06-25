@@ -196,7 +196,7 @@ WHERE
 
 // loadChannelByAddressFromDB get the channel with the passed in channel type and address from the DB, returning it
 func loadChannelByAddressFromDB(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, address courier.ChannelAddress) (*DBChannel, error) {
-	channel := &DBChannel{Address_: address}
+	channel := &DBChannel{Address_: sql.NullString{String: address.String(), Valid: address == courier.NilChannelAddress}}
 
 	// select just the fields we need
 	err := db.GetContext(ctx, channel, lookupChannelFromAddressSQL, address)
@@ -267,15 +267,15 @@ var channelByAddressCache = make(map[courier.ChannelAddress]*DBChannel)
 
 // DBChannel is the RapidPro specific concrete type satisfying the courier.Channel interface
 type DBChannel struct {
-	OrgID_       OrgID                  `db:"org_id"`
-	ID_          courier.ChannelID      `db:"id"`
-	ChannelType_ courier.ChannelType    `db:"channel_type"`
-	Schemes_     pq.StringArray         `db:"schemes"`
-	UUID_        courier.ChannelUUID    `db:"uuid"`
-	Name_        sql.NullString         `db:"name"`
-	Address_     courier.ChannelAddress `db:"address"`
-	Country_     sql.NullString         `db:"country"`
-	Config_      utils.NullMap          `db:"config"`
+	OrgID_       OrgID               `db:"org_id"`
+	ID_          courier.ChannelID   `db:"id"`
+	ChannelType_ courier.ChannelType `db:"channel_type"`
+	Schemes_     pq.StringArray      `db:"schemes"`
+	UUID_        courier.ChannelUUID `db:"uuid"`
+	Name_        sql.NullString      `db:"name"`
+	Address_     sql.NullString      `db:"address"`
+	Country_     sql.NullString      `db:"country"`
+	Config_      utils.NullMap       `db:"config"`
 
 	OrgConfig_ utils.NullMap `db:"org_config"`
 	OrgIsAnon_ bool          `db:"org_is_anon"`
@@ -305,10 +305,16 @@ func (c *DBChannel) ID() courier.ChannelID { return c.ID_ }
 func (c *DBChannel) UUID() courier.ChannelUUID { return c.UUID_ }
 
 // Address returns the address of this channel as a string
-func (c *DBChannel) Address() string { return c.Address_.String() }
+func (c *DBChannel) Address() string { return c.Address_.String }
 
 // ChannelAddress returns the address of this channel
-func (c *DBChannel) ChannelAddress() courier.ChannelAddress { return c.Address_ }
+func (c *DBChannel) ChannelAddress() courier.ChannelAddress {
+	if !c.Address_.Valid {
+		return courier.NilChannelAddress
+	}
+
+	return courier.ChannelAddress(c.Address_.String)
+}
 
 // Country returns the country code for this channel if any
 func (c *DBChannel) Country() string { return c.Country_.String }

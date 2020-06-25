@@ -834,6 +834,9 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 }
 
 func (ts *BackendTestSuite) TestChannel() {
+	noAddress := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c99a")
+	ts.Equal("US", noAddress.Country())
+
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
 	ts.Equal("2500", knChannel.Address())
