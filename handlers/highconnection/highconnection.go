@@ -3,6 +3,7 @@ package highconnection
 import (
 	"context"
 	"fmt"
+	"mime"
 	"net/http"
 	"net/url"
 	"time"
@@ -66,8 +67,15 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
+	text := form.Message
+	// Hign connection URL encodes escapes ISO 8859 escape sequences
+	text, _ = url.QueryUnescape(text)
+	// decode from ISO 8859
+	text = mime.BEncoding.Encode("ISO-8859-1", text)
+	text, _ = new(mime.WordDecoder).DecodeHeader(text)
+
 	// build our Message
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text)).WithReceivedOn(date.UTC())
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
