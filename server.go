@@ -317,8 +317,8 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			writeAndLogRequestError(ctx, ww, r, channel, err)
 		}
 
-		// if no events were created we still want to log this to the channel, do so
-		if len(events) == 0 {
+		// if we have a channel matched but no events were created we still want to log this to the channel, do so
+		if channel != nil && len(events) == 0 {
 			if err != nil {
 				logs = append(logs, NewChannelLog("Channel Error", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
 				librato.Gauge(fmt.Sprintf("courier.channel_error_%s", channel.ChannelType()), secondDuration)
