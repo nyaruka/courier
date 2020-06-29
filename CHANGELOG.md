@@ -1,3 +1,7 @@
+v5.5.25
+----------
+ * Load FBA channel handler package
+
 v5.5.24
 ----------
  * Support loading channels with null address
