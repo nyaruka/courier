@@ -67,9 +67,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	text := form.Message
 	// Hign connection URL encodes escapes ISO 8859 escape sequences
-	text, _ = url.QueryUnescape(text)
+	text, _ := url.QueryUnescape(form.Message)
 	// decode from ISO 8859
 	text = mime.BEncoding.Encode("ISO-8859-1", text)
 	text, _ = new(mime.WordDecoder).DecodeHeader(text)
