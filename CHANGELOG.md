@@ -1,3 +1,8 @@
+v5.5.26
+----------
+ * Only log channel events when we have a channel matched
+ * HX channel sends MO using ISO 8859-1 encoding
+
 v5.5.25
 ----------
  * Load FBA channel handler package
