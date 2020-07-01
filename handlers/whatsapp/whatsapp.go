@@ -776,8 +776,12 @@ func (h *handler) getTemplate(msg courier.Msg) (*MsgTemplating, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid templating definition")
 	}
+	// check country
+	if templating.Country != "" {
+		templating.Language = fmt.Sprintf("%s_%s", templating.Language, templating.Country)
+	}
 
-	// map our language from iso639-3 to the WA country / iso638-2 pair
+	// map our language from iso639-3_iso3166-2 to the WA country / iso638-2 pair
 	language, found := languageMap[templating.Language]
 	if !found {
 		return nil, fmt.Errorf("unable to find mapping for language: %s", templating.Language)
@@ -797,74 +801,80 @@ type MsgTemplating struct {
 		UUID string `json:"uuid" validate:"required"`
 	} `json:"template" validate:"required,dive"`
 	Language  string   `json:"language" validate:"required"`
+	Country   string   `json:"country"`
 	Variables []string `json:"variables"`
 }
 
-// mapping from iso639-3 to WA language code
+// mapping from iso639-3_iso3166-2 to WA language code
 var languageMap = map[string]string{
-	"afr": "af",    // Afrikaans
-	"sqi": "sq",    // Albanian
-	"ara": "ar",    // Arabic
-	"aze": "az",    // Azerbaijani
-	"ben": "bn",    // Bengali
-	"bul": "bg",    // Bulgarian
-	"cat": "ca",    // Catalan
-	"zho": "zh_CN", // Chinese (CHN)
-	// zh_HK Chinese (HKG) (unsupported, use zh_CN)
-	// zh_TW Chinese (TAI) (unsupported, use zh_CN)
-	"hrv": "hr", //Croatian
-	"ces": "cs", // Czech
-	"dah": "da", // Danish
-	"nld": "nl", // Dutch
-	"eng": "en", // English
-	// en_GB English (UK) (unsupported, use en)
-	// en_US English (US) (unsupported, use en)
-	"est": "et",  // Estonian
-	"fil": "fil", // Filipino
-	"fin": "fi",  // Finnish
-	"fra": "fr",  // French
-	"deu": "de",  // German
-	"ell": "el",  // Greek
-	"gul": "gu",  // Gujarati
-	"enb": "he",  // Hebrew
-	"hin": "hi",  // Hindi
-	"hun": "hu",  // Hungarian
-	"ind": "id",  // Indonesian
-	"gle": "ga",  // Irish
-	"ita": "it",  // Italian
-	"jpn": "ja",  // Japanese
-	"kan": "kn",  // Kannada
-	"kaz": "kk",  // Kazakh
-	"kor": "ko",  // Korean
-	"lao": "lo",  // Lao
-	"jav": "lv",  // Latvian
-	"lit": "lt",  // Lithuanian
-	"mkd": "mk",  // Macedonian
-	"msa": "ms",  // Malay
-	"mar": "mr",  // Marathi
-	"nob": "nb",  // Norwegian
-	"fas": "fa",  // Persian
-	"pol": "pl",  // Polish
-	// "pt_BR" Portuguese (BR)  (unsupported, use pt_PT)
-	"por": "pt_PT", // Portuguese (POR)
-	"pan": "pa",    // Punjabi
-	"ron": "ro",    // Romanian
-	"rus": "ru",    // Russian
-	"srp": "sr",    // Serbian
-	"slk": "sk",    // Slovak
-	"slv": "sl",    // Slovenian
-	"spa": "es",    // Spanish
-	// es_AR Spanish (ARG) (unsupported, use es)
-	// es_ES Spanish (SPA) (unsupported, use es)
-	// es_MX Spanish (MEX) (unsupported, use es)
-	"swa": "sw", // Swahili
-	"swe": "sv", // Swedish
-	"tam": "ta", // Tamil
-	"tel": "te", // Telugu
-	"tha": "th", // Thai
-	"tur": "tr", // Turkish
-	"ukr": "uk", // Ukrainian
-	"urd": "ur", // Urdu
-	"uzb": "uz", // Uzbek
-	"vie": "vi", // Vietnamese
+	"afr": "af",       // Afrikaans
+	"sqi": "sq",       // Albanian
+	"ara": "ar",       // Arabic
+	"aze": "az",       // Azerbaijani
+	"ben": "bn",       // Bengali
+	"bul": "bg",       // Bulgarian
+	"cat": "ca",       // Catalan
+	"zho": "zh_CN",    // Chinese
+	"zho_CN": "zh_CN", // Chinese (CHN)
+	"zho_HK": "zh_HK", // Chinese (HKG)
+	"zho_TW": "zh_TW", // Chinese (TAI)
+	"hrv": "hr",       // Croatian
+	"ces": "cs",       // Czech
+	"dah": "da",       // Danish
+	"nld": "nl",       // Dutch
+	"eng": "en",       // English
+	"eng_GB": "en_GB", // English (UK)
+	"eng_US": "en_US", // English (US)
+	"est": "et",       // Estonian
+	"fil": "fil",      // Filipino
+	"fin": "fi",       // Finnish
+	"fra": "fr",       // French
+	"deu": "de",       // German
+	"ell": "el",       // Greek
+	"gul": "gu",       // Gujarati
+	"hau": "ha",       // Hausa
+	"enb": "he",       // Hebrew
+	"hin": "hi",       // Hindi
+	"hun": "hu",       // Hungarian
+	"ind": "id",       // Indonesian
+	"gle": "ga",       // Irish
+	"ita": "it",       // Italian
+	"jpn": "ja",       // Japanese
+	"kan": "kn",       // Kannada
+	"kaz": "kk",       // Kazakh
+	"kor": "ko",       // Korean
+	"lao": "lo",       // Lao
+	"lav": "lv",       // Latvian
+	"lit": "lt",       // Lithuanian
+	"mal": "ml",       // Malayalam
+	"mkd": "mk",       // Macedonian
+	"msa": "ms",       // Malay
+	"mar": "mr",       // Marathi
+	"nob": "nb",       // Norwegian
+	"fas": "fa",       // Persian
+	"pol": "pl",       // Polish
+	"por": "pt_PT",    // Portuguese
+	"por_BR": "pt_BR", // Portuguese (BR)
+	"por_PT": "pt_PT", // Portuguese (POR)
+	"pan": "pa",       // Punjabi
+	"ron": "ro",       // Romanian
+	"rus": "ru",       // Russian
+	"srp": "sr",       // Serbian
+	"slk": "sk",       // Slovak
+	"slv": "sl",       // Slovenian
+	"spa": "es",       // Spanish
+	"spa_AR": "es_AR", // Spanish (ARG)
+	"spa_ES": "es_ES", // Spanish (SPA)
+	"spa_MX": "es_MX", // Spanish (MEX)
+	"swa": "sw",       // Swahili
+	"swe": "sv",       // Swedish
+	"tam": "ta",       // Tamil
+	"tel": "te",       // Telugu
+	"tha": "th",       // Thai
+	"tur": "tr",       // Turkish
+	"ukr": "uk",       // Ukrainian
+	"urd": "ur",       // Urdu
+	"uzb": "uz",       // Uzbek
+	"vie": "vi",       // Vietnamese
+	"zul": "zu",       // Zulu
 }
