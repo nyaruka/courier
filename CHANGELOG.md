@@ -1,3 +1,7 @@
+v5.5.27
+----------
+ * Add country field and support for more template languages on WhatsApp handler
+
 v5.5.26
 ----------
  * Only log channel events when we have a channel matched
