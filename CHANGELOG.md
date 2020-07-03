@@ -1,3 +1,7 @@
+v5.5.28
+----------
+ * Fix FBA signature validation and channel lookup
+
 v5.5.27
 ----------
  * Add country field and support for more template languages on WhatsApp handler
