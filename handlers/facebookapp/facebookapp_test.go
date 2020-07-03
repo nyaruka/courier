@@ -223,17 +223,17 @@ var optInUserRef = `{
 	"entry": [{
 	  "id": "1234",
 	  "messaging": [{
-			"optin": {
+		  "optin": {
 		  	"ref": "optin_ref",
 		  	"user_ref": "optin_user_ref"
-			},
-			"recipient": {
+		  },
+		  "recipient": {
 		  	"id": "1234"
-			},
-			"sender": {
+		  },
+		  "sender": {
 		  	"id": "5678"
-			},
-			"timestamp": 1459991487970
+		  },
+		  "timestamp": 1459991487970
 	  }],
 	  "time": 1459991487970
 	}]
@@ -392,7 +392,9 @@ var noEntries = `{
 
 var noMessagingEntries = `{
 	"object":"page",
-	"entry": [{"id": "1234"}]
+	"entry": [{
+		"id": "1234"
+	}]
 }`
 
 var unkownMessagingEntry = `{
