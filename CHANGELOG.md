@@ -1,4 +1,4 @@
-v5.5.28
+v5.5.28 
 ----------
  * Fix FBA signature validation and channel lookup
 
