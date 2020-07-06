@@ -1,3 +1,7 @@
+v5.6.0
+----------
+ * 5.6.0 Candidate Release
+
 v5.5.28 
 ----------
  * Fix FBA signature validation and channel lookup
