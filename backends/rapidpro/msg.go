@@ -27,6 +27,11 @@ import (
 	"github.com/nyaruka/null"
 	"github.com/sirupsen/logrus"
 	filetype "gopkg.in/h2non/filetype.v1"
+	"image"
+	"bytes"
+	"image/png"
+	"image/jpeg"
+	"github.com/nfnt/resize"
 )
 
 // MsgDirection is the direction of a message
@@ -279,9 +284,37 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 	}
 
 	// create our filename
-	filename := msgUUID.String()
+	filename := utils.NewUUID()
+
+	// if we have images as an attachment to be downloaded to S3, making sure that our files will have 1920px as a limit of size
+	if mimeType == "image/png" || mimeType == "image/jpeg" || mimeType == "image/jpg" {
+		// Do the resizing here
+		file := bytes.NewReader(body)
+		img, _, _ := image.Decode(file)
+
+		if img != nil {
+			resized := resize.Thumbnail(1920, 1920, img, resize.NearestNeighbor)
+			tmpImageName := fmt.Sprintf("/tmp/%s.%s", filename, extension)
+			outResized, _ := os.Create(tmpImageName)
+
+			defer outResized.Close()
+
+			// write new image to file
+			if strings.ToLower(extension) == "png" {
+				png.Encode(outResized, resized)
+			} else {
+				jpeg.Encode(outResized, resized, nil)
+			}
+
+			body, _ = ioutil.ReadFile(tmpImageName)
+
+			// Removing the file created on /tmp directory
+			os.Remove(tmpImageName)
+		}
+	}
+
 	if extension != "" {
-		filename = fmt.Sprintf("%s.%s", msgUUID, extension)
+		filename = fmt.Sprintf("%s.%s", filename, extension)
 	}
 	path := filepath.Join(b.config.S3MediaPrefix, strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 	if !strings.HasPrefix(path, "/") {

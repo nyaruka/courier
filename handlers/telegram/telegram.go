@@ -85,10 +85,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// deal with attachments
 	mediaURL := ""
 	if len(payload.Message.Photo) > 0 {
-		// grab the largest photo less than 100k
+		// grab the largest photo less than 250k
 		photo := payload.Message.Photo[0]
 		for i := 1; i < len(payload.Message.Photo); i++ {
-			if payload.Message.Photo[i].FileSize > 100000 {
+			if payload.Message.Photo[i].FileSize > 250000 {
 				break
 			}
 			photo = payload.Message.Photo[i]
