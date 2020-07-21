@@ -699,7 +699,7 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 }
 
 func addAuthorizationHeader(header http.Header, channel courier.Channel, token string) http.Header {
-	if channel.ChannelType() == "D3" {
+	if channel.ChannelType() == channelTypeD3 {
 		header.Set(d3AuthorizationKey, token)
 	} else {
 		header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
