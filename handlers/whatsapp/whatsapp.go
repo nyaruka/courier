@@ -24,6 +24,9 @@ const (
 	configHSMSupport = "hsm_support"
 
 	d3AuthorizationKey = "D360-API-KEY"
+
+	channelTypeWa = "WA"
+	channelTypeD3 = "D3"
 )
 
 var (
@@ -31,8 +34,8 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newWAHandler(courier.ChannelType("WA"), "WhatsApp"))
-	courier.RegisterHandler(newWAHandler(courier.ChannelType("D3"), "360Dialog"))
+	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeWa), "WhatsApp"))
+	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeD3), "360Dialog"))
 }
 
 type handler struct {
