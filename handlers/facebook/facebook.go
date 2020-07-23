@@ -171,6 +171,7 @@ type moPayload struct {
 					Ref    string `json:"ref"`
 					Source string `json:"source"`
 					Type   string `json:"type"`
+					AdID   string `json:"ad_id"`
 				} `json:"referral"`
 			} `json:"postback"`
 
@@ -297,6 +298,10 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 				extra[referrerIDKey] = msg.Postback.Referral.Ref
 				extra[sourceKey] = msg.Postback.Referral.Source
 				extra[typeKey] = msg.Postback.Referral.Type
+
+				if msg.Postback.Referral.AdID != "" {
+					extra[adIDKey] = msg.Postback.Referral.AdID
+				}
 			}
 
 			event = event.WithExtra(extra)
