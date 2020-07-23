@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -184,7 +183,7 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 
 	pageID := payload.Entry[0].ID
 
-	return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("FB2"), courier.ChannelAddress(pageID))
+	return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("FBA"), courier.ChannelAddress(pageID))
 }
 
 // receiveVerify handles Facebook's webhook verification callback
@@ -652,7 +651,7 @@ func (h *handler) validateSignature(r *http.Request) error {
 	if headerSignature == "" {
 		return fmt.Errorf("missing request signature")
 	}
-	appSecret := h.Server().Config().FacebookAppSecret
+	appSecret := h.Server().Config().FacebookApplicationSecret
 
 	expectedSignature, err := fbCalculateSignature(appSecret, r)
 	if err != nil {
@@ -678,10 +677,8 @@ func fbCalculateSignature(appSecret string, r *http.Request) (string, error) {
 		return "", fmt.Errorf("unable to read request body: %s", err)
 	}
 
-	escapedRawData := []byte(strconv.QuoteToASCII(string(rawPostData)))
-
 	var buffer bytes.Buffer
-	buffer.Write(escapedRawData)
+	buffer.Write(rawPostData)
 
 	// hash with SHA1
 	mac := hmac.New(sha1.New, []byte(appSecret))

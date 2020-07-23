@@ -182,7 +182,7 @@ func newServer(backend courier.Backend) courier.Server {
 
 	config := courier.NewConfig()
 	config.FacebookWebhookSecret = "fb_webhook_secret"
-	config.FacebookAppSecret = "fb_app_secret"
+	config.FacebookApplicationSecret = "fb_app_secret"
 
 	return courier.NewServerWithLogger(config, backend, logger)
 
