@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	sendURL      = "http://clickmobile.com/sendsms"
+	sendURL      = "http://206.225.81.36/ucm_api/index.php"
 	maxMsgLength = 160
 
 	configAppID = "app_id"
