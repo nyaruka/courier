@@ -1,3 +1,7 @@
+v5.7.1
+----------
+ * Add ClickMobile channel type
+
 v5.7.0
 ----------
  * Save the Ad ID for Facebook postback referral 
