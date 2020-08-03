@@ -296,7 +296,8 @@ var postbackReferral = `{
 				"referral": {
 				  "ref": "postback ref",
 				  "source": "postback source",
-				  "type": "postback type"
+				  "type": "postback type",
+				  "ad_id": "ad id"
 				}
 			},
 			"recipient": {
@@ -455,7 +456,7 @@ var testCases = []ChannelHandleTestCase{
 		PrepRequest:       addValidSignature},
 	{Label: "Receive Referral", URL: "/c/fba/receive", Data: postbackReferral, Status: 200, Response: "Handled",
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
-		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"},
+		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"},
 		PrepRequest:       addValidSignature},
 
 	{Label: "Receive Referral", URL: "/c/fba/receive", Data: referral, Status: 200, Response: `"referrer_id":"referral id"`,

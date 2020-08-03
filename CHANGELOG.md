@@ -1,3 +1,7 @@
+v5.7.0
+----------
+ * Save the Ad ID for Facebook postback referral 
+
 v5.6.0
 ----------
  * 5.6.0 Candidate Release
