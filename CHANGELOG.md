@@ -1,3 +1,7 @@
+v5.7.2
+----------
+ * Deal with Shaqodoon not properly escaping + in from
+
 v5.7.1
 ----------
  * Add ClickMobile channel type
