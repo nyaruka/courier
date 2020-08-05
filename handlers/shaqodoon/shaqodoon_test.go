@@ -11,6 +11,7 @@ import (
 
 var (
 	receiveValidMessage         = "/c/sq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=%2B2349067554729&text=Join"
+	receiveBadlyEscaped         = "/c/sq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=+252999999999&text=Join"
 	receiveInvalidURN           = "/c/sq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=MTN&text=Join"
 	receiveEmptyMessage         = "/c/sq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=%2B2349067554729&text="
 	receiveValidMessageWithDate = "/c/sq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=%2B2349067554729&text=Join&date=2017-06-23T12:30:00.500Z"
@@ -27,6 +28,8 @@ var testChannels = []courier.Channel{
 var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
+	{Label: "Receive Badly Escaped", URL: receiveBadlyEscaped, Data: "empty", Status: 200, Response: "Accepted",
+		Text: Sp("Join"), URN: Sp("tel:+252999999999")},
 	{Label: "Receive Empty Message", URL: receiveEmptyMessage, Data: "empty", Status: 200, Response: "Accepted",
 		Text: Sp(""), URN: Sp("tel:+2349067554729")},
 	{Label: "Receive Valid Message With Date", URL: receiveValidMessageWithDate, Data: "empty", Status: 200, Response: "Accepted",

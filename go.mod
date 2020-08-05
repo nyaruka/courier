@@ -3,6 +3,7 @@ module github.com/nyaruka/courier
 require (
 	github.com/antchfx/xmlquery v0.0.0-20181223105952-355641961c92
 	github.com/antchfx/xpath v0.0.0-20181208024549-4bbdf6db12aa // indirect
+	github.com/aws/aws-lambda-go v1.8.1 // indirect
 	github.com/aws/aws-sdk-go v1.13.3
 	github.com/buger/jsonparser v0.0.0-20180318095312-2cac668e8456
 	github.com/certifi/gocertifi v0.0.0-20180118203423-deb3ae2ef261 // indirect
@@ -30,7 +31,7 @@ require (
 	github.com/nyaruka/gocommon v1.2.0
 	github.com/nyaruka/librato v1.0.0
 	github.com/nyaruka/null v1.1.1
-	github.com/nyaruka/phonenumbers v1.0.44 // indirect
+	github.com/nyaruka/phonenumbers v1.0.57 // indirect
 	github.com/pkg/errors v0.8.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d // indirect
