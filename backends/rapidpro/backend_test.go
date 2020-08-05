@@ -1155,12 +1155,12 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	ts.Equal("referral", body["type"])
 	ts.Equal(map[string]interface{}{
 		"channel_id":  float64(10),
-		"contact_id":  float64(1),
+		"contact_id":  float64(contact.ID_),
 		"extra":       map[string]interface{}{"ref_id": "12345"},
-		"new_contact": true,
+		"new_contact": contact.IsNew_,
 		"occurred_on": "2020-08-05T13:30:00.123456789Z",
 		"org_id":      float64(1),
-		"urn_id":      float64(1),
+		"urn_id":      float64(contact.URNID_),
 	}, body["task"])
 }
 
