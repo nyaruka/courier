@@ -1067,6 +1067,28 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	count, err = redis.Int(rc.Do("LLEN", fmt.Sprintf("c:1:%d", msg.ContactID_)))
 	ts.NoError(err)
 	ts.Equal(1, count)
+
+	data, err := redis.Bytes(rc.Do("LPOP", fmt.Sprintf("c:1:%d", contact.ID_)))
+	ts.NoError(err)
+
+	var body map[string]interface{}
+	err = json.Unmarshal(data, &body)
+	ts.NoError(err)
+	ts.Equal("msg_event", body["type"])
+	ts.Equal(map[string]interface{}{
+		"contact_id":      float64(contact.ID_),
+		"org_id":          float64(1),
+		"channel_id":      float64(10),
+		"msg_id":          float64(msg.ID_),
+		"msg_uuid":        msg.UUID_.String(),
+		"msg_external_id": msg.ExternalID(),
+		"urn":             msg.URN().String(),
+		"urn_id":          float64(msg.ContactURNID_),
+		"text":            msg.Text(),
+		"attachments":     nil,
+		"new_contact":     contact.IsNew_,
+		"created_on":      msg.CreatedOn_.Format(time.RFC3339Nano),
+	}, body["task"])
 }
 
 func (ts *BackendTestSuite) TestChannelEvent() {
