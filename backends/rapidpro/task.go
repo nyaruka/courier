@@ -35,8 +35,9 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 	switch e.EventType() {
 	case courier.StopContact:
 		body := map[string]interface{}{
-			"org_id":     e.OrgID_,
-			"contact_id": e.ContactID_,
+			"org_id":      e.OrgID_,
+			"contact_id":  e.ContactID_,
+			"occurred_on": e.OccurredOn_,
 		}
 		return queueMailroomTask(rc, "stop_event", e.OrgID_, e.ContactID_, body)
 
@@ -47,6 +48,7 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 			"urn_id":      e.ContactURNID_,
 			"channel_id":  e.ChannelID_,
 			"new_contact": c.IsNew_,
+			"occurred_on": e.OccurredOn_,
 		}
 		return queueMailroomTask(rc, "welcome_message", e.OrgID_, e.ContactID_, body)
 
@@ -58,6 +60,7 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 			"channel_id":  e.ChannelID_,
 			"extra":       e.Extra(),
 			"new_contact": c.IsNew_,
+			"occurred_on": e.OccurredOn_,
 		}
 		return queueMailroomTask(rc, "referral", e.OrgID_, e.ContactID_, body)
 
@@ -69,6 +72,7 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 			"channel_id":  e.ChannelID_,
 			"extra":       e.Extra(),
 			"new_contact": c.IsNew_,
+			"occurred_on": e.OccurredOn_,
 		}
 		return queueMailroomTask(rc, "new_conversation", e.OrgID_, e.ContactID_, body)
 
