@@ -85,8 +85,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel Channel, w http.Re
 	}
 
 	// no message? ignore this
-	if payload.Text == "" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
+	if payload.Text == "" && payload.AttachmentURL == "" {
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message or no attachment")
 	}
 
 	urn, errURN := urns.NewURNFromParts(channel.Schemes()[0], payload.From, "", "")
@@ -96,6 +96,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel Channel, w http.Re
 	text := payload.Text
 
 	msg := h.Backend().NewIncomingMsg(channel, urn, text)
+
+	if payload.AttachmentURL != "" {
+		msg.WithAttachment(payload.AttachmentURL)
+	}
 
 	return handlers.WriteMsgsAndResponse(ctx, h, []Msg{msg}, w, r)
 }
@@ -178,8 +182,9 @@ type userPayload struct {
 }
 
 type msgPayload struct {
-	Text string `json:"text"`
-	From string `json:"from"`
+	Text          string `json:"text"`
+	From          string `json:"from"`
+	AttachmentURL string `json:"attachment_url"`
 }
 
 type dataPayload struct {
