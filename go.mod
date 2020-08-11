@@ -1,6 +1,6 @@
 module github.com/nyaruka/courier
 
-replace github.com/nyaruka/gocommon => /home/awen/go/src/github.com/nyaruka/gocommon
+replace github.com/nyaruka/gocommon => github.com/awensaunders/gocommon v1.2.1-0.20200804204232-b6e8c3fe0df1
 
 require (
 	github.com/antchfx/xmlquery v0.0.0-20181223105952-355641961c92
