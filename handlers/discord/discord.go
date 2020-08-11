@@ -1,10 +1,8 @@
 package discord
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
@@ -90,7 +88,7 @@ func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channe
 
 	// create our URN
 	urn := urns.NilURN
-	urn, err = urns.NewURNFromParts(channel.Schemes()[0], form.From, "", "")
+	urn, err = urns.NewURNFromParts(urns.DiscordScheme, form.From, "", "")
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
@@ -129,7 +127,7 @@ func getFormField(form url.Values, defaultNames []string, name string) string {
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	var err error
 
-	var from, dateString, text string
+	var from, text string
 
 	// parse our form
 	err = r.ParseForm()
@@ -139,25 +137,21 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	from = getFormField(r.Form, defaultFromFields, channel.StringConfigForKey(configMOFromField, ""))
 	text = getFormField(r.Form, defaultTextFields, channel.StringConfigForKey(configMOTextField, ""))
-	dateString = getFormField(r.Form, defaultDateFields, channel.StringConfigForKey(configMODateField, ""))
 
 	// must have from field
 	if from == "" {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("must have one of 'sender' or 'from' set"))
 	}
+	if text == "" {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("must have 'text' set"))
+	}
 
 	// if we have a date, parse it
 	date := time.Now()
-	if dateString != "" {
-		date, err = time.Parse(time.RFC3339Nano, dateString)
-		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid date format, must be RFC 3339"))
-		}
-	}
 
 	// create our URN
 	urn := urns.NilURN
-	urn, err = urns.NewURNFromParts(channel.Schemes()[0], from, "", "")
+	urn, err = urns.NewURNFromParts(urns.DiscordScheme, from, "", "")
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
@@ -171,17 +165,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 // WriteMsgSuccessResponse writes our response in TWIML format
 func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
-	moResponse := msgs[0].Channel().StringConfigForKey(configMOResponse, "")
-	if moResponse == "" {
-		return courier.WriteMsgSuccess(ctx, w, r, msgs)
-	}
-	moResponseContentType := msgs[0].Channel().StringConfigForKey(configMOResponseContentType, "")
-	if moResponseContentType != "" {
-		w.Header().Set("Content-Type", moResponseContentType)
-	}
-	w.WriteHeader(200)
-	_, err := fmt.Fprint(w, moResponse)
-	return err
+	return courier.WriteMsgSuccess(ctx, w, r, msgs)
 }
 
 // buildStatusHandler deals with building a handler that takes what status is received in the URL
@@ -238,7 +222,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), 160)
-	for i, part := range parts {
+	for _, part := range parts {
 		// build our request
 		form := map[string]string{
 			"id":           msg.ID().String(),
@@ -252,18 +236,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		formEncoded := encodeVariables(form, contentType)
 
-		// put quick replies on last message part
 		url := replaceVariables(sendURL, formEncoded)
 
 		var body io.Reader
 		if sendMethod == http.MethodPost || sendMethod == http.MethodPut {
 			formEncoded = encodeVariables(form, contentType)
 
-			if i == len(parts)-1 {
-				formEncoded["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentType)
-			} else {
-				formEncoded["quick_replies"] = buildQuickRepliesResponse([]string{}, sendMethod, contentType)
-			}
 			body = strings.NewReader(replaceVariables(sendBody, formEncoded))
 		}
 
@@ -292,28 +270,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	return status, nil
-}
-
-type quickReplyXMLItem struct {
-	XMLName xml.Name `xml:"item"`
-	Value   string   `xml:",chardata"`
-}
-
-func buildQuickRepliesResponse(quickReplies []string, sendMethod string, contentType string) string {
-	if quickReplies == nil {
-		quickReplies = []string{}
-	}
-	if (sendMethod == http.MethodPost || sendMethod == http.MethodPut) && contentType == contentJSON {
-		marshalled, _ := json.Marshal(quickReplies)
-		return string(marshalled)
-	}
-	response := bytes.Buffer{}
-
-	for _, reply := range quickReplies {
-		reply = url.QueryEscape(reply)
-		response.WriteString(fmt.Sprintf("&quick_reply=%s", reply))
-	}
-	return response.String()
 }
 
 func encodeVariables(variables map[string]string, contentType string) map[string]string {
