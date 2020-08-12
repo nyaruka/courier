@@ -276,7 +276,7 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backe
 
 	// set the access token as the authorization header
 	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
-	req.Header = addAuthorizationHeader(req.Header, channel, token)
+	req.Header = buildAuthorizationHeader(req.Header, channel, token)
 	req.Header.Set("User-Agent", utils.HTTPUserAgent)
 	return req, nil
 }
@@ -698,7 +698,7 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 	return "", externalID, []*courier.ChannelLog{log}, err
 }
 
-func addAuthorizationHeader(header http.Header, channel courier.Channel, token string) http.Header {
+func buildAuthorizationHeader(header http.Header, channel courier.Channel, token string) http.Header {
 	if channel.ChannelType() == channelTypeD3 {
 		header.Set(d3AuthorizationKey, token)
 	} else {
@@ -713,7 +713,7 @@ func buildWhatsAppRequestHeader(channel courier.Channel, token string) http.Head
 		"Accept":       []string{"application/json"},
 		"User-Agent":   []string{utils.HTTPUserAgent},
 	}
-	header = addAuthorizationHeader(header, channel, token)
+	header = buildAuthorizationHeader(header, channel, token)
 	return header
 }
 
