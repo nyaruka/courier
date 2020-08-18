@@ -138,6 +138,8 @@ func (h *handler) SendMsg(ctx context.Context, msg Msg) (MsgStatus, error) {
 		Attachments: nil,
 	}
 
+	metadata := make(map[string]interface{}, 0)
+
 	if len(msg.QuickReplies()) > 0 {
 		buildQuickReplies := make([]string, 0)
 		for _, item := range msg.QuickReplies() {
@@ -146,14 +148,18 @@ func (h *handler) SendMsg(ctx context.Context, msg Msg) (MsgStatus, error) {
 			item = strings.ReplaceAll(item, "\\\\", "\\")
 			buildQuickReplies = append(buildQuickReplies, item)
 		}
-		quickReplies := make(map[string][]string, 0)
-		quickReplies["quick_replies"] = buildQuickReplies
-		data.Metadata = quickReplies
+		metadata["quick_replies"] = buildQuickReplies
 	}
 
 	if len(msg.Attachments()) > 0 {
 		data.Attachments = msg.Attachments()
 	}
+
+	if msg.ReceiveAttachment() != "" {
+		metadata["receive_attachment"] = msg.ReceiveAttachment()
+	}
+
+	data.Metadata = metadata
 
 	// the status that will be written for this message
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
@@ -188,13 +194,13 @@ type msgPayload struct {
 }
 
 type dataPayload struct {
-	ID          string              `json:"id"`
-	Text        string              `json:"text"`
-	To          string              `json:"to"`
-	ToNoPlus    string              `json:"to_no_plus"`
-	From        string              `json:"from"`
-	FromNoPlus  string              `json:"from_no_plus"`
-	Channel     string              `json:"channel"`
-	Metadata    map[string][]string `json:"metadata"`
-	Attachments []string            `json:"attachments"`
+	ID          string                 `json:"id"`
+	Text        string                 `json:"text"`
+	To          string                 `json:"to"`
+	ToNoPlus    string                 `json:"to_no_plus"`
+	From        string                 `json:"from"`
+	FromNoPlus  string                 `json:"from_no_plus"`
+	Channel     string                 `json:"channel"`
+	Metadata    map[string]interface{} `json:"metadata"`
+	Attachments []string               `json:"attachments"`
 }

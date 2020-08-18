@@ -526,6 +526,7 @@ type mockMsg struct {
 	responseToExternalID string
 	metadata             json.RawMessage
 	alreadyWritten       bool
+	receiveAttachment    string
 
 	receivedOn *time.Time
 	sentOn     *time.Time
@@ -548,6 +549,7 @@ func (m *mockMsg) Topic() string                { return m.topic }
 func (m *mockMsg) ResponseToID() MsgID          { return m.responseToID }
 func (m *mockMsg) ResponseToExternalID() string { return m.responseToExternalID }
 func (m *mockMsg) Metadata() json.RawMessage    { return m.metadata }
+func (m *mockMsg) ReceiveAttachment() string    { return m.receiveAttachment }
 
 func (m *mockMsg) ReceivedOn() *time.Time { return m.receivedOn }
 func (m *mockMsg) SentOn() *time.Time     { return m.sentOn }

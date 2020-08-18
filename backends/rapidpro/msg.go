@@ -588,6 +588,14 @@ func (m *DBMsg) Topic() string {
 	return string(topic)
 }
 
+func (m *DBMsg) ReceiveAttachment() string {
+	if m.Metadata_ == nil {
+		return ""
+	}
+	receiveAttachment, _, _, _ := jsonparser.Get(m.Metadata_, "receive_attachment")
+	return string(receiveAttachment)
+}
+
 // Metadata returns the metadata for this message
 func (m *DBMsg) Metadata() json.RawMessage {
 	return m.Metadata_

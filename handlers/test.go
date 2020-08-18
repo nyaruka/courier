@@ -84,6 +84,7 @@ type ChannelSendTestCase struct {
 	ResponseToID         int64
 	ResponseToExternalID string
 	Metadata             json.RawMessage
+	ReceiveAttachment    string
 
 	ResponseStatus int
 	ResponseBody   string
