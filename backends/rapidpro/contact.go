@@ -59,8 +59,8 @@ func (i ContactID) String() string {
 
 const insertContactSQL = `
 INSERT INTO 
-	contacts_contact(org_id, is_active, is_blocked, is_stopped, uuid, created_on, modified_on, created_by_id, modified_by_id, name) 
-              VALUES(:org_id, TRUE, FALSE, FALSE, :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name)
+	contacts_contact(org_id, is_active, status, is_blocked, is_stopped, uuid, created_on, modified_on, created_by_id, modified_by_id, name) 
+              VALUES(:org_id, TRUE, 'A', FALSE, FALSE, :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name)
 RETURNING id
 `
 
