@@ -22,6 +22,15 @@ var testChannels = []courier.Channel{
 			"auth_token": "the-auth-token",
 			"base_url":   "https://foo.bar/",
 		}),
+	courier.NewMockChannel(
+		"8eb23e93-5ecb-45ba-b726-3b064e0c568c",
+		"D3",
+		"250788383383",
+		"RW",
+		map[string]interface{}{
+			"auth_token": "the-auth-token",
+			"base_url":   "https://foo.bar/",
+		}),
 }
 
 var helloMsg = `{
@@ -217,49 +226,90 @@ var ignoreStatus = `
 }
 `
 
-var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, Status: 200, Response: `"type":"msg"`,
-		Name: Sp("Jerry Cooney"), Text: Sp("hello world"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
-	{Label: "Receive Duplicate Valid Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: duplicateMsg, Status: 200, Response: `"type":"msg"`,
-		Text: Sp("hello world"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
-	{Label: "Receive Valid Audio Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: audioMsg, Status: 200, Response: `"type":"msg"`,
-		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
-	{Label: "Receive Valid Document Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: documentMsg, Status: 200, Response: `"type":"msg"`,
-		Text: Sp("the caption"), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
-	{Label: "Receive Valid Image Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: imageMsg, Status: 200, Response: `"type":"msg"`,
-		Text: Sp("the caption"), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
-	{Label: "Receive Valid Location Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: locationMsg, Status: 200, Response: `"type":"msg"`,
-		Text: Sp(""), Attachment: Sp("geo:0.000000,1.000000"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
-	{Label: "Receive Valid Video Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: videoMsg, Status: 200, Response: `"type":"msg"`,
-		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
-	{Label: "Receive Valid Voice Message", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: voiceMsg, Status: 200, Response: `"type":"msg"`,
-		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
-	{Label: "Receive Invalid JSON", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidMsg, Status: 400, Response: "unable to parse"},
-	{Label: "Receive Invalid From", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidFrom, Status: 400, Response: "invalid whatsapp id"},
-	{Label: "Receive Invalid Timestamp", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTimestamp, Status: 400, Response: "invalid timestamp"},
+var (
+	waReceiveURL = "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive"
 
-	{Label: "Receive Valid Status", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: validStatus, Status: 200, Response: `"type":"status"`,
+	d3ReceiveURL = "/c/d3/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive"
+)
+
+var waTestCases = []ChannelHandleTestCase{
+	{Label: "Receive Valid Message", URL: waReceiveURL, Data: helloMsg, Status: 200, Response: `"type":"msg"`,
+		Name: Sp("Jerry Cooney"), Text: Sp("hello world"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Duplicate Valid Message", URL: waReceiveURL, Data: duplicateMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp("hello world"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Audio Message", URL: waReceiveURL, Data: audioMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Document Message", URL: waReceiveURL, Data: documentMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp("the caption"), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Image Message", URL: waReceiveURL, Data: imageMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp("the caption"), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Location Message", URL: waReceiveURL, Data: locationMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp(""), Attachment: Sp("geo:0.000000,1.000000"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Video Message", URL: waReceiveURL, Data: videoMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Voice Message", URL: waReceiveURL, Data: voiceMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Invalid JSON", URL: waReceiveURL, Data: invalidMsg, Status: 400, Response: "unable to parse"},
+	{Label: "Receive Invalid From", URL: waReceiveURL, Data: invalidFrom, Status: 400, Response: "invalid whatsapp id"},
+	{Label: "Receive Invalid Timestamp", URL: waReceiveURL, Data: invalidTimestamp, Status: 400, Response: "invalid timestamp"},
+
+	{Label: "Receive Valid Status", URL: waReceiveURL, Data: validStatus, Status: 200, Response: `"type":"status"`,
 		MsgStatus: Sp("S"), ExternalID: Sp("9712A34B4A8B6AD50F")},
-	{Label: "Receive Invalid JSON", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: "not json", Status: 400, Response: "unable to parse"},
-	{Label: "Receive Invalid Status", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidStatus, Status: 400, Response: `"unknown status: in_orbit"`},
-	{Label: "Receive Ignore Status", URL: "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: ignoreStatus, Status: 200, Response: `"ignoring status: deleted"`},
+	{Label: "Receive Invalid JSON", URL: waReceiveURL, Data: "not json", Status: 400, Response: "unable to parse"},
+	{Label: "Receive Invalid Status", URL: waReceiveURL, Data: invalidStatus, Status: 400, Response: `"unknown status: in_orbit"`},
+	{Label: "Receive Ignore Status", URL: waReceiveURL, Data: ignoreStatus, Status: 200, Response: `"ignoring status: deleted"`},
+}
+
+var d3TestCases = []ChannelHandleTestCase{
+	{Label: "Receive Valid Message", URL: d3ReceiveURL, Data: helloMsg, Status: 200, Response: `"type":"msg"`,
+		Name: Sp("Jerry Cooney"), Text: Sp("hello world"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Duplicate Valid Message", URL: d3ReceiveURL, Data: duplicateMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp("hello world"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Audio Message", URL: d3ReceiveURL, Data: audioMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Document Message", URL: d3ReceiveURL, Data: documentMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp("the caption"), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Image Message", URL: d3ReceiveURL, Data: imageMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp("the caption"), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Location Message", URL: d3ReceiveURL, Data: locationMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp(""), Attachment: Sp("geo:0.000000,1.000000"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Video Message", URL: d3ReceiveURL, Data: videoMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Voice Message", URL: d3ReceiveURL, Data: voiceMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Invalid JSON", URL: d3ReceiveURL, Data: invalidMsg, Status: 400, Response: "unable to parse"},
+	{Label: "Receive Invalid From", URL: d3ReceiveURL, Data: invalidFrom, Status: 400, Response: "invalid whatsapp id"},
+	{Label: "Receive Invalid Timestamp", URL: d3ReceiveURL, Data: invalidTimestamp, Status: 400, Response: "invalid timestamp"},
+
+	{Label: "Receive Valid Status", URL: d3ReceiveURL, Data: validStatus, Status: 200, Response: `"type":"status"`,
+		MsgStatus: Sp("S"), ExternalID: Sp("9712A34B4A8B6AD50F")},
+	{Label: "Receive Invalid JSON", URL: d3ReceiveURL, Data: "not json", Status: 400, Response: "unable to parse"},
+	{Label: "Receive Invalid Status", URL: d3ReceiveURL, Data: invalidStatus, Status: 400, Response: `"unknown status: in_orbit"`},
+	{Label: "Receive Ignore Status", URL: d3ReceiveURL, Data: ignoreStatus, Status: 200, Response: `"ignoring status: deleted"`},
 }
 
 func TestBuildMediaRequest(t *testing.T) {
 	mb := courier.NewMockBackend()
 
-	handler := &handler{NewBaseHandler(courier.ChannelType("WA"), "WhatsApp")}
-	req, _ := handler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
+	waHandler := &handler{NewBaseHandler(courier.ChannelType("WA"), "WhatsApp")}
+	req, _ := waHandler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer the-auth-token", req.Header.Get("Authorization"))
+
+	d3Handler := &handler{NewBaseHandler(courier.ChannelType("D3"), "360Dialog")}
+	req, _ = d3Handler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[1], "https://example.org/v1/media/41")
+	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
+	assert.Equal(t, "the-auth-token", req.Header.Get("D360-API-KEY"))
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+	RunChannelTestCases(t, testChannels, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), waTestCases)
+	RunChannelTestCases(t, testChannels, newWAHandler(courier.ChannelType("D3"), "360Dialog"), d3TestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
+	RunChannelBenchmarks(b, testChannels, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), waTestCases)
+	RunChannelBenchmarks(b, testChannels, newWAHandler(courier.ChannelType("D3"), "360Dialog"), d3TestCases)
 }
 
 // setSendURL takes care of setting the base_url to our test server host
@@ -507,6 +557,14 @@ func TestSending(t *testing.T) {
 			"hsm_support":  true,
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
-	RunChannelSendTestCases(t, hsmSupportChannel, newHandler(), hsmSupportSendTestCases, nil)
+	var d3Channel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "D3", "250788383383", "US",
+		map[string]interface{}{
+			"auth_token":   "token123",
+			"base_url":     "https://foo.bar/",
+			"fb_namespace": "waba_namespace",
+		})
+
+	RunChannelSendTestCases(t, defaultChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, hsmSupportChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), hsmSupportSendTestCases, nil)
+	RunChannelSendTestCases(t, d3Channel, newWAHandler(courier.ChannelType("D3"), "360Dialog"), defaultSendTestCases, nil)
 }
