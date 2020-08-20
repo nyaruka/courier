@@ -2,6 +2,7 @@ package rapidpro
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,15 +14,14 @@ import (
 	"testing"
 	"time"
 
-	"encoding/json"
-
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/garyburd/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null"
+
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/garyburd/redigo/redis"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 )

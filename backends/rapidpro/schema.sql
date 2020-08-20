@@ -27,6 +27,7 @@ DROP TABLE IF EXISTS contacts_contact CASCADE;
 CREATE TABLE contacts_contact (
     id serial primary key,
     is_active boolean NOT NULL,
+    status character varying(1),
     created_on timestamp with time zone NOT NULL,
     modified_on timestamp with time zone NOT NULL,
     uuid character varying(36) NOT NULL,
