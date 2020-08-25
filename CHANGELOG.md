@@ -1,3 +1,7 @@
+v5.7.5
+----------
+ * No longer write contact.is_stopped or is_blocked
+
 v5.7.4
 ----------
  * Support receiving XML for CM channels
