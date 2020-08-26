@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -434,7 +433,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		for attachmentCount, attachment := range msg.Attachments() {
 
 			mimeType, mediaURL := handlers.SplitAttachment(attachment)
-			mediaID, err := h.fetchMediaID(msg.Channel(), mimeType, mediaURL)
+			mediaID, mediaLogs, err := h.fetchMediaID(msg, mimeType, mediaURL)
 			if err == nil && mediaID != "" {
 				mediaURL = ""
 			}
@@ -481,6 +480,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				duration := time.Since(start)
 				err = fmt.Errorf("unknown attachment mime type: %s", mimeType)
 				logs = []*courier.ChannelLog{courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)}
+			}
+
+			// add media logs to our status
+			for _, log := range mediaLogs {
+				status.AddLog(log)
 			}
 
 			// add logs to our status
@@ -602,46 +606,64 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 }
 
 // fetchMediaID tries to fetch the id for the uploaded media, setting the result in redis.
-func (h *handler) fetchMediaID(channel courier.Channel, mimeType, mediaURL string) (string, error) {
+func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (string, []*courier.ChannelLog, error) {
+	var logs []*courier.ChannelLog
+	start := time.Now()
+
 	// check on cache first
 	rc := h.Backend().RedisPool().Get()
 	defer rc.Close()
 
-	cacheKey := fmt.Sprintf("whatsapp_media:%s:%s", channel.UUID().String(), mediaURL)
+	cacheKey := fmt.Sprintf("whatsapp_media:%s:%s", msg.Channel().UUID().String(), mediaURL)
 	mediaID, err := redis.String(rc.Do("GET", cacheKey))
 	if err == nil {
-		return mediaID, nil
+		return mediaID, logs, nil
 	} else if err != redis.ErrNil {
-		return "", err
+		elapsed := time.Now().Sub(start)
+		log := courier.NewChannelLogFromError("error reading the media id from redis", msg.Channel(), msg.ID(), elapsed, err)
+		logs = append(logs, log)
+		return "", logs, err
 	}
 
 	// download media
 	req, err := http.NewRequest("GET", mediaURL, nil)
 	if err != nil {
-		return "", err
+		return "", logs, err
 	}
 	res, err := utils.MakeHTTPRequest(req)
 	if err != nil {
-		return "", err
+		elapsed := time.Now().Sub(start)
+		log := courier.NewChannelLogFromError("error downloading the media", msg.Channel(), msg.ID(), elapsed, err)
+		logs = append(logs, log)
+		return "", logs, err
 	}
 
 	// upload media to WhatsApp
-	baseURL := channel.StringConfigForKey(courier.ConfigBaseURL, "")
+	baseURL := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
 	req, err = http.NewRequest("POST", baseURL + "/v1/media", bytes.NewReader(res.Body))
 	if err != nil {
-		return "", err
+		return "", logs, err
 	}
-	setWhatsAppAuthHeader(&req.Header, channel)
+	setWhatsAppAuthHeader(&req.Header, msg.Channel())
 	req.Header.Add("Content-Type", mimeType)
 	res, err = utils.MakeHTTPRequest(req)
 	if err != nil {
-		return "", err
+		if res != nil {
+			err = errors.Wrap(err, string(res.Body))
+		}
+		elapsed := time.Now().Sub(start)
+		log := courier.NewChannelLogFromError("error uploading the media to WhatsApp", msg.Channel(), msg.ID(), elapsed, err)
+		logs = append(logs, log)
+		return "", logs, err
 	}
 
 	// take uploaded media id
 	mediaID, err = jsonparser.GetString(res.Body, "media", "[0]", "id")
 	if err != nil {
-		return "", err
+		elapsed := time.Now().Sub(start)
+		log := courier.NewChannelLogFromError("error reading the media id from response", msg.Channel(), msg.ID(), elapsed, err)
+		logs = append(logs, log)
+		return "", logs, err
 	}
 
 	// put on cache
@@ -650,9 +672,12 @@ func (h *handler) fetchMediaID(channel courier.Channel, mimeType, mediaURL strin
 
 	_, err = rc.Do("SET", cacheKey, mediaID, "EX", h.Server().Config().WhatsAppMediaExpiration)
 	if err != nil {
-		logrus.WithError(err).Error("error setting the media id to redis")
+		elapsed := time.Now().Sub(start)
+		log := courier.NewChannelLogFromError("error setting the media id to redis", msg.Channel(), msg.ID(), elapsed, err)
+		logs = append(logs, log)
+		return "", logs, err
 	}
-	return mediaID, nil
+	return mediaID, logs, nil
 }
 
 func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, payload interface{}) (string, string, []*courier.ChannelLog, error) {
