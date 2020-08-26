@@ -22,6 +22,7 @@ type Config struct {
 	AWSSecretAccessKey        string `help:"the secret access key id to use when authenticating S3"`
 	FacebookApplicationSecret string `help:"the Facebook app secret"`
 	FacebookWebhookSecret     string `help:"the secret for Facebook webhook URL verification"`
+	WhatsAppMediaExpiration   int    `help:"the time in seconds for expire WhatsApp media ids in Redis"`
 	MaxWorkers                int    `help:"the maximum number of go routines that will be used for sending (set to 0 to disable sending)"`
 	LibratoUsername           string `help:"the username that will be used to authenticate to Librato"`
 	LibratoToken              string `help:"the token that will be used to authenticate to Librato"`
@@ -57,6 +58,7 @@ func NewConfig() *Config {
 		AWSSecretAccessKey:        "missing_aws_secret_access_key",
 		FacebookApplicationSecret: "missing_facebook_app_secret",
 		FacebookWebhookSecret:     "missing_facebook_webhook_secret",
+		WhatsAppMediaExpiration:   86400,
 		MaxWorkers:                32,
 		LogLevel:                  "error",
 		Version:                   "Dev",
