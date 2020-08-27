@@ -188,16 +188,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	contentTypeHeader := contentTypeMappings[contentType]
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	fmt.Println("Content Type:", contentType)
-	fmt.Println("Hellooooooooo")
-	fmt.Println(msg.Attachments())
 	attachmentURLs := []string{}
 	for _, attachment := range msg.Attachments() {
 		_, attachmentURL := handlers.SplitAttachment(attachment)
 		attachmentURLs = append(attachmentURLs, attachmentURL)
 	}
-	attachmentString := fmt.Sprint(attachmentURLs)
-	fmt.Println(attachmentString)
 	// build our request
 	type OutputMessage struct {
 		ID          string   `json:"id"`
@@ -221,8 +216,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, err
 	}
 	body = bytes.NewReader(marshalled)
-	fmt.Print("Body:")
-	fmt.Println(body)
 
 	req, err := http.NewRequest(sendMethod, sendURL, body)
 	if err != nil {
