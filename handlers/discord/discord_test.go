@@ -26,10 +26,13 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Invalid ID", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `from=somebody&text=hello`, Status: 400, Response: "Error"},
 	{Label: "Garbage Body", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `sdfaskdfajsdkfajsdfaksdf`, Status: 400, Response: "Error"},
 	{Label: "Missing Text", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `from=694634743521607802`, Status: 400, Response: "Error"},
+	{Label: "Message Sent Handler", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/sent/", Data: `id=12345`, Status: 200, Response: `"status":"S"`},
+	{Label: "Message Sent Handler Garbage", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/sent/", Data: `nothing`, Status: 400},
 }
 
 var sendTestCases = []ChannelSendTestCase{
-	{Label: "Simple Send", Text: "Hello World", URN: "discord:694634743521607802", Path: "/discord/rp/send", ResponseBody: "", ResponseStatus: 200, SendPrep: setSendURL},
+	{Label: "Simple Send", Text: "Hello World", URN: "discord:694634743521607802", Path: "/discord/rp/send", ResponseStatus: 200, RequestBody: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[]}`, SendPrep: setSendURL},
+	{Label: "Simple Send", Text: "Hello World", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"}, URN: "discord:694634743521607802", Path: "/discord/rp/send", RequestBody: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"]}`, ResponseStatus: 200, SendPrep: setSendURL},
 }
 
 // setSendURL takes care of setting the send_url to our test server host

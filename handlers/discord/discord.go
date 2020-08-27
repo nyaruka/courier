@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -55,52 +56,21 @@ func newHandler() courier.ChannelHandler {
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
 
 	sentHandler := h.buildStatusHandler("sent")
-	s.AddHandlerRoute(h, http.MethodGet, "sent", sentHandler)
 	s.AddHandlerRoute(h, http.MethodPost, "sent", sentHandler)
 
 	deliveredHandler := h.buildStatusHandler("delivered")
-	s.AddHandlerRoute(h, http.MethodGet, "delivered", deliveredHandler)
 	s.AddHandlerRoute(h, http.MethodPost, "delivered", deliveredHandler)
 
 	failedHandler := h.buildStatusHandler("failed")
-	s.AddHandlerRoute(h, http.MethodGet, "failed", failedHandler)
 	s.AddHandlerRoute(h, http.MethodPost, "failed", failedHandler)
-
-	s.AddHandlerRoute(h, http.MethodPost, "stopped", h.receiveStopContact)
-	s.AddHandlerRoute(h, http.MethodGet, "stopped", h.receiveStopContact)
 
 	return nil
 }
 
 type stopContactForm struct {
 	From string `validate:"required" name:"from"`
-}
-
-func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	form := &stopContactForm{}
-	err := handlers.DecodeAndValidateForm(form, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
-	// create our URN
-	urn := urns.NilURN
-	urn, err = urns.NewURNFromParts(urns.DiscordScheme, form.From, "", "")
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-	urn = urn.Normalize("")
-
-	// create a stop channel event
-	channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
-	err = h.Backend().WriteChannelEvent(ctx, channelEvent)
-	if err != nil {
-		return nil, err
-	}
-	return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
 }
 
 // utility function to grab the form value for either the passed in name (if non-empty) or the first set
@@ -216,87 +186,65 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	// sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
 	contentType := contentJSON
 	contentTypeHeader := contentTypeMappings[contentType]
-	if contentTypeHeader == "" {
-		contentTypeHeader = contentType
-	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), 160)
-	for _, part := range parts {
-		// build our request
-		form := map[string]string{
-			"id":           msg.ID().String(),
-			"text":         part,
-			"to":           msg.URN().Path(),
-			"to_no_plus":   strings.TrimPrefix(msg.URN().Path(), "+"),
-			"from":         msg.Channel().Address(),
-			"from_no_plus": strings.TrimPrefix(msg.Channel().Address(), "+"),
-			"channel":      msg.Channel().UUID().String(),
-		}
-
-		formEncoded := encodeVariables(form, contentType)
-
-		url := replaceVariables(sendURL, formEncoded)
-
-		var body io.Reader
-		if sendMethod == http.MethodPost || sendMethod == http.MethodPut {
-			formEncoded = encodeVariables(form, contentType)
-
-			body = strings.NewReader(replaceVariables(sendBody, formEncoded))
-		}
-
-		req, err := http.NewRequest(sendMethod, url, body)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Content-Type", contentTypeHeader)
-
-		authorization := msg.Channel().StringConfigForKey(courier.ConfigSendAuthorization, "")
-		if authorization != "" {
-			req.Header.Set("Authorization", authorization)
-		}
-
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
-			return status, nil
-		}
-		// If we don't have an error, set the message as wired and move on
-		status.SetStatus(courier.MsgWired)
-
+	fmt.Println("Content Type:", contentType)
+	fmt.Println("Hellooooooooo")
+	fmt.Println(msg.Attachments())
+	attachmentURLs := []string{}
+	for _, attachment := range msg.Attachments() {
+		_, attachmentURL := handlers.SplitAttachment(attachment)
+		attachmentURLs = append(attachmentURLs, attachmentURL)
 	}
+	attachmentString := fmt.Sprint(attachmentURLs)
+	fmt.Println(attachmentString)
+	// build our request
+	type OutputMessage struct {
+		ID          string   `json:"id"`
+		Text        string   `json:"text"`
+		To          string   `json:"to"`
+		Channel     string   `json:"channel"`
+		Attachments []string `json:"attachments"`
+	}
+
+	ourMessage := OutputMessage{
+		ID:          msg.ID().String(),
+		Text:        msg.Text(),
+		To:          msg.URN().Path(),
+		Channel:     msg.Channel().UUID().String(),
+		Attachments: attachmentURLs,
+	}
+
+	var body io.Reader
+	marshalled, err := json.Marshal(ourMessage)
+	if err != nil {
+		return nil, err
+	}
+	body = bytes.NewReader(marshalled)
+	fmt.Print("Body:")
+	fmt.Println(body)
+
+	req, err := http.NewRequest(sendMethod, sendURL, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", contentTypeHeader)
+
+	authorization := msg.Channel().StringConfigForKey(courier.ConfigSendAuthorization, "")
+	if authorization != "" {
+		req.Header.Set("Authorization", authorization)
+	}
+
+	rr, err := utils.MakeHTTPRequest(req)
+
+	// record our status and log
+	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+	status.AddLog(log)
+	if err != nil {
+		return status, nil
+	}
+	// If we don't have an error, set the message as wired and move on
+	status.SetStatus(courier.MsgWired)
 
 	return status, nil
 }
-
-func encodeVariables(variables map[string]string, contentType string) map[string]string {
-	encoded := make(map[string]string)
-
-	for k, v := range variables {
-		// encode according to our content type
-		switch contentType {
-		case contentJSON:
-			marshalled, _ := json.Marshal(v)
-			v = string(marshalled)
-
-		case contentURLEncoded:
-			v = url.QueryEscape(v)
-
-		}
-		encoded[k] = v
-	}
-	return encoded
-}
-
-func replaceVariables(text string, variables map[string]string) string {
-	for k, v := range variables {
-		text = strings.Replace(text, fmt.Sprintf("{{%s}}", k), v, -1)
-	}
-	return text
-}
-
-// const defaultSendBody = `id={{id}}&text={{text}}&to={{to}}&to_no_plus={{to_no_plus}}&from={{from}}&from_no_plus={{from_no_plus}}&channel={{channel}}`
-const sendBody = `{"id": {{id}}, "text": {{text}}, "to":{{to}}, "channel": {{channel}}}`
