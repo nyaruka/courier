@@ -557,11 +557,28 @@ var mediaCacheSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL,
 	},
-	{Label: "Media Upload OK",
+	{Label: "Previous Media Upload Error",
 		Text:   "document caption",
 		URN:    "whatsapp:250788123123",
 		Status: "W", ExternalID: "157b5e14568e8",
 		Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method:       "POST",
+				Path:         "/v1/messages",
+				BodyContains: `/document.pdf`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
+	{Label: "Media Upload OK",
+		Text:   "video caption",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Attachments: []string{"video/mp4:https://foo.bar/video.mp4"},
 		Responses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method: "POST",
@@ -569,12 +586,12 @@ var mediaCacheSendTestCases = []ChannelSendTestCase{
 				Body:   "media bytes",
 			}: MockedResponse{
 				Status: 200,
-				Body:   `{ "media" : [{"id": "f043afd0-f0ae-4b9c-ab3d-696fb4c8cd68"}] }`,
+				Body:   `{ "media" : [{"id": "36c484d1-1283-4b94-988d-7276bdec4de2"}] }`,
 			},
 			MockedRequest{
 				Method: "POST",
 				Path:   "/v1/messages",
-				Body:   `{"to":"250788123123","type":"document","document":{"id":"f043afd0-f0ae-4b9c-ab3d-696fb4c8cd68","caption":"document caption"}}`,
+				Body:   `{"to":"250788123123","type":"video","video":{"id":"36c484d1-1283-4b94-988d-7276bdec4de2","caption":"video caption"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -583,15 +600,15 @@ var mediaCacheSendTestCases = []ChannelSendTestCase{
 		SendPrep: setSendURL,
 	},
 	{Label: "Cached Media",
-		Text:   "document caption",
+		Text:   "video caption",
 		URN:    "whatsapp:250788123123",
 		Status: "W", ExternalID: "157b5e14568e8",
-		Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		Attachments: []string{"video/mp4:https://foo.bar/video.mp4"},
 		Responses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/v1/messages",
-				Body:   `{"to":"250788123123","type":"document","document":{"id":"f043afd0-f0ae-4b9c-ab3d-696fb4c8cd68","caption":"document caption"}}`,
+				Body:   `{"to":"250788123123","type":"video","video":{"id":"36c484d1-1283-4b94-988d-7276bdec4de2","caption":"video caption"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,

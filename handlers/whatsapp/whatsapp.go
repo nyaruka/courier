@@ -625,6 +625,12 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 		return "", logs, err
 	}
 
+	// check on failure cache
+	failureCacheKey := fmt.Sprintf("whatsapp_failed_media:%s:%s", msg.Channel().UUID().String(), mediaURL)
+	if failed, _ := redis.Bool(rc.Do("GET", failureCacheKey)); failed {
+		return "", logs, errors.New("ignoring media that previously failed to upload")
+	}
+
 	// download media
 	req, err := http.NewRequest("GET", mediaURL, nil)
 	if err != nil {
@@ -648,6 +654,9 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	req.Header.Add("Content-Type", mimeType)
 	res, err = utils.MakeHTTPRequest(req)
 	if err != nil {
+		// put on failure cache
+		rc.Do("SET", failureCacheKey, true, "EX", h.Server().Config().WhatsAppFailedMediaExpiration)
+
 		if res != nil {
 			err = errors.Wrap(err, string(res.Body))
 		}
@@ -667,9 +676,6 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	}
 
 	// put on cache
-	rc = h.Backend().RedisPool().Get()
-	defer rc.Close()
-
 	_, err = rc.Do("SET", cacheKey, mediaID, "EX", h.Server().Config().WhatsAppMediaExpiration)
 	if err != nil {
 		elapsed := time.Now().Sub(start)
