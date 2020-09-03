@@ -15,9 +15,10 @@ import (
 )
 
 const (
-	configBaseURL  = "base_url"
-	configUsername = "username"
-	configPassword = "password"
+	configBaseURL          = "base_url"
+	configUsername         = "username"
+	configPassword         = "password"
+	configIncomingPrefixes = "incoming_prefixes"
 )
 
 var (
@@ -115,6 +116,21 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		urn, err := handlers.StrictTelForCountry(pmMsg.MSIDSN, c.Country())
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+		}
+
+		// remove message prefix according to a list of possible prefixes, useful for free accounts
+		incomingPrefixes := c.ConfigForKey(configIncomingPrefixes, []string{})
+		if prefixes, ok := incomingPrefixes.([]string); ok {
+			for _, prefix := range prefixes {
+				text := pmMsg.Content.Text
+				prefix = strings.ToLower(prefix)
+
+				if strings.ToLower(text[:len(prefix)]) == prefix {
+					text = strings.TrimSpace(text[len(prefix):])
+					pmMsg.Content.Text = text
+					break
+				}
+			}
 		}
 
 		// build our msg

@@ -9,7 +9,9 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PM", "1122", "UZ", nil),
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PM", "1122", "UZ", map[string]interface{}{
+		"incoming_prefixes": []string{"xx", "XA"},
+	}),
 }
 
 var (
@@ -26,6 +28,14 @@ var (
 	invalidXML = ``
 
 	noMessages = `<sms-request></sms-request>`
+
+	receiveWithPrefix = `<sms-request><message id="1107962" msisdn="998999999999" submit-date="2016-11-22 15:10:32">
+	<content type="text/plain">xx SMS Response Accepted</content>
+	<content type="text/plain">Xx SMS Response Accepted</content>
+	<content type="text/plain">XXSMS Response Accepted</content>
+	<content type="text/plain">xa SMS Response Accepted</content>
+	<content type="text/plain">XASMS Response Accepted</content>
+	</message></sms-request>`
 
 	validMessage = `{
 		"messages": [
@@ -94,6 +104,13 @@ var testCases = []ChannelHandleTestCase{
 		Data: invalidXML,
 		Response: "",
 		Status: 405},
+	{Label: "Receive With Prefix",
+		URL: receiveURL,
+		Data: receiveWithPrefix,
+		Response: "Accepted",
+		Status: 200,
+		Text: Sp("SMS Response Accepted"),
+		URN: Sp("tel:+998999999999")},
 }
 
 func TestHandler(t *testing.T) {
