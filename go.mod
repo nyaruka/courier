@@ -1,7 +1,5 @@
 module github.com/nyaruka/courier
 
-replace github.com/nyaruka/gocommon => github.com/awensaunders/gocommon v1.2.1-0.20200804204232-b6e8c3fe0df1
-
 require (
 	github.com/antchfx/xmlquery v0.0.0-20181223105952-355641961c92
 	github.com/antchfx/xpath v0.0.0-20181208024549-4bbdf6db12aa // indirect
