@@ -20,6 +20,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/clickatell"
 	_ "github.com/nyaruka/courier/handlers/clicksend"
 	_ "github.com/nyaruka/courier/handlers/dart"
+	_ "github.com/nyaruka/courier/handlers/discord"
 	_ "github.com/nyaruka/courier/handlers/dmark"
 	_ "github.com/nyaruka/courier/handlers/external"
 	_ "github.com/nyaruka/courier/handlers/facebook"
