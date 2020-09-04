@@ -6,15 +6,13 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"time"
-
-	"github.com/nyaruka/courier/gsm7"
-
 	"strings"
+	"time"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/gsm7"
 )
 
 var idRegex = regexp.MustCompile(`Success \"(.*)\"`)

@@ -10,16 +10,16 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
-	"strings"
-
-	"github.com/antchfx/xmlquery"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
+
+	"github.com/antchfx/xmlquery"
 	"github.com/pkg/errors"
 )
 
