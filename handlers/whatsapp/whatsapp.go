@@ -28,6 +28,9 @@ const (
 
 	channelTypeWa = "WA"
 	channelTypeD3 = "D3"
+
+	mediaCacheKeyPattern        = "whatsapp_media:%s"
+	failureMediaCacheKeyPattern = "whatsapp_failed_media:%s"
 )
 
 var (
@@ -610,14 +613,14 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	var logs []*courier.ChannelLog
 	start := time.Now()
 
-	// check on cache first
+	// check in cache first
 	rc := h.Backend().RedisPool().Get()
 	defer rc.Close()
 
-	cacheKey := fmt.Sprintf("whatsapp_media:%s:%s", msg.Channel().UUID().String(), mediaURL)
-	mediaID, err := redis.String(rc.Do("GET", cacheKey))
+	cacheKey := fmt.Sprintf(mediaCacheKeyPattern, msg.Channel().UUID().String())
+	expiration, err := getMediaExpirationFromCache(rc, cacheKey, mediaURL)
 	if err == nil {
-		return mediaID, logs, nil
+		return expiration.MediaID, logs, nil
 	} else if err != redis.ErrNil {
 		elapsed := time.Now().Sub(start)
 		log := courier.NewChannelLogFromError("error reading the media id from redis", msg.Channel(), msg.ID(), elapsed, err)
@@ -625,9 +628,9 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 		return "", logs, err
 	}
 
-	// check on failure cache
-	failureCacheKey := fmt.Sprintf("whatsapp_failed_media:%s:%s", msg.Channel().UUID().String(), mediaURL)
-	if failed, _ := redis.Bool(rc.Do("GET", failureCacheKey)); failed {
+	// check in failure cache
+	failureCacheKey := fmt.Sprintf(failureMediaCacheKeyPattern, msg.Channel().UUID().String())
+	if expiration, _ := getMediaExpirationFromCache(rc, failureCacheKey, mediaURL); expiration != nil {
 		return "", logs, errors.New("ignoring media that previously failed to upload")
 	}
 
@@ -654,8 +657,8 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	req.Header.Add("Content-Type", mimeType)
 	res, err = utils.MakeHTTPRequest(req)
 	if err != nil {
-		// put on failure cache
-		rc.Do("SET", failureCacheKey, true, "EX", h.Server().Config().WhatsAppFailedMediaExpiration)
+		// put in failure cache
+		setMediaExpirationInCache(rc, failureCacheKey, mediaURL, "", h.Server().Config().WhatsAppFailedMediaExpiration)
 
 		if res != nil {
 			err = errors.Wrap(err, string(res.Body))
@@ -667,7 +670,7 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	}
 
 	// take uploaded media id
-	mediaID, err = jsonparser.GetString(res.Body, "media", "[0]", "id")
+	mediaID, err := jsonparser.GetString(res.Body, "media", "[0]", "id")
 	if err != nil {
 		elapsed := time.Now().Sub(start)
 		log := courier.NewChannelLogFromError("error reading the media id from response", msg.Channel(), msg.ID(), elapsed, err)
@@ -675,8 +678,8 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 		return "", logs, err
 	}
 
-	// put on cache
-	_, err = rc.Do("SET", cacheKey, mediaID, "EX", h.Server().Config().WhatsAppMediaExpiration)
+	// put in cache
+	err = setMediaExpirationInCache(rc, cacheKey, mediaURL, mediaID, h.Server().Config().WhatsAppMediaExpiration)
 	if err != nil {
 		elapsed := time.Now().Sub(start)
 		log := courier.NewChannelLogFromError("error setting the media id to redis", msg.Channel(), msg.ID(), elapsed, err)
@@ -684,6 +687,45 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 		return "", logs, err
 	}
 	return mediaID, logs, nil
+}
+
+type mediaExpiration struct {
+	ExpiresOn time.Time `json:"expires_on"`
+	MediaID   string    `json:"media_id,omitempty"`
+}
+
+func getMediaExpirationFromCache(rc redis.Conn, cacheKey, mediaURL string) (*mediaExpiration, error) {
+	expirationJSON, err := redis.String(rc.Do("HGET", cacheKey, mediaURL))
+	if err != nil {
+		return nil, err
+	}
+
+	expiration := &mediaExpiration{}
+	err = json.Unmarshal([]byte(expirationJSON), expiration)
+	if err != nil {
+		return nil, err
+	}
+
+	if expiration.ExpiresOn.Before(time.Now()) {
+		rc.Do("HDEL", cacheKey, mediaURL)
+		return nil, redis.ErrNil
+	}
+	return expiration, nil
+}
+
+func setMediaExpirationInCache(rc redis.Conn, cacheKey, mediaURL, mediaID string, expiration int) error {
+	expiresOn := time.Now().Add(time.Second * time.Duration(expiration))
+	expirationJSON, err := json.Marshal(mediaExpiration{ExpiresOn: expiresOn, MediaID: mediaID})
+	if err != nil {
+		return err
+	}
+
+	_, err = rc.Do("HSET", cacheKey, mediaURL, string(expirationJSON))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, payload interface{}) (string, string, []*courier.ChannelLog, error) {
