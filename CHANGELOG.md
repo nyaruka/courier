@@ -1,3 +1,8 @@
+v5.7.6
+----------
+ * Remove dummy values for AWS config values so you can use local file system for testing
+ * Use gsm7, storage, dates and uuids packages from gocommon
+
 v5.7.5
 ----------
  * No longer write contact.is_stopped or is_blocked
