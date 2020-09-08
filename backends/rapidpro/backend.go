@@ -12,11 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/garyburd/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
@@ -24,6 +20,7 @@ import (
 	"github.com/nyaruka/courier/chatbase"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/librato"
 	"github.com/pkg/errors"
@@ -677,25 +674,30 @@ func (b *backend) Start() error {
 		queue.StartDethrottler(redisPool, b.stopChan, b.waitGroup, msgQueueName)
 	}
 
-	// create our s3 client
-	s3Session, err := session.NewSession(&aws.Config{
-		Credentials:      credentials.NewStaticCredentials(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, ""),
-		Endpoint:         aws.String(b.config.S3Endpoint),
-		Region:           aws.String(b.config.S3Region),
-		DisableSSL:       aws.Bool(b.config.S3DisableSSL),
-		S3ForcePathStyle: aws.Bool(b.config.S3ForcePathStyle),
-	})
-	if err != nil {
-		return err
-	}
-	b.s3Client = s3.New(s3Session)
-
-	// test out our S3 credentials
-	err = utils.TestS3(b.s3Client, b.config.S3MediaBucket)
-	if err != nil {
-		log.WithError(err).Error("s3 bucket not reachable")
+	// create our storage (S3 or file system)
+	if b.config.AWSAccessKeyID != "" {
+		s3Client, err := storage.NewS3Client(&storage.S3Options{
+			AWSAccessKeyID:     b.config.AWSAccessKeyID,
+			AWSSecretAccessKey: b.config.AWSSecretAccessKey,
+			Endpoint:           b.config.S3Endpoint,
+			Region:             b.config.S3Region,
+			DisableSSL:         b.config.S3DisableSSL,
+			ForcePathStyle:     b.config.S3ForcePathStyle,
+		})
+		if err != nil {
+			return err
+		}
+		b.storage = storage.NewS3(s3Client, b.config.S3MediaBucket)
 	} else {
-		log.Info("s3 bucket ok")
+		b.storage = storage.NewFS("_storage")
+	}
+
+	// test our storage
+	err = b.storage.Test()
+	if err != nil {
+		log.WithError(err).Error(b.storage.Name() + " storage not available")
+	} else {
+		log.Info(b.storage.Name() + " storage ok")
 	}
 
 	// make sure our spool dirs are writable
@@ -800,7 +802,7 @@ type backend struct {
 
 	db        *sqlx.DB
 	redisPool *redis.Pool
-	s3Client  s3iface.S3API
+	storage   storage.Storage
 	awsCreds  *credentials.Credentials
 
 	popScript *redis.Script
