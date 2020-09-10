@@ -1,3 +1,7 @@
+v5.7.7
+----------
+ * Update to gocommon v1.5.1
+
 v5.7.6
 ----------
  * Remove dummy values for AWS config values so you can use local file system for testing
