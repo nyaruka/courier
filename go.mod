@@ -22,10 +22,9 @@ require (
 	github.com/lib/pq v1.0.0
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/nyaruka/ezconf v0.2.1
-	github.com/nyaruka/gocommon v1.5.0
+	github.com/nyaruka/gocommon v1.5.1
 	github.com/nyaruka/librato v1.0.0
 	github.com/nyaruka/null v1.1.1
-	github.com/nyaruka/phonenumbers v1.0.57 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/stretchr/testify v1.5.1
