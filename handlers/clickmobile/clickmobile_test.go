@@ -7,14 +7,58 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils/dates"
+	"github.com/nyaruka/gocommon/dates"
 )
 
 var (
-	receiveValidMessage = "/c/cm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=%2B2349067554729&text=Join"
-	receiveNoParams     = "/c/cm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-	invalidURN          = "/c/cm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=MTN&text=Join"
-	receiveNoSender     = "/c/cm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?text=Join"
+	receiveURL = "/c/cm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
+
+	notXML = "empty"
+
+	validReceive = `<request>
+	<shortCode>2020</shortCode>
+	<mobile>265990099333</mobile>
+	<referenceID>1232434354</referenceID>
+	<text>Join</text>
+	</request>`
+
+	invalidURNReceive = `<request>
+	<shortCode>2020</shortCode>
+	<mobile>MTN</mobile>
+	<referenceID>1232434354</referenceID>
+	<text>Join</text>
+	</request>`
+
+	validReceiveEmptyText = `<request>
+	<shortCode>2020</shortCode>
+	<mobile>265990099333</mobile>
+	<referenceID>1232434354</referenceID>
+	<text></text>
+	</request>`
+
+	validMissingText = `<request>
+	<shortCode>2020</shortCode>
+	<mobile>265990099333</mobile>
+	<referenceID>1232434354</referenceID>
+	</request>`
+
+	validMissingReferenceID = `<request>
+	<shortCode>2020</shortCode>
+	<mobile>265990099333</mobile>
+	<text>Join</text>
+	</request>`
+
+	missingShortcode = `<request>
+	<mobile>265990099333</mobile>
+	<referenceID>1232434354</referenceID>
+	<text>Join</text>
+	</request>`
+
+	missingMobile = `<request>
+	<shortCode>2020</shortCode>
+	<referenceID>1232434354</referenceID>
+	<text>Join</text>
+	</request>`
 )
 
 var testChannels = []courier.Channel{
@@ -22,17 +66,21 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Invalid URN", URL: invalidURN, Data: "", Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive No Params", URL: receiveNoParams, Data: "", Status: 400, Response: "field 'from' required"},
-	{Label: "Receive No Sender", URL: receiveNoSender, Data: "", Status: 400, Response: "field 'from' required"},
+	{Label: "Receive Valid Message", URL: receiveURL, Data: validReceive, Status: 200, Response: "Accepted",
+		Text: Sp("Join"), URN: Sp("tel:+265990099333"), ExternalID: Sp("1232434354")},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURNReceive, Status: 400, Response: "phone number supplied is not a number"},
 
-	{Label: "Receive Valid Message", URL: receiveNoParams, Data: "from=%2B2349067554729&text=Join", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Invalid URN", URL: receiveNoParams, Data: "from=MTN&text=Join", Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", Status: 400, Response: "field 'from' required"},
-	{Label: "Receive No Sender", URL: receiveNoParams, Data: "text=Join", Status: 400, Response: "field 'from' required"},
+	{Label: "Receive valid with empty text", URL: receiveURL, Data: validReceiveEmptyText, Status: 200, Response: "Accepted",
+		Text: Sp(""), URN: Sp("tel:+265990099333"), ExternalID: Sp("1232434354")},
+	{Label: "Receive valid missing text", URL: receiveURL, Data: validMissingText, Status: 200, Response: "Accepted",
+		Text: Sp(""), URN: Sp("tel:+265990099333"), ExternalID: Sp("1232434354")},
+
+	{Label: "Receive valid missing referenceID", URL: receiveURL, Data: validMissingReferenceID, Status: 200, Response: "Accepted",
+		Text: Sp("Join"), URN: Sp("tel:+265990099333"), ExternalID: Sp("")},
+
+	{Label: "Missing Shortcode", URL: receiveURL, Data: missingShortcode, Status: 400, Response: "missing parameters, must have 'mobile' and 'shortcode'"},
+	{Label: "Missing Mobile", URL: receiveURL, Data: missingMobile, Status: 400, Response: "missing parameters, must have 'mobile' and 'shortcode'"},
+	{Label: "Receive invalid XML", URL: receiveURL, Data: notXML, Status: 400, Response: "unable to parse request XML"},
 }
 
 func TestHandler(t *testing.T) {

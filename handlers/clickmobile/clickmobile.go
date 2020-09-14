@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"net/http"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/courier/utils/dates"
+	"github.com/nyaruka/gocommon/dates"
 )
 
 var (
@@ -43,29 +44,41 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-type moForm struct {
-	To   string `name:"to"`
-	Text string `validate:"required" name:"text"`
-	From string `validate:"required" name:"from"`
+//  <request>
+//    <shortCode>3014</shortCode>
+//    <mobile>2659900993333</mobile>
+//    <referenceID>1232434354</referenceID>
+//    <text>This is a test message</text>
+//  </request>
+
+type moPayload struct {
+	XMLName     xml.Name `xml:"request"`
+	Shortcode   string   `xml:"shortCode"`
+	Mobile      string   `xml:"mobile"`
+	ReferenceID string   `xml:"referenceID"`
+	Text        string   `xml:"text"`
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	// get our params
-	form := &moForm{}
-	err := handlers.DecodeAndValidateForm(form, r)
+	payload := &moPayload{}
+	err := handlers.DecodeAndValidateXML(payload, r)
 	if err != nil {
 		return nil, err
 	}
 
+	if payload.Mobile == "" || payload.Shortcode == "" {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("missing parameters, must have 'mobile' and 'shortcode'"))
+	}
+
 	// create our URN
-	urn, err := handlers.StrictTelForCountry(form.From, channel.Country())
+	urn, err := handlers.StrictTelForCountry(payload.Mobile, channel.Country())
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text)
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Text).WithExternalID(payload.ReferenceID)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)

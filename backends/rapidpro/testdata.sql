@@ -23,8 +23,8 @@ INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modifi
 
 /* Contacts with ids 100, 101 */
 DELETE FROM contacts_contact;
-INSERT INTO contacts_contact("id", "is_active", "created_on", "modified_on", "uuid", "is_blocked", "is_stopped", "language", "created_by_id", "modified_by_id", "org_id")
-                      VALUES(100, True, now(), now(), 'a984069d-0008-4d8c-a772-b14a8a6acccc', False, False, 'eng', 1, 1, 1);
+INSERT INTO contacts_contact("id", "is_active", "status", "created_on", "modified_on", "uuid", "language", "created_by_id", "modified_by_id", "org_id")
+                      VALUES(100, True, 'A', now(), now(), 'a984069d-0008-4d8c-a772-b14a8a6acccc', 'eng', 1, 1, 1);
 
 /** ContactURN with id 1000 */
 DELETE FROM contacts_contacturn;

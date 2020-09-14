@@ -22,6 +22,11 @@ import (
 const (
 	configNamespace  = "fb_namespace"
 	configHSMSupport = "hsm_support"
+
+	d3AuthorizationKey = "D360-API-KEY"
+
+	channelTypeWa = "WA"
+	channelTypeD3 = "D3"
 )
 
 var (
@@ -29,15 +34,16 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler())
+	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeWa), "WhatsApp"))
+	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeD3), "360Dialog"))
 }
 
 type handler struct {
 	handlers.BaseHandler
 }
 
-func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("WA"), "WhatsApp")}
+func newWAHandler(channelType courier.ChannelType, name string) courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandler(channelType, name)}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -270,7 +276,7 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backe
 
 	// set the access token as the authorization header
 	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header = buildAuthorizationHeader(req.Header, channel, token)
 	req.Header.Set("User-Agent", utils.HTTPUserAgent)
 	return req, nil
 }
@@ -604,7 +610,7 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 		return "", "", []*courier.ChannelLog{log}, err
 	}
 	req, _ := http.NewRequest(http.MethodPost, sendPath.String(), bytes.NewReader(jsonBody))
-	req.Header = buildWhatsAppRequestHeader(token)
+	req.Header = buildWhatsAppRequestHeader(msg.Channel(), token)
 	rr, err := utils.MakeHTTPRequest(req)
 	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 	errPayload := &mtErrorPayload{}
@@ -618,7 +624,7 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 		}
 		// check contact
 		baseURL := fmt.Sprintf("%s://%s", sendPath.Scheme, sendPath.Host)
-		rrCheck, err := checkWhatsAppContact(baseURL, token, msg.URN())
+		rrCheck, err := checkWhatsAppContact(msg.Channel(), baseURL, token, msg.URN())
 
 		if rrCheck == nil {
 			elapsed := time.Now().Sub(start)
@@ -674,7 +680,7 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 		}
 		// try send msg again
 		reqRetry, _ := http.NewRequest(http.MethodPost, sendPath.String(), bytes.NewReader(jsonBody))
-		reqRetry.Header = buildWhatsAppRequestHeader(token)
+		reqRetry.Header = buildWhatsAppRequestHeader(msg.Channel(), token)
 
 		if retryParam != "" {
 			reqRetry.URL.RawQuery = fmt.Sprintf("%s=1", retryParam)
@@ -692,13 +698,22 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, token string, payload i
 	return "", externalID, []*courier.ChannelLog{log}, err
 }
 
-func buildWhatsAppRequestHeader(token string) http.Header {
-	header := http.Header{
-		"Content-Type":  []string{"application/json"},
-		"Accept":        []string{"application/json"},
-		"Authorization": []string{fmt.Sprintf("Bearer %s", token)},
-		"User-Agent":    []string{utils.HTTPUserAgent},
+func buildAuthorizationHeader(header http.Header, channel courier.Channel, token string) http.Header {
+	if channel.ChannelType() == channelTypeD3 {
+		header.Set(d3AuthorizationKey, token)
+	} else {
+		header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	}
+	return header
+}
+
+func buildWhatsAppRequestHeader(channel courier.Channel, token string) http.Header {
+	header := http.Header{
+		"Content-Type": []string{"application/json"},
+		"Accept":       []string{"application/json"},
+		"User-Agent":   []string{utils.HTTPUserAgent},
+	}
+	header = buildAuthorizationHeader(header, channel, token)
 	return header
 }
 
@@ -725,7 +740,7 @@ type mtContactCheckPayload struct {
 	ForceCheck bool     `json:"force_check"`
 }
 
-func checkWhatsAppContact(baseURL string, token string, urn urns.URN) (*utils.RequestResponse, error) {
+func checkWhatsAppContact(channel courier.Channel, baseURL string, token string, urn urns.URN) (*utils.RequestResponse, error) {
 	payload := mtContactCheckPayload{
 		Blocking:   "wait",
 		Contacts:   []string{fmt.Sprintf("+%s", urn.Path())},
@@ -738,7 +753,7 @@ func checkWhatsAppContact(baseURL string, token string, urn urns.URN) (*utils.Re
 	}
 	sendURL := fmt.Sprintf("%s/v1/contacts", baseURL)
 	req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(reqBody))
-	req.Header = buildWhatsAppRequestHeader(token)
+	req.Header = buildWhatsAppRequestHeader(channel, token)
 	rr, err := utils.MakeHTTPRequest(req)
 
 	if err != nil {
