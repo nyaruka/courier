@@ -267,6 +267,9 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
+type sessionStatusMetaData struct {
+	SessionStatus string `json:"session_status"`
+}
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
@@ -285,6 +288,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		contentTypeHeader = contentType
 	}
 
+	// Get session status, ignore error
+	sessionMetaData := &sessionStatusMetaData{}
+	err := json.Unmarshal(msg.Metadata(),sessionMetaData)
+	if err != nil {
+		sessionMetaData = &sessionStatusMetaData{ SessionStatus: ""} // Defaults to empty string
+	}
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), 160)
 	for i, part := range parts {
@@ -297,6 +306,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"from":         msg.Channel().Address(),
 			"from_no_plus": strings.TrimPrefix(msg.Channel().Address(), "+"),
 			"channel":      msg.Channel().UUID().String(),
+			"session_status": sessionMetaData.SessionStatus,
 		}
 
 		useNationalStr := msg.Channel().ConfigForKey(courier.ConfigUseNational, false)
