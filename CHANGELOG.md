@@ -1,3 +1,7 @@
+v5.7.8
+----------
+ * deal with empty message in FreshChat incoming requests
+
 v5.7.7
 ----------
  * Update to gocommon v1.5.1
