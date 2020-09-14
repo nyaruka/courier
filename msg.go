@@ -105,6 +105,8 @@ type Msg interface {
 
 	HighPriority() bool
 
+	SessionStatus() string
+
 	WithContactName(name string) Msg
 	WithReceivedOn(date time.Time) Msg
 	WithExternalID(id string) Msg

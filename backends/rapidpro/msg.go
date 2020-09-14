@@ -504,6 +504,7 @@ type DBMsg struct {
 	SessionID_            SessionID  `json:"session_id,omitempty"`
 	SessionTimeout_       int        `json:"session_timeout,omitempty"`
 	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on,omitempty"`
+	SessionStatus_		string `json:"session_status,omitempty""`
 
 	channel        *DBChannel
 	workerToken    queue.WorkerToken
@@ -559,6 +560,8 @@ func (m *DBMsg) Topic() string {
 func (m *DBMsg) Metadata() json.RawMessage {
 	return m.Metadata_
 }
+
+func (m *DBMsg) SessionStatus() string {return m.SessionStatus_}
 
 // fingerprint returns a fingerprint for this msg, suitable for figuring out if this is a dupe
 func (m *DBMsg) urnFingerprint() string {
