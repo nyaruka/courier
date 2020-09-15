@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -123,9 +124,8 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		if prefixes, ok := incomingPrefixes.([]string); ok {
 			for _, prefix := range prefixes {
 				text := pmMsg.Content.Text
-				prefix = strings.ToLower(prefix)
 
-				if strings.ToLower(text[:len(prefix)]) == prefix {
+				if strings.HasPrefix(strings.ToLower(text), strings.ToLower(prefix)) {
 					text = strings.TrimSpace(text[len(prefix):])
 					pmMsg.Content.Text = text
 					break
@@ -134,6 +134,9 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		}
 
 		// build our msg
+		if pmMsg.Content.Text == "" {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("no text"))
+		}
 		msg := h.Backend().NewIncomingMsg(c, urn, pmMsg.Content.Text).WithExternalID(pmMsg.ID)
 		msgs = append(msgs, msg)
 	}
