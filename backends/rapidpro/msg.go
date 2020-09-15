@@ -186,7 +186,8 @@ SELECT
 	modified_on,
 	next_attempt,
 	queued_on,
-	sent_on
+	sent_on,
+	session_status
 FROM
 	msgs_msg
 WHERE
@@ -504,7 +505,7 @@ type DBMsg struct {
 	SessionID_            SessionID  `json:"session_id,omitempty"`
 	SessionTimeout_       int        `json:"session_timeout,omitempty"`
 	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on,omitempty"`
-	SessionStatus_		string `json:"session_status,omitempty""`
+	SessionStatus_		string `json:"session_status,omitempty"     db:"session_status"`
 
 	channel        *DBChannel
 	workerToken    queue.WorkerToken
