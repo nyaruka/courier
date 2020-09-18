@@ -297,7 +297,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"from":         msg.Channel().Address(),
 			"from_no_plus": strings.TrimPrefix(msg.Channel().Address(), "+"),
 			"channel":      msg.Channel().UUID().String(),
-			"session_status": msg.SessionStatus(),
 		}
 
 		useNationalStr := msg.Channel().ConfigForKey(courier.ConfigUseNational, false)
