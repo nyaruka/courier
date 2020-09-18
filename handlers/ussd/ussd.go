@@ -75,10 +75,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// build our msg
 	var input = form.Input
 
-	var fkey = makeKey(urn.Path(), form.ID) // Use canonical phone number
+	var fkey = makeKey(urn.Path(), form.ID) // Use canonical phone number in key...
 
 	if h.requests[fkey] == nil { // New session
-
 		h.requests[fkey] = make(chan response, 100) // For waiting for the response from rapidPro
 		var smsg = channel.StringConfigForKey(configStartMsg, "")
 		if len(smsg) > 0 { // Use provided start message
@@ -96,14 +95,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	msg := h.Backend().NewIncomingMsg(channel, urn, input).WithExternalID(form.ID).WithReceivedOn(date)
-
 	events, err := writeMsgs(ctx, h, []courier.Msg{msg})
 
-	// Now wait for the response and send it back
+	// Now wait for the response from the  and send it back
 	var timeout = channel.IntConfigForKey(configTimeOut, 30)
-
-	var v = "hello world"
-	var status = http.StatusOK
+	var v string
+	var status int
 	select {
 	case res := <-h.requests[fkey]:
 		v = res.resp
