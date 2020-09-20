@@ -15,7 +15,7 @@ const (
 	configTimeOut     = "time_out"
 	configStripPrefix = "strip_prefix"
 	SessionStatusWaiting     = "W"
-	ussdSessionTimeOut = 600 // 5 minutes
+	ussdSessionTimeOut = 600 // A USSD session, we assume, shouldn't last more than 5 minutes
 )
 
 const (
@@ -25,36 +25,31 @@ func init() {
 	courier.RegisterHandler(newHandler())
 }
 
-type response struct {
-	resp         string
-	wantResponse bool
+type responseData struct {
+	response        string
+	expectsResponse bool
 }
 
-type PqItem struct {
-	fkey string
-	index int
-	expiresOn time.Time
-}
 
-type sessions struct {
-	c chan response
-	i *PqItem
+// Every ussd session has a channel on which responses from flow engine are posted, and
+// an entry in our priority queue, used for tracking timed-out sessions
+type sessionData struct {
+	c chan responseData
+	i *pQitem
 }
 
 type handler struct {
 	handlers.BaseHandler
-
-	requests  map[string] sessions  // map[string]chan response // the request waiters, indexed by from+sessionID
-
-	expirationQueue *PQueue // When last
+	requests  map[string]sessionData // the request waiters, indexed by from+sessionID
+	expirationQueue *pQueue          // When last
 }
 
 func newHandler() courier.ChannelHandler {
-	pq := make(PQueue,0)
-	heap.Init(&pq) // init...
+	pq := make(pQueue,0)
+	heap.Init(&pq)
 	return &handler{
 		BaseHandler:      handlers.NewBaseHandler(courier.ChannelType("US"), "USSD"),
-		requests:         make(map[string]sessions),
+		requests:         make(map[string]sessionData),
 		expirationQueue: &pq,
 	}
 }
@@ -67,11 +62,11 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type moForm struct {
-	ID          string `validate:"required" name:"sessionID"`
-	Input       string `validate:"required" name:"ussdString"`
-	Sender      string `validate:"required" name:"from"`
-	ServiceCode string `validate:"required" name:"to"`
-	MsgID       string `name:"messageID"`
+	ID       string `validate:"required" name:"sessionID"`
+	Input    string `validate:"required" name:"ussdString"`
+	Sender   string `validate:"required" name:"from"`
+	USSDcode string `validate:"required" name:"to"`
+	MsgID    string `name:"messageID"`
 }
 
 // Make the key into the handler requests.
@@ -99,9 +94,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	var fkey = makeKey(urn.Path(), form.ID) // Use canonical phone number in key...
 	r,ok := h.requests[fkey]
 	if !ok { // New session
-		r = sessions {
-			 c: make(chan response, 100), // For waiting for the response from rapidPro
-			 i: &PqItem{
+		r = sessionData{
+			 c: make(chan responseData, 100), // For waiting for the response from rapidPro
+			 i: &pQitem{
 			 	fkey: fkey,
 			 	expiresOn: expiresOn,
 			 },
@@ -133,8 +128,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	var status int
 	select {
 	case res := <-r.c:
-		v = res.resp
-		if res.wantResponse {
+		v = res.response
+		if res.expectsResponse {
 			status = http.StatusAccepted
 		} else {
 			heap.Remove(h.expirationQueue,r.i.index)
@@ -150,7 +145,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// Delete expired ones...
 	for h.expirationQueue.Len() > 0 {
-		item := heap.Pop(h.expirationQueue).(*PqItem)
+		item := heap.Pop(h.expirationQueue).(*pQitem)
 		if item.expiresOn.After(date) {
 			// put it back, we are done
 			heap.Push(h.expirationQueue,item)
@@ -171,9 +166,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	var sender = msg.URN().Path()
 	var sessionID = msg.ResponseToExternalID()
 
-	var resp = response{
-		resp:         handlers.GetTextAndAttachments(msg),
-		wantResponse: msg.SessionStatus() == SessionStatusWaiting,
+	var resp = responseData{
+		response:        handlers.GetTextAndAttachments(msg),
+		expectsResponse: msg.SessionStatus() == SessionStatusWaiting,
 	}
 
 	fkey := makeKey(sender, sessionID)
@@ -210,26 +205,32 @@ func writeTextResponse(w http.ResponseWriter, statusCode int, response string) (
 	return w.Write([]byte(response))
 }
 
-// Priority queue used to ensure timed-out session do not stick around
-type PQueue []*PqItem
-func (pq PQueue) Len() int {return len(pq)}
-func (pq PQueue) Less (i, j int) bool {
+// Priority queue used to ensure timed-out session do not stick around too long
+type pQitem struct {
+	fkey string
+	index int
+	expiresOn time.Time
+}
+
+type pQueue []*pQitem
+func (pq pQueue) Len() int {return len(pq)}
+func (pq pQueue) Less (i, j int) bool {
 	return pq[i].expiresOn.Before(pq[j].expiresOn)
 }
-func (pq PQueue) Swap(i, j int) {
+func (pq pQueue) Swap(i, j int) {
 	pq[i], pq[j] = pq[j], pq[i]
 	pq[i].index = i
 	pq[j].index = j
 }
 
-func (pq *PQueue) Push(x interface{}) {
+func (pq *pQueue) Push(x interface{}) {
 	n := len(*pq)
-	item := x.(*PqItem)
+	item := x.(*pQitem)
 	item.index = n
 	*pq = append(*pq, item)
 }
 
-func (pq *PQueue) Pop() interface{} {
+func (pq *pQueue) Pop() interface{} {
 	old := *pq
 	n := len(old)
 	item := old[n-1]
@@ -239,7 +240,7 @@ func (pq *PQueue) Pop() interface{} {
 	return item
 }
 
-func (pq *PQueue) update(item *PqItem, expiresOn time.Time) {
+func (pq *pQueue) update(item *pQitem, expiresOn time.Time) {
 	item.expiresOn = expiresOn
 	heap.Fix(pq, item.index)
 }
