@@ -3,17 +3,22 @@ package ussd
 import (
 	"container/heap"
 	"context"
+	"errors"
+	"fmt"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
 
 const (
-	configStartMsg    = "start_msg"
-	configTimeOut     = "time_out"
-	configStripPrefix = "strip_prefix"
+	configStartMsg    = "ussd_start_msg"
+	configTimeOut     = "ussd_request_time_out"
+	configStripPrefix = "ussd_strip_prefix"
+	configPushUrl = "ussd_push_url"
 	SessionStatusWaiting     = "W"
 	ussdSessionTimeOut = 600 // A USSD session, we assume, shouldn't last more than 5 minutes
 )
@@ -34,6 +39,8 @@ type responseData struct {
 // Every ussd session has a channel on which responses from flow engine are posted, and
 // an entry in our priority queue, used for tracking timed-out sessions
 type sessionData struct {
+	r string
+	s time.Time
 	c chan responseData
 	i *pQitem
 }
@@ -100,6 +107,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			 	fkey: fkey,
 			 	expiresOn: expiresOn,
 			 },
+			 s: time.Now(),
+			 r: input,
 		}
 		h.requests[fkey] = r
 		heap.Push(h.expirationQueue,r.i)
@@ -132,6 +141,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		if res.expectsResponse {
 			status = http.StatusAccepted
 		} else {
+			status = http.StatusOK
 			heap.Remove(h.expirationQueue,r.i.index)
 		}
 	case <-time.After(time.Second * time.Duration(timeout)):
@@ -164,23 +174,75 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, wr
 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	var sender = msg.URN().Path()
-	var sessionID = msg.ResponseToExternalID()
-
-	var resp = responseData{
-		response:        handlers.GetTextAndAttachments(msg),
-		expectsResponse: msg.SessionStatus() == SessionStatusWaiting,
-	}
-
-	fkey := makeKey(sender, sessionID)
-
-	r,ok := h.requests[fkey]
+	var externalSessionID = msg.ResponseToExternalID()
+	var expectsResponse = msg.SessionStatus() == SessionStatusWaiting
+	var msgText = handlers.GetTextAndAttachments(msg)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgFailed)
+	if len(externalSessionID) > 0 { // A response...
+		var resp = responseData{
+			response: msgText ,
+			expectsResponse: expectsResponse,
+		}
 
-	// Push out.
-	if ok {
-		r.c <- resp
-		status.SetStatus(courier.MsgSent)
+		r, ok := h.requests[makeKey(sender, externalSessionID)]
+		var err error
+		var request string
+		var duration time.Duration
+		var httpCode int
+		// Push out.
+		if ok {
+			r.c <- resp
+			status.SetStatus(courier.MsgWired)
+			request = r.r
+			duration = time.Now().Sub(r.s)
+			if expectsResponse {
+				httpCode = http.StatusAccepted
+			} else {
+				httpCode = http.StatusOK
+			}
+		} else {
+			httpCode = http.StatusGatewayTimeout
+			status.SetStatus(courier.MsgFailed)
+			err = errors.New("timeout waiting for response")
+		}
+		// Log it.
+		status.AddLog(courier.NewChannelLog("Message Sent",msg.Channel(),msg.ID(),"GET","", httpCode,request,msgText,duration,err))
+	} else {
+		// Must be a push message...
+		pushUrl := msg.Channel().StringConfigForKey(configPushUrl,"")
+		if len(pushUrl) > 0 {
+			var r string
+			if expectsResponse {
+				r = "yes"
+			} else  {
+				r = "no"
+			}
+
+			form := url.Values{
+				"to" : []string{sender},
+				"message": []string{msgText},
+				"respond": []string{r},
+			}
+			encodedForm := form.Encode()
+			if strings.Contains(pushUrl, "?") {
+				pushUrl = fmt.Sprintf("%s&%s", pushUrl, encodedForm)
+			} else {
+				pushUrl = fmt.Sprintf("%s?%s", pushUrl, encodedForm)
+			}
+			var rr *utils.RequestResponse
+			req, err := http.NewRequest(http.MethodGet, pushUrl, nil)
+			rr, err = utils.MakeHTTPRequest(req)
+			status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
+			if err == nil {
+				status.SetStatus(courier.MsgWired)
+			} else {
+				status.SetStatus(courier.MsgFailed)
+			}
+		} else {
+			status.SetStatus(courier.MsgFailed)
+			status.AddLog(courier.NewChannelLogFromError("Message cannot be sent, channel does not support USSD PUSH",msg.Channel(),msg.ID(),0,errors.New("Please set the push URL")))
+		}
 	}
 	return status, nil
 }
