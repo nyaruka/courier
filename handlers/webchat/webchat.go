@@ -159,6 +159,10 @@ func (h *handler) SendMsg(ctx context.Context, msg Msg) (MsgStatus, error) {
 		metadata["receive_attachment"] = msg.ReceiveAttachment()
 	}
 
+	if msg.SharingConfig() != nil {
+		metadata["sharing_config"] = msg.SharingConfig()
+	}
+
 	data.Metadata = metadata
 
 	// the status that will be written for this message

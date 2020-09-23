@@ -98,6 +98,7 @@ type Msg interface {
 	ResponseToID() MsgID
 	ResponseToExternalID() string
 	ReceiveAttachment() string
+	SharingConfig() json.RawMessage
 
 	Channel() Channel
 

@@ -596,6 +596,14 @@ func (m *DBMsg) ReceiveAttachment() string {
 	return string(receiveAttachment)
 }
 
+func (m *DBMsg) SharingConfig() json.RawMessage {
+	if m.Metadata_ == nil {
+		return nil
+	}
+	sharingConfig, _, _, _ := jsonparser.Get(m.Metadata_, "sharing_config")
+	return sharingConfig
+}
+
 // Metadata returns the metadata for this message
 func (m *DBMsg) Metadata() json.RawMessage {
 	return m.Metadata_
