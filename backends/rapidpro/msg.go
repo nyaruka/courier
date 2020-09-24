@@ -504,7 +504,7 @@ type DBMsg struct {
 	SessionID_            SessionID  `json:"session_id,omitempty"`
 	SessionTimeout_       int        `json:"session_timeout,omitempty"`
 	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on,omitempty"`
-	SessionStatus_ string `json:"session_status,omitempty"`
+	SessionStatus_        string     `json:"session_status,omitempty"`
 
 	channel        *DBChannel
 	workerToken    queue.WorkerToken
@@ -528,7 +528,7 @@ func (m *DBMsg) ResponseToID() courier.MsgID  { return m.ResponseToID_ }
 func (m *DBMsg) ResponseToExternalID() string { return m.ResponseToExternalID_ }
 
 func (m *DBMsg) Channel() courier.Channel { return m.channel }
-func (m *DBMsg) SessionStatus() string {return m.SessionStatus_ }
+func (m *DBMsg) SessionStatus() string    { return m.SessionStatus_ }
 
 func (m *DBMsg) QuickReplies() []string {
 	if m.quickReplies != nil {

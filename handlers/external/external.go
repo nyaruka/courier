@@ -290,14 +290,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	for i, part := range parts {
 		// build our request
 		form := map[string]string{
-			"id":           msg.ID().String(),
-			"text":         part,
-			"to":           msg.URN().Path(),
-			"to_no_plus":   strings.TrimPrefix(msg.URN().Path(), "+"),
-			"from":         msg.Channel().Address(),
-			"from_no_plus": strings.TrimPrefix(msg.Channel().Address(), "+"),
-			"channel":      msg.Channel().UUID().String(),
-			"session_status":	msg.SessionStatus(),
+			"id":             msg.ID().String(),
+			"text":           part,
+			"to":             msg.URN().Path(),
+			"to_no_plus":     strings.TrimPrefix(msg.URN().Path(), "+"),
+			"from":           msg.Channel().Address(),
+			"from_no_plus":   strings.TrimPrefix(msg.Channel().Address(), "+"),
+			"channel":        msg.Channel().UUID().String(),
+			"session_status": msg.SessionStatus(),
 		}
 
 		useNationalStr := msg.Channel().ConfigForKey(courier.ConfigUseNational, false)
