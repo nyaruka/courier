@@ -543,6 +543,8 @@ type mockMsg struct {
 	wiredOn    *time.Time
 }
 
+func (m *mockMsg) SessionStatus() string { return "" }
+
 func (m *mockMsg) Channel() Channel             { return m.channel }
 func (m *mockMsg) ID() MsgID                    { return m.id }
 func (m *mockMsg) EventID() int64               { return int64(m.id) }
