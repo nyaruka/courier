@@ -20,25 +20,9 @@ import (
 )
 
 const (
-	contentURLEncoded = "urlencoded"
-	contentJSON       = "json"
-
-	configMOFromField = "mo_from_field"
-	configMOTextField = "mo_text_field"
-	configMODateField = "mo_date_field"
-
-	configMOResponseContentType = "mo_response_content_type"
-	configMOResponse            = "mo_response"
+	jsonMimeTypeType   = "application/json"
+	urlEncodedMimeType = "application/x-www-form-urlencoded"
 )
-
-var defaultFromFields = []string{"from", "sender"}
-var defaultTextFields = []string{"text"}
-var defaultDateFields = []string{"date", "time"}
-
-var contentTypeMappings = map[string]string{
-	contentURLEncoded: "application/x-www-form-urlencoded",
-	contentJSON:       "application/json",
-}
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -75,21 +59,13 @@ type stopContactForm struct {
 
 // utility function to grab the form value for either the passed in name (if non-empty) or the first set
 // value from defaultNames
-func getFormField(form url.Values, defaultNames []string, name string) string {
+func getFormField(form url.Values, name string) string {
 	if name != "" {
 		values, found := form[name]
 		if found {
 			return values[0]
 		}
 	}
-
-	for _, name := range defaultNames {
-		values, found := form[name]
-		if found {
-			return values[0]
-		}
-	}
-
 	return ""
 }
 
@@ -105,8 +81,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.Wrapf(err, "invalid request"))
 	}
 
-	from = getFormField(r.Form, defaultFromFields, channel.StringConfigForKey(configMOFromField, ""))
-	text = getFormField(r.Form, defaultTextFields, channel.StringConfigForKey(configMOTextField, ""))
+	from = getFormField(r.Form, "from")
+	text = getFormField(r.Form, "text")
 
 	// must have from field
 	if from == "" {
@@ -184,8 +160,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	// figure out what encoding to tell kannel to send as
 	sendMethod := http.MethodPost
 	// sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
-	contentType := contentJSON
-	contentTypeHeader := contentTypeMappings[contentType]
+	contentTypeHeader := jsonMimeTypeType
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	attachmentURLs := []string{}
