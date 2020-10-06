@@ -48,6 +48,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/playmobile"
 	_ "github.com/nyaruka/courier/handlers/plivo"
 	_ "github.com/nyaruka/courier/handlers/redrabbit"
+	_ "github.com/nyaruka/courier/handlers/rocketchat"
 	_ "github.com/nyaruka/courier/handlers/shaqodoon"
 	_ "github.com/nyaruka/courier/handlers/smscentral"
 	_ "github.com/nyaruka/courier/handlers/start"
