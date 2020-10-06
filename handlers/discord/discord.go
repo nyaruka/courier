@@ -195,19 +195,21 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 	// build our request
 	type OutputMessage struct {
-		ID          string   `json:"id"`
-		Text        string   `json:"text"`
-		To          string   `json:"to"`
-		Channel     string   `json:"channel"`
-		Attachments []string `json:"attachments"`
+		ID           string   `json:"id"`
+		Text         string   `json:"text"`
+		To           string   `json:"to"`
+		Channel      string   `json:"channel"`
+		Attachments  []string `json:"attachments"`
+		QuickReplies []string `json:"quick_replies"`
 	}
 
 	ourMessage := OutputMessage{
-		ID:          msg.ID().String(),
-		Text:        msg.Text(),
-		To:          msg.URN().Path(),
-		Channel:     msg.Channel().UUID().String(),
-		Attachments: attachmentURLs,
+		ID:           msg.ID().String(),
+		Text:         msg.Text(),
+		To:           msg.URN().Path(),
+		Channel:      msg.Channel().UUID().String(),
+		Attachments:  attachmentURLs,
+		QuickReplies: msg.QuickReplies(),
 	}
 
 	var body io.Reader

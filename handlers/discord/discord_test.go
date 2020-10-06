@@ -31,8 +31,9 @@ var testCases = []ChannelHandleTestCase{
 }
 
 var sendTestCases = []ChannelSendTestCase{
-	{Label: "Simple Send", Text: "Hello World", URN: "discord:694634743521607802", Path: "/discord/rp/send", ResponseStatus: 200, RequestBody: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[]}`, SendPrep: setSendURL},
-	{Label: "Simple Send", Text: "Hello World", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"}, URN: "discord:694634743521607802", Path: "/discord/rp/send", RequestBody: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"]}`, ResponseStatus: 200, SendPrep: setSendURL},
+	{Label: "Simple Send", Text: "Hello World", URN: "discord:694634743521607802", Path: "/discord/rp/send", ResponseStatus: 200, RequestBody: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":null}`, SendPrep: setSendURL},
+	{Label: "Simple Send", Text: "Hello World", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"}, URN: "discord:694634743521607802", Path: "/discord/rp/send", RequestBody: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"],"quick_replies":null}`, ResponseStatus: 200, SendPrep: setSendURL},
+	{Label: "Simple Send with attachements and Quick Replies", Text: "Hello World", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"}, QuickReplies: []string{"hello", "world"}, URN: "discord:694634743521607802", Path: "/discord/rp/send", RequestBody: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"],"quick_replies":["hello","world"]}`, ResponseStatus: 200, SendPrep: setSendURL},
 }
 
 // setSendURL takes care of setting the send_url to our test server host
