@@ -9,7 +9,9 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PM", "1122", "UZ", nil),
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PM", "1122", "UZ", map[string]interface{}{
+		"incoming_prefixes": []string{"abc", "DE"},
+	}),
 }
 
 var (
@@ -26,6 +28,18 @@ var (
 	invalidXML = ``
 
 	noMessages = `<sms-request></sms-request>`
+
+	receiveWithPrefix = `<sms-request><message id="1107962" msisdn="998999999999" submit-date="2016-11-22 15:10:32">
+	<content type="text/plain">abc SMS Response Accepted</content>
+	<content type="text/plain">aBc SMS Response Accepted</content>
+	<content type="text/plain">ABCSMS Response Accepted</content>
+	<content type="text/plain">de SMS Response Accepted</content>
+	<content type="text/plain">DESMS Response Accepted</content>
+	</message></sms-request>`
+
+	receiveWithPrefixOnly = `<sms-request><message id="1107962" msisdn="998999999999" submit-date="2016-11-22 15:10:32">
+	<content type="text/plain">abc </content>
+	</message></sms-request>`
 
 	validMessage = `{
 		"messages": [
@@ -94,6 +108,18 @@ var testCases = []ChannelHandleTestCase{
 		Data: invalidXML,
 		Response: "",
 		Status: 405},
+	{Label: "Receive With Prefix",
+		URL: receiveURL,
+		Data: receiveWithPrefix,
+		Response: "Accepted",
+		Status: 200,
+		Text: Sp("SMS Response Accepted"),
+		URN: Sp("tel:+998999999999")},
+	{Label: "Receive With Prefix Only",
+		URL:      receiveURL,
+		Data:     receiveWithPrefixOnly,
+		Response: "no text",
+		Status:   400},
 }
 
 func TestHandler(t *testing.T) {

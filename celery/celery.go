@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/uuids"
 
 	"github.com/garyburd/redigo/redis"
 )
@@ -39,8 +39,8 @@ const defaultBody = `[[], {}, {"chord": null, "callbacks": null, "errbacks": nul
 // QueueEmptyTask queues a new empty task with the passed in task name for the passed in queue
 func QueueEmptyTask(rc redis.Conn, queueName string, taskName string) error {
 	body := base64.StdEncoding.EncodeToString([]byte(defaultBody))
-	taskUUID := utils.NewUUID()
-	deliveryTag := utils.NewUUID()
+	taskUUID := string(uuids.New())
+	deliveryTag := string(uuids.New())
 
 	task := Task{
 		Body: body,
@@ -63,7 +63,7 @@ func QueueEmptyTask(rc redis.Conn, queueName string, taskName string) error {
 		Properties: TaskProperties{
 			BodyEncoding:  "base64",
 			CorrelationID: taskUUID,
-			ReplyTo:       utils.NewUUID(),
+			ReplyTo:       string(uuids.New()),
 			DeliveryMode:  2,
 			DeliveryTag:   deliveryTag,
 			DeliveryInfo: TaskDeliveryInfo{

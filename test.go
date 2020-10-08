@@ -8,13 +8,13 @@ import (
 	"log"
 	"strconv"
 	"sync"
-
 	"time"
+
+	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 
 	"github.com/garyburd/redigo/redis"
 	_ "github.com/lib/pq" // postgres driver
-	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 )
 
 //-----------------------------------------------------------------------------
@@ -274,7 +274,7 @@ func (mb *MockBackend) GetChannelByAddress(ctx context.Context, cType ChannelTyp
 func (mb *MockBackend) GetContact(ctx context.Context, channel Channel, urn urns.URN, auth string, name string) (Contact, error) {
 	contact, found := mb.contacts[urn]
 	if !found {
-		uuid, _ := NewContactUUID(utils.NewUUID())
+		uuid, _ := NewContactUUID(string(uuids.New()))
 		contact = &mockContact{channel, urn, auth, uuid}
 		mb.contacts[urn] = contact
 	}
@@ -542,6 +542,8 @@ type mockMsg struct {
 	sentOn     *time.Time
 	wiredOn    *time.Time
 }
+
+func (m *mockMsg) SessionStatus() string { return "" }
 
 func (m *mockMsg) Channel() Channel             { return m.channel }
 func (m *mockMsg) ID() MsgID                    { return m.id }

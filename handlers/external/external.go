@@ -10,16 +10,16 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
-	"strings"
-
-	"github.com/antchfx/xmlquery"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
+
+	"github.com/antchfx/xmlquery"
 	"github.com/pkg/errors"
 )
 
@@ -290,13 +290,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	for i, part := range parts {
 		// build our request
 		form := map[string]string{
-			"id":           msg.ID().String(),
-			"text":         part,
-			"to":           msg.URN().Path(),
-			"to_no_plus":   strings.TrimPrefix(msg.URN().Path(), "+"),
-			"from":         msg.Channel().Address(),
-			"from_no_plus": strings.TrimPrefix(msg.Channel().Address(), "+"),
-			"channel":      msg.Channel().UUID().String(),
+			"id":             msg.ID().String(),
+			"text":           part,
+			"to":             msg.URN().Path(),
+			"to_no_plus":     strings.TrimPrefix(msg.URN().Path(), "+"),
+			"from":           msg.Channel().Address(),
+			"from_no_plus":   strings.TrimPrefix(msg.Channel().Address(), "+"),
+			"channel":        msg.Channel().UUID().String(),
+			"session_status": msg.SessionStatus(),
 		}
 
 		useNationalStr := msg.Channel().ConfigForKey(courier.ConfigUseNational, false)

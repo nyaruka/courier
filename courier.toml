@@ -25,8 +25,8 @@ redis = "redis://localhost:6379/15"
 spool_dir = "/var/spool/courier"
 
 # Our AWS access credentials
-aws_access_key_id = "missing_aws_access_key_id"
-aws_secret_access_key = "missing_aws_secret_access_key"
+aws_access_key_id = ""
+aws_secret_access_key = ""
 
 # The region our AWS bucket is in
 s3_region = "us-east-2"

@@ -2,6 +2,7 @@ package courier
 
 import (
 	"bytes"
+	"compress/flate"
 	"context"
 	"errors"
 	"fmt"
@@ -56,7 +57,7 @@ func NewServer(config *Config, backend Backend) Server {
 // afterwards, which is when configuration options are checked.
 func NewServerWithLogger(config *Config, backend Backend, logger *logrus.Logger) Server {
 	router := chi.NewRouter()
-	router.Use(middleware.DefaultCompress)
+	router.Use(middleware.Compress(flate.DefaultCompression))
 	router.Use(middleware.StripSlashes)
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)

@@ -61,7 +61,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// no message? ignore this
-	if payload.Data.Message.ActorID == "" {
+	if payload.Data.Message == nil || payload.Data.Message.ActorID == "" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 	}
 
