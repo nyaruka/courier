@@ -98,6 +98,10 @@ func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, testChannels, newHandler(), testCases)
 }
 
+func BenchmarkHandler(b *testing.B) {
+	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
+}
+
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
 	c.(*courier.MockChannel).SetConfig(configBaseURL, s.URL)
 }

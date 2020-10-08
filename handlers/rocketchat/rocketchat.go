@@ -15,9 +15,11 @@ import (
 )
 
 const (
-	configBaseURL     = "base_url"
-	configSecret      = "secret"
-	configBotUsername = "bot_username"
+	configBaseURL        = "base_url"
+	configSecret         = "secret"
+	configBotUsername    = "bot_username"
+	configAdminAuthToken = "admin_auth_token"
+	configAdminUserID    = "admin_user_id"
 )
 
 func init() {
@@ -84,6 +86,20 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+}
+
+// BuildDownloadMediaRequest download media for message attachment with RC auth_token/user_id set
+func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+	adminAuthToken := channel.StringConfigForKey(configAdminAuthToken, "")
+	adminUserID := channel.StringConfigForKey(configAdminUserID, "")
+	if adminAuthToken == "" || adminUserID == "" {
+		return nil, fmt.Errorf("missing token for RC channel")
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
+	req.Header.Set("X-Auth-Token", adminAuthToken)
+	req.Header.Set("X-User-Id", adminUserID)
+	return req, nil
 }
 
 type mtPayload struct {
