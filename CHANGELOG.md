@@ -1,3 +1,9 @@
+v5.7.9
+----------
+ * Update to latest gocommon 1.5.3 and golang 1.15
+ * Add session status from mailroom to MT message sent to external channel API call
+ * Remove incoming message prefix for Play Mobile free accounts
+
 v5.7.8
 ----------
  * deal with empty message in FreshChat incoming requests
