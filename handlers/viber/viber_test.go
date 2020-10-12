@@ -409,7 +409,6 @@ var (
 		}
 	}`
 
-
 	receiveInvalidMessageType = `{
 		"event": "message",
 		"timestamp": 1481142112807,
@@ -487,7 +486,7 @@ var testWelcomeMessageCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, Status: 200, Response: "Accepted",
 		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
 		PrepRequest: addValidSignature},
-	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, Status: 200, Response: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"\u0000"}`, PrepRequest: addValidSignature},
+	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, Status: 200, Response: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0"}`, PrepRequest: addValidSignature},
 }
 
 func addValidSignature(r *http.Request) {
