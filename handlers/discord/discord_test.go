@@ -23,6 +23,7 @@ var testChannels = []courier.Channel{
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Recieve Message", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `from=694634743521607802&text=hello`, Status: 200, Text: Sp("hello"), URN: Sp("discord:694634743521607802")},
+	{Label: "Recieve Message with attachment", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `from=694634743521607802&text=hello&attachments=https://test.test/foo.png`, Status: 200, Text: Sp("hello"), URN: Sp("discord:694634743521607802"), Attachments: []string{"https://test.test/foo.png"}},
 	{Label: "Invalid ID", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `from=somebody&text=hello`, Status: 400, Response: "Error"},
 	{Label: "Garbage Body", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `sdfaskdfajsdkfajsdfaksdf`, Status: 400, Response: "Error"},
 	{Label: "Missing Text", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `from=694634743521607802`, Status: 400, Response: "Error"},

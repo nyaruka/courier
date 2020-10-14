@@ -105,6 +105,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date)
 
+	for _, attachment := range r.Form["attachments"] {
+		msg.WithAttachment(attachment)
+	}
+
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
