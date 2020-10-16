@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -16,31 +17,20 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
+	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null"
 
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/garyburd/redigo/redis"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 )
 
+const storageDir = "_test_storage"
+
 type BackendTestSuite struct {
 	suite.Suite
 	b *backend
-}
-
-type mockS3Client struct {
-	s3iface.S3API
-}
-
-func (m *mockS3Client) PutObject(*s3.PutObjectInput) (*s3.PutObjectOutput, error) {
-	return nil, nil
-}
-
-func (m *mockS3Client) HeadBucket(*s3.HeadBucketInput) (*s3.HeadBucketOutput, error) {
-	return nil, nil
 }
 
 func testConfig() *courier.Config {
@@ -84,13 +74,17 @@ func (ts *BackendTestSuite) SetupSuite() {
 	defer r.Close()
 	r.Do("FLUSHDB")
 
-	// plug in our mock s3 client
-	ts.b.s3Client = &mockS3Client{}
+	// use file storage instead of S3
+	ts.b.storage = storage.NewFS(storageDir)
 }
 
 func (ts *BackendTestSuite) TearDownSuite() {
 	ts.b.Stop()
 	ts.b.Cleanup()
+
+	if err := os.RemoveAll(storageDir); err != nil {
+		panic(err)
+	}
 }
 
 func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *DBChannel {

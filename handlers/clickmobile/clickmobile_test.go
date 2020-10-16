@@ -7,7 +7,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils/dates"
+	"github.com/nyaruka/gocommon/dates"
 )
 
 var (

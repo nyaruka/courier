@@ -1,3 +1,26 @@
+v5.7.9
+----------
+ * Update to latest gocommon 1.5.3 and golang 1.15
+ * Add session status from mailroom to MT message sent to external channel API call
+ * Remove incoming message prefix for Play Mobile free accounts
+
+v5.7.8
+----------
+ * deal with empty message in FreshChat incoming requests
+
+v5.7.7
+----------
+ * Update to gocommon v1.5.1
+
+v5.7.6
+----------
+ * Remove dummy values for AWS config values so you can use local file system for testing
+ * Use gsm7, storage, dates and uuids packages from gocommon
+
+v5.7.5
+----------
+ * No longer write contact.is_stopped or is_blocked
+
 v5.7.4
 ----------
  * Support receiving XML for CM channels
