@@ -1,3 +1,7 @@
+v5.7.10
+----------
+ * Support receiving Multipart form data requests for EX channels
+
 v5.7.9
 ----------
  * Update to latest gocommon 1.5.3 and golang 1.15
