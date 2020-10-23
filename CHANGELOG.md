@@ -1,3 +1,7 @@
+v5.7.11
+----------
+ * Cache media ids for WhatsApp attachments
+
 v5.7.10
 ----------
  * Support receiving Multipart form data requests for EX channels
