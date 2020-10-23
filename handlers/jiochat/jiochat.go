@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
