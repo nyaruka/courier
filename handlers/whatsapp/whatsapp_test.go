@@ -169,6 +169,38 @@ var voiceMsg = `{
 	}]
 }`
 
+var contactMsg = `{
+	"messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"timestamp": "1454119029",
+		"type": "contacts",
+		"contacts": [{
+			"addresses": [],
+			"emails": [],
+			"ims": [],
+			"name": {
+				"first_name": "John Cruz",
+				"formatted_name": "John Cruz"
+			},
+			"org": {},
+			"phones": [
+				{
+					"phone": "+1 415-858-6273",
+					"type": "CELL",
+					"wa_id": "14158586273"
+				},
+				{
+					"phone": "+1 415-858-6274",
+					"type": "CELL",
+					"wa_id": "14158586274"
+				}
+			],
+			"urls": []
+		}]
+	}]
+}`
+
 var invalidFrom = `{
   "messages": [{
     "from": "notnumber",
@@ -249,6 +281,8 @@ var waTestCases = []ChannelHandleTestCase{
 		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 	{Label: "Receive Valid Voice Message", URL: waReceiveURL, Data: voiceMsg, Status: 200, Response: `"type":"msg"`,
 		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Contact Message", URL: waReceiveURL, Data: contactMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp("+1 415-858-6273, +1 415-858-6274"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 	{Label: "Receive Invalid JSON", URL: waReceiveURL, Data: invalidMsg, Status: 400, Response: "unable to parse"},
 	{Label: "Receive Invalid From", URL: waReceiveURL, Data: invalidFrom, Status: 400, Response: "invalid whatsapp id"},
 	{Label: "Receive Invalid Timestamp", URL: waReceiveURL, Data: invalidTimestamp, Status: 400, Response: "invalid timestamp"},
@@ -277,6 +311,8 @@ var d3TestCases = []ChannelHandleTestCase{
 		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 	{Label: "Receive Valid Voice Message", URL: d3ReceiveURL, Data: voiceMsg, Status: 200, Response: `"type":"msg"`,
 		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Contact Message", URL: d3ReceiveURL, Data: contactMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp("+1 415-858-6273, +1 415-858-6274"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 	{Label: "Receive Invalid JSON", URL: d3ReceiveURL, Data: invalidMsg, Status: 400, Response: "unable to parse"},
 	{Label: "Receive Invalid From", URL: d3ReceiveURL, Data: invalidFrom, Status: 400, Response: "invalid whatsapp id"},
 	{Label: "Receive Invalid Timestamp", URL: d3ReceiveURL, Data: invalidTimestamp, Status: 400, Response: "invalid timestamp"},
