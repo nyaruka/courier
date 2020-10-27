@@ -1,3 +1,53 @@
+v5.7.11
+----------
+ * Cache media ids for WhatsApp attachments
+
+v5.7.10
+----------
+ * Support receiving Multipart form data requests for EX channels
+
+v5.7.9
+----------
+ * Update to latest gocommon 1.5.3 and golang 1.15
+ * Add session status from mailroom to MT message sent to external channel API call
+ * Remove incoming message prefix for Play Mobile free accounts
+
+v5.7.8
+----------
+ * deal with empty message in FreshChat incoming requests
+
+v5.7.7
+----------
+ * Update to gocommon v1.5.1
+
+v5.7.6
+----------
+ * Remove dummy values for AWS config values so you can use local file system for testing
+ * Use gsm7, storage, dates and uuids packages from gocommon
+
+v5.7.5
+----------
+ * No longer write contact.is_stopped or is_blocked
+
+v5.7.4
+----------
+ * Support receiving XML for CM channels
+ * Write status on new contacts
+ * Add support for Whatsapp 360dialog
+
+v5.7.3
+----------
+ * Include created_on in msg_event
+ * Include occurred_on when queueing channel events for mailroom
+
+v5.7.2
+----------
+ * Deal with Shaqodoon not properly escaping + in from
+
+v5.7.1
+----------
+ * Add ClickMobile channel type
+
 v5.7.0
 ----------
  * Save the Ad ID for Facebook postback referral 

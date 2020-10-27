@@ -34,3 +34,4 @@ _testmain.go
 dist/
 .envrc
 courier
+_storage

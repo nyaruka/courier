@@ -2,21 +2,20 @@ package rapidpro
 
 import (
 	"context"
+	"database/sql"
+	"database/sql/driver"
 	"strconv"
 	"time"
 	"unicode/utf8"
 
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/courier"
+	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
+	"github.com/nyaruka/librato"
 	"github.com/nyaruka/null"
-
-	"database/sql"
-	"database/sql/driver"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	"github.com/nyaruka/courier"
-	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/librato"
 	"github.com/sirupsen/logrus"
 )
 
@@ -59,8 +58,8 @@ func (i ContactID) String() string {
 
 const insertContactSQL = `
 INSERT INTO 
-	contacts_contact(org_id, is_active, is_blocked, is_stopped, uuid, created_on, modified_on, created_by_id, modified_by_id, name) 
-              VALUES(:org_id, TRUE, FALSE, FALSE, :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name)
+	contacts_contact(org_id, is_active, status, uuid, created_on, modified_on, created_by_id, modified_by_id, name) 
+              VALUES(:org_id, TRUE, 'A', :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name)
 RETURNING id
 `
 
@@ -126,7 +125,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 
 	// didn't find it, we need to create it instead
 	contact.OrgID_ = org
-	contact.UUID_, _ = courier.NewContactUUID(utils.NewUUID())
+	contact.UUID_, _ = courier.NewContactUUID(string(uuids.New()))
 	contact.CreatedOn_ = time.Now()
 	contact.ModifiedOn_ = time.Now()
 	contact.IsNew_ = true
