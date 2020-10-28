@@ -283,7 +283,7 @@ type DBChannel struct {
 	Address_     sql.NullString      `db:"address"`
 	Country_     sql.NullString      `db:"country"`
 	Config_      utils.NullMap       `db:"config"`
-	Role_        sql.NullString      `db:"role"`
+	Role_        string              `db:"role"`
 
 	OrgConfig_ utils.NullMap `db:"org_config"`
 	OrgIsAnon_ bool          `db:"org_is_anon"`
@@ -335,7 +335,7 @@ func (c *DBChannel) IsScheme(scheme string) bool {
 // Roles returns the roles of this channel
 func (c *DBChannel) Roles() []courier.ChannelRole {
 	roles := []courier.ChannelRole{}
-	for _, char := range strings.Split(c.Role_.String, "") {
+	for _, char := range strings.Split(c.Role_, "") {
 		roles = append(roles, courier.ChannelRole(char))
 	}
 	return roles

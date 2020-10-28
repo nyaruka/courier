@@ -340,7 +340,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.Equal(null.String("chestnut"), contactURNs[0].Auth)
 
 	// now build a URN for our number with the kannel channel
-	knURN, err := contactURNForURN(tx, knChannel.OrgID_, knChannel.ID_, contact.ID_, urn, "sesame")
+	knURN, err := contactURNForURN(tx, knChannel, contact.ID_, urn, "sesame")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(knURN.OrgID, knChannel.OrgID_)
@@ -350,7 +350,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.NoError(err)
 
 	// then with our twilio channel
-	twURN, err := contactURNForURN(tx, twChannel.OrgID_, twChannel.ID_, contact.ID_, urn, "")
+	twURN, err := contactURNForURN(tx, twChannel, contact.ID_, urn, "")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
@@ -370,7 +370,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.NoError(err)
 
 	// again with different auth
-	twURN, err = contactURNForURN(tx, twChannel.OrgID_, twChannel.ID_, contact.ID_, urn, "peanut")
+	twURN, err = contactURNForURN(tx, twChannel, contact.ID_, urn, "peanut")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(null.String("peanut"), twURN.Auth)
@@ -391,7 +391,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
 
-	tgContactURN, err := contactURNForURN(tx, tgChannel.OrgID_, tgChannel.ID_, tgContact.ID_, tgURNDisplay, "")
+	tgContactURN, err := contactURNForURN(tx, tgChannel, tgContact.ID_, tgURNDisplay, "")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(tgContact.URNID_, tgContactURN.ID)
@@ -435,7 +435,7 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
 
-	_, err = contactURNForURN(tx, knChannel.OrgID_, twChannel.ID_, knContact.ID_, twURN, "")
+	_, err = contactURNForURN(tx, twChannel, knContact.ID_, twURN, "")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
@@ -878,6 +878,20 @@ func (ts *BackendTestSuite) TestChannel() {
 	// and a missing value
 	val = knChannel.OrgConfigForKey("missing", "missingValue")
 	ts.Equal("missingValue", val)
+
+	exChannel := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327100a")
+	ts.Equal([]courier.ChannelRole{courier.ChannelRoleReceive}, exChannel.Roles())
+	ts.False(exChannel.HasRole(courier.ChannelRoleSend))
+	ts.True(exChannel.HasRole(courier.ChannelRoleReceive))
+	ts.False(exChannel.HasRole(courier.ChannelRoleCall))
+	ts.False(exChannel.HasRole(courier.ChannelRoleAnswer))
+
+	exChannel2 := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327222a")
+	ts.False(exChannel2.HasRole(courier.ChannelRoleSend))
+	ts.False(exChannel2.HasRole(courier.ChannelRoleReceive))
+	ts.False(exChannel2.HasRole(courier.ChannelRoleCall))
+	ts.False(exChannel2.HasRole(courier.ChannelRoleAnswer))
+
 }
 
 func (ts *BackendTestSuite) TestChanneLog() {
@@ -998,7 +1012,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.NoError(err)
 
 	// load our URN
-	contactURN, err := contactURNForURN(tx, m.OrgID_, m.ChannelID_, m.ContactID_, urn, "")
+	contactURN, err := contactURNForURN(tx, m.channel, m.ContactID_, urn, "")
 	if !ts.NoError(err) || !ts.NoError(tx.Commit()) {
 		ts.FailNow("failed writing contact urn")
 	}
@@ -1088,6 +1102,38 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 		"new_contact":     contact.IsNew_,
 		"created_on":      msg.CreatedOn_.Format(time.RFC3339Nano),
 	}, body["task"])
+}
+
+func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
+	exChannel := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327100a")
+	ctx := context.Background()
+
+	// have to round to microseconds because postgres can't store nanos
+	now := time.Now().Round(time.Microsecond).In(time.UTC)
+
+	urn, _ := urns.NewTelURNForCountry("12065552020", exChannel.Country())
+	msg := ts.b.NewIncomingMsg(exChannel, urn, "test123").WithExternalID("ext123").WithReceivedOn(now).WithContactName("test contact").(*DBMsg)
+
+	// try to write it to our db
+	err := ts.b.WriteMsg(ctx, msg)
+	ts.NoError(err)
+
+	time.Sleep(1 * time.Second)
+
+	// load it back from the id
+	m, err := readMsgFromDB(ts.b, msg.ID())
+	ts.NoError(err)
+
+	tx, err := ts.b.db.Beginx()
+	ts.NoError(err)
+
+	// load our URN
+	exContactURN, err := contactURNForURN(tx, m.channel, m.ContactID_, urn, "")
+	if !ts.NoError(err) || !ts.NoError(tx.Commit()) {
+		ts.FailNow("failed writing contact urn")
+	}
+
+	ts.Equal(exContactURN.ChannelID, courier.NilChannelID)
 }
 
 func (ts *BackendTestSuite) TestChannelEvent() {

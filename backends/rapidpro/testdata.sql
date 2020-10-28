@@ -21,8 +21,10 @@ INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modifi
                       VALUES('14', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c99a', 'KN', NULL, 1, 'US', 'SR', NULL);
 
 INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "config")
-                      VALUES('15', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327100a', 'EX', NULL, 1, 'US', 'SR', NULL);
+                      VALUES('15', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327100a', 'EX', NULL, 1, 'US', 'R', NULL);
 
+INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "config")
+                      VALUES('16', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327222a', 'EX', NULL, 1, 'US', '', NULL);
 
 /* Contacts with ids 100, 101 */
 DELETE FROM contacts_contact;
