@@ -20,6 +20,7 @@ CREATE TABLE channels_channel (
     address character varying(64),
     country character varying(2),
     config text,
+    role character varying(4),
     org_id integer references orgs_org(id) on delete cascade
 );
 

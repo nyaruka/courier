@@ -837,6 +837,11 @@ func (ts *BackendTestSuite) TestChannel() {
 	ts.Equal("2500", knChannel.Address())
 	ts.Equal(courier.ChannelAddress("2500"), knChannel.ChannelAddress())
 	ts.Equal("RW", knChannel.Country())
+	ts.Equal([]courier.ChannelRole{courier.ChannelRoleSend, courier.ChannelRoleReceive}, knChannel.Roles())
+	ts.True(knChannel.HasRole(courier.ChannelRoleSend))
+	ts.True(knChannel.HasRole(courier.ChannelRoleReceive))
+	ts.False(knChannel.HasRole(courier.ChannelRoleCall))
+	ts.False(knChannel.HasRole(courier.ChannelRoleAnswer))
 
 	// assert our config values
 	val := knChannel.ConfigForKey("use_national", false)
