@@ -8,13 +8,13 @@ require (
 	github.com/certifi/gocertifi v0.0.0-20180118203423-deb3ae2ef261 // indirect
 	github.com/dghubble/oauth1 v0.4.0
 	github.com/evalphobia/logrus_sentry v0.4.6
-	github.com/garyburd/redigo v1.5.0
 	github.com/getsentry/raven-go v0.0.0-20180517221441-ed7bcb39ff10 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-errors/errors v1.0.1
 	github.com/go-playground/locales v0.11.2 // indirect
 	github.com/go-playground/universal-translator v0.16.0 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible
+	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gorilla/schema v1.0.2
 	github.com/jmoiron/sqlx v0.0.0-20180614180643-0dae4fefe7c0
 	github.com/kr/pretty v0.1.0 // indirect
@@ -34,4 +34,4 @@ require (
 	gopkg.in/h2non/filetype.v1 v1.0.5
 )
 
-go 1.13
+go 1.15

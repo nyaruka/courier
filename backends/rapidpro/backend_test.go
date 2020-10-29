@@ -21,7 +21,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 )
