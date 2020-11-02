@@ -78,7 +78,7 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 	}
 	dbChannel := c.(*DBChannel)
 	dbContact := contact.(*DBContact)
-	_, err = contactURNForURN(tx, dbChannel.OrgID(), dbChannel.ID(), dbContact.ID_, urn, "")
+	_, err = contactURNForURN(tx, dbChannel, dbContact.ID_, urn, "")
 	if err != nil {
 		return urns.NilURN, err
 	}

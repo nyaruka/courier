@@ -64,6 +64,17 @@ func (ct ChannelType) String() string {
 	return string(ct)
 }
 
+// ChannelRole is a role that a channel can perform
+type ChannelRole string
+
+// different roles that channels can perform
+const (
+	ChannelRoleSend    ChannelRole = "S"
+	ChannelRoleReceive ChannelRole = "R"
+	ChannelRoleCall    ChannelRole = "C"
+	ChannelRoleAnswer  ChannelRole = "A"
+)
+
 // ChannelUUID is our typing of a channel's UUID
 type ChannelUUID struct {
 	uuid.UUID
@@ -144,6 +155,8 @@ type Channel interface {
 	Country() string
 	Address() string
 	ChannelAddress() ChannelAddress
+
+	Roles() []ChannelRole
 
 	// is this channel for the passed in scheme (and only that scheme)
 	IsScheme(string) bool

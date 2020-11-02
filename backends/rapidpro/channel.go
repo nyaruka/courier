@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -56,7 +57,7 @@ SELECT
 	ch.uuid as uuid, 
 	ch.name as name, 
 	channel_type, schemes, 
-	address, 
+	address, role,
 	ch.country as country, 
 	ch.config as config, 
 	org.config as org_config, 
@@ -282,6 +283,7 @@ type DBChannel struct {
 	Address_     sql.NullString      `db:"address"`
 	Country_     sql.NullString      `db:"country"`
 	Config_      utils.NullMap       `db:"config"`
+	Role_        string              `db:"role"`
 
 	OrgConfig_ utils.NullMap `db:"org_config"`
 	OrgIsAnon_ bool          `db:"org_is_anon"`
@@ -328,6 +330,25 @@ func (c *DBChannel) Country() string { return c.Country_.String }
 // IsScheme returns whether this channel serves only the passed in scheme
 func (c *DBChannel) IsScheme(scheme string) bool {
 	return len(c.Schemes_) == 1 && c.Schemes_[0] == scheme
+}
+
+// Roles returns the roles of this channel
+func (c *DBChannel) Roles() []courier.ChannelRole {
+	roles := []courier.ChannelRole{}
+	for _, char := range strings.Split(c.Role_, "") {
+		roles = append(roles, courier.ChannelRole(char))
+	}
+	return roles
+}
+
+// HasRole returns whether the passed in channel supports the passed role
+func (c *DBChannel) HasRole(role courier.ChannelRole) bool {
+	for _, r := range c.Roles() {
+		if r == role {
+			return true
+		}
+	}
+	return false
 }
 
 // ConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
