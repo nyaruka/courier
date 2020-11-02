@@ -1,3 +1,10 @@
+v5.7.12
+----------
+ * URN channel change only for channels with SEND role
+ * Update to gocommon v1.6.1
+ * Add RocketChat handler
+ * Add discord handler
+
 v5.7.11
 ----------
  * Cache media ids for WhatsApp attachments
