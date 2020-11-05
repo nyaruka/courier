@@ -1,3 +1,7 @@
+v6.0.0
+----------
+ * Update README
+
 v5.7.12
 ----------
  * URN channel change only for channels with SEND role
