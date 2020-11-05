@@ -3,7 +3,9 @@ package kaleyra
 import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -24,19 +26,21 @@ var testChannels = []courier.Channel{
 
 var testCases = []ChannelHandleTestCase{
 	{
-		Label:    "Receive Msg",
-		URL:      receiveMsgURL + "?created_at=1603914166&type=text&from=14133881111&name=John%20Cruz&body=Hello%20World",
-		Name:     Sp("John Cruz"),
-		URN:      Sp("whatsapp:14133881111"),
-		Text:     Sp("Hello World"),
-		Status:   200,
-		Response: "Accepted",
+		Label:       "Receive Msg",
+		URL:         receiveMsgURL + "?created_at=1603914166&type=text&from=14133881111&name=John%20Cruz&body=Hello%20World",
+		Name:        Sp("John Cruz"),
+		URN:         Sp("whatsapp:14133881111"),
+		Text:        Sp("Hello World"),
+		Attachments: []string{},
+		Status:      200,
+		Response:    "Accepted",
 	},
 	{
 		Label:      "Receive Media",
 		URL:        receiveMsgURL + "?created_at=1603914166&type=image&from=14133881111&name=John%20Cruz&media_url=https://link.to/image.jpg",
 		Name:       Sp("John Cruz"),
 		URN:        Sp("whatsapp:14133881111"),
+		Text:       Sp(""),
 		Attachment: Sp("https://link.to/image.jpg"),
 		Status:     200,
 		Response:   "Accepted",
@@ -126,7 +130,7 @@ var sendTestCases = []ChannelSendTestCase{
 		SendPrep:       setSendURL,
 	},
 	{
-		Label:          "Error Send",
+		Label:          "Plain Send Error",
 		Text:           "Error",
 		URN:            "whatsapp:14133881112",
 		Status:         "F",
@@ -137,8 +141,90 @@ var sendTestCases = []ChannelSendTestCase{
 		ResponseBody:   `{"error":{"to":"invalid number"}}`,
 		SendPrep:       setSendURL,
 	},
+	{
+		Label:       "Medias Send",
+		Text:        "Medias",
+		Attachments: []string{"image/jpg:https://foo.bar/image.jpg", "image/png:https://foo.bar/video.mp4"},
+		URN:         "whatsapp:14133881111",
+		Status:      "W",
+		ExternalID:  "f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0",
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method:       "POST",
+				Path:         "/v1/SID/messages",
+				BodyContains: "image bytes",
+			}: {
+				Status: 200,
+				Body:   `{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`,
+			},
+			MockedRequest{
+				Method:       "POST",
+				Path:         "/v1/SID/messages",
+				BodyContains: "video bytes",
+			}: {
+				Status: 200,
+				Body:   `{"id":"f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0"}`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
+	{
+		Label:       "Media Send Error",
+		Text:        "Medias",
+		Attachments: []string{"image/jpg:https://foo.bar/image.jpg", "image/png:https://foo.bar/video.wmv"},
+		URN:         "whatsapp:14133881111",
+		Status:      "F",
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method:       "POST",
+				Path:         "/v1/SID/messages",
+				BodyContains: "image bytes",
+			}: {
+				Status: 200,
+				Body:   `{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`,
+			},
+			MockedRequest{
+				Method:       "POST",
+				Path:         "/v1/SID/messages",
+				BodyContains: "video bytes",
+			}: {
+				Status: 400,
+				Body:   `{"error":{"media":"invalid media type"}}`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
+}
+
+func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTestCase) []ChannelSendTestCase {
+	casesWithMockedUrls := make([]ChannelSendTestCase, len(testCases))
+
+	for i, testCase := range testCases {
+		mockedCase := testCase
+
+		for j, attachment := range testCase.Attachments {
+			mockedCase.Attachments[j] = strings.Replace(attachment, "https://foo.bar", mediaServer.URL, 1)
+		}
+		casesWithMockedUrls[i] = mockedCase
+	}
+	return casesWithMockedUrls
 }
 
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, nil)
+	mediaServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		defer req.Body.Close()
+		res.WriteHeader(200)
+
+		path := req.URL.Path
+		if strings.Contains(path, "image") {
+			res.Write([]byte("image bytes"))
+		} else if strings.Contains(path, "video") {
+			res.Write([]byte("video bytes"))
+		} else {
+			res.Write([]byte("media bytes"))
+		}
+	}))
+	mockedSendTestCases := mockAttachmentURLs(mediaServer, sendTestCases)
+
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, nil)
 }
