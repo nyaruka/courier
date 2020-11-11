@@ -171,7 +171,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
 
 	case "failed":
-		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, string(payload.MessageToken), courier.MsgFailed)
+		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), courier.MsgFailed)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "delivered":
@@ -248,7 +248,7 @@ func writeWelcomeMessageResponse(w http.ResponseWriter, channel courier.Channel,
 		AuthToken:    authToken,
 		Text:         msgText,
 		Type:         "text",
-		TrackingData: string(event.EventID()),
+		TrackingData: fmt.Sprintf("%d", event.EventID()),
 	}
 
 	responseBody := &bytes.Buffer{}

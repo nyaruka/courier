@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	_ "github.com/lib/pq" // postgres driver
 )
 
@@ -389,6 +390,7 @@ type MockChannel struct {
 	schemes     []string
 	address     ChannelAddress
 	country     string
+	role        string
 	config      map[string]interface{}
 	orgConfig   map[string]interface{}
 }
@@ -500,6 +502,30 @@ func (c *MockChannel) OrgConfigForKey(key string, defaultValue interface{}) inte
 	return value
 }
 
+// SetRoles sets the role on the channel
+func (c *MockChannel) SetRoles(roles []ChannelRole) {
+	c.role = fmt.Sprint(roles)
+}
+
+// Roles returns the roles of this channel
+func (c *MockChannel) Roles() []ChannelRole {
+	roles := []ChannelRole{}
+	for _, char := range strings.Split(c.role, "") {
+		roles = append(roles, ChannelRole(char))
+	}
+	return roles
+}
+
+// HasRole returns whether the passed in channel supports the passed role
+func (c *MockChannel) HasRole(role ChannelRole) bool {
+	for _, r := range c.Roles() {
+		if r == role {
+			return true
+		}
+	}
+	return false
+}
+
 // NewMockChannel creates a new mock channel for the passed in type, address, country and config
 func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}) *MockChannel {
 	cUUID, _ := NewChannelUUID(uuid)
@@ -511,6 +537,7 @@ func NewMockChannel(uuid string, channelType string, address string, country str
 		address:     ChannelAddress(address),
 		country:     country,
 		config:      config,
+		role:        "SR",
 		orgConfig:   map[string]interface{}{},
 	}
 	return channel
@@ -542,6 +569,8 @@ type mockMsg struct {
 	sentOn     *time.Time
 	wiredOn    *time.Time
 }
+
+func (m *mockMsg) SessionStatus() string { return "" }
 
 func (m *mockMsg) Channel() Channel             { return m.channel }
 func (m *mockMsg) ID() MsgID                    { return m.id }

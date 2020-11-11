@@ -5,12 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/buger/jsonparser"
-	"github.com/go-errors/errors"
-	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -19,6 +13,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/buger/jsonparser"
+	"github.com/go-errors/errors"
+	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var (
@@ -270,7 +271,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 // DescribeURN handles VK contact details
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
-	req, err := http.NewRequest(http.MethodPost, apiBaseURL + actionGetUser, nil)
+	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionGetUser, nil)
 
 	if err != nil {
 		return nil, err
@@ -383,7 +384,7 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	req, err := http.NewRequest(http.MethodPost, apiBaseURL + actionSendMessage, nil)
+	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionSendMessage, nil)
 
 	if err != nil {
 		return status, errors.New("Cannot create send message request")
@@ -460,7 +461,7 @@ func handleMediaUploadAndGetAttachment(channel courier.Channel, mediaType, media
 
 		// initialize server URL to upload photos
 		if URLPhotoUploadServer == "" {
-			if serverURL, err := getUploadServerURL(channel, apiBaseURL + actionGetPhotoUploadServer); err == nil {
+			if serverURL, err := getUploadServerURL(channel, apiBaseURL+actionGetPhotoUploadServer); err == nil {
 				URLPhotoUploadServer = serverURL
 			}
 		}
@@ -480,7 +481,7 @@ func handleMediaUploadAndGetAttachment(channel courier.Channel, mediaType, media
 			return "", err
 		}
 		serverId := strconv.FormatInt(payload.ServerId, 10)
-		info, err := saveUploadedMediaInfo(channel, apiBaseURL + actionSaveUploadedPhotoInfo, serverId, payload.Hash, uploadKey, payload.Photo)
+		info, err := saveUploadedMediaInfo(channel, apiBaseURL+actionSaveUploadedPhotoInfo, serverId, payload.Hash, uploadKey, payload.Photo)
 
 		if err != nil {
 			return "", err

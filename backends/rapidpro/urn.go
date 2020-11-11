@@ -99,11 +99,11 @@ func contactURNsForContact(db *sqlx.Tx, contactID ContactID) ([]*DBContactURN, e
 // that the passed in channel is the default one for that URN
 //
 // Note that the URN must be one of the contact's URN before calling this method
-func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact, urn urns.URN, auth string) error {
+func setDefaultURN(db *sqlx.Tx, channel *DBChannel, contact *DBContact, urn urns.URN, auth string) error {
 	scheme := urn.Scheme()
 	contactURNs, err := contactURNsForContact(db, contact.ID_)
 	if err != nil {
-		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("channel_id", channelID).Error("error looking up contact urns")
+		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("channel_id", channel.ID()).Error("error looking up contact urns")
 		return err
 	}
 
@@ -117,9 +117,13 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 		display := urn.Display()
 
 		// if display, channel id or auth changed, update them
-		if string(contactURNs[0].Display) != display || contactURNs[0].ChannelID != channelID || (auth != "" && string(contactURNs[0].Auth) != auth) {
+		if string(contactURNs[0].Display) != display || contactURNs[0].ChannelID != channel.ID() || (auth != "" && string(contactURNs[0].Auth) != auth) {
 			contactURNs[0].Display = null.String(display)
-			contactURNs[0].ChannelID = channelID
+
+			if channel.HasRole(courier.ChannelRoleSend) {
+				contactURNs[0].ChannelID = channel.ID()
+			}
+
 			if auth != "" {
 				contactURNs[0].Auth = null.String(auth)
 			}
@@ -137,7 +141,11 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 		// if this is current URN, make sure it has an updated auth as well
 		if existing.Identity == string(urn.Identity()) {
 			existing.Priority = topPriority
-			existing.ChannelID = channelID
+
+			if channel.HasRole(courier.ChannelRoleSend) {
+				existing.ChannelID = channel.ID()
+			}
+
 			if auth != "" {
 				existing.Auth = null.String(auth)
 			}
@@ -145,8 +153,8 @@ func setDefaultURN(db *sqlx.Tx, channelID courier.ChannelID, contact *DBContact,
 			existing.Priority = currPriority
 
 			// if this is a phone number and we just received a message on a tel scheme, set that as our new preferred channel
-			if existing.Scheme == urns.TelScheme && scheme == urns.TelScheme {
-				existing.ChannelID = channelID
+			if existing.Scheme == urns.TelScheme && scheme == urns.TelScheme && channel.HasRole(courier.ChannelRoleSend) {
+				existing.ChannelID = channel.ID()
 			}
 			currPriority--
 		}
@@ -194,9 +202,12 @@ func selectContactURN(db *sqlx.Tx, org OrgID, urn urns.URN) (*DBContactURN, erro
 
 // contactURNForURN returns the ContactURN for the passed in org and URN, creating and associating
 // it with the passed in contact if necessary
-func contactURNForURN(db *sqlx.Tx, org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN, auth string) (*DBContactURN, error) {
-	contactURN := newDBContactURN(org, channelID, contactID, urn, auth)
-	err := db.Get(contactURN, selectOrgURN, org, urn.Identity())
+func contactURNForURN(db *sqlx.Tx, channel *DBChannel, contactID ContactID, urn urns.URN, auth string) (*DBContactURN, error) {
+	contactURN := newDBContactURN(channel.OrgID(), courier.NilChannelID, contactID, urn, auth)
+	if channel.HasRole(courier.ChannelRoleSend) {
+		contactURN.ChannelID = channel.ID()
+	}
+	err := db.Get(contactURN, selectOrgURN, channel.OrgID(), urn.Identity())
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -212,9 +223,11 @@ func contactURNForURN(db *sqlx.Tx, org OrgID, channelID courier.ChannelID, conta
 	display := null.String(urn.Display())
 
 	// make sure our contact URN is up to date
-	if contactURN.ChannelID != channelID || contactURN.ContactID != contactID || contactURN.Display != display {
+	if (channel.HasRole(courier.ChannelRoleSend) && contactURN.ChannelID != channel.ID()) || contactURN.ContactID != contactID || contactURN.Display != display {
 		contactURN.PrevContactID = contactURN.ContactID
-		contactURN.ChannelID = channelID
+		if channel.HasRole(courier.ChannelRoleSend) {
+			contactURN.ChannelID = channel.ID()
+		}
 		contactURN.ContactID = contactID
 		contactURN.Display = display
 		err = updateContactURN(db, contactURN)

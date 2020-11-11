@@ -114,7 +114,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 			return nil, err
 		}
 
-		err = setDefaultURN(tx, channel.ID(), contact, urn, auth)
+		err = setDefaultURN(tx, channel, contact, urn, auth)
 		if err != nil {
 			logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
 			tx.Rollback()
@@ -183,7 +183,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	// associate our URN
 	// If we've inserted a duplicate URN then we'll get a uniqueness violation.
 	// That means this contact URN was written by someone else after we tried to look it up.
-	contactURN, err := contactURNForURN(tx, org, channel.ID(), contact.ID_, urn, auth)
+	contactURN, err := contactURNForURN(tx, channel, contact.ID_, urn, auth)
 	if err != nil {
 		tx.Rollback()
 		if pqErr, ok := err.(*pq.Error); ok {

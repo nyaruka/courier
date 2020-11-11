@@ -115,4 +115,5 @@ type Msg interface {
 	WithMetadata(metadata json.RawMessage) Msg
 
 	EventID() int64
+	SessionStatus() string
 }

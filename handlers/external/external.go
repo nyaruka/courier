@@ -173,7 +173,13 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		text = textNode.InnerText()
 	} else {
 		// parse our form
-		err := r.ParseForm()
+		contentType := r.Header.Get("Content-Type")
+		var err error
+		if strings.Contains(contentType, "multipart/form-data") {
+			err = r.ParseMultipartForm(10000000)
+		} else {
+			err = r.ParseForm()
+		}
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.Wrapf(err, "invalid request"))
 		}
@@ -290,13 +296,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	for i, part := range parts {
 		// build our request
 		form := map[string]string{
-			"id":           msg.ID().String(),
-			"text":         part,
-			"to":           msg.URN().Path(),
-			"to_no_plus":   strings.TrimPrefix(msg.URN().Path(), "+"),
-			"from":         msg.Channel().Address(),
-			"from_no_plus": strings.TrimPrefix(msg.Channel().Address(), "+"),
-			"channel":      msg.Channel().UUID().String(),
+			"id":             msg.ID().String(),
+			"text":           part,
+			"to":             msg.URN().Path(),
+			"to_no_plus":     strings.TrimPrefix(msg.URN().Path(), "+"),
+			"from":           msg.Channel().Address(),
+			"from_no_plus":   strings.TrimPrefix(msg.Channel().Address(), "+"),
+			"channel":        msg.Channel().UUID().String(),
+			"session_status": msg.SessionStatus(),
 		}
 
 		useNationalStr := msg.Channel().ConfigForKey(courier.ConfigUseNational, false)
