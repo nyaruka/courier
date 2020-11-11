@@ -68,23 +68,28 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
+	// invalid type? ignore this
 	if form.Type != "text" && form.Type != "image" && form.Type != "video" && form.Type != "voice" && form.Type != "document" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, unknown message type")
 	}
+	// check empty content
 	if form.Body == "" && form.MediaURL == "" {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("no text or media"))
 	}
 
+	// build urn
 	urn, err := urns.NewWhatsAppURN(form.From)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
+	// parse created_at timestamp
 	ts, err := strconv.ParseInt(form.CreatedAt, 10, 64)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid created_at: %s", form.CreatedAt))
 	}
 
+	// build msg
 	date := time.Unix(ts, 0).UTC()
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Body).WithReceivedOn(date).WithContactName(form.Name)
 
@@ -92,6 +97,7 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 		msg.WithAttachment(form.MediaURL)
 	}
 
+	// write msg
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
@@ -110,31 +116,20 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
+	// unknown status? ignore this
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("unknown status: %s", form.Status))
 	}
 
+	// msg not found? ignore this
 	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus)
 	if status == nil {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("ignoring request, message %s not found", form.ID))
 	}
 
+	// write status
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
-}
-
-type mtForm struct {
-	ApiKey      string `schema:"api-key"`
-	Channel     string `schema:"channel"`
-	From        string `schema:"from"`
-	CallbackURL string `schema:"callback_url"`
-	Type        string `schema:"type"`
-	To          string `schema:"to"`
-}
-
-type mtTextForm struct {
-	mtForm
-	Body string `schema:"body"`
 }
 
 // SendMsg sends the passed in message, returning any error
@@ -154,6 +149,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	var kwaRes *utils.RequestResponse
 	var kwaErr error
 
+	// make multipart form requests if we have attachments, the kaleyra api doesn't supports media url nor media upload before send
 	if len(msg.Attachments()) > 0 {
 		attachmentsLoop:
 		for i, attachment := range msg.Attachments() {
@@ -233,6 +229,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), kwaRes).WithError("Message Send Error", kwaErr)
 		logs = append(logs, log)
 	}
+	// add logs to status
 	for _, log := range logs {
 		status.AddLog(log)
 	}
@@ -242,6 +239,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return status, nil
 	}
 
+	// record external id from the last sent msg request
 	externalID, err := jsonparser.GetString(kwaRes.Body, "id")
 	if err == nil {
 		status.SetExternalID(externalID)
