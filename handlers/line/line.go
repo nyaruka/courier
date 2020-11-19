@@ -8,11 +8,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/buger/jsonparser"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/buger/jsonparser"
 
 	"github.com/nyaruka/courier/utils"
 
@@ -191,9 +192,9 @@ type mtImageMsg struct {
 }
 
 type mtPayload struct {
-	To         string        `json:"to,omitempty"`
-	ReplyToken string        `json:"replyToken,omitempty"`
-	Messages json.RawMessage `json:"messages"`
+	To         string          `json:"to,omitempty"`
+	ReplyToken string          `json:"replyToken,omitempty"`
+	Messages   json.RawMessage `json:"messages"`
 }
 
 // SendMsg sends the passed in message, returning any error
@@ -241,6 +242,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if batchCount == maxMsgSend || (i == len(jsonMsgs)-1) {
 			req, err := buildSendMsgRequest(authToken, msg.URN().Path(), msg.ResponseToExternalID(), batch)
 			if err != nil {
+				courier.LogRequestError(req, msg.Channel(), err)
 				return status, err
 			}
 			rr, err := utils.MakeHTTPRequest(req)

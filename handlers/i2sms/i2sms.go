@@ -109,10 +109,14 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 			"message": []string{part},
 		}
 
-		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		req.SetBasicAuth(username, password)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
+
+		if err != nil {
+			courier.LogRequestError(req, msg.Channel(), err)
+		}
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log

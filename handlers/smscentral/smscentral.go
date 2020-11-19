@@ -84,8 +84,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		"content": []string{handlers.GetTextAndAttachments(msg)},
 	}
 
-	req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if err != nil {
+		courier.LogRequestError(req, msg.Channel(), err)
+	}
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log

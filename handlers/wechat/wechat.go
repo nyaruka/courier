@@ -261,9 +261,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		json.NewEncoder(requestBody).Encode(wcMsg)
 
 		// build our request
-		req, _ := http.NewRequest(http.MethodPost, partSendURL.String(), requestBody)
+		req, err := http.NewRequest(http.MethodPost, partSendURL.String(), requestBody)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
+
+		if err != nil {
+			courier.LogRequestError(req, msg.Channel(), err)
+		}
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log

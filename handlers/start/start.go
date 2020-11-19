@@ -158,9 +158,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		// build our request
-		req, _ := http.NewRequest(http.MethodPost, sendURL, requestBody)
+		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
 		req.Header.Set("Content-Type", "application/xml; charset=utf8")
 		req.SetBasicAuth(username, password)
+		if err != nil {
+			courier.LogRequestError(req, msg.Channel(), err)
+		}
 		rr, err := utils.MakeHTTPRequest(req)
 
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)

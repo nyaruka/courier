@@ -183,9 +183,12 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel)
 		return err
 	}
 
-	req, _ := http.NewRequest(http.MethodPost, tokenURL.String(), bytes.NewReader(jsonBody))
+	req, err := http.NewRequest(http.MethodPost, tokenURL.String(), bytes.NewReader(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	if err != nil {
+		courier.LogRequestError(req, channel, err)
+	}
 	rr, err := utils.MakeHTTPRequest(req)
 	if err != nil {
 		duration := time.Now().Sub(start)

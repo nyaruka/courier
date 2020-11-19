@@ -190,10 +190,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return status, err
 		}
 
-		req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonBody))
+		req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(username, password)
+		if err != nil {
+			courier.LogRequestError(req, msg.Channel(), err)
+		}
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log

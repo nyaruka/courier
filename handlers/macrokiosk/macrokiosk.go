@@ -185,10 +185,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		json.NewEncoder(requestBody).Encode(payload)
 
 		// build our request
-		req, _ := http.NewRequest(http.MethodPost, sendURL, requestBody)
+		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
-
+		if err != nil {
+			courier.LogRequestError(req, msg.Channel(), err)
+		}
 		rr, err := utils.MakeHTTPRequest(req)
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 		status.AddLog(log)

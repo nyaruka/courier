@@ -188,9 +188,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		partSendURL, _ := url.Parse(sendURL)
 		partSendURL.RawQuery = form.Encode()
 
-		req, _ := http.NewRequest(http.MethodGet, partSendURL.String(), nil)
+		req, err := http.NewRequest(http.MethodGet, partSendURL.String(), nil)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
+
+		if err != nil {
+			courier.LogRequestError(req, msg.Channel(), err)
+		}
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log
