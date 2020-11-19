@@ -89,12 +89,11 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		}
 
 		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+		if err != nil {
+			return nil, err
+		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/xml")
-
-		if err != nil {
-			courier.LogRequestError(req, msg.Channel(), err)
-		}
 
 		rr, err := utils.MakeHTTPRequest(req)
 

@@ -136,10 +136,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		if err != nil {
-			courier.LogRequestError(req, msg.Channel(), err)
+			return nil, err
 		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		rr, err := utils.MakeHTTPRequest(req)
 

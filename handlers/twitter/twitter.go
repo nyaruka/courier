@@ -488,12 +488,12 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 	}
 
 	twReq, err = http.NewRequest(http.MethodPost, mediaUrl, strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", nil, err
+	}
 	twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	twReq.Header.Set("Accept", "application/json")
 	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
-	if err != nil {
-		courier.LogRequestError(req, msg.Channel(), err)
-	}
 	twrr, err = utils.MakeHTTPRequestWithClient(twReq, client)
 
 	log = courier.NewChannelLogFromRR("Media Upload FINALIZE", msg.Channel(), msg.ID(), twrr)

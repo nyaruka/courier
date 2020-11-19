@@ -242,7 +242,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if batchCount == maxMsgSend || (i == len(jsonMsgs)-1) {
 			req, err := buildSendMsgRequest(authToken, msg.URN().Path(), msg.ResponseToExternalID(), batch)
 			if err != nil {
-				courier.LogRequestError(req, msg.Channel(), err)
 				return status, err
 			}
 			rr, err := utils.MakeHTTPRequest(req)

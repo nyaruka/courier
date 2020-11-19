@@ -129,13 +129,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+		if err != nil {
+			return nil, err
+		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Token %s", auth))
 
-		if err != nil {
-			courier.LogRequestError(req, msg.Channel(), err)
-		}
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log

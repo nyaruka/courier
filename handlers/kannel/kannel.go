@@ -198,7 +198,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	req, err := http.NewRequest(http.MethodGet, sendURL, nil)
 	if err != nil {
-		courier.LogRequestError(req, msg.Channel(), err)
+		return nil, err
 	}
 	var rr *utils.RequestResponse
 

@@ -542,12 +542,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		req, err := http.NewRequest(http.MethodPost, msgURL.String(), bytes.NewReader(jsonBody))
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json")
 
 		if err != nil {
-			courier.LogRequestError(req, msg.Channel(), err)
+			return nil, err
 		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
 
 		rr, err := utils.MakeHTTPRequest(req)
 

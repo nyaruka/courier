@@ -110,10 +110,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	sendURL = fmt.Sprintf("%s?%s", sendURL, encodedForm)
 
 	req, err := http.NewRequest(http.MethodGet, sendURL, nil)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	if err != nil {
-		courier.LogRequestError(req, msg.Channel(), err)
+		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 	rr, err := utils.MakeInsecureHTTPRequest(req)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)

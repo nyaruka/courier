@@ -219,13 +219,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// build our request
 	req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(username, password)
 
-	if err != nil {
-		courier.LogRequestError(req, msg.Channel(), err)
-	}
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log

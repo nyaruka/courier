@@ -774,14 +774,15 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, payload interface{}) (s
 		}
 		// try send msg again
 		reqRetry, err := http.NewRequest(http.MethodPost, sendPath.String(), bytes.NewReader(jsonBody))
+		if err != nil {
+			return "", "", nil, err
+		}
 		reqRetry.Header = buildWhatsAppHeaders(msg.Channel())
 
 		if retryParam != "" {
 			reqRetry.URL.RawQuery = fmt.Sprintf("%s=1", retryParam)
 		}
-		if err != nil {
-			courier.LogRequestError(req, msg.Channel(), err)
-		}
+
 		rrRetry, err := utils.MakeHTTPRequest(reqRetry)
 		retryLog := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rrRetry).WithError("Message Send Error", err)
 

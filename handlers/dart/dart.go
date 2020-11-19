@@ -174,11 +174,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		partSendURL.RawQuery = form.Encode()
 
 		req, err := http.NewRequest(http.MethodGet, partSendURL.String(), nil)
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
 		if err != nil {
-			courier.LogRequestError(req, msg.Channel(), err)
+			return nil, err
 		}
+
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		rr, err := utils.MakeHTTPRequest(req)
 

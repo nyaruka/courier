@@ -162,7 +162,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(jsonBody))
 
 	if err != nil {
-		courier.LogRequestError(req, msg.Channel(), err)
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")

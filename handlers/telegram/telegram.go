@@ -140,7 +140,10 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 	}
 
 	sendURL := fmt.Sprintf("%s/bot%s/%s", apiURL, token, path)
-	req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", nil, err
+	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	rr, err := utils.MakeHTTPRequest(req)
