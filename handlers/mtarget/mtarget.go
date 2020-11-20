@@ -175,7 +175,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		msgURL, _ := url.Parse(sendURL)
 		msgURL.RawQuery = params.Encode()
-		req, _ := http.NewRequest(http.MethodPost, msgURL.String(), nil)
+		req, err := http.NewRequest(http.MethodPost, msgURL.String(), nil)
+
+		if err != nil {
+			return nil, err
+		}
 
 		rr, err := utils.MakeHTTPRequest(req)
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)

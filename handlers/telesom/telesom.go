@@ -109,8 +109,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		encodedForm := form.Encode()
 		tsSendURL = fmt.Sprintf("%s?%s", tsSendURL, encodedForm)
 
-		req, _ := http.NewRequest(http.MethodGet, tsSendURL, nil)
+		req, err := http.NewRequest(http.MethodGet, tsSendURL, nil)
+		if err != nil {
+			return nil, err
+		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 		rr, err := utils.MakeInsecureHTTPRequest(req)
 
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)

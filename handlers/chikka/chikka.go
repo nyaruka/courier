@@ -135,8 +135,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			form["request_id"] = []string{msg.ResponseToExternalID()}
 		}
 
-		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+		if err != nil {
+			return nil, err
+		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 		rr, err := utils.MakeHTTPRequest(req)
 
 		if rr.StatusCode == 400 {

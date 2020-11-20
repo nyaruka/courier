@@ -89,7 +89,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		signature := utils.SignHMAC256(privateKey, params)
 		fullURL := fmt.Sprintf("%s/%s/%s/%s", sendURL, params, publicKey, signature)
 
-		req, _ := http.NewRequest(http.MethodGet, fullURL, nil)
+		req, err := http.NewRequest(http.MethodGet, fullURL, nil)
+
+		if err != nil {
+			return nil, err
+		}
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log

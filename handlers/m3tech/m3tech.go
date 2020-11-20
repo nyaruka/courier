@@ -106,10 +106,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"Telco":       []string{"0"},
 		}
 
-		msgURL, _ := url.Parse(sendURL)
-		msgURL.RawQuery = params.Encode()
-		req, _ := http.NewRequest(http.MethodGet, msgURL.String(), nil)
+		msgURL, err := url.Parse(sendURL)
 
+		msgURL.RawQuery = params.Encode()
+		req, err := http.NewRequest(http.MethodGet, msgURL.String(), nil)
+		if err != nil {
+			return nil, err
+		}
 		rr, err := utils.MakeHTTPRequest(req)
 		status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
 		if err != nil {

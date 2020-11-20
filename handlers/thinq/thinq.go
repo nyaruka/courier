@@ -158,10 +158,14 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		form.WriteField("media_url", u)
 		form.Close()
 
-		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf(sendMMSURL, accountID), data)
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(sendMMSURL, accountID), data)
+		if err != nil {
+			return nil, err
+		}
 		req.Header.Set("Content-Type", form.FormDataContentType())
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(tokenUser, token)
+
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log
@@ -191,7 +195,10 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 				Message: part,
 			}
 			bodyJSON, _ := json.Marshal(body)
-			req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, accountID), bytes.NewBuffer(bodyJSON))
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, accountID), bytes.NewBuffer(bodyJSON))
+			if err != nil {
+				return nil, err
+			}
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Accept", "application/json")
 			req.SetBasicAuth(tokenUser, token)

@@ -184,10 +184,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return nil, err
 		}
 
-		req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonPayload))
+		req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonPayload))
+		if err != nil {
+			return nil, err
+		}
+
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("key=%s", fcmKey))
+
 		rr, err := utils.MakeHTTPRequest(req)
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 		status.AddLog(log)

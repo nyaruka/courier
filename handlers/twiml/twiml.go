@@ -245,10 +245,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return nil, err
 		}
 
-		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+		if err != nil {
+			return nil, err
+		}
 		req.SetBasicAuth(accountSID, accountToken)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
+
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log
