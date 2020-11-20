@@ -1,3 +1,7 @@
+v6.1.0
+----------
+ * Check and log errors when building URLs for sending
+
 v6.0.0
 ----------
  * Update README
