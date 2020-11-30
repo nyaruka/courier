@@ -35,7 +35,7 @@ var testChannels = []courier.Channel{
 		}),
 	courier.NewMockChannel(
 		"8eb23e93-5ecb-45ba-b726-3b064e0c568c",
-		"TX",
+		"TXW",
 		"250788383383",
 		"RW",
 		map[string]interface{}{
@@ -240,7 +240,7 @@ var ignoreStatus = `
 var (
 	waReceiveURL = "/c/wa/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive"
 	d3ReceiveURL = "/c/d3/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive"
-	txReceiveURL = "/c/tx/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive"
+	txReceiveURL = "/c/txw/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive"
 )
 
 var waTestCases = []ChannelHandleTestCase{
@@ -284,7 +284,7 @@ func TestBuildMediaRequest(t *testing.T) {
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "the-auth-token", req.Header.Get("D360-API-KEY"))
 
-	txHandler := &handler{NewBaseHandler(courier.ChannelType("TX"), "TextIt")}
+	txHandler := &handler{NewBaseHandler(courier.ChannelType("TXW"), "TextIt")}
 	req, _ = txHandler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer the-auth-token", req.Header.Get("Authorization"))
@@ -302,13 +302,13 @@ func replaceTestcaseURLs(tcs []ChannelHandleTestCase, url string) []ChannelHandl
 func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, testChannels, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), waTestCases)
 	RunChannelTestCases(t, testChannels, newWAHandler(courier.ChannelType("D3"), "360Dialog"), replaceTestcaseURLs(waTestCases, d3ReceiveURL))
-	RunChannelTestCases(t, testChannels, newWAHandler(courier.ChannelType("TX"), "TextIt"), replaceTestcaseURLs(waTestCases, txReceiveURL))
+	RunChannelTestCases(t, testChannels, newWAHandler(courier.ChannelType("TXW"), "TextIt"), replaceTestcaseURLs(waTestCases, txReceiveURL))
 }
 
 func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), waTestCases)
 	RunChannelBenchmarks(b, testChannels, newWAHandler(courier.ChannelType("D3"), "360Dialog"), replaceTestcaseURLs(waTestCases, d3ReceiveURL))
-	RunChannelBenchmarks(b, testChannels, newWAHandler(courier.ChannelType("TX"), "TextIt"), replaceTestcaseURLs(waTestCases, txReceiveURL))
+	RunChannelBenchmarks(b, testChannels, newWAHandler(courier.ChannelType("TXW"), "TextIt"), replaceTestcaseURLs(waTestCases, txReceiveURL))
 }
 
 // setSendURL takes care of setting the base_url to our test server host
@@ -674,7 +674,7 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, defaultChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), defaultSendTestCases, nil)
 	RunChannelSendTestCases(t, hsmSupportChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), hsmSupportSendTestCases, nil)
 	RunChannelSendTestCases(t, d3Channel, newWAHandler(courier.ChannelType("D3"), "360Dialog"), defaultSendTestCases, nil)
-	RunChannelSendTestCases(t, txChannel, newWAHandler(courier.ChannelType("TX"), "TextIt"), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, txChannel, newWAHandler(courier.ChannelType("TXW"), "TextIt"), defaultSendTestCases, nil)
 
 	mediaServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
