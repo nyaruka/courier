@@ -28,6 +28,7 @@ const (
 
 	channelTypeWa = "WA"
 	channelTypeD3 = "D3"
+	channelTypeTX = "TX"
 
 	mediaCacheKeyPattern        = "whatsapp_media_%s"
 	failureMediaCacheKeyPattern = "whatsapp_failed_media_%s"
@@ -40,6 +41,7 @@ var (
 func init() {
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeWa), "WhatsApp"))
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeD3), "360Dialog"))
+	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeTX), "TextIt"))
 }
 
 type handler struct {
