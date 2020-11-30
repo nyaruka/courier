@@ -26,8 +26,9 @@ const (
 
 	d3AuthorizationKey = "D360-API-KEY"
 
-	channelTypeWa = "WA"
-	channelTypeD3 = "D3"
+	channelTypeWa  = "WA"
+	channelTypeD3  = "D3"
+	channelTypeTXW = "TXW"
 
 	mediaCacheKeyPattern        = "whatsapp_media_%s"
 	failureMediaCacheKeyPattern = "whatsapp_failed_media_%s"
@@ -40,6 +41,7 @@ var (
 func init() {
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeWa), "WhatsApp"))
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeD3), "360Dialog"))
+	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeTXW), "TextIt"))
 }
 
 type handler struct {
