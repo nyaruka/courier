@@ -1,3 +1,7 @@
+v6.1.3
+----------
+ * Better logging of error cases when uploading WhatsApp media
+
 v6.1.2
 ----------
  * use url.parse to build media URL
