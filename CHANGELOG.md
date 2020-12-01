@@ -1,3 +1,7 @@
+v6.1.1
+----------
+ * Add TextIt WhatsApp channel type
+
 v6.1.0
 ----------
  * Check and log errors when building URLs for sending
