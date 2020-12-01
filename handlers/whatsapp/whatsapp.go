@@ -669,36 +669,27 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	setWhatsAppAuthHeader(&req.Header, msg.Channel())
 	req.Header.Add("Content-Type", mimeType)
 	res, err = utils.MakeHTTPRequest(req)
+	log := courier.NewChannelLogFromRR("Uploading media to WhatsApp", msg.Channel(), msg.ID(), res).WithError("Error uploading media to WhatsApp", err)
+	logs = append(logs, log)
 	if err != nil {
 		// put in failure cache
 		rcache.Set(rc, failureCacheKey, mediaURL, "true")
-
-		if res != nil {
-			err = errors.Wrap(err, string(res.Body))
-		}
-		elapsed := time.Now().Sub(start)
-		log := courier.NewChannelLogFromError("error uploading media to WhatsApp", msg.Channel(), msg.ID(), elapsed, err)
-		logs = append(logs, log)
 		return "", logs, err
 	}
 
 	// take uploaded media id
 	mediaID, err = jsonparser.GetString(res.Body, "media", "[0]", "id")
 	if err != nil {
-		elapsed := time.Now().Sub(start)
-		log := courier.NewChannelLogFromError("error reading media id from response", msg.Channel(), msg.ID(), elapsed, err)
-		logs = append(logs, log)
+		log.WithError("Error reading media id from response", fmt.Errorf("error reading media id"))
 		return "", logs, err
 	}
 
 	// put in cache
 	err = rcache.Set(rc, cacheKey, mediaURL, mediaID)
 	if err != nil {
-		elapsed := time.Now().Sub(start)
-		log := courier.NewChannelLogFromError("error setting media id to redis", msg.Channel(), msg.ID(), elapsed, err)
-		logs = append(logs, log)
 		return "", logs, err
 	}
+
 	return mediaID, logs, nil
 }
 
