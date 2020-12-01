@@ -1,3 +1,7 @@
+v6.1.2
+----------
+ * use url.parse to build media URL
+
 v6.1.1
 ----------
  * Add TextIt WhatsApp channel type
