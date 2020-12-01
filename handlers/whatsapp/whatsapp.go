@@ -656,7 +656,13 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 
 	// upload media to WhatsApp
 	baseURL := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
-	req, err = http.NewRequest("POST", baseURL+"/v1/media", bytes.NewReader(res.Body))
+	url, err := url.Parse(baseURL)
+	if err != nil {
+		return "", logs, fmt.Errorf("invalid base url set for WA channel: %s", err)
+	}
+	dockerMediaURL, _ := url.Parse("/v1/media")
+
+	req, err = http.NewRequest("POST", dockerMediaURL.String(), bytes.NewReader(res.Body))
 	if err != nil {
 		return "", logs, err
 	}
