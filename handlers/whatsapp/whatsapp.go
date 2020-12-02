@@ -18,6 +18,7 @@ import (
 	"github.com/nyaruka/gocommon/rcache"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -439,6 +440,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 			mimeType, mediaURL := handlers.SplitAttachment(attachment)
 			mediaID, mediaLogs, err := h.fetchMediaID(msg, mimeType, mediaURL)
+			if err != nil {
+				logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("error while uploading media to whatsapp")
+			}
 			if err == nil && mediaID != "" {
 				mediaURL = ""
 			}
@@ -613,7 +617,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 // fetchMediaID tries to fetch the id for the uploaded media, setting the result in redis.
 func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (string, []*courier.ChannelLog, error) {
 	var logs []*courier.ChannelLog
-	start := time.Now()
 
 	// check in cache first
 	rc := h.Backend().RedisPool().Get()
@@ -622,72 +625,67 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	cacheKey := fmt.Sprintf(mediaCacheKeyPattern, msg.Channel().UUID().String())
 	mediaID, err := rcache.Get(rc, cacheKey, mediaURL)
 	if err != nil {
-		elapsed := time.Now().Sub(start)
-		log := courier.NewChannelLogFromError("error reading media id from redis", msg.Channel(), msg.ID(), elapsed, err)
-		logs = append(logs, log)
-		return "", logs, err
+		return "", logs, errors.Wrapf(err, "error reading media id from redis: %s : %s", cacheKey, mediaURL)
 	} else if mediaID != "" {
 		return mediaID, logs, nil
 	}
 
 	// check in failure cache
 	failureCacheKey := fmt.Sprintf(failureMediaCacheKeyPattern, msg.Channel().UUID().String())
-	if failed, err := rcache.Get(rc, failureCacheKey, mediaURL); err != nil {
-		elapsed := time.Now().Sub(start)
-		log := courier.NewChannelLogFromError("error reading failed media from redis", msg.Channel(), msg.ID(), elapsed, err)
-		logs = append(logs, log)
-		return "", logs, err
-	} else if failed == "true" {
-		return "", logs, errors.New("ignoring media that previously failed to upload")
+	failed, err := rcache.Get(rc, failureCacheKey, mediaURL)
+	if err != nil {
+		return "", logs, errors.Wrapf(err, "error reading from failed cache: %s : %s", failureCacheKey, mediaURL)
+	}
+
+	if failed == "true" {
+		return "", logs, nil
 	}
 
 	// download media
 	req, err := http.NewRequest("GET", mediaURL, nil)
 	if err != nil {
-		return "", logs, err
+		return "", logs, errors.Wrapf(err, "error building media request")
 	}
-	res, err := utils.MakeHTTPRequest(req)
+	rr, err := utils.MakeHTTPRequest(req)
+	log := courier.NewChannelLogFromRR("Fetching media", msg.Channel(), msg.ID(), rr).WithError("error fetching media", err)
+	logs = append(logs, log)
 	if err != nil {
-		elapsed := time.Now().Sub(start)
-		log := courier.NewChannelLogFromError("error downloading media", msg.Channel(), msg.ID(), elapsed, err)
-		logs = append(logs, log)
-		return "", logs, err
+		return "", logs, nil
 	}
 
 	// upload media to WhatsApp
 	baseURL := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return "", logs, fmt.Errorf("invalid base url set for WA channel: %s", err)
+		return "", logs, errors.Wrapf(err, "invalid base url set for WA channel: %s", baseURL)
 	}
 	dockerMediaURL, _ := url.Parse("/v1/media")
 
-	req, err = http.NewRequest("POST", dockerMediaURL.String(), bytes.NewReader(res.Body))
+	req, err = http.NewRequest("POST", dockerMediaURL.String(), bytes.NewReader(rr.Body))
 	if err != nil {
-		return "", logs, err
+		return "", logs, errors.Wrapf(err, "error building request to media endpoint")
 	}
 	setWhatsAppAuthHeader(&req.Header, msg.Channel())
-	req.Header.Add("Content-Type", mimeType)
-	res, err = utils.MakeHTTPRequest(req)
-	log := courier.NewChannelLogFromRR("Uploading media to WhatsApp", msg.Channel(), msg.ID(), res).WithError("Error uploading media to WhatsApp", err)
+	req.Header.Add("Content-Type", http.DetectContentType(rr.Body))
+	rr, err = utils.MakeHTTPRequest(req)
+	log = courier.NewChannelLogFromRR("Uploading media to WhatsApp", msg.Channel(), msg.ID(), rr).WithError("Error uploading media to WhatsApp", err)
 	logs = append(logs, log)
 	if err != nil {
 		// put in failure cache
 		rcache.Set(rc, failureCacheKey, mediaURL, "true")
-		return "", logs, err
+		return "", logs, errors.Wrapf(err, "error uploading media to whatsapp")
 	}
 
 	// take uploaded media id
-	mediaID, err = jsonparser.GetString(res.Body, "media", "[0]", "id")
+	mediaID, err = jsonparser.GetString(rr.Body, "media", "[0]", "id")
 	if err != nil {
-		log.WithError("Error reading media id from response", fmt.Errorf("error reading media id"))
-		return "", logs, err
+		return "", logs, errors.Wrapf(err, "error reading media id from response")
 	}
 
 	// put in cache
 	err = rcache.Set(rc, cacheKey, mediaURL, mediaID)
 	if err != nil {
-		return "", logs, err
+		return "", logs, errors.Wrapf(err, "error setting media id in cache")
 	}
 
 	return mediaID, logs, nil
