@@ -54,3 +54,32 @@ func TestServer(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, string(rr.Body), "method not allowed")
 }
+
+func TestSanitizeBody(t *testing.T) {
+	tcs := []struct {
+		Label  string
+		Body   string
+		Result string
+	}{
+		{
+			"empty",
+			"",
+			"",
+		},
+		{
+			"valid",
+			"POST /v1/messages HTTP/1.1\r\nContent-Length: 125\r\n\r\nBody",
+			"POST /v1/messages HTTP/1.1\r\nContent-Length: 125\r\n\r\nBody",
+		},
+		{
+			"application/octet-stream",
+			"POST /v1/messages HTTP/1.1\r\nContent-Length: 125\r\n\r\nJFIF``C",
+			"POST /v1/messages HTTP/1.1\r\nContent-Length: 125\r\n\r\nOmitting non text body of type: application/octet-stream",
+		},
+	}
+
+	for _, tc := range tcs {
+		result := sanitizeBody(tc.Body)
+		assert.Equal(t, tc.Result, result, "%s: unexpected result", tc.Label)
+	}
+}

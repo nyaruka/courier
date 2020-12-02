@@ -37,11 +37,16 @@ func NewChannelLog(description string, channel Channel, msgID MsgID, method stri
 }
 
 func sanitizeBody(body string) string {
-	ct := http.DetectContentType([]byte(body))
+	parts := strings.SplitN(body, "\r\n\r\n", 2)
+	if len(parts) < 2 {
+		return body
+	}
+
+	ct := http.DetectContentType([]byte(parts[1]))
 
 	// if this isn't text, replace with placeholder
 	if !strings.HasPrefix(ct, "text") {
-		return fmt.Sprintf("Omitting non text body of type: %s", ct)
+		return fmt.Sprintf("%s\r\n\r\nOmitting non text body of type: %s", parts[0], ct)
 	}
 
 	return body
