@@ -1,3 +1,7 @@
+v6.1.5
+----------
+ * include header when sanitizing request/response
+
 v6.1.4
 ----------
  * Cleanup of whatsapp media handling
