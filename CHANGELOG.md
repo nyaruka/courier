@@ -1,3 +1,8 @@
+v6.1.4
+----------
+ * Cleanup of whatsapp media handling
+ * Detect media type for uploading media
+
 v6.1.3
 ----------
  * Better logging of error cases when uploading WhatsApp media
