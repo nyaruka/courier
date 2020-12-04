@@ -11,13 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ReneKroon/ttlcache/v2"
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/rcache"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -39,16 +39,14 @@ var (
 	retryParam = ""
 )
 
-var failedMediaCache *ttlcache.Cache
+var failedMediaCache *cache.Cache
 
 func init() {
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeWa), "WhatsApp"))
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeD3), "360Dialog"))
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeTXW), "TextIt"))
 
-	failedMediaCache = ttlcache.NewCache()
-	failedMediaCache.SetTTL(time.Minute * 15)
-	failedMediaCache.SkipTTLExtensionOnHit(true)
+	failedMediaCache = cache.New(15*time.Minute, 15*time.Minute)
 }
 
 type handler struct {
@@ -640,7 +638,7 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	failKey := fmt.Sprintf("%s-%s", msg.Channel().UUID().String(), mediaURL)
 	found, _ := failedMediaCache.Get(failKey)
 
-	// any non nil value means we had a failure, don't try again until our cache expires
+	// any non nil value means we cached a failure, don't try again until our cache expires
 	if found != nil {
 		return "", logs, nil
 	}
@@ -654,7 +652,7 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	log := courier.NewChannelLogFromRR("Fetching media", msg.Channel(), msg.ID(), rr).WithError("error fetching media", err)
 	logs = append(logs, log)
 	if err != nil {
-		failedMediaCache.Set(failKey, true)
+		failedMediaCache.Set(failKey, true, cache.DefaultExpiration)
 		return "", logs, nil
 	}
 
@@ -676,7 +674,7 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	log = courier.NewChannelLogFromRR("Uploading media to WhatsApp", msg.Channel(), msg.ID(), rr).WithError("Error uploading media to WhatsApp", err)
 	logs = append(logs, log)
 	if err != nil {
-		failedMediaCache.Set(failKey, true)
+		failedMediaCache.Set(failKey, true, cache.DefaultExpiration)
 		return "", logs, errors.Wrapf(err, "error uploading media to whatsapp")
 	}
 
