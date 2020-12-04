@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ReneKroon/ttlcache/v2"
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
@@ -31,18 +32,23 @@ const (
 	channelTypeD3  = "D3"
 	channelTypeTXW = "TXW"
 
-	mediaCacheKeyPattern        = "whatsapp_media_%s"
-	failureMediaCacheKeyPattern = "whatsapp_failed_media_%s"
+	mediaCacheKeyPattern = "whatsapp_media_%s"
 )
 
 var (
 	retryParam = ""
 )
 
+var failedMediaCache *ttlcache.Cache
+
 func init() {
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeWa), "WhatsApp"))
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeD3), "360Dialog"))
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeTXW), "TextIt"))
+
+	failedMediaCache = ttlcache.NewCache()
+	failedMediaCache.SetTTL(time.Minute * 15)
+	failedMediaCache.SkipTTLExtensionOnHit(true)
 }
 
 type handler struct {
@@ -631,13 +637,11 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	}
 
 	// check in failure cache
-	failureCacheKey := fmt.Sprintf(failureMediaCacheKeyPattern, msg.Channel().UUID().String())
-	failed, err := rcache.Get(rc, failureCacheKey, mediaURL)
-	if err != nil {
-		return "", logs, errors.Wrapf(err, "error reading from failed cache: %s : %s", failureCacheKey, mediaURL)
-	}
+	failKey := fmt.Sprintf("%s-%s", msg.Channel().UUID().String(), mediaURL)
+	found, _ := failedMediaCache.Get(failKey)
 
-	if failed == "true" {
+	// any non nil value means we had a failure, don't try again until our cache expires
+	if found != nil {
 		return "", logs, nil
 	}
 
@@ -650,6 +654,7 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	log := courier.NewChannelLogFromRR("Fetching media", msg.Channel(), msg.ID(), rr).WithError("error fetching media", err)
 	logs = append(logs, log)
 	if err != nil {
+		failedMediaCache.Set(failKey, true)
 		return "", logs, nil
 	}
 
@@ -671,8 +676,7 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	log = courier.NewChannelLogFromRR("Uploading media to WhatsApp", msg.Channel(), msg.ID(), rr).WithError("Error uploading media to WhatsApp", err)
 	logs = append(logs, log)
 	if err != nil {
-		// put in failure cache
-		rcache.Set(rc, failureCacheKey, mediaURL, "true")
+		failedMediaCache.Set(failKey, true)
 		return "", logs, errors.Wrapf(err, "error uploading media to whatsapp")
 	}
 

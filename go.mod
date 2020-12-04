@@ -1,6 +1,7 @@
 module github.com/nyaruka/courier
 
 require (
+	github.com/ReneKroon/ttlcache/v2 v2.1.0
 	github.com/antchfx/xmlquery v0.0.0-20181223105952-355641961c92
 	github.com/antchfx/xpath v0.0.0-20181208024549-4bbdf6db12aa // indirect
 	github.com/aws/aws-sdk-go v1.34.31
