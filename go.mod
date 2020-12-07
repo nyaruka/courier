@@ -25,6 +25,7 @@ require (
 	github.com/nyaruka/gocommon v1.6.1
 	github.com/nyaruka/librato v1.0.0
 	github.com/nyaruka/null v1.1.1
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/stretchr/testify v1.6.1
