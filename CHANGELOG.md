@@ -1,3 +1,7 @@
+v6.1.6
+----------
+ * Cache media upload failures localy for 15m
+
 v6.1.5
 ----------
  * include header when sanitizing request/response
