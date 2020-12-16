@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -25,7 +26,10 @@ const (
 	configApiKey     = "api_key"
 )
 
-var baseURL = "https://api.kaleyra.io"
+var (
+	baseURL  = "https://api.kaleyra.io"
+	urlRegex = regexp.MustCompile(`https?:\/\/(www\.)?[^\W][-a-zA-Z0-9@:%.\+~#=]{1,256}[^\W]\.[a-zA-Z()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+)
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -217,6 +221,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		form := url.Values{}
 		baseForm := h.newSendForm(msg.Channel(), "text", msg.URN().Path())
 		baseForm["body"] = msg.Text()
+		// checks if the message has a valid url to activate the preview
+		if urlRegex.MatchString(msg.Text()) {
+			baseForm["preview_url"] = "true"
+		}
 		for k, v := range baseForm {
 			form.Set(k, v)
 		}

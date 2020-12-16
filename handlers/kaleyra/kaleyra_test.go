@@ -1,12 +1,13 @@
 package kaleyra
 
 import (
-	"github.com/nyaruka/courier"
-	. "github.com/nyaruka/courier/handlers"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/nyaruka/courier"
+	. "github.com/nyaruka/courier/handlers"
 )
 
 const (
@@ -130,6 +131,19 @@ var sendTestCases = []ChannelSendTestCase{
 		SendPrep:       setSendURL,
 	},
 	{
+		Label:          "URL Send",
+		Text:           "foo https://foo.bar bar",
+		URN:            "whatsapp:14133881111",
+		Status:         "W",
+		ExternalID:     "58f86fab-85c5-4f7c-9b68-9c323248afc4:0",
+		Path:           "/v1/SID/messages",
+		Headers:        map[string]string{"Content-type": "application/x-www-form-urlencoded"},
+		RequestBody:    "api-key=123456&body=foo+https%3A%2F%2Ffoo.bar+bar&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&preview_url=true&to=14133881111&type=text",
+		ResponseStatus: 200,
+		ResponseBody:   `{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`,
+		SendPrep:       setSendURL,
+	},
+	{
 		Label:          "Plain Send Error",
 		Text:           "Error",
 		URN:            "whatsapp:14133881112",
@@ -227,4 +241,99 @@ func TestSending(t *testing.T) {
 	mockedSendTestCases := mockAttachmentURLs(mediaServer, sendTestCases)
 
 	RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, nil)
+}
+
+var urlTestCases = []struct {
+	text  string
+	valid bool
+}{
+	// supported by whatsapp
+	{"http://foo.com/blah_blah", true},
+	{"http://foo.com/blah_blah/", true},
+	{"http://foo.com/blah_blah_(wikipedia)", true},
+	{"http://foo.com/blah_blah_(wikipedia)_(again)", true},
+	{"http://www.example.com/wpstyle/?p=364", true},
+	{"https://www.example.com/foo/?bar=baz&inga=42&quux", true},
+	{"http://userid:password@example.com:8080", true},
+	{"http://userid:password@example.com:8080/", true},
+	{"http://userid@example.com", true},
+	{"http://userid@example.com/", true},
+	{"http://userid@example.com:8080", true},
+	{"http://userid@example.com:8080/", true},
+	{"http://userid:password@example.com", true},
+	{"http://userid:password@example.com/", true},
+	{"http://foo.com/blah_(wikipedia)#cite-1", true},
+	{"http://foo.com/blah_(wikipedia)_blah#cite-1", true},
+	{"http://foo.com/unicode_(✪)_in_parens", true},
+	{"http://foo.com/(something)?after=parens", true},
+	{"http://code.google.com/events/#&product=browser", true},
+	{"http://foo.bar/?q=Test%20URL-encoded%20stuff", true},
+	{"http://1337.net", true},
+	{"http://a.b-c.de", true},
+	{"http://foo.bar?q=Spaces foo bar", true},
+	{"http://foo.bar/foo(bar)baz quux", true},
+	{"http://a.b--c.de/", true},
+	{"http://www.foo.bar./", true},
+	// not supported by whatsapp
+	{"http://✪df.ws/123", false},
+	{"http://142.42.1.1/", false},
+	{"http://142.42.1.1:8080/", false},
+	{"http://➡.ws/䨹", false},
+	{"http://⌘.ws", false},
+	{"http://⌘.ws/", false},
+	{"http://☺.damowmow.com/", false},
+	{"ftp://foo.bar/baz", false},
+	{"http://مثال.إختبار", false},
+	{"http://例子.测试", false},
+	{"http://उदाहरण.परीक्षा", false},
+	{"http://-.~_!$&'()*+,;=:%40:80%2f::::::@example.com", false},
+	{"http://223.255.255.254", false},
+	{"https://foo_bar.example.com/", false},
+	{"http://", false},
+	{"http://.", false},
+	{"http://..", false},
+	{"http://../", false},
+	{"http://?", false},
+	{"http://??", false},
+	{"http://??/", false},
+	{"http://#", false},
+	{"http://##", false},
+	{"http://##/", false},
+	{"//", false},
+	{"//a", false},
+	{"///a", false},
+	{"///", false},
+	{"http:///a", false},
+	{"foo.com", false},
+	{"rdar://1234", false},
+	{"h://test", false},
+	{"http:// shouldfail.com", false},
+	{":// should fail", false},
+	{"ftps://foo.bar/", false},
+	{"http://-error-.invalid/", false},
+	{"http://-a.b.co", false},
+	{"http://a.b-.co", false},
+	{"http://0.0.0.0", false},
+	{"http://10.1.1.0", false},
+	{"http://10.1.1.255", false},
+	{"http://224.1.1.1", false},
+	{"http://1.1.1.1.1", false},
+	{"http://123.123.123", false},
+	{"http://3628126748", false},
+	{"http://.www.foo.bar/", false},
+	{"http://.www.foo.bar./", false},
+	{"http://10.1.1.1", false},
+	{"http://10.1.1.254", false},
+}
+
+func TestUrlRegex(t *testing.T) {
+	for _, c := range urlTestCases {
+		if valid := urlRegex.MatchString(c.text); valid != c.valid {
+			t.Errorf(`
+				ERROR:	Not equal:
+						text = %#v
+						expected: %t
+						actual	: %t`, c.text, c.valid, valid)
+		}
+	}
 }
