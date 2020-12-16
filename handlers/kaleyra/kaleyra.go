@@ -4,12 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/buger/jsonparser"
-	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -17,6 +11,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/buger/jsonparser"
+	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -151,7 +152,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// make multipart form requests if we have attachments, the kaleyra api doesn't supports media url nor media upload before send
 	if len(msg.Attachments()) > 0 {
-		attachmentsLoop:
+	attachmentsLoop:
 		for i, attachment := range msg.Attachments() {
 			_, attachmentURL := handlers.SplitAttachment(attachment)
 
@@ -183,7 +184,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			// fill base values
 			baseForm := h.newSendForm(msg.Channel(), "media", msg.URN().Path())
 			if i == 0 {
-				baseForm["body"] = msg.Text()
+				baseForm["caption"] = msg.Text()
 			}
 			for k, v := range baseForm {
 				part, err := writer.CreateFormField(k)
