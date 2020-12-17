@@ -72,7 +72,12 @@ var testCases = []ChannelHandleTestCase{
 		Status:   400,
 		Response: "invalid whatsapp id",
 	},
-
+	{
+		Label:    "Receive Blank From",
+		URL:      receiveMsgURL,
+		Status:   400,
+		Response: "field 'from' required",
+	},
 	{
 		Label:      "Receive Valid Status",
 		URL:        receiveStatusURL + "?id=58f86fab-85c5-4f7c-9b68-9c323248afc4%3A0&status=read",
@@ -88,6 +93,13 @@ var testCases = []ChannelHandleTestCase{
 		MsgStatus:  Sp("D"),
 		Status:     200,
 		Response:   "unknown status",
+	},
+	{
+		Label:      "Receive Blank status",
+		URL:        receiveStatusURL,
+		ExternalID: Sp("58f86fab-85c5-4f7c-9b68-9c323248afc4:0"),
+		Status:     400,
+		Response:   "field 'status' required",
 	},
 }
 

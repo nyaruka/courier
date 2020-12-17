@@ -54,7 +54,7 @@ func (h *handler) Initialize(s courier.Server) error {
 type moMsgForm struct {
 	CreatedAt string `name:"created_at"`
 	Type      string `name:"type"`
-	From      string `name:"from"`
+	From      string `name:"from" validate:"required"`
 	Name      string `name:"name"`
 	Body      string `name:"body"`
 	MediaURL  string `name:"media_url"`
