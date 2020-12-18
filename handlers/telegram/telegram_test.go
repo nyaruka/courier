@@ -262,7 +262,7 @@ var photoMsg = `
             },
             {
                 "file_id": "AgADAQADtKcxG4LRUUQSQVUjfJIiiF8G6C8ABA9NJzFdXskaincBAAEC",
-                "file_size": 104737,
+                "file_size": 254737,
                 "width": 720,
                 "height": 1280
             }
