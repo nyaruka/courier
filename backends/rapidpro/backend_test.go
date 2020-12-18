@@ -2,45 +2,35 @@ package rapidpro
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"encoding/json"
-
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/garyburd/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
+	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null"
+
+	"github.com/gomodule/redigo/redis"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 )
 
+const storageDir = "_test_storage"
+
 type BackendTestSuite struct {
 	suite.Suite
 	b *backend
-}
-
-type mockS3Client struct {
-	s3iface.S3API
-}
-
-func (m *mockS3Client) PutObject(*s3.PutObjectInput) (*s3.PutObjectOutput, error) {
-	return nil, nil
-}
-
-func (m *mockS3Client) HeadBucket(*s3.HeadBucketInput) (*s3.HeadBucketOutput, error) {
-	return nil, nil
 }
 
 func testConfig() *courier.Config {
@@ -84,13 +74,17 @@ func (ts *BackendTestSuite) SetupSuite() {
 	defer r.Close()
 	r.Do("FLUSHDB")
 
-	// plug in our mock s3 client
-	ts.b.s3Client = &mockS3Client{}
+	// use file storage instead of S3
+	ts.b.storage = storage.NewFS(storageDir)
 }
 
 func (ts *BackendTestSuite) TearDownSuite() {
 	ts.b.Stop()
 	ts.b.Cleanup()
+
+	if err := os.RemoveAll(storageDir); err != nil {
+		panic(err)
+	}
 }
 
 func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *DBChannel {
@@ -346,7 +340,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.Equal(null.String("chestnut"), contactURNs[0].Auth)
 
 	// now build a URN for our number with the kannel channel
-	knURN, err := contactURNForURN(tx, knChannel.OrgID_, knChannel.ID_, contact.ID_, urn, "sesame")
+	knURN, err := contactURNForURN(tx, knChannel, contact.ID_, urn, "sesame")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(knURN.OrgID, knChannel.OrgID_)
@@ -356,7 +350,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.NoError(err)
 
 	// then with our twilio channel
-	twURN, err := contactURNForURN(tx, twChannel.OrgID_, twChannel.ID_, contact.ID_, urn, "")
+	twURN, err := contactURNForURN(tx, twChannel, contact.ID_, urn, "")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
@@ -376,7 +370,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.NoError(err)
 
 	// again with different auth
-	twURN, err = contactURNForURN(tx, twChannel.OrgID_, twChannel.ID_, contact.ID_, urn, "peanut")
+	twURN, err = contactURNForURN(tx, twChannel, contact.ID_, urn, "peanut")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(null.String("peanut"), twURN.Auth)
@@ -397,7 +391,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
 
-	tgContactURN, err := contactURNForURN(tx, tgChannel.OrgID_, tgChannel.ID_, tgContact.ID_, tgURNDisplay, "")
+	tgContactURN, err := contactURNForURN(tx, tgChannel, tgContact.ID_, tgURNDisplay, "")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(tgContact.URNID_, tgContactURN.ID)
@@ -441,7 +435,7 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
 
-	_, err = contactURNForURN(tx, knChannel.OrgID_, twChannel.ID_, knContact.ID_, twURN, "")
+	_, err = contactURNForURN(tx, twChannel, knContact.ID_, twURN, "")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
@@ -575,6 +569,70 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.NoError(err)
 	ts.Equal(m.Status_, courier.MsgFailed)
 	ts.Equal(m.ErrorCount_, 3)
+
+	// update URN when the new doesn't exist
+	tx, _ := ts.b.db.BeginTxx(ctx, nil)
+	oldURN, _ := urns.NewWhatsAppURN("55988776655")
+	_ = insertContactURN(tx, newDBContactURN(channel.OrgID_, channel.ID_, NilContactID, oldURN, ""))
+
+	ts.NoError(tx.Commit())
+
+	newURN, _ := urns.NewWhatsAppURN("5588776655")
+	status = ts.b.NewMsgStatusForID(channel, courier.MsgID(10000), courier.MsgSent)
+	status.SetUpdatedURN(oldURN, newURN)
+
+	ts.NoError(ts.b.WriteMsgStatus(ctx, status))
+
+	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	contactURN, err := selectContactURN(tx, channel.OrgID_, newURN)
+
+	ts.NoError(err)
+	ts.Equal(contactURN.Identity, newURN.Identity().String())
+	ts.NoError(tx.Commit())
+
+	// new URN already exits but don't have an associated contact
+	oldURN, _ = urns.NewWhatsAppURN("55999887766")
+	newURN, _ = urns.NewWhatsAppURN("5599887766")
+	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	contact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, "", "")
+	_ = insertContactURN(tx, newDBContactURN(channel.OrgID_, channel.ID_, NilContactID, newURN, ""))
+
+	ts.NoError(tx.Commit())
+
+	status = ts.b.NewMsgStatusForID(channel, courier.MsgID(10007), courier.MsgSent)
+	status.SetUpdatedURN(oldURN, newURN)
+
+	ts.NoError(ts.b.WriteMsgStatus(ctx, status))
+
+	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	newContactURN, _ := selectContactURN(tx, channel.OrgID_, newURN)
+	oldContactURN, _ := selectContactURN(tx, channel.OrgID_, oldURN)
+
+	ts.Equal(newContactURN.ContactID, contact.ID_)
+	ts.Equal(oldContactURN.ContactID, NilContactID)
+	ts.NoError(tx.Commit())
+
+	// new URN already exits and have an associated contact
+	oldURN, _ = urns.NewWhatsAppURN("55988776655")
+	newURN, _ = urns.NewWhatsAppURN("5588776655")
+	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	_, _ = contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, "", "")
+	otherContact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, newURN, "", "")
+
+	ts.NoError(tx.Commit())
+
+	status = ts.b.NewMsgStatusForID(channel, courier.MsgID(10007), courier.MsgSent)
+	status.SetUpdatedURN(oldURN, newURN)
+
+	ts.NoError(ts.b.WriteMsgStatus(ctx, status))
+
+	tx, _ = ts.b.db.BeginTxx(ctx, nil)
+	oldContactURN, _ = selectContactURN(tx, channel.OrgID_, oldURN)
+	newContactURN, _ = selectContactURN(tx, channel.OrgID_, newURN)
+
+	ts.Equal(oldContactURN.ContactID, NilContactID)
+	ts.Equal(newContactURN.ContactID, otherContact.ID_)
+	ts.NoError(tx.Commit())
 }
 
 func (ts *BackendTestSuite) TestHealth() {
@@ -770,10 +828,20 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 }
 
 func (ts *BackendTestSuite) TestChannel() {
+	noAddress := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c99a")
+	ts.Equal("US", noAddress.Country())
+	ts.Equal(courier.NilChannelAddress, noAddress.ChannelAddress())
+
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 
 	ts.Equal("2500", knChannel.Address())
+	ts.Equal(courier.ChannelAddress("2500"), knChannel.ChannelAddress())
 	ts.Equal("RW", knChannel.Country())
+	ts.Equal([]courier.ChannelRole{courier.ChannelRoleSend, courier.ChannelRoleReceive}, knChannel.Roles())
+	ts.True(knChannel.HasRole(courier.ChannelRoleSend))
+	ts.True(knChannel.HasRole(courier.ChannelRoleReceive))
+	ts.False(knChannel.HasRole(courier.ChannelRoleCall))
+	ts.False(knChannel.HasRole(courier.ChannelRoleAnswer))
 
 	// assert our config values
 	val := knChannel.ConfigForKey("use_national", false)
@@ -810,6 +878,20 @@ func (ts *BackendTestSuite) TestChannel() {
 	// and a missing value
 	val = knChannel.OrgConfigForKey("missing", "missingValue")
 	ts.Equal("missingValue", val)
+
+	exChannel := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327100a")
+	ts.Equal([]courier.ChannelRole{courier.ChannelRoleReceive}, exChannel.Roles())
+	ts.False(exChannel.HasRole(courier.ChannelRoleSend))
+	ts.True(exChannel.HasRole(courier.ChannelRoleReceive))
+	ts.False(exChannel.HasRole(courier.ChannelRoleCall))
+	ts.False(exChannel.HasRole(courier.ChannelRoleAnswer))
+
+	exChannel2 := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327222a")
+	ts.False(exChannel2.HasRole(courier.ChannelRoleSend))
+	ts.False(exChannel2.HasRole(courier.ChannelRoleReceive))
+	ts.False(exChannel2.HasRole(courier.ChannelRoleCall))
+	ts.False(exChannel2.HasRole(courier.ChannelRoleAnswer))
+
 }
 
 func (ts *BackendTestSuite) TestChanneLog() {
@@ -930,7 +1012,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.NoError(err)
 
 	// load our URN
-	contactURN, err := contactURNForURN(tx, m.OrgID_, m.ChannelID_, m.ContactID_, urn, "")
+	contactURN, err := contactURNForURN(tx, m.channel, m.ContactID_, urn, "")
 	if !ts.NoError(err) || !ts.NoError(tx.Commit()) {
 		ts.FailNow("failed writing contact urn")
 	}
@@ -998,6 +1080,60 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	count, err = redis.Int(rc.Do("LLEN", fmt.Sprintf("c:1:%d", msg.ContactID_)))
 	ts.NoError(err)
 	ts.Equal(1, count)
+
+	data, err := redis.Bytes(rc.Do("LPOP", fmt.Sprintf("c:1:%d", contact.ID_)))
+	ts.NoError(err)
+
+	var body map[string]interface{}
+	err = json.Unmarshal(data, &body)
+	ts.NoError(err)
+	ts.Equal("msg_event", body["type"])
+	ts.Equal(map[string]interface{}{
+		"contact_id":      float64(contact.ID_),
+		"org_id":          float64(1),
+		"channel_id":      float64(10),
+		"msg_id":          float64(msg.ID_),
+		"msg_uuid":        msg.UUID_.String(),
+		"msg_external_id": msg.ExternalID(),
+		"urn":             msg.URN().String(),
+		"urn_id":          float64(msg.ContactURNID_),
+		"text":            msg.Text(),
+		"attachments":     nil,
+		"new_contact":     contact.IsNew_,
+		"created_on":      msg.CreatedOn_.Format(time.RFC3339Nano),
+	}, body["task"])
+}
+
+func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
+	exChannel := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327100a")
+	ctx := context.Background()
+
+	// have to round to microseconds because postgres can't store nanos
+	now := time.Now().Round(time.Microsecond).In(time.UTC)
+
+	urn, _ := urns.NewTelURNForCountry("12065552020", exChannel.Country())
+	msg := ts.b.NewIncomingMsg(exChannel, urn, "test123").WithExternalID("ext123").WithReceivedOn(now).WithContactName("test contact").(*DBMsg)
+
+	// try to write it to our db
+	err := ts.b.WriteMsg(ctx, msg)
+	ts.NoError(err)
+
+	time.Sleep(1 * time.Second)
+
+	// load it back from the id
+	m, err := readMsgFromDB(ts.b, msg.ID())
+	ts.NoError(err)
+
+	tx, err := ts.b.db.Beginx()
+	ts.NoError(err)
+
+	// load our URN
+	exContactURN, err := contactURNForURN(tx, m.channel, m.ContactID_, urn, "")
+	if !ts.NoError(err) || !ts.NoError(tx.Commit()) {
+		ts.FailNow("failed writing contact urn")
+	}
+
+	ts.Equal(exContactURN.ChannelID, courier.NilChannelID)
 }
 
 func (ts *BackendTestSuite) TestChannelEvent() {
@@ -1047,7 +1183,9 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	urn, _ := urns.NewTelURNForCountry("12065551616", channel.Country())
-	event := ts.b.NewChannelEvent(channel, courier.Referral, urn).WithExtra(map[string]interface{}{"ref_id": "12345"}).WithContactName("kermit frog")
+	event := ts.b.NewChannelEvent(channel, courier.Referral, urn).WithExtra(map[string]interface{}{"ref_id": "12345"}).
+		WithContactName("kermit frog").
+		WithOccurredOn(time.Date(2020, 8, 5, 13, 30, 0, 123456789, time.UTC))
 	err := ts.b.WriteChannelEvent(ctx, event)
 	ts.NoError(err)
 
@@ -1074,6 +1212,23 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	count, err = redis.Int(rc.Do("LLEN", fmt.Sprintf("c:1:%d", contact.ID_)))
 	ts.NoError(err)
 	ts.Equal(1, count)
+
+	data, err := redis.Bytes(rc.Do("LPOP", fmt.Sprintf("c:1:%d", contact.ID_)))
+	ts.NoError(err)
+
+	var body map[string]interface{}
+	err = json.Unmarshal(data, &body)
+	ts.NoError(err)
+	ts.Equal("referral", body["type"])
+	ts.Equal(map[string]interface{}{
+		"channel_id":  float64(10),
+		"contact_id":  float64(contact.ID_),
+		"extra":       map[string]interface{}{"ref_id": "12345"},
+		"new_contact": contact.IsNew_,
+		"occurred_on": "2020-08-05T13:30:00.123456789Z",
+		"org_id":      float64(1),
+		"urn_id":      float64(contact.URNID_),
+	}, body["task"])
 }
 
 func TestMsgSuite(t *testing.T) {

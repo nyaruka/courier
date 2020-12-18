@@ -8,11 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/gsm7"
+
+	"github.com/buger/jsonparser"
 )
 
 var (
@@ -136,7 +137,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
+	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
 			"USERNAME":   []string{username},

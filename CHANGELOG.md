@@ -1,3 +1,171 @@
+v6.0.0
+----------
+ * Update README
+
+v5.7.12
+----------
+ * URN channel change only for channels with SEND role
+ * Update to gocommon v1.6.1
+ * Add RocketChat handler
+ * Add discord handler
+
+v5.7.11
+----------
+ * Cache media ids for WhatsApp attachments
+
+v5.7.10
+----------
+ * Support receiving Multipart form data requests for EX channels
+
+v5.7.9
+----------
+ * Update to latest gocommon 1.5.3 and golang 1.15
+ * Add session status from mailroom to MT message sent to external channel API call
+ * Remove incoming message prefix for Play Mobile free accounts
+
+v5.7.8
+----------
+ * deal with empty message in FreshChat incoming requests
+
+v5.7.7
+----------
+ * Update to gocommon v1.5.1
+
+v5.7.6
+----------
+ * Remove dummy values for AWS config values so you can use local file system for testing
+ * Use gsm7, storage, dates and uuids packages from gocommon
+
+v5.7.5
+----------
+ * No longer write contact.is_stopped or is_blocked
+
+v5.7.4
+----------
+ * Support receiving XML for CM channels
+ * Write status on new contacts
+ * Add support for Whatsapp 360dialog
+
+v5.7.3
+----------
+ * Include created_on in msg_event
+ * Include occurred_on when queueing channel events for mailroom
+
+v5.7.2
+----------
+ * Deal with Shaqodoon not properly escaping + in from
+
+v5.7.1
+----------
+ * Add ClickMobile channel type
+
+v5.7.0
+----------
+ * Save the Ad ID for Facebook postback referral 
+
+v5.6.0
+----------
+ * 5.6.0 Candidate Release
+
+v5.5.28 
+----------
+ * Fix FBA signature validation and channel lookup
+
+v5.5.27
+----------
+ * Add country field and support for more template languages on WhatsApp handler
+
+v5.5.26
+----------
+ * Only log channel events when we have a channel matched
+ * HX channel sends MO using ISO 8859-1 encoding
+
+v5.5.25
+----------
+ * Load FBA channel handler package
+
+v5.5.24
+----------
+ * Support loading channels with null address
+
+v5.5.23
+----------
+ * Add support for FBA channel type
+
+v5.5.22
+----------
+ * User reply endpoint when possible for LINE messages
+
+v5.5.21
+----------
+ * Fix FB location attachment to be handled at geo attachment
+
+v5.5.20
+----------
+ * TS expects national numbers only
+
+v5.5.19
+----------
+ * Upgrade FB graph API to 3.3
+
+v5.5.18
+----------
+ * TS sends should use mobile instead of from
+
+v5.5.17
+----------
+ * Support sending document attachments for Telegram
+
+v5.5.16
+----------
+ * Add option for Telesom Send URL
+ * Ignore received message request in Telegram handler when a file cannot be resolved
+
+v5.5.15
+----------
+ * Support using national number for EX channel if configured so
+
+v5.5.14
+----------
+ * Add Telesom channel type support
+
+v5.5.13
+----------
+ * Use Channel specific max_length config value if set
+
+v5.5.12
+----------
+ * Increase ArabiaCell max length to 1530
+
+v5.5.11
+----------
+ * Retry WhatsApp channel messaging after contact check with returned WhatsApp ID
+
+v5.5.10
+----------
+ * Fix sending WA template messages on new WhatsApp docker
+
+v5.5.9
+----------
+ * Add option for Kannel channels to ignore duplicative sent status
+
+v5.5.8
+----------
+ * More tweaks to slowing down batching of status commits when approaching max queue size
+
+v5.5.7
+----------
+ * slow queuing before reaching our max batch size
+
+v5.5.6
+----------
+ * Slow queuing into a batch when batches are full
+
+v5.5.5
+----------
+ * Increase buffer size
+ * Add support for Viber stickers as image attachments for incoming messages
+
 v5.5.4
 ----------
  * handle error cases for whatsapp callbacks

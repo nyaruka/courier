@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -33,6 +34,8 @@ type ChannelHandleTestCase struct {
 	Response string
 	Headers  map[string]string
 
+	MultipartFormFields map[string]string
+
 	Name        *string
 	Text        *string
 	URN         *string
@@ -48,6 +51,9 @@ type ChannelHandleTestCase struct {
 
 	ExternalID *string
 	ID         int64
+
+	NoQueueErrorCheck     bool
+	NoInvalidChannelCheck bool
 
 	PrepRequest RequestPrepFunc
 }
@@ -126,7 +132,7 @@ func ensureTestServerUp(host string) {
 }
 
 // utility method to make a request to a handler URL
-func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers map[string]string, data string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
+func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
 	var req *http.Request
 	var err error
 	url := fmt.Sprintf("https://%s%s", s.Config().Domain, path)
@@ -142,6 +148,21 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers ma
 		} else if strings.Contains(data, "<") && strings.Contains(data, ">") {
 			contentType = "application/xml"
 		}
+		req.Header.Set("Content-Type", contentType)
+	} else if multipartFormFields != nil {
+		var body bytes.Buffer
+		bodyMultipartWriter := multipart.NewWriter(&body)
+		for k, v := range multipartFormFields {
+			fieldWriter, err := bodyMultipartWriter.CreateFormField(k)
+			require.Nil(tb, err)
+			_, err = fieldWriter.Write([]byte(v))
+			require.Nil(tb, err)
+		}
+		contentType := fmt.Sprintf("multipart/form-data;boundary=%v", bodyMultipartWriter.Boundary())
+		bodyMultipartWriter.Close()
+
+		req, err = http.NewRequest(http.MethodPost, url, bytes.NewReader(body.Bytes()))
+		require.Nil(tb, err)
 		req.Header.Set("Content-Type", contentType)
 	} else {
 		req, err = http.NewRequest(http.MethodGet, url, nil)
@@ -179,7 +200,12 @@ func newServer(backend courier.Backend) courier.Server {
 	logger.Out = ioutil.Discard
 	logrus.SetOutput(ioutil.Discard)
 
-	return courier.NewServerWithLogger(courier.NewConfig(), backend, logger)
+	config := courier.NewConfig()
+	config.FacebookWebhookSecret = "fb_webhook_secret"
+	config.FacebookApplicationSecret = "fb_app_secret"
+
+	return courier.NewServerWithLogger(config, backend, logger)
+
 }
 
 // RunChannelSendTestCases runs all the passed in test cases against the channel
@@ -344,7 +370,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 			mb.ClearQueueMsgs()
 			mb.ClearSeenExternalIDs()
 
-			testHandlerRequest(t, s, testCase.URL, testCase.Headers, testCase.Data, testCase.Status, &testCase.Response, testCase.PrepRequest)
+			testHandlerRequest(t, s, testCase.URL, testCase.Headers, testCase.Data, testCase.MultipartFormFields, testCase.Status, &testCase.Response, testCase.PrepRequest)
 
 			// pop our message off and test against it
 			contactName := mb.GetLastContactName()
@@ -423,16 +449,20 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 	// check non-channel specific error conditions against first test case
 	validCase := testCases[0]
 
-	t.Run("Queue Error", func(t *testing.T) {
-		mb.SetErrorOnQueue(true)
-		defer mb.SetErrorOnQueue(false)
-		testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, 400, Sp("unable to queue message"), validCase.PrepRequest)
-	})
+	if !validCase.NoQueueErrorCheck {
+		t.Run("Queue Error", func(t *testing.T) {
+			mb.SetErrorOnQueue(true)
+			defer mb.SetErrorOnQueue(false)
+			testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, validCase.MultipartFormFields, 400, Sp("unable to queue message"), validCase.PrepRequest)
+		})
+	}
 
-	t.Run("Receive With Invalid Channel", func(t *testing.T) {
-		mb.ClearChannels()
-		testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, 400, Sp("channel not found"), validCase.PrepRequest)
-	})
+	if !validCase.NoInvalidChannelCheck {
+		t.Run("Receive With Invalid Channel", func(t *testing.T) {
+			mb.ClearChannels()
+			testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, validCase.MultipartFormFields, 400, Sp("channel not found"), validCase.PrepRequest)
+		})
+	}
 }
 
 // RunChannelBenchmarks runs all the passed in test cases for the passed in channels
@@ -451,7 +481,7 @@ func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler cour
 
 		b.Run(testCase.Label, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				testHandlerRequest(b, s, testCase.URL, testCase.Headers, testCase.Data, testCase.Status, nil, testCase.PrepRequest)
+				testHandlerRequest(b, s, testCase.URL, testCase.Headers, testCase.Data, testCase.MultipartFormFields, testCase.Status, nil, testCase.PrepRequest)
 			}
 		})
 	}

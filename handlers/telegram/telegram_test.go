@@ -487,13 +487,13 @@ var testCases = []ChannelHandleTestCase{
 
 	{Label: "Receive Empty", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, Status: 200, Response: "Ignoring"},
 
-	{Label: "Receive Invalid FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: invalidFileID, Status: 400, Response: "error retrieving media"},
+	{Label: "Receive Invalid FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: invalidFileID, Status: 200, Response: "unable to resolve file"},
 
-	{Label: "Receive NoOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noOkFile, Status: 400, Response: "no 'ok' in response"},
+	{Label: "Receive NoOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noOkFile, Status: 200, Response: "no 'ok' in response"},
 
-	{Label: "Receive NotOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: notOkFile, Status: 400, Response: "not present"},
+	{Label: "Receive NotOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: notOkFile, Status: 200, Response: "not present"},
 
-	{Label: "Receive No FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noFile, Status: 400, Response: "result.file_path"},
+	{Label: "Receive No FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noFile, Status: 200, Response: "result.file_path"},
 }
 
 func buildMockTelegramService(testCases []ChannelHandleTestCase) *httptest.Server {
@@ -613,6 +613,12 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
 		PostParams: map[string]string{"caption": "My audio!", "chat_id": "12345", "audio": "https://foo.bar/audio.mp3"},
+		SendPrep:   setSendURL},
+	{Label: "Send Document",
+		Text: "My document!", URN: "telegram:12345", Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		Status:       "W",
+		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
+		PostParams: map[string]string{"caption": "My document!", "chat_id": "12345", "document": "https://foo.bar/document.pdf"},
 		SendPrep:   setSendURL},
 	{Label: "Unknown Attachment",
 		Text: "My pic!", URN: "telegram:12345", Attachments: []string{"unknown/foo:https://foo.bar/unknown.foo"},

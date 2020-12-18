@@ -20,7 +20,7 @@ const (
 
 var (
 	sendURL      = "https://acsdp.arabiacell.net"
-	maxMsgLength = 670
+	maxMsgLength = 1530
 )
 
 func init() {
@@ -77,7 +77,7 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
+	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		form := url.Values{
 			"userName":      []string{username},
 			"password":      []string{password},

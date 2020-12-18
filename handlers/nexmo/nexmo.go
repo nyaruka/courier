@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nyaruka/courier/gsm7"
-
-	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/gsm7"
+
+	"github.com/buger/jsonparser"
 	"github.com/pkg/errors"
 )
 
@@ -140,7 +140,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(text, maxMsgLength)
+	parts := handlers.SplitMsgByChannel(msg.Channel(), text, maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
 			"api_key":           []string{nexmoAPIKey},

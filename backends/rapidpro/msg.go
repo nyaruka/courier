@@ -18,7 +18,7 @@ import (
 
 	"mime"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
@@ -32,6 +32,7 @@ import (
 	"image/png"
 	"image/jpeg"
 	"github.com/nfnt/resize"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 // MsgDirection is the direction of a message
@@ -198,12 +199,36 @@ WHERE
 	id = $1
 `
 
+const selectChannelSQL = `
+SELECT
+	org_id,
+	ch.id as id,
+	ch.uuid as uuid,
+	ch.name as name,
+	channel_type, schemes,
+	address, role,
+	ch.country as country,
+	ch.config as config,
+	org.config as org_config,
+	org.is_anon as org_is_anon
+FROM
+	channels_channel ch
+	JOIN orgs_org org on ch.org_id = org.id
+WHERE
+    ch.id = $1
+`
+
 // for testing only, returned DBMsg object is not fully populated
 func readMsgFromDB(b *backend, id courier.MsgID) (*DBMsg, error) {
 	m := &DBMsg{
 		ID_: id,
 	}
 	err := b.db.Get(m, selectMsgSQL, id)
+	ch := &DBChannel{
+		ID_: m.ChannelID_,
+	}
+	err = b.db.Get(ch, selectChannelSQL, m.ChannelID_)
+	m.channel = ch
 	return m, err
 }
 
@@ -284,7 +309,7 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 	}
 
 	// create our filename
-	filename := utils.NewUUID()
+	filename := string(uuids.New())
 
 	// if we have images as an attachment to be downloaded to S3, making sure that our files will have 1920px as a limit of size
 	if mimeType == "image/png" || mimeType == "image/jpeg" || mimeType == "image/jpg" {
@@ -321,7 +346,7 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 		path = fmt.Sprintf("/%s", path)
 	}
 
-	s3URL, err := utils.PutS3File(b.s3Client, b.config.S3MediaBucket, path, mimeType, body)
+	s3URL, err := b.storage.Put(path, mimeType, body)
 	if err != nil {
 		return "", err
 	}
@@ -537,6 +562,7 @@ type DBMsg struct {
 	SessionID_            SessionID  `json:"session_id,omitempty"`
 	SessionTimeout_       int        `json:"session_timeout,omitempty"`
 	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on,omitempty"`
+	SessionStatus_        string     `json:"session_status,omitempty"`
 
 	channel        *DBChannel
 	workerToken    queue.WorkerToken
@@ -560,6 +586,7 @@ func (m *DBMsg) ResponseToID() courier.MsgID  { return m.ResponseToID_ }
 func (m *DBMsg) ResponseToExternalID() string { return m.ResponseToExternalID_ }
 
 func (m *DBMsg) Channel() courier.Channel { return m.channel }
+func (m *DBMsg) SessionStatus() string    { return m.SessionStatus_ }
 
 func (m *DBMsg) QuickReplies() []string {
 	if m.quickReplies != nil {

@@ -46,6 +46,9 @@ var handleTestCases = []ChannelHandleTestCase{
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
 	{Label: "Receive Valid Post", URL: receiveNoParams, Data: "sender=%2B2349067554729&text=Join", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
+
+	{Label: "Receive Valid Post multipart form", URL: receiveNoParams, MultipartFormFields: map[string]string{"sender": "2349067554729", "text": "Join"}, Status: 200, Response: "Accepted",
+		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
 	{Label: "Receive Valid From", URL: receiveValidMessageFrom, Data: "empty", Status: 200, Response: "Accepted",
 		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
 	{Label: "Receive Country Parse", URL: receiveValidNoPlus, Data: "empty", Status: 200, Response: "Accepted",
@@ -274,7 +277,7 @@ var jsonLongSendTestCases = []ChannelSendTestCase{
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		RequestBody: `{ "to":"+250788383383", "text":"characters", "from":"2020", "quick_replies":["One","Two","Three"] }`,
 		Headers:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-		SendPrep:  setSendURL},
+		SendPrep:    setSendURL},
 }
 
 var xmlSendTestCases = []ChannelSendTestCase{
@@ -304,17 +307,17 @@ var xmlSendTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: `0: Accepted for delivery`, ResponseStatus: 200,
 		RequestBody: `<msg><to>+250788383383</to><text>My pic!&#xA;https://foo.bar/image.jpg</text><from>2020</from>` +
-					`<quick_replies></quick_replies></msg>`,
-		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep:    setSendURL},
+			`<quick_replies></quick_replies></msg>`,
+		Headers:  map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep: setSendURL},
 	{Label: "Send Quick Replies",
 		Text: "Some message", URN: "tel:+250788383383", QuickReplies: []string{"One", "Two", "Three"},
 		Status:       "W",
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		RequestBody: "<msg><to>+250788383383</to><text>Some message</text><from>2020</from>" +
-					"<quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>",
-		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep:    setSendURL},
+			"<quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>",
+		Headers:  map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep: setSendURL},
 }
 
 var xmlLongSendTestCases = []ChannelSendTestCase{
@@ -325,8 +328,8 @@ var xmlLongSendTestCases = []ChannelSendTestCase{
 		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
 		RequestBody: "<msg><to>+250788383383</to><text>characters</text><from>2020</from>" +
 			"<quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>",
-		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep:    setSendURL},
+		Headers:  map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep: setSendURL},
 }
 
 var xmlSendWithResponseContentTestCases = []ChannelSendTestCase{
@@ -363,17 +366,27 @@ var xmlSendWithResponseContentTestCases = []ChannelSendTestCase{
 		Status:       "W",
 		ResponseBody: `<return>0</return>`, ResponseStatus: 200,
 		RequestBody: `<msg><to>+250788383383</to><text>My pic!&#xA;https://foo.bar/image.jpg</text><from>2020</from>` +
-					`<quick_replies></quick_replies></msg>`,
-		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep:    setSendURL},
+			`<quick_replies></quick_replies></msg>`,
+		Headers:  map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep: setSendURL},
 	{Label: "Send Quick Replies",
 		Text: "Some message", URN: "tel:+250788383383", QuickReplies: []string{"One", "Two", "Three"},
 		Status:       "W",
 		ResponseBody: "<return>0</return>", ResponseStatus: 200,
 		RequestBody: `<msg><to>+250788383383</to><text>Some message</text><from>2020</from>` +
-					`<quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>`,
-		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep:    setSendURL},
+			`<quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>`,
+		Headers:  map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep: setSendURL},
+}
+
+var nationalGetSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "tel:+250788383383",
+		Status:       "W",
+		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
+		URLParams: map[string]string{"text": "Simple Message", "to": "788383383", "from": "2020"},
+		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		SendPrep:  setSendURL},
 }
 
 func TestSending(t *testing.T) {
@@ -481,4 +494,13 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, getChannel30StrLength, newHandler(), longSendTestCases, nil)
 	RunChannelSendTestCases(t, jsonChannel30IntLength, newHandler(), jsonLongSendTestCases, nil)
 	RunChannelSendTestCases(t, xmlChannel30IntLength, newHandler(), xmlLongSendTestCases, nil)
+
+	var nationalChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+		map[string]interface{}{
+			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
+			"use_national":           true,
+			courier.ConfigSendMethod: http.MethodGet})
+
+	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalGetSendTestCases, nil)
+
 }

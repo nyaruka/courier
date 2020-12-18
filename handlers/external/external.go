@@ -10,16 +10,16 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
-	"strings"
-
-	"github.com/antchfx/xmlquery"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
+
+	"github.com/antchfx/xmlquery"
 	"github.com/pkg/errors"
 )
 
@@ -173,7 +173,13 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		text = textNode.InnerText()
 	} else {
 		// parse our form
-		err := r.ParseForm()
+		contentType := r.Header.Get("Content-Type")
+		var err error
+		if strings.Contains(contentType, "multipart/form-data") {
+			err = r.ParseMultipartForm(10000000)
+		} else {
+			err = r.ParseForm()
+		}
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.Wrapf(err, "invalid request"))
 		}
@@ -285,19 +291,29 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		contentTypeHeader = contentType
 	}
 
-	maxLength := msg.Channel().IntConfigForKey(courier.ConfigMaxLength, 160)
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxLength)
+	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), 160)
 	for i, part := range parts {
 		// build our request
 		form := map[string]string{
-			"id":           msg.ID().String(),
-			"text":         part,
-			"to":           msg.URN().Path(),
-			"to_no_plus":   strings.TrimPrefix(msg.URN().Path(), "+"),
-			"from":         msg.Channel().Address(),
-			"from_no_plus": strings.TrimPrefix(msg.Channel().Address(), "+"),
-			"channel":      msg.Channel().UUID().String(),
+			"id":             msg.ID().String(),
+			"text":           part,
+			"to":             msg.URN().Path(),
+			"to_no_plus":     strings.TrimPrefix(msg.URN().Path(), "+"),
+			"from":           msg.Channel().Address(),
+			"from_no_plus":   strings.TrimPrefix(msg.Channel().Address(), "+"),
+			"channel":        msg.Channel().UUID().String(),
+			"session_status": msg.SessionStatus(),
+		}
+
+		useNationalStr := msg.Channel().ConfigForKey(courier.ConfigUseNational, false)
+		useNational, _ := useNationalStr.(bool)
+
+		// if we are meant to use national formatting (no country code) pull that out
+		if useNational {
+			nationalTo := msg.URN().Localize(msg.Channel().Country())
+			form["to"] = nationalTo.Path()
+			form["to_no_plus"] = nationalTo.Path()
 		}
 
 		// if we are smart, first try to convert to GSM7 chars
@@ -311,7 +327,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		formEncoded := encodeVariables(form, contentURLEncoded)
 
 		// put quick replies on last message part
-		if i == len(parts) - 1 {
+		if i == len(parts)-1 {
 			formEncoded["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentURLEncoded)
 		} else {
 			formEncoded["quick_replies"] = buildQuickRepliesResponse([]string{}, sendMethod, contentURLEncoded)
@@ -322,7 +338,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if sendMethod == http.MethodPost || sendMethod == http.MethodPut {
 			formEncoded = encodeVariables(form, contentType)
 
-			if i == len(parts) - 1 {
+			if i == len(parts)-1 {
 				formEncoded["quick_replies"] = buildQuickRepliesResponse(msg.QuickReplies(), sendMethod, contentType)
 			} else {
 				formEncoded["quick_replies"] = buildQuickRepliesResponse([]string{}, sendMethod, contentType)

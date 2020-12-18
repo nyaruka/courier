@@ -3,6 +3,7 @@ package rapidpro
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -11,18 +12,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/batch"
 	"github.com/nyaruka/courier/chatbase"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/librato"
 	"github.com/pkg/errors"
@@ -58,6 +56,14 @@ func (b *backend) GetChannel(ctx context.Context, ct courier.ChannelType, uuid c
 	return getChannel(timeout, b.db, ct, uuid)
 }
 
+// GetChannelByAddress returns the channel with the passed in type and address
+func (b *backend) GetChannelByAddress(ctx context.Context, ct courier.ChannelType, address courier.ChannelAddress) (courier.Channel, error) {
+	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
+	defer cancel()
+
+	return getChannelByAddress(timeout, b.db, ct, address)
+}
+
 // GetContact returns the contact for the passed in channel and URN
 func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, auth string, name string) (courier.Contact, error) {
 	dbChannel := c.(*DBChannel)
@@ -72,7 +78,7 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 	}
 	dbChannel := c.(*DBChannel)
 	dbContact := contact.(*DBContact)
-	_, err = contactURNForURN(tx, dbChannel.OrgID(), dbChannel.ID(), dbContact.ID_, urn, "")
+	_, err = contactURNForURN(tx, dbChannel, dbContact.ID_, urn, "")
 	if err != nil {
 		return urns.NilURN, err
 	}
@@ -325,6 +331,12 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
+	if status.HasUpdatedURN() {
+		err := b.updateContactURN(ctx, status)
+		if err != nil {
+			return errors.Wrap(err, "error updating contact URN")
+		}
+	}
 	// if we have an ID, we can have our batch commit for us
 	if status.ID() != courier.NilMsgID {
 		b.statusCommitter.Queue(status.(*DBMsgStatus))
@@ -354,6 +366,64 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 	}
 
 	return nil
+}
+
+// updateContactURN updates contact URN according to the old/new URNs from status
+func (b *backend) updateContactURN(ctx context.Context, status courier.MsgStatus) error {
+	old, new := status.UpdatedURN()
+
+	// retrieve channel
+	channel, err := b.GetChannel(ctx, courier.AnyChannelType, status.ChannelUUID())
+	if err != nil {
+		return errors.Wrap(err, "error retrieving channel")
+	}
+	dbChannel := channel.(*DBChannel)
+	tx, err := b.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	// retrieve the old URN
+	oldContactURN, err := selectContactURN(tx, dbChannel.OrgID(), old)
+	if err != nil {
+		return errors.Wrap(err, "error retrieving old contact URN")
+	}
+	// retrieve the new URN
+	newContactURN, err := selectContactURN(tx, dbChannel.OrgID(), new)
+	if err != nil {
+		// only update the old URN path if the new URN doesn't exist
+		if err == sql.ErrNoRows {
+			oldContactURN.Path = new.Path()
+			oldContactURN.Identity = string(new.Identity())
+
+			err = fullyUpdateContactURN(tx, oldContactURN)
+			if err != nil {
+				tx.Rollback()
+				return errors.Wrap(err, "error updating old contact URN")
+			}
+			return tx.Commit()
+		}
+		return errors.Wrap(err, "error retrieving new contact URN")
+	}
+
+	// only update the new URN if it doesn't have an associated contact
+	if newContactURN.ContactID == NilContactID {
+		newContactURN.ContactID = oldContactURN.ContactID
+	}
+	// remove contact association from old URN
+	oldContactURN.ContactID = NilContactID
+
+	// update URNs
+	err = fullyUpdateContactURN(tx, newContactURN)
+	if err != nil {
+		tx.Rollback()
+		return errors.Wrap(err, "error updating new contact URN")
+	}
+	err = fullyUpdateContactURN(tx, oldContactURN)
+	if err != nil {
+		tx.Rollback()
+		return errors.Wrap(err, "error updating old contact URN")
+	}
+	return tx.Commit()
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
@@ -624,25 +694,30 @@ func (b *backend) Start() error {
 		queue.StartDethrottler(redisPool, b.stopChan, b.waitGroup, msgQueueName)
 	}
 
-	// create our s3 client
-	s3Session, err := session.NewSession(&aws.Config{
-		Credentials:      credentials.NewStaticCredentials(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, ""),
-		Endpoint:         aws.String(b.config.S3Endpoint),
-		Region:           aws.String(b.config.S3Region),
-		DisableSSL:       aws.Bool(b.config.S3DisableSSL),
-		S3ForcePathStyle: aws.Bool(b.config.S3ForcePathStyle),
-	})
-	if err != nil {
-		return err
-	}
-	b.s3Client = s3.New(s3Session)
-
-	// test out our S3 credentials
-	err = utils.TestS3(b.s3Client, b.config.S3MediaBucket)
-	if err != nil {
-		log.WithError(err).Error("s3 bucket not reachable")
+	// create our storage (S3 or file system)
+	if b.config.AWSAccessKeyID != "" {
+		s3Client, err := storage.NewS3Client(&storage.S3Options{
+			AWSAccessKeyID:     b.config.AWSAccessKeyID,
+			AWSSecretAccessKey: b.config.AWSSecretAccessKey,
+			Endpoint:           b.config.S3Endpoint,
+			Region:             b.config.S3Region,
+			DisableSSL:         b.config.S3DisableSSL,
+			ForcePathStyle:     b.config.S3ForcePathStyle,
+		})
+		if err != nil {
+			return err
+		}
+		b.storage = storage.NewS3(s3Client, b.config.S3MediaBucket)
 	} else {
-		log.Info("s3 bucket ok")
+		b.storage = storage.NewFS("_storage")
+	}
+
+	// test our storage
+	err = b.storage.Test()
+	if err != nil {
+		log.WithError(err).Error(b.storage.Name() + " storage not available")
+	} else {
+		log.Info(b.storage.Name() + " storage ok")
 	}
 
 	// make sure our spool dirs are writable
@@ -747,7 +822,7 @@ type backend struct {
 
 	db        *sqlx.DB
 	redisPool *redis.Pool
-	s3Client  s3iface.S3API
+	storage   storage.Storage
 	awsCreds  *credentials.Credentials
 
 	popScript *redis.Script

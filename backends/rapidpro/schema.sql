@@ -20,6 +20,7 @@ CREATE TABLE channels_channel (
     address character varying(64),
     country character varying(2),
     config text,
+    role character varying(4) NOT NULL,
     org_id integer references orgs_org(id) on delete cascade
 );
 
@@ -27,12 +28,11 @@ DROP TABLE IF EXISTS contacts_contact CASCADE;
 CREATE TABLE contacts_contact (
     id serial primary key,
     is_active boolean NOT NULL,
+    status character varying(1) NOT NULL,
     created_on timestamp with time zone NOT NULL,
     modified_on timestamp with time zone NOT NULL,
     uuid character varying(36) NOT NULL,
     name character varying(128),
-    is_blocked boolean NOT NULL,
-    is_stopped boolean NOT NULL,
     language character varying(3),
     created_by_id integer NOT NULL,
     modified_by_id integer NOT NULL,

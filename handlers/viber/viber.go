@@ -66,9 +66,10 @@ type eventPayload struct {
 		Name string `json:"name"`
 	} `json:"user"`
 	Message struct {
-		Text    string `json:"text"`
-		Media   string `json:"media"`
-		Contact struct {
+		Text      string `json:"text"`
+		Media     string `json:"media"`
+		StickerID string `json:"sticker_id"`
+		Contact   struct {
 			Name        string `json:"name"`
 			PhoneNumber string `json:"phone_number"`
 		}
@@ -170,7 +171,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
 
 	case "failed":
-		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, string(payload.MessageToken), courier.MsgFailed)
+		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), courier.MsgFailed)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "delivered":
@@ -203,6 +204,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 		case "video":
 			mediaURL = payload.Message.Media
+
+		case "sticker":
+			mediaURL = fmt.Sprintf("https://viber.github.io/docs/img/stickers/%s.png", payload.Message.StickerID)
 
 		case "contact":
 			text = fmt.Sprintf("%s: %s", payload.Message.Contact.Name, payload.Message.Contact.PhoneNumber)
@@ -244,7 +248,7 @@ func writeWelcomeMessageResponse(w http.ResponseWriter, channel courier.Channel,
 		AuthToken:    authToken,
 		Text:         msgText,
 		Type:         "text",
-		TrackingData: string(event.EventID()),
+		TrackingData: fmt.Sprintf("%d", event.EventID()),
 	}
 
 	responseBody := &bytes.Buffer{}
@@ -343,10 +347,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		replies = &mtKeyboard{"keyboard", true, buttons}
 	}
-	parts := handlers.SplitMsg(msg.Text(), maxMsgLength)
+	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	if len(msg.Attachments()) > 0 && len(parts[0]) > descriptionMaxLength {
 		descriptionPart := handlers.SplitMsg(msg.Text(), descriptionMaxLength)[0]
-		others := handlers.SplitMsg(strings.TrimSpace(strings.Replace(msg.Text(), descriptionPart, "", 1)), maxMsgLength)
+		others := handlers.SplitMsgByChannel(msg.Channel(), strings.TrimSpace(strings.Replace(msg.Text(), descriptionPart, "", 1)), maxMsgLength)
 		parts = []string{descriptionPart}
 		parts = append(parts, others...)
 	}

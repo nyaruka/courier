@@ -3,6 +3,7 @@ package highconnection
 import (
 	"context"
 	"fmt"
+	"mime"
 	"net/http"
 	"net/url"
 	"time"
@@ -66,8 +67,14 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
+	// Hign connection URL encodes escapes ISO 8859 escape sequences
+	text, _ := url.QueryUnescape(form.Message)
+	// decode from ISO 8859
+	text = mime.BEncoding.Encode("ISO-8859-1", text)
+	text, _ = new(mime.WordDecoder).DecodeHeader(text)
+
 	// build our Message
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text)).WithReceivedOn(date.UTC())
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
@@ -125,7 +132,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	receiveURL := fmt.Sprintf("https://%s/c/hx/%s/receive", callbackDomain, msg.Channel().UUID())
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
+	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 
 		form := url.Values{

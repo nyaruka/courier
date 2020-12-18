@@ -393,6 +393,22 @@ var (
 		}
 	}`
 
+	validSticker = `{
+		"event": "message",
+		"timestamp": 1481142112807,
+		"message_token": 4987381189870374000,
+		"sender": {
+			"id": "xy5/5y6O81+/kbWHpLhBoA==",
+			"name": "ET3"
+		},
+		"message": {
+			"text": "incoming msg",
+			"type": "sticker",
+			"sticker_id": "40133",
+			"tracking_data": "3055"
+		}
+	}`
+
 	receiveInvalidMessageType = `{
 		"event": "message",
 		"timestamp": 1481142112807,
@@ -461,13 +477,16 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Valid Location receive", URL: receiveURL, Data: validReceiveLocation, Status: 200, Response: "Accepted",
 		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
 		Attachment: Sp("geo:1.200000,-1.300000"), PrepRequest: addValidSignature},
+	{Label: "Valid Sticker", URL: receiveURL, Data: validSticker, Status: 200, Response: "Accepted",
+		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+		Attachment: Sp("https://viber.github.io/docs/img/stickers/40133.png"), PrepRequest: addValidSignature},
 }
 
 var testWelcomeMessageCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, Status: 200, Response: "Accepted",
 		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
 		PrepRequest: addValidSignature},
-	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, Status: 200, Response: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"\u0000"}`, PrepRequest: addValidSignature},
+	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, Status: 200, Response: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0"}`, PrepRequest: addValidSignature},
 }
 
 func addValidSignature(r *http.Request) {

@@ -93,15 +93,15 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			}
 			photo = payload.Message.Photo[i]
 		}
-		mediaURL, err = resolveFileID(channel, photo.FileID)
+		mediaURL, err = h.resolveFileID(ctx, channel, photo.FileID)
 	} else if payload.Message.Video != nil {
-		mediaURL, err = resolveFileID(channel, payload.Message.Video.FileID)
+		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Video.FileID)
 	} else if payload.Message.Voice != nil {
-		mediaURL, err = resolveFileID(channel, payload.Message.Voice.FileID)
+		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Voice.FileID)
 	} else if payload.Message.Sticker != nil {
-		mediaURL, err = resolveFileID(channel, payload.Message.Sticker.Thumb.FileID)
+		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Sticker.Thumb.FileID)
 	} else if payload.Message.Document != nil {
-		mediaURL, err = resolveFileID(channel, payload.Message.Document.FileID)
+		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Document.FileID)
 	} else if payload.Message.Venue != nil {
 		text = utils.JoinNonEmpty(", ", payload.Message.Venue.Title, payload.Message.Venue.Address)
 		mediaURL = fmt.Sprintf("geo:%f,%f", payload.Message.Location.Latitude, payload.Message.Location.Longitude)
@@ -117,8 +117,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// we had an error downloading media
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.WrapPrefix(err, "error retrieving media", 0))
+	if err != nil && text == "" {
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("unable to resolve file: %s", err.Error()))
 	}
 
 	// build our msg
@@ -254,6 +254,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			hasError = err != nil
 			status.AddLog(log)
 
+		case "application":
+			form := url.Values{
+				"chat_id":  []string{msg.URN().Path()},
+				"document": []string{mediaURL},
+				"caption":  []string{caption},
+			}
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendDocument", form, replies)
+			status.SetExternalID(externalID)
+			hasError = err != nil
+			status.AddLog(log)
+
 		default:
 			status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
 				"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
@@ -272,7 +283,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	return status, nil
 }
 
-func resolveFileID(channel courier.Channel, fileID string) (string, error) {
+func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fileID string) (string, error) {
 	confAuth := channel.ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
@@ -289,6 +300,8 @@ func resolveFileID(channel courier.Channel, fileID string) (string, error) {
 
 	rr, err := utils.MakeHTTPRequest(req)
 	if err != nil {
+		log := courier.NewChannelLogFromRR("File Resolving", channel, courier.NilMsgID, rr).WithError("File Resolving Error", err)
+		h.Backend().WriteChannelLogs(ctx, []*courier.ChannelLog{log})
 		return "", err
 	}
 

@@ -67,7 +67,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 	}
 
-	// create our URN
+	// Shaqodoon doesn't encode the "+" when sending us numbers with country codes. This throws off our URN parsing backdown of using
+	// the numbers as is for numbers phonenumbers doesn't recognize. Fix this on our side before passing to our parsing lib.
+	if strings.HasPrefix(form.From, " ") {
+		form.From = "+" + form.From[1:]
+	}
+
 	urn, err := handlers.StrictTelForCountry(form.From, channel.Country())
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
