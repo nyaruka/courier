@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/nyaruka/gocommon/urns"
 	"log"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/nyaruka/gocommon/urns"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
@@ -284,7 +285,7 @@ FROM
 AS 
 	s(msg_id, channel_id, status, external_id) 
 WHERE 
-	msgs_msg.id = s.msg_id::int AND
+	msgs_msg.id = s.msg_id::bigint AND
 	msgs_msg.channel_id = s.channel_id::int AND 
 	msgs_msg.direction = 'O'
 RETURNING 

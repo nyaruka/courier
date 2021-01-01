@@ -56,7 +56,7 @@ CREATE TABLE contacts_contacturn (
 
 DROP TABLE IF EXISTS msgs_msg CASCADE;
 CREATE TABLE msgs_msg (
-    id serial primary key,
+    id bigserial primary key,
     uuid character varying(36) NULL,
     text text NOT NULL,
     high_priority boolean NULL,
