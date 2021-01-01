@@ -1,3 +1,7 @@
+v6.1.7
+----------
+ * switch id to bigserial
+
 v6.1.6
 ----------
  * Cache media upload failures localy for 15m
