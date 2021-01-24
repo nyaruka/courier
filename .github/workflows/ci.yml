@@ -7,7 +7,7 @@ jobs:
     name: Test
     strategy:
       matrix:
-        pg-version: ['10', '11']
+        pg-version: ['11', '12']
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
