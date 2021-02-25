@@ -103,6 +103,10 @@ type eventPayload struct {
 			MimeType string `json:"mime_type" validate:"required"`
 			Sha256   string `json:"sha256"    validate:"required"`
 		} `json:"audio"`
+		Button *struct {
+			Payload string `json:"payload"`
+			Text    string `json:"text"    validate:"required"`
+		} `json:"button"`
 		Document *struct {
 			File     string `json:"file"      validate:"required"`
 			ID       string `json:"id"        validate:"required"`
@@ -190,6 +194,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			text = msg.Text.Body
 		} else if msg.Type == "audio" && msg.Audio != nil {
 			mediaURL, err = resolveMediaURL(channel, msg.Audio.ID)
+		} else if msg.Type == "button" && msg.Button != nil {
+			text = msg.Button.Text
 		} else if msg.Type == "document" && msg.Document != nil {
 			text = msg.Document.Caption
 			mediaURL, err = resolveMediaURL(channel, msg.Document.ID)
