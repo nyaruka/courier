@@ -1,3 +1,10 @@
+v6.2.0
+----------
+ * Add handling for button whatsapp message type
+ * Bump CI testing to PG 11 and 12
+ * Add Kaleyra channel type
+ * 6.2.0 RC
+
 v6.1.7
 ----------
  * switch id to bigserial
