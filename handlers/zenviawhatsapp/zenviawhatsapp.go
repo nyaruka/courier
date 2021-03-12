@@ -108,12 +108,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	msgs := []courier.Msg{}
 
-	for i := 0; i < len(payload.Message.Contents); i++ {
+	for _, content := range payload.Message.Contents {
 
 		text := ""
 		mediaURL := ""
 
-		content := payload.Message.Contents[i]
 		if content.Type == "text" {
 			text = content.Text
 		} else if content.Type == "location" {
@@ -209,27 +208,29 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
+
+	for _, attachment := range msg.Attachments() {
+		attType, attURL := handlers.SplitAttachment(attachment)
+		payload.Contents = append(payload.Contents, mtContent{
+			Type:         "file",
+			FileURL:      attURL,
+			FileMimeType: attType,
+		})
+
+	}
+
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	}
 
-	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
-		if i < len(msg.Attachments()) {
-			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
-
-			payload.Contents = append(payload.Contents, mtContent{
-				Type:         "file",
-				FileURL:      attURL,
-				FileMimeType: attType,
-			})
-		} else {
-			payload.Contents = append(payload.Contents, mtContent{
-				Type: "text",
-				Text: msgParts[i-len(msg.Attachments())],
-			})
-		}
+	for _, msgPart := range msgParts {
+		payload.Contents = append(payload.Contents, mtContent{
+			Type: "text",
+			Text: msgPart,
+		})
 	}
+
 
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
