@@ -1,3 +1,7 @@
+v6.2.1
+----------
+ * Add support for Zenvia WhatsApp
+
 v6.2.0
 ----------
  * Add handling for button whatsapp message type
