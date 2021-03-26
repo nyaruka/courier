@@ -1,15 +1,19 @@
 package weniwebchat
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -110,6 +114,148 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
+var (
+	baseURL  = "https://weni-web-chat.com"
+	timeTest = ""
+)
+
+type moPayload struct {
+	Type    string    `json:"type" validate:"required"`
+	To      string    `json:"to"   validate:"required"`
+	From    string    `json:"from" validate:"required"`
+	Message moMessage `json:"message"`
+}
+
+type moMessage struct {
+	Type         string   `json:"type"      validate:"required"`
+	TimeStamp    string   `json:"timestamp" validate:"required"`
+	Text         string   `json:"text,omitempty"`
+	MediaURL     string   `json:"media_url,omitempty"`
+	Caption      string   `json:"caption,omitempty"`
+	Latitude     string   `json:"latitude,omitempty"`
+	Longitude    string   `json:"longitude,omitempty"`
+	QuickReplies []string `json:"quick_replies,omitempty"`
+}
+
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	return nil, nil
+	start := time.Now()
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgSent)
+	sendURL := fmt.Sprintf("%s/send", baseURL)
+
+	var logs []*courier.ChannelLog
+
+	payload := newOutgoingMessage("message", msg.URN().Path(), msg.Channel().Address(), msg.QuickReplies())
+	if len(msg.Attachments()) > 0 {
+	attachmentsLoop:
+		for i, attachment := range msg.Attachments() {
+			mimeType, attachmentURL := handlers.SplitAttachment(attachment)
+			payload.Message.TimeStamp = getTimestamp()
+			// parse attachment type
+			if strings.HasPrefix(mimeType, "audio") {
+				payload.Message = moMessage{
+					Type:     "audio",
+					MediaURL: attachmentURL,
+				}
+			} else if strings.HasPrefix(mimeType, "application") {
+				payload.Message = moMessage{
+					Type:     "file",
+					MediaURL: attachmentURL,
+				}
+			} else if strings.HasPrefix(mimeType, "image") {
+				payload.Message = moMessage{
+					Type:     "image",
+					MediaURL: attachmentURL,
+				}
+			} else if strings.HasPrefix(mimeType, "video") {
+				payload.Message = moMessage{
+					Type:     "video",
+					MediaURL: attachmentURL,
+				}
+			} else {
+				elapsed := time.Since(start)
+				log := courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), elapsed, fmt.Errorf("unknown attachment mime type: %s", mimeType))
+				logs = append(logs, log)
+				status.SetStatus(courier.MsgFailed)
+				break attachmentsLoop
+			}
+
+			// add a caption to the first attachment
+			if i == 0 {
+				payload.Message.Caption = msg.Text()
+			}
+
+			// build request
+			var body []byte
+			body, err := json.Marshal(&payload)
+			if err != nil {
+				elapsed := time.Since(start)
+				log := courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), elapsed, err)
+				logs = append(logs, log)
+				status.SetStatus(courier.MsgFailed)
+				break attachmentsLoop
+			}
+			req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewBuffer(body))
+			req.Header.Set("Content-Type", "application/json")
+			res, err := utils.MakeHTTPRequest(req)
+			if res != nil {
+				log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), res).WithError("Message Send Error", err)
+				logs = append(logs, log)
+			}
+			if err != nil {
+				status.SetStatus(courier.MsgFailed)
+				break attachmentsLoop
+			}
+		}
+	} else {
+		payload.Message = moMessage{
+			Type:      "text",
+			TimeStamp: getTimestamp(),
+			Text:      msg.Text(),
+		}
+		// build request
+		body, err := json.Marshal(&payload)
+		if err != nil {
+			elapsed := time.Since(start)
+			log := courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), elapsed, err)
+			logs = append(logs, log)
+			status.SetStatus(courier.MsgFailed)
+		} else {
+			req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewBuffer(body))
+			req.Header.Set("Content-Type", "application/json")
+			res, err := utils.MakeHTTPRequest(req)
+			if res != nil {
+				log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), res).WithError("Message Send Error", err)
+				logs = append(logs, log)
+			}
+			if err != nil {
+				status.SetStatus(courier.MsgFailed)
+			}
+		}
+
+	}
+
+	for _, log := range logs {
+		status.AddLog(log)
+	}
+
+	return status, nil
+}
+
+func newOutgoingMessage(payType, to, from string, quickReplies []string) *moPayload {
+	return &moPayload{
+		Type: payType,
+		To:   to,
+		From: from,
+		Message: moMessage{
+			QuickReplies: quickReplies,
+		},
+	}
+}
+
+func getTimestamp() string {
+	if timeTest != "" {
+		return timeTest
+	}
+
+	return fmt.Sprint(time.Now().Unix())
 }

@@ -2,6 +2,9 @@ package weniwebchat
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -10,11 +13,13 @@ import (
 
 const channelUUID = "8eb23e93-5ecb-45ba-b726-3b064e0c568c"
 
-var receiveURL = fmt.Sprintf("/c/wwc/%s/receive", channelUUID)
-
 var testChannels = []courier.Channel{
 	courier.NewMockChannel(channelUUID, "WWC", "250788383383", "", map[string]interface{}{}),
 }
+
+// ReceiveMsg test
+
+var receiveURL = fmt.Sprintf("/c/wwc/%s/receive", channelUUID)
 
 const (
 	textMsgTemplate = `
@@ -138,4 +143,115 @@ func TestHandler(t *testing.T) {
 
 func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
+}
+
+// SendMsg test
+
+func prepareSendMsg(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+	baseURL = s.URL
+	timeTest = "1616700878"
+}
+
+func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTestCase) []ChannelSendTestCase {
+	casesWithMockedUrls := make([]ChannelSendTestCase, len(testCases))
+
+	for i, testCase := range testCases {
+		mockedCase := testCase
+
+		for j, attachment := range testCase.Attachments {
+			mockedCase.Attachments[j] = strings.Replace(attachment, "https://foo.bar", mediaServer.URL, 1)
+		}
+		casesWithMockedUrls[i] = mockedCase
+	}
+	return casesWithMockedUrls
+}
+
+var sendTestCases = []ChannelSendTestCase{
+	{
+		Label:          "Plain Send",
+		Text:           "Simple Message",
+		URN:            "ext:371298371241",
+		Status:         string(courier.MsgSent),
+		Path:           "/send",
+		Headers:        map[string]string{"Content-type": "application/json"},
+		RequestBody:    `{"type":"message","to":"371298371241","from":"250788383383","message":{"type":"text","timestamp":"1616700878","text":"Simple Message"}}`,
+		ResponseStatus: 200,
+		SendPrep:       prepareSendMsg,
+	},
+	{
+		Label:          "Unicode Send",
+		Text:           "☺",
+		URN:            "ext:371298371241",
+		Status:         string(courier.MsgSent),
+		Path:           "/send",
+		Headers:        map[string]string{"Content-type": "application/json"},
+		RequestBody:    `{"type":"message","to":"371298371241","from":"250788383383","message":{"type":"text","timestamp":"1616700878","text":"☺"}}`,
+		ResponseStatus: 200,
+		SendPrep:       prepareSendMsg,
+	},
+	{
+		Label:       "invalid Text Send",
+		Text:        "Error",
+		URN:         "ext:371298371241",
+		Status:      string(courier.MsgFailed),
+		Path:        "/send",
+		Headers:     map[string]string{"Content-type": "application/json"},
+		RequestBody: `{"type":"message","to":"371298371241","from":"250788383383","message":{"type":"text","timestamp":"1616700878","text":"Error"}}`,
+		SendPrep:    prepareSendMsg,
+	},
+	{
+		Label: "Medias Send",
+		Text:  "Medias",
+		Attachments: []string{
+			"audio/mp3:https://foo.bar/audio.mp3",
+			"application/pdf:https://foo.bar/file.pdf",
+			"image/jpg:https://foo.bar/image.jpg",
+			"video/mp4:https://foo.bar/video.mp4",
+		},
+		URN:            "ext:371298371241",
+		Status:         string(courier.MsgSent),
+		ResponseStatus: 200,
+		SendPrep:       prepareSendMsg,
+	},
+	{
+		Label:          "Invalid Media Type Send",
+		Text:           "Medias",
+		Attachments:    []string{"foo/bar:https://foo.bar/foo.bar"},
+		URN:            "ext:371298371241",
+		Status:         string(courier.MsgFailed),
+		ResponseStatus: 400,
+		SendPrep:       prepareSendMsg,
+	},
+	{
+		Label:       "Invalid Media Send",
+		Text:        "Medias",
+		Attachments: []string{"image/png:https://foo.bar/image.png"},
+		URN:         "ext:371298371241",
+		Status:      string(courier.MsgFailed),
+		SendPrep:    prepareSendMsg,
+	},
+	{
+		Label:          "No Timestamp Prepare",
+		Text:           "No prepare",
+		URN:            "ext:371298371241",
+		Status:         string(courier.MsgSent),
+		ResponseStatus: 200,
+		SendPrep: func(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+			baseURL = s.URL
+			timeTest = ""
+		},
+	},
+}
+
+func TestSending(t *testing.T) {
+	mediaServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		defer req.Body.Close()
+		res.WriteHeader(200)
+
+		res.Write([]byte("media bytes"))
+	}))
+	mockedSendTestCases := mockAttachmentURLs(mediaServer, sendTestCases)
+	mediaServer.Close()
+
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, nil)
 }
