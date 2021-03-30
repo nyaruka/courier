@@ -27,7 +27,6 @@ const (
 		"type":"message",
 		"from":%q,
 		"message":{
-			"id":%q,
 			"type":"text",
 			"timestamp":%q,
 			"text":%q
@@ -40,7 +39,6 @@ const (
 		"type":"message",
 		"from":%q,
 		"message":{
-			"id":%q,
 			"type":"image",
 			"timestamp":%q,
 			"media_url":%q,
@@ -54,9 +52,8 @@ const (
 		"type":"message",
 		"from":%q,
 		"message":{
-			"id":%q,
-			"timestamp":%q,
 			"type":"location",
+			"timestamp":%q,
 			"latitude":%q,
 			"longitude":%q
 		}
@@ -80,7 +77,7 @@ var testCases = []ChannelHandleTestCase{
 	{
 		Label:    "Receive Valid Text Msg",
 		URL:      receiveURL,
-		Data:     fmt.Sprintf(textMsgTemplate, "2345678", "12351236", "1616586927", "Hello Test!"),
+		Data:     fmt.Sprintf(textMsgTemplate, "2345678", "1616586927", "Hello Test!"),
 		Name:     Sp("2345678"),
 		URN:      Sp("ext:2345678"),
 		Text:     Sp("Hello Test!"),
@@ -90,7 +87,7 @@ var testCases = []ChannelHandleTestCase{
 	{
 		Label:      "Receive Valid Media",
 		URL:        receiveURL,
-		Data:       fmt.Sprintf(imgMsgTemplate, "2345678", "12351236", "1616586927", "https://link.to/image.png", "My Caption"),
+		Data:       fmt.Sprintf(imgMsgTemplate, "2345678", "1616586927", "https://link.to/image.png", "My Caption"),
 		Name:       Sp("2345678"),
 		URN:        Sp("ext:2345678"),
 		Text:       Sp("My Caption"),
@@ -101,7 +98,7 @@ var testCases = []ChannelHandleTestCase{
 	{
 		Label:      "Receive Valid Location",
 		URL:        receiveURL,
-		Data:       fmt.Sprintf(locationMsgTemplate, "2345678", "12351236", "1616586927", "-9.6996104", "-35.7794614"),
+		Data:       fmt.Sprintf(locationMsgTemplate, "2345678", "1616586927", "-9.6996104", "-35.7794614"),
 		Name:       Sp("2345678"),
 		URN:        Sp("ext:2345678"),
 		Attachment: Sp("geo:-9.6996104,-35.7794614"),
@@ -117,14 +114,14 @@ var testCases = []ChannelHandleTestCase{
 	{
 		Label:    "Receive Text Msg With Blank Message Text",
 		URL:      receiveURL,
-		Data:     fmt.Sprintf(textMsgTemplate, "2345678", "12351236", "1616586927", ""),
+		Data:     fmt.Sprintf(textMsgTemplate, "2345678", "1616586927", ""),
 		Status:   400,
 		Response: "blank message, media or location",
 	},
 	{
 		Label:    "Receive Invalid Timestamp",
 		URL:      receiveURL,
-		Data:     fmt.Sprintf(textMsgTemplate, "2345678", "12351236", "foo", "Hello Test!"),
+		Data:     fmt.Sprintf(textMsgTemplate, "2345678", "foo", "Hello Test!"),
 		Status:   400,
 		Response: "invalid timestamp: foo",
 	},
@@ -148,8 +145,8 @@ func BenchmarkHandler(b *testing.B) {
 // SendMsg test
 
 func prepareSendMsg(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	baseURL = s.URL
-	timeTest = "1616700878"
+	c.(*courier.MockChannel).SetConfig(courier.ConfigBaseURL, s.URL)
+	timestamp = "1616700878"
 }
 
 func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTestCase) []ChannelSendTestCase {
@@ -237,8 +234,8 @@ var sendTestCases = []ChannelSendTestCase{
 		Status:         string(courier.MsgSent),
 		ResponseStatus: 200,
 		SendPrep: func(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-			baseURL = s.URL
-			timeTest = ""
+			c.(*courier.MockChannel).SetConfig(courier.ConfigBaseURL, s.URL)
+			timestamp = ""
 		},
 	},
 }

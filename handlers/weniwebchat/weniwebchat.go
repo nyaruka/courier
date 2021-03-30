@@ -55,7 +55,6 @@ type miPayload struct {
 }
 
 type miMessage struct {
-	ID        string `json:"id"            validate:"required"`
 	Type      string `json:"type"          validate:"required"`
 	TimeStamp string `json:"timestamp"     validate:"required"`
 	Text      string `json:"text,omitempty"`
@@ -73,7 +72,7 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 	}
 
 	// check message type
-	if payload.Type != "message" || (payload.Message.Type != "text" && payload.Message.Type != "image" && payload.Message.Type != "video" && payload.Message.Type != "voice" && payload.Message.Type != "document" && payload.Message.Type != "location") {
+	if payload.Type != "message" || (payload.Message.Type != "text" && payload.Message.Type != "image" && payload.Message.Type != "video" && payload.Message.Type != "voice" && payload.Message.Type != "file" && payload.Message.Type != "location") {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, unknown message type")
 	}
 
@@ -114,10 +113,7 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
-var (
-	baseURL  = "https://weni-web-chat.com"
-	timeTest = ""
-)
+var timestamp = ""
 
 type moPayload struct {
 	Type    string    `json:"type" validate:"required"`
@@ -140,6 +136,12 @@ type moMessage struct {
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	start := time.Now()
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgSent)
+
+	baseURL := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
+	if baseURL == "" {
+		return nil, errors.New("blank base_url")
+	}
+
 	sendURL := fmt.Sprintf("%s/send", baseURL)
 
 	var logs []*courier.ChannelLog
@@ -253,8 +255,8 @@ func newOutgoingMessage(payType, to, from string, quickReplies []string) *moPayl
 }
 
 func getTimestamp() string {
-	if timeTest != "" {
-		return timeTest
+	if timestamp != "" {
+		return timestamp
 	}
 
 	return fmt.Sprint(time.Now().Unix())
