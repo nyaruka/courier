@@ -36,18 +36,6 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// {
-// 	"type":"message",
-// 	"to":"<to>",
-// 	"from":"<from>",
-// 	"message":{
-// 	   "id":"<id>",
-// 	   "type": "text",
-// 	   "text": "<text>",
-// 	   "quick_replies":"<quick_replies>",
-// 	}
-// }
-
 type miPayload struct {
 	Type    string    `json:"type"           validate:"required"`
 	From    string    `json:"from,omitempty" validate:"required"`
