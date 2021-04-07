@@ -174,6 +174,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				payload.Message.Caption = msg.Text()
 			}
 
+			// add quickreplies on last message
+			if i == len(msg.Attachments())-1 {
+				payload.Message.QuickReplies = msg.QuickReplies()
+			}
+
 			// build request
 			var body []byte
 			body, err := json.Marshal(&payload)
@@ -198,9 +203,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 	} else {
 		payload.Message = moMessage{
-			Type:      "text",
-			TimeStamp: getTimestamp(),
-			Text:      msg.Text(),
+			Type:         "text",
+			TimeStamp:    getTimestamp(),
+			Text:         msg.Text(),
+			QuickReplies: msg.QuickReplies(),
 		}
 		// build request
 		body, err := json.Marshal(&payload)
