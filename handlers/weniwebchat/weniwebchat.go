@@ -135,7 +135,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	var logs []*courier.ChannelLog
 
 	payload := newOutgoingMessage("message", msg.URN().Path(), msg.Channel().Address(), msg.QuickReplies())
-	if len(msg.Attachments()) > 0 {
+	lenAttachments := len(msg.Attachments())
+	if lenAttachments > 0 {
+
 	attachmentsLoop:
 		for i, attachment := range msg.Attachments() {
 			mimeType, attachmentURL := handlers.SplitAttachment(attachment)
@@ -175,7 +177,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			}
 
 			// add quickreplies on last message
-			if i == len(msg.Attachments())-1 {
+			if i == lenAttachments-1 {
 				payload.Message.QuickReplies = msg.QuickReplies()
 			}
 
