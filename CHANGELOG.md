@@ -1,3 +1,8 @@
+v6.2.2
+----------
+ * Handle whatsapp URNs sent to Twiml handler without prefix
+ * Add support for Zenvia SMS
+
 v6.2.1
 ----------
  * Add support for Zenvia WhatsApp
