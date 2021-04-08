@@ -114,11 +114,17 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// create our URN
 	var urn urns.URN
 	if channel.IsScheme(urns.WhatsAppScheme) {
-		// Twilio Whatsapp from is in the form: whatsapp:+12211414154
+		// Twilio Whatsapp from is in the form: whatsapp:+12211414154 or +12211414154
+		var fromTel string
 		parts := strings.Split(form.From, ":")
+		if len(parts) > 1 {
+			fromTel = parts[1]
+		} else {
+			fromTel = parts[0]
+		}
 
 		// trim off left +, official whatsapp IDs dont have that
-		urn, err = urns.NewWhatsAppURN(strings.TrimLeft(parts[1], "+"))
+		urn, err = urns.NewWhatsAppURN(strings.TrimLeft(fromTel, "+"))
 	} else {
 		urn, err = urns.NewTelURNForCountry(form.From, form.FromCountry)
 	}
