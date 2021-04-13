@@ -60,7 +60,7 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 	}
 
 	// check message type
-	if payload.Type != "message" || (payload.Message.Type != "text" && payload.Message.Type != "image" && payload.Message.Type != "video" && payload.Message.Type != "voice" && payload.Message.Type != "file" && payload.Message.Type != "location") {
+	if payload.Type != "message" || (payload.Message.Type != "text" && payload.Message.Type != "image" && payload.Message.Type != "video" && payload.Message.Type != "audio" && payload.Message.Type != "file" && payload.Message.Type != "location") {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, unknown message type")
 	}
 
