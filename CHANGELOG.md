@@ -1,3 +1,7 @@
+v6.3.1
+----------
+ * Update BL to remove UDH parameter and use HTTPS URL
+
 v6.2.2
 ----------
  * Handle whatsapp URNs sent to Twiml handler without prefix
