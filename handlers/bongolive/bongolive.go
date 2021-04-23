@@ -164,7 +164,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		rr, err := utils.MakeHTTPRequest(req)
+		rr, err := utils.MakeInsecureHTTPRequest(req)
 
 		// record our status and log
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Send Error", err)
