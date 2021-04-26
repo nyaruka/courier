@@ -1,3 +1,7 @@
+v6.3.2
+----------
+ * Do not verify the SSL certificate for Bongo Live
+
 v6.3.1
 ----------
  * Update BL to remove UDH parameter and use HTTPS URL
