@@ -84,16 +84,20 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// deal with attachments
 	mediaURL := ""
+	photoURLs := []string{}
 	if len(payload.Message.Photo) > 0 {
-		// grab the largest photo less than 250k
-		photo := payload.Message.Photo[0]
-		for i := 1; i < len(payload.Message.Photo); i++ {
-			if payload.Message.Photo[i].FileSize > 250000 {
+		for _, _photo := range payload.Message.Photo {
+			// grab only photos less than 250k
+			if _photo.FileSize > 250000 {
+				continue
+			}
+			mediaURL, err = h.resolveFileID(ctx, channel, _photo.FileID)
+			if err != nil {
 				break
 			}
-			photo = payload.Message.Photo[i]
+			photoURLs = append(photoURLs, mediaURL)
 		}
-		mediaURL, err = h.resolveFileID(ctx, channel, photo.FileID)
+		mediaURL = ""
 	} else if payload.Message.Video != nil {
 		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Video.FileID)
 	} else if payload.Message.Voice != nil {
@@ -127,6 +131,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	if mediaURL != "" {
 		msg.WithAttachment(mediaURL)
 	}
+	for _, photoURL := range photoURLs {
+		msg.WithAttachment(photoURL)
+	}
+
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
