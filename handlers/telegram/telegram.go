@@ -84,7 +84,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// deal with attachments
 	mediaURL := ""
-	photoURLs := []string{}
+	var photoURLs []string
 	if len(payload.Message.Photo) > 0 {
 		for _, _photo := range payload.Message.Photo {
 			// grab only photos less than 250k
