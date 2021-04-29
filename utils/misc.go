@@ -6,6 +6,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"net/url"
+	"path"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -97,4 +99,13 @@ func CleanString(s string) string {
 	}
 
 	return cleaned
+}
+
+// Clean static URL, and return filename + format
+func URLGetFilename(rawURL string) (string, error) {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL, err
+	}
+	return path.Base(parsedURL.Path), nil
 }
