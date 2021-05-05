@@ -183,13 +183,29 @@ var luaSent = redis.NewScript(3,
 `)
 
 // WasMsgSent returns whether the passed in message has already been sent
-func (b *backend) WasMsgSent(ctx context.Context, msg courier.Msg) (bool, error) {
+func (b *backend) WasMsgSent(ctx context.Context, id courier.MsgID) (bool, error) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
 	todayKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
 	yesterdayKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).UTC().Format("2006_01_02"))
-	return redis.Bool(luaSent.Do(rc, todayKey, yesterdayKey, msg.ID().String()))
+	return redis.Bool(luaSent.Do(rc, todayKey, yesterdayKey, id.String()))
+}
+
+var luaClearSent = redis.NewScript(3,
+	`-- KEYS: [TodayKey, YesterdayKey, MsgID]
+	 redis.call("srem", KEYS[1], KEYS[3])
+     redis.call("srem", KEYS[2], KEYS[3])
+`)
+
+func (b *backend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
+	rc := b.redisPool.Get()
+	defer rc.Close()
+
+	todayKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
+	yesterdayKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).UTC().Format("2006_01_02"))
+	_, err := luaClearSent.Do(rc, todayKey, yesterdayKey, id.String())
+	return err
 }
 
 var luaMsgLoop = redis.NewScript(3, `-- KEYS: [key, contact_id, text]
@@ -330,16 +346,7 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 
 	// if we have an id and are marking an outgoing msg as errored, then clear our sent flag
 	if status.ID() != courier.NilMsgID && status.Status() == courier.MsgErrored {
-		rc := b.redisPool.Get()
-		defer rc.Close()
-
-		dateKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
-		prevDateKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).UTC().Format("2006_01_02"))
-
-		// we pipeline the removals because we don't care about the return value
-		rc.Send("srem", dateKey, status.ID().String())
-		rc.Send("srem", prevDateKey, status.ID().String())
-		_, err := rc.Do("")
+		err := b.ClearMsgSent(ctx, status.ID())
 		if err != nil {
 			logrus.WithError(err).WithField("msg", status.ID().String()).Error("error clearing sent flags")
 		}

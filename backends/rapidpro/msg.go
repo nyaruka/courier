@@ -505,6 +505,7 @@ type DBMsg struct {
 	ExternalID_           null.String            `json:"external_id"     db:"external_id"`
 	ResponseToID_         courier.MsgID          `json:"response_to_id"  db:"response_to_id"`
 	ResponseToExternalID_ string                 `json:"response_to_external_id"`
+	IsResend_             bool                   `json:"is_resend,omitempty"`
 	Metadata_             json.RawMessage        `json:"metadata"        db:"metadata"`
 
 	ChannelID_    courier.ChannelID `json:"channel_id"      db:"channel_id"`
@@ -523,8 +524,7 @@ type DBMsg struct {
 	QueuedOn_    time.Time `json:"queued_on"     db:"queued_on"`
 	SentOn_      time.Time `json:"sent_on"       db:"sent_on"`
 
-	// fields used only for mailroom enabled orgs.. these allow courier to update a session's timeout when
-	// a message is sent for correct and efficient timeout behavior
+	// fields used to allow courier to update a session's timeout when a message is sent for efficient timeout behavior
 	SessionID_            SessionID  `json:"session_id,omitempty"`
 	SessionTimeout_       int        `json:"session_timeout,omitempty"`
 	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on,omitempty"`
@@ -550,6 +550,7 @@ func (m *DBMsg) ReceivedOn() *time.Time       { return &m.SentOn_ }
 func (m *DBMsg) SentOn() *time.Time           { return &m.SentOn_ }
 func (m *DBMsg) ResponseToID() courier.MsgID  { return m.ResponseToID_ }
 func (m *DBMsg) ResponseToExternalID() string { return m.ResponseToExternalID_ }
+func (m *DBMsg) IsResend() bool               { return m.IsResend_ }
 
 func (m *DBMsg) Channel() courier.Channel { return m.channel }
 func (m *DBMsg) SessionStatus() string    { return m.SessionStatus_ }

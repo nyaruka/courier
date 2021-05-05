@@ -123,6 +123,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"response_to_id": 15,
 		"response_to_external_id": "external-id",
 		"external_id": null,
+		"is_resend": true,
 		"metadata": {"quick_replies": ["Yes", "No"], "topic": "event"}
 	}`
 
@@ -139,6 +140,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal(courier.NewMsgID(15), msg.ResponseToID())
 	ts.Equal("external-id", msg.ResponseToExternalID())
 	ts.True(msg.HighPriority())
+	ts.True(msg.IsResend())
 
 	msgJSONNoQR := `{
 		"status": "P",
@@ -173,6 +175,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal("", msg.Topic())
 	ts.Equal(courier.NilMsgID, msg.ResponseToID())
 	ts.Equal("", msg.ResponseToExternalID())
+	ts.False(msg.IsResend())
 }
 
 func (ts *BackendTestSuite) TestCheckMsgExists() {
@@ -801,7 +804,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.b.MarkOutgoingMsgComplete(ctx, msg, ts.b.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgWired))
 
 	// this message should now be marked as sent
-	sent, err := ts.b.WasMsgSent(ctx, msg)
+	sent, err := ts.b.WasMsgSent(ctx, msg.ID())
 	ts.NoError(err)
 	ts.True(sent)
 
@@ -813,7 +816,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	// checking another message should show unsent
 	msg3, err := readMsgFromDB(ts.b, courier.NewMsgID(10001))
 	ts.NoError(err)
-	sent, err = ts.b.WasMsgSent(ctx, msg3)
+	sent, err = ts.b.WasMsgSent(ctx, msg3.ID())
 	ts.NoError(err)
 	ts.False(sent)
 
@@ -822,7 +825,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.NoError(err)
 
 	// message should no longer be considered sent
-	sent, err = ts.b.WasMsgSent(ctx, msg)
+	sent, err = ts.b.WasMsgSent(ctx, msg.ID())
 	ts.NoError(err)
 	ts.False(sent)
 }

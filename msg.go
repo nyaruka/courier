@@ -97,6 +97,7 @@ type Msg interface {
 	Metadata() json.RawMessage
 	ResponseToID() MsgID
 	ResponseToExternalID() string
+	IsResend() bool
 
 	Channel() Channel
 
