@@ -474,7 +474,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				}
 				if attachmentCount == 0 {
 					mediaPayload.Caption = msg.Text()
-					mediaPayload.Filename = msg.Text()
+				}
+				mediaPayload.Filename, err = utils.URLGetFilename(mediaURL)
+
+				logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("Erro while parsing the media URL")
+
+				// Break on erroh
+				if err != nil {
+					break
 				}
 				payload.Document = mediaPayload
 				wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, payload)
