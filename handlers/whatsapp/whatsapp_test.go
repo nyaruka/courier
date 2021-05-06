@@ -123,7 +123,8 @@ var documentMsg = `{
 			"link": "https://example.org/v1/media/41",
 			"mime_type": "text/plain",
 			"sha256": "the-sha-signature",
-			"caption": "the caption"
+			"caption": "the caption",
+			"filename": "filename.type"
 		}
 	}]
 }`
