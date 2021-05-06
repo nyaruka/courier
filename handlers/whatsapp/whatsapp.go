@@ -531,7 +531,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		if templating != nil {
-			namespace := msg.Channel().StringConfigForKey(configNamespace, "")
+			namespace := templating.Namespace
+			if namespace == "" {
+				namespace = msg.Channel().StringConfigForKey(configNamespace, "")
+			}
 			if namespace == "" {
 				return nil, errors.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
 			}
@@ -921,6 +924,7 @@ type MsgTemplating struct {
 	} `json:"template" validate:"required,dive"`
 	Language  string   `json:"language" validate:"required"`
 	Country   string   `json:"country"`
+	Namespace string   `json:"namespace"`
 	Variables []string `json:"variables"`
 }
 
