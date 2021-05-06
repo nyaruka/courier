@@ -316,6 +316,21 @@ func (b *backend) WriteMsg(ctx context.Context, m courier.Msg) error {
 	return writeMsg(timeout, b, m)
 }
 
+// NewMsgAttachmentForExternalID creates a new Attachment object for the given message id
+func (b *backend) NewMsgAttachmentForExternalID(channel courier.Channel, externalID string, attachmentUrl string) (courier.MsgAttachment, error) {
+	attachment := newMsgAttachment(channel, externalID, attachmentUrl)
+	err := validateMsgAttachmentInDB(b, attachment)
+	return attachment, err
+}
+
+// WriteMsgAttachment writes the passed in attachment to our store
+func (b *backend) WriteMsgAttachment(ctx context.Context, channel courier.Channel, attachment *courier.MsgAttachment) error {
+	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
+	defer cancel()
+
+	return writeMsgAttachment(timeout, b, channel, attachment)
+}
+
 // NewStatusUpdateForID creates a new Status object for the given message id
 func (b *backend) NewMsgStatusForID(channel courier.Channel, id courier.MsgID, status courier.MsgStatusValue) courier.MsgStatus {
 	return newMsgStatus(channel, id, "", status)
