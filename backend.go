@@ -47,6 +47,12 @@ type Backend interface {
 	// WriteMsg writes the passed in message to our backend
 	WriteMsg(context.Context, Msg) error
 
+	// NewMsgAttachmentForExternalID creates a new Attachment object for the given message id
+	NewMsgAttachmentForExternalID(Channel, string, string) (MsgAttachment, error)
+
+	// WriteMsg writes the passed in message to our backend
+	WriteMsgAttachment(context.Context, Channel, *MsgAttachment) error
+
 	// NewMsgStatusForID creates a new Status object for the given message id
 	NewMsgStatusForID(Channel, MsgID, MsgStatusValue) MsgStatus
 

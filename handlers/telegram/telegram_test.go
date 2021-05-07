@@ -465,8 +465,7 @@ var testCases = []ChannelHandleTestCase{
 		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/sticker.jpg"), URN: Sp("telegram:3527065"), ExternalID: Sp("44"), Date: Tp(time.Date(2016, 1, 30, 2, 07, 48, 0, time.UTC))},
 
 	{Label: "Receive Photo", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: photoMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("Photo Caption"), ExternalID: Sp("85"), Date: Tp(time.Date(2017, 5, 3, 20, 28, 38, 0, time.UTC)),
-		Attachments: []string{*Sp("/file/bota123/photo1.jpg"), *Sp("/file/bota123/photo2.jpg"), *Sp("/file/bota123/photo3.jpg")}, URN: Sp("telegram:3527065#nicpottier")},
+		Name: Sp("Nic Pottier"), Text: Sp("Photo Caption"), Attachment: Sp("/file/bota123/photo.jpg"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("85"), Date: Tp(time.Date(2017, 5, 3, 20, 28, 38, 0, time.UTC))},
 
 	{Label: "Receive Video", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: videoMsg, Status: 200, Response: "Accepted",
 		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/video.jpg"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("86"), Date: Tp(time.Date(2017, 5, 3, 20, 29, 24, 0, time.UTC))},
@@ -507,12 +506,8 @@ func buildMockTelegramService(testCases []ChannelHandleTestCase) *httptest.Serve
 		switch fileID {
 		case "AAQDABNW--sqAAS6easb1s1rNdJYAAIC":
 			filePath = "sticker.jpg"
-		case "AgADAQADtKcxG4LRUUQSQVUjfJIiiF8G6C8ABHsRSbk65AmUi3cBAAEC":
-			filePath = "photo1.jpg"
-		case "AgADAQADtKcxG4LRUUQSQVUjfJIiiF8G6C8ABNEDQTuwtue6jXcBAAEC":
-			filePath = "photo2.jpg"
 		case "AgADAQADtKcxG4LRUUQSQVUjfJIiiF8G6C8ABF8Fy2sccmWmjHcBAAEC":
-			filePath = "photo3.jpg"
+			filePath = "photo.jpg"
 		case "BAADAQADBgADgtFRRPFTAAHxLVw76wI":
 			filePath = "video.jpg"
 		case "AwADAQADCQADgtFRRGn8KrC-0D_MAg":
@@ -543,13 +538,6 @@ func buildMockTelegramService(testCases []ChannelHandleTestCase) *httptest.Serve
 	for c := range testCases {
 		if testCases[c].Attachment != nil && !strings.HasPrefix(*testCases[c].Attachment, "geo") {
 			testCases[c].Attachment = Sp(fmt.Sprintf("%s%s", apiURL, *testCases[c].Attachment))
-		}
-		if testCases[c].Attachments != nil {
-			for i := 0; i < len(testCases[c].Attachments); i++ {
-				if !strings.HasPrefix(testCases[c].Attachments[i], "geo") {
-					testCases[c].Attachments[i] = *Sp(fmt.Sprintf("%s%s", apiURL, testCases[c].Attachments[i]))
-				}
-			}
 		}
 	}
 

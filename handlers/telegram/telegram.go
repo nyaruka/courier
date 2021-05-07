@@ -84,20 +84,16 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// deal with attachments
 	mediaURL := ""
-	var photoURLs []string
 	if len(payload.Message.Photo) > 0 {
-		for _, _photo := range payload.Message.Photo {
-			// grab only photos less than 250k
-			if _photo.FileSize > 250000 {
-				continue
-			}
-			mediaURL, err = h.resolveFileID(ctx, channel, _photo.FileID)
-			if err != nil {
+		// grab the largest photo less than 250k
+		photo := payload.Message.Photo[0]
+		for i := 1; i < len(payload.Message.Photo); i++ {
+			if payload.Message.Photo[i].FileSize > 250000 {
 				break
 			}
-			photoURLs = append(photoURLs, mediaURL)
+			photo = payload.Message.Photo[i]
 		}
-		mediaURL = ""
+		mediaURL, err = h.resolveFileID(ctx, channel, photo.FileID)
 	} else if payload.Message.Video != nil {
 		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Video.FileID)
 	} else if payload.Message.Voice != nil {
@@ -125,16 +121,24 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("unable to resolve file: %s", err.Error()))
 	}
 
+	// check if the message is not part of a media group sent
+	externalID := fmt.Sprintf("%d", payload.Message.MessageID)
+	if payload.Message.MediaGroupID != "" {
+		externalID = payload.Message.MediaGroupID
+		attachment, err := h.Backend().NewMsgAttachmentForExternalID(channel, externalID, mediaURL)
+		if err == nil {
+			msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(externalID).WithContactName(name)
+			msg.WithID(attachment.ID())
+			return handlers.WriteMsgAttachmentAndResponse(ctx, h, &msg, &attachment, w, r)
+		}
+	}
+
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(fmt.Sprintf("%d", payload.Message.MessageID)).WithContactName(name)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(externalID).WithContactName(name)
 
 	if mediaURL != "" {
 		msg.WithAttachment(mediaURL)
 	}
-	for _, photoURL := range photoURLs {
-		msg.WithAttachment(photoURL)
-	}
-
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
@@ -376,8 +380,9 @@ type moLocation struct {
 type moPayload struct {
 	UpdateID int64 `json:"update_id" validate:"required"`
 	Message  struct {
-		MessageID int64 `json:"message_id"`
-		From      struct {
+		MessageID    int64  `json:"message_id"`
+		MediaGroupID string `json:"media_group_id"`
+		From         struct {
 			ContactID int64  `json:"id"`
 			FirstName string `json:"first_name"`
 			LastName  string `json:"last_name"`

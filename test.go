@@ -376,6 +376,14 @@ func (mb *MockBackend) RedisPool() *redis.Pool {
 	return mb.redisPool
 }
 
+func (mb *MockBackend) NewMsgAttachmentForExternalID(channel Channel, s string, s2 string) (MsgAttachment, error) {
+	return nil, nil
+}
+
+func (mb *MockBackend) WriteMsgAttachment(ctx context.Context, channel Channel, attachment *MsgAttachment) error {
+	return nil
+}
+
 func buildMockBackend(config *Config) Backend {
 	return NewMockBackend()
 }
