@@ -475,7 +475,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				if attachmentCount == 0 {
 					mediaPayload.Caption = msg.Text()
 				}
-				mediaPayload.Filename, err = utils.URLGetFilename(mediaURL)
+				mediaPayload.Filename, err = utils.BasePathForURL(mediaURL)
 
 				logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("Error while parsing the media URL")
 

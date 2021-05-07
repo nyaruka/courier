@@ -101,8 +101,8 @@ func CleanString(s string) string {
 	return cleaned
 }
 
-// Clean static URL, and return filename + format
-func URLGetFilename(rawURL string) (string, error) {
+// BasePathForURL, parse static URL, and return filename + format
+func BasePathForURL(rawURL string) (string, error) {
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		return rawURL, err
