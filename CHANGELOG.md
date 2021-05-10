@@ -1,3 +1,8 @@
+v6.3.3
+----------
+ * Support using namespace from the template translation
+ * Add is_resend to Msg payload to allow for resending messages manually
+
 v6.3.2
 ----------
  * Do not verify the SSL certificate for Bongo Live
