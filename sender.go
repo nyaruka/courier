@@ -172,8 +172,17 @@ func (w *Sender) sendMessage(msg Msg) {
 
 	start := time.Now()
 
+	// if this is a resend, clear our sent status
+	if msg.IsResend() {
+		err := backend.ClearMsgSent(sendCTX, msg.ID())
+		if err != nil {
+			log.WithError(err).Error("error clearing sent status for msg")
+		}
+
+	}
+
 	// was this msg already sent? (from a double queue?)
-	sent, err := backend.WasMsgSent(sendCTX, msg)
+	sent, err := backend.WasMsgSent(sendCTX, msg.ID())
 
 	// failing on a lookup isn't a halting problem but we should log it
 	if err != nil {

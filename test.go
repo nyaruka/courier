@@ -151,11 +151,19 @@ func (mb *MockBackend) PopNextOutgoingMsg(ctx context.Context) (Msg, error) {
 }
 
 // WasMsgSent returns whether the passed in msg was already sent
-func (mb *MockBackend) WasMsgSent(ctx context.Context, msg Msg) (bool, error) {
+func (mb *MockBackend) WasMsgSent(ctx context.Context, id MsgID) (bool, error) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	return mb.sentMsgs[msg.ID()], nil
+	return mb.sentMsgs[id], nil
+}
+
+func (mb *MockBackend) ClearMsgSent(ctx context.Context, id MsgID) error {
+	mb.mutex.Lock()
+	defer mb.mutex.Unlock()
+
+	delete(mb.sentMsgs, id)
+	return nil
 }
 
 // IsMsgLoop returns whether the passed in msg is a loop
@@ -564,6 +572,7 @@ type mockMsg struct {
 	responseToExternalID string
 	metadata             json.RawMessage
 	alreadyWritten       bool
+	isResend             bool
 
 	receivedOn *time.Time
 	sentOn     *time.Time
@@ -588,6 +597,7 @@ func (m *mockMsg) Topic() string                { return m.topic }
 func (m *mockMsg) ResponseToID() MsgID          { return m.responseToID }
 func (m *mockMsg) ResponseToExternalID() string { return m.responseToExternalID }
 func (m *mockMsg) Metadata() json.RawMessage    { return m.metadata }
+func (m *mockMsg) IsResend() bool               { return m.isResend }
 
 func (m *mockMsg) ReceivedOn() *time.Time { return m.receivedOn }
 func (m *mockMsg) SentOn() *time.Time     { return m.sentOn }
