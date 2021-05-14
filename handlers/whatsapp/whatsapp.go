@@ -477,11 +477,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				}
 				mediaPayload.Filename, err = utils.BasePathForURL(mediaURL)
 
-				logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("Error while parsing the media URL")
-
 				// Break out on error
 				if err != nil {
-					break
+					logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("Error while parsing the media URL")
 				}
 				payload.Document = mediaPayload
 				wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, payload)
