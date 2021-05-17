@@ -41,11 +41,11 @@ func TestCleanString(t *testing.T) {
 }
 
 func TestURLGetFile(t *testing.T) {
-	test1, err := URLGetFilename("https://example.com/test.pdf")
+	test1, err := BasePathForURL("https://example.com/test.pdf")
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "test.pdf", test1)
 
-	test2, err := URLGetFilename("application/pdf:https://some-url.host.service.com/media/999/zz99/9999/da514731-4bed-428c-afb9-860dd94530cc.xlsx")
+	test2, err := BasePathForURL("application/pdf:https://some-url.host.service.com/media/999/zz99/9999/da514731-4bed-428c-afb9-860dd94530cc.xlsx")
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "da514731-4bed-428c-afb9-860dd94530cc.xlsx", test2)
 }
