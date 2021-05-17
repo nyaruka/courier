@@ -477,7 +477,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				}
 				mediaPayload.Filename, err = utils.BasePathForURL(mediaURL)
 
-				// Break out on error
+				// Logging error
 				if err != nil {
 					logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("Error while parsing the media URL")
 				}
