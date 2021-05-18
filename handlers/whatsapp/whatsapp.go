@@ -114,6 +114,7 @@ type eventPayload struct {
 			MimeType string `json:"mime_type" validate:"required"`
 			Sha256   string `json:"sha256"    validate:"required"`
 			Caption  string `json:"caption"`
+			Filename string `json:"filename"`
 		} `json:"document"`
 		Image *struct {
 			File     string `json:"file"      validate:"required"`
@@ -342,9 +343,10 @@ type mtTextPayload struct {
 }
 
 type mediaObject struct {
-	ID      string `json:"id,omitempty"`
-	Link    string `json:"link,omitempty"`
-	Caption string `json:"caption,omitempty"`
+	ID       string `json:"id,omitempty"`
+	Link     string `json:"link,omitempty"`
+	Caption  string `json:"caption,omitempty"`
+	Filename string `json:"filename,omitempty"`
 }
 
 type LocalizableParam struct {
@@ -472,6 +474,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				}
 				if attachmentCount == 0 {
 					mediaPayload.Caption = msg.Text()
+				}
+				mediaPayload.Filename, err = utils.BasePathForURL(mediaURL)
+
+				// Logging error
+				if err != nil {
+					logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("Error while parsing the media URL")
 				}
 				payload.Document = mediaPayload
 				wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, payload)

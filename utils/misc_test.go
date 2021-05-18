@@ -39,3 +39,13 @@ func TestCleanString(t *testing.T) {
 	text, _ := url.PathUnescape("hi%1C%00%00%00%00%00%07%E0%00")
 	assert.Equal(t, "hi\x1c\a", CleanString(text))
 }
+
+func TestURLGetFile(t *testing.T) {
+	test1, err := BasePathForURL("https://example.com/test.pdf")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "test.pdf", test1)
+
+	test2, err := BasePathForURL("application/pdf:https://some-url.host.service.com/media/999/zz99/9999/da514731-4bed-428c-afb9-860dd94530cc.xlsx")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "da514731-4bed-428c-afb9-860dd94530cc.xlsx", test2)
+}

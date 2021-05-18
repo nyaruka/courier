@@ -123,7 +123,8 @@ var documentMsg = `{
 			"link": "https://example.org/v1/media/41",
 			"mime_type": "text/plain",
 			"sha256": "the-sha-signature",
-			"caption": "the caption"
+			"caption": "the caption",
+			"filename": "filename.type"
 		}
 	}]
 }`
@@ -389,7 +390,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/v1/messages",
-				Body:   `{"to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption"}}`,
+				Body:   `{"to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
