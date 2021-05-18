@@ -1,3 +1,7 @@
+v6.3.4
+----------
+ * Include filename when sending WhatsApp attachments
+
 v6.3.3
 ----------
  * Support using namespace from the template translation
