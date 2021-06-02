@@ -33,6 +33,8 @@ const (
 	channelTypeTXW = "TXW"
 
 	mediaCacheKeyPattern = "whatsapp_media_%s"
+
+	interactiveMsgMinSupVersion = "v2.35.2"
 )
 
 var (
@@ -659,7 +661,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 			qrs := msg.QuickReplies()
 
-			if len(qrs) > 0 {
+			channel := msg.Channel()
+
+			wppVersion := channel.ConfigForKey("version", "0").(string)
+			hasCompatibleVersion := wppVersion >= interactiveMsgMinSupVersion
+
+			if len(qrs) > 0 && hasCompatibleVersion {
 				if len(qrs) > 3 {
 					section := mtSection{
 						Rows: make([]mtSectionRow, len(qrs)),
