@@ -20,6 +20,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/mod/semver"
 )
 
 const (
@@ -475,8 +476,8 @@ type mtImagePayload struct {
 }
 
 type mtVideoPayload struct {
-	To    string       `json:"to" validate: "required"`
-	Type  string       `json:"type" validate: "required"`
+	To    string       `json:"to" validate:"required"`
+	Type  string       `json:"type" validate:"required"`
 	Video *mediaObject `json:"video"`
 }
 
@@ -512,11 +513,65 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	var wppID string
 	var logs []*courier.ChannelLog
 
+	payloads, logs, err := buildPayloads(msg, h)
+
+	fail := payloads == nil && err != nil
+	if fail {
+		return nil, err
+	}
+	for _, log := range logs {
+		status.AddLog(log)
+	}
+
+	for i, payload := range payloads {
+		externalID := ""
+		wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, payload)
+		// add logs to our status
+		for _, log := range logs {
+			status.AddLog(log)
+		}
+		if err != nil {
+			break
+		}
+
+		// if this is our first message, record the external id
+		if i == 0 {
+			status.SetExternalID(externalID)
+		}
+	}
+
+	// we are wired it there were no errors
+	if err == nil {
+		if wppID != "" {
+			newURN, _ := urns.NewWhatsAppURN(wppID)
+			err = status.SetUpdatedURN(msg.URN(), newURN)
+
+			if err != nil {
+				elapsed := time.Since(start)
+				log := courier.NewChannelLogFromError("unable to update contact URN", msg.Channel(), msg.ID(), elapsed, err)
+				status.AddLog(log)
+			}
+		}
+		status.SetStatus(courier.MsgWired)
+	}
+
+	return status, nil
+}
+
+func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.ChannelLog, error) {
+	start := time.Now()
+	var payloads []interface{}
+	var logs []*courier.ChannelLog
+	var err error
+
 	if len(msg.Attachments()) > 0 {
 		for attachmentCount, attachment := range msg.Attachments() {
 
 			mimeType, mediaURL := handlers.SplitAttachment(attachment)
 			mediaID, mediaLogs, err := h.fetchMediaID(msg, mimeType, mediaURL)
+			if len(mediaLogs) > 0 {
+				logs = append(logs, mediaLogs...)
+			}
 			if err != nil {
 				logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("error while uploading media to whatsapp")
 			}
@@ -524,14 +579,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				mediaURL = ""
 			}
 			mediaPayload := &mediaObject{ID: mediaID, Link: mediaURL}
-			externalID := ""
 			if strings.HasPrefix(mimeType, "audio") {
 				payload := mtAudioPayload{
 					To:   msg.URN().Path(),
 					Type: "audio",
 				}
 				payload.Audio = mediaPayload
-				wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, payload)
+				payloads = append(payloads, payload)
 			} else if strings.HasPrefix(mimeType, "application") {
 				payload := mtDocumentPayload{
 					To:   msg.URN().Path(),
@@ -547,7 +601,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 					logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("Error while parsing the media URL")
 				}
 				payload.Document = mediaPayload
-				wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, payload)
+				payloads = append(payloads, payload)
 			} else if strings.HasPrefix(mimeType, "image") {
 				payload := mtImagePayload{
 					To:   msg.URN().Path(),
@@ -557,7 +611,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 					mediaPayload.Caption = msg.Text()
 				}
 				payload.Image = mediaPayload
-				wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, payload)
+				payloads = append(payloads, payload)
 			} else if strings.HasPrefix(mimeType, "video") {
 				payload := mtVideoPayload{
 					To:   msg.URN().Path(),
@@ -567,52 +621,31 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 					mediaPayload.Caption = msg.Text()
 				}
 				payload.Video = mediaPayload
-				wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, payload)
+				payloads = append(payloads, payload)
 			} else {
 				duration := time.Since(start)
 				err = fmt.Errorf("unknown attachment mime type: %s", mimeType)
-				logs = []*courier.ChannelLog{courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)}
-			}
-
-			// add media logs to our status
-			for _, log := range mediaLogs {
-				status.AddLog(log)
-			}
-
-			// add logs to our status
-			for _, log := range logs {
-				status.AddLog(log)
-			}
-
-			// break out on errors
-			if err != nil {
+				attachmentLogs := []*courier.ChannelLog{courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)}
+				logs = append(logs, attachmentLogs...)
 				break
 			}
-
-			// set our external id if we have one
-			if attachmentCount == 0 {
-				status.SetExternalID(externalID)
-			}
 		}
-
 	} else {
 		// do we have a template?
 		var templating *MsgTemplating
-		templating, err = h.getTemplate(msg)
+		templating, err := h.getTemplate(msg)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
+			return nil, nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
 		}
-
 		if templating != nil {
 			namespace := templating.Namespace
 			if namespace == "" {
 				namespace = msg.Channel().StringConfigForKey(configNamespace, "")
 			}
 			if namespace == "" {
-				return nil, errors.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
+				return nil, nil, errors.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
 			}
 
-			externalID := ""
 			if msg.Channel().BoolConfigForKey(configHSMSupport, false) {
 				payload := hsmPayload{
 					To:   msg.URN().Path(),
@@ -625,7 +658,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				for _, v := range templating.Variables {
 					payload.HSM.LocalizableParams = append(payload.HSM.LocalizableParams, LocalizableParam{Default: v})
 				}
-				wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, payload)
+				payloads = append(payloads, payload)
 			} else {
 
 				payload := templatePayload{
@@ -644,141 +677,79 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				}
 				payload.Template.Components = append(payload.Template.Components, *component)
 
-				wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, payload)
-			}
-
-			// add logs to our status
-			for _, log := range logs {
-				status.AddLog(log)
-			}
-
-			if err == nil {
-				status.SetExternalID(externalID)
+				payloads = append(payloads, payload)
 			}
 		} else {
 			parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
-			externalID := ""
 
 			qrs := msg.QuickReplies()
+			wppVersion := msg.Channel().ConfigForKey("version", "0").(string)
+			isInteractiveMsgCompatible := semver.Compare(wppVersion, interactiveMsgMinSupVersion)
+			isInteractiveMsg := (isInteractiveMsgCompatible >= 0) && (len(qrs) > 0)
 
-			channel := msg.Channel()
-
-			wppVersion := channel.ConfigForKey("version", "0").(string)
-			hasCompatibleVersion := wppVersion >= interactiveMsgMinSupVersion
-
-			if len(qrs) > 0 && hasCompatibleVersion {
-				if len(qrs) > 3 {
-					section := mtSection{
-						Rows: make([]mtSectionRow, len(qrs)),
-					}
-
-					for i, qr := range qrs {
-						section.Rows[i] = mtSectionRow{
-							ID:    fmt.Sprint(i),
-							Title: qr,
+			if isInteractiveMsg {
+				for i, part := range parts {
+					if i < (len(parts) - 1) { //if split into more than one message, the first parts will be text and the last interactive
+						payload := mtTextPayload{
+							To:   msg.URN().Path(),
+							Type: "text",
 						}
-					}
+						payload.Text.Body = part
+						payloads = append(payloads, payload)
 
-					for i, part := range parts {
+					} else {
 						payload := mtInteractivePayload{
 							To:   msg.URN().Path(),
 							Type: "interactive",
 						}
-						payload.Interactive.Type = "list"
-						payload.Interactive.Body.Text = part
-						payload.Interactive.Action.Button = "Menu"
-						payload.Interactive.Action.Sections = []mtSection{
-							section,
-						}
 
-						wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, payload)
-
-						for _, log := range logs {
-							status.AddLog(log)
-						}
-						if err != nil {
-							break
-						}
-
-						if i == 0 {
-							status.SetExternalID((externalID))
-						}
-					}
-
-				} else {
-					btns := make([]mtButton, len(qrs))
-					for i, qr := range qrs {
-						btns[i] = mtButton{
-							Type: "reply",
-						}
-						btns[i].Reply.ID = fmt.Sprint(i)
-						btns[i].Reply.Title = qr
-					}
-
-					for i, part := range parts {
-						payload := mtInteractivePayload{
-							To:   msg.URN().Path(),
-							Type: "interactive",
-						}
-						payload.Interactive.Type = "button"
-						payload.Interactive.Body.Text = part
-						payload.Interactive.Action.Buttons = btns
-						wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, payload)
-
-						for _, log := range logs {
-							status.AddLog(log)
-						}
-						if err != nil {
-							break
-						}
-
-						if i == 0 {
-							status.SetExternalID((externalID))
+						// up to 3 qrs the interactive message will be button type, otherwise it will be list
+						if len(qrs) <= 3 {
+							payload.Interactive.Type = "button"
+							payload.Interactive.Body.Text = part
+							btns := make([]mtButton, len(qrs))
+							for i, qr := range qrs {
+								btns[i] = mtButton{
+									Type: "reply",
+								}
+								btns[i].Reply.ID = fmt.Sprint(i)
+								btns[i].Reply.Title = qr
+							}
+							payload.Interactive.Action.Buttons = btns
+							payloads = append(payloads, payload)
+						} else {
+							payload.Interactive.Type = "list"
+							payload.Interactive.Body.Text = part
+							payload.Interactive.Action.Button = "Menu"
+							section := mtSection{
+								Rows: make([]mtSectionRow, len(qrs)),
+							}
+							for i, qr := range qrs {
+								section.Rows[i] = mtSectionRow{
+									ID:    fmt.Sprint(i),
+									Title: qr,
+								}
+							}
+							payload.Interactive.Action.Sections = []mtSection{
+								section,
+							}
+							payloads = append(payloads, payload)
 						}
 					}
 				}
 			} else {
-				for i, part := range parts {
+				for _, part := range parts {
 					payload := mtTextPayload{
 						To:   msg.URN().Path(),
 						Type: "text",
 					}
 					payload.Text.Body = part
-					wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, payload)
-
-					// add logs to our status
-					for _, log := range logs {
-						status.AddLog(log)
-					}
-					if err != nil {
-						break
-					}
-
-					// if this is our first message, record the external id
-					if i == 0 {
-						status.SetExternalID(externalID)
-					}
+					payloads = append(payloads, payload)
 				}
 			}
 		}
 	}
-
-	// we are wired it there were no errors
-	if err == nil {
-		if wppID != "" {
-			newURN, _ := urns.NewWhatsAppURN(wppID)
-			err = status.SetUpdatedURN(msg.URN(), newURN)
-
-			if err != nil {
-				elapsed := time.Now().Sub(start)
-				log := courier.NewChannelLogFromError("unable to update contact URN", msg.Channel(), msg.ID(), elapsed, err)
-				status.AddLog(log)
-			}
-		}
-		status.SetStatus(courier.MsgWired)
-	}
-
-	return status, nil
+	return payloads, logs, err
 }
 
 // fetchMediaID tries to fetch the id for the uploaded media, setting the result in redis.
