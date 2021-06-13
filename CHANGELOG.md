@@ -1,3 +1,7 @@
+v6.3.5
+----------
+ * up max request size to 1M
+
 v6.3.4
 ----------
  * Include filename when sending WhatsApp attachments
