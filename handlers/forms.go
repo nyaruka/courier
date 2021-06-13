@@ -53,7 +53,7 @@ func DecodeAndValidateForm(form interface{}, r *http.Request) error {
 // DecodeAndValidateJSON takes the passed in envelope and tries to unmarshal it from the body
 // of the passed in request, then validating it
 func DecodeAndValidateJSON(envelope interface{}, r *http.Request) error {
-	body, err := ReadBody(r, 100000)
+	body, err := ReadBody(r, 1000000)
 	if err != nil {
 		return fmt.Errorf("unable to read request body: %s", err)
 	}
