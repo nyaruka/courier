@@ -189,7 +189,10 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	// build our callback URL
-	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+	//callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
+
+	// TODO It is here only for test
+	callbackDomain := "courier-dev.communityconnectlabs.com"
 	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?id=%d&action=callback", callbackDomain, strings.ToLower(h.ChannelType().String()), msg.Channel().UUID(), msg.ID())
 
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
