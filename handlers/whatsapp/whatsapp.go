@@ -17,7 +17,9 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/rcache"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -26,20 +28,25 @@ const (
 
 	d3AuthorizationKey = "D360-API-KEY"
 
-	channelTypeWa = "WA"
-	channelTypeD3 = "D3"
+	channelTypeWa  = "WA"
+	channelTypeD3  = "D3"
+	channelTypeTXW = "TXW"
 
-	mediaCacheKeyPattern        = "whatsapp_media_%s"
-	failureMediaCacheKeyPattern = "whatsapp_failed_media_%s"
+	mediaCacheKeyPattern = "whatsapp_media_%s"
 )
 
 var (
 	retryParam = ""
 )
 
+var failedMediaCache *cache.Cache
+
 func init() {
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeWa), "WhatsApp"))
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeD3), "360Dialog"))
+	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeTXW), "TextIt"))
+
+	failedMediaCache = cache.New(15*time.Minute, 15*time.Minute)
 }
 
 type handler struct {
@@ -96,6 +103,10 @@ type eventPayload struct {
 			MimeType string `json:"mime_type" validate:"required"`
 			Sha256   string `json:"sha256"    validate:"required"`
 		} `json:"audio"`
+		Button *struct {
+			Payload string `json:"payload"`
+			Text    string `json:"text"    validate:"required"`
+		} `json:"button"`
 		Document *struct {
 			File     string `json:"file"      validate:"required"`
 			ID       string `json:"id"        validate:"required"`
@@ -183,6 +194,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			text = msg.Text.Body
 		} else if msg.Type == "audio" && msg.Audio != nil {
 			mediaURL, err = resolveMediaURL(channel, msg.Audio.ID)
+		} else if msg.Type == "button" && msg.Button != nil {
+			text = msg.Button.Text
 		} else if msg.Type == "document" && msg.Document != nil {
 			text = msg.Document.Caption
 			mediaURL, err = resolveMediaURL(channel, msg.Document.ID)
@@ -437,6 +450,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 			mimeType, mediaURL := handlers.SplitAttachment(attachment)
 			mediaID, mediaLogs, err := h.fetchMediaID(msg, mimeType, mediaURL)
+			if err != nil {
+				logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("error while uploading media to whatsapp")
+			}
 			if err == nil && mediaID != "" {
 				mediaURL = ""
 			}
@@ -611,7 +627,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 // fetchMediaID tries to fetch the id for the uploaded media, setting the result in redis.
 func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (string, []*courier.ChannelLog, error) {
 	var logs []*courier.ChannelLog
-	start := time.Now()
 
 	// check in cache first
 	rc := h.Backend().RedisPool().Get()
@@ -620,77 +635,67 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	cacheKey := fmt.Sprintf(mediaCacheKeyPattern, msg.Channel().UUID().String())
 	mediaID, err := rcache.Get(rc, cacheKey, mediaURL)
 	if err != nil {
-		elapsed := time.Now().Sub(start)
-		log := courier.NewChannelLogFromError("error reading media id from redis", msg.Channel(), msg.ID(), elapsed, err)
-		logs = append(logs, log)
-		return "", logs, err
+		return "", logs, errors.Wrapf(err, "error reading media id from redis: %s : %s", cacheKey, mediaURL)
 	} else if mediaID != "" {
 		return mediaID, logs, nil
 	}
 
 	// check in failure cache
-	failureCacheKey := fmt.Sprintf(failureMediaCacheKeyPattern, msg.Channel().UUID().String())
-	if failed, err := rcache.Get(rc, failureCacheKey, mediaURL); err != nil {
-		elapsed := time.Now().Sub(start)
-		log := courier.NewChannelLogFromError("error reading failed media from redis", msg.Channel(), msg.ID(), elapsed, err)
-		logs = append(logs, log)
-		return "", logs, err
-	} else if failed == "true" {
-		return "", logs, errors.New("ignoring media that previously failed to upload")
+	failKey := fmt.Sprintf("%s-%s", msg.Channel().UUID().String(), mediaURL)
+	found, _ := failedMediaCache.Get(failKey)
+
+	// any non nil value means we cached a failure, don't try again until our cache expires
+	if found != nil {
+		return "", logs, nil
 	}
 
 	// download media
 	req, err := http.NewRequest("GET", mediaURL, nil)
 	if err != nil {
-		return "", logs, err
+		return "", logs, errors.Wrapf(err, "error building media request")
 	}
-	res, err := utils.MakeHTTPRequest(req)
+	rr, err := utils.MakeHTTPRequest(req)
+	log := courier.NewChannelLogFromRR("Fetching media", msg.Channel(), msg.ID(), rr).WithError("error fetching media", err)
+	logs = append(logs, log)
 	if err != nil {
-		elapsed := time.Now().Sub(start)
-		log := courier.NewChannelLogFromError("error downloading media", msg.Channel(), msg.ID(), elapsed, err)
-		logs = append(logs, log)
-		return "", logs, err
+		failedMediaCache.Set(failKey, true, cache.DefaultExpiration)
+		return "", logs, nil
 	}
 
 	// upload media to WhatsApp
 	baseURL := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
-	req, err = http.NewRequest("POST", baseURL + "/v1/media", bytes.NewReader(res.Body))
+	url, err := url.Parse(baseURL)
 	if err != nil {
-		return "", logs, err
+		return "", logs, errors.Wrapf(err, "invalid base url set for WA channel: %s", baseURL)
+	}
+	dockerMediaURL, _ := url.Parse("/v1/media")
+
+	req, err = http.NewRequest("POST", dockerMediaURL.String(), bytes.NewReader(rr.Body))
+	if err != nil {
+		return "", logs, errors.Wrapf(err, "error building request to media endpoint")
 	}
 	setWhatsAppAuthHeader(&req.Header, msg.Channel())
-	req.Header.Add("Content-Type", mimeType)
-	res, err = utils.MakeHTTPRequest(req)
+	req.Header.Add("Content-Type", http.DetectContentType(rr.Body))
+	rr, err = utils.MakeHTTPRequest(req)
+	log = courier.NewChannelLogFromRR("Uploading media to WhatsApp", msg.Channel(), msg.ID(), rr).WithError("Error uploading media to WhatsApp", err)
+	logs = append(logs, log)
 	if err != nil {
-		// put in failure cache
-		rcache.Set(rc, failureCacheKey, mediaURL, "true")
-
-		if res != nil {
-			err = errors.Wrap(err, string(res.Body))
-		}
-		elapsed := time.Now().Sub(start)
-		log := courier.NewChannelLogFromError("error uploading media to WhatsApp", msg.Channel(), msg.ID(), elapsed, err)
-		logs = append(logs, log)
-		return "", logs, err
+		failedMediaCache.Set(failKey, true, cache.DefaultExpiration)
+		return "", logs, errors.Wrapf(err, "error uploading media to whatsapp")
 	}
 
 	// take uploaded media id
-	mediaID, err = jsonparser.GetString(res.Body, "media", "[0]", "id")
+	mediaID, err = jsonparser.GetString(rr.Body, "media", "[0]", "id")
 	if err != nil {
-		elapsed := time.Now().Sub(start)
-		log := courier.NewChannelLogFromError("error reading media id from response", msg.Channel(), msg.ID(), elapsed, err)
-		logs = append(logs, log)
-		return "", logs, err
+		return "", logs, errors.Wrapf(err, "error reading media id from response")
 	}
 
 	// put in cache
 	err = rcache.Set(rc, cacheKey, mediaURL, mediaID)
 	if err != nil {
-		elapsed := time.Now().Sub(start)
-		log := courier.NewChannelLogFromError("error setting media id to redis", msg.Channel(), msg.ID(), elapsed, err)
-		logs = append(logs, log)
-		return "", logs, err
+		return "", logs, errors.Wrapf(err, "error setting media id in cache")
 	}
+
 	return mediaID, logs, nil
 }
 
@@ -773,12 +778,16 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, payload interface{}) (s
 			}
 		}
 		// try send msg again
-		reqRetry, _ := http.NewRequest(http.MethodPost, sendPath.String(), bytes.NewReader(jsonBody))
+		reqRetry, err := http.NewRequest(http.MethodPost, sendPath.String(), bytes.NewReader(jsonBody))
+		if err != nil {
+			return "", "", nil, err
+		}
 		reqRetry.Header = buildWhatsAppHeaders(msg.Channel())
 
 		if retryParam != "" {
 			reqRetry.URL.RawQuery = fmt.Sprintf("%s=1", retryParam)
 		}
+
 		rrRetry, err := utils.MakeHTTPRequest(reqRetry)
 		retryLog := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rrRetry).WithError("Message Send Error", err)
 
@@ -917,74 +926,74 @@ type MsgTemplating struct {
 
 // mapping from iso639-3_iso3166-2 to WA language code
 var languageMap = map[string]string{
-	"afr": "af",       // Afrikaans
-	"sqi": "sq",       // Albanian
-	"ara": "ar",       // Arabic
-	"aze": "az",       // Azerbaijani
-	"ben": "bn",       // Bengali
-	"bul": "bg",       // Bulgarian
-	"cat": "ca",       // Catalan
-	"zho": "zh_CN",    // Chinese
+	"afr":    "af",    // Afrikaans
+	"sqi":    "sq",    // Albanian
+	"ara":    "ar",    // Arabic
+	"aze":    "az",    // Azerbaijani
+	"ben":    "bn",    // Bengali
+	"bul":    "bg",    // Bulgarian
+	"cat":    "ca",    // Catalan
+	"zho":    "zh_CN", // Chinese
 	"zho_CN": "zh_CN", // Chinese (CHN)
 	"zho_HK": "zh_HK", // Chinese (HKG)
 	"zho_TW": "zh_TW", // Chinese (TAI)
-	"hrv": "hr",       // Croatian
-	"ces": "cs",       // Czech
-	"dah": "da",       // Danish
-	"nld": "nl",       // Dutch
-	"eng": "en",       // English
+	"hrv":    "hr",    // Croatian
+	"ces":    "cs",    // Czech
+	"dah":    "da",    // Danish
+	"nld":    "nl",    // Dutch
+	"eng":    "en",    // English
 	"eng_GB": "en_GB", // English (UK)
 	"eng_US": "en_US", // English (US)
-	"est": "et",       // Estonian
-	"fil": "fil",      // Filipino
-	"fin": "fi",       // Finnish
-	"fra": "fr",       // French
-	"deu": "de",       // German
-	"ell": "el",       // Greek
-	"gul": "gu",       // Gujarati
-	"hau": "ha",       // Hausa
-	"enb": "he",       // Hebrew
-	"hin": "hi",       // Hindi
-	"hun": "hu",       // Hungarian
-	"ind": "id",       // Indonesian
-	"gle": "ga",       // Irish
-	"ita": "it",       // Italian
-	"jpn": "ja",       // Japanese
-	"kan": "kn",       // Kannada
-	"kaz": "kk",       // Kazakh
-	"kor": "ko",       // Korean
-	"lao": "lo",       // Lao
-	"lav": "lv",       // Latvian
-	"lit": "lt",       // Lithuanian
-	"mal": "ml",       // Malayalam
-	"mkd": "mk",       // Macedonian
-	"msa": "ms",       // Malay
-	"mar": "mr",       // Marathi
-	"nob": "nb",       // Norwegian
-	"fas": "fa",       // Persian
-	"pol": "pl",       // Polish
-	"por": "pt_PT",    // Portuguese
+	"est":    "et",    // Estonian
+	"fil":    "fil",   // Filipino
+	"fin":    "fi",    // Finnish
+	"fra":    "fr",    // French
+	"deu":    "de",    // German
+	"ell":    "el",    // Greek
+	"gul":    "gu",    // Gujarati
+	"hau":    "ha",    // Hausa
+	"enb":    "he",    // Hebrew
+	"hin":    "hi",    // Hindi
+	"hun":    "hu",    // Hungarian
+	"ind":    "id",    // Indonesian
+	"gle":    "ga",    // Irish
+	"ita":    "it",    // Italian
+	"jpn":    "ja",    // Japanese
+	"kan":    "kn",    // Kannada
+	"kaz":    "kk",    // Kazakh
+	"kor":    "ko",    // Korean
+	"lao":    "lo",    // Lao
+	"lav":    "lv",    // Latvian
+	"lit":    "lt",    // Lithuanian
+	"mal":    "ml",    // Malayalam
+	"mkd":    "mk",    // Macedonian
+	"msa":    "ms",    // Malay
+	"mar":    "mr",    // Marathi
+	"nob":    "nb",    // Norwegian
+	"fas":    "fa",    // Persian
+	"pol":    "pl",    // Polish
+	"por":    "pt_PT", // Portuguese
 	"por_BR": "pt_BR", // Portuguese (BR)
 	"por_PT": "pt_PT", // Portuguese (POR)
-	"pan": "pa",       // Punjabi
-	"ron": "ro",       // Romanian
-	"rus": "ru",       // Russian
-	"srp": "sr",       // Serbian
-	"slk": "sk",       // Slovak
-	"slv": "sl",       // Slovenian
-	"spa": "es",       // Spanish
+	"pan":    "pa",    // Punjabi
+	"ron":    "ro",    // Romanian
+	"rus":    "ru",    // Russian
+	"srp":    "sr",    // Serbian
+	"slk":    "sk",    // Slovak
+	"slv":    "sl",    // Slovenian
+	"spa":    "es",    // Spanish
 	"spa_AR": "es_AR", // Spanish (ARG)
 	"spa_ES": "es_ES", // Spanish (SPA)
 	"spa_MX": "es_MX", // Spanish (MEX)
-	"swa": "sw",       // Swahili
-	"swe": "sv",       // Swedish
-	"tam": "ta",       // Tamil
-	"tel": "te",       // Telugu
-	"tha": "th",       // Thai
-	"tur": "tr",       // Turkish
-	"ukr": "uk",       // Ukrainian
-	"urd": "ur",       // Urdu
-	"uzb": "uz",       // Uzbek
-	"vie": "vi",       // Vietnamese
-	"zul": "zu",       // Zulu
+	"swa":    "sw",    // Swahili
+	"swe":    "sv",    // Swedish
+	"tam":    "ta",    // Tamil
+	"tel":    "te",    // Telugu
+	"tha":    "th",    // Thai
+	"tur":    "tr",    // Turkish
+	"ukr":    "uk",    // Ukrainian
+	"urd":    "ur",    // Urdu
+	"uzb":    "uz",    // Uzbek
+	"vie":    "vi",    // Vietnamese
+	"zul":    "zu",    // Zulu
 }

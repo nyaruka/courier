@@ -125,7 +125,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			sendURL, _ := url.Parse(sendURL)
 			sendURL.RawQuery = form.Encode()
 
-			req, _ := http.NewRequest(http.MethodGet, sendURL.String(), nil)
+			req, err := http.NewRequest(http.MethodGet, sendURL.String(), nil)
+
+			if err != nil {
+				return nil, err
+			}
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 			rr, err := utils.MakeHTTPRequest(req)

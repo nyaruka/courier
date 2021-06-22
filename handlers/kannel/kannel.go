@@ -197,6 +197,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	verifySSL, _ := verifySSLStr.(bool)
 
 	req, err := http.NewRequest(http.MethodGet, sendURL, nil)
+	if err != nil {
+		return nil, err
+	}
 	var rr *utils.RequestResponse
 
 	if verifySSL {

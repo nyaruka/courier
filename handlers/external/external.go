@@ -347,6 +347,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		req, err := http.NewRequest(sendMethod, url, body)
+
 		if err != nil {
 			return nil, err
 		}

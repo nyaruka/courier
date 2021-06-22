@@ -156,7 +156,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	fullURL, _ := url.Parse(sendURL)
 	fullURL.RawQuery = form.Encode()
 
-	req, _ := http.NewRequest(http.MethodGet, fullURL.String(), nil)
+	req, err := http.NewRequest(http.MethodGet, fullURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log

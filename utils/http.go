@@ -133,6 +133,7 @@ func newRRFromResponse(method string, requestTrace string, r *http.Response) (*R
 	if err != nil {
 		return &rr, err
 	}
+
 	rr.Response = string(response)
 
 	bodyBytes, err := ioutil.ReadAll(r.Body)

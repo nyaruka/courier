@@ -1,3 +1,43 @@
+v6.2.0
+----------
+ * Add handling for button whatsapp message type
+ * Bump CI testing to PG 11 and 12
+ * Add Kaleyra channel type
+ * 6.2.0 RC
+
+v6.1.7
+----------
+ * switch id to bigserial
+
+v6.1.6
+----------
+ * Cache media upload failures localy for 15m
+
+v6.1.5
+----------
+ * include header when sanitizing request/response
+
+v6.1.4
+----------
+ * Cleanup of whatsapp media handling
+ * Detect media type for uploading media
+
+v6.1.3
+----------
+ * Better logging of error cases when uploading WhatsApp media
+
+v6.1.2
+----------
+ * use url.parse to build media URL
+
+v6.1.1
+----------
+ * Add TextIt WhatsApp channel type
+
+v6.1.0
+----------
+ * Check and log errors when building URLs for sending
+
 v6.0.0
 ----------
  * Update README

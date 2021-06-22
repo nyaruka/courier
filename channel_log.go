@@ -2,6 +2,8 @@ package courier
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/nyaruka/courier/utils"
@@ -27,11 +29,27 @@ func NewChannelLog(description string, channel Channel, msgID MsgID, method stri
 		URL:         url,
 		StatusCode:  statusCode,
 		Error:       errString,
-		Request:     request,
-		Response:    response,
+		Request:     sanitizeBody(request),
+		Response:    sanitizeBody(response),
 		CreatedOn:   time.Now(),
 		Elapsed:     elapsed,
 	}
+}
+
+func sanitizeBody(body string) string {
+	parts := strings.SplitN(body, "\r\n\r\n", 2)
+	if len(parts) < 2 {
+		return body
+	}
+
+	ct := http.DetectContentType([]byte(parts[1]))
+
+	// if this isn't text, replace with placeholder
+	if !strings.HasPrefix(ct, "text") {
+		return fmt.Sprintf("%s\r\n\r\nOmitting non text body of type: %s", parts[0], ct)
+	}
+
+	return body
 }
 
 // NewChannelLogFromRR creates a new channel log for the passed in channel, id, and request/response log
@@ -43,8 +61,8 @@ func NewChannelLogFromRR(description string, channel Channel, msgID MsgID, rr *u
 		Method:      rr.Method,
 		URL:         rr.URL,
 		StatusCode:  rr.StatusCode,
-		Request:     rr.Request,
-		Response:    rr.Response,
+		Request:     sanitizeBody(rr.Request),
+		Response:    sanitizeBody(rr.Response),
 		CreatedOn:   time.Now(),
 		Elapsed:     rr.Elapsed,
 	}
