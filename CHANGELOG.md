@@ -1,3 +1,7 @@
+v6.4.0
+----------
+ * 6.4.0 Release Candidate
+
 v6.3.5
 ----------
  * up max request size to 1M
