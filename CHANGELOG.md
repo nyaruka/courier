@@ -1,3 +1,8 @@
+v6.5.0
+----------
+ * Always set sent_on for W/S/D statuses if not already set
+ * Update to latest gocommon
+
 v6.4.0
 ----------
  * 6.4.0 Release Candidate
