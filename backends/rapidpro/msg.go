@@ -312,7 +312,7 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 		path = fmt.Sprintf("/%s", path)
 	}
 
-	s3URL, err := b.storage.Put(path, mimeType, body)
+	s3URL, err := b.storage.Put(ctx, path, mimeType, body)
 	if err != nil {
 		return "", err
 	}
