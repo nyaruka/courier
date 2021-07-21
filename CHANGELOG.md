@@ -1,3 +1,8 @@
+v6.5.1
+----------
+ * Give S3 storage test new context on startup
+ * Make DBMsg.SentOn nullable
+
 v6.5.0
 ----------
  * Always set sent_on for W/S/D statuses if not already set
