@@ -470,7 +470,10 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	now := time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)
 
-	// update by id with external id
+	// put test message back into queued state
+	ts.b.db.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL WHERE id = $1`, 10001)
+
+	// update to WIRED using id and provide new external ID
 	status := ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10001), courier.MsgWired)
 	status.SetExternalID("ext0")
 	err := ts.b.WriteMsgStatus(ctx, status)
@@ -479,47 +482,89 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	m, err := readMsgFromDB(ts.b, courier.NewMsgID(10001))
 	ts.NoError(err)
-	ts.Equal(m.Status_, courier.MsgWired)
-	ts.Equal(m.ExternalID_, null.String("ext0"))
+	ts.Equal(courier.MsgWired, m.Status_)
+	ts.Equal(null.String("ext0"), m.ExternalID_)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.After(now))
 
-	// update by id, no external id, shouldn't overwrite it
+	sentOn := m.SentOn_
+
+	// update to SENT using id
 	status = ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10001), courier.MsgSent)
 	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
 	time.Sleep(time.Second)
 
-	// no change for incoming messages
-	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10002))
+	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10001))
 	ts.NoError(err)
-	ts.Equal(m.Status_, courier.MsgPending)
-	ts.Equal(m.ExternalID_, null.String("ext2"))
+	ts.Equal(courier.MsgSent, m.Status_)
+	ts.Equal(null.String("ext0"), m.ExternalID_) // no change
+	ts.True(m.ModifiedOn_.After(now))
+	ts.True(m.SentOn_.Equal(sentOn)) // no change
 
+	// update to DELIVERED using id
+	status = ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10001), courier.MsgDelivered)
+	err = ts.b.WriteMsgStatus(ctx, status)
+	ts.NoError(err)
+	time.Sleep(time.Second)
+
+	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10001))
+	ts.NoError(err)
+	ts.Equal(m.Status_, courier.MsgDelivered)
+	ts.True(m.ModifiedOn_.After(now))
+	ts.True(m.SentOn_.Equal(sentOn)) // no change
+
+	// no change for incoming messages
 	status = ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10002), courier.MsgSent)
 	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
 	time.Sleep(time.Second)
+
 	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10002))
 	ts.NoError(err)
-	ts.Equal(m.Status_, courier.MsgPending)
+	ts.Equal(courier.MsgPending, m.Status_)
 	ts.Equal(m.ExternalID_, null.String("ext2"))
 
-	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10001))
-	ts.NoError(err)
-	ts.Equal(m.Status_, courier.MsgSent)
-	ts.Equal(m.ExternalID_, null.String("ext0"))
-	ts.True(m.ModifiedOn_.After(now))
-
-	// update by external id
+	// update to FAILED using external id
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgFailed)
 	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
 	time.Sleep(time.Second)
+
 	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10000))
 	ts.NoError(err)
-	ts.Equal(m.Status_, courier.MsgFailed)
+	ts.Equal(courier.MsgFailed, m.Status_)
 	ts.True(m.ModifiedOn_.After(now))
+	ts.True(m.SentOn_.IsZero())
+
+	now = time.Now().In(time.UTC)
+	time.Sleep(2 * time.Millisecond)
+
+	// update to WIRED using external id
+	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgWired)
+	err = ts.b.WriteMsgStatus(ctx, status)
+	ts.NoError(err)
+	time.Sleep(time.Second)
+
+	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10000))
+	ts.NoError(err)
+	ts.Equal(courier.MsgWired, m.Status_)
+	ts.True(m.ModifiedOn_.After(now))
+	ts.True(m.SentOn_.After(now))
+
+	sentOn = m.SentOn_
+
+	// update to SENT using external id
+	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgSent)
+	err = ts.b.WriteMsgStatus(ctx, status)
+	ts.NoError(err)
+	time.Sleep(time.Second)
+
+	m, err = readMsgFromDB(ts.b, courier.NewMsgID(10000))
+	ts.NoError(err)
+	ts.Equal(courier.MsgSent, m.Status_)
+	ts.True(m.ModifiedOn_.After(now))
+	ts.True(m.SentOn_.Equal(sentOn)) // no change
 
 	// no such external id for outgoing message
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext2", courier.MsgSent)
@@ -534,6 +579,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// reset our status to sent
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgSent)
 	err = ts.b.WriteMsgStatus(ctx, status)
+	ts.NoError(err)
 	time.Sleep(time.Second)
 
 	// error our msg

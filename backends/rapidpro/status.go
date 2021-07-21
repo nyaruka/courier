@@ -166,11 +166,11 @@ UPDATE msgs_msg SET
 		END,
 	sent_on = CASE 
 		WHEN 
-			:status = 'W' 
+			:status IN ('W', 'S', 'D')
 		THEN 
-			NOW() 
+			COALESCE(sent_on, NOW())
 		ELSE 
-			sent_on 
+			NULL 
 		END,
 	modified_on = :modified_on
 WHERE 
@@ -265,11 +265,11 @@ UPDATE msgs_msg SET
 		END,
 	sent_on = CASE 
 		WHEN 
-			s.status = 'W' 
+			s.status IN ('W', 'S', 'D')
 		THEN 
-			NOW() 
+			COALESCE(sent_on, NOW())
 		ELSE 
-			sent_on 
+			NULL
 		END,
 	external_id = CASE
 		WHEN 
