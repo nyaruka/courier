@@ -700,7 +700,9 @@ func (b *backend) Start() error {
 	}
 
 	// test our storage
+	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 	err = b.storage.Test(ctx)
+	cancel()
 	if err != nil {
 		log.WithError(err).Error(b.storage.Name() + " storage not available")
 	} else {
