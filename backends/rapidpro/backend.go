@@ -694,13 +694,15 @@ func (b *backend) Start() error {
 		if err != nil {
 			return err
 		}
-		b.storage = storage.NewS3(s3Client, b.config.S3MediaBucket)
+		b.storage = storage.NewS3(s3Client, b.config.S3MediaBucket, b.config.S3Region, 32)
 	} else {
 		b.storage = storage.NewFS("_storage")
 	}
 
 	// test our storage
-	err = b.storage.Test()
+	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	err = b.storage.Test(ctx)
+	cancel()
 	if err != nil {
 		log.WithError(err).Error(b.storage.Name() + " storage not available")
 	} else {

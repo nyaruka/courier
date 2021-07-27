@@ -22,18 +22,18 @@ require (
 	github.com/lib/pq v1.0.0
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/nyaruka/ezconf v0.2.1
-	github.com/nyaruka/gocommon v1.6.1
+	github.com/nyaruka/gocommon v1.13.0
 	github.com/nyaruka/librato v1.0.0
 	github.com/nyaruka/null v1.1.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.4.2
-	github.com/stretchr/testify v1.6.1
 	golang.org/x/mod v0.4.2 // indirect
+	github.com/stretchr/testify v1.7.0
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1
 	gopkg.in/go-playground/validator.v9 v9.11.0
 	gopkg.in/h2non/filetype.v1 v1.0.5
 )
 
-go 1.15
+go 1.16

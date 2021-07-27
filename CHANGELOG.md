@@ -1,3 +1,21 @@
+v6.5.1
+----------
+ * Give S3 storage test new context on startup
+ * Make DBMsg.SentOn nullable
+
+v6.5.0
+----------
+ * Always set sent_on for W/S/D statuses if not already set
+ * Update to latest gocommon
+
+v6.4.0
+----------
+ * 6.4.0 Release Candidate
+
+v6.3.5
+----------
+ * up max request size to 1M
+
 v6.3.4
 ----------
  * Include filename when sending WhatsApp attachments
