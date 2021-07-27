@@ -29,6 +29,7 @@ CREATE TABLE contacts_contact (
     id serial primary key,
     is_active boolean NOT NULL,
     status character varying(1) NOT NULL,
+    ticket_count integer NOT NULL,
     created_on timestamp with time zone NOT NULL,
     modified_on timestamp with time zone NOT NULL,
     uuid character varying(36) NOT NULL,
