@@ -1,3 +1,7 @@
+v6.5.2
+----------
+ * Add ticket_count column to contact and set to zero when creating new contacts
+
 v6.5.1
 ----------
  * Give S3 storage test new context on startup
