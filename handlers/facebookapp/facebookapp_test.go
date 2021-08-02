@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/handlers"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
 	"gopkg.in/go-playground/assert.v1"
@@ -479,7 +480,8 @@ var testCases = []ChannelHandleTestCase{
 }
 
 func addValidSignature(r *http.Request) {
-	sig, _ := fbCalculateSignature("fb_app_secret", r)
+	body, _ := handlers.ReadBody(r, 100000)
+	sig, _ := fbCalculateSignature("fb_app_secret", body)
 	r.Header.Set(signatureHeader, fmt.Sprintf("sha1=%s", string(sig)))
 }
 

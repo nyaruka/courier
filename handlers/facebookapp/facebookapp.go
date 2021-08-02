@@ -662,7 +662,12 @@ func (h *handler) validateSignature(r *http.Request) error {
 	}
 	appSecret := h.Server().Config().FacebookApplicationSecret
 
-	expectedSignature, err := fbCalculateSignature(appSecret, r)
+	body, err := handlers.ReadBody(r, 100000)
+	if err != nil {
+		return fmt.Errorf("unable to read request body: %s", err)
+	}
+
+	expectedSignature, err := fbCalculateSignature(appSecret, body)
 	if err != nil {
 		return err
 	}
@@ -674,20 +679,15 @@ func (h *handler) validateSignature(r *http.Request) error {
 
 	// compare signatures in way that isn't sensitive to a timing attack
 	if !hmac.Equal([]byte(expectedSignature), []byte(signature)) {
-		return fmt.Errorf("invalid request signature")
+		return fmt.Errorf("invalid request signature, expected: %s got: %s for body: '%s'", expectedSignature, signature, string(body))
 	}
 
 	return nil
 }
 
-func fbCalculateSignature(appSecret string, r *http.Request) (string, error) {
-	rawPostData, err := handlers.ReadBody(r, 100000)
-	if err != nil {
-		return "", fmt.Errorf("unable to read request body: %s", err)
-	}
-
+func fbCalculateSignature(appSecret string, body []byte) (string, error) {
 	var buffer bytes.Buffer
-	buffer.Write(rawPostData)
+	buffer.Write(body)
 
 	// hash with SHA1
 	mac := hmac.New(sha1.New, []byte(appSecret))
