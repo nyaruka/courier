@@ -1,3 +1,7 @@
+v6.5.3
+----------
+ * log body when calculating signatures, include expected and calculated
+
 v6.5.2
 ----------
  * Add ticket_count column to contact and set to zero when creating new contacts
