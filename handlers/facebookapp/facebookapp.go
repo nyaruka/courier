@@ -674,7 +674,7 @@ func (h *handler) validateSignature(r *http.Request) error {
 
 	signature := ""
 	if len(headerSignature) == 45 && strings.HasPrefix(headerSignature, "sha1=") {
-		signature = strings.TrimLeft(headerSignature, "sha1=")
+		signature = strings.TrimPrefix(headerSignature, "sha1=")
 	}
 
 	// compare signatures in way that isn't sensitive to a timing attack
