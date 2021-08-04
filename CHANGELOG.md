@@ -1,3 +1,7 @@
+v6.5.4
+----------
+ * trim prefix instead of strip when comparing FB sigs
+
 v6.5.3
 ----------
  * log body when calculating signatures, include expected and calculated
