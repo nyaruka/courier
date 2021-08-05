@@ -1,3 +1,7 @@
+v6.5.5
+----------
+ * Send WhatsApp buttons and list buttons when supported (thanks Weni)
+
 v6.5.4
 ----------
  * trim prefix instead of strip when comparing FB sigs
