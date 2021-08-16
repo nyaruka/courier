@@ -111,10 +111,11 @@ func BasePathForURL(rawURL string) (string, error) {
 }
 
 // StringsToRows takes a slice of strings and re-organizes it into rows and columns
-func StringsToRows(strs []string, maxRowRunes, maxRows int) [][]string {
+func StringsToRows(strs []string, maxRows, maxRowRunes, paddingRunes int) [][]string {
+	// calculate rune length if it's all one row
 	totalRunes := 0
 	for i := range strs {
-		totalRunes += utf8.RuneCountInString(strs[i])
+		totalRunes += utf8.RuneCountInString(strs[i]) + paddingRunes*2
 	}
 
 	if totalRunes <= maxRowRunes {
@@ -134,7 +135,7 @@ func StringsToRows(strs []string, maxRowRunes, maxRows int) [][]string {
 	rowRunes := 0
 
 	for _, str := range strs {
-		strRunes := utf8.RuneCountInString(str)
+		strRunes := utf8.RuneCountInString(str) + paddingRunes*2
 
 		// take a new row if we can't fit this string and the current row isn't empty and we haven't hit the row limit
 		if rowRunes+strRunes > maxRowRunes && len(rows[curRow]) > 0 && len(rows) < maxRows {

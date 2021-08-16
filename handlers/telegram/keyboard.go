@@ -18,7 +18,7 @@ type ReplyKeyboardMarkup struct {
 
 // NewKeyboardFromReplies creates a keyboard from the given quick replies
 func NewKeyboardFromReplies(replies []string) *ReplyKeyboardMarkup {
-	rows := utils.StringsToRows(replies, 25, 5)
+	rows := utils.StringsToRows(replies, 5, 30, 2)
 	keyboard := make([][]KeyboardButton, len(rows))
 
 	for i := range rows {

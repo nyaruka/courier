@@ -53,34 +53,38 @@ func TestURLGetFile(t *testing.T) {
 
 func TestStringsToRows(t *testing.T) {
 	tcs := []struct {
-		replies     []string
-		maxRowRunes int
-		maxRows     int
-		expected    [][]string
+		replies      []string
+		maxRows      int
+		maxRowRunes  int
+		paddingRunes int
+		expected     [][]string
 	}{
 		{
 
-			replies:     []string{"OK"},
-			maxRowRunes: 30,
-			maxRows:     3,
+			replies:      []string{"OK"},
+			maxRows:      3,
+			maxRowRunes:  30,
+			paddingRunes: 2,
 			expected: [][]string{
 				{"OK"},
 			},
 		},
 		{
 			// all values fit in single row
-			replies:     []string{"Yes", "No", "Maybe"},
-			maxRowRunes: 30,
-			maxRows:     3,
+			replies:      []string{"Yes", "No", "Maybe"},
+			maxRows:      3,
+			maxRowRunes:  30,
+			paddingRunes: 2,
 			expected: [][]string{
 				{"Yes", "No", "Maybe"},
 			},
 		},
 		{
 			// all values can be their own row
-			replies:     []string{"12345678901234567890", "23456789012345678901", "34567890123456789012"},
-			maxRowRunes: 25,
-			maxRows:     3,
+			replies:      []string{"12345678901234567890", "23456789012345678901", "34567890123456789012"},
+			maxRows:      3,
+			maxRowRunes:  25,
+			paddingRunes: 2,
 			expected: [][]string{
 				{"12345678901234567890"},
 				{"23456789012345678901"},
@@ -88,9 +92,10 @@ func TestStringsToRows(t *testing.T) {
 			},
 		},
 		{
-			replies:     []string{"1234567890", "2345678901", "3456789012", "4567890123"},
-			maxRowRunes: 25,
-			maxRows:     3,
+			replies:      []string{"1234567890", "2345678901", "3456789012", "4567890123"},
+			maxRows:      3,
+			maxRowRunes:  25,
+			paddingRunes: 1,
 			expected: [][]string{
 				{"1234567890", "2345678901"},
 				{"3456789012", "4567890123"},
@@ -98,19 +103,20 @@ func TestStringsToRows(t *testing.T) {
 		},
 		{
 			// we break chars per row limit rather than row limit
-			replies:     []string{"Vanilla", "Chocolate", "Strawberry", "Lemon Sorbet", "Ecuadorian Amazonian Papayas", "Mint"},
-			maxRowRunes: 30,
-			maxRows:     3,
+			replies:      []string{"Vanilla", "Chocolate", "Strawberry", "Lemon Sorbet", "Ecuadorian Amazonian Papayas", "Mint"},
+			maxRows:      3,
+			maxRowRunes:  30,
+			paddingRunes: 2,
 			expected: [][]string{
-				{"Vanilla", "Chocolate", "Strawberry"},
-				{"Lemon Sorbet"},
+				{"Vanilla", "Chocolate"},
+				{"Strawberry", "Lemon Sorbet"},
 				{"Ecuadorian Amazonian Papayas", "Mint"},
 			},
 		},
 	}
 
 	for _, tc := range tcs {
-		rows := utils.StringsToRows(tc.replies, tc.maxRowRunes, tc.maxRows)
+		rows := utils.StringsToRows(tc.replies, tc.maxRows, tc.maxRowRunes, tc.paddingRunes)
 		assert.Equal(t, tc.expected, rows, "rows mismatch for replies %v", tc.replies)
 	}
 }
