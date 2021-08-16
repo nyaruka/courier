@@ -109,3 +109,43 @@ func BasePathForURL(rawURL string) (string, error) {
 	}
 	return path.Base(parsedURL.Path), nil
 }
+
+// StringsToRows takes a slice of strings and re-organizes it into rows and columns
+func StringsToRows(strs []string, maxRows, maxRowRunes, paddingRunes int) [][]string {
+	// calculate rune length if it's all one row
+	totalRunes := 0
+	for i := range strs {
+		totalRunes += utf8.RuneCountInString(strs[i]) + paddingRunes*2
+	}
+
+	if totalRunes <= maxRowRunes {
+		// if all strings fit on a single row, do that
+		return [][]string{strs}
+	} else if len(strs) <= maxRows {
+		// if each string can be a row, do that
+		rows := make([][]string, len(strs))
+		for i := range strs {
+			rows[i] = []string{strs[i]}
+		}
+		return rows
+	}
+
+	rows := [][]string{{}}
+	curRow := 0
+	rowRunes := 0
+
+	for _, str := range strs {
+		strRunes := utf8.RuneCountInString(str) + paddingRunes*2
+
+		// take a new row if we can't fit this string and the current row isn't empty and we haven't hit the row limit
+		if rowRunes+strRunes > maxRowRunes && len(rows[curRow]) > 0 && len(rows) < maxRows {
+			rows = append(rows, []string{})
+			curRow += 1
+			rowRunes = 0
+		}
+
+		rows[curRow] = append(rows[curRow], str)
+		rowRunes += strRunes
+	}
+	return rows
+}
