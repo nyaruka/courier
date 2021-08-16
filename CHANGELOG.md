@@ -1,3 +1,8 @@
+v6.5.6
+----------
+ * Fix FB signing checks by trimming prefix instead of stripping
+ * Improve layout of Telegram keyboards
+
 v6.5.5
 ----------
  * Send WhatsApp buttons and list buttons when supported (thanks Weni)
