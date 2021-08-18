@@ -101,8 +101,6 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
-var timestamp = ""
-
 type moPayload struct {
 	Type    string    `json:"type" validate:"required"`
 	To      string    `json:"to"   validate:"required"`
@@ -123,7 +121,9 @@ type moMessage struct {
 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	start := time.Now()
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgSent)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+
+	timestamp := fmt.Sprint(time.Now().Unix())
 
 	baseURL := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
 	if baseURL == "" {
@@ -134,14 +134,22 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	var logs []*courier.ChannelLog
 
-	payload := newOutgoingMessage("message", msg.URN().Path(), msg.Channel().Address(), msg.QuickReplies())
+	payload := &moPayload{
+		Type: "message",
+		To:   msg.URN().Path(),
+		From: msg.Channel().Address(),
+		Message: moMessage{
+			QuickReplies: msg.QuickReplies(),
+		},
+	}
+
 	lenAttachments := len(msg.Attachments())
 	if lenAttachments > 0 {
 
 	attachmentsLoop:
 		for i, attachment := range msg.Attachments() {
 			mimeType, attachmentURL := handlers.SplitAttachment(attachment)
-			payload.Message.TimeStamp = getTimestamp()
+			payload.Message.TimeStamp = timestamp
 			// parse attachment type
 			if strings.HasPrefix(mimeType, "audio") {
 				payload.Message = moMessage{
@@ -167,7 +175,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				elapsed := time.Since(start)
 				log := courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), elapsed, fmt.Errorf("unknown attachment mime type: %s", mimeType))
 				logs = append(logs, log)
-				status.SetStatus(courier.MsgFailed)
 				break attachmentsLoop
 			}
 
@@ -206,7 +213,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	} else {
 		payload.Message = moMessage{
 			Type:         "text",
-			TimeStamp:    getTimestamp(),
+			TimeStamp:    timestamp,
 			Text:         msg.Text(),
 			QuickReplies: msg.QuickReplies(),
 		}
@@ -237,23 +244,4 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	return status, nil
-}
-
-func newOutgoingMessage(payType, to, from string, quickReplies []string) *moPayload {
-	return &moPayload{
-		Type: payType,
-		To:   to,
-		From: from,
-		Message: moMessage{
-			QuickReplies: quickReplies,
-		},
-	}
-}
-
-func getTimestamp() string {
-	if timestamp != "" {
-		return timestamp
-	}
-
-	return fmt.Sprint(time.Now().Unix())
 }
