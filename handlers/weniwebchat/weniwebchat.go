@@ -124,6 +124,7 @@ type moMessage struct {
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	start := time.Now()
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	hasError := false
 
 	if timestamp == "" {
 		timestamp = fmt.Sprint(time.Now().Unix())
@@ -179,6 +180,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				elapsed := time.Since(start)
 				log := courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), elapsed, fmt.Errorf("unknown attachment mime type: %s", mimeType))
 				logs = append(logs, log)
+				hasError = true
 				break attachmentsLoop
 			}
 
@@ -199,7 +201,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				elapsed := time.Since(start)
 				log := courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), elapsed, err)
 				logs = append(logs, log)
-				status.SetStatus(courier.MsgFailed)
+				hasError = true
 				break attachmentsLoop
 			}
 			req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewBuffer(body))
@@ -210,7 +212,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				logs = append(logs, log)
 			}
 			if err != nil {
-				status.SetStatus(courier.MsgFailed)
+				hasError = true
 				break attachmentsLoop
 			}
 		}
@@ -227,7 +229,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			elapsed := time.Since(start)
 			log := courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), elapsed, err)
 			logs = append(logs, log)
-			status.SetStatus(courier.MsgFailed)
+			hasError = true
 		} else {
 			req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
@@ -237,7 +239,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				logs = append(logs, log)
 			}
 			if err != nil {
-				status.SetStatus(courier.MsgFailed)
+				hasError = true
 			}
 		}
 
@@ -245,6 +247,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	for _, log := range logs {
 		status.AddLog(log)
+	}
+
+	if !hasError {
+		status.SetStatus(courier.MsgWired)
 	}
 
 	return status, nil
