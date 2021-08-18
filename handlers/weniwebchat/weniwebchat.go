@@ -17,6 +17,8 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
+var timestamp = ""
+
 func init() {
 	courier.RegisterHandler(newHandler())
 }
@@ -123,7 +125,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	start := time.Now()
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
-	timestamp := fmt.Sprint(time.Now().Unix())
+	if timestamp == "" {
+		timestamp = fmt.Sprint(time.Now().Unix())
+	}
 
 	baseURL := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
 	if baseURL == "" {
