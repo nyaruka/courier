@@ -195,22 +195,30 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// if we have text, send that if we aren't sending it as a caption
 	if msg.Text() != "" && caption == "" {
+		var msgKeyBoard *ReplyKeyboardMarkup
+		if len(msg.Attachments()) == 0 {
+			msgKeyBoard = keyboard
+		}
+
 		form := url.Values{
 			"chat_id": []string{msg.URN().Path()},
 			"text":    []string{msg.Text()},
 		}
 
-		externalID, log, err := h.sendMsgPart(msg, authToken, "sendMessage", form, keyboard)
+		externalID, log, err := h.sendMsgPart(msg, authToken, "sendMessage", form, msgKeyBoard)
 		status.SetExternalID(externalID)
 		hasError = err != nil
 		status.AddLog(log)
 
-		// clear our keyboard which has now been sent
-		keyboard = nil
 	}
 
 	// send each attachment
-	for _, attachment := range msg.Attachments() {
+	for i, attachment := range msg.Attachments() {
+		var attachmentKeyBoard *ReplyKeyboardMarkup
+		if i == len(msg.Attachments())-1 {
+			attachmentKeyBoard = keyboard
+		}
+
 		mediaType, mediaURL := handlers.SplitAttachment(attachment)
 		switch strings.Split(mediaType, "/")[0] {
 		case "image":
@@ -219,7 +227,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"photo":   []string{mediaURL},
 				"caption": []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, keyboard)
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, attachmentKeyBoard)
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
@@ -230,7 +238,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"video":   []string{mediaURL},
 				"caption": []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendVideo", form, keyboard)
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendVideo", form, attachmentKeyBoard)
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
@@ -241,7 +249,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"audio":   []string{mediaURL},
 				"caption": []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendAudio", form, keyboard)
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendAudio", form, attachmentKeyBoard)
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
@@ -252,7 +260,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"document": []string{mediaURL},
 				"caption":  []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendDocument", form, keyboard)
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendDocument", form, attachmentKeyBoard)
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
@@ -264,8 +272,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		}
 
-		// clear our keyboard, we only send it on the first message
-		keyboard = nil
 	}
 
 	if !hasError {
