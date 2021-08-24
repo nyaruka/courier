@@ -2,7 +2,6 @@ package telegram
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -15,6 +14,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -131,12 +131,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
-func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, replies string) (string, *courier.ChannelLog, error) {
-	// either include or remove our keyboard depending on whether we have quick replies
-	if replies == "" {
+func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, keyboard *ReplyKeyboardMarkup) (string, *courier.ChannelLog, error) {
+	// either include or remove our keyboard
+	if keyboard == nil {
 		form.Add("reply_markup", `{"remove_keyboard":true}`)
 	} else {
-		form.Add("reply_markup", replies)
+		form.Add("reply_markup", string(jsonx.MustMarshal(keyboard)))
 	}
 
 	sendURL := fmt.Sprintf("%s/bot%s/%s", apiURL, token, path)
@@ -188,20 +188,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// figure out whether we have a keyboard to send as well
 	qrs := msg.QuickReplies()
-	replies := ""
-
+	var keyboard *ReplyKeyboardMarkup
 	if len(qrs) > 0 {
-		keys := make([]moKey, len(qrs))
-		for i, qr := range qrs {
-			keys[i].Text = qr
-		}
-
-		tk := moKeyboard{true, true, [][]moKey{keys}}
-		replyBytes, err := json.Marshal(tk)
-		if err != nil {
-			return nil, err
-		}
-		replies = string(replyBytes)
+		keyboard = NewKeyboardFromReplies(qrs)
 	}
 
 	// if we have text, send that if we aren't sending it as a caption
@@ -211,13 +200,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"text":    []string{msg.Text()},
 		}
 
-		externalID, log, err := h.sendMsgPart(msg, authToken, "sendMessage", form, replies)
+		externalID, log, err := h.sendMsgPart(msg, authToken, "sendMessage", form, keyboard)
 		status.SetExternalID(externalID)
 		hasError = err != nil
 		status.AddLog(log)
 
-		// clear our replies, they've been sent
-		replies = ""
+		// clear our keyboard which has now been sent
+		keyboard = nil
 	}
 
 	// send each attachment
@@ -230,7 +219,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"photo":   []string{mediaURL},
 				"caption": []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, replies)
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, keyboard)
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
@@ -241,7 +230,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"video":   []string{mediaURL},
 				"caption": []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendVideo", form, replies)
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendVideo", form, keyboard)
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
@@ -252,7 +241,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"audio":   []string{mediaURL},
 				"caption": []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendAudio", form, replies)
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendAudio", form, keyboard)
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
@@ -263,7 +252,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"document": []string{mediaURL},
 				"caption":  []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendDocument", form, replies)
+			externalID, log, err := h.sendMsgPart(msg, authToken, "sendDocument", form, keyboard)
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
@@ -275,8 +264,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		}
 
-		// clear our replies, we only send it on the first message
-		replies = ""
+		// clear our keyboard, we only send it on the first message
+		keyboard = nil
 	}
 
 	if !hasError {
@@ -330,16 +319,6 @@ func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fi
 
 	// return the URL
 	return fmt.Sprintf("%s/file/bot%s/%s", apiURL, authToken, filePath), nil
-}
-
-type moKeyboard struct {
-	ResizeKeyboard  bool      `json:"resize_keyboard"`
-	OneTimeKeyboard bool      `json:"one_time_keyboard"`
-	Keyboard        [][]moKey `json:"keyboard"`
-}
-
-type moKey struct {
-	Text string `json:"text"`
 }
 
 type moFile struct {

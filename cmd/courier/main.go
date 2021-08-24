@@ -67,7 +67,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/whatsapp"
 	_ "github.com/nyaruka/courier/handlers/yo"
 	_ "github.com/nyaruka/courier/handlers/zenvia"
-	_ "github.com/nyaruka/courier/handlers/zenviawhatsapp"
+	_ "github.com/nyaruka/courier/handlers/zenviaold"
 
 	// load available backends
 	_ "github.com/nyaruka/courier/backends/rapidpro"

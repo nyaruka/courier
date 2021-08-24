@@ -212,20 +212,6 @@ WHERE
     ch.id = $1
 `
 
-// for testing only, returned DBMsg object is not fully populated
-func readMsgFromDB(b *backend, id courier.MsgID) (*DBMsg, error) {
-	m := &DBMsg{
-		ID_: id,
-	}
-	err := b.db.Get(m, selectMsgSQL, id)
-	ch := &DBChannel{
-		ID_: m.ChannelID_,
-	}
-	err = b.db.Get(ch, selectChannelSQL, m.ChannelID_)
-	m.channel = ch
-	return m, err
-}
-
 //-----------------------------------------------------------------------------
 // Media download and classification
 //-----------------------------------------------------------------------------
@@ -312,7 +298,7 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 		path = fmt.Sprintf("/%s", path)
 	}
 
-	s3URL, err := b.storage.Put(path, mimeType, body)
+	s3URL, err := b.storage.Put(ctx, path, mimeType, body)
 	if err != nil {
 		return "", err
 	}
@@ -505,6 +491,7 @@ type DBMsg struct {
 	ExternalID_           null.String            `json:"external_id"     db:"external_id"`
 	ResponseToID_         courier.MsgID          `json:"response_to_id"  db:"response_to_id"`
 	ResponseToExternalID_ string                 `json:"response_to_external_id"`
+	IsResend_             bool                   `json:"is_resend,omitempty"`
 	Metadata_             json.RawMessage        `json:"metadata"        db:"metadata"`
 
 	ChannelID_    courier.ChannelID `json:"channel_id"      db:"channel_id"`
@@ -517,14 +504,13 @@ type DBMsg struct {
 	ChannelUUID_ courier.ChannelUUID `json:"channel_uuid"`
 	ContactName_ string              `json:"contact_name"`
 
-	NextAttempt_ time.Time `json:"next_attempt"  db:"next_attempt"`
-	CreatedOn_   time.Time `json:"created_on"    db:"created_on"`
-	ModifiedOn_  time.Time `json:"modified_on"   db:"modified_on"`
-	QueuedOn_    time.Time `json:"queued_on"     db:"queued_on"`
-	SentOn_      time.Time `json:"sent_on"       db:"sent_on"`
+	NextAttempt_ time.Time  `json:"next_attempt"  db:"next_attempt"`
+	CreatedOn_   time.Time  `json:"created_on"    db:"created_on"`
+	ModifiedOn_  time.Time  `json:"modified_on"   db:"modified_on"`
+	QueuedOn_    time.Time  `json:"queued_on"     db:"queued_on"`
+	SentOn_      *time.Time `json:"sent_on"       db:"sent_on"`
 
-	// fields used only for mailroom enabled orgs.. these allow courier to update a session's timeout when
-	// a message is sent for correct and efficient timeout behavior
+	// fields used to allow courier to update a session's timeout when a message is sent for efficient timeout behavior
 	SessionID_            SessionID  `json:"session_id,omitempty"`
 	SessionTimeout_       int        `json:"session_timeout,omitempty"`
 	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on,omitempty"`
@@ -546,10 +532,11 @@ func (m *DBMsg) URN() urns.URN                { return m.URN_ }
 func (m *DBMsg) URNAuth() string              { return m.URNAuth_ }
 func (m *DBMsg) ContactName() string          { return m.ContactName_ }
 func (m *DBMsg) HighPriority() bool           { return m.HighPriority_ }
-func (m *DBMsg) ReceivedOn() *time.Time       { return &m.SentOn_ }
-func (m *DBMsg) SentOn() *time.Time           { return &m.SentOn_ }
+func (m *DBMsg) ReceivedOn() *time.Time       { return m.SentOn_ }
+func (m *DBMsg) SentOn() *time.Time           { return m.SentOn_ }
 func (m *DBMsg) ResponseToID() courier.MsgID  { return m.ResponseToID_ }
 func (m *DBMsg) ResponseToExternalID() string { return m.ResponseToExternalID_ }
+func (m *DBMsg) IsResend() bool               { return m.IsResend_ }
 
 func (m *DBMsg) Channel() courier.Channel { return m.channel }
 func (m *DBMsg) SessionStatus() string    { return m.SessionStatus_ }
@@ -595,7 +582,7 @@ func (m *DBMsg) urnFingerprint() string {
 func (m *DBMsg) WithContactName(name string) courier.Msg { m.ContactName_ = name; return m }
 
 // WithReceivedOn can be used to set sent_on on a msg in a chained call
-func (m *DBMsg) WithReceivedOn(date time.Time) courier.Msg { m.SentOn_ = date; return m }
+func (m *DBMsg) WithReceivedOn(date time.Time) courier.Msg { m.SentOn_ = &date; return m }
 
 // WithExternalID can be used to set the external id on a msg in a chained call
 func (m *DBMsg) WithExternalID(id string) courier.Msg { m.ExternalID_ = null.String(id); return m }

@@ -1,3 +1,64 @@
+v6.5.6
+----------
+ * Fix FB signing checks by trimming prefix instead of stripping
+ * Improve layout of Telegram keyboards
+
+v6.5.5
+----------
+ * Send WhatsApp buttons and list buttons when supported (thanks Weni)
+
+v6.5.4
+----------
+ * trim prefix instead of strip when comparing FB sigs
+
+v6.5.3
+----------
+ * log body when calculating signatures, include expected and calculated
+
+v6.5.2
+----------
+ * Add ticket_count column to contact and set to zero when creating new contacts
+
+v6.5.1
+----------
+ * Give S3 storage test new context on startup
+ * Make DBMsg.SentOn nullable
+
+v6.5.0
+----------
+ * Always set sent_on for W/S/D statuses if not already set
+ * Update to latest gocommon
+
+v6.4.0
+----------
+ * 6.4.0 Release Candidate
+
+v6.3.5
+----------
+ * up max request size to 1M
+
+v6.3.4
+----------
+ * Include filename when sending WhatsApp attachments
+
+v6.3.3
+----------
+ * Support using namespace from the template translation
+ * Add is_resend to Msg payload to allow for resending messages manually
+
+v6.3.2
+----------
+ * Do not verify the SSL certificate for Bongo Live
+
+v6.3.1
+----------
+ * Update BL to remove UDH parameter and use HTTPS URL
+
+v6.2.2
+----------
+ * Handle whatsapp URNs sent to Twiml handler without prefix
+ * Add support for Zenvia SMS
+
 v6.2.1
 ----------
  * Add support for Zenvia WhatsApp

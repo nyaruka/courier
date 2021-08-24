@@ -10,9 +10,10 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/handlers"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
-	"gopkg.in/go-playground/assert.v1"
+	"github.com/stretchr/testify/assert"
 )
 
 var testChannels = []courier.Channel{
@@ -479,7 +480,8 @@ var testCases = []ChannelHandleTestCase{
 }
 
 func addValidSignature(r *http.Request) {
-	sig, _ := fbCalculateSignature("fb_app_secret", r)
+	body, _ := handlers.ReadBody(r, 100000)
+	sig, _ := fbCalculateSignature("fb_app_secret", body)
 	r.Header.Set(signatureHeader, fmt.Sprintf("sha1=%s", string(sig)))
 }
 
@@ -623,4 +625,26 @@ func TestSending(t *testing.T) {
 	maxMsgLength = 100
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "2020", "US", map[string]interface{}{courier.ConfigAuthToken: "access_token"})
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+}
+
+func TestSigning(t *testing.T) {
+	tcs := []struct {
+		Body      string
+		Signature string
+	}{
+		{
+			"hello world",
+			"308de7627fe19e92294c4572a7f831bc1002809d",
+		},
+		{
+			"hello world2",
+			"ab6f902b58b9944032d4a960f470d7a8ebfd12b7",
+		},
+	}
+
+	for i, tc := range tcs {
+		sig, err := fbCalculateSignature("sesame", []byte(tc.Body))
+		assert.NoError(t, err)
+		assert.Equal(t, tc.Signature, sig, "%d: mismatched signature", i)
+	}
 }

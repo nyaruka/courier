@@ -68,7 +68,11 @@ type Backend interface {
 
 	// WasMsgSent returns whether the backend thinks the passed in message was already sent. This can be used in cases where
 	// a backend wants to implement a failsafe against double sending messages (say if they were double queued)
-	WasMsgSent(context.Context, Msg) (bool, error)
+	WasMsgSent(context.Context, MsgID) (bool, error)
+
+	// ClearMsgSent clears any internal status that a message was previously sent. This can be used in the case where
+	// a message is being forced in being resent by a user
+	ClearMsgSent(context.Context, MsgID) error
 
 	// IsMsgLoop returns whether the passed in message is part of a message loop, possibly with another bot. Backends should
 	// implement their own logic to implement this.

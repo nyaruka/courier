@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	sendURL      = "http://api.blsmsgw.com:8080/bin/send.json"
+	sendURL      = "https://api.blsmsgw.com:8443/bin/send.json"
 	maxMsgLength = 160
 )
 
@@ -146,7 +146,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"DESTADDR":   []string{strings.TrimPrefix(msg.URN().Path(), "+")},
 			"MESSAGE":    []string{part},
 			"DLR":        []string{"1"},
-			"UDHI":       []string{"1"},
 		}
 
 		replaced := gsm7.ReplaceSubstitutions(part)
@@ -159,13 +158,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		partSendURL, _ := url.Parse(sendURL)
 		partSendURL.RawQuery = form.Encode()
 
-		req, err := http.NewRequest(http.MethodGet, partSendURL.String(), nil)
+		req, err := http.NewRequest(http.MethodPost, partSendURL.String(), nil)
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		rr, err := utils.MakeHTTPRequest(req)
+		rr, err := utils.MakeInsecureHTTPRequest(req)
 
 		// record our status and log
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Send Error", err)

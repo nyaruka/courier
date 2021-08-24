@@ -581,7 +581,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		PostParams: map[string]string{
 			"text":         "Are you happy?",
 			"chat_id":      "12345",
-			"reply_markup": `{"resize_keyboard":true,"one_time_keyboard":true,"keyboard":[[{"text":"Yes"},{"text":"No"}]]}`,
+			"reply_markup": `{"keyboard":[[{"text":"Yes"},{"text":"No"}]],"resize_keyboard":true,"one_time_keyboard":true}`,
 		},
 		SendPrep: setSendURL},
 	{Label: "Unicode Send",

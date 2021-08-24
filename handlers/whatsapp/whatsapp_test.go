@@ -123,7 +123,8 @@ var documentMsg = `{
 			"link": "https://example.org/v1/media/41",
 			"mime_type": "text/plain",
 			"sha256": "the-sha-signature",
-			"caption": "the caption"
+			"caption": "the caption",
+			"filename": "filename.type"
 		}
 	}]
 }`
@@ -142,6 +143,38 @@ var imageMsg = `{
 			"sha256": "the-sha-signature",
 			"caption": "the caption"
 		}
+	}]
+}`
+
+var interactiveButtonMsg = `{
+  "messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"interactive": {
+			"button_reply": {
+				"id": "0",
+				"title": "BUTTON1"
+			},
+			"type": "button_reply"
+		},
+		"timestamp": "1454119029",
+		"type": "interactive"
+	}]
+}`
+
+var interactiveListMsg = `{
+	"messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"interactive": {
+			"list_reply": {
+				"id": "0",
+				"title": "ROW1"
+			},
+			"type": "list_reply"
+		},
+		"timestamp": "1454119029",
+		"type": "interactive"
 	}]
 }`
 
@@ -269,6 +302,10 @@ var waTestCases = []ChannelHandleTestCase{
 		Text: Sp("the caption"), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 	{Label: "Receive Valid Image Message", URL: waReceiveURL, Data: imageMsg, Status: 200, Response: `"type":"msg"`,
 		Text: Sp("the caption"), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Interactive Button Message", URL: waReceiveURL, Data: interactiveButtonMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp("BUTTON1"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Interactive List Message", URL: waReceiveURL, Data: interactiveListMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp("ROW1"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 	{Label: "Receive Valid Location Message", URL: waReceiveURL, Data: locationMsg, Status: 200, Response: `"type":"msg"`,
 		Text: Sp(""), Attachment: Sp("geo:0.000000,1.000000"), URN: Sp("whatsapp:250788123123"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 	{Label: "Receive Valid Video Message", URL: waReceiveURL, Data: videoMsg, Status: 200, Response: `"type":"msg"`,
@@ -389,7 +426,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/v1/messages",
-				Body:   `{"to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption"}}`,
+				Body:   `{"to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -447,6 +484,15 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Metadata:     json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "country": "US", "variables": ["Chef", "tomorrow"]}}`),
 		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 200,
 		RequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		SendPrep:    setSendURL,
+	},
+	{Label: "Template Namespace",
+		Text:   "templated message",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Metadata:     json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "namespace": "wa_template_namespace", "language": "eng", "country": "US", "variables": ["Chef", "tomorrow"]}}`),
+		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 200,
+		RequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"wa_template_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		SendPrep:    setSendURL,
 	},
 	{Label: "Template Invalid Language",
@@ -541,6 +587,18 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL,
 	},
+	{Label: "Interactive Button Message Send",
+		Text: "Interactive Button Msg", URN: "whatsapp:250788123123", QuickReplies: []string{"BUTTON1"},
+		Status: "W", ExternalID: "157b5e14568e8",
+		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
+		RequestBody: `{"to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
+		SendPrep:    setSendURL},
+	{Label: "Interactive List Message Send",
+		Text: "Interactive List Msg", URN: "whatsapp:250788123123", QuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
+		Status: "W", ExternalID: "157b5e14568e8",
+		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
+		RequestBody: `{"to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
+		SendPrep:    setSendURL},
 }
 
 var mediaCacheSendTestCases = []ChannelSendTestCase{
@@ -662,6 +720,7 @@ func TestSending(t *testing.T) {
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",
 			"fb_namespace": "waba_namespace",
+			"version":      "v2.35.2",
 		})
 
 	var hsmSupportChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WA", "250788383383", "US",
@@ -670,6 +729,7 @@ func TestSending(t *testing.T) {
 			"base_url":     "https://foo.bar/",
 			"fb_namespace": "waba_namespace",
 			"hsm_support":  true,
+			"version":      "v2.35.2",
 		})
 
 	var d3Channel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "D3", "250788383383", "US",
@@ -677,6 +737,7 @@ func TestSending(t *testing.T) {
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",
 			"fb_namespace": "waba_namespace",
+			"version":      "v2.35.2",
 		})
 
 	var txwChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TXW", "250788383383", "US",
@@ -684,6 +745,7 @@ func TestSending(t *testing.T) {
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",
 			"fb_namespace": "waba_namespace",
+			"version":      "v2.35.2",
 		})
 
 	RunChannelSendTestCases(t, defaultChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), defaultSendTestCases, nil)
