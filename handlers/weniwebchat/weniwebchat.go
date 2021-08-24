@@ -72,7 +72,7 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 	}
 
 	// build urn
-	urn, err := urns.NewURNFromParts(urns.ExternalScheme, payload.From, "", "")
+	urn, err := urns.NewURNFromParts(urns.WebChatScheme, payload.From, "", "")
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
