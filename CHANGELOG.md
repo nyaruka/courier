@@ -1,3 +1,8 @@
+v6.5.7
+----------
+ * Fix to only set the quick replies keyboard for the last message
+ * Update to latest gocommon
+
 v6.5.6
 ----------
  * Fix FB signing checks by trimming prefix instead of stripping
