@@ -76,8 +76,8 @@ type moPayload struct {
 type statusPayload struct {
 	CallbackMTRequest struct {
 		StatusCode string `json:"status" validate:"required"`
-		ID         string `json:"id"     validate:"required" `
-	}
+		ID         string `json:"id"     validate:"required"`
+	} `json:"callbackMtRequest"`
 }
 
 // {
