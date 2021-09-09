@@ -172,6 +172,7 @@ type eventPayload struct {
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	payload := &eventPayload{}
+	
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -419,9 +420,24 @@ type LocalizableParam struct {
 	Default string `json:"default"`
 }
 
+type mmtImage struct{
+	Link string `json:"link,omitempty"`
+}
+
+type mmtDocument struct{
+	Link string `json:"link,omitempty"`
+}
+
+type mmtVideo struct{
+	Link string `json:"link,omitempty"`
+}
+
 type Param struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
+	Type     string      `json:"type"`
+	Text     string      `json:"text,omitempty"`
+	Image    *mmtImage    `json:"image,omitempty"`
+	Document *mmtDocument `json:"document,omitempty"`
+	Video    *mmtVideo    `json:"video,omitempty"`
 }
 
 type Component struct {
@@ -495,6 +511,7 @@ const maxMsgLength = 4096
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	start := time.Now()
+	
 	// get our token
 	token := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if token == "" {
@@ -525,6 +542,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	for i, payload := range payloads {
 		externalID := ""
+
 		wppID, externalID, logs, err = sendWhatsAppMsg(msg, sendPath, payload)
 		// add logs to our status
 		for _, log := range logs {
@@ -564,76 +582,11 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 	var logs []*courier.ChannelLog
 	var err error
 
-	if len(msg.Attachments()) > 0 {
-		for attachmentCount, attachment := range msg.Attachments() {
+	// do we have a template?
+	var templating *MsgTemplating
+	templating,err = h.getTemplate(msg)
+	if templating != nil || len(msg.Attachments()) == 0{
 
-			mimeType, mediaURL := handlers.SplitAttachment(attachment)
-			mediaID, mediaLogs, err := h.fetchMediaID(msg, mimeType, mediaURL)
-			if len(mediaLogs) > 0 {
-				logs = append(logs, mediaLogs...)
-			}
-			if err != nil {
-				logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("error while uploading media to whatsapp")
-			}
-			if err == nil && mediaID != "" {
-				mediaURL = ""
-			}
-			mediaPayload := &mediaObject{ID: mediaID, Link: mediaURL}
-			if strings.HasPrefix(mimeType, "audio") {
-				payload := mtAudioPayload{
-					To:   msg.URN().Path(),
-					Type: "audio",
-				}
-				payload.Audio = mediaPayload
-				payloads = append(payloads, payload)
-			} else if strings.HasPrefix(mimeType, "application") {
-				payload := mtDocumentPayload{
-					To:   msg.URN().Path(),
-					Type: "document",
-				}
-				if attachmentCount == 0 {
-					mediaPayload.Caption = msg.Text()
-				}
-				mediaPayload.Filename, err = utils.BasePathForURL(mediaURL)
-
-				// Logging error
-				if err != nil {
-					logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("Error while parsing the media URL")
-				}
-				payload.Document = mediaPayload
-				payloads = append(payloads, payload)
-			} else if strings.HasPrefix(mimeType, "image") {
-				payload := mtImagePayload{
-					To:   msg.URN().Path(),
-					Type: "image",
-				}
-				if attachmentCount == 0 {
-					mediaPayload.Caption = msg.Text()
-				}
-				payload.Image = mediaPayload
-				payloads = append(payloads, payload)
-			} else if strings.HasPrefix(mimeType, "video") {
-				payload := mtVideoPayload{
-					To:   msg.URN().Path(),
-					Type: "video",
-				}
-				if attachmentCount == 0 {
-					mediaPayload.Caption = msg.Text()
-				}
-				payload.Video = mediaPayload
-				payloads = append(payloads, payload)
-			} else {
-				duration := time.Since(start)
-				err = fmt.Errorf("unknown attachment mime type: %s", mimeType)
-				attachmentLogs := []*courier.ChannelLog{courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)}
-				logs = append(logs, attachmentLogs...)
-				break
-			}
-		}
-	} else {
-		// do we have a template?
-		var templating *MsgTemplating
-		templating, err := h.getTemplate(msg)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
 		}
@@ -660,7 +613,6 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				}
 				payloads = append(payloads, payload)
 			} else {
-
 				payload := templatePayload{
 					To:   msg.URN().Path(),
 					Type: "template",
@@ -677,6 +629,50 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				}
 				payload.Template.Components = append(payload.Template.Components, *component)
 
+				if(len(msg.Attachments()) > 0){
+
+					header := &Component{Type:"header"}
+
+					for _, attachment := range msg.Attachments() {
+
+						mimeType, mediaURL := handlers.SplitAttachment(attachment)
+						mediaID, mediaLogs, err := h.fetchMediaID(msg, mimeType, mediaURL)
+						if len(mediaLogs) > 0 {
+							logs = append(logs, mediaLogs...)
+						}
+						if err != nil {
+							logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("error while uploading media to whatsapp")
+						}
+						if err != nil && mediaID != "" {
+							mediaURL = ""
+						}
+						if strings.HasPrefix(mimeType, "image"){
+							image := &mmtImage{
+								Link: mediaURL,
+							}
+							header.Parameters = append(header.Parameters, Param{Type: "image", Image: image})
+							payload.Template.Components = append(payload.Template.Components, *header)
+						}else if strings.HasPrefix(mimeType, "application"){
+							document := &mmtDocument{
+								Link: mediaURL,
+							}
+							header.Parameters = append(header.Parameters, Param{Type: "document", Document: document})
+							payload.Template.Components = append(payload.Template.Components, *header)
+						}else if strings.HasPrefix(mimeType, "video") {
+							video := &mmtVideo{
+								Link: mediaURL,
+							}
+							header.Parameters = append(header.Parameters, Param{Type: "video", Video: video})
+							payload.Template.Components = append(payload.Template.Components, *header)
+						}else {
+							duration := time.Since(start)
+							err = fmt.Errorf("unknown attachment mime type: %s", mimeType)
+							attachmentLogs := []*courier.ChannelLog{courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)}
+							logs = append(logs, attachmentLogs...)
+							break
+						}		
+					}
+				}
 				payloads = append(payloads, payload)
 			}
 		} else {
@@ -748,7 +744,76 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				}
 			}
 		}
-	}
+	}else{
+
+		if len(msg.Attachments()) > 0 {
+			for attachmentCount, attachment := range msg.Attachments() {
+
+				mimeType, mediaURL := handlers.SplitAttachment(attachment)
+				mediaID, mediaLogs, err := h.fetchMediaID(msg, mimeType, mediaURL)
+				if len(mediaLogs) > 0 {
+					logs = append(logs, mediaLogs...)
+				}
+				if err != nil {
+					logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("error while uploading media to whatsapp")
+				}
+				if err == nil && mediaID != "" {
+					mediaURL = ""
+				}
+				mediaPayload := &mediaObject{ID: mediaID, Link: mediaURL}
+				if strings.HasPrefix(mimeType, "audio") {
+					payload := mtAudioPayload{
+						To:   msg.URN().Path(),
+						Type: "audio",
+					}
+					payload.Audio = mediaPayload
+					payloads = append(payloads, payload)
+				} else if strings.HasPrefix(mimeType, "application") {
+					payload := mtDocumentPayload{
+						To:   msg.URN().Path(),
+						Type: "document",
+					}
+					if attachmentCount == 0 {
+						mediaPayload.Caption = msg.Text()
+					}
+					mediaPayload.Filename, err = utils.BasePathForURL(mediaURL)
+
+					// Logging error
+					if err != nil {
+						logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("Error while parsing the media URL")
+					}
+					payload.Document = mediaPayload
+					payloads = append(payloads, payload)
+				} else if strings.HasPrefix(mimeType, "image") {
+					payload := mtImagePayload{
+						To:   msg.URN().Path(),
+						Type: "image",
+					}
+					if attachmentCount == 0 {
+						mediaPayload.Caption = msg.Text()
+					}
+					payload.Image = mediaPayload
+					payloads = append(payloads, payload)
+				} else if strings.HasPrefix(mimeType, "video") {
+					payload := mtVideoPayload{
+						To:   msg.URN().Path(),
+						Type: "video",
+					}
+					if attachmentCount == 0 {
+						mediaPayload.Caption = msg.Text()
+					}
+					payload.Video = mediaPayload
+					payloads = append(payloads, payload)
+				} else {
+					duration := time.Since(start)
+					err = fmt.Errorf("unknown attachment mime type: %s", mimeType)
+					attachmentLogs := []*courier.ChannelLog{courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)}
+					logs = append(logs, attachmentLogs...)
+					break
+				}
+			}
+		}
+	} 
 	return payloads, logs, err
 }
 
@@ -836,6 +901,7 @@ func sendWhatsAppMsg(msg courier.Msg, sendPath *url.URL, payload interface{}) (s
 		log := courier.NewChannelLogFromError("unable to build JSON body", msg.Channel(), msg.ID(), elapsed, err)
 		return "", "", []*courier.ChannelLog{log}, err
 	}
+
 	req, _ := http.NewRequest(http.MethodPost, sendPath.String(), bytes.NewReader(jsonBody))
 	req.Header = buildWhatsAppHeaders(msg.Channel())
 	rr, err := utils.MakeHTTPRequest(req)
