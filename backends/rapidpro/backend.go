@@ -310,10 +310,13 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 
 // WriteMsg writes the passed in message to our store
 func (b *backend) WriteMsg(ctx context.Context, m courier.Msg) error {
-	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
-	defer cancel()
-
-	return writeMsg(timeout, b, m)
+	if checkOptOutKeywordPresence(m.Text()) {
+		return nil
+	} else {
+		timeout, cancel := context.WithTimeout(ctx, backendTimeout)
+		defer cancel()
+		return writeMsg(timeout, b, m)
+	}
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
