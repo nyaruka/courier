@@ -310,11 +310,12 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 
 // WriteMsg writes the passed in message to our store
 func (b *backend) WriteMsg(ctx context.Context, m courier.Msg) error {
+	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
+	defer cancel()
 	if checkOptOutKeywordPresence(m.Text()) {
-		return nil
+		event := b.NewChannelEvent(m.Channel(), courier.StopConversation, m.URN())
+		return writeChannelEvent(timeout, b, event)
 	} else {
-		timeout, cancel := context.WithTimeout(ctx, backendTimeout)
-		defer cancel()
 		return writeMsg(timeout, b, m)
 	}
 }
@@ -436,6 +437,7 @@ func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.Cha
 
 // WriteChannelEvent writes the passed in channel even returning any error
 func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent) error {
+
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
