@@ -172,7 +172,7 @@ type eventPayload struct {
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	payload := &eventPayload{}
-	
+
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -420,21 +420,21 @@ type LocalizableParam struct {
 	Default string `json:"default"`
 }
 
-type mmtImage struct{
+type mmtImage struct {
 	Link string `json:"link,omitempty"`
 }
 
-type mmtDocument struct{
+type mmtDocument struct {
 	Link string `json:"link,omitempty"`
 }
 
-type mmtVideo struct{
+type mmtVideo struct {
 	Link string `json:"link,omitempty"`
 }
 
 type Param struct {
-	Type     string      `json:"type"`
-	Text     string      `json:"text,omitempty"`
+	Type     string       `json:"type"`
+	Text     string       `json:"text,omitempty"`
 	Image    *mmtImage    `json:"image,omitempty"`
 	Document *mmtDocument `json:"document,omitempty"`
 	Video    *mmtVideo    `json:"video,omitempty"`
@@ -511,7 +511,7 @@ const maxMsgLength = 4096
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	start := time.Now()
-	
+
 	// get our token
 	token := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if token == "" {
@@ -584,7 +584,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 
 	// do we have a template?
 	templating, err := h.getTemplate(msg)
-	if templating != nil || len(msg.Attachments()) == 0{
+	if templating != nil || len(msg.Attachments()) == 0 {
 
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
@@ -628,9 +628,9 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				}
 				payload.Template.Components = append(payload.Template.Components, *component)
 
-				if(len(msg.Attachments()) > 0){
+				if len(msg.Attachments()) > 0 {
 
-					header := &Component{Type:"header"}
+					header := &Component{Type: "header"}
 
 					for _, attachment := range msg.Attachments() {
 
@@ -645,31 +645,31 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 						if err != nil && mediaID != "" {
 							mediaURL = ""
 						}
-						if strings.HasPrefix(mimeType, "image"){
+						if strings.HasPrefix(mimeType, "image") {
 							image := &mmtImage{
 								Link: mediaURL,
 							}
 							header.Parameters = append(header.Parameters, Param{Type: "image", Image: image})
 							payload.Template.Components = append(payload.Template.Components, *header)
-						}else if strings.HasPrefix(mimeType, "application"){
+						} else if strings.HasPrefix(mimeType, "application") {
 							document := &mmtDocument{
 								Link: mediaURL,
 							}
 							header.Parameters = append(header.Parameters, Param{Type: "document", Document: document})
 							payload.Template.Components = append(payload.Template.Components, *header)
-						}else if strings.HasPrefix(mimeType, "video") {
+						} else if strings.HasPrefix(mimeType, "video") {
 							video := &mmtVideo{
 								Link: mediaURL,
 							}
 							header.Parameters = append(header.Parameters, Param{Type: "video", Video: video})
 							payload.Template.Components = append(payload.Template.Components, *header)
-						}else {
+						} else {
 							duration := time.Since(start)
 							err = fmt.Errorf("unknown attachment mime type: %s", mimeType)
 							attachmentLogs := []*courier.ChannelLog{courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)}
 							logs = append(logs, attachmentLogs...)
 							break
-						}		
+						}
 					}
 				}
 				payloads = append(payloads, payload)
@@ -743,7 +743,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				}
 			}
 		}
-	}else{
+	} else {
 
 		if len(msg.Attachments()) > 0 {
 			for attachmentCount, attachment := range msg.Attachments() {
@@ -812,7 +812,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				}
 			}
 		}
-	} 
+	}
 	return payloads, logs, err
 }
 
