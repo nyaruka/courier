@@ -583,8 +583,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 	var err error
 
 	// do we have a template?
-	var templating *MsgTemplating
-	templating,err = h.getTemplate(msg)
+	templating, err := h.getTemplate(msg)
 	if templating != nil || len(msg.Attachments()) == 0{
 
 		if err != nil {
