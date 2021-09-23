@@ -312,8 +312,12 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 func (b *backend) WriteMsg(ctx context.Context, m courier.Msg) error {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
-
-	return writeMsg(timeout, b, m)
+	if checkOptOutKeywordPresence(m.Text()) {
+		event := b.NewChannelEvent(m.Channel(), courier.StopConversation, m.URN())
+		return writeChannelEvent(timeout, b, event)
+	} else {
+		return writeMsg(timeout, b, m)
+	}
 }
 
 // NewMsgAttachmentForExternalID creates a new Attachment object for the given message id
@@ -448,6 +452,7 @@ func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.Cha
 
 // WriteChannelEvent writes the passed in channel even returning any error
 func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent) error {
+
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
