@@ -313,7 +313,10 @@ func (b *backend) WriteMsg(ctx context.Context, m courier.Msg) error {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 	if checkOptOutKeywordPresence(m.Text()) {
-		event := b.NewChannelEvent(m.Channel(), courier.StopConversation, m.URN())
+		event := b.NewChannelEvent(m.Channel(), courier.StopConversation, m.URN()).WithExtra(map[string]interface{}{
+			"opt_out_message":  m.Text(),
+			"opt_out_datetime": m.ReceivedOn(),
+		})
 		return writeChannelEvent(timeout, b, event)
 	} else {
 		return writeMsg(timeout, b, m)
