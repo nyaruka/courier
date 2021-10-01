@@ -11,10 +11,11 @@ type ChannelEventType string
 
 // Possible values for ChannelEventTypes
 const (
-	NewConversation ChannelEventType = "new_conversation"
-	Referral        ChannelEventType = "referral"
-	StopContact     ChannelEventType = "stop_contact"
-	WelcomeMessage  ChannelEventType = "welcome_message"
+	NewConversation  ChannelEventType = "new_conversation"
+	StopConversation ChannelEventType = "stop_conversation"
+	Referral         ChannelEventType = "referral"
+	StopContact      ChannelEventType = "stop_contact"
+	WelcomeMessage   ChannelEventType = "welcome_message"
 )
 
 //-----------------------------------------------------------------------------
