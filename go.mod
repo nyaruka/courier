@@ -3,7 +3,7 @@ module github.com/nyaruka/courier
 require (
 	github.com/antchfx/xmlquery v0.0.0-20181223105952-355641961c92
 	github.com/antchfx/xpath v0.0.0-20181208024549-4bbdf6db12aa // indirect
-	github.com/aws/aws-sdk-go v1.34.31
+	github.com/aws/aws-sdk-go v1.40.56
 	github.com/buger/jsonparser v0.0.0-20180318095312-2cac668e8456
 	github.com/certifi/gocertifi v0.0.0-20180118203423-deb3ae2ef261 // indirect
 	github.com/dghubble/oauth1 v0.4.0
@@ -13,6 +13,7 @@ require (
 	github.com/go-errors/errors v1.0.1
 	github.com/go-playground/locales v0.11.2 // indirect
 	github.com/go-playground/universal-translator v0.16.0 // indirect
+	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gorilla/schema v1.0.2
@@ -22,7 +23,7 @@ require (
 	github.com/lib/pq v1.0.0
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/nyaruka/ezconf v0.2.1
-	github.com/nyaruka/gocommon v1.13.2
+	github.com/nyaruka/gocommon v1.14.1
 	github.com/nyaruka/librato v1.0.0
 	github.com/nyaruka/null v1.1.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -36,4 +37,21 @@ require (
 	gopkg.in/h2non/filetype.v1 v1.0.5
 )
 
-go 1.16
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/fatih/structs v1.0.0 // indirect
+	github.com/golang/protobuf v1.3.2 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
+	github.com/naoina/go-stringutil v0.1.0 // indirect
+	github.com/naoina/toml v0.1.1 // indirect
+	github.com/nyaruka/phonenumbers v1.0.71 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/shopspring/decimal v1.2.0 // indirect
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
+	golang.org/x/sys v0.0.0-20210423082822-04245dca01da // indirect
+	golang.org/x/text v0.3.6 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+)
+
+go 1.17

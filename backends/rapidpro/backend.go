@@ -690,6 +690,7 @@ func (b *backend) Start() error {
 			Region:             b.config.S3Region,
 			DisableSSL:         b.config.S3DisableSSL,
 			ForcePathStyle:     b.config.S3ForcePathStyle,
+			MaxRetries:         3,
 		})
 		if err != nil {
 			return err
