@@ -300,7 +300,7 @@ func calculateSignature(authToken string, contents []byte) string {
 type mtPayload struct {
 	AuthToken    string            `json:"auth_token"`
 	Receiver     string            `json:"receiver"`
-	Text         string            `json:"text"`
+	Text         string            `json:"text,omitempty"`
 	Type         string            `json:"type"`
 	TrackingData string            `json:"tracking_data"`
 	Sender       map[string]string `json:"sender,omitempty"`
@@ -348,11 +348,31 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		replies = &mtKeyboard{"keyboard", true, buttons}
 	}
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
-	if len(msg.Attachments()) > 0 && len(parts[0]) > descriptionMaxLength {
-		descriptionPart := handlers.SplitMsg(msg.Text(), descriptionMaxLength)[0]
-		others := handlers.SplitMsgByChannel(msg.Channel(), strings.TrimSpace(strings.Replace(msg.Text(), descriptionPart, "", 1)), maxMsgLength)
+
+	if len(msg.Attachments()) > 0 {
+		mediaType, _ := handlers.SplitAttachment(msg.Attachments()[0])
+		format := strings.Split(mediaType, "/")[0]
+		descriptionPart := ""
+		others := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
+
+		if format == "image" {
+			descriptionPart = parts[0]
+			if len(parts[0]) > descriptionMaxLength {
+				descriptionPart = handlers.SplitMsg(msg.Text(), descriptionMaxLength)[0]
+			}
+
+			if len(descriptionPart) > 0 {
+				remaining_text := strings.TrimSpace(strings.Replace(msg.Text(), descriptionPart, "", 1))
+				if len(remaining_text) > 0 {
+					others = handlers.SplitMsgByChannel(msg.Channel(), remaining_text, maxMsgLength)
+				} else {
+					others = []string{}
+				}
+			}
+		}
 		parts = []string{descriptionPart}
 		parts = append(parts, others...)
+
 	}
 
 	for i, part := range parts {
