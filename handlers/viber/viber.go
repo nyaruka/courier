@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -321,6 +322,11 @@ type mtButton struct {
 	ActionBody string `json:"ActionBody"`
 	Text       string `json:"Text"`
 	TextSize   string `json:"TextSize"`
+	Columns    string `json:"Columns,omitempty"`
+	Rows       string `json:"Rows,omitempty"`
+	BgColor    string `json:"BgColor,omitempty"`
+	TextHAlign string `json:"TextHAlign,omitempty"`
+	TextVAlign string `json:"TextVAlign,omitempty"`
 }
 
 // SendMsg sends the passed in message, returning any error
@@ -338,11 +344,46 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	if len(qrs) > 0 {
 		buttons := make([]mtButton, len(qrs))
+		buttonLayout := msg.Channel().ConfigForKey("button_layout", nil)
+
 		for i, qr := range qrs {
 			buttons[i].ActionType = "reply"
 			buttons[i].TextSize = "regular"
 			buttons[i].ActionBody = string(qr[:])
 			buttons[i].Text = string(qr[:])
+
+			if buttonLayout != nil {
+				layout := buttonLayout.(map[string]interface{})
+				columns := fmt.Sprint(layout["columns"])
+				rows := fmt.Sprint(layout["rows"])
+				bgColor := fmt.Sprint(layout["bg_color"])
+				textVAlign := fmt.Sprint(layout["text_v_align"])
+				textHAlign := fmt.Sprint(layout["text_h_align"])
+				textStyle := fmt.Sprint(layout["text"])
+				textSize := fmt.Sprint(layout["text_size"])
+
+				if columns, err := strconv.Atoi(strings.TrimSpace(columns)); err == nil && columns >= 1 && columns <= 6 {
+					buttons[i].Columns = fmt.Sprint(columns)
+				}
+				if rows, err := strconv.Atoi(strings.TrimSpace(rows)); err == nil && rows >= 1 && rows <= 6 {
+					buttons[i].Rows = fmt.Sprint(rows)
+				}
+				if len(strings.TrimSpace(bgColor)) == 7 {
+					buttons[i].BgColor = bgColor
+				}
+				if strings.TrimSpace(textVAlign) != "" {
+					buttons[i].TextVAlign = textVAlign
+				}
+				if strings.TrimSpace(textHAlign) != "" {
+					buttons[i].TextHAlign = textHAlign
+				}
+				if strings.TrimSpace(textStyle) != "" {
+					buttons[i].Text = strings.Replace(textStyle, "*", qr[:], 1)
+				}
+				if strings.TrimSpace(textSize) != "" {
+					buttons[i].TextSize = textSize
+				}
+			}
 		}
 
 		replies = &mtKeyboard{"keyboard", true, buttons}

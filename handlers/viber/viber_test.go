@@ -162,6 +162,19 @@ var invalidTokenSendTestCases = []ChannelSendTestCase{
 	{Label: "Invalid token", Error: "missing auth token in config"},
 }
 
+var buttonLayoutSendTestCases = []ChannelSendTestCase{
+	{Label: "Quick Reply With Layout With Column, Row and BgColor definitions",
+		Text: "Select a, b, c or d.", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", QuickReplies: []string{"a", "b", "c", "d"},
+		Status: "W", ResponseStatus: 200,
+		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+			"Accept":       "application/json",
+		},
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Select a, b, c or d.","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":true,"Buttons":[{"ActionType":"reply","ActionBody":"a","Text":"\u003cfont color=\"#ffffff\"\u003ea\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","Rows":"2","BgColor":"#f7bb3f","TextHAlign":"left","TextVAlign":"bottom"},{"ActionType":"reply","ActionBody":"b","Text":"\u003cfont color=\"#ffffff\"\u003eb\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","Rows":"2","BgColor":"#f7bb3f","TextHAlign":"left","TextVAlign":"bottom"},{"ActionType":"reply","ActionBody":"c","Text":"\u003cfont color=\"#ffffff\"\u003ec\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","Rows":"2","BgColor":"#f7bb3f","TextHAlign":"left","TextVAlign":"bottom"},{"ActionType":"reply","ActionBody":"d","Text":"\u003cfont color=\"#ffffff\"\u003ed\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","Rows":"2","BgColor":"#f7bb3f","TextHAlign":"left","TextVAlign":"bottom"}]}}`,
+		SendPrep:    setSendURL},
+}
+
 func TestSending(t *testing.T) {
 	attachmentService := buildMockAttachmentService(defaultSendTestCases)
 	defer attachmentService.Close()
@@ -175,8 +188,14 @@ func TestSending(t *testing.T) {
 	var invalidTokenChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		map[string]interface{}{},
 	)
+	var buttonLayoutChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2021", "",
+		map[string]interface{}{
+			courier.ConfigAuthToken: "Token",
+			"button_layout":         map[string]interface{}{"columns": "2", "rows": "2", "bg_color": "#f7bb3f", "text_v_align": "bottom", "text_h_align": "left", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
+		})
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 	RunChannelSendTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases, nil)
+	RunChannelSendTestCases(t, buttonLayoutChannel, newHandler(), buttonLayoutSendTestCases, nil)
 }
 
 var testChannels = []courier.Channel{
