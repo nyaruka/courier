@@ -351,23 +351,20 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	if len(msg.Attachments()) > 0 {
 		mediaType, _ := handlers.SplitAttachment(msg.Attachments()[0])
-		format := strings.Split(mediaType, "/")[0]
+		isImage := strings.Split(mediaType, "/")[0] == "image"
+
 		descriptionPart := ""
 		others := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 
-		if format == "image" {
+		if isImage {
 			descriptionPart = parts[0]
 			if len(parts[0]) > descriptionMaxLength {
 				descriptionPart = handlers.SplitMsg(msg.Text(), descriptionMaxLength)[0]
 			}
-
-			if len(descriptionPart) > 0 {
-				remaining_text := strings.TrimSpace(strings.Replace(msg.Text(), descriptionPart, "", 1))
-				if len(remaining_text) > 0 {
-					others = handlers.SplitMsgByChannel(msg.Channel(), remaining_text, maxMsgLength)
-				} else {
-					others = []string{}
-				}
+			others = []string{}
+			// find remaining parts if we have message longer than the description
+			if len(msg.Text()) > len(descriptionPart) {
+				others = handlers.SplitMsgByChannel(msg.Channel(), strings.TrimSpace(strings.Replace(msg.Text(), descriptionPart, "", 1)), maxMsgLength)
 			}
 		}
 		parts = []string{descriptionPart}
