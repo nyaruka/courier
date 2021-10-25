@@ -349,42 +349,40 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 
+	descriptionPart := ""
 	if len(msg.Attachments()) > 0 {
-		mediaType, _ := handlers.SplitAttachment(msg.Attachments()[0])
-		isImage := strings.Split(mediaType, "/")[0] == "image"
+		descriptionPart = handlers.SplitMsg(msg.Text(), descriptionMaxLength)[0]
 
-		descriptionPart := ""
-		others := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
+		// Avoid repeating the sent description when we have exactly one image sent.
+		if len(msg.Attachments()) == 1 {
+			mediaType, _ := handlers.SplitAttachment(msg.Attachments()[0])
+			isImage := strings.Split(mediaType, "/")[0] == "image"
 
-		if isImage {
-			descriptionPart = parts[0]
-			if len(parts[0]) > descriptionMaxLength {
-				descriptionPart = handlers.SplitMsg(msg.Text(), descriptionMaxLength)[0]
+			if isImage {
+				parts = []string{}
+				// find remaining parts if we have message longer than the description
+				if len(msg.Text()) > len(descriptionPart) {
+					parts = handlers.SplitMsgByChannel(msg.Channel(), strings.TrimSpace(strings.Replace(msg.Text(), descriptionPart, "", 1)), maxMsgLength)
+				}
 			}
-			others = []string{}
-			// find remaining parts if we have message longer than the description
-			if len(msg.Text()) > len(descriptionPart) {
-				others = handlers.SplitMsgByChannel(msg.Channel(), strings.TrimSpace(strings.Replace(msg.Text(), descriptionPart, "", 1)), maxMsgLength)
-			}
+
 		}
-		parts = []string{descriptionPart}
-		parts = append(parts, others...)
-
 	}
 
-	for i, part := range parts {
+	for i := 0; i < len(parts)+len(msg.Attachments()); i++ {
 		msgType := "text"
 		attSize := -1
 		attURL := ""
 		filename := ""
+		msgText := ""
 
-		// add any media URL to the first part
-		if len(msg.Attachments()) > 0 && i == 0 {
+		if i < len(msg.Attachments()) {
 			mediaType, mediaURL := handlers.SplitAttachment(msg.Attachments()[0])
 			switch strings.Split(mediaType, "/")[0] {
 			case "image":
 				msgType = "picture"
 				attURL = mediaURL
+				msgText = descriptionPart
 
 			case "video":
 				msgType = "video"
@@ -399,6 +397,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				}
 
 				attSize = rr.ContentLength
+				msgText = ""
 
 			case "audio":
 				msgType = "file"
@@ -413,18 +412,22 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				}
 				attSize = rr.ContentLength
 				filename = "Audio"
+				msgText = ""
 
 			default:
 				status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
 					"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
 
 			}
+
+		} else {
+			msgText = parts[i-len(msg.Attachments())]
 		}
 
 		payload := mtPayload{
 			AuthToken:    authToken,
 			Receiver:     msg.URN().Path(),
-			Text:         part,
+			Text:         msgText,
 			Type:         msgType,
 			TrackingData: msg.ID().String(),
 			Media:        attURL,
