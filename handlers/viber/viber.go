@@ -30,7 +30,7 @@ var (
 	sendURL              = "https://chatapi.viber.com/pa/send_message"
 	maxMsgLength         = 7000
 	quickReplyTextSize   = 36
-	descriptionMaxLength = 120
+	descriptionMaxLength = 512
 )
 
 func init() {
@@ -350,23 +350,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 
 	descriptionPart := ""
-	if len(msg.Attachments()) > 0 {
-		descriptionPart = handlers.SplitMsg(msg.Text(), descriptionMaxLength)[0]
+	if len(msg.Attachments()) == 1 && len(msg.Text()) < descriptionMaxLength {
+		mediaType, _ := handlers.SplitAttachment(msg.Attachments()[0])
+		isImage := strings.Split(mediaType, "/")[0] == "image"
 
-		// Avoid repeating the sent description when we have exactly one image sent.
-		if len(msg.Attachments()) == 1 {
-			mediaType, _ := handlers.SplitAttachment(msg.Attachments()[0])
-			isImage := strings.Split(mediaType, "/")[0] == "image"
-
-			if isImage {
-				parts = []string{}
-				// find remaining parts if we have message longer than the description
-				if len(msg.Text()) > len(descriptionPart) {
-					parts = handlers.SplitMsgByChannel(msg.Channel(), strings.TrimSpace(strings.Replace(msg.Text(), descriptionPart, "", 1)), maxMsgLength)
-				}
-			}
-
+		if isImage {
+			descriptionPart = msg.Text()
+			parts = []string{}
 		}
+
 	}
 
 	for i := 0; i < len(parts)+len(msg.Attachments()); i++ {
