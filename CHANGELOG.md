@@ -1,3 +1,9 @@
+v6.5.9
+----------
+ * Fix Viber attachments
+ * CI testing on PG12 and 13
+ * Update to latest gocommon and go 1.17
+
 v6.5.8
 ----------
  * Fix Facebook document attachment
