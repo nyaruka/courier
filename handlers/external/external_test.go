@@ -423,11 +423,11 @@ func TestSending(t *testing.T) {
 
 	var jsonChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
-			"send_path":                     "",
-			courier.ConfigSendBody:          `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
-			courier.ConfigContentType:       contentJSON,
-			courier.ConfigSendMethod:        http.MethodPost,
-			courier.ConfigSendAuthorization: "Token ABCDEF",
+			"send_path":               "",
+			courier.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
+			courier.ConfigContentType: contentJSON,
+			courier.ConfigSendMethod:  http.MethodPost,
+			courier.ConfigSendHeaders: map[string]interface{}{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
 	var xmlChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
@@ -472,22 +472,22 @@ func TestSending(t *testing.T) {
 
 	var jsonChannel30IntLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
-			"send_path":                     "",
-			"max_length":                    30,
-			courier.ConfigSendBody:          `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
-			courier.ConfigContentType:       contentJSON,
-			courier.ConfigSendMethod:        http.MethodPost,
-			courier.ConfigSendAuthorization: "Token ABCDEF",
+			"send_path":               "",
+			"max_length":              30,
+			courier.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
+			courier.ConfigContentType: contentJSON,
+			courier.ConfigSendMethod:  http.MethodPost,
+			courier.ConfigSendHeaders: map[string]interface{}{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
 	var xmlChannel30IntLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
-			"send_path":                     "",
-			"max_length":                    30,
-			courier.ConfigSendBody:          `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
-			courier.ConfigContentType:       contentXML,
-			courier.ConfigSendMethod:        http.MethodPost,
-			courier.ConfigSendAuthorization: "Token ABCDEF",
+			"send_path":               "",
+			"max_length":              30,
+			courier.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
+			courier.ConfigContentType: contentXML,
+			courier.ConfigSendMethod:  http.MethodPost,
+			courier.ConfigSendHeaders: map[string]interface{}{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
 	RunChannelSendTestCases(t, getChannel30IntLength, newHandler(), longSendTestCases, nil)
