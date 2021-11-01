@@ -1,3 +1,7 @@
+v7.0.0
+----------
+ * Tweak README
+
 v6.5.9
 ----------
  * Fix Viber attachments
