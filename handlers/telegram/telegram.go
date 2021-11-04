@@ -126,7 +126,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	if payload.Message.MediaGroupID != "" {
 		externalID = payload.Message.MediaGroupID
 		attachment, err := h.Backend().NewMsgAttachmentForExternalID(channel, externalID, mediaURL)
-		if err == nil {
+		if err == nil && attachment != nil {
 			msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(externalID).WithContactName(name)
 			msg.WithID(attachment.ID())
 			return handlers.WriteMsgAttachmentAndResponse(ctx, h, &msg, &attachment, w, r)

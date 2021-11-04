@@ -978,6 +978,19 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 		ts.True(strings.HasPrefix(m.Attachments()[0], "image/png:"))
 		ts.True(strings.HasSuffix(m.Attachments()[0], ".png"))
 	}
+
+	dbAttachment := newMsgAttachment(knChannel, msg.ExternalID(), msg.Attachments()[0])
+	dbAttachment.ID_ = courier.MsgID(1)
+	ts.Equal(dbAttachment.ExternalID_, msg.ExternalID())
+	ts.Equal(len(dbAttachment.Attachments()), 0)
+	ts.Equal(dbAttachment.ChannelUUID(), knChannel.UUID())
+	ts.Equal(dbAttachment.ID(), courier.MsgID(1))
+
+	err = validateMsgAttachmentInDB(ts.b, dbAttachment)
+	ts.Equal("sql: no rows in result set", err.Error())
+
+	err = writeMsgAttachmentToDB(ctx, ts.b, dbAttachment)
+	ts.NoError(err)
 }
 
 func (ts *BackendTestSuite) TestWriteMsg() {
