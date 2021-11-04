@@ -80,6 +80,7 @@ type moForm struct {
 	ToCountry   string
 	Body        string
 	NumMedia    int
+	NumSegments int
 }
 
 type statusForm struct {
@@ -133,7 +134,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Body).WithExternalID(form.MessageSID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Body).WithExternalID(form.MessageSID).WithSegmentsCount(form.NumSegments)
 
 	// process any attached media
 	for i := 0; i < form.NumMedia; i++ {
@@ -204,6 +205,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	channel := msg.Channel()
 
+	totalSegments := 0
 	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	for i, part := range parts {
@@ -296,6 +298,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if i == 0 {
 			status.SetExternalID(externalID)
 		}
+	}
+
+	if totalSegments != 0 {
+		msg.WithSegmentsCount(totalSegments)
 	}
 
 	return status, nil
