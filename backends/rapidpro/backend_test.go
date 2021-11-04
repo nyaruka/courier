@@ -892,6 +892,24 @@ func (ts *BackendTestSuite) TestChannel() {
 	ts.False(exChannel2.HasRole(courier.ChannelRoleCall))
 	ts.False(exChannel2.HasRole(courier.ChannelRoleAnswer))
 
+	ctx := context.Background()
+
+	channelByAddress, err := getChannelByAddress(ctx, ts.b.db, "KN", courier.ChannelAddress(knChannel.Address()))
+	ts.Equal(channelByAddress.Address(), "2500")
+	ts.NoError(err)
+	ts.Equal(channelByAddress.IsScheme("whatsapp"), false)
+	ts.Equal(channelByAddress.Schemes(), []string{"tel"})
+	ts.Equal(channelByAddress.CallbackDomain("courier.ccl.com"), "courier.ccl.com")
+	ts.Equal(channelByAddress.BoolConfigForKey("CHATBASE_API_KEY", false), false)
+	ts.Equal(channelByAddress.supportsScheme("tel"), true)
+	ts.Equal(channelByAddress.supportsScheme("whatsapp"), false)
+
+	cacheChannelByAddress(channelByAddress)
+
+	channelByAddress, err = getChannelByAddress(ctx, ts.b.db, "KN", courier.ChannelAddress(knChannel.Address()))
+	ts.Equal(channelByAddress.Address(), "2500")
+
+	clearLocalChannel(channelByAddress.UUID())
 }
 
 func (ts *BackendTestSuite) TestChanneLog() {
