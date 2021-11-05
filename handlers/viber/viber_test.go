@@ -83,7 +83,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":true,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular"},{"ActionType":"reply","ActionBody":"No","Text":"No","TextSize":"regular"}]}}`,
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular","Columns":"3"},{"ActionType":"reply","ActionBody":"No","Text":"No","TextSize":"regular","Columns":"3"}]}}`,
 		SendPrep:    setSendURL},
 	{Label: "Send Attachment",
 		Text: "My pic!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"image/jpeg:https://localhost/image.jpg"},
@@ -171,7 +171,7 @@ var buttonLayoutSendTestCases = []ChannelSendTestCase{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Select a, b, c or d.","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":true,"Buttons":[{"ActionType":"reply","ActionBody":"a","Text":"\u003cfont color=\"#ffffff\"\u003ea\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","Rows":"2","BgColor":"#f7bb3f","TextHAlign":"left","TextVAlign":"bottom"},{"ActionType":"reply","ActionBody":"b","Text":"\u003cfont color=\"#ffffff\"\u003eb\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","Rows":"2","BgColor":"#f7bb3f","TextHAlign":"left","TextVAlign":"bottom"},{"ActionType":"reply","ActionBody":"c","Text":"\u003cfont color=\"#ffffff\"\u003ec\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","Rows":"2","BgColor":"#f7bb3f","TextHAlign":"left","TextVAlign":"bottom"},{"ActionType":"reply","ActionBody":"d","Text":"\u003cfont color=\"#ffffff\"\u003ed\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","Rows":"2","BgColor":"#f7bb3f","TextHAlign":"left","TextVAlign":"bottom"}]}}`,
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Select a, b, c or d.","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"a","Text":"\u003cfont color=\"#ffffff\"\u003ea\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"3","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"b","Text":"\u003cfont color=\"#ffffff\"\u003eb\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"3","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"c","Text":"\u003cfont color=\"#ffffff\"\u003ec\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"3","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"d","Text":"\u003cfont color=\"#ffffff\"\u003ed\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"3","BgColor":"#f7bb3f"}]}}`,
 		SendPrep:    setSendURL},
 }
 
@@ -191,7 +191,7 @@ func TestSending(t *testing.T) {
 	var buttonLayoutChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2021", "",
 		map[string]interface{}{
 			courier.ConfigAuthToken: "Token",
-			"button_layout":         map[string]interface{}{"columns": "2", "rows": "2", "bg_color": "#f7bb3f", "text_v_align": "bottom", "text_h_align": "left", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
+			"button_layout":         map[string]interface{}{"bg_color": "#f7bb3f", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
 		})
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 	RunChannelSendTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases, nil)
