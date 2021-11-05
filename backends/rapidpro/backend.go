@@ -323,6 +323,13 @@ func (b *backend) WriteMsg(ctx context.Context, m courier.Msg) error {
 	}
 }
 
+// WriteMsgSegments updates the number of segments in passed message to our store
+func (b *backend) WriteMsgSegments(ctx context.Context, m courier.Msg) error {
+	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
+	defer cancel()
+	return writeMsgSegments(timeout, b, m)
+}
+
 // NewMsgAttachmentForExternalID creates a new Attachment object for the given message id
 func (b *backend) NewMsgAttachmentForExternalID(channel courier.Channel, externalID string, attachmentUrl string) (courier.MsgAttachment, error) {
 	attachment := newMsgAttachment(channel, externalID, attachmentUrl)
