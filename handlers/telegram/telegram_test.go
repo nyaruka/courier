@@ -271,6 +271,56 @@ var photoMsg = `
     }
 }`
 
+var photoMsgWithMediaGroup = `
+{
+    "update_id": 900946525,
+    "message": {
+        "message_id": 85,
+		"media_group_id": "123123123123123",
+        "from": {
+            "id": 3527065,
+            "first_name": "Nic",
+            "last_name": "Pottier",
+            "username": "Nicpottier"
+        },
+        "chat": {
+            "id": 3527065,
+            "first_name": "Nic",
+            "last_name": "Pottier",
+            "username": "Nicpottier",
+            "type": "private"
+        },
+        "date": 1493843318,
+        "photo": [
+            {
+                "file_id": "AgADAQADtKcxG4LRUUQSQVUjfJIiiF8G6C8ABHsRSbk65AmUi3cBAAEC",
+                "file_size": 1140,
+                "width": 51,
+                "height": 90
+            },
+            {
+                "file_id": "AgADAQADtKcxG4LRUUQSQVUjfJIiiF8G6C8ABNEDQTuwtue6jXcBAAEC",
+                "file_size": 12138,
+                "width": 180,
+                "height": 320
+            },
+            {
+                "file_id": "AgADAQADtKcxG4LRUUQSQVUjfJIiiF8G6C8ABF8Fy2sccmWmjHcBAAEC",
+                "file_size": 57833,
+                "width": 450,
+                "height": 800
+            },
+            {
+                "file_id": "AgADAQADtKcxG4LRUUQSQVUjfJIiiF8G6C8ABA9NJzFdXskaincBAAEC",
+                "file_size": 254737,
+                "width": 720,
+                "height": 1280
+            }
+        ],
+        "caption": "Photo Caption"
+    }
+}`
+
 var videoMsg = `
 {
     "update_id": 900946526,
@@ -466,6 +516,9 @@ var testCases = []ChannelHandleTestCase{
 
 	{Label: "Receive Photo", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: photoMsg, Status: 200, Response: "Accepted",
 		Name: Sp("Nic Pottier"), Text: Sp("Photo Caption"), Attachment: Sp("/file/bota123/photo.jpg"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("85"), Date: Tp(time.Date(2017, 5, 3, 20, 28, 38, 0, time.UTC))},
+
+	{Label: "Receive Photo with Media Group ID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: photoMsgWithMediaGroup, Status: 200, Response: "Accepted",
+		Name: Sp("Nic Pottier"), Text: Sp("Photo Caption"), Attachment: Sp("/file/bota123/photo.jpg"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("123123123123123"), Date: Tp(time.Date(2017, 5, 3, 20, 28, 38, 0, time.UTC))},
 
 	{Label: "Receive Video", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: videoMsg, Status: 200, Response: "Accepted",
 		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/video.jpg"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("86"), Date: Tp(time.Date(2017, 5, 3, 20, 29, 24, 0, time.UTC))},

@@ -892,6 +892,24 @@ func (ts *BackendTestSuite) TestChannel() {
 	ts.False(exChannel2.HasRole(courier.ChannelRoleCall))
 	ts.False(exChannel2.HasRole(courier.ChannelRoleAnswer))
 
+	ctx := context.Background()
+
+	channelByAddress, err := getChannelByAddress(ctx, ts.b.db, "KN", courier.ChannelAddress(knChannel.Address()))
+	ts.Equal(channelByAddress.Address(), "2500")
+	ts.NoError(err)
+	ts.Equal(channelByAddress.IsScheme("whatsapp"), false)
+	ts.Equal(channelByAddress.Schemes(), []string{"tel"})
+	ts.Equal(channelByAddress.CallbackDomain("courier.ccl.com"), "courier.ccl.com")
+	ts.Equal(channelByAddress.BoolConfigForKey("CHATBASE_API_KEY", false), false)
+	ts.Equal(channelByAddress.supportsScheme("tel"), true)
+	ts.Equal(channelByAddress.supportsScheme("whatsapp"), false)
+
+	cacheChannelByAddress(channelByAddress)
+
+	channelByAddress, err = getChannelByAddress(ctx, ts.b.db, "KN", courier.ChannelAddress(knChannel.Address()))
+	ts.Equal(channelByAddress.Address(), "2500")
+
+	clearLocalChannel(channelByAddress.UUID())
 }
 
 func (ts *BackendTestSuite) TestChanneLog() {
@@ -978,6 +996,19 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 		ts.True(strings.HasPrefix(m.Attachments()[0], "image/png:"))
 		ts.True(strings.HasSuffix(m.Attachments()[0], ".png"))
 	}
+
+	dbAttachment := newMsgAttachment(knChannel, msg.ExternalID(), msg.Attachments()[0])
+	dbAttachment.ID_ = courier.MsgID(1)
+	ts.Equal(dbAttachment.ExternalID_, msg.ExternalID())
+	ts.Equal(len(dbAttachment.Attachments()), 0)
+	ts.Equal(dbAttachment.ChannelUUID(), knChannel.UUID())
+	ts.Equal(dbAttachment.ID(), courier.MsgID(1))
+
+	err = validateMsgAttachmentInDB(ts.b, dbAttachment)
+	ts.Equal("sql: no rows in result set", err.Error())
+
+	err = writeMsgAttachmentToDB(ctx, ts.b, dbAttachment)
+	ts.NoError(err)
 }
 
 func (ts *BackendTestSuite) TestWriteMsg() {
