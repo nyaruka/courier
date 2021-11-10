@@ -261,15 +261,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 		status.AddLog(log)
 
-		// grab the number of segments of current message
-		currSegmentsNum, err := jsonparser.GetString([]byte(rr.Body), "num_segments")
-		if err == nil {
-			currSegmentsNum, err := strconv.Atoi(currSegmentsNum)
-			if err == nil {
-				totalSegments += currSegmentsNum
-			}
-		}
-
 		// see if we can parse the error if we have one
 		if err != nil && rr.Body != nil {
 			errorCode, _ := jsonparser.GetInt([]byte(rr.Body), "code")
@@ -292,6 +283,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		// fail if we received an error
 		if err != nil {
 			return status, nil
+		}
+
+		// grab the number of segments of current message
+		if rr.Body != nil {
+			currSegmentsNum, err := jsonparser.GetString([]byte(rr.Body), "num_segments")
+			if err == nil {
+				currSegmentsNum, err := strconv.Atoi(currSegmentsNum)
+				if err == nil {
+					totalSegments += currSegmentsNum
+				}
+			}
 		}
 
 		// grab the external id
