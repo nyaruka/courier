@@ -91,6 +91,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 	"Buffered": courier.MsgSent,
 	"Rejected": courier.MsgFailed,
 	"Failed":   courier.MsgFailed,
+	"Expired":  courier.MsgFailed,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -105,7 +106,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
-			fmt.Errorf("unknown status '%s', must be one of 'Success','Sent','Buffered','Rejected' or 'Failed'", form.Status))
+			fmt.Errorf("unknown status '%s', must be one of 'Success','Sent','Buffered','Rejected', 'Failed', or 'Expired'", form.Status))
 	}
 
 	// write our status
