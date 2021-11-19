@@ -2,6 +2,7 @@ name: CI
 on: [push, pull_request]
 env:
   go-version: '1.17.x'
+  redis-version: '3.2.4'
 jobs:
   test:
     name: Test
@@ -16,7 +17,7 @@ jobs:
     - name: Install Redis
       uses: zhulik/redis-action@v1.0.0
       with:
-        redis version: '5'
+        redis version: ${{ env.redis-version }}
 
     - name: Install PostgreSQL
       uses: harmon758/postgresql-action@v1
