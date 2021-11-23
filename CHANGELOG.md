@@ -1,3 +1,7 @@
+v7.1.1
+----------
+ * Pin to go 1.17.2
+
 v7.1.0
 ----------
  * Remove chatbase support
