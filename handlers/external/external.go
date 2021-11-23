@@ -353,17 +353,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 		req.Header.Set("Content-Type", contentTypeHeader)
 
+		// TODO can drop this when channels have been migrated to use ConfigSendHeaders
 		authorization := msg.Channel().StringConfigForKey(courier.ConfigSendAuthorization, "")
 		if authorization != "" {
 			req.Header.Set("Authorization", authorization)
 		}
 
 		headers := msg.Channel().ConfigForKey(courier.ConfigSendHeaders, map[string]interface{}{}).(map[string]interface{})
-
-		if len(headers) > 0 {
-			for hKey, hValue := range headers {
-				req.Header.Set(hKey, fmt.Sprint(hValue))
-			}
+		for hKey, hValue := range headers {
+			req.Header.Set(hKey, fmt.Sprint(hValue))
 		}
 
 		rr, err := utils.MakeHTTPRequest(req)
