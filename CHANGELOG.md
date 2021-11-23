@@ -1,3 +1,9 @@
+v7.1.0
+----------
+ * Remove chatbase support
+ * Test with Redis 3.2.4
+ * Add support for 'Expired' status in the AT handler
+
 v7.0.0
 ----------
  * Tweak README
