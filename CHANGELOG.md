@@ -1,3 +1,7 @@
+v7.1.2
+----------
+ * External channel handler should use headers config setting if provided
+
 v7.1.1
 ----------
  * Pin to go 1.17.2
