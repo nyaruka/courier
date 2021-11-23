@@ -503,4 +503,14 @@ func TestSending(t *testing.T) {
 
 	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalGetSendTestCases, nil)
 
+	var jsonChannelWithSendAuthorization = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+		map[string]interface{}{
+			"send_path":                     "",
+			courier.ConfigSendBody:          `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
+			courier.ConfigContentType:       contentJSON,
+			courier.ConfigSendMethod:        http.MethodPost,
+			courier.ConfigSendAuthorization: "Token ABCDEF",
+		})
+	RunChannelSendTestCases(t, jsonChannelWithSendAuthorization, newHandler(), jsonSendTestCases, nil)
+
 }
