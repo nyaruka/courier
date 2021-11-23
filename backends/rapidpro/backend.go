@@ -17,7 +17,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/batch"
-	"github.com/nyaruka/courier/chatbase"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/storage"
@@ -32,11 +31,6 @@ const msgQueueName = "msgs"
 
 // the name of our set for tracking sends
 const sentSetName = "msgs_sent_%s"
-
-// constants used in org configs for chatbase
-const chatbaseAPIKey = "CHATBASE_API_KEY"
-const chatbaseVersion = "CHATBASE_VERSION"
-const chatbaseMessageType = "agent"
 
 // our timeout for backend operations
 const backendTimeout = time.Second * 20
@@ -290,16 +284,6 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 			if err != nil {
 				logrus.WithError(err).WithField("session_id", dbMsg.SessionID_).Error("unable to update session timeout")
 			}
-		}
-	}
-
-	// if this org has chatbase connected, notify chatbase
-	chatKey, _ := msg.Channel().OrgConfigForKey(chatbaseAPIKey, "").(string)
-	if chatKey != "" {
-		chatVersion, _ := msg.Channel().OrgConfigForKey(chatbaseVersion, "").(string)
-		err := chatbase.SendChatbaseMessage(chatKey, chatVersion, chatbaseMessageType, dbMsg.ContactID_.String(), msg.Channel().Name(), msg.Text(), time.Now().UTC())
-		if err != nil {
-			logrus.WithError(err).WithField("chatbase_api_key", chatKey).WithField("chatbase_version", chatVersion).WithField("msg_id", dbMsg.ID().String()).Error("unable to write chatbase message")
 		}
 	}
 }
