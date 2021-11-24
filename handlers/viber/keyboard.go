@@ -3,8 +3,7 @@ package viber
 import (
 	"fmt"
 	"strings"
-
-	"github.com/nyaruka/courier/utils"
+	"unicode/utf8"
 )
 
 // KeyboardButton is button on a keyboard, see https://developers.viber.com/docs/tools/keyboards/#buttons-parameters
@@ -25,40 +24,22 @@ type Keyboard struct {
 }
 
 const (
-	// maxRows refer to the maximum number of rows visible without scrolling
-	maxRows = 4
+	// maxColumns refer to the maximum number of columns units in a row
+	maxColumns = 6
 	// maxRowsRunes refer to maximum number of runes in the same row to help define buttons layout
-	maxRowRunes = 30
+	maxRowRunes = 38
 	// paddingRunes to help to calculate the size of button column width
 	paddingRunes = 2
 )
 
 // NewKeyboardFromReplies create a keyboard from the given quick replies
 func NewKeyboardFromReplies(replies []string, buttonConfig map[string]interface{}) *Keyboard {
-	rows := utils.StringsToRows(replies, maxRows, maxRowRunes, paddingRunes)
+	rows := StringsToRows(replies, maxColumns, maxRowRunes, paddingRunes)
 	buttons := []KeyboardButton{}
 
 	for i := range rows {
 		for j := range rows[i] {
-			var cols int
-			switch len(rows[i]) {
-			case 1:
-				cols = 6
-			case 2:
-				cols = 3
-			case 3:
-				cols = 2
-			case 4:
-				cols = 3
-			case 5:
-				if j < 3 {
-					cols = 2
-				} else {
-					cols = 3
-				}
-			default:
-				cols = 6
-			}
+			cols := 6 / len(rows[i])
 
 			button := KeyboardButton{
 				ActionType: "reply",
@@ -91,4 +72,42 @@ func (b *KeyboardButton) ApplyConfig(buttonConfig map[string]interface{}) {
 	if map[string]bool{"small": true, "large": true}[textSize] {
 		b.TextSize = textSize
 	}
+}
+
+// StringsToRows takes a slice of strings and re-organize it into rows and columns
+func StringsToRows(strs []string, maxColumns, maxRowRunes, paddingRunes int) [][]string {
+	rows := [][]string{{}}
+	curRow := 0
+	rowRunes := 0
+
+	colsByRow := []int{6, 3, 2, 1}
+	i := 0
+
+	for len(strs) > 0 {
+		if len(strs) >= colsByRow[i] {
+			rowRunes = 0
+			for _, str := range strs[:colsByRow[i]] {
+				strRunes := utf8.RuneCountInString(str) + paddingRunes*2
+				rowRunes += strRunes
+			}
+			if rowRunes <= maxRowRunes || colsByRow[i] == 1 {
+				strsCopy := make([]string, colsByRow[i])
+				copy(strsCopy, strs[:colsByRow[i]])
+				for _, str := range strsCopy {
+					rows[curRow] = append(rows[curRow], str)
+					strs = append(strs[:0], strs[0+1:]...)
+				}
+				if len(strs) > 0 {
+					rows = append(rows, []string{})
+					curRow += 1
+					i = 0
+				}
+			}
+		}
+		i++
+		if i >= len(colsByRow) {
+			i = 0
+		}
+	}
+	return rows
 }
