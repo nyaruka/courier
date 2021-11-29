@@ -173,6 +173,17 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 	return nil
 }
 
+const updateMsgSegments = `
+UPDATE msgs_msg SET segments=:segments WHERE msgs_msg.id=:id;
+`
+
+// WriteMsgSegments
+func writeMsgSegments(ctx context.Context, b *backend, msg courier.Msg) error {
+	m := msg.(*DBMsg)
+	_, err := b.db.NamedExecContext(ctx, updateMsgSegments, m)
+	return err
+}
+
 const selectMsgSQL = `
 SELECT
 	org_id,
@@ -540,6 +551,7 @@ type DBMsg struct {
 	ResponseToID_         courier.MsgID          `json:"response_to_id"  db:"response_to_id"`
 	ResponseToExternalID_ string                 `json:"response_to_external_id"`
 	Metadata_             json.RawMessage        `json:"metadata"        db:"metadata"`
+	Segments_             int                    `json:"segments"        db:"segments"`
 
 	ChannelID_    courier.ChannelID `json:"channel_id"      db:"channel_id"`
 	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
@@ -668,5 +680,11 @@ func (m *DBMsg) WithAttachment(url string) courier.Msg {
 // WithURNAuth can be used to add a URN auth setting to a message
 func (m *DBMsg) WithURNAuth(auth string) courier.Msg {
 	m.URNAuth_ = auth
+	return m
+}
+
+// WithSegmentsCount can be used to add a segments count to a message
+func (m *DBMsg) WithSegmentsCount(segments int) courier.Msg {
+	m.Segments_ = segments
 	return m
 }

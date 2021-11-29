@@ -47,6 +47,9 @@ type Backend interface {
 	// WriteMsg writes the passed in message to our backend
 	WriteMsg(context.Context, Msg) error
 
+	// WriteMsgSegments writes the passed in number of segments to our backend
+	WriteMsgSegments(context.Context, Msg) error
+
 	// NewMsgAttachmentForExternalID creates a new Attachment object for the given message id
 	NewMsgAttachmentForExternalID(Channel, string, string) (MsgAttachment, error)
 

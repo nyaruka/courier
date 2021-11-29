@@ -384,6 +384,10 @@ func (mb *MockBackend) WriteMsgAttachment(ctx context.Context, channel Channel, 
 	return nil
 }
 
+func (mb *MockBackend) WriteMsgSegments(ctx context.Context, m Msg) error {
+	return nil
+}
+
 func buildMockBackend(config *Config) Backend {
 	return NewMockBackend()
 }
@@ -576,6 +580,7 @@ type mockMsg struct {
 	responseToID         MsgID
 	responseToExternalID string
 	metadata             json.RawMessage
+	segments             int
 	alreadyWritten       bool
 	receiveAttachment    string
 	sharingConfig        json.RawMessage
@@ -621,6 +626,7 @@ func (m *mockMsg) WithAttachment(url string) Msg {
 	return m
 }
 func (m *mockMsg) WithMetadata(metadata json.RawMessage) Msg { m.metadata = metadata; return m }
+func (m *mockMsg) WithSegmentsCount(segments int) Msg { m.segments = segments; return m }
 
 //-----------------------------------------------------------------------------
 // Mock status implementation

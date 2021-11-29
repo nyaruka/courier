@@ -115,6 +115,7 @@ type Msg interface {
 	WithAttachment(url string) Msg
 	WithURNAuth(auth string) Msg
 	WithMetadata(metadata json.RawMessage) Msg
+	WithSegmentsCount(segments int) Msg
 
 	EventID() int64
 	SessionStatus() string
