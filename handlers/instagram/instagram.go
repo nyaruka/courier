@@ -122,48 +122,6 @@ type moPayload struct {
 	} `json:"entry"`
 }
 
-/*type moPayload struct {
-	Object string `json:"object"`
-	Entry  []struct {
-		ID      string `json:"id"`
-		Time    int64  `json:"time"`
-		Changes []struct {
-			Field string `json:"field"`
-			Value struct {
-				Sender struct {
-					ID string `json:"id"`
-				} `json:"sender"`
-
-				Recipient struct {
-					ID string `json:"id"`
-				} `json:"recipient"`
-				Timestamp int64 `json:"timestamp"`
-
-				Postback *struct {
-					MID     string `json:"mid"`
-					Title   string `json:"title"`
-					Payload string `json:"payload"`
-				} `json:"postback,omitempty"`
-
-				Message *struct {
-					IsEcho     bool   `json:"is_echo,omitempty"`
-					MID        string `json:"mid"`
-					Text       string `json:"text,omitempty"`
-					QuickReply struct {
-						Payload string `json:"payload"`
-					} `json:"quick_replies,omitempty"`
-					Attachments []struct {
-						Type    string `json:"type"`
-						Payload *struct {
-							URL string `json:"url"`
-						} `json:"payload"`
-					} `json:"attachments,omitempty"`
-				} `json:"message,omitempty"`
-			} `json:"value"`
-		} `json:"changes"`
-	} `json:"entry"`
-}*/
-
 // GetChannel returns the channel
 func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
 
@@ -256,8 +214,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 		// grab our message, there is always a single one
 		msg := entry.Messaging[0]
-
-		//msg.Value.Recipient.ID = "218041941572367"
 
 		// ignore this entry if it is to another page
 		if channel.Address() != msg.Recipient.ID {
