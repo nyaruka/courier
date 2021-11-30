@@ -110,7 +110,7 @@ var attachment = `{
 		  			"attachments":[{
       	      		"type":"image",
       	      		"payload":{
-						   "url":"https://image-url/foo.png"
+						"url":"https://image-url/foo.png"
 						}
 					}]
 				},
@@ -320,8 +320,7 @@ func TestDescribe(t *testing.T) {
 		urn      urns.URN
 		metadata map[string]string
 	}{{"instagram:1337", map[string]string{"name": "John Doe"}},
-		{"instagram:4567", map[string]string{"name": ""}},
-		{"instagram:ref:1337", map[string]string{}}}
+		{"instagram:4567", map[string]string{"name": ""}}}
 
 	for _, tc := range tcs {
 		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn)
@@ -380,13 +379,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		RequestBody: `{"messaging_type":"MESSAGE_TAG","tag":"HUMAN_AGENT","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		SendPrep:    setSendURL},
 
-	{Label: "Plain Send using ref URN",
-		Text: "Simple Message", URN: "instagram:ref:67890",
-		ContactURNs: map[string]bool{"instagram:12345": true, "ext:67890": true, "instagram:ref:67890": false},
-		Status:      "W", ExternalID: "mid.133",
-		ResponseBody: `{"message_id": "mid.133", "recipient_id": "12345"}`, ResponseStatus: 200,
-		RequestBody: `{"messaging_type":"UPDATE","recipient":{"user_ref":"67890"},"message":{"text":"Simple Message"}}`,
-		SendPrep:    setSendURL},
 	{Label: "Long Message",
 		Text: "This is a long message which spans more than one part, what will actually be sent in the end if we exceed the max length?",
 		URN:  "instagram:12345", QuickReplies: []string{"Yes", "No"}, Topic: "agent",

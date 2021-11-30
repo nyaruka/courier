@@ -318,7 +318,6 @@ type mtPayload struct {
 	MessagingType string `json:"messaging_type"`
 	Tag           string `json:"tag,omitempty"`
 	Recipient     struct {
-		//UserRef string `json:"user_ref,omitempty"`
 		ID string `json:"id,omitempty"`
 	} `json:"recipient"`
 	Message struct {
@@ -422,54 +421,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if err != nil {
 			return status, nil
 		}
-
 		externalID, err := jsonparser.GetString(rr.Body, "message_id")
 		if err != nil {
 			log.WithError("Message Send Error", errors.Errorf("unable to get message_id from body"))
 			return status, nil
 		}
-
-		// if this is our first message, record the external id
 		if i == 0 {
 			status.SetExternalID(externalID)
-			if msg.URN().IsInstagramRef() {
-				recipientID, err := jsonparser.GetString(rr.Body, "recipient_id")
-				if err != nil {
-					log.WithError("Message Send Error", errors.Errorf("unable to get recipient_id from body"))
-					return status, nil
-				}
-
-				referralID := msg.URN().InstagramRef()
-
-				realIDURN, err := urns.NewInstagramURN(recipientID)
-				if err != nil {
-					log.WithError("Message Send Error", errors.Errorf("unable to make Instagram urn from %s", recipientID))
-				}
-
-				contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), "", "")
-				if err != nil {
-					log.WithError("Message Send Error", errors.Errorf("unable to get contact for %s", msg.URN().String()))
-				}
-				realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN)
-				if err != nil {
-					log.WithError("Message Send Error", errors.Errorf("unable to add real Instagram URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
-				}
-				referralIDExtURN, err := urns.NewURNFromParts(urns.ExternalScheme, referralID, "", "")
-				if err != nil {
-					log.WithError("Message Send Error", errors.Errorf("unable to make ext urn from %s", referralID))
-				}
-				extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN)
-				if err != nil {
-					log.WithError("Message Send Error", errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
-				}
-
-				referralInstagramURN, err := h.Backend().RemoveURNfromContact(ctx, msg.Channel(), contact, msg.URN())
-				if err != nil {
-					log.WithError("Message Send Error", errors.Errorf("unable to remove referral Instagram URN %s from contact with uuid %s", referralInstagramURN.String(), contact.UUID()))
-				}
-
-			}
-
 		}
 
 		// this was wired successfully
@@ -481,10 +439,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 // DescribeURN looks up URN metadata for new contacts
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
-	// can't do anything with Instagram refs, ignore them
-	if urn.IsInstagramRef() {
-		return map[string]string{}, nil
-	}
 
 	accessToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
 	if accessToken == "" {
