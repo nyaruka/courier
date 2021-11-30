@@ -238,7 +238,7 @@ func (b *backend) IsMsgLoop(ctx context.Context, msg courier.Msg) (bool, error) 
 	m := msg.(*DBMsg)
 
 	// things that aren't replies can't be loops, neither do we count retries
-	if m.ResponseToID_ == courier.NilMsgID || m.ErrorCount_ > 0 {
+	if m.ResponseToExternalID_ == "" || m.ErrorCount_ > 0 {
 		return false, nil
 	}
 

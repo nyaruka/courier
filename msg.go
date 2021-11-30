@@ -95,7 +95,6 @@ type Msg interface {
 	QuickReplies() []string
 	Topic() string
 	Metadata() json.RawMessage
-	ResponseToID() MsgID
 	ResponseToExternalID() string
 	IsResend() bool
 

@@ -71,7 +71,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Reply",
 		Text: "Simple Message", URN: "tel:+63911231234",
 		Status:               "W",
-		ResponseToID:         5,
 		ResponseToExternalID: "external-id",
 		ResponseBody:         "Success", ResponseStatus: 200,
 		PostParams: map[string]string{
@@ -88,7 +87,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep: setSendURL},
 	{Label: "Failed Reply use Send",
 		Text: "Simple Message", URN: "tel:+63911231234",
-		ResponseToID:         5,
 		ResponseToExternalID: "external-id",
 		ResponseBody:         `{"status":400,"message":"BAD REQUEST","description":"Invalid\\/Used Request ID"}`,
 		ResponseStatus:       400,
