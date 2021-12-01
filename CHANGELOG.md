@@ -1,3 +1,7 @@
+v7.1.3
+----------
+ * Use response_to_external_id instead of response_to_id
+
 v7.1.2
 ----------
  * External channel handler should use headers config setting if provided
