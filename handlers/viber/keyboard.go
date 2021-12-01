@@ -2,6 +2,7 @@ package viber
 
 import (
 	"fmt"
+	"html"
 	"strings"
 	"unicode/utf8"
 )
@@ -32,6 +33,8 @@ const (
 	paddingRunes = 2
 )
 
+var textSizes = map[string]string{"small": "small", "regular": "regular", "large": "large"}
+
 // NewKeyboardFromReplies create a keyboard from the given quick replies
 func NewKeyboardFromReplies(replies []string, buttonConfig map[string]interface{}) *Keyboard {
 	rows := StringsToRows(replies, maxColumns, maxRowRunes, paddingRunes)
@@ -45,7 +48,7 @@ func NewKeyboardFromReplies(replies []string, buttonConfig map[string]interface{
 				ActionType: "reply",
 				TextSize:   "regular",
 				ActionBody: rows[i][j],
-				Text:       rows[i][j],
+				Text:       html.EscapeString(rows[i][j]),
 				Columns:    fmt.Sprint(cols),
 			}
 
@@ -66,10 +69,11 @@ func (b *KeyboardButton) ApplyConfig(buttonConfig map[string]interface{}) {
 	if len(bgColor) == 7 {
 		b.BgColor = bgColor
 	}
+
 	if strings.Contains(textStyle, "*") {
 		b.Text = strings.Replace(textStyle, "*", b.Text, 1)
 	}
-	if map[string]bool{"small": true, "large": true}[textSize] {
+	if textSizes[textSize] != "" {
 		b.TextSize = textSize
 	}
 }
@@ -87,8 +91,7 @@ func StringsToRows(strs []string, maxColumns, maxRowRunes, paddingRunes int) [][
 		if len(strs) >= colsByRow[i] {
 			rowRunes = 0
 			for _, str := range strs[:colsByRow[i]] {
-				strRunes := utf8.RuneCountInString(str) + paddingRunes*2
-				rowRunes += strRunes
+				rowRunes += utf8.RuneCountInString(str) + paddingRunes*2
 			}
 			if rowRunes <= maxRowRunes || colsByRow[i] == 1 {
 				strsCopy := make([]string, colsByRow[i])

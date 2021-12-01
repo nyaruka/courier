@@ -52,6 +52,18 @@ func TestKeyboardFromReplies(t *testing.T) {
 			map[string]interface{}{},
 		},
 		{
+			[]string{"\"A\"", "<B>"},
+			&viber.Keyboard{
+				"keyboard",
+				false,
+				[]viber.KeyboardButton{
+					{ActionType: "reply", TextSize: "regular", ActionBody: "\"A\"", Text: "&#34;A&#34;", Columns: "3"},
+					{ActionType: "reply", TextSize: "regular", ActionBody: "<B>", Text: "&lt;B&gt;", Columns: "3"},
+				},
+			},
+			map[string]interface{}{},
+		},
+		{
 			[]string{"Vanilla", "Chocolate", "Mint", "Lemon Sorbet", "Papaya", "Strawberry"},
 			&viber.Keyboard{
 				"keyboard",
