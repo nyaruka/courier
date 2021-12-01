@@ -488,7 +488,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	payload := mtPayload{}
 
 	// set our message type
-	if msg.ResponseToID() != courier.NilMsgID {
+	if msg.ResponseToExternalID() != "" {
 		payload.MessagingType = "RESPONSE"
 	} else if topic != "" {
 		payload.MessagingType = "MESSAGE_TAG"

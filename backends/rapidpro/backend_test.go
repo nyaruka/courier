@@ -120,7 +120,6 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"sent_on": null,
 		"high_priority": true,
 		"channel_id": 11,
-		"response_to_id": 15,
 		"response_to_external_id": "external-id",
 		"external_id": null,
 		"is_resend": true,
@@ -137,7 +136,6 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal(msg.ExternalID(), "")
 	ts.Equal([]string{"Yes", "No"}, msg.QuickReplies())
 	ts.Equal("event", msg.Topic())
-	ts.Equal(courier.NewMsgID(15), msg.ResponseToID())
 	ts.Equal("external-id", msg.ResponseToExternalID())
 	ts.True(msg.HighPriority())
 	ts.True(msg.IsResend())
@@ -162,8 +160,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"sent_on": null,
 		"high_priority": true,
 		"channel_id": 11,
-		"response_to_id": null,
-		"response_to_external_id": "",
+		"response_to_external_id": null,
 		"external_id": null,
 		"metadata": null
 	}`
@@ -173,7 +170,6 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.NoError(err)
 	ts.Equal([]string{}, msg.QuickReplies())
 	ts.Equal("", msg.Topic())
-	ts.Equal(courier.NilMsgID, msg.ResponseToID())
 	ts.Equal("", msg.ResponseToExternalID())
 	ts.False(msg.IsResend())
 }
@@ -756,7 +752,7 @@ func (ts *BackendTestSuite) TestLoop() {
 	ctx := context.Background()
 	dbMsg := readMsgFromDB(ts.b, courier.NewMsgID(10000))
 
-	dbMsg.ResponseToID_ = courier.MsgID(5)
+	dbMsg.ResponseToExternalID_ = "65474"
 
 	loop, err := ts.b.IsMsgLoop(ctx, dbMsg)
 	ts.NoError(err)
