@@ -161,11 +161,6 @@ func (mb *MockBackend) ClearMsgSent(ctx context.Context, id MsgID) error {
 	return nil
 }
 
-// IsMsgLoop returns whether the passed in msg is a loop
-func (mb *MockBackend) IsMsgLoop(ctx context.Context, msg Msg) (bool, error) {
-	return false, nil
-}
-
 // MarkOutgoingMsgComplete marks the passed msg as having been dealt with
 func (mb *MockBackend) MarkOutgoingMsgComplete(ctx context.Context, msg Msg, s MsgStatus) {
 	mb.mutex.Lock()
