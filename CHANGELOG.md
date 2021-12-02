@@ -1,3 +1,8 @@
+v7.1.4
+----------
+ * Remove loop detection now that mailroom does this
+ * Smarter organization of quick replies for viber keyboards
+
 v7.1.3
 ----------
  * Use response_to_external_id instead of response_to_id
