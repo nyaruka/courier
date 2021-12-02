@@ -29,7 +29,6 @@ var (
 	viberSignatureHeader = "X-Viber-Content-Signature"
 	sendURL              = "https://chatapi.viber.com/pa/send_message"
 	maxMsgLength         = 7000
-	quickReplyTextSize   = 36
 	descriptionMaxLength = 512
 )
 
@@ -307,20 +306,7 @@ type mtPayload struct {
 	Media        string            `json:"media,omitempty"`
 	Size         int               `json:"size,omitempty"`
 	FileName     string            `json:"file_name,omitempty"`
-	Keyboard     *mtKeyboard       `json:"keyboard,omitempty"`
-}
-
-type mtKeyboard struct {
-	Type          string     `json:"Type"`
-	DefaultHeight bool       `json:"DefaultHeight"`
-	Buttons       []mtButton `json:"Buttons"`
-}
-
-type mtButton struct {
-	ActionType string `json:"ActionType"`
-	ActionBody string `json:"ActionBody"`
-	Text       string `json:"Text"`
-	TextSize   string `json:"TextSize"`
+	Keyboard     *Keyboard         `json:"keyboard,omitempty"`
 }
 
 // SendMsg sends the passed in message, returning any error
@@ -334,18 +320,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// figure out whether we have a keyboard to send as well
 	qrs := msg.QuickReplies()
-	var replies *mtKeyboard
+	var keyboard *Keyboard
 
 	if len(qrs) > 0 {
-		buttons := make([]mtButton, len(qrs))
-		for i, qr := range qrs {
-			buttons[i].ActionType = "reply"
-			buttons[i].TextSize = "regular"
-			buttons[i].ActionBody = string(qr[:])
-			buttons[i].Text = string(qr[:])
-		}
-
-		replies = &mtKeyboard{"keyboard", true, buttons}
+		buttonLayout := msg.Channel().ConfigForKey("button_layout", map[string]interface{}{}).(map[string]interface{})
+		keyboard = NewKeyboardFromReplies(qrs, buttonLayout)
 	}
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 
@@ -424,7 +403,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			TrackingData: msg.ID().String(),
 			Media:        attURL,
 			FileName:     filename,
-			Keyboard:     replies,
+			Keyboard:     keyboard,
 		}
 
 		if attSize != -1 {
@@ -465,7 +444,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		status.SetStatus(courier.MsgWired)
-		replies = nil
+		keyboard = nil
 	}
 	return status, nil
 }
