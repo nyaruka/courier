@@ -33,7 +33,7 @@ const (
 	paddingRunes = 2
 )
 
-var textSizes = map[string]string{"small": "small", "regular": "regular", "large": "large"}
+var textSizes = map[string]bool{"small": true, "regular": true, "large": true}
 
 // NewKeyboardFromReplies create a keyboard from the given quick replies
 func NewKeyboardFromReplies(replies []string, buttonConfig map[string]interface{}) *Keyboard {
@@ -73,7 +73,7 @@ func (b *KeyboardButton) ApplyConfig(buttonConfig map[string]interface{}) {
 	if strings.Contains(textStyle, "*") {
 		b.Text = strings.Replace(textStyle, "*", b.Text, 1)
 	}
-	if textSizes[textSize] != "" {
+	if textSizes[textSize] {
 		b.TextSize = textSize
 	}
 }
