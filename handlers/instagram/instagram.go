@@ -165,10 +165,10 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown request"))
 	}
 
-	// verify the token against our server facebook webhook secret, if the same return the challenge IG sent us
+	// verify the token against our server instagram webhook secret, if the same return the challenge IG sent us
 	secret := r.URL.Query().Get("hub.verify_token")
 
-	if secret != h.Server().Config().FacebookWebhookSecret {
+	if secret != h.Server().Config().InstagramWebhookSecret {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("token does not match secret"))
 	}
 	// and respond with the challenge token
@@ -473,7 +473,7 @@ func (h *handler) validateSignature(r *http.Request) error {
 	if headerSignature == "" {
 		return fmt.Errorf("missing request signature")
 	}
-	appSecret := h.Server().Config().FacebookApplicationSecret
+	appSecret := h.Server().Config().InstagramApplicationSecret
 
 	body, err := handlers.ReadBody(r, 100000)
 	if err != nil {

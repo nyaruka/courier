@@ -278,7 +278,7 @@ var testCases = []ChannelHandleTestCase{
 
 func addValidSignature(r *http.Request) {
 	body, _ := handlers.ReadBody(r, 100000)
-	sig, _ := fbCalculateSignature("fb_app_secret", body)
+	sig, _ := fbCalculateSignature("ig_app_secret", body)
 	r.Header.Set(signatureHeader, fmt.Sprintf("sha1=%s", string(sig)))
 }
 
@@ -342,12 +342,12 @@ func BenchmarkHandler(b *testing.B) {
 func TestVerify(t *testing.T) {
 
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
-		{Label: "Valid Secret", URL: "/c/ig/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge", Status: 200,
+		{Label: "Valid Secret", URL: "/c/ig/receive?hub.mode=subscribe&hub.verify_token=ig_webhook_secret&hub.challenge=yarchallenge", Status: 200,
 			Response: "yarchallenge", NoQueueErrorCheck: true, NoInvalidChannelCheck: true},
 		{Label: "Verify No Mode", URL: "/c/ig/receive", Status: 400, Response: "unknown request"},
 		{Label: "Verify No Secret", URL: "/c/ig/receive?hub.mode=subscribe", Status: 400, Response: "token does not match secret"},
 		{Label: "Invalid Secret", URL: "/c/ig/receive?hub.mode=subscribe&hub.verify_token=blah", Status: 400, Response: "token does not match secret"},
-		{Label: "Valid Secret", URL: "/c/ig/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge", Status: 200, Response: "yarchallenge"},
+		{Label: "Valid Secret", URL: "/c/ig/receive?hub.mode=subscribe&hub.verify_token=ig_webhook_secret&hub.challenge=yarchallenge", Status: 200, Response: "yarchallenge"},
 	})
 
 }
