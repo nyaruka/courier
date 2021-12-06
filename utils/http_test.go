@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -61,7 +61,7 @@ func TestNewRRFromRequestAndError(t *testing.T) {
 func TestNewRRFromResponse(t *testing.T) {
 	header := map[string][]string{"Content-Type": {"application/json"} }
 	stringReader := strings.NewReader("shiny!")
-	stringReadCloser := io.NopCloser(stringReader)
+	stringReadCloser := ioutil.NopCloser(stringReader)
 	req := &http.Request{
 		URL: &url.URL{},
 	}
