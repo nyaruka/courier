@@ -6,10 +6,6 @@ import (
 	"testing"
 )
 
-//func TestGetTextAndAttachments(t *testing.T) {
-//	msg := courier.Msg{}
-//	response := GetTextAndAttachments()
-//}
 
 func TestSplitAttachment(t *testing.T) {
 	split1, split2 := SplitAttachment("test")
