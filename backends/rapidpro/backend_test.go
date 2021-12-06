@@ -481,6 +481,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(null.String("ext0"), m.ExternalID_)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.SentOn_.After(now))
+	ts.Equal(null.NullString, m.FailedReason_)
 
 	sentOn := *m.SentOn_
 
@@ -584,6 +585,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(m.ErrorCount_, 1)
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.NextAttempt_.After(now))
+	ts.Equal(null.NullString, m.FailedReason_)
 
 	// second go
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgErrored)
@@ -594,6 +596,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	m = readMsgFromDB(ts.b, courier.NewMsgID(10000))
 	ts.Equal(m.Status_, courier.MsgErrored)
 	ts.Equal(m.ErrorCount_, 2)
+	ts.Equal(null.NullString, m.FailedReason_)
 
 	// third go
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgErrored)
@@ -604,6 +607,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	m = readMsgFromDB(ts.b, courier.NewMsgID(10000))
 	ts.Equal(m.Status_, courier.MsgFailed)
 	ts.Equal(m.ErrorCount_, 3)
+	ts.Equal(null.String("E"), m.FailedReason_)
 
 	// update URN when the new doesn't exist
 	tx, _ := ts.b.db.BeginTxx(ctx, nil)

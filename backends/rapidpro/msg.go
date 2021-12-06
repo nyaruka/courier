@@ -175,6 +175,7 @@ SELECT
 	attachments,
 	msg_count,
 	error_count,
+	failed_reason,
 	high_priority,
 	status,
 	visibility,
@@ -497,8 +498,9 @@ type DBMsg struct {
 	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
 	ContactURNID_ ContactURNID      `json:"contact_urn_id"  db:"contact_urn_id"`
 
-	MessageCount_ int `json:"msg_count"    db:"msg_count"`
-	ErrorCount_   int `json:"error_count"  db:"error_count"`
+	MessageCount_ int         `json:"msg_count"     db:"msg_count"`
+	ErrorCount_   int         `json:"error_count"   db:"error_count"`
+	FailedReason_ null.String `json:"failed_reason" db:"failed_reason"`
 
 	ChannelUUID_ courier.ChannelUUID `json:"channel_uuid"`
 	ContactName_ string              `json:"contact_name"`

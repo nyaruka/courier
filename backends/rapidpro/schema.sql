@@ -72,6 +72,7 @@ CREATE TABLE msgs_msg (
     msg_count integer NOT NULL,
     error_count integer NOT NULL,
     next_attempt timestamp with time zone NOT NULL,
+    failed_reason character varying(1),
     external_id character varying(255),
     attachments character varying(255)[],
     channel_id integer references channels_channel(id) on delete cascade,
@@ -79,7 +80,8 @@ CREATE TABLE msgs_msg (
     contact_urn_id integer NOT NULL references contacts_contacturn(id) on delete cascade,
     org_id integer NOT NULL references orgs_org(id) on delete cascade,
     metadata text,
-    topup_id integer
+    topup_id integer,
+    delete_from_counts boolean
 );
 
 DROP TABLE IF EXISTS channels_channellog CASCADE;

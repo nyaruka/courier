@@ -107,6 +107,14 @@ UPDATE msgs_msg SET
 		ELSE 
 			next_attempt 
 		END,
+	failed_reason = CASE
+		WHEN
+			error_count >= 2
+		THEN
+			'E'
+		ELSE
+			failed_reason
+	    END,
 	sent_on = CASE 
 		WHEN 
 			:status = 'W' 
@@ -164,6 +172,14 @@ UPDATE msgs_msg SET
 		ELSE 
 			next_attempt 
 		END,
+	failed_reason = CASE
+		WHEN
+			error_count >= 2
+		THEN
+			'E'
+		ELSE
+			failed_reason
+	    END,
 	sent_on = CASE 
 		WHEN 
 			:status IN ('W', 'S', 'D')
