@@ -1,3 +1,7 @@
+v7.1.5
+----------
+ * Add Msg.failed_reason and set when msg fails due to reaching error limit
+
 v7.1.4
 ----------
  * Remove loop detection now that mailroom does this
