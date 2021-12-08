@@ -847,6 +847,10 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload 
 	if rr.StatusCode == 429 || rr.StatusCode == 503 {
 		rateLimitKey := fmt.Sprintf("rate_limit:%s", msg.Channel().UUID().String())
 		rc.Do("set", rateLimitKey, "engaged")
+
+		// The rate limit is 50 requests per second
+		// We pause sending 2 seconds so the limit count is reset
+		// TODO: In the future we should the header value when available
 		rc.Do("expire", rateLimitKey, 2)
 
 		log := courier.NewChannelLogFromRR("rate limit engaged", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
