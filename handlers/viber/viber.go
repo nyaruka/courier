@@ -29,8 +29,7 @@ var (
 	viberSignatureHeader = "X-Viber-Content-Signature"
 	sendURL              = "https://chatapi.viber.com/pa/send_message"
 	maxMsgLength         = 7000
-	quickReplyTextSize   = 36
-	descriptionMaxLength = 120
+	descriptionMaxLength = 512
 )
 
 func init() {
@@ -300,27 +299,14 @@ func calculateSignature(authToken string, contents []byte) string {
 type mtPayload struct {
 	AuthToken    string            `json:"auth_token"`
 	Receiver     string            `json:"receiver"`
-	Text         string            `json:"text"`
+	Text         string            `json:"text,omitempty"`
 	Type         string            `json:"type"`
 	TrackingData string            `json:"tracking_data"`
 	Sender       map[string]string `json:"sender,omitempty"`
 	Media        string            `json:"media,omitempty"`
 	Size         int               `json:"size,omitempty"`
 	FileName     string            `json:"file_name,omitempty"`
-	Keyboard     *mtKeyboard       `json:"keyboard,omitempty"`
-}
-
-type mtKeyboard struct {
-	Type          string     `json:"Type"`
-	DefaultHeight bool       `json:"DefaultHeight"`
-	Buttons       []mtButton `json:"Buttons"`
-}
-
-type mtButton struct {
-	ActionType string `json:"ActionType"`
-	ActionBody string `json:"ActionBody"`
-	Text       string `json:"Text"`
-	TextSize   string `json:"TextSize"`
+	Keyboard     *Keyboard         `json:"keyboard,omitempty"`
 }
 
 // SendMsg sends the passed in message, returning any error
@@ -334,40 +320,40 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// figure out whether we have a keyboard to send as well
 	qrs := msg.QuickReplies()
-	var replies *mtKeyboard
+	var keyboard *Keyboard
 
 	if len(qrs) > 0 {
-		buttons := make([]mtButton, len(qrs))
-		for i, qr := range qrs {
-			buttons[i].ActionType = "reply"
-			buttons[i].TextSize = "regular"
-			buttons[i].ActionBody = string(qr[:])
-			buttons[i].Text = string(qr[:])
-		}
-
-		replies = &mtKeyboard{"keyboard", true, buttons}
+		buttonLayout := msg.Channel().ConfigForKey("button_layout", map[string]interface{}{}).(map[string]interface{})
+		keyboard = NewKeyboardFromReplies(qrs, buttonLayout)
 	}
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
-	if len(msg.Attachments()) > 0 && len(parts[0]) > descriptionMaxLength {
-		descriptionPart := handlers.SplitMsg(msg.Text(), descriptionMaxLength)[0]
-		others := handlers.SplitMsgByChannel(msg.Channel(), strings.TrimSpace(strings.Replace(msg.Text(), descriptionPart, "", 1)), maxMsgLength)
-		parts = []string{descriptionPart}
-		parts = append(parts, others...)
+
+	descriptionPart := ""
+	if len(msg.Attachments()) == 1 && len(msg.Text()) < descriptionMaxLength {
+		mediaType, _ := handlers.SplitAttachment(msg.Attachments()[0])
+		isImage := strings.Split(mediaType, "/")[0] == "image"
+
+		if isImage {
+			descriptionPart = msg.Text()
+			parts = []string{}
+		}
+
 	}
 
-	for i, part := range parts {
+	for i := 0; i < len(parts)+len(msg.Attachments()); i++ {
 		msgType := "text"
 		attSize := -1
 		attURL := ""
 		filename := ""
+		msgText := ""
 
-		// add any media URL to the first part
-		if len(msg.Attachments()) > 0 && i == 0 {
+		if i < len(msg.Attachments()) {
 			mediaType, mediaURL := handlers.SplitAttachment(msg.Attachments()[0])
 			switch strings.Split(mediaType, "/")[0] {
 			case "image":
 				msgType = "picture"
 				attURL = mediaURL
+				msgText = descriptionPart
 
 			case "video":
 				msgType = "video"
@@ -382,6 +368,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				}
 
 				attSize = rr.ContentLength
+				msgText = ""
 
 			case "audio":
 				msgType = "file"
@@ -396,23 +383,27 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				}
 				attSize = rr.ContentLength
 				filename = "Audio"
+				msgText = ""
 
 			default:
 				status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
 					"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
 
 			}
+
+		} else {
+			msgText = parts[i-len(msg.Attachments())]
 		}
 
 		payload := mtPayload{
 			AuthToken:    authToken,
 			Receiver:     msg.URN().Path(),
-			Text:         part,
+			Text:         msgText,
 			Type:         msgType,
 			TrackingData: msg.ID().String(),
 			Media:        attURL,
 			FileName:     filename,
-			Keyboard:     replies,
+			Keyboard:     keyboard,
 		}
 
 		if attSize != -1 {
@@ -453,7 +444,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		status.SetStatus(courier.MsgWired)
-		replies = nil
+		keyboard = nil
 	}
 	return status, nil
 }

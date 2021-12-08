@@ -1,3 +1,40 @@
+v7.1.5
+----------
+ * Add Msg.failed_reason and set when msg fails due to reaching error limit
+
+v7.1.4
+----------
+ * Remove loop detection now that mailroom does this
+ * Smarter organization of quick replies for viber keyboards
+
+v7.1.3
+----------
+ * Use response_to_external_id instead of response_to_id
+
+v7.1.2
+----------
+ * External channel handler should use headers config setting if provided
+
+v7.1.1
+----------
+ * Pin to go 1.17.2
+
+v7.1.0
+----------
+ * Remove chatbase support
+ * Test with Redis 3.2.4
+ * Add support for 'Expired' status in the AT handler
+
+v7.0.0
+----------
+ * Tweak README
+
+v6.5.9
+----------
+ * Fix Viber attachments
+ * CI testing on PG12 and 13
+ * Update to latest gocommon and go 1.17
+
 v6.5.8
 ----------
  * Fix Facebook document attachment

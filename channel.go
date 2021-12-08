@@ -52,6 +52,9 @@ const (
 
 	// ConfigUseNational is a constant key for channel configs
 	ConfigUseNational = "use_national"
+
+	// ConfigSendHeaders is a constant key for channel configs
+	ConfigSendHeaders = "headers"
 )
 
 // ChannelType is our typing of the two char channel types

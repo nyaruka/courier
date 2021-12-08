@@ -83,7 +83,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":true,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular"},{"ActionType":"reply","ActionBody":"No","Text":"No","TextSize":"regular"}]}}`,
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular","Columns":"3"},{"ActionType":"reply","ActionBody":"No","Text":"No","TextSize":"regular","Columns":"3"}]}}`,
 		SendPrep:    setSendURL},
 	{Label: "Send Attachment",
 		Text: "My pic!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"image/jpeg:https://localhost/image.jpg"},
@@ -104,7 +104,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"description is longer that 10 characters","type":"text","tracking_data":"10"}`,
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Text description is longer that 10 characters","type":"text","tracking_data":"10"}`,
 		SendPrep:    setSendURL},
 	{Label: "Send Attachment Video",
 		Text: "My video!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"video/mp4:https://localhost/video.mp4"},
@@ -114,7 +114,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My video!","type":"video","tracking_data":"10","media":"{{ SERVER_URL }}/video.mp4","size":123456}`,
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My video!","type":"text","tracking_data":"10"}`,
 		SendPrep:    setSendURL},
 	{Label: "Send Attachment Audio",
 		Text: "My audio!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"audio/mp3:https://localhost/audio.mp3"},
@@ -124,7 +124,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My audio!","type":"file","tracking_data":"10","media":"{{ SERVER_URL }}/audio.mp3","size":123456,"file_name":"Audio"}`,
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My audio!","type":"text","tracking_data":"10"}`,
 		SendPrep:    setSendURL},
 	{Label: "Got non-0 response",
 		Text: "Simple Message", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==",
@@ -162,6 +162,19 @@ var invalidTokenSendTestCases = []ChannelSendTestCase{
 	{Label: "Invalid token", Error: "missing auth token in config"},
 }
 
+var buttonLayoutSendTestCases = []ChannelSendTestCase{
+	{Label: "Quick Reply With Layout With Column, Row and BgColor definitions",
+		Text: "Select a, b, c or d.", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", QuickReplies: []string{"a", "b", "c", "d"},
+		Status: "W", ResponseStatus: 200,
+		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+			"Accept":       "application/json",
+		},
+		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Select a, b, c or d.","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"a","Text":"\u003cfont color=\"#ffffff\"\u003ea\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"b","Text":"\u003cfont color=\"#ffffff\"\u003eb\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"c","Text":"\u003cfont color=\"#ffffff\"\u003ec\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"d","Text":"\u003cfont color=\"#ffffff\"\u003ed\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"6","BgColor":"#f7bb3f"}]}}`,
+		SendPrep:    setSendURL},
+}
+
 func TestSending(t *testing.T) {
 	attachmentService := buildMockAttachmentService(defaultSendTestCases)
 	defer attachmentService.Close()
@@ -175,8 +188,14 @@ func TestSending(t *testing.T) {
 	var invalidTokenChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		map[string]interface{}{},
 	)
+	var buttonLayoutChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2021", "",
+		map[string]interface{}{
+			courier.ConfigAuthToken: "Token",
+			"button_layout":         map[string]interface{}{"bg_color": "#f7bb3f", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
+		})
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 	RunChannelSendTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases, nil)
+	RunChannelSendTestCases(t, buttonLayoutChannel, newHandler(), buttonLayoutSendTestCases, nil)
 }
 
 var testChannels = []courier.Channel{

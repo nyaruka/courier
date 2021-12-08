@@ -17,7 +17,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/batch"
-	"github.com/nyaruka/courier/chatbase"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/storage"
@@ -33,16 +32,8 @@ const msgQueueName = "msgs"
 // the name of our set for tracking sends
 const sentSetName = "msgs_sent_%s"
 
-// constants used in org configs for chatbase
-const chatbaseAPIKey = "CHATBASE_API_KEY"
-const chatbaseVersion = "CHATBASE_VERSION"
-const chatbaseMessageType = "agent"
-
 // our timeout for backend operations
 const backendTimeout = time.Second * 20
-
-// number of messages for loop detection
-const msgLoopThreshold = 20
 
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
@@ -208,63 +199,6 @@ func (b *backend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
 	return err
 }
 
-var luaMsgLoop = redis.NewScript(3, `-- KEYS: [key, contact_id, text]
-	local key = KEYS[1]
-	local contact_id = KEYS[2]
-	local text = KEYS[3]
-	local count = 1
-
-    -- try to look up in window
-	local record = redis.call("hget", key, contact_id)
-	if record then
-		local record_count = tonumber(string.sub(record, 1, 2))
-		local record_text = string.sub(record, 4, -1)
-
-		if record_text == text then 
-			count = math.min(record_count + 1, 99)
-		else
-			count = 1
-		end		
-	end
-
-	-- create our new record with our updated count
-	record = string.format("%02d:%s", count, text)
-
-	-- write our new record with updated count
-	redis.call("hset", key, contact_id, record)
-
-	-- sets its expiration
-	redis.call("expire", key, 300)
-
-	return count
-`)
-
-// IsMsgLoop checks whether the passed in message is part of a loop
-func (b *backend) IsMsgLoop(ctx context.Context, msg courier.Msg) (bool, error) {
-	m := msg.(*DBMsg)
-
-	// things that aren't replies can't be loops, neither do we count retries
-	if m.ResponseToID_ == courier.NilMsgID || m.ErrorCount_ > 0 {
-		return false, nil
-	}
-
-	// otherwise run our script to check whether this is a loop in the past 5 minutes
-	rc := b.redisPool.Get()
-	defer rc.Close()
-
-	keyTime := time.Now().UTC().Round(time.Minute * 5)
-	key := fmt.Sprintf(sentSetName, fmt.Sprintf("loop_msgs:%s", keyTime.Format("2006-01-02-15:04")))
-	count, err := redis.Int(luaMsgLoop.Do(rc, key, m.ContactID_, m.Text_))
-	if err != nil {
-		return false, errors.Wrapf(err, "error while checking for msg loop")
-	}
-
-	if count >= msgLoopThreshold {
-		return true, nil
-	}
-	return false, nil
-}
-
 // MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel
 func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, status courier.MsgStatus) {
 	rc := b.redisPool.Get()
@@ -290,16 +224,6 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 			if err != nil {
 				logrus.WithError(err).WithField("session_id", dbMsg.SessionID_).Error("unable to update session timeout")
 			}
-		}
-	}
-
-	// if this org has chatbase connected, notify chatbase
-	chatKey, _ := msg.Channel().OrgConfigForKey(chatbaseAPIKey, "").(string)
-	if chatKey != "" {
-		chatVersion, _ := msg.Channel().OrgConfigForKey(chatbaseVersion, "").(string)
-		err := chatbase.SendChatbaseMessage(chatKey, chatVersion, chatbaseMessageType, dbMsg.ContactID_.String(), msg.Channel().Name(), msg.Text(), time.Now().UTC())
-		if err != nil {
-			logrus.WithError(err).WithField("chatbase_api_key", chatKey).WithField("chatbase_version", chatVersion).WithField("msg_id", dbMsg.ID().String()).Error("unable to write chatbase message")
 		}
 	}
 }

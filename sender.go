@@ -189,23 +189,10 @@ func (w *Sender) sendMessage(msg Msg) {
 		log.WithError(err).Error("error looking up msg was sent")
 	}
 
-	// is this msg in a loop?
-	loop, err := backend.IsMsgLoop(sendCTX, msg)
-
-	// failing on loop lookup isn't permanent, but log
-	if err != nil {
-		log.WithError(err).Error("error looking up msg loop")
-	}
-
 	if sent {
 		// if this message was already sent, create a wired status for it
 		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired)
 		log.Warning("duplicate send, marking as wired")
-	} else if loop {
-		// if this contact is in a loop, fail the message immediately without sending
-		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgFailed)
-		status.AddLog(NewChannelLogFromError("Message Loop", msg.Channel(), msg.ID(), 0, fmt.Errorf("message loop detected, failing message without send")))
-		log.Error("message loop detected, failing message")
 	} else {
 		// send our message
 		status, err = server.SendMsg(sendCTX, msg)

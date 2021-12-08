@@ -119,13 +119,8 @@ func (mb *MockBackend) NewIncomingMsg(channel Channel, urn urns.URN, text string
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
-func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool, quickReplies []string, topic string, responseToID int64, responseToExternalID string) Msg {
-	msgResponseToID := NilMsgID
-	if responseToID != 0 {
-		msgResponseToID = NewMsgID(responseToID)
-	}
-
-	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority, quickReplies: quickReplies, topic: topic, responseToID: msgResponseToID, responseToExternalID: responseToExternalID}
+func (mb *MockBackend) NewOutgoingMsg(channel Channel, id MsgID, urn urns.URN, text string, highPriority bool, quickReplies []string, topic string, responseToExternalID string) Msg {
+	return &mockMsg{channel: channel, id: id, urn: urn, text: text, highPriority: highPriority, quickReplies: quickReplies, topic: topic, responseToExternalID: responseToExternalID}
 }
 
 // PushOutgoingMsg is a test method to add a message to our queue of messages to send
@@ -164,11 +159,6 @@ func (mb *MockBackend) ClearMsgSent(ctx context.Context, id MsgID) error {
 
 	delete(mb.sentMsgs, id)
 	return nil
-}
-
-// IsMsgLoop returns whether the passed in msg is a loop
-func (mb *MockBackend) IsMsgLoop(ctx context.Context, msg Msg) (bool, error) {
-	return false, nil
 }
 
 // MarkOutgoingMsgComplete marks the passed msg as having been dealt with
@@ -568,7 +558,6 @@ type mockMsg struct {
 	highPriority         bool
 	quickReplies         []string
 	topic                string
-	responseToID         MsgID
 	responseToExternalID string
 	metadata             json.RawMessage
 	alreadyWritten       bool
@@ -594,7 +583,6 @@ func (m *mockMsg) ContactName() string          { return m.contactName }
 func (m *mockMsg) HighPriority() bool           { return m.highPriority }
 func (m *mockMsg) QuickReplies() []string       { return m.quickReplies }
 func (m *mockMsg) Topic() string                { return m.topic }
-func (m *mockMsg) ResponseToID() MsgID          { return m.responseToID }
 func (m *mockMsg) ResponseToExternalID() string { return m.responseToExternalID }
 func (m *mockMsg) Metadata() json.RawMessage    { return m.metadata }
 func (m *mockMsg) IsResend() bool               { return m.isResend }

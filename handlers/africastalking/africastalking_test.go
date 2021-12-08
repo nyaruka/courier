@@ -26,7 +26,8 @@ var (
 
 	missingStatus = "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7"
 	invalidStatus = "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Borked"
-	validStatus   = "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Success"
+	successStatus = "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Success"
+	expiredStatus = "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Expired"
 )
 
 var testCases = []ChannelHandleTestCase{
@@ -42,7 +43,8 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Invalid Date", URL: receiveURL, Data: invalidDate, Status: 400, Response: "invalid date format"},
 	{Label: "Status Invalid", URL: statusURL, Status: 400, Data: invalidStatus, Response: "unknown status"},
 	{Label: "Status Missing", URL: statusURL, Status: 400, Data: missingStatus, Response: "field 'status' required"},
-	{Label: "Status Valid", URL: statusURL, Status: 200, Data: validStatus, Response: `"status":"D"`},
+	{Label: "Status Success", URL: statusURL, Status: 200, Data: successStatus, Response: `"status":"D"`},
+	{Label: "Status Expired", URL: statusURL, Status: 200, Data: expiredStatus, Response: `"status":"F"`},
 }
 
 func TestHandler(t *testing.T) {
