@@ -50,6 +50,7 @@ func TestLua(t *testing.T) {
 	defer close(quitter)
 
 	rate := 10
+
 	for i := 0; i < 20; i++ {
 		err := PushOntoQueue(conn, "msgs", "chan1", rate, fmt.Sprintf(`[{"id":%d}]`, i), LowPriority)
 		assert.NoError(err)
@@ -166,6 +167,51 @@ func TestLua(t *testing.T) {
 	assert.NoError(err)
 	assert.Equal(EmptyQueue, queue)
 	assert.Empty(value)
+
+	err = PushOntoQueue(conn, "msgs", "chan1", rate, `[{"id":34}]`, HighPriority)
+	assert.NoError(err)
+
+	conn.Do("set", "rate_limit:chan1", "engaged")
+	conn.Do("EXPIRE", "rate_limit:chan1", 5)
+
+	// we have the rate limit set,
+	queue, value, err = PopFromQueue(conn, "msgs")
+	if value != "" && queue != EmptyQueue {
+		t.Fatal("Should be throttled")
+	}
+
+	time.Sleep(2 * time.Second)
+	queue, value, err = PopFromQueue(conn, "msgs")
+	if value != "" && queue != EmptyQueue {
+		t.Fatal("Should be throttled")
+	}
+
+	count, err = redis.Int(conn.Do("zcard", "msgs:throttled"))
+	assert.NoError(err)
+	assert.Equal(1, count, "Expected chan1 to be throttled")
+
+	count, err = redis.Int(conn.Do("zcard", "msgs:active"))
+	assert.NoError(err)
+	assert.Equal(0, count, "Expected chan1 to not be active")
+
+	// but if we wait for the rate limit to expire
+	time.Sleep(3 * time.Second)
+
+	// next should be 34
+	queue, value, err = PopFromQueue(conn, "msgs")
+	assert.NotEqual(queue, EmptyQueue)
+	assert.Equal(`{"id":34}`, value)
+	assert.NoError(err)
+
+	// nothing should be left
+	queue = Retry
+	for queue == Retry {
+		queue, value, err = PopFromQueue(conn, "msgs")
+	}
+	assert.NoError(err)
+	assert.Equal(EmptyQueue, queue)
+	assert.Empty(value)
+
 }
 
 func nTestThrottle(t *testing.T) {

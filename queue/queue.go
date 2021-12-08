@@ -83,8 +83,22 @@ var luaPop = redis.NewScript(2, `-- KEYS: [EpochMS QueueType]
 	local delim = string.find(queue, "|")
 	local tps = 0
 	local tpsKey = ""
+
+	local queueName = ""
+
 	if delim then
+	    queueName = string.sub(queue, string.len(KEYS[2])+2, delim-1)
 	    tps = tonumber(string.sub(queue, delim+1))
+	end
+
+	if queueName then
+		local rateLimitKey = "rate_limit:" .. queueName
+		local rateLimitEngaged = redis.call("get", rateLimitKey)
+		if rateLimitEngaged then
+			redis.call("zincrby", KEYS[2] .. ":throttled", workers, queue)
+			redis.call("zrem", KEYS[2] .. ":active", queue)
+			return {"retry", ""}
+		end
 	end
 
 	-- if we have a tps, then check whether we exceed it
