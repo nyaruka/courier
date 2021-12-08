@@ -39,3 +39,10 @@ func TestCleanString(t *testing.T) {
 	text, _ := url.PathUnescape("hi%1C%00%00%00%00%00%07%E0%00")
 	assert.Equal(t, "hi\x1c\a", CleanString(text))
 }
+
+func TestDecodeUTF8(t *testing.T) {
+	data := []byte("\u2022")
+	decoded := DecodeUTF8(data)
+
+	assert.Equal(t, "•", decoded)
+}
