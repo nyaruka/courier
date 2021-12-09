@@ -18,21 +18,21 @@ import (
 
 	"mime"
 
+	"bytes"
 	"github.com/gomodule/redigo/redis"
 	"github.com/lib/pq"
+	"github.com/nfnt/resize"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null"
 	"github.com/sirupsen/logrus"
 	filetype "gopkg.in/h2non/filetype.v1"
 	"image"
-	"bytes"
-	"image/png"
 	"image/jpeg"
-	"github.com/nfnt/resize"
-	"github.com/nyaruka/gocommon/uuids"
+	"image/png"
 )
 
 // MsgDirection is the direction of a message
@@ -113,6 +113,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 
 		URN_:          urn,
 		MessageCount_: 1,
+		Segments_:     0,
 
 		NextAttempt_: now,
 		CreatedOn_:   now,
@@ -127,9 +128,9 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 
 const insertMsgSQL = `
 INSERT INTO
-	msgs_msg(org_id, uuid, direction, text, attachments, msg_count, error_count, high_priority, status,
+	msgs_msg(org_id, uuid, direction, text, attachments, msg_count, error_count, high_priority, status, segments,
              visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on)
-    VALUES(:org_id, :uuid, :direction, :text, :attachments, :msg_count, :error_count, :high_priority, :status,
+    VALUES(:org_id, :uuid, :direction, :text, :attachments, :msg_count, :error_count, :high_priority, :status, :segments,
            :visibility, :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :next_attempt, :queued_on, :sent_on)
 RETURNING id
 `
