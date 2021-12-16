@@ -299,12 +299,12 @@ func buildMockFBGraph(testCases []ChannelHandleTestCase) *httptest.Server {
 
 		// user has a name
 		if strings.HasSuffix(r.URL.Path, "1337") {
-			w.Write([]byte(`{ "first_name": "John", "last_name": "Doe"}`))
+			w.Write([]byte(`{ "name": "John Doe"}`))
 			return
 		}
 
 		// no name
-		w.Write([]byte(`{ "first_name": "", "last_name": ""}`))
+		w.Write([]byte(`{ "name": ""}`))
 	}))
 	graphURL = server.URL
 
@@ -319,8 +319,10 @@ func TestDescribe(t *testing.T) {
 	tcs := []struct {
 		urn      urns.URN
 		metadata map[string]string
-	}{{"instagram:1337", map[string]string{"name": "John Doe"}},
-		{"instagram:4567", map[string]string{"name": ""}}}
+	}{
+		{"instagram:1337", map[string]string{"name": "John Doe"}},
+		{"instagram:4567", map[string]string{"name": ""}},
+	}
 
 	for _, tc := range tcs {
 		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn)
