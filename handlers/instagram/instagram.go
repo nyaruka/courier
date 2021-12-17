@@ -71,23 +71,6 @@ type igUser struct {
 	ID string `json:"id"`
 }
 
-// {
-//   "object":"instagram",
-//   "entry":[{
-//     "id":"180005062406476",
-//     "time":1514924367082,
-//     "messaging":[{
-//       "sender":  {"id":"1630934236957797"},
-//       "recipient":{"id":"180005062406476"},
-//       "timestamp":1514924366807,
-//       "message":{
-//         "mid":"mid.$cAAD5QiNHkz1m6cyj11guxokwkhi2",
-//         "text":"65863634"
-//       }
-//     }]
-//   }]
-// }
-
 type moPayload struct {
 	Object string `json:"object"`
 	Entry  []struct {
@@ -298,22 +281,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
 }
 
-// {
-//     "messaging_type": "<MESSAGING_TYPE>"
-//     "recipient":{
-//         "id":"<PSID>"
-//     },
-//     "message":{
-//	       "text":"hello, world!"
-//         "attachment":{
-//             "type":"image",
-//             "payload":{
-//                 "url":"http://www.messenger-rocks.com/image.jpg",
-//                 "is_reusable":true
-//             }
-//         }
-//     }
-// }
 type mtPayload struct {
 	MessagingType string `json:"messaging_type"`
 	Tag           string `json:"tag,omitempty"`
@@ -351,7 +318,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	payload := mtPayload{}
 
 	// set our message type
-	if msg.ResponseToID() != courier.NilMsgID {
+	if msg.ResponseToExternalID() != "" {
 		payload.MessagingType = "RESPONSE"
 	} else if topic != "" {
 		payload.MessagingType = "MESSAGE_TAG"
