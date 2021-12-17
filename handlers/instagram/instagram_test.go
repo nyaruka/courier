@@ -369,7 +369,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 
 	{Label: "Plain Response",
 		Text: "Simple Message", URN: "instagram:12345",
-		Status: "W", ExternalID: "mid.133", ResponseToID: 23526,
+		Status: "W", ExternalID: "mid.133", ResponseToExternalID: "23526",
 		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
 		RequestBody: `{"messaging_type":"RESPONSE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		SendPrep:    setSendURL},
