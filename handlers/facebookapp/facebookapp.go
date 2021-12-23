@@ -23,13 +23,13 @@ import (
 
 // Endpoints we hit
 var (
-	sendURL  = "https://graph.facebook.com/v7.0/me/messages"
-	graphURL = "https://graph.facebook.com/v7.0/"
+	sendURL  = "https://graph.facebook.com/v12.0/me/messages"
+	graphURL = "https://graph.facebook.com/v12.0/"
 
 	signatureHeader = "X-Hub-Signature"
 
-	// Facebook API says 640 is max for the body
-	maxMsgLength = 640
+	// max for the body
+	maxMsgLength = 1000
 
 	// Sticker ID substitutions
 	stickerIDToEmoji = map[int64]string{
@@ -56,16 +56,18 @@ const (
 	payloadKey    = "payload"
 )
 
+func newHandler(channelType courier.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, validateSignatures)}
+}
+
 func init() {
-	courier.RegisterHandler(newHandler())
+	courier.RegisterHandler(newHandler("IG", "Instagram", false))
+	courier.RegisterHandler(newHandler("FBA", "Facebook", false))
+
 }
 
 type handler struct {
 	handlers.BaseHandler
-}
-
-func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandlerWithParams(courier.ChannelType("FBA"), "Facebook", false)}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -76,12 +78,12 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-type fbSender struct {
+type Sender struct {
 	ID      string `json:"id"`
-	UserRef string `json:"user_ref"`
+	UserRef string `json:"user_ref,omitempty"`
 }
 
-type fbUser struct {
+type User struct {
 	ID string `json:"id"`
 }
 
@@ -108,9 +110,9 @@ type moPayload struct {
 		ID        string `json:"id"`
 		Time      int64  `json:"time"`
 		Messaging []struct {
-			Sender    fbSender `json:"sender"`
-			Recipient fbUser   `json:"recipient"`
-			Timestamp int64    `json:"timestamp"`
+			Sender    Sender `json:"sender"`
+			Recipient User   `json:"recipient"`
+			Timestamp int64  `json:"timestamp"`
 
 			OptIn *struct {
 				Ref     string `json:"ref"`
@@ -125,6 +127,7 @@ type moPayload struct {
 			} `json:"referral"`
 
 			Postback *struct {
+				MID      string `json:"mid"`
 				Title    string `json:"title"`
 				Payload  string `json:"payload"`
 				Referral struct {
@@ -172,9 +175,9 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 		return nil, err
 	}
 
-	// not a page object? ignore
-	if payload.Object != "page" {
-		return nil, fmt.Errorf("object expected 'page', found %s", payload.Object)
+	// is not a 'page' and 'instagram' object? ignore it
+	if payload.Object != "page" && payload.Object != "instagram" {
+		return nil, fmt.Errorf("object expected 'page' or 'instagram', found %s", payload.Object)
 	}
 
 	// no entries? ignore this request
@@ -182,9 +185,14 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 		return nil, fmt.Errorf("no entries found")
 	}
 
-	pageID := payload.Entry[0].ID
+	EntryID := payload.Entry[0].ID
 
-	return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("FBA"), courier.ChannelAddress(pageID))
+	//if object is 'page' returns type FBA, if object is 'instagram' returns type IG
+	if payload.Object == "page" {
+		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("FBA"), courier.ChannelAddress(EntryID))
+	} else {
+		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("IG"), courier.ChannelAddress(EntryID))
+	}
 }
 
 // receiveVerify handles Facebook's webhook verification callback
@@ -219,9 +227,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	// not a page object? ignore
-	if payload.Object != "page" {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring non-page request")
+	// // is not a 'page' and 'instagram' object? ignore it
+	if payload.Object != "page" && payload.Object != "instagram" {
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request")
 	}
 
 	// no entries? ignore this request
@@ -494,7 +502,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		payload.MessagingType = "MESSAGE_TAG"
 		payload.Tag = tagByTopic[topic]
 	} else {
-		payload.MessagingType = "NON_PROMOTIONAL_SUBSCRIPTION" // only allowed until Jan 15, 2020
+		payload.MessagingType = "UPDATE"
 	}
 
 	// build our recipient
@@ -641,7 +649,6 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	u := base.ResolveReference(path)
 
 	query := url.Values{}
-	query.Set("fields", "first_name,last_name")
 	query.Set("access_token", accessToken)
 	u.RawQuery = query.Encode()
 	req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
@@ -650,11 +657,10 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 		return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
 	}
 
-	// read our first and last name
-	firstName, _ := jsonparser.GetString(rr.Body, "first_name")
-	lastName, _ := jsonparser.GetString(rr.Body, "last_name")
+	// read our name
+	name, _ := jsonparser.GetString(rr.Body, "name")
 
-	return map[string]string{"name": utils.JoinNonEmpty(" ", firstName, lastName)}, nil
+	return map[string]string{"name": name}, nil
 }
 
 // see https://developers.facebook.com/docs/messenger-platform/webhook#security

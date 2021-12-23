@@ -17,20 +17,24 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FBA", "1234", "", map[string]interface{}{courier.ConfigAuthToken: "a123"}),
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FBA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"}),
 }
 
-var helloMsg = `{
+var testChannelsIG = []courier.Channel{
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "IG", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"}),
+}
+
+var helloMsgFBA = `{
 	"object":"page",
 	"entry": [{
-	  "id": "1234",
+	  "id": "12345",
 	  "messaging": [{
 			"message": {
 			  "text": "Hello World",
 			  "mid": "external_id"
 			},
 			"recipient": {
-			  "id": "1234"
+			  "id": "12345"
 			},
 			"sender": {
 			  "id": "5678"
@@ -41,17 +45,38 @@ var helloMsg = `{
 	}]
 }`
 
-var duplicateMsg = `{
-	"object":"page",
+var helloMsgIG = `{
+	"object":"instagram",
 	"entry": [{
-	  "id": "1234",
+	  "id": "12345",
 	  "messaging": [{
 			"message": {
 			  "text": "Hello World",
 			  "mid": "external_id"
 			},
 			"recipient": {
-			  "id": "1234"
+			  "id": "12345"
+			},
+			"sender": {
+			  "id": "5678"
+			},
+			"timestamp": 1459991487970
+	  }],
+	  "time": 1459991487970
+	}]
+}`
+
+var duplicateMsgFBA = `{
+	"object":"page",
+	"entry": [{
+	  "id": "12345",
+	  "messaging": [{
+			"message": {
+			  "text": "Hello World",
+			  "mid": "external_id"
+			},
+			"recipient": {
+			  "id": "12345"
 			},
 			"sender": {
 			  "id": "5678"
@@ -61,14 +86,14 @@ var duplicateMsg = `{
 	  "time": 1459991487970
 	},
 	{
-	  "id": "1234",
+	  "id": "12345",
 	  "messaging": [{
 			"message": {
 			  "text": "Hello World",
 			  "mid": "external_id"
 			},
 			"recipient": {
-			  "id": "1234"
+			  "id": "12345"
 			},
 			"sender": {
 			  "id": "5678"
@@ -79,17 +104,55 @@ var duplicateMsg = `{
 	}]
 }`
 
-var invalidURN = `{
-	"object":"page",
+var duplicateMsgIG = `{
+	"object":"instagram",
 	"entry": [{
-	  "id": "1234",
+	  "id": "12345",
 	  "messaging": [{
 			"message": {
 			  "text": "Hello World",
 			  "mid": "external_id"
 			},
 			"recipient": {
-			  "id": "1234"
+			  "id": "12345"
+			},
+			"sender": {
+			  "id": "5678"
+			},
+			"timestamp": 1459991487970
+	  }],
+	  "time": 1459991487970
+	},
+	{
+	  "id": "12345",
+	  "messaging": [{
+			"message": {
+			  "text": "Hello World",
+			  "mid": "external_id"
+			},
+			"recipient": {
+			  "id": "12345"
+			},
+			"sender": {
+			  "id": "5678"
+			},
+			"timestamp": 1459991487970
+	  }],
+	  "time": 1459991487970
+	}]
+}`
+
+var invalidURNFBA = `{
+	"object":"page",
+	"entry": [{
+	  "id": "12345",
+	  "messaging": [{
+			"message": {
+			  "text": "Hello World",
+			  "mid": "external_id"
+			},
+			"recipient": {
+			  "id": "12345"
 			},
 			"sender": {
 			  "id": "abc5678"
@@ -100,10 +163,31 @@ var invalidURN = `{
 	}]
 }`
 
-var attachment = `{
+var invalidURNIG = `{
+	"object":"instagram",
+	"entry": [{
+	  "id": "12345",
+	  "messaging": [{
+			"message": {
+			  "text": "Hello World",
+			  "mid": "external_id"
+			},
+			"recipient": {
+			  "id": "12345"
+			},
+			"sender": {
+			  "id": "abc5678"
+			},
+			"timestamp": 1459991487970
+	  }],
+	  "time": 1459991487970
+	}]
+}`
+
+var attachmentFBA = `{
 	"object":"page",
 	"entry": [{
-	  	"id": "1234",
+	  	"id": "12345",
 	  	"messaging": [{
 				"message": {
 		  			"mid": "external_id",
@@ -115,7 +199,33 @@ var attachment = `{
 					}]
 				},
 				"recipient": {
-					"id": "1234"
+					"id": "12345"
+				},
+				"sender": {
+					"id": "5678"
+				},
+				"timestamp": 1459991487970
+	    }],
+	  	"time": 1459991487970
+	}]
+}`
+
+var attachmentIG = `{
+	"object":"instagram",
+	"entry": [{
+	  	"id": "12345",
+	  	"messaging": [{
+				"message": {
+		  			"mid": "external_id",
+		  			"attachments":[{
+      	      		"type":"image",
+      	      		"payload":{
+						"url":"https://image-url/foo.png"
+						}
+					}]
+				},
+				"recipient": {
+					"id": "12345"
 				},
 				"sender": {
 					"id": "5678"
@@ -129,7 +239,7 @@ var attachment = `{
 var locationAttachment = `{
 	"object":"page",
 	"entry": [{
-	  	"id": "1234",
+	  	"id": "12345",
 	  	"messaging": [{
 				"message": {
 		  			"mid": "external_id",
@@ -144,7 +254,7 @@ var locationAttachment = `{
 					}]
 				},
 				"recipient": {
-					"id": "1234"
+					"id": "12345"
 				},
 				"sender": {
 					"id": "5678"
@@ -158,11 +268,11 @@ var locationAttachment = `{
 var thumbsUp = `{
 	"object":"page",
 	"entry":[{
-		"id":"1234",
+		"id":"12345",
 		"time":1459991487970,
 		"messaging":[{
 			"sender":{"id":"5678"},
-			"recipient":{"id":"1234"},
+			"recipient":{"id":"12345"},
 			"timestamp":1459991487970,
 			"message":{
 				"mid":"external_id",
@@ -178,10 +288,29 @@ var thumbsUp = `{
 	}]
 }`
 
-var differentPage = `{
-	"object":"page",
+var like_heart = `{
+	"object":"instagram",
+	"entry":[{
+		"id":"12345",
+		"messaging":[{
+			"sender":{"id":"5678"},
+			"recipient":{"id":"12345"},
+			"timestamp":1459991487970,
+			"message":{
+				"mid":"external_id",
+				"attachments":[{
+					"type":"like_heart"
+				}]
+			}
+		}],
+		"time":1459991487970
+	}]
+}`
+
+var differentPageIG = `{
+	"object":"instagram",
 	"entry": [{
-	  "id": "1234",
+	  "id": "12345",
 	  "messaging": [{
 			"message": {
 			  "text": "Hello World",
@@ -199,13 +328,34 @@ var differentPage = `{
 	}]
 }`
 
-var echo = `{
+var differentPageFBA = `{
 	"object":"page",
 	"entry": [{
-		"id": "1234",
+	  "id": "12345",
+	  "messaging": [{
+			"message": {
+			  "text": "Hello World",
+			  "mid": "external_id"
+			},
+			"recipient": {
+			  "id": "1235"
+			},
+			"sender": {
+			  "id": "5678"
+			},
+			"timestamp": 1459991487970
+	  }],
+	  "time": 1459991487970
+	}]
+}`
+
+var echoFBA = `{
+	"object":"page",
+	"entry": [{
+		"id": "12345",
 		"messaging": [{
 			"recipient": {
-				"id": "1234"
+				"id": "12345"
 			},
 			"sender": {
 				"id": "5678"
@@ -219,17 +369,58 @@ var echo = `{
 	}]
 }`
 
+var echoIG = `{
+	"object":"instagram",
+	"entry": [{
+		"id": "12345",
+		"messaging": [{
+			"recipient": {
+				"id": "12345"
+			},
+			"sender": {
+				"id": "5678"
+			},
+			"timestamp": 1459991487970,
+			"message": {
+				"is_echo": true,
+				"mid": "qT7ywaK"
+			}
+		}]
+	}]
+}`
+
+var icebreakerGetStarted = `{
+	"object":"instagram",
+	"entry": [{
+	  "id": "12345",
+	  "messaging": [{
+			"postback": {
+				"title": "icebreaker question",  
+				"payload": "get_started"
+			},
+			"recipient": {
+			  "id": "12345"
+			},
+			"sender": {
+			  "id": "5678"
+			},
+			"timestamp": 1459991487970
+	  }],
+	  "time": 1459991487970
+	}]
+}`
+
 var optInUserRef = `{
 	"object":"page",
 	"entry": [{
-	  "id": "1234",
+	  "id": "12345",
 	  "messaging": [{
 		  "optin": {
 		  	"ref": "optin_ref",
 		  	"user_ref": "optin_user_ref"
 		  },
 		  "recipient": {
-		  	"id": "1234"
+		  	"id": "12345"
 		  },
 		  "sender": {
 		  	"id": "5678"
@@ -243,13 +434,13 @@ var optInUserRef = `{
 var optIn = `{
 	"object":"page",
 	"entry": [{
-	  "id": "1234",
+	  "id": "12345",
 	  "messaging": [{
 			"optin": {
 		 		"ref": "optin_ref"
 			},
 			"recipient": {
-		  	"id": "1234"
+		  	"id": "12345"
 			},
 			"sender": {
 		  	"id": "5678"
@@ -263,7 +454,7 @@ var optIn = `{
 var postback = `{
 	"object":"page",
 	"entry": [{
-	  "id": "1234",
+	  "id": "12345",
 	  "messaging": [{
 			"postback": {
 				"title": "postback title",  
@@ -275,7 +466,7 @@ var postback = `{
 				}
 			},
 			"recipient": {
-			  "id": "1234"
+			  "id": "12345"
 			},
 			"sender": {
 			  "id": "5678"
@@ -289,7 +480,7 @@ var postback = `{
 var postbackReferral = `{
 	"object":"page",
 	"entry": [{
-	  "id": "1234",
+	  "id": "12345",
 	  "messaging": [{
 			"postback": {
 				"title": "postback title",  
@@ -302,7 +493,7 @@ var postbackReferral = `{
 				}
 			},
 			"recipient": {
-			  "id": "1234"
+			  "id": "12345"
 			},
 			"sender": {
 			  "id": "5678"
@@ -316,14 +507,14 @@ var postbackReferral = `{
 var postbackGetStarted = `{
 	"object":"page",
 	"entry": [{
-	  "id": "1234",
+	  "id": "12345",
 	  "messaging": [{
 			"postback": {
 				"title": "postback title",  
 				"payload": "get_started"
 			},
 			"recipient": {
-			  "id": "1234"
+			  "id": "12345"
 			},
 			"sender": {
 			  "id": "5678"
@@ -337,7 +528,7 @@ var postbackGetStarted = `{
 var referral = `{
 	"object":"page",
 	"entry": [{
-	  "id": "1234",
+	  "id": "12345",
 	  "messaging": [{
 			"referral": {
 				"ref": "referral id",
@@ -346,7 +537,7 @@ var referral = `{
 				"type": "referral type"
 			},
 			"recipient": {
-			  "id": "1234"
+			  "id": "12345"
 			},
 			"sender": {
 			  "id": "5678",
@@ -361,7 +552,7 @@ var referral = `{
 var dlr = `{
 	"object":"page",
 	"entry": [{
-	  "id": "1234",
+	  "id": "12345",
 	  "messaging": [{
 			"delivery":{
 				"mids":[
@@ -371,7 +562,7 @@ var dlr = `{
 				"seq":37
 			},
 			"recipient": {
-			  "id": "1234"
+			  "id": "12345"
 			},
 			"sender": {
 			  "id": "5678"
@@ -387,25 +578,58 @@ var notPage = `{
 	"entry": [{}]
 }`
 
-var noEntries = `{
+var notInstagram = `{
+	"object":"notinstagram",
+	"entry": [{}]
+}`
+
+var noEntriesFBA = `{
 	"object":"page",
 	"entry": []
 }`
 
-var noMessagingEntries = `{
+var noEntriesIG = `{
+	"object":"instagram",
+	"entry": []
+}`
+
+var noMessagingEntriesFBA = `{
 	"object":"page",
 	"entry": [{
-		"id": "1234"
+		"id": "12345"
 	}]
 }`
 
-var unkownMessagingEntry = `{
+var noMessagingEntriesIG = `{
+	"object":"instagram",
+	"entry": [{
+		"id": "12345"
+	}]
+}`
+
+var unkownMessagingEntryFBA = `{
 	"object":"page",
 	"entry": [{
-		"id": "1234",
+		"id": "12345",
 		"messaging": [{
 			"recipient": {
-				"id": "1234"
+				"id": "12345"
+			},
+			"sender": {
+				"id": "5678"
+			},
+			"timestamp": 1459991487970
+		}]
+	}]
+}`
+
+var unkownMessagingEntryIG = `{
+	"object":"instagram",
+	"entry": [{
+		"id": "12345",
+		"messaging": [{
+			"recipient": {
+				"id": "12345"
 			},
 			"sender": {
 				"id": "5678"
@@ -417,17 +641,16 @@ var unkownMessagingEntry = `{
 
 var notJSON = `blargh`
 
-var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Message", URL: "/c/fba/receive", Data: helloMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+var testCasesFBA = []ChannelHandleTestCase{
+	{Label: "Receive Message FBA", URL: "/c/fba/receive", Data: helloMsgFBA, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		PrepRequest: addValidSignature},
+	{Label: "Receive Invalid Signature", URL: "/c/fba/receive", Data: helloMsgFBA, Status: 400, Response: "invalid request signature", PrepRequest: addInvalidSignature},
 
-	{Label: "Receive Invalid Signature", URL: "/c/fba/receive", Data: helloMsg, Status: 400, Response: "invalid request signature", PrepRequest: addInvalidSignature},
-
-	{Label: "No Duplicate Receive Message", URL: "/c/fba/receive", Data: duplicateMsg, Status: 200, Response: "Handled",
+	{Label: "No Duplicate Receive Message", URL: "/c/fba/receive", Data: duplicateMsgFBA, Status: 200, Response: "Handled",
 		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Attachment", URL: "/c/fba/receive", Data: attachment, Status: 200, Response: "Handled",
+	{Label: "Receive Attachment", URL: "/c/fba/receive", Data: attachmentFBA, Status: 200, Response: "Handled",
 		Text: Sp(""), Attachments: []string{"https://image-url/foo.png"}, URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		PrepRequest: addValidSignature},
 
@@ -469,14 +692,47 @@ var testCases = []ChannelHandleTestCase{
 		Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), MsgStatus: Sp(courier.MsgDelivered), ExternalID: Sp("mid.1458668856218:ed81099e15d3f4f233"),
 		PrepRequest: addValidSignature},
 
-	{Label: "Different Page", URL: "/c/fba/receive", Data: differentPage, Status: 200, Response: `"data":[]`, PrepRequest: addValidSignature},
-	{Label: "Echo", URL: "/c/fba/receive", Data: echo, Status: 200, Response: `ignoring echo`, PrepRequest: addValidSignature},
-	{Label: "Not Page", URL: "/c/fba/receive", Data: notPage, Status: 400, Response: "expected 'page', found notpage", PrepRequest: addValidSignature},
-	{Label: "No Entries", URL: "/c/fba/receive", Data: noEntries, Status: 400, Response: "no entries found", PrepRequest: addValidSignature},
-	{Label: "No Messaging Entries", URL: "/c/fba/receive", Data: noMessagingEntries, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
-	{Label: "Unknown Messaging Entry", URL: "/c/fba/receive", Data: unkownMessagingEntry, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
+	{Label: "Different Page", URL: "/c/fba/receive", Data: differentPageFBA, Status: 200, Response: `"data":[]`, PrepRequest: addValidSignature},
+	{Label: "Echo", URL: "/c/fba/receive", Data: echoFBA, Status: 200, Response: `ignoring echo`, PrepRequest: addValidSignature},
+	{Label: "Not Page", URL: "/c/fba/receive", Data: notPage, Status: 400, Response: "object expected 'page' or 'instagram', found notpage", PrepRequest: addValidSignature},
+	{Label: "No Entries", URL: "/c/fba/receive", Data: noEntriesFBA, Status: 400, Response: "no entries found", PrepRequest: addValidSignature},
+	{Label: "No Messaging Entries", URL: "/c/fba/receive", Data: noMessagingEntriesFBA, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
+	{Label: "Unknown Messaging Entry", URL: "/c/fba/receive", Data: unkownMessagingEntryFBA, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
 	{Label: "Not JSON", URL: "/c/fba/receive", Data: notJSON, Status: 400, Response: "Error", PrepRequest: addValidSignature},
-	{Label: "Invalid URN", URL: "/c/fba/receive", Data: invalidURN, Status: 400, Response: "invalid facebook id", PrepRequest: addValidSignature},
+	{Label: "Invalid URN", URL: "/c/fba/receive", Data: invalidURNFBA, Status: 400, Response: "invalid facebook id", PrepRequest: addValidSignature},
+}
+var testCasesIG = []ChannelHandleTestCase{
+	{Label: "Receive Message", URL: "/c/ig/receive", Data: helloMsgIG, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Invalid Signature", URL: "/c/ig/receive", Data: helloMsgIG, Status: 400, Response: "invalid request signature", PrepRequest: addInvalidSignature},
+
+	{Label: "No Duplicate Receive Message", URL: "/c/ig/receive", Data: duplicateMsgIG, Status: 200, Response: "Handled",
+		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Attachment", URL: "/c/ig/receive", Data: attachmentIG, Status: 200, Response: "Handled",
+		Text: Sp(""), Attachments: []string{"https://image-url/foo.png"}, URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Like Heart", URL: "/c/ig/receive", Data: like_heart, Status: 200, Response: "Handled",
+		Text: Sp(""), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Icebreaker Get Started", URL: "/c/ig/receive", Data: icebreakerGetStarted, Status: 200, Response: "Handled",
+		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.NewConversation),
+		ChannelEventExtra: map[string]interface{}{"title": "icebreaker question", "payload": "get_started"},
+		PrepRequest:       addValidSignature},
+
+	{Label: "Different Page", URL: "/c/ig/receive", Data: differentPageIG, Status: 200, Response: `"data":[]`, PrepRequest: addValidSignature},
+	{Label: "Echo", URL: "/c/ig/receive", Data: echoIG, Status: 200, Response: `ignoring echo`, PrepRequest: addValidSignature},
+	{Label: "No Entries", URL: "/c/ig/receive", Data: noEntriesIG, Status: 400, Response: "no entries found", PrepRequest: addValidSignature},
+	{Label: "Not Instagram", URL: "/c/ig/receive", Data: notInstagram, Status: 400, Response: "object expected 'page' or 'instagram', found notinstagram", PrepRequest: addValidSignature},
+	{Label: "No Messaging Entries", URL: "/c/ig/receive", Data: noMessagingEntriesIG, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
+	{Label: "Unknown Messaging Entry", URL: "/c/ig/receive", Data: unkownMessagingEntryIG, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
+	{Label: "Not JSON", URL: "/c/ig/receive", Data: notJSON, Status: 400, Response: "Error", PrepRequest: addValidSignature},
+	{Label: "Invalid URN", URL: "/c/ig/receive", Data: invalidURNIG, Status: 400, Response: "invalid facebook id", PrepRequest: addValidSignature},
 }
 
 func addValidSignature(r *http.Request) {
@@ -502,12 +758,12 @@ func buildMockFBGraph(testCases []ChannelHandleTestCase) *httptest.Server {
 
 		// user has a name
 		if strings.HasSuffix(r.URL.Path, "1337") {
-			w.Write([]byte(`{ "first_name": "John", "last_name": "Doe"}`))
+			w.Write([]byte(`{ "name": "John Doe"}`))
 			return
 		}
 
 		// no name
-		w.Write([]byte(`{ "first_name": "", "last_name": ""}`))
+		w.Write([]byte(`{ "name": ""}`))
 	}))
 	graphURL = server.URL
 
@@ -515,43 +771,84 @@ func buildMockFBGraph(testCases []ChannelHandleTestCase) *httptest.Server {
 }
 
 func TestDescribe(t *testing.T) {
-	fbGraph := buildMockFBGraph(testCases)
-	defer fbGraph.Close()
+	var testCases [][]ChannelHandleTestCase
+	testCases = append(testCases, testCasesFBA)
+	testCases = append(testCases, testCasesIG)
 
-	handler := newHandler().(courier.URNDescriber)
-	tcs := []struct {
-		urn      urns.URN
-		metadata map[string]string
-	}{{"facebook:1337", map[string]string{"name": "John Doe"}},
-		{"facebook:4567", map[string]string{"name": ""}},
-		{"facebook:ref:1337", map[string]string{}}}
+	for i, tc := range testCases {
+		fbGraph := buildMockFBGraph(tc)
+		defer fbGraph.Close()
 
-	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn)
-		assert.Equal(t, metadata, tc.metadata)
+		if i == 0 {
+			handler := newHandler("FBA", "Facebook", false).(courier.URNDescriber)
+			tcs := []struct {
+				urn      urns.URN
+				metadata map[string]string
+			}{
+				{"facebook:1337", map[string]string{"name": "John Doe"}},
+				{"facebook:4567", map[string]string{"name": ""}},
+			}
+
+			for _, tc := range tcs {
+				metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn)
+				assert.Equal(t, metadata, tc.metadata)
+			}
+		} else {
+			handler := newHandler("IG", "Instagram", false).(courier.URNDescriber)
+			tcs := []struct {
+				urn      urns.URN
+				metadata map[string]string
+			}{
+				{"facebook:1337", map[string]string{"name": "John Doe"}},
+				{"facebook:4567", map[string]string{"name": ""}},
+			}
+
+			for _, tc := range tcs {
+				metadata, _ := handler.DescribeURN(context.Background(), testChannelsIG[0], tc.urn)
+				assert.Equal(t, metadata, tc.metadata)
+			}
+		}
+
 	}
+
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+	RunChannelTestCases(t, testChannels, newHandler("FBA", "Facebook", false), testCasesFBA)
+	RunChannelTestCases(t, testChannelsIG, newHandler("IG", "Instagram", false), testCasesIG)
+
 }
 
 func BenchmarkHandler(b *testing.B) {
-	fbService := buildMockFBGraph(testCases)
-	defer fbService.Close()
+	fbService := buildMockFBGraph(testCasesFBA)
 
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
+	RunChannelBenchmarks(b, testChannels, newHandler("FBA", "Facebook", false), testCasesFBA)
+	fbService.Close()
+
+	fbServiceIG := buildMockFBGraph(testCasesIG)
+
+	RunChannelBenchmarks(b, testChannelsIG, newHandler("IG", "Instagram", false), testCasesIG)
+	fbServiceIG.Close()
 }
 
 func TestVerify(t *testing.T) {
 
-	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
+	RunChannelTestCases(t, testChannels, newHandler("FBA", "Facebook", false), []ChannelHandleTestCase{
 		{Label: "Valid Secret", URL: "/c/fba/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge", Status: 200,
 			Response: "yarchallenge", NoQueueErrorCheck: true, NoInvalidChannelCheck: true},
 		{Label: "Verify No Mode", URL: "/c/fba/receive", Status: 400, Response: "unknown request"},
 		{Label: "Verify No Secret", URL: "/c/fba/receive?hub.mode=subscribe", Status: 400, Response: "token does not match secret"},
 		{Label: "Invalid Secret", URL: "/c/fba/receive?hub.mode=subscribe&hub.verify_token=blah", Status: 400, Response: "token does not match secret"},
 		{Label: "Valid Secret", URL: "/c/fba/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge", Status: 200, Response: "yarchallenge"},
+	})
+
+	RunChannelTestCases(t, testChannelsIG, newHandler("IG", "Instagram", false), []ChannelHandleTestCase{
+		{Label: "Valid Secret", URL: "/c/ig/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge", Status: 200,
+			Response: "yarchallenge", NoQueueErrorCheck: true, NoInvalidChannelCheck: true},
+		{Label: "Verify No Mode", URL: "/c/ig/receive", Status: 400, Response: "unknown request"},
+		{Label: "Verify No Secret", URL: "/c/ig/receive?hub.mode=subscribe", Status: 400, Response: "token does not match secret"},
+		{Label: "Invalid Secret", URL: "/c/ig/receive?hub.mode=subscribe&hub.verify_token=blah", Status: 400, Response: "token does not match secret"},
+		{Label: "Valid Secret", URL: "/c/ig/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge", Status: 200, Response: "yarchallenge"},
 	})
 
 }
@@ -561,12 +858,12 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var SendTestCasesFBA = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "facebook:12345",
 		Status: "W", ExternalID: "mid.133",
 		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
-		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
+		RequestBody: `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		SendPrep:    setSendURL},
 	{Label: "Plain Response",
 		Text: "Simple Message", URN: "facebook:12345",
@@ -579,13 +876,13 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ContactURNs: map[string]bool{"facebook:12345": true, "ext:67890": true, "facebook:ref:67890": false},
 		Status:      "W", ExternalID: "mid.133",
 		ResponseBody: `{"message_id": "mid.133", "recipient_id": "12345"}`, ResponseStatus: 200,
-		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"user_ref":"67890"},"message":{"text":"Simple Message"}}`,
+		RequestBody: `{"messaging_type":"UPDATE","recipient":{"user_ref":"67890"},"message":{"text":"Simple Message"}}`,
 		SendPrep:    setSendURL},
 	{Label: "Quick Reply",
 		Text: "Are you happy?", URN: "facebook:12345", QuickReplies: []string{"Yes", "No"},
 		Status: "W", ExternalID: "mid.133",
 		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
-		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Are you happy?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
+		RequestBody: `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"text":"Are you happy?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 		SendPrep:    setSendURL},
 	{Label: "Long Message",
 		Text: "This is a long message which spans more than one part, what will actually be sent in the end if we exceed the max length?",
@@ -598,7 +895,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		URN: "facebook:12345", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status: "W", ExternalID: "mid.133",
 		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
-		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
+		RequestBody: `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
 		SendPrep:    setSendURL},
 	{Label: "Send caption and photo with Quick Reply",
 		Text: "This is some text.",
@@ -612,7 +909,71 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		URN: "facebook:12345", Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
 		Status: "W", ExternalID: "mid.133",
 		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
-		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"file","payload":{"url":"https://foo.bar/document.pdf","is_reusable":true}}}}`,
+		RequestBody: `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"file","payload":{"url":"https://foo.bar/document.pdf","is_reusable":true}}}}`,
+		SendPrep:    setSendURL},
+	{Label: "ID Error",
+		Text: "ID Error", URN: "facebook:12345",
+		Status:       "E",
+		ResponseBody: `{ "is_error": true }`, ResponseStatus: 200,
+		SendPrep: setSendURL},
+	{Label: "Error",
+		Text: "Error", URN: "facebook:12345",
+		Status:       "E",
+		ResponseBody: `{ "is_error": true }`, ResponseStatus: 403,
+		SendPrep: setSendURL},
+}
+
+var SendTestCasesIG = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "facebook:12345",
+		Status: "W", ExternalID: "mid.133",
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
+		SendPrep:    setSendURL},
+	{Label: "Plain Response",
+		Text: "Simple Message", URN: "facebook:12345",
+		Status: "W", ExternalID: "mid.133", ResponseToExternalID: "23526",
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"RESPONSE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
+		SendPrep:    setSendURL},
+	{Label: "Quick Reply",
+		Text: "Are you happy?", URN: "facebook:12345", QuickReplies: []string{"Yes", "No"},
+		Status: "W", ExternalID: "mid.133",
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"text":"Are you happy?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
+		SendPrep:    setSendURL},
+	{Label: "Long Message",
+		Text: "This is a long message which spans more than one part, what will actually be sent in the end if we exceed the max length?",
+		URN:  "facebook:12345", QuickReplies: []string{"Yes", "No"}, Topic: "agent",
+		Status: "W", ExternalID: "mid.133",
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"MESSAGE_TAG","tag":"HUMAN_AGENT","recipient":{"id":"12345"},"message":{"text":"we exceed the max length?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
+		SendPrep:    setSendURL},
+	{Label: "Send Photo",
+		URN: "facebook:12345", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Status: "W", ExternalID: "mid.133",
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
+		SendPrep:    setSendURL},
+	{Label: "Send caption and photo with Quick Reply",
+		Text: "This is some text.",
+		URN:  "facebook:12345", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		QuickReplies: []string{"Yes", "No"},
+		Status:       "W", ExternalID: "mid.133",
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"text":"This is some text.","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
+		SendPrep:    setSendURL},
+	{Label: "Tag Human Agent",
+		Text: "Simple Message", URN: "facebook:12345",
+		Status: "W", ExternalID: "mid.133", Topic: "agent",
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"MESSAGE_TAG","tag":"HUMAN_AGENT","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
+		SendPrep:    setSendURL},
+	{Label: "Send Document",
+		URN: "facebook:12345", Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		Status: "W", ExternalID: "mid.133",
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"file","payload":{"url":"https://foo.bar/document.pdf","is_reusable":true}}}}`,
 		SendPrep:    setSendURL},
 	{Label: "ID Error",
 		Text: "ID Error", URN: "facebook:12345",
@@ -629,8 +990,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "2020", "US", map[string]interface{}{courier.ConfigAuthToken: "access_token"})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	var ChannelFBA = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"})
+	var ChannelIG = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IG", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"})
+	RunChannelSendTestCases(t, ChannelFBA, newHandler("FBA", "Facebook", false), SendTestCasesFBA, nil)
+	RunChannelSendTestCases(t, ChannelIG, newHandler("IG", "Instagram", false), SendTestCasesIG, nil)
 }
 
 func TestSigning(t *testing.T) {
