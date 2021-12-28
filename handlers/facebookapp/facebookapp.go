@@ -142,6 +142,7 @@ type moPayload struct {
 				IsEcho      bool   `json:"is_echo"`
 				MID         string `json:"mid"`
 				Text        string `json:"text"`
+				IsDeleted   bool   `json:"is_deleted"`
 				Attachments []struct {
 					Type    string `json:"type"`
 					Payload *struct {
@@ -386,6 +387,11 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 				if att.Type == "location" {
 					attachmentURLs = append(attachmentURLs, fmt.Sprintf("geo:%f,%f", att.Payload.Coordinates.Lat, att.Payload.Coordinates.Long))
+				}
+
+				if att.Type == "story_mention" {
+					data = append(data, courier.NewInfoData("ignoring story_mention"))
+					continue
 				}
 
 				if att.Payload != nil && att.Payload.URL != "" {
