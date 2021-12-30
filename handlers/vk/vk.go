@@ -56,6 +56,7 @@ var (
 	paramMessage      = "message"
 	paramAttachments  = "attachment"
 	paramRandomId     = "random_id"
+	paramKeyboard     = "keyboard"
 
 	// base upload media values
 	paramServerId = "server"
@@ -113,6 +114,7 @@ type moNewMessagePayload struct {
 					Lng float64 `json:"longitude"`
 				} `json:"coordinates"`
 			} `json:"geo"`
+			Payload string `json:"payload"`
 		} `json:"message" validate:"required"`
 	} `json:"object" validate:"required"`
 }
@@ -187,6 +189,23 @@ type photoUploadPayload struct {
 type mediaUploadInfoPayload struct {
 	MediaId int64 `json:"id"`
 	OwnerId int64 `json:"owner_id"`
+}
+
+type Keyboard struct {
+	One_Time bool              `json:"one_time"`
+	Buttons  [][]buttonPayload `json:"buttons"`
+	Inline   bool              `json:"inline"`
+}
+
+type buttonPayload struct {
+	Action buttonAction `json:"action"`
+	Color  string       `json:"color"`
+}
+
+type buttonAction struct {
+	Type    string `json:"type"`
+	Label   string `json:"label"`
+	Payload string `json:"payload"`
 }
 
 // receiveEvent handles request event type
@@ -384,11 +403,7 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionSendMessage, nil)
 
-	if err != nil {
-		return status, errors.New("Cannot create send message request")
-	}
 	params := buildApiBaseParams(msg.Channel())
 	params.Set(paramUserId, msg.URN().Path())
 	params.Set(paramRandomId, msg.ID().String())
@@ -396,6 +411,19 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	text, attachments := buildTextAndAttachmentParams(msg, status)
 	params.Set(paramMessage, text)
 	params.Set(paramAttachments, attachments)
+
+	if len(msg.QuickReplies()) != 0 {
+		keyboard := buildQuickRepliesParams(msg)
+		keyboardString := ToJSON(keyboard)
+
+		params.Set(paramKeyboard, keyboardString)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionSendMessage, nil)
+
+	if err != nil {
+		return status, errors.New("Cannot create send message request")
+	}
 
 	req.URL.RawQuery = params.Encode()
 	res, err := utils.MakeHTTPRequest(req)
@@ -415,6 +443,58 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	status.SetStatus(courier.MsgSent)
 
 	return status, nil
+}
+
+// ToJSON returns the JSON encoding of Keyboard.
+func ToJSON(keyboard Keyboard) string {
+	b, _ := json.Marshal(keyboard)
+	return string(b)
+}
+
+//keyboard
+func buildQuickRepliesParams(msg courier.Msg) Keyboard {
+
+	var keyboard Keyboard
+	keyboard = AddRowKeyboard(keyboard)
+
+	for _, qr := range msg.QuickReplies() {
+		keyboard = AddTextButton(qr, qr, "secondary", keyboard)
+	}
+	return keyboard
+}
+
+func AddRowKeyboard(keyboard Keyboard) Keyboard {
+	if len(keyboard.Buttons) == 0 {
+		keyboard.Buttons = make([][]buttonPayload, 1)
+	} else {
+		row := make([]buttonPayload, 0)
+		keyboard.Buttons = append(keyboard.Buttons, row)
+
+	}
+	keyboard.One_Time = true
+
+	return keyboard
+}
+
+func AddTextButton(label string, payload interface{}, color string, keyboard Keyboard) Keyboard {
+	b, err := json.Marshal(payload)
+	if err != nil {
+		panic(err)
+	}
+
+	button := buttonPayload{
+		Action: buttonAction{
+			Type:    "text",
+			Label:   label,
+			Payload: string(b),
+		},
+		Color: color,
+	}
+
+	lastRow := len(keyboard.Buttons) - 1
+	keyboard.Buttons[lastRow] = append(keyboard.Buttons[lastRow], button)
+
+	return keyboard
 }
 
 // buildTextAndAttachmentParams builds msg text with attachment links (if needed) and attachments list param, also returns the errors that occurred
