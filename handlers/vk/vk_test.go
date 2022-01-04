@@ -225,7 +225,7 @@ const msgKeyboard = `{
 	"secret": "abc123xyz"
   }`
 
-const keyboardJson = `{"one_time":true,"buttons":[[{"action":{"type":"text","label":"Yes","payload":"\"Yes\""},"color":"secondary"}]],"inline":false}`
+const keyboardJson = `{"one_time":true,"buttons":[[{"action":{"type":"text","label":"A","payload":"\"A\""},"color":"primary"},{"action":{"type":"text","label":"B","payload":"\"B\""},"color":"primary"},{"action":{"type":"text","label":"C","payload":"\"C\""},"color":"primary"},{"action":{"type":"text","label":"D","payload":"\"D\""},"color":"primary"},{"action":{"type":"text","label":"E","payload":"\"E\""},"color":"primary"}]],"inline":false}`
 
 var testCases = []ChannelHandleTestCase{
 	{
@@ -476,7 +476,7 @@ var sendTestCases = []ChannelSendTestCase{
 		Label:        "Send keyboard",
 		Text:         "Send keyboard",
 		URN:          "vk:123456789",
-		QuickReplies: []string{"Yes"},
+		QuickReplies: []string{"A", "B", "C", "D", "E"},
 		Status:       "S",
 		SendPrep:     setSendURL,
 		ExternalID:   "1",

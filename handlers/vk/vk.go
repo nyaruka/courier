@@ -19,6 +19,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -189,23 +190,6 @@ type photoUploadPayload struct {
 type mediaUploadInfoPayload struct {
 	MediaId int64 `json:"id"`
 	OwnerId int64 `json:"owner_id"`
-}
-
-type Keyboard struct {
-	One_Time bool              `json:"one_time"`
-	Buttons  [][]buttonPayload `json:"buttons"`
-	Inline   bool              `json:"inline"`
-}
-
-type buttonPayload struct {
-	Action buttonAction `json:"action"`
-	Color  string       `json:"color"`
-}
-
-type buttonAction struct {
-	Type    string `json:"type"`
-	Label   string `json:"label"`
-	Payload string `json:"payload"`
 }
 
 // receiveEvent handles request event type
@@ -413,10 +397,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	params.Set(paramAttachments, attachments)
 
 	if len(msg.QuickReplies()) != 0 {
-		keyboard := buildQuickRepliesParams(msg)
-		keyboardString := ToJSON(keyboard)
+		qrs := msg.QuickReplies()
+		keyboard := NewKeyboardFromReplies(qrs)
 
-		params.Set(paramKeyboard, keyboardString)
+		params.Set(paramKeyboard, string(jsonx.MustMarshal(keyboard)))
 	}
 
 	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionSendMessage, nil)
@@ -443,58 +427,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	status.SetStatus(courier.MsgSent)
 
 	return status, nil
-}
-
-// ToJSON returns the JSON encoding of Keyboard.
-func ToJSON(keyboard Keyboard) string {
-	b, _ := json.Marshal(keyboard)
-	return string(b)
-}
-
-//keyboard
-func buildQuickRepliesParams(msg courier.Msg) Keyboard {
-
-	var keyboard Keyboard
-	keyboard = AddRowKeyboard(keyboard)
-
-	for _, qr := range msg.QuickReplies() {
-		keyboard = AddTextButton(qr, qr, "secondary", keyboard)
-	}
-	return keyboard
-}
-
-func AddRowKeyboard(keyboard Keyboard) Keyboard {
-	if len(keyboard.Buttons) == 0 {
-		keyboard.Buttons = make([][]buttonPayload, 1)
-	} else {
-		row := make([]buttonPayload, 0)
-		keyboard.Buttons = append(keyboard.Buttons, row)
-
-	}
-	keyboard.One_Time = true
-
-	return keyboard
-}
-
-func AddTextButton(label string, payload interface{}, color string, keyboard Keyboard) Keyboard {
-	b, err := json.Marshal(payload)
-	if err != nil {
-		panic(err)
-	}
-
-	button := buttonPayload{
-		Action: buttonAction{
-			Type:    "text",
-			Label:   label,
-			Payload: string(b),
-		},
-		Color: color,
-	}
-
-	lastRow := len(keyboard.Buttons) - 1
-	keyboard.Buttons[lastRow] = append(keyboard.Buttons[lastRow], button)
-
-	return keyboard
 }
 
 // buildTextAndAttachmentParams builds msg text with attachment links (if needed) and attachments list param, also returns the errors that occurred
