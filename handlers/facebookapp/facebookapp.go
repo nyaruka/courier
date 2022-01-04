@@ -142,7 +142,6 @@ type moPayload struct {
 				IsEcho      bool   `json:"is_echo"`
 				MID         string `json:"mid"`
 				Text        string `json:"text"`
-				IsDeleted   bool   `json:"is_deleted"`
 				Attachments []struct {
 					Type    string `json:"type"`
 					Payload *struct {
@@ -228,7 +227,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	// // is not a 'page' and 'instagram' object? ignore it
+	// is not a 'page' and 'instagram' object? ignore it
 	if payload.Object != "page" && payload.Object != "instagram" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request")
 	}

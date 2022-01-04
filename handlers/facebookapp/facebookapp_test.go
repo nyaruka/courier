@@ -639,6 +639,32 @@ var unkownMessagingEntryIG = `{
 	}]
 }`
 
+var storyMentionIG = `{
+	"object":"instagram",
+	"entry": [{
+	  	"id": "12345",
+	  	"messaging": [{
+				"message": {
+		  			"mid": "external_id",
+		  			"attachments":[{
+      	      		"type":"story_mention",
+      	      		"payload":{
+						"url":"https://story-url"
+						}
+					}]
+				},
+				"recipient": {
+					"id": "12345"
+				},
+				"sender": {
+					"id": "5678"
+				},
+				"timestamp": 1459991487970
+	    }],
+	  	"time": 1459991487970
+	}]
+}`
+
 var notJSON = `blargh`
 
 var testCasesFBA = []ChannelHandleTestCase{
@@ -733,6 +759,7 @@ var testCasesIG = []ChannelHandleTestCase{
 	{Label: "Unknown Messaging Entry", URL: "/c/ig/receive", Data: unkownMessagingEntryIG, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
 	{Label: "Not JSON", URL: "/c/ig/receive", Data: notJSON, Status: 400, Response: "Error", PrepRequest: addValidSignature},
 	{Label: "Invalid URN", URL: "/c/ig/receive", Data: invalidURNIG, Status: 400, Response: "invalid facebook id", PrepRequest: addValidSignature},
+	{Label: "Story Mention", URL: "/c/ig/receive", Data: storyMentionIG, Status: 200, Response: `ignoring story_mention`, PrepRequest: addValidSignature},
 }
 
 func addValidSignature(r *http.Request) {
