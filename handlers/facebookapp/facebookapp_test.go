@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testChannels = []courier.Channel{
+var testChannelsFBA = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FBA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"}),
 }
 
@@ -797,51 +797,43 @@ func buildMockFBGraph(testCases []ChannelHandleTestCase) *httptest.Server {
 	return server
 }
 
-func TestDescribe(t *testing.T) {
-	var testCases [][]ChannelHandleTestCase
-	testCases = append(testCases, testCasesFBA)
-	testCases = append(testCases, testCasesIG)
+func TestDescribeFBA(t *testing.T) {
+	fbGraph := buildMockFBGraph(testCasesFBA)
+	defer fbGraph.Close()
 
-	for i, tc := range testCases {
-		fbGraph := buildMockFBGraph(tc)
-		defer fbGraph.Close()
+	handler := newHandler("FBA", "Facebook", false).(courier.URNDescriber)
+	tcs := []struct {
+		urn      urns.URN
+		metadata map[string]string
+	}{{"facebook:1337", map[string]string{"name": "John Doe"}},
+		{"facebook:4567", map[string]string{"name": ""}},
+		{"facebook:ref:1337", map[string]string{}}}
 
-		if i == 0 {
-			handler := newHandler("FBA", "Facebook", false).(courier.URNDescriber)
-			tcs := []struct {
-				urn      urns.URN
-				metadata map[string]string
-			}{
-				{"facebook:1337", map[string]string{"name": "John Doe"}},
-				{"facebook:4567", map[string]string{"name": ""}},
-			}
-
-			for _, tc := range tcs {
-				metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn)
-				assert.Equal(t, metadata, tc.metadata)
-			}
-		} else {
-			handler := newHandler("IG", "Instagram", false).(courier.URNDescriber)
-			tcs := []struct {
-				urn      urns.URN
-				metadata map[string]string
-			}{
-				{"facebook:1337", map[string]string{"name": "John Doe"}},
-				{"facebook:4567", map[string]string{"name": ""}},
-			}
-
-			for _, tc := range tcs {
-				metadata, _ := handler.DescribeURN(context.Background(), testChannelsIG[0], tc.urn)
-				assert.Equal(t, metadata, tc.metadata)
-			}
-		}
-
+	for _, tc := range tcs {
+		metadata, _ := handler.DescribeURN(context.Background(), testChannelsFBA[0], tc.urn)
+		assert.Equal(t, metadata, tc.metadata)
 	}
+}
 
+func TestDescribeIG(t *testing.T) {
+	fbGraph := buildMockFBGraph(testCasesIG)
+	defer fbGraph.Close()
+
+	handler := newHandler("IG", "Instagram", false).(courier.URNDescriber)
+	tcs := []struct {
+		urn      urns.URN
+		metadata map[string]string
+	}{{"instagram:1337", map[string]string{"name": "John Doe"}},
+		{"instagram:4567", map[string]string{"name": ""}}}
+
+	for _, tc := range tcs {
+		metadata, _ := handler.DescribeURN(context.Background(), testChannelsIG[0], tc.urn)
+		assert.Equal(t, metadata, tc.metadata)
+	}
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler("FBA", "Facebook", false), testCasesFBA)
+	RunChannelTestCases(t, testChannelsFBA, newHandler("FBA", "Facebook", false), testCasesFBA)
 	RunChannelTestCases(t, testChannelsIG, newHandler("IG", "Instagram", false), testCasesIG)
 
 }
@@ -849,7 +841,7 @@ func TestHandler(t *testing.T) {
 func BenchmarkHandler(b *testing.B) {
 	fbService := buildMockFBGraph(testCasesFBA)
 
-	RunChannelBenchmarks(b, testChannels, newHandler("FBA", "Facebook", false), testCasesFBA)
+	RunChannelBenchmarks(b, testChannelsFBA, newHandler("FBA", "Facebook", false), testCasesFBA)
 	fbService.Close()
 
 	fbServiceIG := buildMockFBGraph(testCasesIG)
@@ -860,7 +852,7 @@ func BenchmarkHandler(b *testing.B) {
 
 func TestVerify(t *testing.T) {
 
-	RunChannelTestCases(t, testChannels, newHandler("FBA", "Facebook", false), []ChannelHandleTestCase{
+	RunChannelTestCases(t, testChannelsFBA, newHandler("FBA", "Facebook", false), []ChannelHandleTestCase{
 		{Label: "Valid Secret", URL: "/c/fba/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge", Status: 200,
 			Response: "yarchallenge", NoQueueErrorCheck: true, NoInvalidChannelCheck: true},
 		{Label: "Verify No Mode", URL: "/c/fba/receive", Status: 400, Response: "unknown request"},
