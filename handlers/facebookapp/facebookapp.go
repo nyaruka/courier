@@ -56,8 +56,8 @@ const (
 	payloadKey    = "payload"
 )
 
-func newHandler(channelType courier.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, validateSignatures)}
+func newHandler(channelType courier.ChannelType, name string, useUUIDRoutes bool) courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, useUUIDRoutes)}
 }
 
 func init() {
