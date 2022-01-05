@@ -266,11 +266,21 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			sender = msg.Sender.ID
 		}
 
+		var urn urns.URN
+
 		// create our URN
-		urn, err := urns.NewFacebookURN(sender)
-		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		if payload.Object == "instagram" {
+			urn, err = urns.NewInstagramURN(sender)
+			if err != nil {
+				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			}
+		} else {
+			urn, err = urns.NewFacebookURN(sender)
+			if err != nil {
+				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			}
 		}
+
 		if msg.OptIn != nil {
 			// this is an opt in, if we have a user_ref, use that as our URN (this is a checkbox plugin)
 			// TODO:
