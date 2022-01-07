@@ -5,7 +5,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"net/url"
 	"path"
 	"regexp"
@@ -20,15 +19,6 @@ func SignHMAC256(privateKey string, value string) string {
 
 	signedParams := hex.EncodeToString(hash.Sum(nil))
 	return signedParams
-}
-
-// MapAsJSON serializes the given map as a JSON string
-func MapAsJSON(m map[string]string) []byte {
-	bytes, err := json.Marshal(m)
-	if err != nil {
-		panic(err)
-	}
-	return bytes
 }
 
 // JoinNonEmpty takes a vararg of strings and return the join of all the non-empty strings with a delimiter between them
