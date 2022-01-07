@@ -723,7 +723,7 @@ var testCasesFBA = []ChannelHandleTestCase{
 	{Label: "Not Page", URL: "/c/fba/receive", Data: notPage, Status: 400, Response: "object expected 'page' or 'instagram', found notpage", PrepRequest: addValidSignature},
 	{Label: "No Entries", URL: "/c/fba/receive", Data: noEntriesFBA, Status: 400, Response: "no entries found", PrepRequest: addValidSignature},
 	{Label: "No Messaging Entries", URL: "/c/fba/receive", Data: noMessagingEntriesFBA, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
-	{Label: "Unknown Messaging Entry", URL: "/c/fba/receive", Data: unkownMessagingEntryFBA, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
+	{Label: "Unknown Messaging Entry", URL: "/c/fba/receive", Data: unknownMessagingEntryFBA, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
 	{Label: "Not JSON", URL: "/c/fba/receive", Data: notJSON, Status: 400, Response: "Error", PrepRequest: addValidSignature},
 	{Label: "Invalid URN", URL: "/c/fba/receive", Data: invalidURNFBA, Status: 400, Response: "invalid facebook id", PrepRequest: addValidSignature},
 }
@@ -756,7 +756,7 @@ var testCasesIG = []ChannelHandleTestCase{
 	{Label: "No Entries", URL: "/c/ig/receive", Data: noEntriesIG, Status: 400, Response: "no entries found", PrepRequest: addValidSignature},
 	{Label: "Not Instagram", URL: "/c/ig/receive", Data: notInstagram, Status: 400, Response: "object expected 'page' or 'instagram', found notinstagram", PrepRequest: addValidSignature},
 	{Label: "No Messaging Entries", URL: "/c/ig/receive", Data: noMessagingEntriesIG, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
-	{Label: "Unknown Messaging Entry", URL: "/c/ig/receive", Data: unkownMessagingEntryIG, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
+	{Label: "Unknown Messaging Entry", URL: "/c/ig/receive", Data: unknownMessagingEntryIG, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
 	{Label: "Not JSON", URL: "/c/ig/receive", Data: notJSON, Status: 400, Response: "Error", PrepRequest: addValidSignature},
 	{Label: "Invalid URN", URL: "/c/ig/receive", Data: invalidURNIG, Status: 400, Response: "invalid instagram id", PrepRequest: addValidSignature},
 	{Label: "Story Mention", URL: "/c/ig/receive", Data: storyMentionIG, Status: 200, Response: `ignoring story_mention`, PrepRequest: addValidSignature},
