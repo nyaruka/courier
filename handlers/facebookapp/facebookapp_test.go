@@ -607,7 +607,7 @@ var noMessagingEntriesIG = `{
 	}]
 }`
 
-var unkownMessagingEntryFBA = `{
+var unknownMessagingEntryFBA = `{
 	"object":"page",
 	"entry": [{
 		"id": "12345",
@@ -623,7 +623,7 @@ var unkownMessagingEntryFBA = `{
 	}]
 }`
 
-var unkownMessagingEntryIG = `{
+var unknownMessagingEntryIG = `{
 	"object":"instagram",
 	"entry": [{
 		"id": "12345",
