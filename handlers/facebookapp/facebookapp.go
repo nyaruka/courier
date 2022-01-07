@@ -185,13 +185,13 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 		return nil, fmt.Errorf("no entries found")
 	}
 
-	EntryID := payload.Entry[0].ID
+	entryID := payload.Entry[0].ID
 
 	//if object is 'page' returns type FBA, if object is 'instagram' returns type IG
 	if payload.Object == "page" {
-		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("FBA"), courier.ChannelAddress(EntryID))
+		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("FBA"), courier.ChannelAddress(entryID))
 	} else {
-		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("IG"), courier.ChannelAddress(EntryID))
+		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("IG"), courier.ChannelAddress(entryID))
 	}
 }
 
