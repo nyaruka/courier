@@ -17,6 +17,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
+	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null"
@@ -1172,9 +1173,7 @@ func (ts *BackendTestSuite) TestSessionTimeout() {
 	ts.NoError(err)
 
 	// make sure that took
-	count := 0
-	ts.b.db.Get(&count, "SELECT count(*) from flows_flowsession WHERE timeout_on > NOW()")
-	ts.Equal(1, count)
+	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) from flows_flowsession WHERE timeout_on > NOW()`).Returns(1)
 }
 
 func (ts *BackendTestSuite) TestMailroomEvents() {

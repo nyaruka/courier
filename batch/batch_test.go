@@ -8,6 +8,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,9 +45,7 @@ func TestBatchInsert(t *testing.T) {
 	time.Sleep(time.Second)
 
 	assert.NoError(t, callbackErr)
-	count := 0
-	db.Get(&count, "SELECT count(*) FROM labels;")
-	assert.Equal(t, 3, count)
+	assertdb.Query(t, db, `SELECT count(*) FROM labels;`).Returns(3)
 
 	committer.Queue(&Label{0, "label4"})
 	committer.Queue(&Label{0, "label3"})
@@ -54,9 +53,8 @@ func TestBatchInsert(t *testing.T) {
 	time.Sleep(time.Second)
 
 	assert.Error(t, callbackErr)
-	assert.Equal(t, `labels: error comitting value: error during bulk insert: pq: duplicate key value violates unique constraint "labels_label_key"`, callbackErr.Error())
-	db.Get(&count, "SELECT count(*) FROM labels;")
-	assert.Equal(t, 4, count)
+	assert.Equal(t, `labels: error committing value: error making bulk query: pq: duplicate key value violates unique constraint "labels_label_key"`, callbackErr.Error())
+	assertdb.Query(t, db, `SELECT count(*) FROM labels;`).Returns(4)
 }
 
 func TestBatchUpdate(t *testing.T) {
@@ -94,17 +92,8 @@ func TestBatchUpdate(t *testing.T) {
 	time.Sleep(time.Second)
 
 	assert.NoError(t, callbackErr)
-	count := 0
-	db.Get(&count, "SELECT count(*) FROM labels;")
-	assert.Equal(t, 3, count)
-
-	label := ""
-	db.Get(&label, "SELECT label FROM labels WHERE id = 1;")
-	assert.Equal(t, "label001", label)
-
-	db.Get(&label, "SELECT label FROM labels WHERE id = 2;")
-	assert.Equal(t, "label02", label)
-
-	db.Get(&label, "SELECT label FROM labels WHERE id = 3;")
-	assert.Equal(t, "label03", label)
+	assertdb.Query(t, db, `SELECT count(*) FROM labels;`).Returns(3)
+	assertdb.Query(t, db, `SELECT label FROM labels WHERE id = 1`).Returns("label001")
+	assertdb.Query(t, db, `SELECT label FROM labels WHERE id = 2`).Returns("label02")
+	assertdb.Query(t, db, `SELECT label FROM labels WHERE id = 3`).Returns("label03")
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/nyaruka/courier/batch"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/librato"
@@ -651,7 +652,15 @@ func (b *backend) Start() error {
 	// create our status committer and start it
 	b.statusCommitter = batch.NewCommitter("status committer", b.db, bulkUpdateMsgStatusSQL, time.Millisecond*500, b.committerWG,
 		func(err error, value batch.Value) {
-			logrus.WithField("comp", "status committer").WithError(err).Error("error writing status")
+			log := logrus.WithField("comp", "status committer")
+
+			if qerr := dbutil.AsQueryError(err); qerr != nil {
+				query, params := qerr.Query()
+				log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
+			}
+
+			log.WithError(err).Error("error writing status")
+
 			err = courier.WriteToSpool(b.config.SpoolDir, "statuses", value)
 			if err != nil {
 				logrus.WithField("comp", "status committer").WithError(err).Error("error writing status to spool")
@@ -662,7 +671,14 @@ func (b *backend) Start() error {
 	// create our log committer and start it
 	b.logCommitter = batch.NewCommitter("log committer", b.db, insertLogSQL, time.Millisecond*500, b.committerWG,
 		func(err error, value batch.Value) {
-			logrus.WithField("comp", "log committer").WithError(err).Error("error writing channel log")
+			log := logrus.WithField("comp", "log committer")
+
+			if qerr := dbutil.AsQueryError(err); qerr != nil {
+				query, params := qerr.Query()
+				log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
+			}
+
+			log.WithError(err).Error("error writing channel log")
 		})
 	b.logCommitter.Start()
 
