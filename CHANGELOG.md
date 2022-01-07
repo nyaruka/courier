@@ -1,3 +1,8 @@
+v7.1.7
+----------
+ * Use dbutil package from gocommon
+ * Add quick replies for vk
+
 v7.1.6
 ----------
  * Throttle WA queues when we get 429 responses

@@ -14,11 +14,6 @@ func TestSignHMAC256(t *testing.T) {
 	assert.Len(t, utils.SignHMAC256("ZXwAumfRSejDxJGa", "newValueToEncrypt"), 64)
 }
 
-func TestMapAsJSON(t *testing.T) {
-	assert.Equal(t, "{}", string(utils.MapAsJSON(map[string]string{})))
-	assert.Equal(t, "{\"foo\":\"bar\"}", string(utils.MapAsJSON(map[string]string{"foo": "bar"})))
-}
-
 func TestJoinNonEmpty(t *testing.T) {
 	assert.Equal(t, "", utils.JoinNonEmpty(" "))
 	assert.Equal(t, "hello world", utils.JoinNonEmpty(" ", "", "hello", "", "world"))

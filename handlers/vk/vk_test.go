@@ -2,14 +2,15 @@ package vk
 
 import (
 	"context"
-	"github.com/nyaruka/gocommon/urns"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/nyaruka/gocommon/urns"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
@@ -210,6 +211,22 @@ const eventServerVerification = `{
   "secret": "abc123xyz"
 }`
 
+const msgKeyboard = `{
+	"type": "message_new",
+	"object": {
+	   "message": {
+	   "id": 1,
+       "date": 1580125800,
+       "from_id": 123456,
+       "text": "Yes",
+	   "payload": "\"Yes\""
+	  }
+	},
+	"secret": "abc123xyz"
+  }`
+
+const keyboardJson = `{"one_time":true,"buttons":[[{"action":{"type":"text","label":"A","payload":"\"A\""},"color":"primary"},{"action":{"type":"text","label":"B","payload":"\"B\""},"color":"primary"},{"action":{"type":"text","label":"C","payload":"\"C\""},"color":"primary"},{"action":{"type":"text","label":"D","payload":"\"D\""},"color":"primary"},{"action":{"type":"text","label":"E","payload":"\"E\""},"color":"primary"}]],"inline":false}`
+
 var testCases = []ChannelHandleTestCase{
 	{
 		Label:      "Receive Message",
@@ -280,6 +297,16 @@ var testCases = []ChannelHandleTestCase{
 		URN:        Sp("vk:123456"),
 		ExternalID: Sp("1"),
 		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/doc.pdf"},
+	},
+	{
+		Label:      "Receive Message Keyboard",
+		URL:        receiveURL,
+		Data:       msgKeyboard,
+		Status:     200,
+		Response:   "ok",
+		URN:        Sp("vk:123456"),
+		ExternalID: Sp("1"),
+		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)),
 	},
 	{
 		Label:      "Receive Geolocation Attachment",
@@ -439,6 +466,25 @@ var sendTestCases = []ChannelSendTestCase{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=Attachments" + url.QueryEscape("\n\nhttps://foo.bar/audio.mp3") + "&random_id=10&user_id=123456789&v=5.103",
+			}: {
+				Status: 200,
+				Body:   `{"response": 1}`,
+			},
+		},
+	},
+	{
+		Label:        "Send keyboard",
+		Text:         "Send keyboard",
+		URN:          "vk:123456789",
+		QuickReplies: []string{"A", "B", "C", "D", "E"},
+		Status:       "S",
+		SendPrep:     setSendURL,
+		ExternalID:   "1",
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method:   "POST",
+				Path:     actionSendMessage,
+				RawQuery: "access_token=token123xyz&attachment=&keyboard=" + url.QueryEscape(keyboardJson) + "&message=Send+keyboard&random_id=10&user_id=123456789&v=5.103",
 			}: {
 				Status: 200,
 				Body:   `{"response": 1}`,

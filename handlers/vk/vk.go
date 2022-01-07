@@ -19,6 +19,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -56,6 +57,7 @@ var (
 	paramMessage      = "message"
 	paramAttachments  = "attachment"
 	paramRandomId     = "random_id"
+	paramKeyboard     = "keyboard"
 
 	// base upload media values
 	paramServerId = "server"
@@ -113,6 +115,7 @@ type moNewMessagePayload struct {
 					Lng float64 `json:"longitude"`
 				} `json:"coordinates"`
 			} `json:"geo"`
+			Payload string `json:"payload"`
 		} `json:"message" validate:"required"`
 	} `json:"object" validate:"required"`
 }
@@ -384,11 +387,7 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionSendMessage, nil)
 
-	if err != nil {
-		return status, errors.New("Cannot create send message request")
-	}
 	params := buildApiBaseParams(msg.Channel())
 	params.Set(paramUserId, msg.URN().Path())
 	params.Set(paramRandomId, msg.ID().String())
@@ -396,6 +395,19 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	text, attachments := buildTextAndAttachmentParams(msg, status)
 	params.Set(paramMessage, text)
 	params.Set(paramAttachments, attachments)
+
+	if len(msg.QuickReplies()) != 0 {
+		qrs := msg.QuickReplies()
+		keyboard := NewKeyboardFromReplies(qrs)
+
+		params.Set(paramKeyboard, string(jsonx.MustMarshal(keyboard)))
+	}
+
+	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionSendMessage, nil)
+
+	if err != nil {
+		return status, errors.New("Cannot create send message request")
+	}
 
 	req.URL.RawQuery = params.Encode()
 	res, err := utils.MakeHTTPRequest(req)

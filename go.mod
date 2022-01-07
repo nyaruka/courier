@@ -11,19 +11,17 @@ require (
 	github.com/getsentry/raven-go v0.0.0-20180517221441-ed7bcb39ff10 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-errors/errors v1.0.1
-	github.com/go-playground/locales v0.11.2 // indirect
-	github.com/go-playground/universal-translator v0.16.0 // indirect
-	github.com/go-sql-driver/mysql v1.5.0 // indirect
+	github.com/go-playground/locales v0.14.0 // indirect
+	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gorilla/schema v1.0.2
-	github.com/jmoiron/sqlx v0.0.0-20180614180643-0dae4fefe7c0
+	github.com/jmoiron/sqlx v1.3.4
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348 // indirect
-	github.com/lib/pq v1.0.0
-	github.com/mattn/go-sqlite3 v1.10.0 // indirect
+	github.com/lib/pq v1.10.4
 	github.com/nyaruka/ezconf v0.2.1
-	github.com/nyaruka/gocommon v1.15.1
+	github.com/nyaruka/gocommon v1.16.0
 	github.com/nyaruka/librato v1.0.0
 	github.com/nyaruka/null v1.1.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -32,8 +30,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/mod v0.4.2
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
-	gopkg.in/go-playground/validator.v9 v9.11.0
+	gopkg.in/go-playground/validator.v9 v9.31.0
 	gopkg.in/h2non/filetype.v1 v1.0.5
 )
 
@@ -43,6 +40,7 @@ require (
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
+	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.1.1 // indirect
 	github.com/nyaruka/phonenumbers v1.0.71 // indirect
