@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/nyaruka/null"
+	"github.com/pkg/errors"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
@@ -209,14 +210,14 @@ func contactURNForURN(db *sqlx.Tx, channel *DBChannel, contactID ContactID, urn 
 	}
 	err := db.Get(contactURN, selectOrgURN, channel.OrgID(), urn.Identity())
 	if err != nil && err != sql.ErrNoRows {
-		return nil, err
+		return nil, errors.Wrap(err, "error looking up URN by identity")
 	}
 
 	// we didn't find it, let's insert it
 	if err == sql.ErrNoRows {
 		err = insertContactURN(db, contactURN)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "error inserting URN")
 		}
 	}
 
@@ -232,7 +233,7 @@ func contactURNForURN(db *sqlx.Tx, channel *DBChannel, contactID ContactID, urn 
 		contactURN.Display = display
 		err = updateContactURN(db, contactURN)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "error updating URN")
 		}
 	}
 
@@ -242,7 +243,7 @@ func contactURNForURN(db *sqlx.Tx, channel *DBChannel, contactID ContactID, urn 
 		err = updateContactURN(db, contactURN)
 	}
 
-	return contactURN, err
+	return contactURN, errors.Wrap(err, "error updating URN auth")
 }
 
 const insertURN = `

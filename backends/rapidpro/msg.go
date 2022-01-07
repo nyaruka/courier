@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
+	"github.com/pkg/errors"
 
 	"mime"
 
@@ -134,7 +135,7 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 
 	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error getting contact for message")
 	}
 
 	// set our contact and urn ids from our contact
@@ -143,14 +144,14 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 
 	rows, err := b.db.NamedQueryContext(ctx, insertMsgSQL, m)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error inserting message")
 	}
 	defer rows.Close()
 
 	rows.Next()
 	err = rows.Scan(&m.ID_)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error scanning for inserted message id")
 	}
 
 	// queue this up to be handled by RapidPro
