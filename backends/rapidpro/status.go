@@ -304,8 +304,6 @@ WHERE
 	msgs_msg.id = s.msg_id::bigint AND
 	msgs_msg.channel_id = s.channel_id::int AND 
 	msgs_msg.direction = 'O'
-RETURNING 
-	msgs_msg.id AS msg_id
 `
 
 //-----------------------------------------------------------------------------
