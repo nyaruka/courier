@@ -1,3 +1,7 @@
+v7.1.11
+----------
+ * More bulk sql tweaks
+
 v7.1.10
 ----------
  * Update to latest gocommon
