@@ -1,3 +1,7 @@
+v7.1.9
+----------
+ * Fix bulk status updates
+
 v7.1.8
 ----------
  * Do more error wrapping when creating contacts and URNs
