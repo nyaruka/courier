@@ -1,3 +1,7 @@
+v7.1.8
+----------
+ * Do more error wrapping when creating contacts and URNs
+
 v7.1.7
 ----------
  * Use dbutil package from gocommon
