@@ -1,3 +1,7 @@
+v7.1.10
+----------
+ * Update to latest gocommon
+
 v7.1.9
 ----------
  * Fix bulk status updates
