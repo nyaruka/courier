@@ -9,13 +9,14 @@ import (
 	"unicode/utf8"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/librato"
 	"github.com/nyaruka/null"
+	"github.com/pkg/errors"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -102,7 +103,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	err := b.db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
 	if err != nil && err != sql.ErrNoRows {
 		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
-		return nil, err
+		return nil, errors.Wrap(err, "error looking up contact by URN")
 	}
 
 	// we found it, return it
@@ -111,14 +112,14 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 		tx, err := b.db.BeginTxx(ctx, nil)
 		if err != nil {
 			logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
-			return nil, err
+			return nil, errors.Wrap(err, "error beginning transaction")
 		}
 
 		err = setDefaultURN(tx, channel, contact, urn, auth)
 		if err != nil {
 			logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
 			tx.Rollback()
-			return nil, err
+			return nil, errors.Wrap(err, "error setting default URN for contact")
 		}
 		return contact, tx.Commit()
 	}
@@ -166,13 +167,13 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	// insert it
 	tx, err := b.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error beginning transaction")
 	}
 
 	err = insertContact(tx, contact)
 	if err != nil {
 		tx.Rollback()
-		return nil, err
+		return nil, errors.Wrap(err, "error inserting contact")
 	}
 
 	// used for unit testing contact races
@@ -186,13 +187,12 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	contactURN, err := contactURNForURN(tx, channel, contact.ID_, urn, auth)
 	if err != nil {
 		tx.Rollback()
-		if pqErr, ok := err.(*pq.Error); ok {
+
+		if dbutil.IsUniqueViolation(err) {
 			// if this was a duplicate URN, start over with a contact lookup
-			if pqErr.Code.Name() == "unique_violation" {
-				return contactForURN(ctx, b, org, channel, urn, auth, name)
-			}
+			return contactForURN(ctx, b, org, channel, urn, auth, name)
 		}
-		return nil, err
+		return nil, errors.Wrap(err, "error getting URN for contact")
 	}
 
 	// we stole the URN from another contact, roll back and start over
@@ -204,7 +204,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	// all is well, we created the new contact, commit and move forward
 	err = tx.Commit()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error commiting transaction")
 	}
 
 	// store this URN on our contact
