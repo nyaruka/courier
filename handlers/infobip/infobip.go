@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var sendURL = "https://api.infobip.com/sms/1/text/advanced"
+var sendURL = "" // added here to override for testing
 
 const configTransliteration = "transliteration"
 
@@ -177,16 +177,6 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 // SendMsg sends the passed in message, returning any error
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("no username set for IB channel")
-	}
-
-	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("no password set for IB channel")
-	}
-
 	transliteration := msg.Channel().StringConfigForKey(configTransliteration, "")
 
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
@@ -218,13 +208,18 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	// build our request
+	var authorization = fmt.Sprintf("App %s", msg.Channel().StringConfigForKey(courier.ConfigAPIKey, ""))
+	if sendURL == "" {
+		urlFromConfig := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
+		sendURL = fmt.Sprintf("%s/sms/2/text/advanced", urlFromConfig)
+	}
 	req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.SetBasicAuth(username, password)
+	req.Header.Set("Authorization", authorization)
 
 	rr, err := utils.MakeHTTPRequest(req)
 
