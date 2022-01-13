@@ -1,3 +1,8 @@
+v7.1.12
+----------
+ * Update to latest gocommon
+ * Add instagram handler
+
 v7.1.11
 ----------
  * More bulk sql tweaks
