@@ -16,8 +16,8 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/gocommon/rcache"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/redisx"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -765,7 +765,8 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	defer rc.Close()
 
 	cacheKey := fmt.Sprintf(mediaCacheKeyPattern, msg.Channel().UUID().String())
-	mediaID, err := rcache.Get(rc, cacheKey, mediaURL)
+	mediaCache := redisx.NewIntervalHash(cacheKey, time.Hour*24, 2)
+	mediaID, err := mediaCache.Get(rc, mediaURL)
 	if err != nil {
 		return "", logs, errors.Wrapf(err, "error reading media id from redis: %s : %s", cacheKey, mediaURL)
 	} else if mediaID != "" {
@@ -823,7 +824,7 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	}
 
 	// put in cache
-	err = rcache.Set(rc, cacheKey, mediaURL, mediaID)
+	err = mediaCache.Set(rc, mediaURL, mediaID)
 	if err != nil {
 		return "", logs, errors.Wrapf(err, "error setting media id in cache")
 	}
