@@ -117,11 +117,12 @@ func (h *handler) registerContact(ctx context.Context, channel courier.Channel, 
 
 type mtPayload struct {
 	Data struct {
-		Type         string   `json:"type"`
-		Title        string   `json:"title"`
-		Message      string   `json:"message"`
-		MessageID    int64    `json:"message_id"`
-		QuickReplies []string `json:"quick_replies,omitempty"`
+		Type          string   `json:"type"`
+		Title         string   `json:"title"`
+		Message       string   `json:"message"`
+		MessageID     int64    `json:"message_id"`
+		SessionStatus string   `json:"session_status"`
+		QuickReplies  []string `json:"quick_replies,omitempty"`
 	} `json:"data"`
 	Notification     *mtNotification `json:"notification,omitempty"`
 	ContentAvailable bool            `json:"content_available"`
@@ -162,6 +163,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		payload.Data.Title = title
 		payload.Data.Message = part
 		payload.Data.MessageID = int64(msg.ID())
+		payload.Data.SessionStatus = msg.SessionStatus()
 
 		// include any quick replies on the last piece we send
 		if i == len(msgParts)-1 {
