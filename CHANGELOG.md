@@ -1,3 +1,8 @@
+v7.1.13
+----------
+ * Send db and redis stats to librato in backed heartbeat
+ * Include session_status in FCM payloads
+
 v7.1.12
 ----------
  * Update to latest gocommon
