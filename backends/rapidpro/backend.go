@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
@@ -438,10 +437,39 @@ func (b *backend) Heartbeat() error {
 		bulkSize += count
 	}
 
-	// log our total
+	// get our DB and redis stats
+	dbStats := b.db.Stats()
+	redisStats := b.redisPool.Stats()
+
+	dbWaitDurationInPeriod := dbStats.WaitDuration - b.dbWaitDuration
+	dbWaitCountInPeriod := dbStats.WaitCount - b.dbWaitCount
+	redisWaitDurationInPeriod := redisStats.WaitDuration - b.redisWaitDuration
+	redisWaitCountInPeriod := redisStats.WaitCount - b.redisWaitCount
+
+	b.dbWaitDuration = dbStats.WaitDuration
+	b.dbWaitCount = dbStats.WaitCount
+	b.redisWaitDuration = redisStats.WaitDuration
+	b.redisWaitCount = redisStats.WaitCount
+
+	librato.Gauge("courier.db_busy", float64(dbStats.InUse))
+	librato.Gauge("courier.db_idle", float64(dbStats.Idle))
+	librato.Gauge("courier.db_wait_ms", float64(dbWaitDurationInPeriod/time.Millisecond))
+	librato.Gauge("courier.db_wait_count", float64(dbWaitCountInPeriod))
+	librato.Gauge("courier.redis_wait_ms", float64(redisWaitDurationInPeriod/time.Millisecond))
+	librato.Gauge("courier.redis_wait_count", float64(redisWaitCountInPeriod))
 	librato.Gauge("courier.bulk_queue", float64(bulkSize))
 	librato.Gauge("courier.priority_queue", float64(prioritySize))
-	logrus.WithField("bulk_queue", bulkSize).WithField("priority_queue", prioritySize).Info("heartbeat queue sizes calculated")
+
+	logrus.WithFields(logrus.Fields{
+		"db_busy":          dbStats.InUse,
+		"db_idle":          dbStats.Idle,
+		"db_wait_time":     dbWaitDurationInPeriod,
+		"db_wait_count":    dbWaitCountInPeriod,
+		"redis_wait_time":  dbWaitDurationInPeriod,
+		"redis_wait_count": dbWaitCountInPeriod,
+		"priority_size":    prioritySize,
+		"bulk_size":        bulkSize,
+	}).Info("current analytics")
 
 	return nil
 }
@@ -753,10 +781,13 @@ type backend struct {
 	db        *sqlx.DB
 	redisPool *redis.Pool
 	storage   storage.Storage
-	awsCreds  *credentials.Credentials
-
-	popScript *redis.Script
 
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
+
+	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments
+	dbWaitDuration    time.Duration
+	dbWaitCount       int64
+	redisWaitDuration time.Duration
+	redisWaitCount    int64
 }

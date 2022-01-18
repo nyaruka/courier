@@ -680,6 +680,11 @@ func (ts *BackendTestSuite) TestHealth() {
 	ts.Equal(ts.b.Health(), "")
 }
 
+func (ts *BackendTestSuite) TestHeartbeat() {
+	// TODO make analytics abstraction layer so we can test what we report
+	ts.NoError(ts.b.Heartbeat())
+}
+
 func (ts *BackendTestSuite) TestDupes() {
 	r := ts.b.redisPool.Get()
 	defer r.Close()
