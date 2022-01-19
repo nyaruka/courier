@@ -568,6 +568,13 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 	var logs []*courier.ChannelLog
 	var err error
 
+	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
+
+	qrs := msg.QuickReplies()
+	wppVersion := msg.Channel().ConfigForKey("version", "0").(string)
+	isInteractiveMsgCompatible := semver.Compare(wppVersion, interactiveMsgMinSupVersion)
+	isInteractiveMsg := (isInteractiveMsgCompatible >= 0) && (len(qrs) > 0)
+
 	if len(msg.Attachments()) > 0 {
 		for attachmentCount, attachment := range msg.Attachments() {
 
@@ -595,7 +602,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 					To:   msg.URN().Path(),
 					Type: "document",
 				}
-				if attachmentCount == 0 {
+				if attachmentCount == 0 && !isInteractiveMsg {
 					mediaPayload.Caption = msg.Text()
 				}
 				mediaPayload.Filename, err = utils.BasePathForURL(mediaURL)
@@ -611,7 +618,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 					To:   msg.URN().Path(),
 					Type: "image",
 				}
-				if attachmentCount == 0 {
+				if attachmentCount == 0 && !isInteractiveMsg {
 					mediaPayload.Caption = msg.Text()
 				}
 				payload.Image = mediaPayload
@@ -621,7 +628,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 					To:   msg.URN().Path(),
 					Type: "video",
 				}
-				if attachmentCount == 0 {
+				if attachmentCount == 0 && !isInteractiveMsg {
 					mediaPayload.Caption = msg.Text()
 				}
 				payload.Video = mediaPayload
@@ -634,6 +641,59 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				break
 			}
 		}
+
+		if isInteractiveMsg {
+			for i, part := range parts {
+				if i < (len(parts) - 1) { //if split into more than one message, the first parts will be text and the last interactive
+					payload := mtTextPayload{
+						To:   msg.URN().Path(),
+						Type: "text",
+					}
+					payload.Text.Body = part
+					payloads = append(payloads, payload)
+
+				} else {
+					payload := mtInteractivePayload{
+						To:   msg.URN().Path(),
+						Type: "interactive",
+					}
+
+					// up to 3 qrs the interactive message will be button type, otherwise it will be list
+					if len(qrs) <= 3 {
+						payload.Interactive.Type = "button"
+						payload.Interactive.Body.Text = part
+						btns := make([]mtButton, len(qrs))
+						for i, qr := range qrs {
+							btns[i] = mtButton{
+								Type: "reply",
+							}
+							btns[i].Reply.ID = fmt.Sprint(i)
+							btns[i].Reply.Title = qr
+						}
+						payload.Interactive.Action.Buttons = btns
+						payloads = append(payloads, payload)
+					} else {
+						payload.Interactive.Type = "list"
+						payload.Interactive.Body.Text = part
+						payload.Interactive.Action.Button = "Menu"
+						section := mtSection{
+							Rows: make([]mtSectionRow, len(qrs)),
+						}
+						for i, qr := range qrs {
+							section.Rows[i] = mtSectionRow{
+								ID:    fmt.Sprint(i),
+								Title: qr,
+							}
+						}
+						payload.Interactive.Action.Sections = []mtSection{
+							section,
+						}
+						payloads = append(payloads, payload)
+					}
+				}
+			}
+		}
+
 	} else {
 		// do we have a template?
 		var templating *MsgTemplating
@@ -684,12 +744,6 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				payloads = append(payloads, payload)
 			}
 		} else {
-			parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
-
-			qrs := msg.QuickReplies()
-			wppVersion := msg.Channel().ConfigForKey("version", "0").(string)
-			isInteractiveMsgCompatible := semver.Compare(wppVersion, interactiveMsgMinSupVersion)
-			isInteractiveMsg := (isInteractiveMsgCompatible >= 0) && (len(qrs) > 0)
 
 			if isInteractiveMsg {
 				for i, part := range parts {
