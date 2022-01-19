@@ -54,10 +54,11 @@ var (
 	twaStatusIDURL        = "/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=12345"
 	twaStatusInvalidIDURL = "/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=asdf"
 
-	receiveValid        = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=0&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&Body=Msg&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
-	receiveMedia        = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=2&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01&MediaUrl0=cat.jpg&MediaUrl1=dog.jpg"
-	receiveMediaWithMsg = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=2&ToCity=&Body=Msg&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01&MediaUrl0=cat.jpg&MediaUrl1=dog.jpg"
-	receiveBase64       = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=0&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&Body=QmFubm9uIEV4cGxhaW5zIFRoZSBXb3JsZCAuLi4K4oCcVGhlIENhbXAgb2YgdGhlIFNhaW50c%2BKA&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
+	receiveValid         = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=0&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&Body=Msg&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
+	receiveButtonIgnored = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=0&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&Body=Msg&ButtonText=Confirm&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
+	receiveMedia         = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=2&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01&MediaUrl0=cat.jpg&MediaUrl1=dog.jpg"
+	receiveMediaWithMsg  = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=2&ToCity=&Body=Msg&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01&MediaUrl0=cat.jpg&MediaUrl1=dog.jpg"
+	receiveBase64        = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=0&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&Body=QmFubm9uIEV4cGxhaW5zIFRoZSBXb3JsZCAuLi4K4oCcVGhlIENhbXAgb2YgdGhlIFNhaW50c%2BKA&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
 
 	statusInvalid = "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=huh"
 	statusValid   = "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=delivered"
@@ -67,11 +68,15 @@ var (
 	tmsReceiveExtra = "ToCountry=US&ToState=&SmsMessageSid=SMbbf29aeb9d380ce2a1c0ae4635ff9dab&NumMedia=0&ToCity=&FromZip=27609&SmsSid=SMbbf29aeb9d380ce2a1c0ae4635ff9dab&FromState=NC&SmsStatus=received&FromCity=RALEIGH&Body=John+Cruz&FromCountry=US&To=384387&ToZip=&NumSegments=1&MessageSid=SMbbf29aeb9d380ce2a1c0ae4635ff9dab&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
 
 	waReceiveValid         = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=0&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&Body=Msg&FromCountry=US&To=whatsapp:%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=whatsapp:%2B14133881111&ApiVersion=2010-04-01"
+	waReceiveButtonValid   = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=0&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&Body=Msg&ButtonText=Confirm&FromCountry=US&To=whatsapp:%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=whatsapp:%2B14133881111&ApiVersion=2010-04-01"
 	waReceivePrefixlessURN = "ToCountry=US&ToState=CA&SmsMessageSid=SM681a1f26d9ec591431ce406e8f399525&NumMedia=0&ToCity=&FromZip=60625&SmsSid=SM681a1f26d9ec591431ce406e8f399525&FromState=IL&SmsStatus=received&FromCity=CHICAGO&Body=Msg&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SM681a1f26d9ec591431ce406e8f399525&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
 )
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: receiveValid, Status: 200, Response: "<Response/>",
+		Text: Sp("Msg"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Button Ignored", URL: receiveURL, Data: receiveButtonIgnored, Status: 200, Response: "<Response/>",
 		Text: Sp("Msg"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Invalid Signature", URL: receiveURL, Data: receiveValid, Status: 400, Response: "invalid request signature",
@@ -198,6 +203,9 @@ var waTestCases = []ChannelHandleTestCase{
 var twaTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: twaReceiveURL, Data: waReceiveValid, Status: 200, Response: "<Response/>",
 		Text: Sp("Msg"), URN: Sp("whatsapp:14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Valid", URL: twaReceiveURL, Data: waReceiveButtonValid, Status: 200, Response: "<Response/>",
+		Text: Sp("Confirm"), URN: Sp("whatsapp:14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Prefixless URN", URL: twaReceiveURL, Data: waReceivePrefixlessURN, Status: 200, Response: "<Response/>",
 		Text: Sp("Msg"), URN: Sp("whatsapp:14133881111"), ExternalID: Sp("SM681a1f26d9ec591431ce406e8f399525"),
