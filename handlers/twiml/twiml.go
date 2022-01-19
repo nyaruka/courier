@@ -79,6 +79,7 @@ type moForm struct {
 	To          string `validate:"required"`
 	ToCountry   string
 	Body        string
+	ButtonText  string
 	NumMedia    int
 }
 
@@ -138,8 +139,13 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		form.Body = handlers.DecodePossibleBase64(form.Body)
 	}
 
+	text := form.Body
+	if channel.IsScheme(urns.WhatsAppScheme) && form.ButtonText != "" {
+		text = form.ButtonText
+	}
+
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Body).WithExternalID(form.MessageSID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(form.MessageSID)
 
 	// process any attached media
 	for i := 0; i < form.NumMedia; i++ {
