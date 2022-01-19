@@ -98,6 +98,10 @@ type Msg interface {
 	ResponseToExternalID() string
 	IsResend() bool
 
+	Flow() json.RawMessage
+	FlowName() string
+	FlowUUID() string
+
 	Channel() Channel
 
 	ReceivedOn() *time.Time
@@ -113,6 +117,7 @@ type Msg interface {
 	WithAttachment(url string) Msg
 	WithURNAuth(auth string) Msg
 	WithMetadata(metadata json.RawMessage) Msg
+	WithFlow(flow json.RawMessage) Msg
 
 	EventID() int64
 	SessionStatus() string

@@ -1,6 +1,7 @@
 package highconnection
 
 import (
+	"encoding/json"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -57,6 +58,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text:   "Simple Message",
 		URN:    "tel:+250788383383",
 		Status: "W",
+		Flow:   json.RawMessage(`{"uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", "name": "Favorites"}`),
 		URLParams: map[string]string{
 			"accountid":  "Username",
 			"password":   "Password",
@@ -64,7 +66,24 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"to":         "+250788383383",
 			"ret_id":     "10",
 			"datacoding": "8",
-			"user_data":  "textit",
+			"user_data":  "Favorites",
+			"ret_url":    "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+			"ret_mo_url": "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		},
+		ResponseStatus: 200,
+		SendPrep:       setSendURL},
+	{Label: "Plain Send without flow",
+		Text:   "Simple Message",
+		URN:    "tel:+250788383383",
+		Status: "W",
+		URLParams: map[string]string{
+			"accountid":  "Username",
+			"password":   "Password",
+			"text":       "Simple Message",
+			"to":         "+250788383383",
+			"ret_id":     "10",
+			"datacoding": "8",
+			"user_data":  "",
 			"ret_url":    "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
 			"ret_mo_url": "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		},
@@ -74,6 +93,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text:   "☺",
 		URN:    "tel:+250788383383",
 		Status: "W",
+		Flow:   json.RawMessage(`{"uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", "name": "Favorites"}`),
 		URLParams: map[string]string{
 			"accountid":  "Username",
 			"password":   "Password",
@@ -81,7 +101,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"to":         "+250788383383",
 			"ret_id":     "10",
 			"datacoding": "8",
-			"user_data":  "textit",
+			"user_data":  "Favorites",
 			"ret_url":    "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
 			"ret_mo_url": "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		},
@@ -91,6 +111,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text:   "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
 		URN:    "tel:+250788383383",
 		Status: "W",
+		Flow:   json.RawMessage(`{"uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", "name": "Favorites"}`),
 		URLParams: map[string]string{
 			"accountid":  "Username",
 			"password":   "Password",
@@ -98,7 +119,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"to":         "+250788383383",
 			"ret_id":     "10",
 			"datacoding": "8",
-			"user_data":  "textit",
+			"user_data":  "Favorites",
 			"ret_url":    "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
 			"ret_mo_url": "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		},
@@ -109,6 +130,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		URN:         "tel:+250788383383",
 		Status:      "W",
+		Flow:        json.RawMessage(`{"uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", "name": "Favorites"}`),
 		URLParams: map[string]string{
 			"accountid":  "Username",
 			"password":   "Password",
@@ -116,7 +138,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"to":         "+250788383383",
 			"ret_id":     "10",
 			"datacoding": "8",
-			"user_data":  "textit",
+			"user_data":  "Favorites",
 			"ret_url":    "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
 			"ret_mo_url": "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		},

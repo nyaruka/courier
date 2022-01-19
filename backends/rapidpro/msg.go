@@ -518,6 +518,8 @@ type DBMsg struct {
 	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on,omitempty"`
 	SessionStatus_        string     `json:"session_status,omitempty"`
 
+	Flow_ json.RawMessage `json:"flow,omitempty"`
+
 	channel        *DBChannel
 	workerToken    queue.WorkerToken
 	alreadyWritten bool
@@ -541,6 +543,26 @@ func (m *DBMsg) IsResend() bool               { return m.IsResend_ }
 
 func (m *DBMsg) Channel() courier.Channel { return m.channel }
 func (m *DBMsg) SessionStatus() string    { return m.SessionStatus_ }
+
+func (m *DBMsg) Flow() json.RawMessage {
+	return m.Flow_
+}
+
+func (m *DBMsg) FlowName() string {
+	if m.Flow_ == nil {
+		return ""
+	}
+	name, _, _, _ := jsonparser.Get(m.Flow_, "name")
+	return string(name)
+}
+
+func (m *DBMsg) FlowUUID() string {
+	if m.Flow_ == nil {
+		return ""
+	}
+	flowUUID, _, _, _ := jsonparser.Get(m.Flow_, "uuid")
+	return string(flowUUID)
+}
 
 func (m *DBMsg) QuickReplies() []string {
 	if m.quickReplies != nil {
@@ -596,6 +618,9 @@ func (m *DBMsg) WithUUID(uuid courier.MsgUUID) courier.Msg { m.UUID_ = uuid; ret
 
 // WithMetadata can be used to add metadata to a Msg
 func (m *DBMsg) WithMetadata(metadata json.RawMessage) courier.Msg { m.Metadata_ = metadata; return m }
+
+// WithFlow can be used to add flow to a Msg
+func (m *DBMsg) WithFlow(flow json.RawMessage) courier.Msg { m.Flow_ = flow; return m }
 
 // WithAttachment can be used to append to the media urls for a message
 func (m *DBMsg) WithAttachment(url string) courier.Msg {
