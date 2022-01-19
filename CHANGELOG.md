@@ -1,3 +1,9 @@
+v7.1.14
+----------
+ * Allow more active redis connections
+ * Support sending WA quick replies when we have attachments too
+ * Add support to receive button text from Twilio WhatsApp
+
 v7.1.13
 ----------
  * Send db and redis stats to librato in backed heartbeat
