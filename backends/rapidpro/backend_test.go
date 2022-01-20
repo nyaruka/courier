@@ -109,6 +109,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"contact_id": 30,
 		"contact_urn_id": 14,
 		"error_count": 0,
+		"flow": {"uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", "name": "Favorites"},
 		"modified_on": "2017-07-21T19:22:23.254133Z",
 		"id": 204,
 		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba",
@@ -140,6 +141,8 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal("external-id", msg.ResponseToExternalID())
 	ts.True(msg.HighPriority())
 	ts.True(msg.IsResend())
+	ts.Equal("Favorites", msg.Flow().Name)
+	ts.Equal("9de3663f-c5c5-4c92-9f45-ecbc09abcc85", msg.Flow().UUID)
 
 	msgJSONNoQR := `{
 		"status": "P",

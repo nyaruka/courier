@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/buger/jsonparser"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 
@@ -563,7 +562,7 @@ type mockMsg struct {
 	metadata             json.RawMessage
 	alreadyWritten       bool
 	isResend             bool
-	flow                 json.RawMessage
+	flow                 MsgFlowRef
 
 	receivedOn *time.Time
 	sentOn     *time.Time
@@ -572,23 +571,7 @@ type mockMsg struct {
 
 func (m *mockMsg) SessionStatus() string { return "" }
 
-func (m *mockMsg) Flow() json.RawMessage { return m.flow }
-
-func (m *mockMsg) FlowName() string {
-	if m.flow == nil {
-		return ""
-	}
-	name, _, _, _ := jsonparser.Get(m.flow, "name")
-	return string(name)
-}
-
-func (m *mockMsg) FlowUUID() string {
-	if m.flow == nil {
-		return ""
-	}
-	flowUUID, _, _, _ := jsonparser.Get(m.flow, "uuid")
-	return string(flowUUID)
-}
+func (m *mockMsg) Flow() MsgFlowRef { return m.flow }
 
 func (m *mockMsg) Channel() Channel             { return m.channel }
 func (m *mockMsg) ID() MsgID                    { return m.id }
@@ -623,7 +606,7 @@ func (m *mockMsg) WithAttachment(url string) Msg {
 }
 func (m *mockMsg) WithMetadata(metadata json.RawMessage) Msg { m.metadata = metadata; return m }
 
-func (m *mockMsg) WithFlow(flow json.RawMessage) Msg { m.flow = flow; return m }
+func (m *mockMsg) WithFlow(flow MsgFlowRef) Msg { m.flow = flow; return m }
 
 //-----------------------------------------------------------------------------
 // Mock status implementation

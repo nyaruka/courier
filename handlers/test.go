@@ -89,7 +89,10 @@ type ChannelSendTestCase struct {
 	HighPriority         bool
 	ResponseToExternalID string
 	Metadata             json.RawMessage
-	Flow                 json.RawMessage
+	Flow                 *struct {
+		UUID string
+		Name string
+	}
 
 	ResponseStatus int
 	ResponseBody   string
@@ -232,8 +235,9 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			if len(testCase.Metadata) > 0 {
 				msg.WithMetadata(testCase.Metadata)
 			}
-			if len(testCase.Flow) > 0 {
-				msg.WithFlow(testCase.Flow)
+			if testCase.Flow != nil {
+				var flowRef = courier.MsgFlowRef{UUID: testCase.Flow.UUID, Name: testCase.Flow.Name}
+				msg.WithFlow(flowRef)
 			}
 
 			var testRequest *http.Request
