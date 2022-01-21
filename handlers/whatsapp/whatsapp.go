@@ -1152,7 +1152,7 @@ var languageMap = map[string]string{
 	"fra":    "fr",    // French
 	"deu":    "de",    // German
 	"ell":    "el",    // Greek
-	"gul":    "gu",    // Gujarati
+	"guj":    "gu",    // Gujarati
 	"hau":    "ha",    // Hausa
 	"enb":    "he",    // Hebrew
 	"hin":    "hi",    // Hindi
