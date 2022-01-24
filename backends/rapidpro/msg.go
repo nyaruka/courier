@@ -518,7 +518,7 @@ type DBMsg struct {
 	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on,omitempty"`
 	SessionStatus_        string     `json:"session_status,omitempty"`
 
-	Flow_ courier.MsgFlowRef `json:"flow,omitempty"`
+	Flow_ *courier.FlowReference `json:"flow,omitempty"`
 
 	channel        *DBChannel
 	workerToken    queue.WorkerToken
@@ -544,7 +544,21 @@ func (m *DBMsg) IsResend() bool               { return m.IsResend_ }
 func (m *DBMsg) Channel() courier.Channel { return m.channel }
 func (m *DBMsg) SessionStatus() string    { return m.SessionStatus_ }
 
-func (m *DBMsg) Flow() courier.MsgFlowRef { return m.Flow_ }
+func (m *DBMsg) Flow() *courier.FlowReference { return m.Flow_ }
+
+func (m *DBMsg) FlowName() string {
+	if m.Flow_ == nil {
+		return ""
+	}
+	return m.Flow_.Name
+}
+
+func (m *DBMsg) FlowUUID() string {
+	if m.Flow_ == nil {
+		return ""
+	}
+	return m.Flow_.UUID
+}
 
 func (m *DBMsg) QuickReplies() []string {
 	if m.quickReplies != nil {
@@ -602,7 +616,7 @@ func (m *DBMsg) WithUUID(uuid courier.MsgUUID) courier.Msg { m.UUID_ = uuid; ret
 func (m *DBMsg) WithMetadata(metadata json.RawMessage) courier.Msg { m.Metadata_ = metadata; return m }
 
 // WithFlow can be used to add flow to a Msg
-func (m *DBMsg) WithFlow(flow courier.MsgFlowRef) courier.Msg { m.Flow_ = flow; return m }
+func (m *DBMsg) WithFlow(flow *courier.FlowReference) courier.Msg { m.Flow_ = flow; return m }
 
 // WithAttachment can be used to append to the media urls for a message
 func (m *DBMsg) WithAttachment(url string) courier.Msg {

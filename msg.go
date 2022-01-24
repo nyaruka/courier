@@ -78,12 +78,10 @@ func NewMsgUUIDFromString(uuidString string) MsgUUID {
 	return MsgUUID{uuid}
 }
 
-type MsgFlowRef struct {
+type FlowReference struct {
 	UUID string `json:"uuid" validate:"uuid4"`
 	Name string `json:"name"`
 }
-
-var NilMsgFlowRef = MsgFlowRef{"", ""}
 
 //-----------------------------------------------------------------------------
 // Msg interface
@@ -105,7 +103,9 @@ type Msg interface {
 	ResponseToExternalID() string
 	IsResend() bool
 
-	Flow() MsgFlowRef
+	Flow() *FlowReference
+	FlowName() string
+	FlowUUID() string
 
 	Channel() Channel
 
@@ -122,7 +122,7 @@ type Msg interface {
 	WithAttachment(url string) Msg
 	WithURNAuth(auth string) Msg
 	WithMetadata(metadata json.RawMessage) Msg
-	WithFlow(flow MsgFlowRef) Msg
+	WithFlow(flow *FlowReference) Msg
 
 	EventID() int64
 	SessionStatus() string

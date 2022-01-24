@@ -236,8 +236,8 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				msg.WithMetadata(testCase.Metadata)
 			}
 			if testCase.Flow != nil {
-				var flowRef = courier.MsgFlowRef{UUID: testCase.Flow.UUID, Name: testCase.Flow.Name}
-				msg.WithFlow(flowRef)
+				var flowRef = courier.FlowReference{UUID: testCase.Flow.UUID, Name: testCase.Flow.Name}
+				msg.WithFlow(&flowRef)
 			}
 
 			var testRequest *http.Request

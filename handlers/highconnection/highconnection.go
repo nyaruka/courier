@@ -142,7 +142,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"to":         []string{msg.URN().Path()},
 			"ret_id":     []string{msg.ID().String()},
 			"datacoding": []string{"8"},
-			"user_data":  []string{msg.Flow().Name},
+			"user_data":  []string{msg.FlowName()},
 			"ret_url":    []string{statusURL},
 			"ret_mo_url": []string{receiveURL},
 		}

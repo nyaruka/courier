@@ -141,8 +141,10 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal("external-id", msg.ResponseToExternalID())
 	ts.True(msg.HighPriority())
 	ts.True(msg.IsResend())
-	ts.Equal("Favorites", msg.Flow().Name)
-	ts.Equal("9de3663f-c5c5-4c92-9f45-ecbc09abcc85", msg.Flow().UUID)
+	flow_ref := courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"}
+	ts.Equal(msg.Flow(), &flow_ref)
+	ts.Equal("Favorites", msg.FlowName())
+	ts.Equal("9de3663f-c5c5-4c92-9f45-ecbc09abcc85", msg.FlowUUID())
 
 	msgJSONNoQR := `{
 		"status": "P",
@@ -176,6 +178,9 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal("", msg.Topic())
 	ts.Equal("", msg.ResponseToExternalID())
 	ts.False(msg.IsResend())
+	ts.Nil(msg.Flow())
+	ts.Equal("", msg.FlowName())
+	ts.Equal("", msg.FlowUUID())
 }
 
 func (ts *BackendTestSuite) TestCheckMsgExists() {
