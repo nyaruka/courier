@@ -1,3 +1,8 @@
+v7.1.15
+----------
+ * Fix Gujarati whatsapp language code
+ * Send flow name as user_data to HX
+
 v7.1.14
 ----------
  * Allow more active redis connections
