@@ -563,12 +563,30 @@ type mockMsg struct {
 	alreadyWritten       bool
 	isResend             bool
 
+	flow *FlowReference
+
 	receivedOn *time.Time
 	sentOn     *time.Time
 	wiredOn    *time.Time
 }
 
 func (m *mockMsg) SessionStatus() string { return "" }
+
+func (m *mockMsg) Flow() *FlowReference { return m.flow }
+
+func (m *mockMsg) FlowName() string {
+	if m.flow == nil {
+		return ""
+	}
+	return m.flow.Name
+}
+
+func (m *mockMsg) FlowUUID() string {
+	if m.flow == nil {
+		return ""
+	}
+	return m.flow.UUID
+}
 
 func (m *mockMsg) Channel() Channel             { return m.channel }
 func (m *mockMsg) ID() MsgID                    { return m.id }
@@ -602,6 +620,8 @@ func (m *mockMsg) WithAttachment(url string) Msg {
 	return m
 }
 func (m *mockMsg) WithMetadata(metadata json.RawMessage) Msg { m.metadata = metadata; return m }
+
+func (m *mockMsg) WithFlow(flow *FlowReference) Msg { m.flow = flow; return m }
 
 //-----------------------------------------------------------------------------
 // Mock status implementation
