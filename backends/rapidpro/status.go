@@ -103,7 +103,7 @@ UPDATE msgs_msg SET
 		WHEN 
 			:status = 'E' 
 		THEN 
-			NOW() + (5 * (error_count+1) * interval '1 minutes') 
+			GREATEST(NOW() + (5 * (error_count+1) * interval '1 minutes'), :next_attempt::timestamp with time zone)
 		ELSE 
 			next_attempt 
 		END,
@@ -168,7 +168,7 @@ UPDATE msgs_msg SET
 		WHEN 
 			:status = 'E' 
 		THEN 
-			NOW() + (5 * (error_count+1) * interval '1 minutes') 
+			GREATEST(NOW() + (5 * (error_count+1) * interval '1 minutes'), :next_attempt::timestamp with time zone)
 		ELSE 
 			next_attempt 
 		END,
@@ -275,7 +275,7 @@ UPDATE msgs_msg SET
 		WHEN 
 			s.status = 'E' 
 		THEN 
-			NOW() + (5 * (error_count+1) * interval '1 minutes') 
+			GREATEST(NOW() + (5 * (error_count+1) * interval '1 minutes'), :next_attempt::timestamp with time zone)
 		ELSE 
 			next_attempt 
 		END,
@@ -320,6 +320,7 @@ type DBMsgStatus struct {
 	ExternalID_  string                 `json:"external_id,omitempty"    db:"external_id"`
 	Status_      courier.MsgStatusValue `json:"status"                   db:"status"`
 	ModifiedOn_  time.Time              `json:"modified_on"              db:"modified_on"`
+	NextAttempt_ *time.Time             `json:"next_attempt"             db:"next_attempt"`
 
 	logs []*courier.ChannelLog
 }
@@ -364,6 +365,8 @@ func (s *DBMsgStatus) HasUpdatedURN() bool {
 	}
 	return false
 }
+
+func (s *DBMsgStatus) SetNextAttempt(date *time.Time) { s.NextAttempt_ = date }
 
 func (s *DBMsgStatus) ExternalID() string      { return s.ExternalID_ }
 func (s *DBMsgStatus) SetExternalID(id string) { s.ExternalID_ = id }

@@ -636,6 +636,8 @@ type mockMsgStatus struct {
 	status     MsgStatusValue
 	createdOn  time.Time
 
+	nextAttempt *time.Time
+
 	logs []*ChannelLog
 }
 
@@ -657,6 +659,8 @@ func (m *mockMsgStatus) HasUpdatedURN() bool {
 	}
 	return false
 }
+
+func (m *mockMsgStatus) SetNextAttempt(date *time.Time) { m.nextAttempt = date }
 
 func (m *mockMsgStatus) ExternalID() string      { return m.externalID }
 func (m *mockMsgStatus) SetExternalID(id string) { m.externalID = id }
