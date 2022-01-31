@@ -537,6 +537,7 @@ func (m *DBMsg) URNAuth() string              { return m.URNAuth_ }
 func (m *DBMsg) ContactName() string          { return m.ContactName_ }
 func (m *DBMsg) HighPriority() bool           { return m.HighPriority_ }
 func (m *DBMsg) ReceivedOn() *time.Time       { return m.SentOn_ }
+func (m *DBMsg) NextAttempt() *time.Time      { return &m.NextAttempt_ }
 func (m *DBMsg) SentOn() *time.Time           { return m.SentOn_ }
 func (m *DBMsg) ResponseToExternalID() string { return m.ResponseToExternalID_ }
 func (m *DBMsg) IsResend() bool               { return m.IsResend_ }

@@ -1,6 +1,10 @@
 package courier
 
-import "github.com/nyaruka/gocommon/urns"
+import (
+	"time"
+
+	"github.com/nyaruka/gocommon/urns"
+)
 
 // MsgStatusValue is the status of a message
 type MsgStatusValue string
@@ -31,6 +35,8 @@ type MsgStatus interface {
 	SetUpdatedURN(old, new urns.URN) error
 	UpdatedURN() (old, new urns.URN)
 	HasUpdatedURN() bool
+
+	SetNextAttempt(date *time.Time)
 
 	ExternalID() string
 	SetExternalID(string)

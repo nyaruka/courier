@@ -565,6 +565,8 @@ type mockMsg struct {
 
 	flow *FlowReference
 
+	nextAttempt *time.Time
+
 	receivedOn *time.Time
 	sentOn     *time.Time
 	wiredOn    *time.Time
@@ -605,6 +607,8 @@ func (m *mockMsg) ResponseToExternalID() string { return m.responseToExternalID 
 func (m *mockMsg) Metadata() json.RawMessage    { return m.metadata }
 func (m *mockMsg) IsResend() bool               { return m.isResend }
 
+func (m *mockMsg) NextAttempt() *time.Time { return m.nextAttempt }
+
 func (m *mockMsg) ReceivedOn() *time.Time { return m.receivedOn }
 func (m *mockMsg) SentOn() *time.Time     { return m.sentOn }
 func (m *mockMsg) WiredOn() *time.Time    { return m.wiredOn }
@@ -636,6 +640,8 @@ type mockMsgStatus struct {
 	status     MsgStatusValue
 	createdOn  time.Time
 
+	nextAttempt *time.Time
+
 	logs []*ChannelLog
 }
 
@@ -657,6 +663,8 @@ func (m *mockMsgStatus) HasUpdatedURN() bool {
 	}
 	return false
 }
+
+func (m *mockMsgStatus) SetNextAttempt(date *time.Time) { m.nextAttempt = date }
 
 func (m *mockMsgStatus) ExternalID() string      { return m.externalID }
 func (m *mockMsgStatus) SetExternalID(id string) { m.externalID = id }

@@ -112,6 +112,8 @@ type Msg interface {
 	ReceivedOn() *time.Time
 	SentOn() *time.Time
 
+	NextAttempt() *time.Time
+
 	HighPriority() bool
 
 	WithContactName(name string) Msg
