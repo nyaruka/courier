@@ -32,6 +32,9 @@ type MsgStatus interface {
 	UpdatedURN() (old, new urns.URN)
 	HasUpdatedURN() bool
 
+	NextAttemptInterval() string
+	SetNextAttemptInterval(intervalString string)
+
 	ExternalID() string
 	SetExternalID(string)
 

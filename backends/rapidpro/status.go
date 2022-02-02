@@ -30,6 +30,8 @@ func newMsgStatus(channel courier.Channel, id courier.MsgID, externalID string, 
 		ExternalID_:  externalID,
 		Status_:      status,
 		ModifiedOn_:  time.Now().In(time.UTC),
+
+		NextAttemptInterval_: "",
 	}
 }
 
@@ -102,9 +104,15 @@ UPDATE msgs_msg SET
 	next_attempt = CASE 
 		WHEN 
 			:status = 'E' 
-		THEN 
-			NOW() + (5 * (error_count+1) * interval '1 minutes') 
-		ELSE 
+		THEN CASE
+			WHEN
+				:next_attempt_interval = '24 hours'
+			THEN
+				NOW() + interval '24 hours'
+			ELSE
+				NOW() + (5 * (error_count+1) * interval '1 minutes')
+			END
+		ELSE
 			next_attempt 
 		END,
 	failed_reason = CASE
@@ -167,8 +175,14 @@ UPDATE msgs_msg SET
 	next_attempt = CASE 
 		WHEN 
 			:status = 'E' 
-		THEN 
-			NOW() + (5 * (error_count+1) * interval '1 minutes') 
+		THEN CASE
+			WHEN
+				:next_attempt_interval = '24 hours'
+			THEN
+				NOW() + interval '24 hours'
+			ELSE
+				NOW() + (5 * (error_count+1) * interval '1 minutes')
+			END
 		ELSE 
 			next_attempt 
 		END,
@@ -274,8 +288,14 @@ UPDATE msgs_msg SET
 	next_attempt = CASE 
 		WHEN 
 			s.status = 'E' 
-		THEN 
-			NOW() + (5 * (error_count+1) * interval '1 minutes') 
+		THEN CASE
+			WHEN
+				s.next_attempt_interval = '24 hours'
+			THEN
+				NOW() + interval '24 hours'
+			ELSE
+				NOW() + (5 * (error_count+1) * interval '1 minutes')
+			END
 		ELSE 
 			next_attempt 
 		END,
@@ -297,9 +317,9 @@ UPDATE msgs_msg SET
 		END,
 	modified_on = NOW()
 FROM
-	(VALUES(:msg_id, :channel_id, :status, :external_id)) 
+	(VALUES(:msg_id, :channel_id, :status, :external_id, :next_attempt_interval))
 AS 
-	s(msg_id, channel_id, status, external_id) 
+	s(msg_id, channel_id, status, external_id, next_attempt_interval)
 WHERE 
 	msgs_msg.id = s.msg_id::bigint AND
 	msgs_msg.channel_id = s.channel_id::int AND 
@@ -320,6 +340,8 @@ type DBMsgStatus struct {
 	ExternalID_  string                 `json:"external_id,omitempty"    db:"external_id"`
 	Status_      courier.MsgStatusValue `json:"status"                   db:"status"`
 	ModifiedOn_  time.Time              `json:"modified_on"              db:"modified_on"`
+
+	NextAttemptInterval_ string `json:"next_attempt_interval"    db:"next_attempt_interval"`
 
 	logs []*courier.ChannelLog
 }
@@ -363,6 +385,12 @@ func (s *DBMsgStatus) HasUpdatedURN() bool {
 		return true
 	}
 	return false
+}
+
+func (s *DBMsgStatus) NextAttemptInterval() string { return s.NextAttemptInterval_ }
+
+func (s *DBMsgStatus) SetNextAttemptInterval(intervalString string) {
+	s.NextAttemptInterval_ = intervalString
 }
 
 func (s *DBMsgStatus) ExternalID() string      { return s.ExternalID_ }

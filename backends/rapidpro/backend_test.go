@@ -583,8 +583,10 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	// error our msg
 	now = time.Now().In(time.UTC)
+	nextAttemptInterval := "24 hours"
 	time.Sleep(2 * time.Millisecond)
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgErrored)
+	status.SetNextAttemptInterval(nextAttemptInterval)
 	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
 	time.Sleep(time.Second)
@@ -595,6 +597,9 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.True(m.ModifiedOn_.After(now))
 	ts.True(m.NextAttempt_.After(now))
 	ts.Equal(null.NullString, m.FailedReason_)
+	println(m.NextAttempt_.String())
+	println(now.Add(24 * time.Hour).String())
+	ts.True(m.NextAttempt_.After(now.Add(24 * time.Hour)))
 
 	// second go
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgErrored)

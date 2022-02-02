@@ -105,6 +105,8 @@ type ChannelSendTestCase struct {
 	Status     string
 	ExternalID string
 
+	NextAttemptInterval string
+
 	Stopped bool
 
 	ContactURNs map[string]bool
@@ -320,6 +322,10 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 			if testCase.ExternalID != "" {
 				require.Equal(testCase.ExternalID, status.ExternalID())
+			}
+
+			if testCase.NextAttemptInterval != "" {
+				require.Equal(testCase.NextAttemptInterval, status.NextAttemptInterval())
 			}
 
 			if testCase.Status != "" {

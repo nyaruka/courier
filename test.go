@@ -636,6 +636,8 @@ type mockMsgStatus struct {
 	status     MsgStatusValue
 	createdOn  time.Time
 
+	nextAttemptInterval string
+
 	logs []*ChannelLog
 }
 
@@ -656,6 +658,11 @@ func (m *mockMsgStatus) HasUpdatedURN() bool {
 		return true
 	}
 	return false
+}
+
+func (m *mockMsgStatus) NextAttemptInterval() string { return m.nextAttemptInterval }
+func (m *mockMsgStatus) SetNextAttemptInterval(intervalString string) {
+	m.nextAttemptInterval = intervalString
 }
 
 func (m *mockMsgStatus) ExternalID() string      { return m.externalID }
