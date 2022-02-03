@@ -134,7 +134,7 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel)
 	defer rc.Close()
 
 	cacheKey := fmt.Sprintf("wechat_channel_access_token:%s", channel.UUID().String())
-	_, err = rc.Do("set", cacheKey, accessToken, expiration)
+	_, err = rc.Do("SET", cacheKey, accessToken, expiration)
 
 	if err != nil {
 		logrus.WithError(err).Error("error setting the access token to redis")
@@ -147,7 +147,7 @@ func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
 	defer rc.Close()
 
 	cacheKey := fmt.Sprintf("wechat_channel_access_token:%s", channel.UUID().String())
-	accessToken, err := redis.String(rc.Do(http.MethodGet, cacheKey))
+	accessToken, err := redis.String(rc.Do("GET", cacheKey))
 	if err != nil {
 		return "", err
 	}

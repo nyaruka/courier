@@ -409,11 +409,11 @@ func (b *backend) Heartbeat() error {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	active, err := redis.Strings(rc.Do("zrange", fmt.Sprintf("%s:active", msgQueueName), "0", "-1"))
+	active, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("%s:active", msgQueueName), "0", "-1"))
 	if err != nil {
 		return errors.Wrapf(err, "error getting active queues")
 	}
-	throttled, err := redis.Strings(rc.Do("zrange", fmt.Sprintf("%s:throttled", msgQueueName), "0", "-1"))
+	throttled, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("%s:throttled", msgQueueName), "0", "-1"))
 	if err != nil {
 		return errors.Wrapf(err, "error getting throttled queues")
 	}
@@ -423,14 +423,14 @@ func (b *backend) Heartbeat() error {
 	bulkSize := 0
 	for _, queue := range queues {
 		q := fmt.Sprintf("%s/1", queue)
-		count, err := redis.Int(rc.Do("zcard", q))
+		count, err := redis.Int(rc.Do("ZCARD", q))
 		if err != nil {
 			return errors.Wrapf(err, "error getting size of priority queue: %s", q)
 		}
 		prioritySize += count
 
 		q = fmt.Sprintf("%s/0", queue)
-		count, err = redis.Int(rc.Do("zcard", q))
+		count, err = redis.Int(rc.Do("ZCARD", q))
 		if err != nil {
 			return errors.Wrapf(err, "error getting size of bulk queue: %s", q)
 		}
@@ -526,13 +526,13 @@ func (b *backend) Status() string {
 		}
 
 		// get # of items in our normal queue
-		size, err := redis.Int64(rc.Do("zcard", fmt.Sprintf("%s:%s/1", msgQueueName, queue)))
+		size, err := redis.Int64(rc.Do("ZCARD", fmt.Sprintf("%s:%s/1", msgQueueName, queue)))
 		if err != nil {
 			return fmt.Sprintf("error reading queue size: %v", err)
 		}
 
 		// get # of items in the bulk queue
-		bulkSize, err := redis.Int64(rc.Do("zcard", fmt.Sprintf("%s:%s/0", msgQueueName, queue)))
+		bulkSize, err := redis.Int64(rc.Do("ZCARD", fmt.Sprintf("%s:%s/0", msgQueueName, queue)))
 		if err != nil {
 			return fmt.Sprintf("error reading bulk queue size: %v", err)
 		}
