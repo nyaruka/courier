@@ -919,12 +919,12 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload 
 	// handle send msg errors
 	if err == nil && len(errPayload.Errors) > 0 {
 		if hasTiersError(*errPayload) {
-			pausedBulkKey := fmt.Sprintf("paused_bulk:%s", msg.Channel().UUID().String())
-			rc.Do("SET", pausedBulkKey, "engaged")
+			rateLimitBulkKey := fmt.Sprintf("rate_limit_bulk:%s", msg.Channel().UUID().String())
+			rc.Do("SET", rateLimitBulkKey, "engaged")
 
 			// The WA tiers spam rate limit hit
 			// We pause the bulk queue for 24 hours and 5min
-			rc.Do("EXPIRE", pausedBulkKey, (60*60*24)+(5*60))
+			rc.Do("EXPIRE", rateLimitBulkKey, (60*60*24)+(5*60))
 
 			err := errors.Errorf("received error from send endpoint: %s", errPayload.Errors[0].Title)
 			return "", "", []*courier.ChannelLog{log}, err
