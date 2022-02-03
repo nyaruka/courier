@@ -1,3 +1,8 @@
+v7.1.16
+----------
+ * Update to latest gocommon
+ * Pause WA channel bulk queue when we hit the spam rate limit
+
 v7.1.15
 ----------
  * Fix Gujarati whatsapp language code
