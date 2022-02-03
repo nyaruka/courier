@@ -123,6 +123,14 @@ var luaPop = redis.NewScript(2, `-- KEYS: [EpochMS QueueType]
 
 	-- if we didn't find one, try again from our bulk queue
 	if not result[1] or isFutureResult then
+		-- check if we are paused for bulk queue
+		local pausedBulkKey = "paused_bulk:" .. queueName
+		local pausedBulk = redis.call("get", pausedBulkKey)
+		if pausedBulk then
+			return {"retry", ""}
+		end
+
+		-- we are not pause check our bulk queue
 		local bulkQueue = queue .. "/0"
 		local bulkResult = redis.call("zrangebyscore", bulkQueue, 0, "+inf", "WITHSCORES", "LIMIT", 0, 1)
 

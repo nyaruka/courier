@@ -60,6 +60,19 @@ func TestLua(t *testing.T) {
 	delay := time.Second*2 - time.Duration(time.Now().UnixNano()%int64(time.Second))
 	time.Sleep(delay)
 
+	conn.Do("set", "paused_bulk:chan1", "engaged")
+	conn.Do("EXPIRE", "paused_bulk:chan1", 5)
+
+	// we have the rate limit set,
+	queue, value, err := PopFromQueue(conn, "msgs")
+	assert.NoError(err)
+	if value != "" && queue != EmptyQueue {
+		t.Fatal("Should be paused")
+	}
+
+	// When the redis paused key is remove, we get the values from bulk queue/low priority
+	conn.Do("DEL", "paused_bulk:chan1")
+
 	// pop 10 items off
 	for i := 0; i < 10; i++ {
 		queue, value, err := PopFromQueue(conn, "msgs")
@@ -69,7 +82,8 @@ func TestLua(t *testing.T) {
 	}
 
 	// next value should be throttled
-	queue, value, err := PopFromQueue(conn, "msgs")
+	queue, value, err = PopFromQueue(conn, "msgs")
+	assert.NoError(err)
 	if value != "" && queue != EmptyQueue {
 		t.Fatal("Should be throttled")
 	}
@@ -85,6 +99,7 @@ func TestLua(t *testing.T) {
 
 	// adding more items shouldn't change that
 	queue, value, err = PopFromQueue(conn, "msgs")
+	assert.NoError(err)
 	if value != "" && queue != EmptyQueue {
 		t.Fatal("Should be throttled")
 	}
@@ -104,10 +119,17 @@ func TestLua(t *testing.T) {
 	err = PushOntoQueue(conn, "msgs", "chan1", rate, `[{"id":31}]`, HighPriority)
 	assert.NoError(err)
 
+	// make sure pause bulk key do not prevent use to get from the high priority queue
+	conn.Do("set", "paused_bulk:chan1", "engaged")
+	conn.Do("EXPIRE", "paused_bulk:chan1", 5)
+
 	queue, value, err = PopFromQueue(conn, "msgs")
 	assert.NoError(err)
 	assert.Equal(WorkerToken("msgs:chan1|10"), queue)
 	assert.Equal(`{"id":31}`, value)
+
+	// make sure paused is not present for more tests
+	conn.Do("DEL", "paused_bulk:chan1")
 
 	// should get next five bulk msgs fine
 	for i := 10; i < 15; i++ {
@@ -119,6 +141,7 @@ func TestLua(t *testing.T) {
 
 	// push on a compound message
 	err = PushOntoQueue(conn, "msgs", "chan1", rate, `[{"id":32}, {"id":33}]`, HighPriority)
+	assert.NoError(err)
 
 	queue, value, err = PopFromQueue(conn, "msgs")
 	assert.NoError(err)
@@ -176,12 +199,14 @@ func TestLua(t *testing.T) {
 
 	// we have the rate limit set,
 	queue, value, err = PopFromQueue(conn, "msgs")
+	assert.NoError(err)
 	if value != "" && queue != EmptyQueue {
 		t.Fatal("Should be throttled")
 	}
 
 	time.Sleep(2 * time.Second)
 	queue, value, err = PopFromQueue(conn, "msgs")
+	assert.NoError(err)
 	if value != "" && queue != EmptyQueue {
 		t.Fatal("Should be throttled")
 	}
