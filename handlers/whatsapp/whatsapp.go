@@ -918,6 +918,18 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload 
 
 	// handle send msg errors
 	if err == nil && len(errPayload.Errors) > 0 {
+		if hasTiersError(*errPayload) {
+			pausedBulkKey := fmt.Sprintf("paused_bulk:%s", msg.Channel().UUID().String())
+			rc.Do("set", pausedBulkKey, "engaged")
+
+			// The WA tiers spam rate limit hit
+			// We pause the bulk queue for 24 hours and 5min
+			rc.Do("expire", pausedBulkKey, (60*60*24)+(5*60))
+
+			err := errors.Errorf("received error from send endpoint: %s", errPayload.Errors[0].Title)
+			return "", "", []*courier.ChannelLog{log}, err
+		}
+
 		if !hasWhatsAppContactError(*errPayload) {
 			err := errors.Errorf("received error from send endpoint: %s", errPayload.Errors[0].Title)
 			return "", "", []*courier.ChannelLog{log}, err
@@ -1020,6 +1032,15 @@ func buildWhatsAppHeaders(channel courier.Channel) http.Header {
 	}
 	setWhatsAppAuthHeader(&header, channel)
 	return header
+}
+
+func hasTiersError(payload mtErrorPayload) bool {
+	for _, err := range payload.Errors {
+		if err.Code == 471 && err.Title == "Spam rate limit hit" {
+			return true
+		}
+	}
+	return false
 }
 
 func hasWhatsAppContactError(payload mtErrorPayload) bool {
