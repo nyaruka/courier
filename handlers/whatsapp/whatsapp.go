@@ -1036,7 +1036,7 @@ func buildWhatsAppHeaders(channel courier.Channel) http.Header {
 
 func hasTiersError(payload mtErrorPayload) bool {
 	for _, err := range payload.Errors {
-		if err.Code == 471 && err.Title == "Spam rate limit hit" {
+		if err.Code == 471 {
 			return true
 		}
 	}
