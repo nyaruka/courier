@@ -89,11 +89,11 @@ func TestLua(t *testing.T) {
 	}
 
 	// check our redis state
-	count, err := redis.Int(conn.Do("zcard", "msgs:throttled"))
+	count, err := redis.Int(conn.Do("ZCARD", "msgs:throttled"))
 	assert.NoError(err)
 	assert.Equal(1, count, "Expected chan1 to be throttled")
 
-	count, err = redis.Int(conn.Do("zcard", "msgs:active"))
+	count, err = redis.Int(conn.Do("ZCARD", "msgs:active"))
 	assert.NoError(err)
 	assert.Equal(0, count, "Expected chan1 to not be active")
 
@@ -106,11 +106,11 @@ func TestLua(t *testing.T) {
 	err = PushOntoQueue(conn, "msgs", "chan1", rate, `[{"id":30}]`, LowPriority)
 	assert.NoError(err)
 
-	count, err = redis.Int(conn.Do("zcard", "msgs:throttled"))
+	count, err = redis.Int(conn.Do("ZCARD", "msgs:throttled"))
 	assert.NoError(err)
 	assert.Equal(1, count, "Expected chan1 to be throttled")
 
-	count, err = redis.Int(conn.Do("zcard", "msgs:active"))
+	count, err = redis.Int(conn.Do("ZCARD", "msgs:active"))
 	assert.NoError(err)
 	assert.Equal(0, count, "Expected chan1 to not be active")
 
@@ -211,11 +211,11 @@ func TestLua(t *testing.T) {
 		t.Fatal("Should be throttled")
 	}
 
-	count, err = redis.Int(conn.Do("zcard", "msgs:throttled"))
+	count, err = redis.Int(conn.Do("ZCARD", "msgs:throttled"))
 	assert.NoError(err)
 	assert.Equal(1, count, "Expected chan1 to be throttled")
 
-	count, err = redis.Int(conn.Do("zcard", "msgs:active"))
+	count, err = redis.Int(conn.Do("ZCARD", "msgs:active"))
 	assert.NoError(err)
 	assert.Equal(0, count, "Expected chan1 to not be active")
 
