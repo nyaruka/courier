@@ -573,6 +573,32 @@ var dlr = `{
 	}]
 }`
 
+var unsentMsgIG = `{
+	"object":"instagram",
+	"entry":[
+	   {
+		  "id":"12345",
+		  "time":1459991487970,
+		  "messaging":[
+			 {
+				"sender":{
+				   "id":"5678"
+				},
+				"recipient":{
+				   "id":"12345"
+				},
+				"timestamp":1569262485349,
+				"message":{
+				   "mid":"external_id",
+				   "is_deleted":"true"
+				}
+			 }
+		  ]
+	   }
+	]
+ }
+`
+
 var notPage = `{
 	"object":"notpage",
 	"entry": [{}]
@@ -760,6 +786,7 @@ var testCasesIG = []ChannelHandleTestCase{
 	{Label: "Not JSON", URL: "/c/ig/receive", Data: notJSON, Status: 400, Response: "Error", PrepRequest: addValidSignature},
 	{Label: "Invalid URN", URL: "/c/ig/receive", Data: invalidURNIG, Status: 400, Response: "invalid instagram id", PrepRequest: addValidSignature},
 	{Label: "Story Mention", URL: "/c/ig/receive", Data: storyMentionIG, Status: 200, Response: `ignoring story_mention`, PrepRequest: addValidSignature},
+	{Label: "Message unsent", URL: "/c/ig/receive", Data: unsentMsgIG, Status: 200, Response: `msg deleted`, PrepRequest: addValidSignature},
 }
 
 func addValidSignature(r *http.Request) {

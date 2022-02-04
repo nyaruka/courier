@@ -38,6 +38,9 @@ type Backend interface {
 	// RemoveURNFromcontact removes a URN from the passed in contact
 	RemoveURNfromContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error)
 
+	// DeleteMsgWithExternalID delete a message we receive an event that it should be deleted
+	DeleteMsgWithExternalID(ctx context.Context, channel Channel, externalID string) error
+
 	// NewIncomingMsg creates a new message from the given params
 	NewIncomingMsg(channel Channel, urn urns.URN, text string) Msg
 
