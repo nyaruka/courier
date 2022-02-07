@@ -1164,6 +1164,7 @@ var languageMap = map[string]string{
 	"kan":    "kn",    // Kannada
 	"kaz":    "kk",    // Kazakh
 	"kor":    "ko",    // Korean
+	"kir":    "ky_KG", // Kyrgyzstan
 	"lao":    "lo",    // Lao
 	"lav":    "lv",    // Latvian
 	"lit":    "lt",    // Lithuanian
