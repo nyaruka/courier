@@ -1171,6 +1171,7 @@ var languageMap = map[string]string{
 	"fil":    "fil",   // Filipino
 	"fin":    "fi",    // Finnish
 	"fra":    "fr",    // French
+	"kat":    "ka",    // Georgian
 	"deu":    "de",    // German
 	"ell":    "el",    // Greek
 	"guj":    "gu",    // Gujarati
@@ -1184,6 +1185,7 @@ var languageMap = map[string]string{
 	"jpn":    "ja",    // Japanese
 	"kan":    "kn",    // Kannada
 	"kaz":    "kk",    // Kazakh
+	"kin":    "rw_RW", // Kinyarwanda
 	"kor":    "ko",    // Korean
 	"kir":    "ky_KG", // Kyrgyzstan
 	"lao":    "lo",    // Lao
