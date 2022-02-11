@@ -101,20 +101,22 @@ func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, c
 	return urn, nil
 }
 
-const updateMsgVisibilityDeleted = `
+const updateMsgVisibilityDeletedBySender = `
 UPDATE
 	msgs_msg
 SET
-	visibility = 'D'
+	visibility = 'X',
+	text = '',
+	attachments = '{}'
 WHERE
-	msgs_msg.id = (SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (c."uuid" = $1 AND m."external_id" = $2 AND m."direction" = 'I')
+	msgs_msg.id = (SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (c."uuid" = $1 AND m."external_id" = $2 AND m."direction" = 'I'))
 RETURNING
 	msgs_msg.id
 `
 
 // DeleteMsgWithExternalID delete a message we receive an event that it should be deleted
 func (b *backend) DeleteMsgWithExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
-	_, err := b.db.ExecContext(ctx, updateMsgVisibilityDeleted, channel.UUID().String(), externalID)
+	_, err := b.db.ExecContext(ctx, updateMsgVisibilityDeletedBySender, string(channel.UUID().String()), externalID)
 	if err != nil {
 		return err
 	}
