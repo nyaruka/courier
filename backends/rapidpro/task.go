@@ -122,7 +122,7 @@ func queueMailroomTask(rc redis.Conn, taskType string, orgID OrgID, contactID Co
 	rc.Send("rpush", contactQueue, eventJSON)
 	rc.Send("zadd", fmt.Sprintf("handler:%d", orgID), fmt.Sprintf("%.5f", epochFloat-10000000), contactJSON)
 	rc.Send("zincrby", "handler:active", 0, orgID)
-	_, err = rc.Do("exec")
+	_, err = rc.Do("EXEC")
 
 	return err
 }

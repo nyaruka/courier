@@ -261,7 +261,7 @@ func TestDescribe(t *testing.T) {
 	mb := courier.NewMockBackend()
 	conn := mb.RedisPool().Get()
 
-	_, err := conn.Do("Set", "jiochat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
+	_, err := conn.Do("SET", "jiochat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -290,7 +290,7 @@ func TestBuildMediaRequest(t *testing.T) {
 	mb := courier.NewMockBackend()
 	conn := mb.RedisPool().Get()
 
-	_, err := conn.Do("Set", "jiochat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
+	_, err := conn.Do("SET", "jiochat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -376,7 +376,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 func setupBackend(mb *courier.MockBackend) {
 	conn := mb.RedisPool().Get()
 
-	_, err := conn.Do("Set", "jiochat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
+	_, err := conn.Do("SET", "jiochat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 	if err != nil {
 		log.Fatal(err)
 	}
