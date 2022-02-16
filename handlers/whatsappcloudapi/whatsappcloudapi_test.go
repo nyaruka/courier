@@ -16,6 +16,8 @@ var testChannelsCWA = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "CWA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"}),
 }
 
+var cwaReceiveURL = "/c/cwa/receive"
+
 var helloCWA = `{
     "object": "whatsapp_business_account",
     "entry": [
@@ -56,10 +58,525 @@ var helloCWA = `{
     ]
 }`
 
+var duplicatedMsg = `{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "8856996819413533",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "12345",
+                            "phone_number_id": "27681414235104944"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Kerry Fisher"
+                                },
+                                "wa_id": "5678"
+                            }
+                        ],
+                        "messages": [
+                            {
+                                "from": "5678",
+                                "id": "external_id",
+                                "timestamp": "1454119029",
+                                "text": {
+                                    "body": "Hello World"
+                                },
+                                "type": "text"
+                            },{
+                                "from": "5678",
+                                "id": "external_id",
+                                "timestamp": "1454119029",
+                                "text": {
+                                    "body": "Hello World"
+                                },
+                                "type": "text"
+                            }
+                        ]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}
+`
+
+var voiceMsg = `{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "8856996819413533",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "12345",
+                            "phone_number_id": "27681414235104944"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Kerry Fisher"
+                                },
+                                "wa_id": "5678"
+                            }
+                        ],
+						"messages":[{
+							"from": "5678",
+							"id": "external_id",
+							"timestamp": "1454119029",
+							"type": "voice",
+							"voice": {
+								"file": "/usr/local/wamedia/shared/463e/b7ec/ff4e4d9bb1101879cbd411b2",
+								"id": "463eb7ec-ff4e-4d9b-b110-1879cbd411b2",
+								"mime_type": "audio/ogg; codecs=opus",
+								"sha256": "fa9e1807d936b7cebe63654ea3a7912b1fa9479220258d823590521ef53b0710"}
+					  }]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}`
+
+var buttonMsg = `{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "8856996819413533",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "12345",
+                            "phone_number_id": "27681414235104944"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Kerry Fisher"
+                                },
+                                "wa_id": "5678"
+                            }
+                        ],
+						"messages": [
+        {
+            "button": {
+                "payload": "No-Button-Payload",
+                "text": "No"
+            },
+            "context": {
+                "from": "5678",
+                "id": "gBGGFmkiWVVPAgkgQkwi7IORac0"
+            },
+            "from": "5678",
+            "id": "external_id",
+            "timestamp": "1454119029",
+            "type": "button"
+        }
+    ]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}`
+
+var documentMsg = `{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "8856996819413533",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "12345",
+                            "phone_number_id": "27681414235104944"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Kerry Fisher"
+                                },
+                                "wa_id": "5678"
+                            }
+                        ],
+						"messages": [{
+							"from": "5678",
+							"id": "external_id",
+							"timestamp": "1454119029",
+							"type": "document",
+							"document": {
+							  "caption": "80skaraokesonglistartist",
+									"file": "/usr/local/wamedia/shared/fc233119-733f-49c-bcbd-b2f68f798e33",
+									"id": "fc233119-733f-49c-bcbd-b2f68f798e33",
+									"mime_type": "application/pdf",
+									"sha256": "3b11fa6ef2bde1dd14726e09d3edaf782120919d06f6484f32d5d5caa4b8e"
+								}
+							}]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}`
+
+var imageMsg = `{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "8856996819413533",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "12345",
+                            "phone_number_id": "27681414235104944"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Kerry Fisher"
+                                },
+                                "wa_id": "5678"
+                            }
+                        ],
+						"messages": [{
+							"from": "5678",
+							"id": "external_id",
+							"image": {
+								"file": "/usr/local/wamedia/shared/b1cf38-8734-4ad3-b4a1-ef0c10d0d683",
+								"id": "b1c68f38-8734-4ad3-b4a1-ef0c10d683",
+								"mime_type": "image/jpeg",
+								"sha256": "29ed500fa64eb55fc19dc4124acb300e5dcc54a0f822a301ae99944db",
+								"caption": "Check out my new phone!"
+							},
+							"timestamp": "1454119029",
+							"type": "image"
+						}]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}`
+
+var locationMsg = `{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "8856996819413533",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "12345",
+                            "phone_number_id": "27681414235104944"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Kerry Fisher"
+                                },
+                                "wa_id": "5678"
+                            }
+                        ],
+						"messages":[{
+							"from":"5678",
+							"id":"external_id",
+							"location":{
+							   "address":"Main Street Beach, Santa Cruz, CA",
+							   "latitude":0.000000,
+							   "longitude":1.000000,
+							   "name":"Main Street Beach",
+							   "url":"https://foursquare.com/v/4d7031d35b5df7744"},
+							"timestamp":"1454119029",
+							"type":"location"
+						  }]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}`
+
+var invalidMsg = `not json`
+
+var invalidFrom = `{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "8856996819413533",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "12345",
+                            "phone_number_id": "27681414235104944"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Kerry Fisher"
+                                },
+                                "wa_id": "bla"
+                            }
+                        ],
+                        "messages": [
+                            {
+                                "from": "bla",
+                                "id": "external_id",
+                                "timestamp": "1454119029",
+                                "text": {
+                                    "body": "Hello World"
+                                },
+                                "type": "text"
+                            }
+                        ]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}`
+
+var invalidTimestamp = `{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "8856996819413533",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "12345",
+                            "phone_number_id": "27681414235104944"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Kerry Fisher"
+                                },
+                                "wa_id": "bla"
+                            }
+                        ],
+                        "messages": [
+                            {
+                                "from": "bla",
+                                "id": "external_id",
+                                "timestamp": "asdf",
+                                "text": {
+                                    "body": "Hello World"
+                                },
+                                "type": "text"
+                            }
+                        ]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}`
+
+var validStatusCWA = `{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "8856996819413533",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "12345",
+                            "phone_number_id": "27681414235104944"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Kerry Fisher"
+                                },
+                                "wa_id": "5678"
+                            }
+                        ],
+                        "statuses": [{
+							"id": "external_id",
+							"recipient_id": "5678",
+							"status": "sent",
+							"timestamp": "1454119029",
+							"type": "message",
+							"conversation": {
+							  "id": "CONVERSATION_ID",
+							  "expiration_timestamp": 1454119029,
+							  "origin": {
+								 "type": "referral_conversion"
+							  }
+							},
+							"pricing": {
+							  "pricing_model": "CBP",
+							  "billable": false,
+							  "category": "referral_conversion"
+							}
+						   }]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}`
+
+var invalidStatusCWA = `{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "8856996819413533",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "12345",
+                            "phone_number_id": "27681414235104944"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Kerry Fisher"
+                                },
+                                "wa_id": "5678"
+                            }
+                        ],
+                        "statuses": [{
+							"id": "external_id",
+							"recipient_id": "5678",
+							"status": "in_orbit",
+							"timestamp": "1454119029",
+							"type": "message",
+							"conversation": {
+							  "id": "CONVERSATION_ID",
+							  "expiration_timestamp": 1454119029,
+							  "origin": {
+								 "type": "referral_conversion"
+							  }
+							},
+							"pricing": {
+							  "pricing_model": "CBP",
+							  "billable": false,
+							  "category": "referral_conversion"
+							}
+						   }]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}`
+
+var ignoreStatusCWA = `{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "8856996819413533",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "12345",
+                            "phone_number_id": "27681414235104944"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Kerry Fisher"
+                                },
+                                "wa_id": "5678"
+                            }
+                        ],
+                        "statuses": [{
+							"id": "external_id",
+							"recipient_id": "5678",
+							"status": "deleted",
+							"timestamp": "1454119029",
+							"type": "message",
+							"conversation": {
+							  "id": "CONVERSATION_ID",
+							  "expiration_timestamp": 1454119029,
+							  "origin": {
+								 "type": "referral_conversion"
+							  }
+							},
+							"pricing": {
+							  "pricing_model": "CBP",
+							  "billable": false,
+							  "category": "referral_conversion"
+							}
+						   }]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}`
+
 var testCasesCWA = []ChannelHandleTestCase{
-	{Label: "Receive Message CWA", URL: "/c/cwa/receive", Data: helloCWA, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Message CWA", URL: cwaReceiveURL, Data: helloCWA, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Hello World"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
+	{Label: "Receive Duplicate Valid Message", URL: cwaReceiveURL, Data: duplicatedMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp("Hello World"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Valid Voice Message", URL: cwaReceiveURL, Data: voiceMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp(""), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://graph.facebook.com/v13.0/463eb7ec-ff4e-4d9b-b110-1879cbd411b2"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Valid Button Message", URL: cwaReceiveURL, Data: buttonMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp("No"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Valid Document Message", URL: cwaReceiveURL, Data: documentMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp("80skaraokesonglistartist"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://graph.facebook.com/v13.0/fc233119-733f-49c-bcbd-b2f68f798e33"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Valid Image Message", URL: cwaReceiveURL, Data: imageMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://graph.facebook.com/v13.0/b1c68f38-8734-4ad3-b4a1-ef0c10d683"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Valid Location Message", URL: cwaReceiveURL, Data: locationMsg, Status: 200, Response: `"type":"msg"`,
+		Text: Sp(""), Attachment: Sp("geo:0.000000,1.000000"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: invalidMsg, Status: 400, Response: "unable to parse", PrepRequest: addValidSignature},
+	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: invalidFrom, Status: 400, Response: "invalid whatsapp id", PrepRequest: addValidSignature},
+	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: invalidTimestamp, Status: 400, Response: "invalid timestamp", PrepRequest: addValidSignature},
+
+	{Label: "Receive Valid Status", URL: cwaReceiveURL, Data: validStatusCWA, Status: 200, Response: `"type":"status"`,
+		MsgStatus: Sp("S"), ExternalID: Sp("external_id"), PrepRequest: addValidSignature},
+	{Label: "Receive Invalid Status", URL: cwaReceiveURL, Data: invalidStatusCWA, Status: 400, Response: `"unknown status: in_orbit"`, PrepRequest: addValidSignature},
+	{Label: "Receive Ignore Status", URL: cwaReceiveURL, Data: ignoreStatusCWA, Status: 200, Response: `"ignoring status: deleted"`, PrepRequest: addValidSignature},
 }
 
 func addValidSignature(r *http.Request) {

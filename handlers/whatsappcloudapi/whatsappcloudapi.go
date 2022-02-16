@@ -116,13 +116,13 @@ type cwaContext struct {
 }
 
 type cwaStatus struct {
-	ID           string          `json:"id"`
-	RecipientID  string          `json:"recipient_id"`
-	Status       string          `json:"status"`
-	Timestamp    string          `json:"timestamp"`
-	Type         string          `json:"type"`
-	Conversation cwaConversation `json:"conversation"`
-	Pricing      cwaPricing      `json:"pricing"`
+	ID           string           `json:"id"`
+	RecipientID  string           `json:"recipient_id"`
+	Status       string           `json:"status"`
+	Timestamp    string           `json:"timestamp"`
+	Type         string           `json:"type"`
+	Conversation *cwaConversation `json:"conversation"`
+	Pricing      *cwaPricing      `json:"pricing"`
 }
 
 type cwaMedia struct {
@@ -139,10 +139,10 @@ type cwaButton struct {
 }
 
 type cwaLocation struct {
-	Latitude  string `json:"latitude"`
-	Longitude string `json:"longitude"`
-	Name      string `json:"name"`
-	Address   string `json:"address"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	Name      string  `json:"name"`
+	Address   string  `json:"address"`
 }
 
 type cwaError struct {
@@ -161,9 +161,9 @@ type cwaOrigin struct {
 }
 
 type cwaConversation struct {
-	ID                 string    `json:"id"`
-	Origin             cwaOrigin `json:"origin"`
-	ExpirationTimestap int64     `json:"expiration_timestamp"`
+	ID                  string     `json:"id"`
+	Origin              *cwaOrigin `json:"origin"`
+	ExpirationTimestamp int64      `json:"expiration_timestamp"`
 }
 
 // GetChannel returns the channel
@@ -281,19 +281,19 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 				if msg.Type == "text" {
 					text = msg.Text.Body
 				} else if msg.Type == "voice" && msg.Voice != nil {
-					mediaURL = fmt.Sprintf("%s/%s", baseURL, msg.Voice.ID)
+					mediaURL = fmt.Sprintf("%s%s", baseURL, msg.Voice.ID)
 				} else if msg.Type == "button" && msg.Button != nil {
 					text = msg.Button.Text
 				} else if msg.Type == "document" && msg.Document != nil {
 					text = msg.Document.Caption
-					mediaURL = fmt.Sprintf("%s/%s", baseURL, msg.Document.ID)
+					mediaURL = fmt.Sprintf("%s%s", baseURL, msg.Document.ID)
 				} else if msg.Type == "image" && msg.Image != nil {
 					text = msg.Image.Caption
-					mediaURL = fmt.Sprintf("%s/%s", baseURL, msg.Image.ID)
+					mediaURL = fmt.Sprintf("%s%s", baseURL, msg.Image.ID)
 				} else if msg.Type == "location" && msg.Location != nil {
-					mediaURL = fmt.Sprintf("geo:%s,%s", msg.Location.Latitude, msg.Location.Longitude)
+					mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
 				} else if msg.Type == "voice" && msg.Voice != nil {
-					mediaURL = fmt.Sprintf("%s/%s", baseURL, msg.Voice.ID)
+					mediaURL = fmt.Sprintf("%s%s", baseURL, msg.Voice.ID)
 				} else {
 					// we received a message type we do not support.
 					courier.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", msg.Type))
