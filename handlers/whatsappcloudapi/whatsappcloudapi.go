@@ -170,6 +170,82 @@ type cwaConversation struct {
 	ExpirationTimestamp int64      `json:"expiration_timestamp"`
 }
 
+type otherMoPayload struct {
+	Object string `json:"object"`
+	Entry  []struct {
+		ID      string `json:"id"`
+		Changes []struct {
+			Field string `json:"field"`
+			Value struct {
+				MessagingProduct string `json:"messaging_product"`
+				Metadata         *struct {
+					DisplayPhoneNumber string `json:"display_phone_number"`
+					PhoneNumberID      string `json:"phone_number_id"`
+				} `json:"metadata"`
+				Contacts []struct {
+					Profile struct {
+						Name string `json:"name"`
+					} `json:"profile"`
+					WaID string `json:"wa_id"`
+				} `json:"contacts"`
+				Messages []struct {
+					ID        string `json:"id"`
+					From      string `json:"from"`
+					Timestamp string `json:"timestamp"`
+					Type      string `json:"type"`
+					Context   *struct {
+						Forwarded           bool   `json:"forwarded"`
+						FrequentlyForwarded bool   `json:"frequently_forwarded"`
+						From                string `json:"from"`
+						ID                  string `json:"id"`
+					} `json:"context"`
+					Text struct {
+						Body string `json:"body"`
+					} `json:"text"`
+					Image    *cwaMedia `json:"image"`
+					Audio    *cwaMedia `json:"audio"`
+					Video    *cwaMedia `json:"video"`
+					Document *cwaMedia `json:"document"`
+					Voice    *cwaMedia `json:"voice"`
+					Location *struct {
+						Latitude  float64 `json:"latitude"`
+						Longitude float64 `json:"longitude"`
+						Name      string  `json:"name"`
+						Address   string  `json:"address"`
+					} `json:"location"`
+					Button *struct {
+						Text    string `json:"text"`
+						Payload string `json:"payload"`
+					} `json:"button"`
+				} `json:"messages"`
+				Statuses []struct {
+					ID           string `json:"id"`
+					RecipientID  string `json:"recipient_id"`
+					Status       string `json:"status"`
+					Timestamp    string `json:"timestamp"`
+					Type         string `json:"type"`
+					Conversation *struct {
+						ID     string `json:"id"`
+						Origin *struct {
+							Type string `json:"type"`
+						} `json:"origin"`
+						ExpirationTimestamp int64 `json:"expiration_timestamp"`
+					} `json:"conversation"`
+					Pricing *struct {
+						PricingModel string `json:"pricing_model"`
+						Billable     bool   `json:"billable"`
+						Category     string `json:"category"`
+					} `json:"pricing"`
+				} `json:"statuses"`
+				Errors []struct {
+					Code  int    `json:"code"`
+					Title string `json:"title"`
+				} `json:"errors"`
+			} `json:"value"`
+		} `json:"changes"`
+	} `json:"entry"`
+}
+
 // GetChannel returns the channel
 func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
 

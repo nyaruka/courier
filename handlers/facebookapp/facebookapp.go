@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -56,6 +57,17 @@ const (
 	payloadKey    = "payload"
 )
 
+var waStatusMapping = map[string]courier.MsgStatusValue{
+	"sent":      courier.MsgSent,
+	"delivered": courier.MsgDelivered,
+	"read":      courier.MsgDelivered,
+	"failed":    courier.MsgFailed,
+}
+
+var waIgnoreStatuses = map[string]bool{
+	"deleted": true,
+}
+
 func newHandler(channelType courier.ChannelType, name string, useUUIDRoutes bool) courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, useUUIDRoutes)}
 }
@@ -63,6 +75,7 @@ func newHandler(channelType courier.ChannelType, name string, useUUIDRoutes bool
 func init() {
 	courier.RegisterHandler(newHandler("IG", "Instagram", false))
 	courier.RegisterHandler(newHandler("FBA", "Facebook", false))
+	courier.RegisterHandler(newHandler("CWA", "Cloud API WhatsApp", false))
 
 }
 
@@ -104,11 +117,88 @@ type User struct {
 //     }]
 //   }]
 // }
+
+type cwaMedia struct {
+	Caption  string `json:"caption"`
+	Filename string `json:"filename"`
+	ID       string `json:"id"`
+	Mimetype string `json:"mime_type"`
+	SHA256   string `json:"sha256"`
+}
 type moPayload struct {
 	Object string `json:"object"`
 	Entry  []struct {
-		ID        string `json:"id"`
-		Time      int64  `json:"time"`
+		ID      string `json:"id"`
+		Time    int64  `json:"time"`
+		Changes []struct {
+			Field string `json:"field"`
+			Value struct {
+				MessagingProduct string `json:"messaging_product"`
+				Metadata         *struct {
+					DisplayPhoneNumber string `json:"display_phone_number"`
+					PhoneNumberID      string `json:"phone_number_id"`
+				} `json:"metadata"`
+				Contacts []struct {
+					Profile struct {
+						Name string `json:"name"`
+					} `json:"profile"`
+					WaID string `json:"wa_id"`
+				} `json:"contacts"`
+				Messages []struct {
+					ID        string `json:"id"`
+					From      string `json:"from"`
+					Timestamp string `json:"timestamp"`
+					Type      string `json:"type"`
+					Context   *struct {
+						Forwarded           bool   `json:"forwarded"`
+						FrequentlyForwarded bool   `json:"frequently_forwarded"`
+						From                string `json:"from"`
+						ID                  string `json:"id"`
+					} `json:"context"`
+					Text struct {
+						Body string `json:"body"`
+					} `json:"text"`
+					Image    *cwaMedia `json:"image"`
+					Audio    *cwaMedia `json:"audio"`
+					Video    *cwaMedia `json:"video"`
+					Document *cwaMedia `json:"document"`
+					Voice    *cwaMedia `json:"voice"`
+					Location *struct {
+						Latitude  float64 `json:"latitude"`
+						Longitude float64 `json:"longitude"`
+						Name      string  `json:"name"`
+						Address   string  `json:"address"`
+					} `json:"location"`
+					Button *struct {
+						Text    string `json:"text"`
+						Payload string `json:"payload"`
+					} `json:"button"`
+				} `json:"messages"`
+				Statuses []struct {
+					ID           string `json:"id"`
+					RecipientID  string `json:"recipient_id"`
+					Status       string `json:"status"`
+					Timestamp    string `json:"timestamp"`
+					Type         string `json:"type"`
+					Conversation *struct {
+						ID     string `json:"id"`
+						Origin *struct {
+							Type string `json:"type"`
+						} `json:"origin"`
+						ExpirationTimestamp int64 `json:"expiration_timestamp"`
+					} `json:"conversation"`
+					Pricing *struct {
+						PricingModel string `json:"pricing_model"`
+						Billable     bool   `json:"billable"`
+						Category     string `json:"category"`
+					} `json:"pricing"`
+				} `json:"statuses"`
+				Errors []struct {
+					Code  int    `json:"code"`
+					Title string `json:"title"`
+				} `json:"errors"`
+			} `json:"value"`
+		} `json:"changes"`
 		Messaging []struct {
 			Sender    Sender `json:"sender"`
 			Recipient User   `json:"recipient"`
@@ -176,8 +266,8 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 	}
 
 	// is not a 'page' and 'instagram' object? ignore it
-	if payload.Object != "page" && payload.Object != "instagram" {
-		return nil, fmt.Errorf("object expected 'page' or 'instagram', found %s", payload.Object)
+	if payload.Object != "page" && payload.Object != "instagram" && payload.Object != "whatsapp_business_account" {
+		return nil, fmt.Errorf("object expected 'page', 'instagram' or 'whatsapp_business_account', found %s", payload.Object)
 	}
 
 	// no entries? ignore this request
@@ -185,13 +275,25 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 		return nil, fmt.Errorf("no entries found")
 	}
 
-	entryID := payload.Entry[0].ID
+	var channelAddress string
 
 	//if object is 'page' returns type FBA, if object is 'instagram' returns type IG
 	if payload.Object == "page" {
-		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("FBA"), courier.ChannelAddress(entryID))
+		channelAddress = payload.Entry[0].ID
+		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("FBA"), courier.ChannelAddress(channelAddress))
+	} else if payload.Object == "instagram" {
+		channelAddress = payload.Entry[0].ID
+		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("IG"), courier.ChannelAddress(channelAddress))
 	} else {
-		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("IG"), courier.ChannelAddress(entryID))
+		if len(payload.Entry[0].Changes) == 0 {
+			return nil, fmt.Errorf("no changes found")
+		}
+
+		channelAddress = payload.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber
+		if channelAddress == "" {
+			return nil, fmt.Errorf("no channel adress found")
+		}
+		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("CWA"), courier.ChannelAddress(channelAddress))
 	}
 }
 
@@ -214,6 +316,30 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 	return nil, err
 }
 
+func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
+	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	if token == "" {
+		return "", fmt.Errorf("missing token for WA channel")
+	}
+
+	base, _ := url.Parse(graphURL)
+	path, _ := url.Parse(fmt.Sprintf("/%s", mediaID))
+	retreiveURL := base.ResolveReference(path)
+
+	// set the access token as the authorization header
+	req, _ := http.NewRequest(http.MethodGet, retreiveURL.String(), nil)
+	//req.Header.Set("User-Agent", utils.HTTPUserAgent)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	resp, err := utils.MakeHTTPRequest(req)
+	if err != nil {
+		return "", err
+	}
+
+	mediaURL, err := jsonparser.GetString(resp.Body, "url")
+	return mediaURL, err
+}
+
 // receiveEvent is our HTTP handler function for incoming messages and status updates
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.validateSignature(r)
@@ -228,7 +354,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	}
 
 	// is not a 'page' and 'instagram' object? ignore it
-	if payload.Object != "page" && payload.Object != "instagram" {
+	if payload.Object != "page" && payload.Object != "instagram" && payload.Object != "whatsapp_business_account" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request")
 	}
 
@@ -236,6 +362,150 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	if len(payload.Entry) == 0 {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no entries")
 	}
+
+	var events []courier.Event
+	var data []interface{}
+
+	if channel.ChannelType() == "FBA" || channel.ChannelType() == "IG" {
+		events, data, err = h.processFacebookInstagramPayload(ctx, channel, payload, w, r)
+	} else {
+		events, data, err = h.processCloudWhatsAppPayload(ctx, channel, payload, w, r)
+
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
+}
+
+func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request) ([]courier.Event, []interface{}, error) {
+	// the list of events we deal with
+	events := make([]courier.Event, 0, 2)
+
+	// the list of data we will return in our response
+	data := make([]interface{}, 0, 2)
+
+	var contactNames = make(map[string]string)
+
+	// for each entry
+	for _, entry := range payload.Entry {
+		if len(entry.Changes) == 0 {
+			continue
+		}
+
+		for _, change := range entry.Changes {
+
+			for _, contact := range change.Value.Contacts {
+				contactNames[contact.WaID] = contact.Profile.Name
+			}
+
+			for _, msg := range change.Value.Messages {
+				// create our date from the timestamp
+				ts, err := strconv.ParseInt(msg.Timestamp, 10, 64)
+				if err != nil {
+					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid timestamp: %s", msg.Timestamp))
+				}
+				date := time.Unix(ts, 0).UTC()
+
+				urn, err := urns.NewWhatsAppURN(msg.From)
+				if err != nil {
+					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+				}
+
+				text := ""
+				mediaURL := ""
+
+				if msg.Type == "text" {
+					text = msg.Text.Body
+				} else if msg.Type == "audio" && msg.Audio != nil {
+					text = msg.Audio.Caption
+					mediaURL, err = resolveMediaURL(channel, msg.Audio.ID)
+				} else if msg.Type == "voice" && msg.Voice != nil {
+					text = msg.Voice.Caption
+					mediaURL, err = resolveMediaURL(channel, msg.Voice.ID)
+				} else if msg.Type == "button" && msg.Button != nil {
+					text = msg.Button.Text
+				} else if msg.Type == "document" && msg.Document != nil {
+					text = msg.Document.Caption
+					mediaURL, err = resolveMediaURL(channel, msg.Document.ID)
+				} else if msg.Type == "image" && msg.Image != nil {
+					text = msg.Image.Caption
+					mediaURL, err = resolveMediaURL(channel, msg.Image.ID)
+				} else if msg.Type == "video" && msg.Video != nil {
+					text = msg.Video.Caption
+					mediaURL, err = resolveMediaURL(channel, msg.Video.ID)
+				} else if msg.Type == "location" && msg.Location != nil {
+					mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
+				} else {
+					// we received a message type we do not support.
+					courier.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", msg.Type))
+				}
+
+				// create our message
+				ev := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(msg.ID).WithContactName(contactNames[msg.From])
+				event := h.Backend().CheckExternalIDSeen(ev)
+
+				// we had an error downloading media
+				if err != nil {
+					courier.LogRequestError(r, channel, err)
+				}
+
+				if mediaURL != "" {
+					event.WithAttachment(mediaURL)
+				}
+
+				err = h.Backend().WriteMsg(ctx, event)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				h.Backend().WriteExternalIDSeen(event)
+
+				events = append(events, event)
+				data = append(data, courier.NewMsgReceiveData(event))
+
+			}
+
+			for _, status := range change.Value.Statuses {
+
+				msgStatus, found := waStatusMapping[status.Status]
+				if !found {
+					if waIgnoreStatuses[status.Status] {
+						data = append(data, courier.NewInfoData(fmt.Sprintf("ignoring status: %s", status.Status)))
+					} else {
+						handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status: %s", status.Status))
+					}
+					continue
+				}
+
+				event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus)
+				err := h.Backend().WriteMsgStatus(ctx, event)
+
+				// we don't know about this message, just tell them we ignored it
+				if err == courier.ErrMsgNotFound {
+					data = append(data, courier.NewInfoData(fmt.Sprintf("message id: %s not found, ignored", status.ID)))
+					continue
+				}
+
+				if err != nil {
+					return nil, nil, err
+				}
+
+				events = append(events, event)
+				data = append(data, courier.NewStatusData(event))
+
+			}
+
+		}
+
+	}
+	return events, data, nil
+}
+
+func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request) ([]courier.Event, []interface{}, error) {
+	var err error
 
 	// the list of events we deal with
 	events := make([]courier.Event, 0, 2)
@@ -272,12 +542,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		if payload.Object == "instagram" {
 			urn, err = urns.NewInstagramURN(sender)
 			if err != nil {
-				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+				return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 			}
 		} else {
 			urn, err = urns.NewFacebookURN(sender)
 			if err != nil {
-				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+				return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 			}
 		}
 
@@ -291,7 +561,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			if msg.OptIn.UserRef != "" {
 				urn, err = urns.NewFacebookURN(urns.FacebookRefPrefix + msg.OptIn.UserRef)
 				if err != nil {
-					return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 				}
 			}
 
@@ -305,7 +575,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 			err := h.Backend().WriteChannelEvent(ctx, event)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			events = append(events, event)
@@ -340,7 +610,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 			err := h.Backend().WriteChannelEvent(ctx, event)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			events = append(events, event)
@@ -369,7 +639,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 			err := h.Backend().WriteChannelEvent(ctx, event)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			events = append(events, event)
@@ -420,7 +690,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 			err := h.Backend().WriteMsg(ctx, event)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			h.Backend().WriteExternalIDSeen(event)
@@ -441,7 +711,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 				}
 
 				if err != nil {
-					return nil, err
+					return nil, nil, err
 				}
 
 				events = append(events, event)
@@ -453,7 +723,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 	}
 
-	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
+	return events, data, nil
 }
 
 // {
