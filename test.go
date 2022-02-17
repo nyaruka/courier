@@ -113,6 +113,11 @@ func (mb *MockBackend) GetLastContactName() string {
 	return mb.lastContactName
 }
 
+// DeleteMsgWithExternalID delete a message we receive an event that it should be deleted
+func (mb *MockBackend) DeleteMsgWithExternalID(ctx context.Context, channel Channel, externalID string) error {
+	return nil
+}
+
 // NewIncomingMsg creates a new message from the given params
 func (mb *MockBackend) NewIncomingMsg(channel Channel, urn urns.URN, text string) Msg {
 	return &mockMsg{channel: channel, urn: urn, text: text}
