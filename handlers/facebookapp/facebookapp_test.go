@@ -28,742 +28,99 @@ var testChannelsCWA = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "CWA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"}),
 }
 
-var helloMsgFBA = `{
-	"object":"page",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"message": {
-			  "text": "Hello World",
-			  "mid": "external_id"
-			},
-			"recipient": {
-			  "id": "12345"
-			},
-			"sender": {
-			  "id": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var helloMsgIG = `{
-	"object":"instagram",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"message": {
-			  "text": "Hello World",
-			  "mid": "external_id"
-			},
-			"recipient": {
-			  "id": "12345"
-			},
-			"sender": {
-			  "id": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var duplicateMsgFBA = `{
-	"object":"page",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"message": {
-			  "text": "Hello World",
-			  "mid": "external_id"
-			},
-			"recipient": {
-			  "id": "12345"
-			},
-			"sender": {
-			  "id": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	},
-	{
-	  "id": "12345",
-	  "messaging": [{
-			"message": {
-			  "text": "Hello World",
-			  "mid": "external_id"
-			},
-			"recipient": {
-			  "id": "12345"
-			},
-			"sender": {
-			  "id": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var duplicateMsgIG = `{
-	"object":"instagram",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"message": {
-			  "text": "Hello World",
-			  "mid": "external_id"
-			},
-			"recipient": {
-			  "id": "12345"
-			},
-			"sender": {
-			  "id": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	},
-	{
-	  "id": "12345",
-	  "messaging": [{
-			"message": {
-			  "text": "Hello World",
-			  "mid": "external_id"
-			},
-			"recipient": {
-			  "id": "12345"
-			},
-			"sender": {
-			  "id": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var invalidURNFBA = `{
-	"object":"page",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"message": {
-			  "text": "Hello World",
-			  "mid": "external_id"
-			},
-			"recipient": {
-			  "id": "12345"
-			},
-			"sender": {
-			  "id": "abc5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var invalidURNIG = `{
-	"object":"instagram",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"message": {
-			  "text": "Hello World",
-			  "mid": "external_id"
-			},
-			"recipient": {
-			  "id": "12345"
-			},
-			"sender": {
-			  "id": "abc5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var attachmentFBA = `{
-	"object":"page",
-	"entry": [{
-	  	"id": "12345",
-	  	"messaging": [{
-				"message": {
-		  			"mid": "external_id",
-		  			"attachments":[{
-      	      		"type":"image",
-      	      		"payload":{
-						   "url":"https://image-url/foo.png"
-						}
-					}]
-				},
-				"recipient": {
-					"id": "12345"
-				},
-				"sender": {
-					"id": "5678"
-				},
-				"timestamp": 1459991487970
-	    }],
-	  	"time": 1459991487970
-	}]
-}`
-
-var attachmentIG = `{
-	"object":"instagram",
-	"entry": [{
-	  	"id": "12345",
-	  	"messaging": [{
-				"message": {
-		  			"mid": "external_id",
-		  			"attachments":[{
-      	      		"type":"image",
-      	      		"payload":{
-						"url":"https://image-url/foo.png"
-						}
-					}]
-				},
-				"recipient": {
-					"id": "12345"
-				},
-				"sender": {
-					"id": "5678"
-				},
-				"timestamp": 1459991487970
-	    }],
-	  	"time": 1459991487970
-	}]
-}`
-
-var locationAttachment = `{
-	"object":"page",
-	"entry": [{
-	  	"id": "12345",
-	  	"messaging": [{
-				"message": {
-		  			"mid": "external_id",
-		  			"attachments":[{
-						"type":"location",
-      	      			"payload":{
-							"coordinates": {
-								"lat": 1.2,
-								"long": -1.3
-							}
-						}
-					}]
-				},
-				"recipient": {
-					"id": "12345"
-				},
-				"sender": {
-					"id": "5678"
-				},
-				"timestamp": 1459991487970
-	    }],
-	  	"time": 1459991487970
-	}]
-}`
-
-var thumbsUp = `{
-	"object":"page",
-	"entry":[{
-		"id":"12345",
-		"time":1459991487970,
-		"messaging":[{
-			"sender":{"id":"5678"},
-			"recipient":{"id":"12345"},
-			"timestamp":1459991487970,
-			"message":{
-				"mid":"external_id",
-				"attachments":[{
-					"type":"image",
-					"payload":{
-						"sticker_id": 369239263222822,
-						"url":"https://scontent.xx.fbcdn.net/v/arst"
-					}
-				}]
-			}
-		}]
-	}]
-}`
-
-var like_heart = `{
-	"object":"instagram",
-	"entry":[{
-		"id":"12345",
-		"messaging":[{
-			"sender":{"id":"5678"},
-			"recipient":{"id":"12345"},
-			"timestamp":1459991487970,
-			"message":{
-				"mid":"external_id",
-				"attachments":[{
-					"type":"like_heart"
-				}]
-			}
-		}],
-		"time":1459991487970
-	}]
-}`
-
-var differentPageIG = `{
-	"object":"instagram",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"message": {
-			  "text": "Hello World",
-			  "mid": "external_id"
-			},
-			"recipient": {
-			  "id": "1235"
-			},
-			"sender": {
-			  "id": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var differentPageFBA = `{
-	"object":"page",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"message": {
-			  "text": "Hello World",
-			  "mid": "external_id"
-			},
-			"recipient": {
-			  "id": "1235"
-			},
-			"sender": {
-			  "id": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var echoFBA = `{
-	"object":"page",
-	"entry": [{
-		"id": "12345",
-		"messaging": [{
-			"recipient": {
-				"id": "12345"
-			},
-			"sender": {
-				"id": "5678"
-			},
-			"timestamp": 1459991487970,
-			"message": {
-				"is_echo": true,
-				"mid": "qT7ywaK"
-			}
-		}]
-	}]
-}`
-
-var echoIG = `{
-	"object":"instagram",
-	"entry": [{
-		"id": "12345",
-		"messaging": [{
-			"recipient": {
-				"id": "12345"
-			},
-			"sender": {
-				"id": "5678"
-			},
-			"timestamp": 1459991487970,
-			"message": {
-				"is_echo": true,
-				"mid": "qT7ywaK"
-			}
-		}]
-	}]
-}`
-
-var icebreakerGetStarted = `{
-	"object":"instagram",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"postback": {
-				"title": "icebreaker question",  
-				"payload": "get_started"
-			},
-			"recipient": {
-			  "id": "12345"
-			},
-			"sender": {
-			  "id": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var optInUserRef = `{
-	"object":"page",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-		  "optin": {
-		  	"ref": "optin_ref",
-		  	"user_ref": "optin_user_ref"
-		  },
-		  "recipient": {
-		  	"id": "12345"
-		  },
-		  "sender": {
-		  	"id": "5678"
-		  },
-		  "timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var optIn = `{
-	"object":"page",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"optin": {
-		 		"ref": "optin_ref"
-			},
-			"recipient": {
-		  	"id": "12345"
-			},
-			"sender": {
-		  	"id": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var postback = `{
-	"object":"page",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"postback": {
-				"title": "postback title",  
-				"payload": "postback payload",
-				"referral": {
-				  "ref": "postback ref",
-				  "source": "postback source",
-				  "type": "postback type"
-				}
-			},
-			"recipient": {
-			  "id": "12345"
-			},
-			"sender": {
-			  "id": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var postbackReferral = `{
-	"object":"page",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"postback": {
-				"title": "postback title",  
-				"payload": "get_started",
-				"referral": {
-				  "ref": "postback ref",
-				  "source": "postback source",
-				  "type": "postback type",
-				  "ad_id": "ad id"
-				}
-			},
-			"recipient": {
-			  "id": "12345"
-			},
-			"sender": {
-			  "id": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var postbackGetStarted = `{
-	"object":"page",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"postback": {
-				"title": "postback title",  
-				"payload": "get_started"
-			},
-			"recipient": {
-			  "id": "12345"
-			},
-			"sender": {
-			  "id": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var referral = `{
-	"object":"page",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"referral": {
-				"ref": "referral id",
-				"ad_id": "ad id",
-				"source": "referral source",
-				"type": "referral type"
-			},
-			"recipient": {
-			  "id": "12345"
-			},
-			"sender": {
-			  "id": "5678",
-			  "user_ref": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var dlr = `{
-	"object":"page",
-	"entry": [{
-	  "id": "12345",
-	  "messaging": [{
-			"delivery":{
-				"mids":[
-				   "mid.1458668856218:ed81099e15d3f4f233"
-				],
-				"watermark":1458668856253,
-				"seq":37
-			},
-			"recipient": {
-			  "id": "12345"
-			},
-			"sender": {
-			  "id": "5678"
-			},
-			"timestamp": 1459991487970
-	  }],
-	  "time": 1459991487970
-	}]
-}`
-
-var notPage = `{
-	"object":"notpage",
-	"entry": [{}]
-}`
-
-var notInstagram = `{
-	"object":"notinstagram",
-	"entry": [{}]
-}`
-
-var noEntriesFBA = `{
-	"object":"page",
-	"entry": []
-}`
-
-var noEntriesIG = `{
-	"object":"instagram",
-	"entry": []
-}`
-
-var noMessagingEntriesFBA = `{
-	"object":"page",
-	"entry": [{
-		"id": "12345"
-	}]
-}`
-
-var noMessagingEntriesIG = `{
-	"object":"instagram",
-	"entry": [{
-		"id": "12345"
-	}]
-}`
-
-var unknownMessagingEntryFBA = `{
-	"object":"page",
-	"entry": [{
-		"id": "12345",
-		"messaging": [{
-			"recipient": {
-				"id": "12345"
-			},
-			"sender": {
-				"id": "5678"
-			},
-			"timestamp": 1459991487970
-		}]
-	}]
-}`
-
-var unknownMessagingEntryIG = `{
-	"object":"instagram",
-	"entry": [{
-		"id": "12345",
-		"messaging": [{
-			"recipient": {
-				"id": "12345"
-			},
-			"sender": {
-				"id": "5678"
-			},
-			"timestamp": 1459991487970
-		}]
-	}]
-}`
-
-var storyMentionIG = `{
-	"object":"instagram",
-	"entry": [{
-	  	"id": "12345",
-	  	"messaging": [{
-				"message": {
-		  			"mid": "external_id",
-		  			"attachments":[{
-      	      		"type":"story_mention",
-      	      		"payload":{
-						"url":"https://story-url"
-						}
-					}]
-				},
-				"recipient": {
-					"id": "12345"
-				},
-				"sender": {
-					"id": "5678"
-				},
-				"timestamp": 1459991487970
-	    }],
-	  	"time": 1459991487970
-	}]
-}`
-
-var notJSON = `blargh`
-
 var testCasesFBA = []ChannelHandleTestCase{
-	{Label: "Receive Message FBA", URL: "/c/fba/receive", Data: helloMsgFBA, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Message FBA", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/helloMsgFBA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Invalid Signature", URL: "/c/fba/receive", Data: helloMsgFBA, Status: 400, Response: "invalid request signature", PrepRequest: addInvalidSignature},
+	{Label: "Receive Invalid Signature", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/helloMsgFBA.json")), Status: 400, Response: "invalid request signature", PrepRequest: addInvalidSignature},
 
-	{Label: "No Duplicate Receive Message", URL: "/c/fba/receive", Data: duplicateMsgFBA, Status: 200, Response: "Handled",
+	{Label: "No Duplicate Receive Message", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/duplicateMsgFBA.json")), Status: 200, Response: "Handled",
 		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Attachment", URL: "/c/fba/receive", Data: attachmentFBA, Status: 200, Response: "Handled",
+	{Label: "Receive Attachment", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/attachmentFBA.json")), Status: 200, Response: "Handled",
 		Text: Sp(""), Attachments: []string{"https://image-url/foo.png"}, URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Location", URL: "/c/fba/receive", Data: locationAttachment, Status: 200, Response: "Handled",
+	{Label: "Receive Location", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/locationAttachment.json")), Status: 200, Response: "Handled",
 		Text: Sp(""), Attachments: []string{"geo:1.200000,-1.300000"}, URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Thumbs Up", URL: "/c/fba/receive", Data: thumbsUp, Status: 200, Response: "Handled",
+	{Label: "Receive Thumbs Up", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/thumbsUp.json")), Status: 200, Response: "Handled",
 		Text: Sp("👍"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive OptIn UserRef", URL: "/c/fba/receive", Data: optInUserRef, Status: 200, Response: "Handled",
+	{Label: "Receive OptIn UserRef", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/optInUserRef.json")), Status: 200, Response: "Handled",
 		URN: Sp("facebook:ref:optin_user_ref"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		ChannelEvent: Sp(courier.Referral), ChannelEventExtra: map[string]interface{}{"referrer_id": "optin_ref"},
 		PrepRequest: addValidSignature},
-	{Label: "Receive OptIn", URL: "/c/fba/receive", Data: optIn, Status: 200, Response: "Handled",
+	{Label: "Receive OptIn", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/optIn.json")), Status: 200, Response: "Handled",
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		ChannelEvent: Sp(courier.Referral), ChannelEventExtra: map[string]interface{}{"referrer_id": "optin_ref"},
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Get Started", URL: "/c/fba/receive", Data: postbackGetStarted, Status: 200, Response: "Handled",
+	{Label: "Receive Get Started", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/postbackGetStarted.json")), Status: 200, Response: "Handled",
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.NewConversation),
 		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started"},
 		PrepRequest:       addValidSignature},
-	{Label: "Receive Referral Postback", URL: "/c/fba/receive", Data: postback, Status: 200, Response: "Handled",
+	{Label: "Receive Referral Postback", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/postback.json")), Status: 200, Response: "Handled",
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
 		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"},
 		PrepRequest:       addValidSignature},
-	{Label: "Receive Referral", URL: "/c/fba/receive", Data: postbackReferral, Status: 200, Response: "Handled",
+	{Label: "Receive Referral", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/postbackReferral.json")), Status: 200, Response: "Handled",
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
 		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"},
 		PrepRequest:       addValidSignature},
 
-	{Label: "Receive Referral", URL: "/c/fba/receive", Data: referral, Status: 200, Response: `"referrer_id":"referral id"`,
+	{Label: "Receive Referral", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/referral.json")), Status: 200, Response: `"referrer_id":"referral id"`,
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
 		ChannelEventExtra: map[string]interface{}{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"},
 		PrepRequest:       addValidSignature},
 
-	{Label: "Receive DLR", URL: "/c/fba/receive", Data: dlr, Status: 200, Response: "Handled",
+	{Label: "Receive DLR", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/dlr.json")), Status: 200, Response: "Handled",
 		Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), MsgStatus: Sp(courier.MsgDelivered), ExternalID: Sp("mid.1458668856218:ed81099e15d3f4f233"),
 		PrepRequest: addValidSignature},
 
-	{Label: "Different Page", URL: "/c/fba/receive", Data: differentPageFBA, Status: 200, Response: `"data":[]`, PrepRequest: addValidSignature},
-	{Label: "Echo", URL: "/c/fba/receive", Data: echoFBA, Status: 200, Response: `ignoring echo`, PrepRequest: addValidSignature},
-	{Label: "Not Page", URL: "/c/fba/receive", Data: notPage, Status: 400, Response: "object expected 'page', 'instagram' or 'whatsapp_business_account', found notpage", PrepRequest: addValidSignature},
-	{Label: "No Entries", URL: "/c/fba/receive", Data: noEntriesFBA, Status: 400, Response: "no entries found", PrepRequest: addValidSignature},
-	{Label: "No Messaging Entries", URL: "/c/fba/receive", Data: noMessagingEntriesFBA, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
-	{Label: "Unknown Messaging Entry", URL: "/c/fba/receive", Data: unknownMessagingEntryFBA, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
-	{Label: "Not JSON", URL: "/c/fba/receive", Data: notJSON, Status: 400, Response: "Error", PrepRequest: addValidSignature},
-	{Label: "Invalid URN", URL: "/c/fba/receive", Data: invalidURNFBA, Status: 400, Response: "invalid facebook id", PrepRequest: addValidSignature},
+	{Label: "Different Page", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/differentPageFBA.json")), Status: 200, Response: `"data":[]`, PrepRequest: addValidSignature},
+	{Label: "Echo", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/echoFBA.json")), Status: 200, Response: `ignoring echo`, PrepRequest: addValidSignature},
+	{Label: "Not Page", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/notPage.json")), Status: 400, Response: "object expected 'page', 'instagram' or 'whatsapp_business_account', found notpage", PrepRequest: addValidSignature},
+	{Label: "No Entries", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/noEntriesFBA.json")), Status: 400, Response: "no entries found", PrepRequest: addValidSignature},
+	{Label: "No Messaging Entries", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/noMessagingEntriesFBA.json")), Status: 200, Response: "Handled", PrepRequest: addValidSignature},
+	{Label: "Unknown Messaging Entry", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/unknownMessagingEntryFBA.json")), Status: 200, Response: "Handled", PrepRequest: addValidSignature},
+	{Label: "Not JSON", URL: "/c/fba/receive", Data: "not JSON", Status: 400, Response: "Error", PrepRequest: addValidSignature},
+	{Label: "Invalid URN", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/invalidURNFBA.json")), Status: 400, Response: "invalid facebook id", PrepRequest: addValidSignature},
 }
 var testCasesIG = []ChannelHandleTestCase{
-	{Label: "Receive Message", URL: "/c/ig/receive", Data: helloMsgIG, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Message", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/helloMsgIG.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Hello World"), URN: Sp("instagram:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Invalid Signature", URL: "/c/ig/receive", Data: helloMsgIG, Status: 400, Response: "invalid request signature", PrepRequest: addInvalidSignature},
+	{Label: "Receive Invalid Signature", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/helloMsgIG.json")), Status: 400, Response: "invalid request signature", PrepRequest: addInvalidSignature},
 
-	{Label: "No Duplicate Receive Message", URL: "/c/ig/receive", Data: duplicateMsgIG, Status: 200, Response: "Handled",
+	{Label: "No Duplicate Receive Message", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/duplicateMsgIG.json")), Status: 200, Response: "Handled",
 		Text: Sp("Hello World"), URN: Sp("instagram:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Attachment", URL: "/c/ig/receive", Data: attachmentIG, Status: 200, Response: "Handled",
+	{Label: "Receive Attachment", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/attachmentIG.json")), Status: 200, Response: "Handled",
 		Text: Sp(""), Attachments: []string{"https://image-url/foo.png"}, URN: Sp("instagram:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Like Heart", URL: "/c/ig/receive", Data: like_heart, Status: 200, Response: "Handled",
+	{Label: "Receive Like Heart", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/like_heart.json")), Status: 200, Response: "Handled",
 		Text: Sp(""), URN: Sp("instagram:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Icebreaker Get Started", URL: "/c/ig/receive", Data: icebreakerGetStarted, Status: 200, Response: "Handled",
+	{Label: "Receive Icebreaker Get Started", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/icebreakerGetStarted.json")), Status: 200, Response: "Handled",
 		URN: Sp("instagram:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.NewConversation),
 		ChannelEventExtra: map[string]interface{}{"title": "icebreaker question", "payload": "get_started"},
 		PrepRequest:       addValidSignature},
 
-	{Label: "Different Page", URL: "/c/ig/receive", Data: differentPageIG, Status: 200, Response: `"data":[]`, PrepRequest: addValidSignature},
-	{Label: "Echo", URL: "/c/ig/receive", Data: echoIG, Status: 200, Response: `ignoring echo`, PrepRequest: addValidSignature},
-	{Label: "No Entries", URL: "/c/ig/receive", Data: noEntriesIG, Status: 400, Response: "no entries found", PrepRequest: addValidSignature},
-	{Label: "Not Instagram", URL: "/c/ig/receive", Data: notInstagram, Status: 400, Response: "object expected 'page', 'instagram' or 'whatsapp_business_account', found notinstagram", PrepRequest: addValidSignature},
-	{Label: "No Messaging Entries", URL: "/c/ig/receive", Data: noMessagingEntriesIG, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
-	{Label: "Unknown Messaging Entry", URL: "/c/ig/receive", Data: unknownMessagingEntryIG, Status: 200, Response: "Handled", PrepRequest: addValidSignature},
-	{Label: "Not JSON", URL: "/c/ig/receive", Data: notJSON, Status: 400, Response: "Error", PrepRequest: addValidSignature},
-	{Label: "Invalid URN", URL: "/c/ig/receive", Data: invalidURNIG, Status: 400, Response: "invalid instagram id", PrepRequest: addValidSignature},
-	{Label: "Story Mention", URL: "/c/ig/receive", Data: storyMentionIG, Status: 200, Response: `ignoring story_mention`, PrepRequest: addValidSignature},
+	{Label: "Different Page", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/differentPageIG.json")), Status: 200, Response: `"data":[]`, PrepRequest: addValidSignature},
+	{Label: "Echo", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/echoIG.json")), Status: 200, Response: `ignoring echo`, PrepRequest: addValidSignature},
+	{Label: "No Entries", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/noEntriesIG.json")), Status: 400, Response: "no entries found", PrepRequest: addValidSignature},
+	{Label: "Not Instagram", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/notInstagram.json")), Status: 400, Response: "object expected 'page', 'instagram' or 'whatsapp_business_account', found notinstagram", PrepRequest: addValidSignature},
+	{Label: "No Messaging Entries", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/noMessagingEntriesIG.json")), Status: 200, Response: "Handled", PrepRequest: addValidSignature},
+	{Label: "Unknown Messaging Entry", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/unknownMessagingEntryIG.json")), Status: 200, Response: "Handled", PrepRequest: addValidSignature},
+	{Label: "Not JSON", URL: "/c/ig/receive", Data: "not JSON", Status: 400, Response: "Error", PrepRequest: addValidSignature},
+	{Label: "Invalid URN", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/invalidURNIG.json")), Status: 400, Response: "invalid instagram id", PrepRequest: addValidSignature},
+	{Label: "Story Mention", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/storyMentionIG.json")), Status: 200, Response: `ignoring story_mention`, PrepRequest: addValidSignature},
 }
 
 func addValidSignature(r *http.Request) {
@@ -838,655 +195,46 @@ func TestDescribeIG(t *testing.T) {
 
 var cwaReceiveURL = "/c/cwa/receive"
 
-var helloCWA = `{
-    "object": "whatsapp_business_account",
-    "entry": [
-        {
-            "id": "8856996819413533",
-            "changes": [
-                {
-                    "value": {
-                        "messaging_product": "whatsapp",
-                        "metadata": {
-                            "display_phone_number": "12345",
-                            "phone_number_id": "27681414235104944"
-                        },
-                        "contacts": [
-                            {
-                                "profile": {
-                                    "name": "Kerry Fisher"
-                                },
-                                "wa_id": "5678"
-                            }
-                        ],
-                        "messages": [
-                            {
-                                "from": "5678",
-                                "id": "external_id",
-                                "timestamp": "1454119029",
-                                "text": {
-                                    "body": "Hello World"
-                                },
-                                "type": "text"
-                            }
-                        ]
-                    },
-                    "field": "messages"
-                }
-            ]
-        }
-    ]
-}`
-
-var duplicatedMsg = `{
-    "object": "whatsapp_business_account",
-    "entry": [
-        {
-            "id": "8856996819413533",
-            "changes": [
-                {
-                    "value": {
-                        "messaging_product": "whatsapp",
-                        "metadata": {
-                            "display_phone_number": "12345",
-                            "phone_number_id": "27681414235104944"
-                        },
-                        "contacts": [
-                            {
-                                "profile": {
-                                    "name": "Kerry Fisher"
-                                },
-                                "wa_id": "5678"
-                            }
-                        ],
-                        "messages": [
-                            {
-                                "from": "5678",
-                                "id": "external_id",
-                                "timestamp": "1454119029",
-                                "text": {
-                                    "body": "Hello World"
-                                },
-                                "type": "text"
-                            },{
-                                "from": "5678",
-                                "id": "external_id",
-                                "timestamp": "1454119029",
-                                "text": {
-                                    "body": "Hello World"
-                                },
-                                "type": "text"
-                            }
-                        ]
-                    },
-                    "field": "messages"
-                }
-            ]
-        }
-    ]
-}
-`
-
-var voiceMsg = `{
-    "object": "whatsapp_business_account",
-    "entry": [
-        {
-            "id": "8856996819413533",
-            "changes": [
-                {
-                    "value": {
-                        "messaging_product": "whatsapp",
-                        "metadata": {
-                            "display_phone_number": "12345",
-                            "phone_number_id": "27681414235104944"
-                        },
-                        "contacts": [
-                            {
-                                "profile": {
-                                    "name": "Kerry Fisher"
-                                },
-                                "wa_id": "5678"
-                            }
-                        ],
-						"messages":[{
-							"from": "5678",
-							"id": "external_id",
-							"timestamp": "1454119029",
-							"type": "voice",
-							"voice": {
-								"file": "/usr/local/wamedia/shared/463e/b7ec/ff4e4d9bb1101879cbd411b2",
-								"id": "id_voice",
-								"mime_type": "audio/ogg; codecs=opus",
-								"sha256": "fa9e1807d936b7cebe63654ea3a7912b1fa9479220258d823590521ef53b0710"}
-					  }]
-                    },
-                    "field": "messages"
-                }
-            ]
-        }
-    ]
-}`
-
-var buttonMsg = `{
-    "object": "whatsapp_business_account",
-    "entry": [
-        {
-            "id": "8856996819413533",
-            "changes": [
-                {
-                    "value": {
-                        "messaging_product": "whatsapp",
-                        "metadata": {
-                            "display_phone_number": "12345",
-                            "phone_number_id": "27681414235104944"
-                        },
-                        "contacts": [
-                            {
-                                "profile": {
-                                    "name": "Kerry Fisher"
-                                },
-                                "wa_id": "5678"
-                            }
-                        ],
-						"messages": [
-        {
-            "button": {
-                "payload": "No-Button-Payload",
-                "text": "No"
-            },
-            "context": {
-                "from": "5678",
-                "id": "gBGGFmkiWVVPAgkgQkwi7IORac0"
-            },
-            "from": "5678",
-            "id": "external_id",
-            "timestamp": "1454119029",
-            "type": "button"
-        }
-    ]
-                    },
-                    "field": "messages"
-                }
-            ]
-        }
-    ]
-}`
-
-var documentMsg = `{
-    "object": "whatsapp_business_account",
-    "entry": [
-        {
-            "id": "8856996819413533",
-            "changes": [
-                {
-                    "value": {
-                        "messaging_product": "whatsapp",
-                        "metadata": {
-                            "display_phone_number": "12345",
-                            "phone_number_id": "27681414235104944"
-                        },
-                        "contacts": [
-                            {
-                                "profile": {
-                                    "name": "Kerry Fisher"
-                                },
-                                "wa_id": "5678"
-                            }
-                        ],
-						"messages": [{
-							"from": "5678",
-							"id": "external_id",
-							"timestamp": "1454119029",
-							"type": "document",
-							"document": {
-							  "caption": "80skaraokesonglistartist",
-									"file": "/usr/local/wamedia/shared/fc233119-733f-49c-bcbd-b2f68f798e33",
-									"id": "id_document",
-									"mime_type": "application/pdf",
-									"sha256": "3b11fa6ef2bde1dd14726e09d3edaf782120919d06f6484f32d5d5caa4b8e"
-								}
-							}]
-                    },
-                    "field": "messages"
-                }
-            ]
-        }
-    ]
-}`
-
-var imageMsg = `{
-    "object": "whatsapp_business_account",
-    "entry": [
-        {
-            "id": "8856996819413533",
-            "changes": [
-                {
-                    "value": {
-                        "messaging_product": "whatsapp",
-                        "metadata": {
-                            "display_phone_number": "12345",
-                            "phone_number_id": "27681414235104944"
-                        },
-                        "contacts": [
-                            {
-                                "profile": {
-                                    "name": "Kerry Fisher"
-                                },
-                                "wa_id": "5678"
-                            }
-                        ],
-						"messages": [{
-							"from": "5678",
-							"id": "external_id",
-							"image": {
-								"file": "/usr/local/wamedia/shared/b1cf38-8734-4ad3-b4a1-ef0c10d0d683",
-								"id": "id_image",
-								"mime_type": "image/jpeg",
-								"sha256": "29ed500fa64eb55fc19dc4124acb300e5dcc54a0f822a301ae99944db",
-								"caption": "Check out my new phone!"
-							},
-							"timestamp": "1454119029",
-							"type": "image"
-						}]
-                    },
-                    "field": "messages"
-                }
-            ]
-        }
-    ]
-}`
-
-var videoMsg = `{
-    "object": "whatsapp_business_account",
-    "entry": [
-        {
-            "id": "8856996819413533",
-            "changes": [
-                {
-                    "value": {
-                        "messaging_product": "whatsapp",
-                        "metadata": {
-                            "display_phone_number": "12345",
-                            "phone_number_id": "27681414235104944"
-                        },
-                        "contacts": [
-                            {
-                                "profile": {
-                                    "name": "Kerry Fisher"
-                                },
-                                "wa_id": "5678"
-                            }
-                        ],
-						"messages": [{
-							"from": "5678",
-							"id": "external_id",
-							"video": {
-								"file": "/usr/local/wamedia/shared/b1cf38-8734-4ad3-b4a1-ef0c10d0d683",
-								"id": "id_video",
-								"mime_type": "image/jpeg",
-								"sha256": "29ed500fa64eb55fc19dc4124acb300e5dcc54a0f822a301ae99944db",
-								"caption": "Check out my new phone!"
-							},
-							"timestamp": "1454119029",
-							"type": "video"
-						}]
-                    },
-                    "field": "messages"
-                }
-            ]
-        }
-    ]
-}`
-
-var audioMsg = `{
-    "object": "whatsapp_business_account",
-    "entry": [
-        {
-            "id": "8856996819413533",
-            "changes": [
-                {
-                    "value": {
-                        "messaging_product": "whatsapp",
-                        "metadata": {
-                            "display_phone_number": "12345",
-                            "phone_number_id": "27681414235104944"
-                        },
-                        "contacts": [
-                            {
-                                "profile": {
-                                    "name": "Kerry Fisher"
-                                },
-                                "wa_id": "5678"
-                            }
-                        ],
-						"messages": [{
-							"from": "5678",
-							"id": "external_id",
-							"audio": {
-								"file": "/usr/local/wamedia/shared/b1cf38-8734-4ad3-b4a1-ef0c10d0d683",
-								"id": "id_audio",
-								"mime_type": "image/jpeg",
-								"sha256": "29ed500fa64eb55fc19dc4124acb300e5dcc54a0f822a301ae99944db",
-								"caption": "Check out my new phone!"
-							},
-							"timestamp": "1454119029",
-							"type": "audio"
-						}]
-                    },
-                    "field": "messages"
-                }
-            ]
-        }
-    ]
-}`
-
-var locationMsg = `{
-    "object": "whatsapp_business_account",
-    "entry": [
-        {
-            "id": "8856996819413533",
-            "changes": [
-                {
-                    "value": {
-                        "messaging_product": "whatsapp",
-                        "metadata": {
-                            "display_phone_number": "12345",
-                            "phone_number_id": "27681414235104944"
-                        },
-                        "contacts": [
-                            {
-                                "profile": {
-                                    "name": "Kerry Fisher"
-                                },
-                                "wa_id": "5678"
-                            }
-                        ],
-						"messages":[{
-							"from":"5678",
-							"id":"external_id",
-							"location":{
-							   "address":"Main Street Beach, Santa Cruz, CA",
-							   "latitude":0.000000,
-							   "longitude":1.000000,
-							   "name":"Main Street Beach",
-							   "url":"https://foursquare.com/v/4d7031d35b5df7744"},
-							"timestamp":"1454119029",
-							"type":"location"
-						  }]
-                    },
-                    "field": "messages"
-                }
-            ]
-        }
-    ]
-}`
-
-var invalidMsg = `not json`
-
-var invalidFrom = `{
-    "object": "whatsapp_business_account",
-    "entry": [
-        {
-            "id": "8856996819413533",
-            "changes": [
-                {
-                    "value": {
-                        "messaging_product": "whatsapp",
-                        "metadata": {
-                            "display_phone_number": "12345",
-                            "phone_number_id": "27681414235104944"
-                        },
-                        "contacts": [
-                            {
-                                "profile": {
-                                    "name": "Kerry Fisher"
-                                },
-                                "wa_id": "bla"
-                            }
-                        ],
-                        "messages": [
-                            {
-                                "from": "bla",
-                                "id": "external_id",
-                                "timestamp": "1454119029",
-                                "text": {
-                                    "body": "Hello World"
-                                },
-                                "type": "text"
-                            }
-                        ]
-                    },
-                    "field": "messages"
-                }
-            ]
-        }
-    ]
-}`
-
-var invalidTimestamp = `{
-    "object": "whatsapp_business_account",
-    "entry": [
-        {
-            "id": "8856996819413533",
-            "changes": [
-                {
-                    "value": {
-                        "messaging_product": "whatsapp",
-                        "metadata": {
-                            "display_phone_number": "12345",
-                            "phone_number_id": "27681414235104944"
-                        },
-                        "contacts": [
-                            {
-                                "profile": {
-                                    "name": "Kerry Fisher"
-                                },
-                                "wa_id": "bla"
-                            }
-                        ],
-                        "messages": [
-                            {
-                                "from": "bla",
-                                "id": "external_id",
-                                "timestamp": "asdf",
-                                "text": {
-                                    "body": "Hello World"
-                                },
-                                "type": "text"
-                            }
-                        ]
-                    },
-                    "field": "messages"
-                }
-            ]
-        }
-    ]
-}`
-
-var validStatusCWA = `{
-    "object": "whatsapp_business_account",
-    "entry": [
-        {
-            "id": "8856996819413533",
-            "changes": [
-                {
-                    "value": {
-                        "messaging_product": "whatsapp",
-                        "metadata": {
-                            "display_phone_number": "12345",
-                            "phone_number_id": "27681414235104944"
-                        },
-                        "contacts": [
-                            {
-                                "profile": {
-                                    "name": "Kerry Fisher"
-                                },
-                                "wa_id": "5678"
-                            }
-                        ],
-                        "statuses": [{
-							"id": "external_id",
-							"recipient_id": "5678",
-							"status": "sent",
-							"timestamp": "1454119029",
-							"type": "message",
-							"conversation": {
-							  "id": "CONVERSATION_ID",
-							  "expiration_timestamp": 1454119029,
-							  "origin": {
-								 "type": "referral_conversion"
-							  }
-							},
-							"pricing": {
-							  "pricing_model": "CBP",
-							  "billable": false,
-							  "category": "referral_conversion"
-							}
-						   }]
-                    },
-                    "field": "messages"
-                }
-            ]
-        }
-    ]
-}`
-
-var invalidStatusCWA = `{
-    "object": "whatsapp_business_account",
-    "entry": [
-        {
-            "id": "8856996819413533",
-            "changes": [
-                {
-                    "value": {
-                        "messaging_product": "whatsapp",
-                        "metadata": {
-                            "display_phone_number": "12345",
-                            "phone_number_id": "27681414235104944"
-                        },
-                        "contacts": [
-                            {
-                                "profile": {
-                                    "name": "Kerry Fisher"
-                                },
-                                "wa_id": "5678"
-                            }
-                        ],
-                        "statuses": [{
-							"id": "external_id",
-							"recipient_id": "5678",
-							"status": "in_orbit",
-							"timestamp": "1454119029",
-							"type": "message",
-							"conversation": {
-							  "id": "CONVERSATION_ID",
-							  "expiration_timestamp": 1454119029,
-							  "origin": {
-								 "type": "referral_conversion"
-							  }
-							},
-							"pricing": {
-							  "pricing_model": "CBP",
-							  "billable": false,
-							  "category": "referral_conversion"
-							}
-						   }]
-                    },
-                    "field": "messages"
-                }
-            ]
-        }
-    ]
-}`
-
-var ignoreStatusCWA = `{
-    "object": "whatsapp_business_account",
-    "entry": [
-        {
-            "id": "8856996819413533",
-            "changes": [
-                {
-                    "value": {
-                        "messaging_product": "whatsapp",
-                        "metadata": {
-                            "display_phone_number": "12345",
-                            "phone_number_id": "27681414235104944"
-                        },
-                        "contacts": [
-                            {
-                                "profile": {
-                                    "name": "Kerry Fisher"
-                                },
-                                "wa_id": "5678"
-                            }
-                        ],
-                        "statuses": [{
-							"id": "external_id",
-							"recipient_id": "5678",
-							"status": "deleted",
-							"timestamp": "1454119029",
-							"type": "message",
-							"conversation": {
-							  "id": "CONVERSATION_ID",
-							  "expiration_timestamp": 1454119029,
-							  "origin": {
-								 "type": "referral_conversion"
-							  }
-							},
-							"pricing": {
-							  "pricing_model": "CBP",
-							  "billable": false,
-							  "category": "referral_conversion"
-							}
-						   }]
-                    },
-                    "field": "messages"
-                }
-            ]
-        }
-    ]
-}`
-
 var testCasesCWA = []ChannelHandleTestCase{
-	{Label: "Receive Message CWA", URL: cwaReceiveURL, Data: helloCWA, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Message CWA", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/helloCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Hello World"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Duplicate Valid Message", URL: cwaReceiveURL, Data: duplicatedMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Duplicate Valid Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/duplicateCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Hello World"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Valid Voice Message", URL: cwaReceiveURL, Data: voiceMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Valid Voice Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/voiceCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp(""), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Voice"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Valid Button Message", URL: cwaReceiveURL, Data: buttonMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Valid Button Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/buttonCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("No"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Valid Document Message", URL: cwaReceiveURL, Data: documentMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Valid Document Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/documentCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("80skaraokesonglistartist"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Document"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Valid Image Message", URL: cwaReceiveURL, Data: imageMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Valid Image Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/imageCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Image"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Valid Video Message", URL: cwaReceiveURL, Data: videoMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Valid Video Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/videoCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Video"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Valid Audio Message", URL: cwaReceiveURL, Data: audioMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Valid Audio Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/audioCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Audio"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Valid Location Message", URL: cwaReceiveURL, Data: locationMsg, Status: 200, Response: `"type":"msg"`,
+	{Label: "Receive Valid Location Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/locationCWA.json")), Status: 200, Response: `"type":"msg"`,
 		Text: Sp(""), Attachment: Sp("geo:0.000000,1.000000"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: invalidMsg, Status: 400, Response: "unable to parse", PrepRequest: addValidSignature},
-	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: invalidFrom, Status: 400, Response: "invalid whatsapp id", PrepRequest: addValidSignature},
-	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: invalidTimestamp, Status: 400, Response: "invalid timestamp", PrepRequest: addValidSignature},
+	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: "not json", Status: 400, Response: "unable to parse", PrepRequest: addValidSignature},
+	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/invalidFrom.json")), Status: 400, Response: "invalid whatsapp id", PrepRequest: addValidSignature},
+	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/invalidTimestamp.json")), Status: 400, Response: "invalid timestamp", PrepRequest: addValidSignature},
 
-	{Label: "Receive Valid Status", URL: cwaReceiveURL, Data: validStatusCWA, Status: 200, Response: `"type":"status"`,
+	{Label: "Receive Valid Status", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/validStatusCWA.json")), Status: 200, Response: `"type":"status"`,
 		MsgStatus: Sp("S"), ExternalID: Sp("external_id"), PrepRequest: addValidSignature},
-	{Label: "Receive Invalid Status", URL: cwaReceiveURL, Data: invalidStatusCWA, Status: 400, Response: `"unknown status: in_orbit"`, PrepRequest: addValidSignature},
-	{Label: "Receive Ignore Status", URL: cwaReceiveURL, Data: ignoreStatusCWA, Status: 200, Response: `"ignoring status: deleted"`, PrepRequest: addValidSignature},
+	{Label: "Receive Invalid Status", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/invalidStatusCWA.json")), Status: 400, Response: `"unknown status: in_orbit"`, PrepRequest: addValidSignature},
+	{Label: "Receive Ignore Status", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/ignoreStatusCWA.json")), Status: 200, Response: `"ignoring status: deleted"`, PrepRequest: addValidSignature},
 }
 
 func TestHandler(t *testing.T) {
