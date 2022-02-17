@@ -918,6 +918,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 // DescribeURN looks up URN metadata for new contacts
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
+	if channel.ChannelType() == "CWA" {
+		return map[string]string{}, nil
+
+	}
+
 	// can't do anything with facebook refs, ignore them
 	if urn.IsFacebookRef() {
 		return map[string]string{}, nil

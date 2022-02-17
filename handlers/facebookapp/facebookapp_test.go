@@ -193,6 +193,21 @@ func TestDescribeIG(t *testing.T) {
 	}
 }
 
+func TestDescribeCWA(t *testing.T) {
+	handler := newHandler("CWA", "Cloud API WhatsApp", false).(courier.URNDescriber)
+
+	tcs := []struct {
+		urn      urns.URN
+		metadata map[string]string
+	}{{"whatsapp:1337", map[string]string{}},
+		{"whatsapp:4567", map[string]string{}}}
+
+	for _, tc := range tcs {
+		metadata, _ := handler.DescribeURN(context.Background(), testChannelsCWA[0], tc.urn)
+		assert.Equal(t, metadata, tc.metadata)
+	}
+}
+
 var cwaReceiveURL = "/c/cwa/receive"
 
 var testCasesCWA = []ChannelHandleTestCase{
