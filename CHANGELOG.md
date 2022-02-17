@@ -1,3 +1,10 @@
+v7.1.17
+----------
+ * Fix whatsapp uploaded attachment file name
+ * Use deleted by sender visibity for message unsent on IG channels
+ * Add missing languages from whatsapp template
+ * Do not save any message when receiving IG story mentions
+
 v7.1.16
 ----------
  * Update to latest gocommon
