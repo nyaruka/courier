@@ -13,8 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -102,6 +104,7 @@ type cwaMessage struct {
 		Body string `json:"body"`
 	} `json:"text"`
 	Image    *cwaMedia    `json:"image"`
+	Audio    *cwaMedia    `json:"audio"`
 	Video    *cwaMedia    `json:"video"`
 	Document *cwaMedia    `json:"document"`
 	Voice    *cwaMedia    `json:"voice"`
@@ -225,8 +228,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	baseURL, _ := url.Parse(graphURL)
-
 	payload := &moPayload{}
 	err = handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -281,23 +282,25 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 				if msg.Type == "text" {
 					text = msg.Text.Body
+				} else if msg.Type == "audio" && msg.Audio != nil {
+					text = msg.Audio.Caption
+					mediaURL, err = resolveMediaURL(channel, msg.Audio.ID)
 				} else if msg.Type == "voice" && msg.Voice != nil {
-					mediaURL = fmt.Sprintf("%s%s", baseURL, msg.Voice.ID)
+					text = msg.Voice.Caption
+					mediaURL, err = resolveMediaURL(channel, msg.Voice.ID)
 				} else if msg.Type == "button" && msg.Button != nil {
 					text = msg.Button.Text
 				} else if msg.Type == "document" && msg.Document != nil {
 					text = msg.Document.Caption
-					mediaURL = fmt.Sprintf("%s%s", baseURL, msg.Document.ID)
+					mediaURL, err = resolveMediaURL(channel, msg.Document.ID)
 				} else if msg.Type == "image" && msg.Image != nil {
 					text = msg.Image.Caption
-					mediaURL = fmt.Sprintf("%s%s", baseURL, msg.Image.ID)
+					mediaURL, err = resolveMediaURL(channel, msg.Image.ID)
 				} else if msg.Type == "video" && msg.Video != nil {
 					text = msg.Video.Caption
-					mediaURL = fmt.Sprintf("%s%s", baseURL, msg.Video.ID)
+					mediaURL, err = resolveMediaURL(channel, msg.Video.ID)
 				} else if msg.Type == "location" && msg.Location != nil {
 					mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
-				} else if msg.Type == "voice" && msg.Voice != nil {
-					mediaURL = fmt.Sprintf("%s%s", baseURL, msg.Voice.ID)
 				} else {
 					// we received a message type we do not support.
 					courier.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", msg.Type))
@@ -363,6 +366,35 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	}
 
 	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
+}
+
+func setWhatsAppAuthHeader(header *http.Header, channel courier.Channel) {
+	authToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	header.Set("Authorization", fmt.Sprintf("Bearer %s", authToken))
+}
+
+func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
+	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	if token == "" {
+		return "", fmt.Errorf("missing token for WA channel")
+	}
+
+	base, _ := url.Parse(graphURL)
+	path, _ := url.Parse(fmt.Sprintf("/%s", mediaID))
+	retreiveURL := base.ResolveReference(path)
+
+	// set the access token as the authorization header
+	req, _ := http.NewRequest(http.MethodGet, retreiveURL.String(), nil)
+	//req.Header.Set("User-Agent", utils.HTTPUserAgent)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	resp, err := utils.MakeHTTPRequest(req)
+	if err != nil {
+		return "", err
+	}
+
+	mediaURL, err := jsonparser.GetString(resp.Body, "url")
+	return mediaURL, err
 }
 
 // see https://developers.facebook.com/docs/graph-api/webhooks/getting-started/#verification-requests

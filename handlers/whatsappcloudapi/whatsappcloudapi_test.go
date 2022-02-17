@@ -3,6 +3,8 @@ package whatsappcloudapi
 import (
 	"fmt"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -135,7 +137,7 @@ var voiceMsg = `{
 							"type": "voice",
 							"voice": {
 								"file": "/usr/local/wamedia/shared/463e/b7ec/ff4e4d9bb1101879cbd411b2",
-								"id": "463eb7ec-ff4e-4d9b-b110-1879cbd411b2",
+								"id": "id_voice",
 								"mime_type": "audio/ogg; codecs=opus",
 								"sha256": "fa9e1807d936b7cebe63654ea3a7912b1fa9479220258d823590521ef53b0710"}
 					  }]
@@ -221,7 +223,7 @@ var documentMsg = `{
 							"document": {
 							  "caption": "80skaraokesonglistartist",
 									"file": "/usr/local/wamedia/shared/fc233119-733f-49c-bcbd-b2f68f798e33",
-									"id": "fc233119-733f-49c-bcbd-b2f68f798e33",
+									"id": "id_document",
 									"mime_type": "application/pdf",
 									"sha256": "3b11fa6ef2bde1dd14726e09d3edaf782120919d06f6484f32d5d5caa4b8e"
 								}
@@ -260,7 +262,7 @@ var imageMsg = `{
 							"id": "external_id",
 							"image": {
 								"file": "/usr/local/wamedia/shared/b1cf38-8734-4ad3-b4a1-ef0c10d0d683",
-								"id": "b1c68f38-8734-4ad3-b4a1-ef0c10d683",
+								"id": "id_image",
 								"mime_type": "image/jpeg",
 								"sha256": "29ed500fa64eb55fc19dc4124acb300e5dcc54a0f822a301ae99944db",
 								"caption": "Check out my new phone!"
@@ -302,13 +304,55 @@ var videoMsg = `{
 							"id": "external_id",
 							"video": {
 								"file": "/usr/local/wamedia/shared/b1cf38-8734-4ad3-b4a1-ef0c10d0d683",
-								"id": "b1c68f38-8734-4ad3-b4a1-ef0c10d683",
+								"id": "id_video",
 								"mime_type": "image/jpeg",
 								"sha256": "29ed500fa64eb55fc19dc4124acb300e5dcc54a0f822a301ae99944db",
 								"caption": "Check out my new phone!"
 							},
 							"timestamp": "1454119029",
 							"type": "video"
+						}]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}`
+
+var audioMsg = `{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "8856996819413533",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "12345",
+                            "phone_number_id": "27681414235104944"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Kerry Fisher"
+                                },
+                                "wa_id": "5678"
+                            }
+                        ],
+						"messages": [{
+							"from": "5678",
+							"id": "external_id",
+							"audio": {
+								"file": "/usr/local/wamedia/shared/b1cf38-8734-4ad3-b4a1-ef0c10d0d683",
+								"id": "id_audio",
+								"mime_type": "image/jpeg",
+								"sha256": "29ed500fa64eb55fc19dc4124acb300e5dcc54a0f822a301ae99944db",
+								"caption": "Check out my new phone!"
+							},
+							"timestamp": "1454119029",
+							"type": "audio"
 						}]
                     },
                     "field": "messages"
@@ -594,7 +638,7 @@ var testCasesCWA = []ChannelHandleTestCase{
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive Valid Voice Message", URL: cwaReceiveURL, Data: voiceMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		Text: Sp(""), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://graph.facebook.com/v13.0/463eb7ec-ff4e-4d9b-b110-1879cbd411b2"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		Text: Sp(""), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Voice"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive Valid Button Message", URL: cwaReceiveURL, Data: buttonMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
@@ -602,13 +646,16 @@ var testCasesCWA = []ChannelHandleTestCase{
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive Valid Document Message", URL: cwaReceiveURL, Data: documentMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		Text: Sp("80skaraokesonglistartist"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://graph.facebook.com/v13.0/fc233119-733f-49c-bcbd-b2f68f798e33"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		Text: Sp("80skaraokesonglistartist"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Document"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Image Message", URL: cwaReceiveURL, Data: imageMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://graph.facebook.com/v13.0/b1c68f38-8734-4ad3-b4a1-ef0c10d683"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Image"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Video Message", URL: cwaReceiveURL, Data: videoMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://graph.facebook.com/v13.0/b1c68f38-8734-4ad3-b4a1-ef0c10d683"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Video"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Valid Audio Message", URL: cwaReceiveURL, Data: audioMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Audio"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Location Message", URL: cwaReceiveURL, Data: locationMsg, Status: 200, Response: `"type":"msg"`,
 		Text: Sp(""), Attachment: Sp("geo:0.000000,1.000000"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
@@ -635,6 +682,48 @@ func addInvalidSignature(r *http.Request) {
 }
 
 func TestHandler(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		accessToken := r.Header.Get("Authorization")
+		defer r.Body.Close()
+
+		// invalid auth token
+		if accessToken != "Bearer a123" {
+			fmt.Printf("Access token: %s\n", accessToken)
+			http.Error(w, "invalid auth token", 403)
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "image") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Image"}`))
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "audio") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Audio"}`))
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "voice") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Voice"}`))
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "video") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Video"}`))
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "document") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Document"}`))
+			return
+		}
+
+		// valid token
+		w.Write([]byte(`{"url": "https://foo.bar/attachmentURL"}`))
+
+	}))
+	graphURL = server.URL
+
 	RunChannelTestCases(t, testChannelsCWA, newHandler("CWA", "Cloud API WhatsApp", false), testCasesCWA)
 }
 
