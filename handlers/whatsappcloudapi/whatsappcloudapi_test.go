@@ -276,6 +276,48 @@ var imageMsg = `{
     ]
 }`
 
+var videoMsg = `{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "8856996819413533",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "12345",
+                            "phone_number_id": "27681414235104944"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Kerry Fisher"
+                                },
+                                "wa_id": "5678"
+                            }
+                        ],
+						"messages": [{
+							"from": "5678",
+							"id": "external_id",
+							"video": {
+								"file": "/usr/local/wamedia/shared/b1cf38-8734-4ad3-b4a1-ef0c10d0d683",
+								"id": "b1c68f38-8734-4ad3-b4a1-ef0c10d683",
+								"mime_type": "image/jpeg",
+								"sha256": "29ed500fa64eb55fc19dc4124acb300e5dcc54a0f822a301ae99944db",
+								"caption": "Check out my new phone!"
+							},
+							"timestamp": "1454119029",
+							"type": "video"
+						}]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}`
+
 var locationMsg = `{
     "object": "whatsapp_business_account",
     "entry": [
@@ -563,6 +605,9 @@ var testCasesCWA = []ChannelHandleTestCase{
 		Text: Sp("80skaraokesonglistartist"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://graph.facebook.com/v13.0/fc233119-733f-49c-bcbd-b2f68f798e33"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Image Message", URL: cwaReceiveURL, Data: imageMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://graph.facebook.com/v13.0/b1c68f38-8734-4ad3-b4a1-ef0c10d683"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Valid Video Message", URL: cwaReceiveURL, Data: videoMsg, Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://graph.facebook.com/v13.0/b1c68f38-8734-4ad3-b4a1-ef0c10d683"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Location Message", URL: cwaReceiveURL, Data: locationMsg, Status: 200, Response: `"type":"msg"`,

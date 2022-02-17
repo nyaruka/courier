@@ -102,6 +102,7 @@ type cwaMessage struct {
 		Body string `json:"body"`
 	} `json:"text"`
 	Image    *cwaMedia    `json:"image"`
+	Video    *cwaMedia    `json:"video"`
 	Document *cwaMedia    `json:"document"`
 	Voice    *cwaMedia    `json:"voice"`
 	Location *cwaLocation `json:"location"`
@@ -290,6 +291,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 				} else if msg.Type == "image" && msg.Image != nil {
 					text = msg.Image.Caption
 					mediaURL = fmt.Sprintf("%s%s", baseURL, msg.Image.ID)
+				} else if msg.Type == "video" && msg.Video != nil {
+					text = msg.Video.Caption
+					mediaURL = fmt.Sprintf("%s%s", baseURL, msg.Video.ID)
 				} else if msg.Type == "location" && msg.Location != nil {
 					mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
 				} else if msg.Type == "voice" && msg.Voice != nil {
