@@ -662,20 +662,34 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	base, _ := url.Parse(graphURL)
 	path, _ := url.Parse(fmt.Sprintf("/%s", urn.Path()))
 	u := base.ResolveReference(path)
-
 	query := url.Values{}
-	query.Set("access_token", accessToken)
-	u.RawQuery = query.Encode()
-	req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
-	rr, err := utils.MakeHTTPRequest(req)
-	if err != nil {
-		return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
+
+	if fmt.Sprint(channel.ChannelType()) == "FBA" {
+		query.Set("fields", "first_name,last_name")
+		query.Set("access_token", accessToken)
+
+		u.RawQuery = query.Encode()
+		req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
+		rr, err := utils.MakeHTTPRequest(req)
+		if err != nil {
+			return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
+		}
+		// read our first and last name
+		firstName, _ := jsonparser.GetString(rr.Body, "first_name")
+		lastName, _ := jsonparser.GetString(rr.Body, "last_name")
+		return map[string]string{"name": utils.JoinNonEmpty(" ", firstName, lastName)}, nil
+	} else {
+		query.Set("access_token", accessToken)
+		u.RawQuery = query.Encode()
+		req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
+		rr, err := utils.MakeHTTPRequest(req)
+		if err != nil {
+			return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
+		}
+		// read our name
+		name, _ := jsonparser.GetString(rr.Body, "name")
+		return map[string]string{"name": name}, nil
 	}
-
-	// read our name
-	name, _ := jsonparser.GetString(rr.Body, "name")
-
-	return map[string]string{"name": name}, nil
 }
 
 // see https://developers.facebook.com/docs/messenger-platform/webhook#security
