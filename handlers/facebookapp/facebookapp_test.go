@@ -800,7 +800,31 @@ func addInvalidSignature(r *http.Request) {
 }
 
 // mocks the call to the Facebook graph API
-func buildMockFBGraph(testCases []ChannelHandleTestCase) *httptest.Server {
+func buildMockFBGraphFBA(testCases []ChannelHandleTestCase) *httptest.Server {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		accessToken := r.URL.Query().Get("access_token")
+		defer r.Body.Close()
+
+		// invalid auth token
+		if accessToken != "a123" {
+			http.Error(w, "invalid auth token", 403)
+		}
+
+		// user has a name
+		if strings.HasSuffix(r.URL.Path, "1337") {
+			w.Write([]byte(`{ "first_name": "John", "last_name": "Doe"}`))
+			return
+		}
+		// no name
+		w.Write([]byte(`{ "first_name": "", "last_name": ""}`))
+	}))
+	graphURL = server.URL
+
+	return server
+}
+
+// mocks the call to the Facebook graph API
+func buildMockFBGraphIG(testCases []ChannelHandleTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		accessToken := r.URL.Query().Get("access_token")
 		defer r.Body.Close()
@@ -824,8 +848,9 @@ func buildMockFBGraph(testCases []ChannelHandleTestCase) *httptest.Server {
 	return server
 }
 
+
 func TestDescribeFBA(t *testing.T) {
-	fbGraph := buildMockFBGraph(testCasesFBA)
+	fbGraph := buildMockFBGraphFBA(testCasesFBA)
 	defer fbGraph.Close()
 
 	handler := newHandler("FBA", "Facebook", false).(courier.URNDescriber)
@@ -843,7 +868,7 @@ func TestDescribeFBA(t *testing.T) {
 }
 
 func TestDescribeIG(t *testing.T) {
-	fbGraph := buildMockFBGraph(testCasesIG)
+	fbGraph := buildMockFBGraphIG(testCasesIG)
 	defer fbGraph.Close()
 
 	handler := newHandler("IG", "Instagram", false).(courier.URNDescriber)
@@ -866,12 +891,12 @@ func TestHandler(t *testing.T) {
 }
 
 func BenchmarkHandler(b *testing.B) {
-	fbService := buildMockFBGraph(testCasesFBA)
+	fbService := buildMockFBGraphFBA(testCasesFBA)
 
 	RunChannelBenchmarks(b, testChannelsFBA, newHandler("FBA", "Facebook", false), testCasesFBA)
 	fbService.Close()
 
-	fbServiceIG := buildMockFBGraph(testCasesIG)
+	fbServiceIG := buildMockFBGraphIG(testCasesIG)
 
 	RunChannelBenchmarks(b, testChannelsIG, newHandler("IG", "Instagram", false), testCasesIG)
 	fbServiceIG.Close()
