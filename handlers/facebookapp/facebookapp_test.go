@@ -590,7 +590,7 @@ var unsentMsgIG = `{
 				"timestamp":1569262485349,
 				"message":{
 				   "mid":"external_id",
-				   "is_deleted":"true"
+				   "is_deleted": true
 				}
 			 }
 		  ]
@@ -847,7 +847,6 @@ func buildMockFBGraphIG(testCases []ChannelHandleTestCase) *httptest.Server {
 
 	return server
 }
-
 
 func TestDescribeFBA(t *testing.T) {
 	fbGraph := buildMockFBGraphFBA(testCasesFBA)
