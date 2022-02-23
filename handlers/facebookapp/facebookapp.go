@@ -142,7 +142,7 @@ type moPayload struct {
 				IsEcho      bool   `json:"is_echo"`
 				MID         string `json:"mid"`
 				Text        string `json:"text"`
-				IsDeleted   string `json:"is_deleted"`
+				IsDeleted   bool   `json:"is_deleted"`
 				Attachments []struct {
 					Type    string `json:"type"`
 					Payload *struct {
@@ -385,7 +385,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 				continue
 			}
 
-			if msg.Message.IsDeleted == "true" {
+			if msg.Message.IsDeleted {
 				h.Backend().DeleteMsgWithExternalID(ctx, channel, msg.Message.MID)
 				data = append(data, courier.NewInfoData("msg deleted"))
 				continue
@@ -691,18 +691,18 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	if err != nil {
 		return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
 	}
-	
+
 	// read our first and last name	or complete name
 	if fmt.Sprint(channel.ChannelType()) == "FBA" {
 		firstName, _ := jsonparser.GetString(rr.Body, "first_name")
 		lastName, _ := jsonparser.GetString(rr.Body, "last_name")
 		name = utils.JoinNonEmpty(" ", firstName, lastName)
-	}else{
+	} else {
 		name, _ = jsonparser.GetString(rr.Body, "name")
 	}
-	
+
 	return map[string]string{"name": name}, nil
-	
+
 }
 
 // see https://developers.facebook.com/docs/messenger-platform/webhook#security
