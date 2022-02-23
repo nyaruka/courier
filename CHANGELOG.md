@@ -1,3 +1,8 @@
+v7.1.18
+----------
+ * Fix type for IsDeleted field for IG unsend events
+ * Fix metadata fetching for new Facebook contacts
+
 v7.1.17
 ----------
  * Fix whatsapp uploaded attachment file name
