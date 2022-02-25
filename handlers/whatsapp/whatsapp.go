@@ -1046,7 +1046,7 @@ func hasTiersError(payload mtErrorPayload) bool {
 
 func hasWhatsAppContactError(payload mtErrorPayload) bool {
 	for _, err := range payload.Errors {
-		if err.Code == 1006 && err.Title == "Resource not found" && err.Details == "unknown contact" {
+		if err.Code == 1006 && err.Title == "Resource not found" && (err.Details == "unknown contact" || err.Details == "Could not retrieve phone number from contact store") {
 			return true
 		}
 	}
