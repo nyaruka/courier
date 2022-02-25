@@ -1,3 +1,7 @@
+v7.1.19
+----------
+ * Update D3 handler to support check for whatsapp contact not in contact store
+
 v7.1.18
 ----------
  * Fix type for IsDeleted field for IG unsend events
