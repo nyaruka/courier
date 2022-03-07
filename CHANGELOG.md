@@ -1,3 +1,7 @@
+v7.2.0
+----------
+ * CI testing with go 1.17.7
+
 v7.1.19
 ----------
  * Update D3 handler to support check for whatsapp contact not in contact store
