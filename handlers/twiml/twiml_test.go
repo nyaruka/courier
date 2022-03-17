@@ -60,6 +60,8 @@ var (
 	receiveMediaWithMsg  = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=2&ToCity=&Body=Msg&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01&MediaUrl0=cat.jpg&MediaUrl1=dog.jpg"
 	receiveBase64        = "ToCountry=US&ToState=District+Of+Columbia&SmsMessageSid=SMe287d7109a5a925f182f0e07fe5b223b&NumMedia=0&ToCity=&FromZip=01022&SmsSid=SMe287d7109a5a925f182f0e07fe5b223b&FromState=MA&SmsStatus=received&FromCity=CHICOPEE&Body=QmFubm9uIEV4cGxhaW5zIFRoZSBXb3JsZCAuLi4K4oCcVGhlIENhbXAgb2YgdGhlIFNhaW50c%2BKA&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
 
+	statusStop = "ErrorCode=21610&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=failed&To=%2B12028831111"
+
 	statusInvalid = "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=huh"
 	statusValid   = "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=delivered"
 	statusRead    = "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=read"
@@ -92,6 +94,8 @@ var testCases = []ChannelHandleTestCase{
 		PrepRequest: addValidSignature},
 	{Label: "Receive Base64", URL: receiveURL, Data: receiveBase64, Status: 200, Response: "<Response/>",
 		Text: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
+		PrepRequest: addValidSignature},
+	{Label: "Status Stop contact", URL: statusURL, Data: statusStop, Status: 200, Response: `"status":"F"`,
 		PrepRequest: addValidSignature},
 	{Label: "Status No Params", URL: statusURL, Data: " ", Status: 200, Response: "no msg status, ignoring",
 		PrepRequest: addValidSignature},
@@ -127,6 +131,8 @@ var tmsTestCases = []ChannelHandleTestCase{
 		PrepRequest: addValidSignature},
 	{Label: "Receive Base64", URL: tmsReceiveURL, Data: receiveBase64, Status: 200, Response: "<Response/>",
 		Text: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
+		PrepRequest: addValidSignature},
+	{Label: "Status Stop contact", URL: tmsStatusURL, Data: statusStop, Status: 200, Response: `"status":"F"`,
 		PrepRequest: addValidSignature},
 	{Label: "Status TMS extra", URL: tmsStatusURL, Data: tmsStatusExtra, Status: 200, Response: `"status":"S"`,
 		ExternalID: Sp("SM0b6e2697aae04182a9f5b5c7a8994c7f"), PrepRequest: addValidSignature},
@@ -165,6 +171,8 @@ var twTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Base64", URL: twReceiveURL, Data: receiveBase64, Status: 200, Response: "<Response/>",
 		Text: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"),
 		PrepRequest: addValidSignature},
+	{Label: "Status Stop contact", URL: twStatusURL, Data: statusStop, Status: 200, Response: `"status":"F"`,
+		PrepRequest: addValidSignature},
 	{Label: "Status No Params", URL: twStatusURL, Data: " ", Status: 200, Response: "no msg status, ignoring",
 		PrepRequest: addValidSignature},
 	{Label: "Status Invalid Status", URL: twStatusURL, Data: statusInvalid, Status: 400, Response: "unknown status 'huh'",
@@ -187,6 +195,8 @@ var swTestCases = []ChannelHandleTestCase{
 		Text: Sp("Msg"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b"), Attachments: []string{"cat.jpg", "dog.jpg"}},
 	{Label: "Receive Base64", URL: swReceiveURL, Data: receiveBase64, Status: 200, Response: "<Response/>",
 		Text: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), URN: Sp("tel:+14133881111"), ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b")},
+	{Label: "Status Stop contact", URL: swStatusURL, Data: statusStop, Status: 200, Response: `"status":"F"`,
+		PrepRequest: addValidSignature},
 	{Label: "Status No Params", URL: swStatusURL, Data: " ", Status: 200, Response: "no msg status, ignoring"},
 	{Label: "Status Invalid Status", URL: swStatusURL, Data: statusInvalid, Status: 400, Response: "unknown status 'huh'"},
 	{Label: "Status Valid", URL: swStatusURL, Data: statusValid, Status: 200, Response: `"status":"D"`, ExternalID: Sp("SMe287d7109a5a925f182f0e07fe5b223b")},

@@ -87,6 +87,7 @@ type statusForm struct {
 	MessageSID    string `validate:"required"`
 	MessageStatus string `validate:"required"`
 	ErrorCode     string
+	To            string
 }
 
 var statusMapping = map[string]courier.MsgStatusValue{
@@ -195,6 +196,18 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	if status == nil {
 		status = h.Backend().NewMsgStatusForExternalID(channel, form.MessageSID, msgStatus)
 	}
+
+	errorCode, _ := strconv.ParseInt(form.ErrorCode, 10, 64)
+	if errorCode == errorStopped {
+		// create a stop channel event
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urns.URN(form.To))
+		err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+		if err != nil {
+			return nil, err
+		}
+
+	}
+
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
