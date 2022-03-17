@@ -29,6 +29,8 @@ var (
 
 	signatureHeader = "X-Hub-Signature"
 
+	configCWAPhoneNumberID = "cwa_phone_number_id"
+
 	// max for the body
 	maxMsgLength = 1000
 
@@ -771,6 +773,16 @@ type mtQuickReply struct {
 }
 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+	if msg.Channel().ChannelType() == "FBA" || msg.Channel().ChannelType() == "IG" {
+		return h.sendFacebookInstagramMsg(ctx, msg)
+	} else if msg.Channel().ChannelType() == "CWA" {
+		return h.sendCloudAPIWhatsappMsg(ctx, msg)
+	}
+
+	return nil, fmt.Errorf("unssuported channel type")
+}
+
+func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	// can't do anything without an access token
 	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if accessToken == "" {
@@ -913,6 +925,141 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		status.SetStatus(courier.MsgWired)
 	}
 
+	return status, nil
+}
+
+type cwaMTMedia struct {
+	ID       string `json:"id"`
+	Link     string `json:"link"`
+	Caption  string `json:"caption"`
+	Filename string `json:"filename"`
+}
+
+type cwaMTPayload struct {
+	MessagingProduct string `json:"messaging_product"`
+	PreviewURL       bool   `json:"preview_url"`
+	RecipientType    string `json:"recipient_type"`
+	To               string `json:"to"`
+	Type             string `json:"type"`
+
+	Text *struct {
+		Body string `json:"body"`
+	} `json:"text"`
+
+	Document *cwaMTMedia `json:"document"`
+	Image    *cwaMTMedia `json:"image"`
+	Audio    *cwaMTMedia `json:"audio"`
+	Video    *cwaMTMedia `json:"video"`
+
+	Template *struct {
+		Name     string `json:"name"`
+		Language *struct {
+			Policy string `json:"policy"`
+			Code   string `json:"code"`
+		} `json:"language"`
+		Components []*struct {
+			Type    string `json:"type"`
+			SubType string `json:"sub_type"`
+			Index   string `json:"index"`
+			Params  []*struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			}
+		}
+	}
+}
+
+type cwaMTResponse struct {
+	Messages []*struct {
+		ID string `json:"id"`
+	} `json:"messages"`
+}
+
+func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+	// can't do anything without an access token
+	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	if accessToken == "" {
+		return nil, fmt.Errorf("missing access token")
+	}
+
+	phoneNumberId := msg.Channel().StringConfigForKey(configCWAPhoneNumberID, "")
+	if phoneNumberId == "" {
+		return nil, fmt.Errorf("missing CWA phone number ID")
+	}
+
+	base, _ := url.Parse(graphURL)
+	path, _ := url.Parse(fmt.Sprintf("/%s/messages", phoneNumberId))
+	cwaPhoneURL := base.ResolveReference(path)
+
+	payload := cwaMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
+
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+
+	msgParts := make([]string, 0)
+	if msg.Text() != "" {
+		msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
+	}
+	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
+		if i < len(msg.Attachments()) {
+			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
+			attType = strings.Split(attType, "/")[0]
+			if attType == "application" {
+				attType = "document"
+			}
+			payload.Type = attType
+			media := cwaMTMedia{Link: attURL}
+
+			if attType == "image" {
+				payload.Image = &media
+			} else if attType == "audio" {
+				payload.Audio = &media
+			} else if attType == "video" {
+				payload.Video = &media
+			} else if attType == "document" {
+				payload.Document = &media
+			}
+		} else {
+			// this is still a msg part
+			payload.Type = "text"
+			payload.Text.Body = msgParts[i-len(msg.Attachments())]
+		}
+
+		jsonBody, err := json.Marshal(payload)
+		if err != nil {
+			return status, err
+		}
+
+		req, err := http.NewRequest(http.MethodPost, cwaPhoneURL.String(), bytes.NewReader(jsonBody))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
+
+		rr, err := utils.MakeHTTPRequest(req)
+
+		// record our status and log
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
+		if err != nil {
+			return status, nil
+		}
+
+		respPayload := &cwaMTResponse{}
+		err = json.Unmarshal(rr.Body, respPayload)
+		if err != nil {
+			log.WithError("Message Send Error", errors.Errorf("unable to unmarshal response body"))
+			return status, nil
+		}
+		externalID := respPayload.Messages[0].ID
+		if i == 0 && externalID != "" {
+			status.SetExternalID(externalID)
+		}
+		// this was wired successfully
+		status.SetStatus(courier.MsgWired)
+
+	}
 	return status, nil
 }
 
