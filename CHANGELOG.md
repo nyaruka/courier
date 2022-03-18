@@ -1,3 +1,7 @@
+v7.3.0
+----------
+ * Support stopping contacts when we get stop events on status callbacks
+
 v7.2.0
 ----------
  * CI testing with go 1.17.7
