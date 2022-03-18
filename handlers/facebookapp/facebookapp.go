@@ -935,6 +935,37 @@ type cwaMTMedia struct {
 	Filename string `json:"filename"`
 }
 
+type cwaMTSection struct {
+	Title string            `json:"title,omitempty"`
+	Rows  []cwaMTSectionRow `json:"rows" validate:"required"`
+}
+
+type cwaMTSectionRow struct {
+	ID          string `json:"id" validate:"required"`
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+type cwaMTButton struct {
+	Type  string `json:"type" validate:"required"`
+	Reply struct {
+		ID    string `json:"id" validate:"required"`
+		Title string `json:"title" validate:"required"`
+	} `json:"reply" validate:"required"`
+}
+
+type cwaParam struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+type cwaComponent struct {
+	Type    string      `json:"type"`
+	SubType string      `json:"sub_type"`
+	Index   string      `json:"index"`
+	Params  []*cwaParam `json:"parameters"`
+}
+
 type cwaMTPayload struct {
 	MessagingProduct string `json:"messaging_product"`
 	PreviewURL       bool   `json:"preview_url"`
@@ -951,21 +982,35 @@ type cwaMTPayload struct {
 	Audio    *cwaMTMedia `json:"audio"`
 	Video    *cwaMTMedia `json:"video"`
 
+	Interactive *struct {
+		Type   string `json:"type"`
+		Header *struct {
+			Type     string `json:"type"`
+			Text     string `json:"text,omitempty"`
+			Video    string `json:"video,omitempty"`
+			Image    string `json:"image,omitempty"`
+			Document string `json:"document,omitempty"`
+		} `json:"header,omitempty"`
+		Body struct {
+			Text string `json:"text"`
+		} `json:"body" validate:"required"`
+		Footer *struct {
+			Text string `json:"text"`
+		} `json:"footer,omitempty"`
+		Action *struct {
+			Button   string         `json:"button,omitempty"`
+			Sections []cwaMTSection `json:"sections,omitempty"`
+			Buttons  []cwaMTButton  `json:"buttons,omitempty"`
+		} `json:"action"`
+	} `json:"interactive"`
+
 	Template *struct {
 		Name     string `json:"name"`
 		Language *struct {
 			Policy string `json:"policy"`
 			Code   string `json:"code"`
 		} `json:"language"`
-		Components []*struct {
-			Type    string `json:"type"`
-			SubType string `json:"sub_type"`
-			Index   string `json:"index"`
-			Params  []*struct {
-				Type string `json:"type"`
-				Text string `json:"text"`
-			}
-		}
+		Components []*cwaComponent `json:"components"`
 	}
 }
 
@@ -991,16 +1036,86 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 	path, _ := url.Parse(fmt.Sprintf("/%s/messages", phoneNumberId))
 	cwaPhoneURL := base.ResolveReference(path)
 
-	payload := cwaMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
-
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	}
+	qrs := msg.QuickReplies()
+
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
-		if i < len(msg.Attachments()) {
+		payload := cwaMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
+
+		if len(msg.Attachments()) == 0 {
+			// do we have a template?
+			var templating *MsgTemplating
+			templating, err := h.getTemplate(msg)
+			if err != nil {
+				return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
+			}
+			if templating != nil {
+
+				payload.Type = "template"
+				payload.Template.Name = templating.Template.Name
+				payload.Template.Language.Policy = "deterministic"
+				payload.Template.Language.Code = templating.Language
+
+				component := &cwaComponent{Type: "body"}
+
+				for _, v := range templating.Variables {
+					component.Params = append(component.Params, &cwaParam{Type: "text", Text: v})
+				}
+				payload.Template.Components = append(payload.Template.Components, component)
+			} else {
+				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
+					// this is still a msg part
+					payload.Type = "text"
+					payload.Text.Body = msgParts[i-len(msg.Attachments())]
+				} else {
+					if len(qrs) > 0 {
+						payload.Type = "interactive"
+						// We can use buttons
+						if len(qrs) <= 3 {
+							payload.Interactive.Type = "button"
+							payload.Interactive.Body.Text = msgParts[i-len(msg.Attachments())]
+							btns := make([]cwaMTButton, len(qrs))
+							for i, qr := range qrs {
+								btns[i] = cwaMTButton{
+									Type: "reply",
+								}
+								btns[i].Reply.ID = fmt.Sprint(i)
+								btns[i].Reply.Title = qr
+							}
+							payload.Interactive.Action.Buttons = btns
+						} else if len(qrs) <= 10 {
+							payload.Interactive.Type = "list"
+							payload.Interactive.Body.Text = msgParts[i-len(msg.Attachments())]
+							payload.Interactive.Action.Button = "Menu"
+							section := cwaMTSection{
+								Rows: make([]cwaMTSectionRow, len(qrs)),
+							}
+							for i, qr := range qrs {
+								section.Rows[i] = cwaMTSectionRow{
+									ID:    fmt.Sprint(i),
+									Title: qr,
+								}
+							}
+							payload.Interactive.Action.Sections = []cwaMTSection{
+								section,
+							}
+						} else {
+							return nil, fmt.Errorf("too many quick replies CWA supports only up to 10 quick replies")
+						}
+					} else {
+						// this is still a msg part
+						payload.Type = "text"
+						payload.Text.Body = msgParts[i-len(msg.Attachments())]
+					}
+				}
+			}
+
+		} else if i < len(msg.Attachments()) {
 			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
 			attType = strings.Split(attType, "/")[0]
 			if attType == "application" {
@@ -1019,9 +1134,52 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 				payload.Document = &media
 			}
 		} else {
-			// this is still a msg part
-			payload.Type = "text"
-			payload.Text.Body = msgParts[i-len(msg.Attachments())]
+			if i < (len(msgParts) + len(msg.Attachments()) - 1) {
+				// this is still a msg part
+				payload.Type = "text"
+				payload.Text.Body = msgParts[i-len(msg.Attachments())]
+			} else {
+				if len(qrs) > 0 {
+					payload.Type = "interactive"
+					// We can use buttons
+					if len(qrs) <= 3 {
+						payload.Interactive.Type = "button"
+						payload.Interactive.Body.Text = msgParts[i-len(msg.Attachments())]
+						btns := make([]cwaMTButton, len(qrs))
+						for i, qr := range qrs {
+							btns[i] = cwaMTButton{
+								Type: "reply",
+							}
+							btns[i].Reply.ID = fmt.Sprint(i)
+							btns[i].Reply.Title = qr
+						}
+						payload.Interactive.Action.Buttons = btns
+					} else if len(qrs) <= 10 {
+						payload.Interactive.Type = "list"
+						payload.Interactive.Body.Text = msgParts[i-len(msg.Attachments())]
+						payload.Interactive.Action.Button = "Menu"
+						section := cwaMTSection{
+							Rows: make([]cwaMTSectionRow, len(qrs)),
+						}
+						for i, qr := range qrs {
+							section.Rows[i] = cwaMTSectionRow{
+								ID:    fmt.Sprint(i),
+								Title: qr,
+							}
+						}
+						payload.Interactive.Action.Sections = []cwaMTSection{
+							section,
+						}
+					} else {
+						return nil, fmt.Errorf("too many quick replies CWA supports only up to 10 quick replies")
+					}
+				} else {
+					// this is still a msg part
+					payload.Type = "text"
+					payload.Text.Body = msgParts[i-len(msg.Attachments())]
+				}
+			}
+
 		}
 
 		jsonBody, err := json.Marshal(payload)
@@ -1140,4 +1298,131 @@ func fbCalculateSignature(appSecret string, body []byte) (string, error) {
 	mac.Write(buffer.Bytes())
 
 	return hex.EncodeToString(mac.Sum(nil)), nil
+}
+
+func (h *handler) getTemplate(msg courier.Msg) (*MsgTemplating, error) {
+	mdJSON := msg.Metadata()
+	if len(mdJSON) == 0 {
+		return nil, nil
+	}
+	metadata := &TemplateMetadata{}
+	err := json.Unmarshal(mdJSON, metadata)
+	if err != nil {
+		return nil, err
+	}
+	templating := metadata.Templating
+	if templating == nil {
+		return nil, nil
+	}
+
+	// check our template is valid
+	err = handlers.Validate(templating)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid templating definition")
+	}
+	// check country
+	if templating.Country != "" {
+		templating.Language = fmt.Sprintf("%s_%s", templating.Language, templating.Country)
+	}
+
+	// map our language from iso639-3_iso3166-2 to the WA country / iso638-2 pair
+	language, found := languageMap[templating.Language]
+	if !found {
+		return nil, fmt.Errorf("unable to find mapping for language: %s", templating.Language)
+	}
+	templating.Language = language
+
+	return templating, err
+}
+
+type TemplateMetadata struct {
+	Templating *MsgTemplating `json:"templating"`
+}
+
+type MsgTemplating struct {
+	Template struct {
+		Name string `json:"name" validate:"required"`
+		UUID string `json:"uuid" validate:"required"`
+	} `json:"template" validate:"required,dive"`
+	Language  string   `json:"language" validate:"required"`
+	Country   string   `json:"country"`
+	Namespace string   `json:"namespace"`
+	Variables []string `json:"variables"`
+}
+
+// mapping from iso639-3_iso3166-2 to WA language code
+var languageMap = map[string]string{
+	"afr":    "af",    // Afrikaans
+	"sqi":    "sq",    // Albanian
+	"ara":    "ar",    // Arabic
+	"aze":    "az",    // Azerbaijani
+	"ben":    "bn",    // Bengali
+	"bul":    "bg",    // Bulgarian
+	"cat":    "ca",    // Catalan
+	"zho":    "zh_CN", // Chinese
+	"zho_CN": "zh_CN", // Chinese (CHN)
+	"zho_HK": "zh_HK", // Chinese (HKG)
+	"zho_TW": "zh_TW", // Chinese (TAI)
+	"hrv":    "hr",    // Croatian
+	"ces":    "cs",    // Czech
+	"dah":    "da",    // Danish
+	"nld":    "nl",    // Dutch
+	"eng":    "en",    // English
+	"eng_GB": "en_GB", // English (UK)
+	"eng_US": "en_US", // English (US)
+	"est":    "et",    // Estonian
+	"fil":    "fil",   // Filipino
+	"fin":    "fi",    // Finnish
+	"fra":    "fr",    // French
+	"kat":    "ka",    // Georgian
+	"deu":    "de",    // German
+	"ell":    "el",    // Greek
+	"guj":    "gu",    // Gujarati
+	"hau":    "ha",    // Hausa
+	"enb":    "he",    // Hebrew
+	"hin":    "hi",    // Hindi
+	"hun":    "hu",    // Hungarian
+	"ind":    "id",    // Indonesian
+	"gle":    "ga",    // Irish
+	"ita":    "it",    // Italian
+	"jpn":    "ja",    // Japanese
+	"kan":    "kn",    // Kannada
+	"kaz":    "kk",    // Kazakh
+	"kin":    "rw_RW", // Kinyarwanda
+	"kor":    "ko",    // Korean
+	"kir":    "ky_KG", // Kyrgyzstan
+	"lao":    "lo",    // Lao
+	"lav":    "lv",    // Latvian
+	"lit":    "lt",    // Lithuanian
+	"mal":    "ml",    // Malayalam
+	"mkd":    "mk",    // Macedonian
+	"msa":    "ms",    // Malay
+	"mar":    "mr",    // Marathi
+	"nob":    "nb",    // Norwegian
+	"fas":    "fa",    // Persian
+	"pol":    "pl",    // Polish
+	"por":    "pt_PT", // Portuguese
+	"por_BR": "pt_BR", // Portuguese (BR)
+	"por_PT": "pt_PT", // Portuguese (POR)
+	"pan":    "pa",    // Punjabi
+	"ron":    "ro",    // Romanian
+	"rus":    "ru",    // Russian
+	"srp":    "sr",    // Serbian
+	"slk":    "sk",    // Slovak
+	"slv":    "sl",    // Slovenian
+	"spa":    "es",    // Spanish
+	"spa_AR": "es_AR", // Spanish (ARG)
+	"spa_ES": "es_ES", // Spanish (SPA)
+	"spa_MX": "es_MX", // Spanish (MEX)
+	"swa":    "sw",    // Swahili
+	"swe":    "sv",    // Swedish
+	"tam":    "ta",    // Tamil
+	"tel":    "te",    // Telugu
+	"tha":    "th",    // Thai
+	"tur":    "tr",    // Turkish
+	"ukr":    "uk",    // Ukrainian
+	"urd":    "ur",    // Urdu
+	"uzb":    "uz",    // Uzbek
+	"vie":    "vi",    // Vietnamese
+	"zul":    "zu",    // Zulu
 }
