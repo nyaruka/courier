@@ -337,6 +337,7 @@ func TestVerify(t *testing.T) {
 // setSendURL takes care of setting the send_url to our test server host
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
 	sendURL = s.URL
+	graphURL = s.URL
 }
 
 var SendTestCasesFBA = []ChannelSendTestCase{
@@ -468,13 +469,24 @@ var SendTestCasesIG = []ChannelSendTestCase{
 		SendPrep: setSendURL},
 }
 
+var SendTestCasesCWA = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "whatsapp:250788123123", Path: "/12345_ID/messages",
+		Status: "W", ExternalID: "157b5e14568e8",
+		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
+		RequestBody: `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Simple Message"}}`,
+		SendPrep:    setSendURL},
+}
+
 func TestSending(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
-	var ChannelFBA = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"})
-	var ChannelIG = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IG", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"})
-	RunChannelSendTestCases(t, ChannelFBA, newHandler("FBA", "Facebook", false), SendTestCasesFBA, nil)
-	RunChannelSendTestCases(t, ChannelIG, newHandler("IG", "Instagram", false), SendTestCasesIG, nil)
+	//var ChannelFBA = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"})
+	//var ChannelIG = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IG", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"})
+	var ChannelCWA = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CWA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123", configCWAPhoneNumberID: "12345_ID"})
+	//RunChannelSendTestCases(t, ChannelFBA, newHandler("FBA", "Facebook", false), SendTestCasesFBA, nil)
+	//RunChannelSendTestCases(t, ChannelIG, newHandler("IG", "Instagram", false), SendTestCasesIG, nil)
+	RunChannelSendTestCases(t, ChannelCWA, newHandler("CWA", "Cloud API WhatsApp", false), SendTestCasesCWA, nil)
 }
 
 func TestSigning(t *testing.T) {

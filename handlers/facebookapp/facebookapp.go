@@ -966,6 +966,10 @@ type cwaComponent struct {
 	Params  []*cwaParam `json:"parameters"`
 }
 
+type cwaText struct {
+	Body string `json:"body"`
+}
+
 type cwaMTPayload struct {
 	MessagingProduct string `json:"messaging_product"`
 	PreviewURL       bool   `json:"preview_url"`
@@ -973,14 +977,12 @@ type cwaMTPayload struct {
 	To               string `json:"to"`
 	Type             string `json:"type"`
 
-	Text *struct {
-		Body string `json:"body"`
-	} `json:"text"`
+	Text *cwaText `json:"text,omitempty"`
 
-	Document *cwaMTMedia `json:"document"`
-	Image    *cwaMTMedia `json:"image"`
-	Audio    *cwaMTMedia `json:"audio"`
-	Video    *cwaMTMedia `json:"video"`
+	Document *cwaMTMedia `json:"document,omitempty"`
+	Image    *cwaMTMedia `json:"image,omitempty"`
+	Audio    *cwaMTMedia `json:"audio,omitempty"`
+	Video    *cwaMTMedia `json:"video,omitempty"`
 
 	Interactive *struct {
 		Type   string `json:"type"`
@@ -1001,8 +1003,8 @@ type cwaMTPayload struct {
 			Button   string         `json:"button,omitempty"`
 			Sections []cwaMTSection `json:"sections,omitempty"`
 			Buttons  []cwaMTButton  `json:"buttons,omitempty"`
-		} `json:"action"`
-	} `json:"interactive"`
+		} `json:"action,omitempty"`
+	} `json:"interactive,omitempty"`
 
 	Template *struct {
 		Name     string `json:"name"`
@@ -1011,7 +1013,7 @@ type cwaMTPayload struct {
 			Code   string `json:"code"`
 		} `json:"language"`
 		Components []*cwaComponent `json:"components"`
-	}
+	} `json:"template,omitempty"`
 }
 
 type cwaMTResponse struct {
@@ -1071,7 +1073,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 					// this is still a msg part
 					payload.Type = "text"
-					payload.Text.Body = msgParts[i-len(msg.Attachments())]
+					payload.Text = &cwaText{Body: msgParts[i-len(msg.Attachments())]}
 				} else {
 					if len(qrs) > 0 {
 						payload.Type = "interactive"
@@ -1110,7 +1112,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 					} else {
 						// this is still a msg part
 						payload.Type = "text"
-						payload.Text.Body = msgParts[i-len(msg.Attachments())]
+						payload.Text = &cwaText{Body: msgParts[i-len(msg.Attachments())]}
 					}
 				}
 			}
@@ -1137,7 +1139,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 			if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 				// this is still a msg part
 				payload.Type = "text"
-				payload.Text.Body = msgParts[i-len(msg.Attachments())]
+				payload.Text = &cwaText{Body: msgParts[i-len(msg.Attachments())]}
 			} else {
 				if len(qrs) > 0 {
 					payload.Type = "interactive"
@@ -1176,7 +1178,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 				} else {
 					// this is still a msg part
 					payload.Type = "text"
-					payload.Text.Body = msgParts[i-len(msg.Attachments())]
+					payload.Text = &cwaText{Body: msgParts[i-len(msg.Attachments())]}
 				}
 			}
 
