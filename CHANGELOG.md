@@ -1,3 +1,7 @@
+v7.3.1
+----------
+ * Fix handling stops via status callbacks on Twilio
+
 v7.3.0
 ----------
  * Support stopping contacts when we get stop events on status callbacks
