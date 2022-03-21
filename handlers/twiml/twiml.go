@@ -113,24 +113,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	// create our URN
-	var urn urns.URN
-	if channel.IsScheme(urns.WhatsAppScheme) {
-		// Twilio Whatsapp from is in the form: whatsapp:+12211414154 or +12211414154
-		var fromTel string
-		parts := strings.Split(form.From, ":")
-		if len(parts) > 1 {
-			fromTel = parts[1]
-		} else {
-			fromTel = parts[0]
-		}
-
-		// trim off left +, official whatsapp IDs dont have that
-		urn, err = urns.NewWhatsAppURN(strings.TrimLeft(fromTel, "+"))
-	} else {
-		urn, err = urns.NewTelURNForCountry(form.From, form.FromCountry)
-	}
-
+	urn, err := h.parseURN(channel, form.From, form.FromCountry)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
@@ -199,8 +182,13 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 
 	errorCode, _ := strconv.ParseInt(form.ErrorCode, 10, 64)
 	if errorCode == errorStopped {
+		urn, err := h.parseURN(channel, form.To, "")
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		}
+
 		// create a stop channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urns.URN(form.To))
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
 		err = h.Backend().WriteChannelEvent(ctx, channelEvent)
 		if err != nil {
 			return nil, err
@@ -324,6 +312,24 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	return status, nil
+}
+
+func (h *handler) parseURN(channel courier.Channel, text, country string) (urns.URN, error) {
+	if channel.IsScheme(urns.WhatsAppScheme) {
+		// Twilio Whatsapp from is in the form: whatsapp:+12211414154 or +12211414154
+		var fromTel string
+		parts := strings.Split(text, ":")
+		if len(parts) > 1 {
+			fromTel = parts[1]
+		} else {
+			fromTel = parts[0]
+		}
+
+		// trim off left +, official whatsapp IDs dont have that
+		return urns.NewWhatsAppURN(strings.TrimLeft(fromTel, "+"))
+	}
+
+	return urns.NewTelURNForCountry(text, country)
 }
 
 func (h *handler) baseURL(c courier.Channel) string {
