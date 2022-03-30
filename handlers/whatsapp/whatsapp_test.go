@@ -370,6 +370,12 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
+	{Label: "Link Sending",
+		Text: "Link Sending https://link.com", URN: "whatsapp:250788123123", Path: "/v1/messages",
+		Status: "W", ExternalID: "157b5e14568e8",
+		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
+		RequestBody: `{"to":"250788123123","type":"text","preview_url":true,"text":{"body":"Link Sending https://link.com"}}`,
+		SendPrep:    setSendURL},
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "whatsapp:250788123123", Path: "/v1/messages",
 		Status: "W", ExternalID: "157b5e14568e8",
