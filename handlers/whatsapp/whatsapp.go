@@ -359,7 +359,7 @@ var waIgnoreStatuses = map[string]bool{
 type mtTextPayload struct {
 	To   string `json:"to"    validate:"required"`
 	Type string `json:"type"  validate:"required"`
-	Preview_URL bool `json:"preview_url,omitempty"`
+	PreviewURL bool `json:"preview_url,omitempty"`
 	Text struct {
 		Body string `json:"body" validate:"required"`
 	} `json:"text"`
@@ -806,7 +806,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 						payload = mtTextPayload{
 							To:          msg.URN().Path(),
 							Type:        "text",
-							Preview_URL: true,
+							PreviewURL: true,
 						}
 					} else {
 						payload = mtTextPayload{
