@@ -18,6 +18,8 @@ github.com/evalphobia/logrus_sentry v0.4.6 h1:825MLGu+SW5H8hMXGeBI7TwX7vgJLd9hz0
 github.com/evalphobia/logrus_sentry v0.4.6/go.mod h1:pKcp+vriitUqu9KiWj/VRFbRfFNUwz95/UkgG8a6MNc=
 github.com/fatih/structs v1.0.0 h1:BrX964Rv5uQ3wwS+KRUAJCBBw5PQmgJfJ6v4yly5QwU=
 github.com/fatih/structs v1.0.0/go.mod h1:9NiDSp5zOcgEDl+j00MP/WkGVPOlPRLejGD8Ga6PJ7M=
+github.com/gabriel-vasile/mimetype v1.4.0 h1:Cn9dkdYsMIu56tGho+fqzh7XmvY2YyGU0FnbhiOsEro=
+github.com/gabriel-vasile/mimetype v1.4.0/go.mod h1:fA8fi6KUiG7MgQQ+mEWotXoEOvmxRtOJlERCzSmRvr8=
 github.com/getsentry/raven-go v0.0.0-20180517221441-ed7bcb39ff10 h1:YO10pIIBftO/kkTFdWhctH96grJ7qiy7bMdiZcIvPKs=
 github.com/getsentry/raven-go v0.0.0-20180517221441-ed7bcb39ff10/go.mod h1:KungGk8q33+aIAZUIVWZDr2OfAEBsO49PX4NzFV5kcQ=
 github.com/go-chi/chi v4.1.2+incompatible h1:fGFk2Gmi/YKXk0OmGfBh0WgmN3XB8lVnEyNz34tQRec=

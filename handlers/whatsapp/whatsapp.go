@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
@@ -863,7 +864,14 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 		return "", logs, errors.Wrapf(err, "error building request to media endpoint")
 	}
 	setWhatsAppAuthHeader(&req.Header, msg.Channel())
-	req.Header.Add("Content-Type", http.DetectContentType(rr.Body))
+	mtype := http.DetectContentType(rr.Body)
+
+	if mtype != mimeType || mtype == "application/octet-stream" || mtype == "application/zip" {
+		mimeT := mimetype.Detect(rr.Body)
+		req.Header.Add("Content-Type", mimeT.String())
+	} else {
+		req.Header.Add("Content-Type", mtype)
+	}
 	rr, err = utils.MakeHTTPRequest(req)
 	log = courier.NewChannelLogFromRR("Uploading media to WhatsApp", msg.Channel(), msg.ID(), rr).WithError("Error uploading media to WhatsApp", err)
 	logs = append(logs, log)
