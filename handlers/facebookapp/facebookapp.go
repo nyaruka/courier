@@ -929,10 +929,10 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg)
 }
 
 type cwaMTMedia struct {
-	ID       string `json:"id"`
-	Link     string `json:"link"`
-	Caption  string `json:"caption"`
-	Filename string `json:"filename"`
+	ID       string `json:"id,omitempty"`
+	Link     string `json:"link,omitempty"`
+	Caption  string `json:"caption,omitempty"`
+	Filename string `json:"filename,omitempty"`
 }
 
 type cwaMTSection struct {
@@ -970,6 +970,39 @@ type cwaText struct {
 	Body string `json:"body"`
 }
 
+type cwaLanguage struct {
+	Policy string `json:"policy"`
+	Code   string `json:"code"`
+}
+
+type cwaTemplate struct {
+	Name       string          `json:"name"`
+	Language   *cwaLanguage    `json:"language"`
+	Components []*cwaComponent `json:"components"`
+}
+
+type cwaInteractive struct {
+	Type   string `json:"type"`
+	Header *struct {
+		Type     string `json:"type"`
+		Text     string `json:"text,omitempty"`
+		Video    string `json:"video,omitempty"`
+		Image    string `json:"image,omitempty"`
+		Document string `json:"document,omitempty"`
+	} `json:"header,omitempty"`
+	Body struct {
+		Text string `json:"text"`
+	} `json:"body" validate:"required"`
+	Footer *struct {
+		Text string `json:"text"`
+	} `json:"footer,omitempty"`
+	Action *struct {
+		Button   string         `json:"button,omitempty"`
+		Sections []cwaMTSection `json:"sections,omitempty"`
+		Buttons  []cwaMTButton  `json:"buttons,omitempty"`
+	} `json:"action,omitempty"`
+}
+
 type cwaMTPayload struct {
 	MessagingProduct string `json:"messaging_product"`
 	PreviewURL       bool   `json:"preview_url"`
@@ -984,36 +1017,9 @@ type cwaMTPayload struct {
 	Audio    *cwaMTMedia `json:"audio,omitempty"`
 	Video    *cwaMTMedia `json:"video,omitempty"`
 
-	Interactive *struct {
-		Type   string `json:"type"`
-		Header *struct {
-			Type     string `json:"type"`
-			Text     string `json:"text,omitempty"`
-			Video    string `json:"video,omitempty"`
-			Image    string `json:"image,omitempty"`
-			Document string `json:"document,omitempty"`
-		} `json:"header,omitempty"`
-		Body struct {
-			Text string `json:"text"`
-		} `json:"body" validate:"required"`
-		Footer *struct {
-			Text string `json:"text"`
-		} `json:"footer,omitempty"`
-		Action *struct {
-			Button   string         `json:"button,omitempty"`
-			Sections []cwaMTSection `json:"sections,omitempty"`
-			Buttons  []cwaMTButton  `json:"buttons,omitempty"`
-		} `json:"action,omitempty"`
-	} `json:"interactive,omitempty"`
+	Interactive *cwaInteractive `json:"interactive,omitempty"`
 
-	Template *struct {
-		Name     string `json:"name"`
-		Language *struct {
-			Policy string `json:"policy"`
-			Code   string `json:"code"`
-		} `json:"language"`
-		Components []*cwaComponent `json:"components"`
-	} `json:"template,omitempty"`
+	Template *cwaTemplate `json:"template,omitempty"`
 }
 
 type cwaMTResponse struct {
@@ -1059,16 +1065,17 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 			if templating != nil {
 
 				payload.Type = "template"
-				payload.Template.Name = templating.Template.Name
-				payload.Template.Language.Policy = "deterministic"
-				payload.Template.Language.Code = templating.Language
+
+				template := cwaTemplate{Name: templating.Template.Name, Language: &cwaLanguage{Policy: "deterministic", Code: templating.Language}}
+				payload.Template = &template
 
 				component := &cwaComponent{Type: "body"}
 
 				for _, v := range templating.Variables {
 					component.Params = append(component.Params, &cwaParam{Type: "text", Text: v})
 				}
-				payload.Template.Components = append(payload.Template.Components, component)
+				template.Components = append(payload.Template.Components, component)
+
 			} else {
 				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 					// this is still a msg part
@@ -1079,8 +1086,10 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 						payload.Type = "interactive"
 						// We can use buttons
 						if len(qrs) <= 3 {
-							payload.Interactive.Type = "button"
-							payload.Interactive.Body.Text = msgParts[i-len(msg.Attachments())]
+							interactive := cwaInteractive{Type: "button", Body: struct {
+								Text string "json:\"text\""
+							}{Text: msgParts[i-len(msg.Attachments())]}}
+
 							btns := make([]cwaMTButton, len(qrs))
 							for i, qr := range qrs {
 								btns[i] = cwaMTButton{
@@ -1089,11 +1098,17 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 								btns[i].Reply.ID = fmt.Sprint(i)
 								btns[i].Reply.Title = qr
 							}
-							payload.Interactive.Action.Buttons = btns
+							interactive.Action = &struct {
+								Button   string         "json:\"button,omitempty\""
+								Sections []cwaMTSection "json:\"sections,omitempty\""
+								Buttons  []cwaMTButton  "json:\"buttons,omitempty\""
+							}{Buttons: btns}
+							payload.Interactive = &interactive
 						} else if len(qrs) <= 10 {
-							payload.Interactive.Type = "list"
-							payload.Interactive.Body.Text = msgParts[i-len(msg.Attachments())]
-							payload.Interactive.Action.Button = "Menu"
+							interactive := cwaInteractive{Type: "list", Body: struct {
+								Text string "json:\"text\""
+							}{Text: msgParts[i-len(msg.Attachments())]}}
+
 							section := cwaMTSection{
 								Rows: make([]cwaMTSectionRow, len(qrs)),
 							}
@@ -1103,9 +1118,16 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 									Title: qr,
 								}
 							}
-							payload.Interactive.Action.Sections = []cwaMTSection{
+
+							interactive.Action = &struct {
+								Button   string         "json:\"button,omitempty\""
+								Sections []cwaMTSection "json:\"sections,omitempty\""
+								Buttons  []cwaMTButton  "json:\"buttons,omitempty\""
+							}{Button: "Menu", Sections: []cwaMTSection{
 								section,
-							}
+							}}
+
+							payload.Interactive = &interactive
 						} else {
 							return nil, fmt.Errorf("too many quick replies CWA supports only up to 10 quick replies")
 						}
@@ -1145,8 +1167,10 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 					payload.Type = "interactive"
 					// We can use buttons
 					if len(qrs) <= 3 {
-						payload.Interactive.Type = "button"
-						payload.Interactive.Body.Text = msgParts[i-len(msg.Attachments())]
+						interactive := cwaInteractive{Type: "button", Body: struct {
+							Text string "json:\"text\""
+						}{Text: msgParts[i-len(msg.Attachments())]}}
+
 						btns := make([]cwaMTButton, len(qrs))
 						for i, qr := range qrs {
 							btns[i] = cwaMTButton{
@@ -1155,11 +1179,18 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 							btns[i].Reply.ID = fmt.Sprint(i)
 							btns[i].Reply.Title = qr
 						}
-						payload.Interactive.Action.Buttons = btns
+						interactive.Action = &struct {
+							Button   string         "json:\"button,omitempty\""
+							Sections []cwaMTSection "json:\"sections,omitempty\""
+							Buttons  []cwaMTButton  "json:\"buttons,omitempty\""
+						}{Buttons: btns}
+						payload.Interactive = &interactive
+
 					} else if len(qrs) <= 10 {
-						payload.Interactive.Type = "list"
-						payload.Interactive.Body.Text = msgParts[i-len(msg.Attachments())]
-						payload.Interactive.Action.Button = "Menu"
+						interactive := cwaInteractive{Type: "list", Body: struct {
+							Text string "json:\"text\""
+						}{Text: msgParts[i-len(msg.Attachments())]}}
+
 						section := cwaMTSection{
 							Rows: make([]cwaMTSectionRow, len(qrs)),
 						}
@@ -1169,9 +1200,16 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 								Title: qr,
 							}
 						}
-						payload.Interactive.Action.Sections = []cwaMTSection{
+
+						interactive.Action = &struct {
+							Button   string         "json:\"button,omitempty\""
+							Sections []cwaMTSection "json:\"sections,omitempty\""
+							Buttons  []cwaMTButton  "json:\"buttons,omitempty\""
+						}{Button: "Menu", Sections: []cwaMTSection{
 							section,
-						}
+						}}
+
+						payload.Interactive = &interactive
 					} else {
 						return nil, fmt.Errorf("too many quick replies CWA supports only up to 10 quick replies")
 					}
