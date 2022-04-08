@@ -2,6 +2,7 @@ package facebookapp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -22,6 +23,10 @@ var testChannelsFBA = []courier.Channel{
 
 var testChannelsIG = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "IG", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"}),
+}
+
+var testChannelsCWA = []courier.Channel{
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "CWA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"}),
 }
 
 var testCasesFBA = []ChannelHandleTestCase{
@@ -77,7 +82,7 @@ var testCasesFBA = []ChannelHandleTestCase{
 
 	{Label: "Different Page", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/differentPageFBA.json")), Status: 200, Response: `"data":[]`, PrepRequest: addValidSignature},
 	{Label: "Echo", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/echoFBA.json")), Status: 200, Response: `ignoring echo`, PrepRequest: addValidSignature},
-	{Label: "Not Page", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/notPage.json")), Status: 400, Response: "object expected 'page' or 'instagram', found notpage", PrepRequest: addValidSignature},
+	{Label: "Not Page", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/notPage.json")), Status: 400, Response: "object expected 'page', 'instagram' or 'whatsapp_business_account', found notpage", PrepRequest: addValidSignature},
 	{Label: "No Entries", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/noEntriesFBA.json")), Status: 400, Response: "no entries found", PrepRequest: addValidSignature},
 	{Label: "No Messaging Entries", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/noMessagingEntriesFBA.json")), Status: 200, Response: "Handled", PrepRequest: addValidSignature},
 	{Label: "Unknown Messaging Entry", URL: "/c/fba/receive", Data: string(courier.ReadFile("./testdata/fba/unknownMessagingEntryFBA.json")), Status: 200, Response: "Handled", PrepRequest: addValidSignature},
@@ -110,7 +115,7 @@ var testCasesIG = []ChannelHandleTestCase{
 	{Label: "Different Page", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/differentPageIG.json")), Status: 200, Response: `"data":[]`, PrepRequest: addValidSignature},
 	{Label: "Echo", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/echoIG.json")), Status: 200, Response: `ignoring echo`, PrepRequest: addValidSignature},
 	{Label: "No Entries", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/noEntriesIG.json")), Status: 400, Response: "no entries found", PrepRequest: addValidSignature},
-	{Label: "Not Instagram", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/notInstagram.json")), Status: 400, Response: "object expected 'page' or 'instagram', found notinstagram", PrepRequest: addValidSignature},
+	{Label: "Not Instagram", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/notInstagram.json")), Status: 400, Response: "object expected 'page', 'instagram' or 'whatsapp_business_account', found notinstagram", PrepRequest: addValidSignature},
 	{Label: "No Messaging Entries", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/noMessagingEntriesIG.json")), Status: 200, Response: "Handled", PrepRequest: addValidSignature},
 	{Label: "Unknown Messaging Entry", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/unknownMessagingEntryIG.json")), Status: 200, Response: "Handled", PrepRequest: addValidSignature},
 	{Label: "Not JSON", URL: "/c/ig/receive", Data: "not JSON", Status: 400, Response: "Error", PrepRequest: addValidSignature},
@@ -213,10 +218,111 @@ func TestDescribeIG(t *testing.T) {
 	}
 }
 
+func TestDescribeCWA(t *testing.T) {
+	handler := newHandler("CWA", "Cloud API WhatsApp", false).(courier.URNDescriber)
+
+	tcs := []struct {
+		urn      urns.URN
+		metadata map[string]string
+	}{{"whatsapp:1337", map[string]string{}},
+		{"whatsapp:4567", map[string]string{}}}
+
+	for _, tc := range tcs {
+		metadata, _ := handler.DescribeURN(context.Background(), testChannelsCWA[0], tc.urn)
+		assert.Equal(t, metadata, tc.metadata)
+	}
+}
+
+var cwaReceiveURL = "/c/cwa/receive"
+
+var testCasesCWA = []ChannelHandleTestCase{
+	{Label: "Receive Message CWA", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/helloCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp("Hello World"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Duplicate Valid Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/duplicateCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp("Hello World"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Valid Voice Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/voiceCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp(""), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Voice"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Valid Button Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/buttonCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp("No"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Valid Document Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/documentCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp("80skaraokesonglistartist"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Document"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Valid Image Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/imageCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Image"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Valid Video Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/videoCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Video"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Valid Audio Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/audioCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Audio"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Valid Location Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/locationCWA.json")), Status: 200, Response: `"type":"msg"`,
+		Text: Sp(""), Attachment: Sp("geo:0.000000,1.000000"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		PrepRequest: addValidSignature},
+
+	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: "not json", Status: 400, Response: "unable to parse", PrepRequest: addValidSignature},
+	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/invalidFrom.json")), Status: 400, Response: "invalid whatsapp id", PrepRequest: addValidSignature},
+	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/invalidTimestamp.json")), Status: 400, Response: "invalid timestamp", PrepRequest: addValidSignature},
+
+	{Label: "Receive Valid Status", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/validStatusCWA.json")), Status: 200, Response: `"type":"status"`,
+		MsgStatus: Sp("S"), ExternalID: Sp("external_id"), PrepRequest: addValidSignature},
+	{Label: "Receive Invalid Status", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/invalidStatusCWA.json")), Status: 400, Response: `"unknown status: in_orbit"`, PrepRequest: addValidSignature},
+	{Label: "Receive Ignore Status", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/ignoreStatusCWA.json")), Status: 200, Response: `"ignoring status: deleted"`, PrepRequest: addValidSignature},
+}
+
 func TestHandler(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		accessToken := r.Header.Get("Authorization")
+		defer r.Body.Close()
+
+		// invalid auth token
+		if accessToken != "Bearer a123" {
+			fmt.Printf("Access token: %s\n", accessToken)
+			http.Error(w, "invalid auth token", 403)
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "image") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Image"}`))
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "audio") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Audio"}`))
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "voice") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Voice"}`))
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "video") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Video"}`))
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "document") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Document"}`))
+			return
+		}
+
+		// valid token
+		w.Write([]byte(`{"url": "https://foo.bar/attachmentURL"}`))
+
+	}))
+	graphURL = server.URL
+
+	RunChannelTestCases(t, testChannelsCWA, newHandler("CWA", "Cloud API WhatsApp", false), testCasesCWA)
 	RunChannelTestCases(t, testChannelsFBA, newHandler("FBA", "Facebook", false), testCasesFBA)
 	RunChannelTestCases(t, testChannelsIG, newHandler("IG", "Instagram", false), testCasesIG)
-
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -256,6 +362,7 @@ func TestVerify(t *testing.T) {
 // setSendURL takes care of setting the send_url to our test server host
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
 	sendURL = s.URL
+	graphURL = s.URL
 }
 
 var SendTestCasesFBA = []ChannelSendTestCase{
@@ -387,13 +494,210 @@ var SendTestCasesIG = []ChannelSendTestCase{
 		SendPrep: setSendURL},
 }
 
+var SendTestCasesCWA = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		Text: "Simple Message", URN: "whatsapp:250788123123", Path: "/12345_ID/messages",
+		Status: "W", ExternalID: "157b5e14568e8",
+		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
+		RequestBody: `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Simple Message"}}`,
+		SendPrep:    setSendURL},
+	{Label: "Unicode Send",
+		Text: "☺", URN: "whatsapp:250788123123", Path: "/12345_ID/messages",
+		Status: "W", ExternalID: "157b5e14568e8",
+		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
+		RequestBody: `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"☺"}}`,
+		SendPrep:    setSendURL},
+	{Label: "Audio Send",
+		Text:   "audio caption",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Attachments: []string{"audio/mpeg:https://foo.bar/audio.mp3"},
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/12345_ID/messages",
+				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/12345_ID/messages",
+				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"audio caption"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+		},
+		SendPrep: setSendURL},
+	{Label: "Document Send",
+		Text:   "document caption",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/12345_ID/messages",
+				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/12345_ID/messages",
+				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"document caption"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+		},
+		SendPrep: setSendURL},
+
+	{Label: "Image Send",
+		Text:   "document caption",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/12345_ID/messages",
+				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/12345_ID/messages",
+				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"document caption"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+		},
+		SendPrep: setSendURL},
+	{Label: "Video Send",
+		Text:   "video caption",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Attachments: []string{"video/mp4:https://foo.bar/video.mp4"},
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/12345_ID/messages",
+				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"video","video":{"link":"https://foo.bar/video.mp4"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/12345_ID/messages",
+				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"video caption"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+		},
+		SendPrep: setSendURL},
+
+	{Label: "Template Send",
+		Text:   "templated message",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Metadata:     json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "variables": ["Chef", "tomorrow"]}}`),
+		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 200,
+		RequestBody: `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","sub_type":"","index":"","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		SendPrep:    setSendURL,
+	},
+
+	{Label: "Template Country Language",
+		Text:   "templated message",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Metadata:     json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "country": "US", "variables": ["Chef", "tomorrow"]}}`),
+		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 200,
+		RequestBody: `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","sub_type":"","index":"","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		SendPrep:    setSendURL,
+	},
+	{Label: "Template Invalid Language",
+		Text: "templated message", URN: "whatsapp:250788123123",
+		Error:    `unable to decode template: {"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}} for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c56ab: unable to find mapping for language: bnt`,
+		Metadata: json.RawMessage(`{"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}}`),
+	},
+	{Label: "Interactive Button Message Send",
+		Text: "Interactive Button Msg", URN: "whatsapp:250788123123", QuickReplies: []string{"BUTTON1"},
+		Status: "W", ExternalID: "157b5e14568e8",
+		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
+		RequestBody: `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
+		SendPrep:    setSendURL},
+	{Label: "Interactive List Message Send",
+		Text: "Interactive List Msg", URN: "whatsapp:250788123123", QuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
+		Status: "W", ExternalID: "157b5e14568e8",
+		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
+		RequestBody: `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
+		SendPrep:    setSendURL},
+	{Label: "Interactive Button Message Send with attachment",
+		Text: "Interactive Button Msg", URN: "whatsapp:250788123123", QuickReplies: []string{"BUTTON1"},
+		Status: "W", ExternalID: "157b5e14568e8",
+		Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/12345_ID/messages",
+				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/12345_ID/messages",
+				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+		},
+		SendPrep: setSendURL},
+	{Label: "Interactive List Message Send with attachment",
+		Text: "Interactive List Msg", URN: "whatsapp:250788123123", QuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
+		Status: "W", ExternalID: "157b5e14568e8",
+		Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/12345_ID/messages",
+				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/12345_ID/messages",
+				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+		},
+		SendPrep: setSendURL},
+}
+
 func TestSending(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
 	var ChannelFBA = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"})
 	var ChannelIG = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IG", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"})
+	var ChannelCWA = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CWA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123", configCWAPhoneNumberID: "12345_ID"})
 	RunChannelSendTestCases(t, ChannelFBA, newHandler("FBA", "Facebook", false), SendTestCasesFBA, nil)
 	RunChannelSendTestCases(t, ChannelIG, newHandler("IG", "Instagram", false), SendTestCasesIG, nil)
+	RunChannelSendTestCases(t, ChannelCWA, newHandler("CWA", "Cloud API WhatsApp", false), SendTestCasesCWA, nil)
 }
 
 func TestSigning(t *testing.T) {
