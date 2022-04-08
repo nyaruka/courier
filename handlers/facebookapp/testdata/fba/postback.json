@@ -1,0 +1,29 @@
+{
+	"object": "page",
+	"entry": [
+		{
+			"id": "12345",
+			"messaging": [
+				{
+					"postback": {
+						"title": "postback title",
+						"payload": "postback payload",
+						"referral": {
+							"ref": "postback ref",
+							"source": "postback source",
+							"type": "postback type"
+						}
+					},
+					"recipient": {
+						"id": "12345"
+					},
+					"sender": {
+						"id": "5678"
+					},
+					"timestamp": 1459991487970
+				}
+			],
+			"time": 1459991487970
+		}
+	]
+}

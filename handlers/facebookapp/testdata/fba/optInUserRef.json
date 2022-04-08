@@ -1,0 +1,24 @@
+{
+	"object": "page",
+	"entry": [
+		{
+			"id": "12345",
+			"messaging": [
+				{
+					"optin": {
+						"ref": "optin_ref",
+						"user_ref": "optin_user_ref"
+					},
+					"recipient": {
+						"id": "12345"
+					},
+					"sender": {
+						"id": "5678"
+					},
+					"timestamp": 1459991487970
+				}
+			],
+			"time": 1459991487970
+		}
+	]
+}
