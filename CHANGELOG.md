@@ -1,3 +1,31 @@
+v7.3.1
+----------
+ * Fix handling stops via status callbacks on Twilio
+
+v7.3.0
+----------
+ * Support stopping contacts when we get stop events on status callbacks
+
+v7.2.0
+----------
+ * CI testing with go 1.17.7
+
+v7.1.19
+----------
+ * Update D3 handler to support check for whatsapp contact not in contact store
+
+v7.1.18
+----------
+ * Fix type for IsDeleted field for IG unsend events
+ * Fix metadata fetching for new Facebook contacts
+
+v7.1.17
+----------
+ * Fix whatsapp uploaded attachment file name
+ * Use deleted by sender visibity for message unsent on IG channels
+ * Add missing languages from whatsapp template
+ * Do not save any message when receiving IG story mentions
+
 v7.1.16
 ----------
  * Update to latest gocommon

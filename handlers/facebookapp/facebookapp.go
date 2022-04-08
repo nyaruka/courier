@@ -234,6 +234,7 @@ type moPayload struct {
 				IsEcho      bool   `json:"is_echo"`
 				MID         string `json:"mid"`
 				Text        string `json:"text"`
+				IsDeleted   bool   `json:"is_deleted"`
 				Attachments []struct {
 					Type    string `json:"type"`
 					Payload *struct {
@@ -656,6 +657,14 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 				continue
 			}
 
+			if msg.Message.IsDeleted {
+				h.Backend().DeleteMsgWithExternalID(ctx, channel, msg.Message.MID)
+				data = append(data, courier.NewInfoData("msg deleted"))
+				continue
+			}
+
+			has_story_mentions := false
+
 			text := msg.Message.Text
 
 			attachmentURLs := make([]string, 0, 2)
@@ -672,6 +681,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 				if att.Type == "story_mention" {
 					data = append(data, courier.NewInfoData("ignoring story_mention"))
+					has_story_mentions = true
 					continue
 				}
 
@@ -679,6 +689,11 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 					attachmentURLs = append(attachmentURLs, att.Payload.URL)
 				}
 
+			}
+
+			// if we have a story mention, skip and do not save any message
+			if has_story_mentions {
+				continue
 			}
 
 			// create our message
@@ -1282,8 +1297,13 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	base, _ := url.Parse(graphURL)
 	path, _ := url.Parse(fmt.Sprintf("/%s", urn.Path()))
 	u := base.ResolveReference(path)
-
 	query := url.Values{}
+	var name string
+
+	if fmt.Sprint(channel.ChannelType()) == "FBA" {
+		query.Set("fields", "first_name,last_name")
+	}
+
 	query.Set("access_token", accessToken)
 	u.RawQuery = query.Encode()
 	req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
@@ -1292,10 +1312,17 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 		return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
 	}
 
-	// read our name
-	name, _ := jsonparser.GetString(rr.Body, "name")
+	// read our first and last name	or complete name
+	if fmt.Sprint(channel.ChannelType()) == "FBA" {
+		firstName, _ := jsonparser.GetString(rr.Body, "first_name")
+		lastName, _ := jsonparser.GetString(rr.Body, "last_name")
+		name = utils.JoinNonEmpty(" ", firstName, lastName)
+	} else {
+		name, _ = jsonparser.GetString(rr.Body, "name")
+	}
 
 	return map[string]string{"name": name}, nil
+
 }
 
 // see https://developers.facebook.com/docs/messenger-platform/webhook#security

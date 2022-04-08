@@ -112,7 +112,6 @@ var testCasesIG = []ChannelHandleTestCase{
 		URN: Sp("instagram:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.NewConversation),
 		ChannelEventExtra: map[string]interface{}{"title": "icebreaker question", "payload": "get_started"},
 		PrepRequest:       addValidSignature},
-
 	{Label: "Different Page", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/differentPageIG.json")), Status: 200, Response: `"data":[]`, PrepRequest: addValidSignature},
 	{Label: "Echo", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/echoIG.json")), Status: 200, Response: `ignoring echo`, PrepRequest: addValidSignature},
 	{Label: "No Entries", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/noEntriesIG.json")), Status: 400, Response: "no entries found", PrepRequest: addValidSignature},
@@ -122,6 +121,7 @@ var testCasesIG = []ChannelHandleTestCase{
 	{Label: "Not JSON", URL: "/c/ig/receive", Data: "not JSON", Status: 400, Response: "Error", PrepRequest: addValidSignature},
 	{Label: "Invalid URN", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/invalidURNIG.json")), Status: 400, Response: "invalid instagram id", PrepRequest: addValidSignature},
 	{Label: "Story Mention", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/storyMentionIG.json")), Status: 200, Response: `ignoring story_mention`, PrepRequest: addValidSignature},
+	{Label: "Message unsent", URL: "/c/ig/receive", Data: string(courier.ReadFile("./testdata/ig/unsentMsgIG.json")), Status: 200, Response: `msg deleted`, PrepRequest: addValidSignature},
 }
 
 func addValidSignature(r *http.Request) {
@@ -135,7 +135,31 @@ func addInvalidSignature(r *http.Request) {
 }
 
 // mocks the call to the Facebook graph API
-func buildMockFBGraph(testCases []ChannelHandleTestCase) *httptest.Server {
+func buildMockFBGraphFBA(testCases []ChannelHandleTestCase) *httptest.Server {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		accessToken := r.URL.Query().Get("access_token")
+		defer r.Body.Close()
+
+		// invalid auth token
+		if accessToken != "a123" {
+			http.Error(w, "invalid auth token", 403)
+		}
+
+		// user has a name
+		if strings.HasSuffix(r.URL.Path, "1337") {
+			w.Write([]byte(`{ "first_name": "John", "last_name": "Doe"}`))
+			return
+		}
+		// no name
+		w.Write([]byte(`{ "first_name": "", "last_name": ""}`))
+	}))
+	graphURL = server.URL
+
+	return server
+}
+
+// mocks the call to the Facebook graph API
+func buildMockFBGraphIG(testCases []ChannelHandleTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		accessToken := r.URL.Query().Get("access_token")
 		defer r.Body.Close()
@@ -160,7 +184,7 @@ func buildMockFBGraph(testCases []ChannelHandleTestCase) *httptest.Server {
 }
 
 func TestDescribeFBA(t *testing.T) {
-	fbGraph := buildMockFBGraph(testCasesFBA)
+	fbGraph := buildMockFBGraphFBA(testCasesFBA)
 	defer fbGraph.Close()
 
 	handler := newHandler("FBA", "Facebook", false).(courier.URNDescriber)
@@ -178,7 +202,7 @@ func TestDescribeFBA(t *testing.T) {
 }
 
 func TestDescribeIG(t *testing.T) {
-	fbGraph := buildMockFBGraph(testCasesIG)
+	fbGraph := buildMockFBGraphIG(testCasesIG)
 	defer fbGraph.Close()
 
 	handler := newHandler("IG", "Instagram", false).(courier.URNDescriber)
@@ -302,12 +326,12 @@ func TestHandler(t *testing.T) {
 }
 
 func BenchmarkHandler(b *testing.B) {
-	fbService := buildMockFBGraph(testCasesFBA)
+	fbService := buildMockFBGraphFBA(testCasesFBA)
 
 	RunChannelBenchmarks(b, testChannelsFBA, newHandler("FBA", "Facebook", false), testCasesFBA)
 	fbService.Close()
 
-	fbServiceIG := buildMockFBGraph(testCasesIG)
+	fbServiceIG := buildMockFBGraphIG(testCasesIG)
 
 	RunChannelBenchmarks(b, testChannelsIG, newHandler("IG", "Instagram", false), testCasesIG)
 	fbServiceIG.Close()

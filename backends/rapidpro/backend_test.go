@@ -212,6 +212,35 @@ func (ts *BackendTestSuite) TestCheckMsgExists() {
 	ts.Nil(err)
 }
 
+func (ts *BackendTestSuite) TestDeleteMsgWithExternalID() {
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+
+	ctx := context.Background()
+
+	// no error for invalid external ID
+	err := ts.b.DeleteMsgWithExternalID(ctx, knChannel, "ext-invalid")
+	ts.Nil(err)
+
+	// cannot change out going messages
+	err = ts.b.DeleteMsgWithExternalID(ctx, knChannel, "ext1")
+	ts.Nil(err)
+
+	m := readMsgFromDB(ts.b, courier.NewMsgID(10000))
+	ts.Equal(m.Text_, "test message")
+	ts.Equal(len(m.Attachments()), 0)
+	ts.Equal(m.Visibility_, MsgVisibility("V"))
+
+	// for incoming messages mark them deleted by sender and readact their text and clear their attachments
+	err = ts.b.DeleteMsgWithExternalID(ctx, knChannel, "ext2")
+	ts.Nil(err)
+
+	m = readMsgFromDB(ts.b, courier.NewMsgID(10002))
+	ts.Equal(m.Text_, "")
+	ts.Equal(len(m.Attachments()), 0)
+	ts.Equal(m.Visibility_, MsgVisibility("X"))
+
+}
+
 func (ts *BackendTestSuite) TestContact() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	urn, _ := urns.NewTelURNForCountry("12065551518", "US")

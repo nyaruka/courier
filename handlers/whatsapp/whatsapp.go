@@ -586,6 +586,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 			if err != nil {
 				logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("error while uploading media to whatsapp")
 			}
+			fileURL := mediaURL
 			if err == nil && mediaID != "" {
 				mediaURL = ""
 			}
@@ -605,7 +606,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				if attachmentCount == 0 && !isInteractiveMsg {
 					mediaPayload.Caption = msg.Text()
 				}
-				mediaPayload.Filename, err = utils.BasePathForURL(mediaURL)
+				mediaPayload.Filename, err = utils.BasePathForURL(fileURL)
 
 				// Logging error
 				if err != nil {
@@ -1045,7 +1046,7 @@ func hasTiersError(payload mtErrorPayload) bool {
 
 func hasWhatsAppContactError(payload mtErrorPayload) bool {
 	for _, err := range payload.Errors {
-		if err.Code == 1006 && err.Title == "Resource not found" && err.Details == "unknown contact" {
+		if err.Code == 1006 && err.Title == "Resource not found" && (err.Details == "unknown contact" || err.Details == "Could not retrieve phone number from contact store") {
 			return true
 		}
 	}

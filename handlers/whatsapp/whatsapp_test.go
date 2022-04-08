@@ -562,6 +562,38 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL,
 	},
+	{Label: "Try Messaging Again After WhatsApp Contact Check",
+		Text: "try again", URN: "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/messages",
+				Body:   `{"to":"250788123123","type":"text","text":{"body":"try again"}}`,
+			}: MockedResponse{
+				Status: 404,
+				Body:   `{"errors": [{"code": 1006, "title": "Resource not found", "details": "Could not retrieve phone number from contact store"}]}`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/contacts",
+				Body:   `{"blocking":"wait","contacts":["+250788123123"],"force_check":true}`,
+			}: MockedResponse{
+				Status: 200,
+				Body:   `{"contacts": [{"input": "+250788123123", "status": "valid", "wa_id": "250788123123"}]}`,
+			},
+			MockedRequest{
+				Method:   "POST",
+				Path:     "/v1/messages",
+				RawQuery: "retry=1",
+				Body:     `{"to":"250788123123","type":"text","text":{"body":"try again"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{"messages": [{"id": "157b5e14568e8"}]}`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
 	{Label: "Try Messaging Again After WhatsApp Contact Check With Returned WhatsApp ID",
 		Text: "try again", URN: "whatsapp:5582999887766",
 		Status: "W", ExternalID: "157b5e14568e8",
@@ -732,6 +764,49 @@ var mediaCacheSendTestCases = []ChannelSendTestCase{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"video","video":{"id":"36c484d1-1283-4b94-988d-7276bdec4de2","caption":"video caption"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
+	{
+		Label:  "Document Upload OK",
+		Text:   "document caption",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Attachments: []string{"application/pdf:https://foo.bar/document2.pdf"},
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/media",
+				Body:   "media bytes",
+			}: MockedResponse{
+				Status: 200,
+				Body:   `{ "media" : [{"id": "25c484d1-1283-4b94-988d-7276bdec4ef3"}] }`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/messages",
+				Body:   `{"to":"250788123123","type":"document","document":{"id":"25c484d1-1283-4b94-988d-7276bdec4ef3","caption":"document caption","filename":"document2.pdf"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
+	{Label: "Cached Document",
+		Text:   "document caption",
+		URN:    "whatsapp:250788123123",
+		Status: "W", ExternalID: "157b5e14568e8",
+		Attachments: []string{"application/pdf:https://foo.bar/document2.pdf"},
+		Responses: map[MockedRequest]MockedResponse{
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/messages",
+				Body:   `{"to":"250788123123","type":"document","document":{"id":"25c484d1-1283-4b94-988d-7276bdec4ef3","caption":"document caption","filename":"document2.pdf"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,

@@ -26,6 +26,7 @@ behind a reverse proxy such as nginx or Elastic Load Balancer that provides HTTP
 # Configuration
 
 Courier uses a tiered configuration system, each option takes precendence over the ones above it:
+
  1. The configuration file
  2. Environment variables starting with `COURIER_` 
  3. Command line parameters
