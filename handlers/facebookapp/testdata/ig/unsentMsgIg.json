@@ -1,0 +1,24 @@
+{
+	"object":"instagram",
+	"entry":[
+	   {
+		  "id":"12345",
+		  "time":1459991487970,
+		  "messaging":[
+			 {
+				"sender":{
+				   "id":"5678"
+				},
+				"recipient":{
+				   "id":"12345"
+				},
+				"timestamp":1569262485349,
+				"message":{
+				   "mid":"external_id",
+				   "is_deleted": true
+				}
+			 }
+		  ]
+	   }
+	]
+}
