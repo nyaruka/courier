@@ -29,7 +29,7 @@ var (
 
 	signatureHeader = "X-Hub-Signature"
 
-	configCWAPhoneNumberID = "cwa_phone_number_id"
+	configWACPhoneNumberID = "wac_phone_number_id"
 
 	// max for the body
 	maxMsgLength = 1000
@@ -77,7 +77,7 @@ func newHandler(channelType courier.ChannelType, name string, useUUIDRoutes bool
 func init() {
 	courier.RegisterHandler(newHandler("IG", "Instagram", false))
 	courier.RegisterHandler(newHandler("FBA", "Facebook", false))
-	courier.RegisterHandler(newHandler("CWA", "Cloud API WhatsApp", false))
+	courier.RegisterHandler(newHandler("WAC", "WhatsApp Cloud", false))
 
 }
 
@@ -120,7 +120,7 @@ type User struct {
 //   }]
 // }
 
-type cwaMedia struct {
+type wacMedia struct {
 	Caption  string `json:"caption"`
 	Filename string `json:"filename"`
 	ID       string `json:"id"`
@@ -160,11 +160,11 @@ type moPayload struct {
 					Text struct {
 						Body string `json:"body"`
 					} `json:"text"`
-					Image    *cwaMedia `json:"image"`
-					Audio    *cwaMedia `json:"audio"`
-					Video    *cwaMedia `json:"video"`
-					Document *cwaMedia `json:"document"`
-					Voice    *cwaMedia `json:"voice"`
+					Image    *wacMedia `json:"image"`
+					Audio    *wacMedia `json:"audio"`
+					Video    *wacMedia `json:"video"`
+					Document *wacMedia `json:"document"`
+					Voice    *wacMedia `json:"voice"`
 					Location *struct {
 						Latitude  float64 `json:"latitude"`
 						Longitude float64 `json:"longitude"`
@@ -294,9 +294,9 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 
 		channelAddress = payload.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber
 		if channelAddress == "" {
-			return nil, fmt.Errorf("no channel adress found")
+			return nil, fmt.Errorf("no channel address found")
 		}
-		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("CWA"), courier.ChannelAddress(channelAddress))
+		return h.Backend().GetChannelByAddress(ctx, courier.ChannelType("WAC"), courier.ChannelAddress(channelAddress))
 	}
 }
 
@@ -790,7 +790,7 @@ type mtQuickReply struct {
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	if msg.Channel().ChannelType() == "FBA" || msg.Channel().ChannelType() == "IG" {
 		return h.sendFacebookInstagramMsg(ctx, msg)
-	} else if msg.Channel().ChannelType() == "CWA" {
+	} else if msg.Channel().ChannelType() == "WAC" {
 		return h.sendCloudAPIWhatsappMsg(ctx, msg)
 	}
 
@@ -943,25 +943,25 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg)
 	return status, nil
 }
 
-type cwaMTMedia struct {
+type wacMTMedia struct {
 	ID       string `json:"id,omitempty"`
 	Link     string `json:"link,omitempty"`
 	Caption  string `json:"caption,omitempty"`
 	Filename string `json:"filename,omitempty"`
 }
 
-type cwaMTSection struct {
+type wacMTSection struct {
 	Title string            `json:"title,omitempty"`
-	Rows  []cwaMTSectionRow `json:"rows" validate:"required"`
+	Rows  []wacMTSectionRow `json:"rows" validate:"required"`
 }
 
-type cwaMTSectionRow struct {
+type wacMTSectionRow struct {
 	ID          string `json:"id" validate:"required"`
 	Title       string `json:"title,omitempty"`
 	Description string `json:"description,omitempty"`
 }
 
-type cwaMTButton struct {
+type wacMTButton struct {
 	Type  string `json:"type" validate:"required"`
 	Reply struct {
 		ID    string `json:"id" validate:"required"`
@@ -969,34 +969,34 @@ type cwaMTButton struct {
 	} `json:"reply" validate:"required"`
 }
 
-type cwaParam struct {
+type wacParam struct {
 	Type string `json:"type"`
 	Text string `json:"text"`
 }
 
-type cwaComponent struct {
+type wacComponent struct {
 	Type    string      `json:"type"`
 	SubType string      `json:"sub_type"`
 	Index   string      `json:"index"`
-	Params  []*cwaParam `json:"parameters"`
+	Params  []*wacParam `json:"parameters"`
 }
 
-type cwaText struct {
+type wacText struct {
 	Body string `json:"body"`
 }
 
-type cwaLanguage struct {
+type wacLanguage struct {
 	Policy string `json:"policy"`
 	Code   string `json:"code"`
 }
 
-type cwaTemplate struct {
+type wacTemplate struct {
 	Name       string          `json:"name"`
-	Language   *cwaLanguage    `json:"language"`
-	Components []*cwaComponent `json:"components"`
+	Language   *wacLanguage    `json:"language"`
+	Components []*wacComponent `json:"components"`
 }
 
-type cwaInteractive struct {
+type wacInteractive struct {
 	Type   string `json:"type"`
 	Header *struct {
 		Type     string `json:"type"`
@@ -1013,31 +1013,31 @@ type cwaInteractive struct {
 	} `json:"footer,omitempty"`
 	Action *struct {
 		Button   string         `json:"button,omitempty"`
-		Sections []cwaMTSection `json:"sections,omitempty"`
-		Buttons  []cwaMTButton  `json:"buttons,omitempty"`
+		Sections []wacMTSection `json:"sections,omitempty"`
+		Buttons  []wacMTButton  `json:"buttons,omitempty"`
 	} `json:"action,omitempty"`
 }
 
-type cwaMTPayload struct {
+type wacMTPayload struct {
 	MessagingProduct string `json:"messaging_product"`
 	PreviewURL       bool   `json:"preview_url"`
 	RecipientType    string `json:"recipient_type"`
 	To               string `json:"to"`
 	Type             string `json:"type"`
 
-	Text *cwaText `json:"text,omitempty"`
+	Text *wacText `json:"text,omitempty"`
 
-	Document *cwaMTMedia `json:"document,omitempty"`
-	Image    *cwaMTMedia `json:"image,omitempty"`
-	Audio    *cwaMTMedia `json:"audio,omitempty"`
-	Video    *cwaMTMedia `json:"video,omitempty"`
+	Document *wacMTMedia `json:"document,omitempty"`
+	Image    *wacMTMedia `json:"image,omitempty"`
+	Audio    *wacMTMedia `json:"audio,omitempty"`
+	Video    *wacMTMedia `json:"video,omitempty"`
 
-	Interactive *cwaInteractive `json:"interactive,omitempty"`
+	Interactive *wacInteractive `json:"interactive,omitempty"`
 
-	Template *cwaTemplate `json:"template,omitempty"`
+	Template *wacTemplate `json:"template,omitempty"`
 }
 
-type cwaMTResponse struct {
+type wacMTResponse struct {
 	Messages []*struct {
 		ID string `json:"id"`
 	} `json:"messages"`
@@ -1050,14 +1050,14 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 		return nil, fmt.Errorf("missing access token")
 	}
 
-	phoneNumberId := msg.Channel().StringConfigForKey(configCWAPhoneNumberID, "")
+	phoneNumberId := msg.Channel().StringConfigForKey(configWACPhoneNumberID, "")
 	if phoneNumberId == "" {
-		return nil, fmt.Errorf("missing CWA phone number ID")
+		return nil, fmt.Errorf("missing WAC phone number ID")
 	}
 
 	base, _ := url.Parse(graphURL)
 	path, _ := url.Parse(fmt.Sprintf("/%s/messages", phoneNumberId))
-	cwaPhoneURL := base.ResolveReference(path)
+	wacPhoneURL := base.ResolveReference(path)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
@@ -1068,7 +1068,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 	qrs := msg.QuickReplies()
 
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
-		payload := cwaMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
+		payload := wacMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
 
 		if len(msg.Attachments()) == 0 {
 			// do we have a template?
@@ -1081,13 +1081,13 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 
 				payload.Type = "template"
 
-				template := cwaTemplate{Name: templating.Template.Name, Language: &cwaLanguage{Policy: "deterministic", Code: templating.Language}}
+				template := wacTemplate{Name: templating.Template.Name, Language: &wacLanguage{Policy: "deterministic", Code: templating.Language}}
 				payload.Template = &template
 
-				component := &cwaComponent{Type: "body"}
+				component := &wacComponent{Type: "body"}
 
 				for _, v := range templating.Variables {
-					component.Params = append(component.Params, &cwaParam{Type: "text", Text: v})
+					component.Params = append(component.Params, &wacParam{Type: "text", Text: v})
 				}
 				template.Components = append(payload.Template.Components, component)
 
@@ -1095,19 +1095,19 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 					// this is still a msg part
 					payload.Type = "text"
-					payload.Text = &cwaText{Body: msgParts[i-len(msg.Attachments())]}
+					payload.Text = &wacText{Body: msgParts[i-len(msg.Attachments())]}
 				} else {
 					if len(qrs) > 0 {
 						payload.Type = "interactive"
 						// We can use buttons
 						if len(qrs) <= 3 {
-							interactive := cwaInteractive{Type: "button", Body: struct {
+							interactive := wacInteractive{Type: "button", Body: struct {
 								Text string "json:\"text\""
 							}{Text: msgParts[i-len(msg.Attachments())]}}
 
-							btns := make([]cwaMTButton, len(qrs))
+							btns := make([]wacMTButton, len(qrs))
 							for i, qr := range qrs {
-								btns[i] = cwaMTButton{
+								btns[i] = wacMTButton{
 									Type: "reply",
 								}
 								btns[i].Reply.ID = fmt.Sprint(i)
@@ -1115,20 +1115,20 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 							}
 							interactive.Action = &struct {
 								Button   string         "json:\"button,omitempty\""
-								Sections []cwaMTSection "json:\"sections,omitempty\""
-								Buttons  []cwaMTButton  "json:\"buttons,omitempty\""
+								Sections []wacMTSection "json:\"sections,omitempty\""
+								Buttons  []wacMTButton  "json:\"buttons,omitempty\""
 							}{Buttons: btns}
 							payload.Interactive = &interactive
 						} else if len(qrs) <= 10 {
-							interactive := cwaInteractive{Type: "list", Body: struct {
+							interactive := wacInteractive{Type: "list", Body: struct {
 								Text string "json:\"text\""
 							}{Text: msgParts[i-len(msg.Attachments())]}}
 
-							section := cwaMTSection{
-								Rows: make([]cwaMTSectionRow, len(qrs)),
+							section := wacMTSection{
+								Rows: make([]wacMTSectionRow, len(qrs)),
 							}
 							for i, qr := range qrs {
-								section.Rows[i] = cwaMTSectionRow{
+								section.Rows[i] = wacMTSectionRow{
 									ID:    fmt.Sprint(i),
 									Title: qr,
 								}
@@ -1136,20 +1136,20 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 
 							interactive.Action = &struct {
 								Button   string         "json:\"button,omitempty\""
-								Sections []cwaMTSection "json:\"sections,omitempty\""
-								Buttons  []cwaMTButton  "json:\"buttons,omitempty\""
-							}{Button: "Menu", Sections: []cwaMTSection{
+								Sections []wacMTSection "json:\"sections,omitempty\""
+								Buttons  []wacMTButton  "json:\"buttons,omitempty\""
+							}{Button: "Menu", Sections: []wacMTSection{
 								section,
 							}}
 
 							payload.Interactive = &interactive
 						} else {
-							return nil, fmt.Errorf("too many quick replies CWA supports only up to 10 quick replies")
+							return nil, fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
 						}
 					} else {
 						// this is still a msg part
 						payload.Type = "text"
-						payload.Text = &cwaText{Body: msgParts[i-len(msg.Attachments())]}
+						payload.Text = &wacText{Body: msgParts[i-len(msg.Attachments())]}
 					}
 				}
 			}
@@ -1161,7 +1161,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 				attType = "document"
 			}
 			payload.Type = attType
-			media := cwaMTMedia{Link: attURL}
+			media := wacMTMedia{Link: attURL}
 
 			if attType == "image" {
 				payload.Image = &media
@@ -1176,19 +1176,19 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 			if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 				// this is still a msg part
 				payload.Type = "text"
-				payload.Text = &cwaText{Body: msgParts[i-len(msg.Attachments())]}
+				payload.Text = &wacText{Body: msgParts[i-len(msg.Attachments())]}
 			} else {
 				if len(qrs) > 0 {
 					payload.Type = "interactive"
 					// We can use buttons
 					if len(qrs) <= 3 {
-						interactive := cwaInteractive{Type: "button", Body: struct {
+						interactive := wacInteractive{Type: "button", Body: struct {
 							Text string "json:\"text\""
 						}{Text: msgParts[i-len(msg.Attachments())]}}
 
-						btns := make([]cwaMTButton, len(qrs))
+						btns := make([]wacMTButton, len(qrs))
 						for i, qr := range qrs {
-							btns[i] = cwaMTButton{
+							btns[i] = wacMTButton{
 								Type: "reply",
 							}
 							btns[i].Reply.ID = fmt.Sprint(i)
@@ -1196,21 +1196,21 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 						}
 						interactive.Action = &struct {
 							Button   string         "json:\"button,omitempty\""
-							Sections []cwaMTSection "json:\"sections,omitempty\""
-							Buttons  []cwaMTButton  "json:\"buttons,omitempty\""
+							Sections []wacMTSection "json:\"sections,omitempty\""
+							Buttons  []wacMTButton  "json:\"buttons,omitempty\""
 						}{Buttons: btns}
 						payload.Interactive = &interactive
 
 					} else if len(qrs) <= 10 {
-						interactive := cwaInteractive{Type: "list", Body: struct {
+						interactive := wacInteractive{Type: "list", Body: struct {
 							Text string "json:\"text\""
 						}{Text: msgParts[i-len(msg.Attachments())]}}
 
-						section := cwaMTSection{
-							Rows: make([]cwaMTSectionRow, len(qrs)),
+						section := wacMTSection{
+							Rows: make([]wacMTSectionRow, len(qrs)),
 						}
 						for i, qr := range qrs {
-							section.Rows[i] = cwaMTSectionRow{
+							section.Rows[i] = wacMTSectionRow{
 								ID:    fmt.Sprint(i),
 								Title: qr,
 							}
@@ -1218,20 +1218,20 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 
 						interactive.Action = &struct {
 							Button   string         "json:\"button,omitempty\""
-							Sections []cwaMTSection "json:\"sections,omitempty\""
-							Buttons  []cwaMTButton  "json:\"buttons,omitempty\""
-						}{Button: "Menu", Sections: []cwaMTSection{
+							Sections []wacMTSection "json:\"sections,omitempty\""
+							Buttons  []wacMTButton  "json:\"buttons,omitempty\""
+						}{Button: "Menu", Sections: []wacMTSection{
 							section,
 						}}
 
 						payload.Interactive = &interactive
 					} else {
-						return nil, fmt.Errorf("too many quick replies CWA supports only up to 10 quick replies")
+						return nil, fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
 					}
 				} else {
 					// this is still a msg part
 					payload.Type = "text"
-					payload.Text = &cwaText{Body: msgParts[i-len(msg.Attachments())]}
+					payload.Text = &wacText{Body: msgParts[i-len(msg.Attachments())]}
 				}
 			}
 
@@ -1242,7 +1242,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 			return status, err
 		}
 
-		req, err := http.NewRequest(http.MethodPost, cwaPhoneURL.String(), bytes.NewReader(jsonBody))
+		req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))
 		if err != nil {
 			return nil, err
 		}
@@ -1259,7 +1259,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 			return status, nil
 		}
 
-		respPayload := &cwaMTResponse{}
+		respPayload := &wacMTResponse{}
 		err = json.Unmarshal(rr.Body, respPayload)
 		if err != nil {
 			log.WithError("Message Send Error", errors.Errorf("unable to unmarshal response body"))
@@ -1278,7 +1278,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 
 // DescribeURN looks up URN metadata for new contacts
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
-	if channel.ChannelType() == "CWA" {
+	if channel.ChannelType() == "WAC" {
 		return map[string]string{}, nil
 
 	}

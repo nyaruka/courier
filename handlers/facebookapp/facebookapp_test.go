@@ -25,8 +25,8 @@ var testChannelsIG = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "IG", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"}),
 }
 
-var testChannelsCWA = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "CWA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"}),
+var testChannelsWAC = []courier.Channel{
+	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "WAC", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"}),
 }
 
 var testCasesFBA = []ChannelHandleTestCase{
@@ -218,8 +218,8 @@ func TestDescribeIG(t *testing.T) {
 	}
 }
 
-func TestDescribeCWA(t *testing.T) {
-	handler := newHandler("CWA", "Cloud API WhatsApp", false).(courier.URNDescriber)
+func TestDescribeWAC(t *testing.T) {
+	handler := newHandler("WAC", "Cloud API WhatsApp", false).(courier.URNDescriber)
 
 	tcs := []struct {
 		urn      urns.URN
@@ -228,53 +228,53 @@ func TestDescribeCWA(t *testing.T) {
 		{"whatsapp:4567", map[string]string{}}}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), testChannelsCWA[0], tc.urn)
+		metadata, _ := handler.DescribeURN(context.Background(), testChannelsWAC[0], tc.urn)
 		assert.Equal(t, metadata, tc.metadata)
 	}
 }
 
-var cwaReceiveURL = "/c/cwa/receive"
+var wacReceiveURL = "/c/wac/receive"
 
-var testCasesCWA = []ChannelHandleTestCase{
-	{Label: "Receive Message CWA", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/helloCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+var testCasesWAC = []ChannelHandleTestCase{
+	{Label: "Receive Message WAC", URL: wacReceiveURL, Data: string(courier.ReadFile("./testdata/wac/helloWAC.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Hello World"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Duplicate Valid Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/duplicateCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Duplicate Valid Message", URL: wacReceiveURL, Data: string(courier.ReadFile("./testdata/wac/duplicateWAC.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Hello World"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Valid Voice Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/voiceCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Valid Voice Message", URL: wacReceiveURL, Data: string(courier.ReadFile("./testdata/wac/voiceWAC.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp(""), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Voice"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Valid Button Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/buttonCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Valid Button Message", URL: wacReceiveURL, Data: string(courier.ReadFile("./testdata/wac/buttonWAC.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("No"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Valid Document Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/documentCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Valid Document Message", URL: wacReceiveURL, Data: string(courier.ReadFile("./testdata/wac/documentWAC.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("80skaraokesonglistartist"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Document"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Valid Image Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/imageCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Valid Image Message", URL: wacReceiveURL, Data: string(courier.ReadFile("./testdata/wac/imageWAC.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Image"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Valid Video Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/videoCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Valid Video Message", URL: wacReceiveURL, Data: string(courier.ReadFile("./testdata/wac/videoWAC.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Video"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Valid Audio Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/audioCWA.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+	{Label: "Receive Valid Audio Message", URL: wacReceiveURL, Data: string(courier.ReadFile("./testdata/wac/audioWAC.json")), Status: 200, Response: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		Text: Sp("Check out my new phone!"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Attachment: Sp("https://foo.bar/attachmentURL_Audio"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Valid Location Message", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/locationCWA.json")), Status: 200, Response: `"type":"msg"`,
+	{Label: "Receive Valid Location Message", URL: wacReceiveURL, Data: string(courier.ReadFile("./testdata/wac/locationWAC.json")), Status: 200, Response: `"type":"msg"`,
 		Text: Sp(""), Attachment: Sp("geo:0.000000,1.000000"), URN: Sp("whatsapp:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: "not json", Status: 400, Response: "unable to parse", PrepRequest: addValidSignature},
-	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/invalidFrom.json")), Status: 400, Response: "invalid whatsapp id", PrepRequest: addValidSignature},
-	{Label: "Receive Invalid JSON", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/invalidTimestamp.json")), Status: 400, Response: "invalid timestamp", PrepRequest: addValidSignature},
+	{Label: "Receive Invalid JSON", URL: wacReceiveURL, Data: "not json", Status: 400, Response: "unable to parse", PrepRequest: addValidSignature},
+	{Label: "Receive Invalid JSON", URL: wacReceiveURL, Data: string(courier.ReadFile("./testdata/wac/invalidFrom.json")), Status: 400, Response: "invalid whatsapp id", PrepRequest: addValidSignature},
+	{Label: "Receive Invalid JSON", URL: wacReceiveURL, Data: string(courier.ReadFile("./testdata/wac/invalidTimestamp.json")), Status: 400, Response: "invalid timestamp", PrepRequest: addValidSignature},
 
-	{Label: "Receive Valid Status", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/validStatusCWA.json")), Status: 200, Response: `"type":"status"`,
+	{Label: "Receive Valid Status", URL: wacReceiveURL, Data: string(courier.ReadFile("./testdata/wac/validStatusWAC.json")), Status: 200, Response: `"type":"status"`,
 		MsgStatus: Sp("S"), ExternalID: Sp("external_id"), PrepRequest: addValidSignature},
-	{Label: "Receive Invalid Status", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/invalidStatusCWA.json")), Status: 400, Response: `"unknown status: in_orbit"`, PrepRequest: addValidSignature},
-	{Label: "Receive Ignore Status", URL: cwaReceiveURL, Data: string(courier.ReadFile("./testdata/cwa/ignoreStatusCWA.json")), Status: 200, Response: `"ignoring status: deleted"`, PrepRequest: addValidSignature},
+	{Label: "Receive Invalid Status", URL: wacReceiveURL, Data: string(courier.ReadFile("./testdata/wac/invalidStatusWAC.json")), Status: 400, Response: `"unknown status: in_orbit"`, PrepRequest: addValidSignature},
+	{Label: "Receive Ignore Status", URL: wacReceiveURL, Data: string(courier.ReadFile("./testdata/wac/ignoreStatusWAC.json")), Status: 200, Response: `"ignoring status: deleted"`, PrepRequest: addValidSignature},
 }
 
 func TestHandler(t *testing.T) {
@@ -320,7 +320,7 @@ func TestHandler(t *testing.T) {
 	}))
 	graphURL = server.URL
 
-	RunChannelTestCases(t, testChannelsCWA, newHandler("CWA", "Cloud API WhatsApp", false), testCasesCWA)
+	RunChannelTestCases(t, testChannelsWAC, newHandler("WAC", "Cloud API WhatsApp", false), testCasesWAC)
 	RunChannelTestCases(t, testChannelsFBA, newHandler("FBA", "Facebook", false), testCasesFBA)
 	RunChannelTestCases(t, testChannelsIG, newHandler("IG", "Instagram", false), testCasesIG)
 }
@@ -494,7 +494,7 @@ var SendTestCasesIG = []ChannelSendTestCase{
 		SendPrep: setSendURL},
 }
 
-var SendTestCasesCWA = []ChannelSendTestCase{
+var SendTestCasesWAC = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		Text: "Simple Message", URN: "whatsapp:250788123123", Path: "/12345_ID/messages",
 		Status: "W", ExternalID: "157b5e14568e8",
@@ -694,10 +694,10 @@ func TestSending(t *testing.T) {
 	maxMsgLength = 100
 	var ChannelFBA = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"})
 	var ChannelIG = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IG", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"})
-	var ChannelCWA = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CWA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123", configCWAPhoneNumberID: "12345_ID"})
+	var ChannelWAC = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WAC", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123", configWACPhoneNumberID: "12345_ID"})
 	RunChannelSendTestCases(t, ChannelFBA, newHandler("FBA", "Facebook", false), SendTestCasesFBA, nil)
 	RunChannelSendTestCases(t, ChannelIG, newHandler("IG", "Instagram", false), SendTestCasesIG, nil)
-	RunChannelSendTestCases(t, ChannelCWA, newHandler("CWA", "Cloud API WhatsApp", false), SendTestCasesCWA, nil)
+	RunChannelSendTestCases(t, ChannelWAC, newHandler("WAC", "Cloud API WhatsApp", false), SendTestCasesWAC, nil)
 }
 
 func TestSigning(t *testing.T) {
