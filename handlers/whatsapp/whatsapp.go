@@ -360,6 +360,7 @@ var waIgnoreStatuses = map[string]bool{
 type mtTextPayload struct {
 	To   string `json:"to"    validate:"required"`
 	Type string `json:"type"  validate:"required"`
+	PreviewURL bool `json:"preview_url,omitempty"`
 	Text struct {
 		Body string `json:"body" validate:"required"`
 	} `json:"text"`
@@ -799,9 +800,20 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				}
 			} else {
 				for _, part := range parts {
-					payload := mtTextPayload{
-						To:   msg.URN().Path(),
-						Type: "text",
+
+					//check if you have a link
+					var payload mtTextPayload
+					if strings.Contains(part, "https://") || strings.Contains(part, "http://") {
+						payload = mtTextPayload{
+							To:          msg.URN().Path(),
+							Type:        "text",
+							PreviewURL: true,
+						}
+					} else {
+						payload = mtTextPayload{
+							To:          msg.URN().Path(),
+							Type:        "text",
+						}
 					}
 					payload.Text.Body = part
 					payloads = append(payloads, payload)
