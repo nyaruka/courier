@@ -16,6 +16,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/redisx"
 	"github.com/patrickmn/go-cache"
@@ -863,7 +864,7 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 		return "", logs, errors.Wrapf(err, "error building request to media endpoint")
 	}
 	setWhatsAppAuthHeader(&req.Header, msg.Channel())
-	req.Header.Add("Content-Type", http.DetectContentType(rr.Body))
+	req.Header.Add("Content-Type", httpx.DetectContentType(rr.Body))
 	rr, err = utils.MakeHTTPRequest(req)
 	log = courier.NewChannelLogFromRR("Uploading media to WhatsApp", msg.Channel(), msg.ID(), rr).WithError("Error uploading media to WhatsApp", err)
 	logs = append(logs, log)
