@@ -1,3 +1,9 @@
+v7.3.2
+----------
+ * Update to latest gocommon and start using httpx.DetectContentType
+ * Add link preview attribute for sending whatsapp
+ * Update golang.org/x/sys
+
 v7.3.1
 ----------
  * Fix handling stops via status callbacks on Twilio
