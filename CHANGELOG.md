@@ -1,3 +1,7 @@
+v7.3.3
+----------
+ * Quick fix to stop JSON content being omitted in logs
+
 v7.3.2
 ----------
  * Update to latest gocommon and start using httpx.DetectContentType
