@@ -358,10 +358,10 @@ var waIgnoreStatuses = map[string]bool{
 // }
 
 type mtTextPayload struct {
-	To   string `json:"to"    validate:"required"`
-	Type string `json:"type"  validate:"required"`
-	PreviewURL bool `json:"preview_url,omitempty"`
-	Text struct {
+	To         string `json:"to"    validate:"required"`
+	Type       string `json:"type"  validate:"required"`
+	PreviewURL bool   `json:"preview_url,omitempty"`
+	Text       struct {
 		Body string `json:"body" validate:"required"`
 	} `json:"text"`
 }
@@ -548,6 +548,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	// we are wired it there were no errors
 	if err == nil {
+		// so update contact URN if wppID != ""
 		if wppID != "" {
 			newURN, _ := urns.NewWhatsAppURN(wppID)
 			err = status.SetUpdatedURN(msg.URN(), newURN)
@@ -805,14 +806,14 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 					var payload mtTextPayload
 					if strings.Contains(part, "https://") || strings.Contains(part, "http://") {
 						payload = mtTextPayload{
-							To:          msg.URN().Path(),
-							Type:        "text",
+							To:         msg.URN().Path(),
+							Type:       "text",
 							PreviewURL: true,
 						}
 					} else {
 						payload = mtTextPayload{
-							To:          msg.URN().Path(),
-							Type:        "text",
+							To:   msg.URN().Path(),
+							Type: "text",
 						}
 					}
 					payload.Text.Body = part
@@ -1025,6 +1026,10 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload 
 		return wppID, externalID, []*courier.ChannelLog{log, checkLog, retryLog}, err
 	}
 	externalID, err := getSendWhatsAppMsgId(rr)
+	wppID, err := jsonparser.GetString(rr.Body, "contacts", "[0]", "wa_id")
+	if wppID != msg.URN().Path() {
+		return wppID, externalID, []*courier.ChannelLog{log}, err
+	}
 	return "", externalID, []*courier.ChannelLog{log}, err
 }
 

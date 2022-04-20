@@ -110,6 +110,7 @@ type ChannelSendTestCase struct {
 	ContactURNs map[string]bool
 
 	SendPrep SendPrepFunc
+	NewURN   string
 }
 
 // Sp is a utility method to get the pointer to the passed in string
@@ -349,6 +350,11 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				}
 			}
 
+			if testCase.NewURN != "" {
+				old, new := status.UpdatedURN()
+				require.Equal(urns.URN(testCase.URN), old)
+				require.Equal(urns.URN(testCase.NewURN), new)
+			}
 		})
 	}
 
