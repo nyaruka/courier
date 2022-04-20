@@ -45,7 +45,7 @@ func sanitizeBody(body string) string {
 	ct := httpx.DetectContentType([]byte(parts[1]))
 
 	// if this isn't text, replace with placeholder
-	if !strings.HasPrefix(ct, "text") {
+	if !strings.HasPrefix(ct, "text") && !strings.HasPrefix(ct, "application/json") {
 		return fmt.Sprintf("%s\r\n\r\nOmitting non text body of type: %s", parts[0], ct)
 	}
 
