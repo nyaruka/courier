@@ -1026,11 +1026,14 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload 
 		return wppID, externalID, []*courier.ChannelLog{log, checkLog, retryLog}, err
 	}
 	externalID, err := getSendWhatsAppMsgId(rr)
+	if err != nil {
+		return "", "", []*courier.ChannelLog{log}, err
+	}
 	wppID, err := jsonparser.GetString(rr.Body, "contacts", "[0]", "wa_id")
-	if wppID != msg.URN().Path() {
+	if wppID != "" && wppID != msg.URN().Path() {
 		return wppID, externalID, []*courier.ChannelLog{log}, err
 	}
-	return "", externalID, []*courier.ChannelLog{log}, err
+	return "", externalID, []*courier.ChannelLog{log}, nil
 }
 
 func setWhatsAppAuthHeader(header *http.Header, channel courier.Channel) {
