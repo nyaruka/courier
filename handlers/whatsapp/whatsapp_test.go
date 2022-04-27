@@ -689,6 +689,13 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			},
 		},
 		SendPrep: setSendURL},
+	{Label: "Update URN with wa_id returned",
+		Text: "Simple Message", URN: "whatsapp:5511987654321", Path: "/v1/messages",
+		Status: "W", ExternalID: "157b5e14568e8",
+		ResponseBody: `{ "contacts":[{"input":"5511987654321","wa_id":"551187654321"}], "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
+		RequestBody: `{"to":"5511987654321","type":"text","text":{"body":"Simple Message"}}`,
+		SendPrep:    setSendURL,
+		NewURN:      "whatsapp:551187654321"},
 }
 
 var mediaCacheSendTestCases = []ChannelSendTestCase{
