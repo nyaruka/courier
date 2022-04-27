@@ -1,3 +1,8 @@
+v7.3.4
+----------
+ * Update WhatsApp handler so that we update the URN if the returned ID doesn't match
+ * Stop Telegram contact that have blocked the channel bot
+
 v7.3.3
 ----------
  * Quick fix to stop JSON content being omitted in logs
