@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -131,7 +132,16 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
-func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, keyboard *ReplyKeyboardMarkup) (string, *courier.ChannelLog, error) {
+type mtResponse struct {
+	Ok          bool   `json:"ok" validate:"required"`
+	ErrorCode   int    `json:"error_code"`
+	Description string `json:"description"`
+	Result      struct {
+		MessageID int64 `json:"message_id"`
+	} `json:"result"`
+}
+
+func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, keyboard *ReplyKeyboardMarkup) (string, *courier.ChannelLog, bool, error) {
 	// either include or remove our keyboard
 	if keyboard == nil {
 		form.Add("reply_markup", `{"remove_keyboard":true}`)
@@ -142,7 +152,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 	sendURL := fmt.Sprintf("%s/bot%s/%s", apiURL, token, path)
 	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		return "", nil, err
+		return "", nil, false, err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
@@ -151,19 +161,22 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 	// build our channel log
 	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 
-	// was this request successful?
-	ok, err := jsonparser.GetBoolean([]byte(rr.Body), "ok")
-	if err != nil || !ok {
-		return "", log, errors.Errorf("response not 'ok'")
+	response := &mtResponse{}
+	err = json.Unmarshal(rr.Body, response)
+
+	if err != nil || !response.Ok {
+		if response.ErrorCode == 403 && response.Description == "Forbidden: bot was blocked by the user" {
+			return "", log, true, errors.Errorf("response not 'ok'")
+
+		}
+		return "", log, false, errors.Errorf("response not 'ok'")
+
 	}
 
-	// grab our message id
-	externalID, err := jsonparser.GetInt([]byte(rr.Body), "result", "message_id")
-	if err != nil {
-		return "", log, errors.Errorf("no 'result.message_id' in response")
+	if response.Result.MessageID > 0 {
+		return strconv.FormatInt(response.Result.MessageID, 10), log, false, nil
 	}
-
-	return strconv.FormatInt(externalID, 10), log, nil
+	return "", log, true, errors.Errorf("no 'result.message_id' in response")
 }
 
 // SendMsg sends the passed in message, returning any error
@@ -205,7 +218,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"text":    []string{msg.Text()},
 		}
 
-		externalID, log, err := h.sendMsgPart(msg, authToken, "sendMessage", form, msgKeyBoard)
+		externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendMessage", form, msgKeyBoard)
+		if botBlocked {
+			status.SetStatus(courier.MsgFailed)
+			channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
+			err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+			return status, err
+		}
 		status.SetExternalID(externalID)
 		hasError = err != nil
 		status.AddLog(log)
@@ -227,7 +246,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"photo":   []string{mediaURL},
 				"caption": []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, attachmentKeyBoard)
+			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, attachmentKeyBoard)
+			if botBlocked {
+				status.SetStatus(courier.MsgFailed)
+				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
+				err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+				return status, err
+			}
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
@@ -238,7 +263,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"video":   []string{mediaURL},
 				"caption": []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendVideo", form, attachmentKeyBoard)
+			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendVideo", form, attachmentKeyBoard)
+			if botBlocked {
+				status.SetStatus(courier.MsgFailed)
+				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
+				err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+				return status, err
+			}
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
@@ -249,7 +280,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"audio":   []string{mediaURL},
 				"caption": []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendAudio", form, attachmentKeyBoard)
+			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendAudio", form, attachmentKeyBoard)
+			if botBlocked {
+				status.SetStatus(courier.MsgFailed)
+				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
+				err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+				return status, err
+			}
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
@@ -260,7 +297,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"document": []string{mediaURL},
 				"caption":  []string{caption},
 			}
-			externalID, log, err := h.sendMsgPart(msg, authToken, "sendDocument", form, attachmentKeyBoard)
+			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendDocument", form, attachmentKeyBoard)
+			if botBlocked {
+				status.SetStatus(courier.MsgFailed)
+				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
+				err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+				return status, err
+			}
 			status.SetExternalID(externalID)
 			hasError = err != nil
 			status.AddLog(log)
