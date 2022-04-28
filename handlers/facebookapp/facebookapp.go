@@ -292,7 +292,7 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 			return nil, fmt.Errorf("no changes found")
 		}
 
-		channelAddress = payload.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber
+		channelAddress = payload.Entry[0].Changes[0].Value.Metadata.PhoneNumberID
 		if channelAddress == "" {
 			return nil, fmt.Errorf("no channel address found")
 		}
@@ -1050,13 +1050,8 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 		return nil, fmt.Errorf("missing access token")
 	}
 
-	phoneNumberId := msg.Channel().StringConfigForKey(configWACPhoneNumberID, "")
-	if phoneNumberId == "" {
-		return nil, fmt.Errorf("missing WAC phone number ID")
-	}
-
 	base, _ := url.Parse(graphURL)
-	path, _ := url.Parse(fmt.Sprintf("/%s/messages", phoneNumberId))
+	path, _ := url.Parse(fmt.Sprintf("/%s/messages", msg.Channel().Address()))
 	wacPhoneURL := base.ResolveReference(path)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
