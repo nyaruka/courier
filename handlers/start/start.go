@@ -22,7 +22,7 @@ import (
 
 var (
 	maxMsgLength = 1600
-	sendURL      = "http://bulk.startmobile.com.ua/clients.php"
+	sendURL      = "https://bulk.startmobile.ua/clients.php"
 )
 
 func init() {
