@@ -1045,10 +1045,7 @@ type wacMTResponse struct {
 
 func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	// can't do anything without an access token
-	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
-	if accessToken == "" {
-		return nil, fmt.Errorf("missing access token")
-	}
+	accessToken := h.Server().Config().WhatsappAdminSystemUserToken
 
 	base, _ := url.Parse(graphURL)
 	path, _ := url.Parse(fmt.Sprintf("/%s/messages", msg.Channel().Address()))
