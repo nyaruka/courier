@@ -1,3 +1,7 @@
+v7.3.6
+----------
+ * Update to go 1.18 and latest gocommon/phonenumbers/jsonparser
+
 v7.3.5
 ----------
  * Update Start Mobile send URL
