@@ -1,8 +1,8 @@
 name: CI
 on: [push, pull_request]
 env:
-  go-version: "1.17.7"
-  redis-version: "3.2.4"
+  go-version: "1.18.x"
+  redis-version: "5.0.6"
 jobs:
   test:
     name: Test
