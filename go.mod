@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/antchfx/xmlquery v0.0.0-20181223105952-355641961c92
-	github.com/buger/jsonparser v0.0.0-20180318095312-2cac668e8456
+	github.com/buger/jsonparser v1.1.1
 	github.com/dghubble/oauth1 v0.4.0
 	github.com/evalphobia/logrus_sentry v0.4.6
 	github.com/go-chi/chi v4.1.2+incompatible
