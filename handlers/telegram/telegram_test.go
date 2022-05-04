@@ -615,7 +615,17 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		PostParams: map[string]string{"text": `Stopped Contact`, "chat_id": "12345"},
 		SendPrep:   setSendURL,
 		Stopped:    true},
-
+	{Label: "Should not stop other error",
+		Text: "Simple Message", URN: "telegram:12345",
+		Status:       "E",
+		ResponseBody: `{ "ok": true }`, ResponseStatus: 200,
+		PostParams: map[string]string{
+			"text":         "Simple Message",
+			"chat_id":      "12345",
+			"reply_markup": `{"remove_keyboard":true}`,
+		},
+		SendPrep: setSendURL,
+		Stopped:  false},
 	{Label: "Send Photo",
 		Text: "My pic!", URN: "telegram:12345", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status:       "W",
