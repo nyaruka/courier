@@ -1,3 +1,7 @@
+v7.3.7
+----------
+ * Fix to not stop contact for other errors
+
 v7.3.6
 ----------
  * Update to go 1.18 and latest gocommon/phonenumbers/jsonparser
