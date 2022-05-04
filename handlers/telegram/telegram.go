@@ -176,7 +176,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 	if response.Result.MessageID > 0 {
 		return strconv.FormatInt(response.Result.MessageID, 10), log, false, nil
 	}
-	return "", log, true, errors.Errorf("no 'result.message_id' in response")
+	return "", log, false, errors.Errorf("no 'result.message_id' in response")
 }
 
 // SendMsg sends the passed in message, returning any error
