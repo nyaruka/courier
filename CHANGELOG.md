@@ -1,3 +1,7 @@
+v7.3.8
+----------
+ * Add log to status first when handling telegram opt outs
+
 v7.3.7
 ----------
  * Fix to not stop contact for other errors
