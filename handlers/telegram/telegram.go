@@ -219,6 +219,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendMessage", form, msgKeyBoard)
+		status.AddLog(log)
 		if botBlocked {
 			status.SetStatus(courier.MsgFailed)
 			channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -227,7 +228,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 		status.SetExternalID(externalID)
 		hasError = err != nil
-		status.AddLog(log)
 
 	}
 
@@ -247,6 +247,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"caption": []string{caption},
 			}
 			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, attachmentKeyBoard)
+			status.AddLog(log)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -255,7 +256,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			}
 			status.SetExternalID(externalID)
 			hasError = err != nil
-			status.AddLog(log)
 
 		case "video":
 			form := url.Values{
@@ -264,6 +264,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"caption": []string{caption},
 			}
 			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendVideo", form, attachmentKeyBoard)
+			status.AddLog(log)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -272,7 +273,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			}
 			status.SetExternalID(externalID)
 			hasError = err != nil
-			status.AddLog(log)
 
 		case "audio":
 			form := url.Values{
@@ -281,6 +281,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"caption": []string{caption},
 			}
 			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendAudio", form, attachmentKeyBoard)
+			status.AddLog(log)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -289,7 +290,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			}
 			status.SetExternalID(externalID)
 			hasError = err != nil
-			status.AddLog(log)
 
 		case "application":
 			form := url.Values{
@@ -298,6 +298,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				"caption":  []string{caption},
 			}
 			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendDocument", form, attachmentKeyBoard)
+			status.AddLog(log)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -306,7 +307,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			}
 			status.SetExternalID(externalID)
 			hasError = err != nil
-			status.AddLog(log)
 
 		default:
 			status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
