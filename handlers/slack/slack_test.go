@@ -23,11 +23,29 @@ func setSendUrl(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 var defaultSendTestCases = []ChannelSendTestCase{
 	{
 		Label: "Plain Send",
-		Text:  "Simple Message", URN: "slack:12345",
-		Status: "W", ExternalID: "123",
-		ResponseBody:   `{"ok":true,"channel":"C0123ABCDEF","ts":"1652391855.466329","message":{"bot_id":"B03F2F82B4N","type":"message","text":"hello","user":"U03F94B4UMQ","ts":"1652391855.466329","app_id":"A03FBEC4NE8","team":"T03CN5KTA6S","bot_profile":{"id":"B03F2F82B4N","app_id":"A03FBEC4NE8","name":"Test Bot","icons":{"image_36":"https:\/\/a.slack-edge.com\/80588\/img\/plugins\/app\/bot_36.png","image_48":"https:\/\/a.slack-edge.com\/80588\/img\/plugins\/app\/bot_48.png","image_72":"https:\/\/a.slack-edge.com\/80588\/img\/plugins\/app\/service_72.png"},"deleted":false,"updated":1652389333,"team_id":"T03CN5KTA6S"},"blocks":[{"type":"rich_text","block_id":"jv9h","elements":[{"type":"rich_text_section","elements":[{"type":"text","text":"hello"}]}]}]}}`,
+		Text:  "Simple Message", URN: "slack:C0123ABCDEF",
+		Status:         "W",
+		ResponseBody:   `{"ok":true,"channel":"C0123ABCDEF"}`,
 		ResponseStatus: 200,
-		RequestBody:    `{"chanel": "C0123ABCDEF", "text": "Hello"}`,
+		RequestBody:    `{"channel":"C0123ABCDEF","text":"Simple Message"}`,
+		SendPrep:       setSendUrl,
+	},
+	{
+		Label: "Unicode Send",
+		Text:  "☺", URN: "slack:U0123ABCDEF",
+		Status:         "W",
+		ResponseBody:   `{"ok":true,"channel":"U0123ABCDEF"}`,
+		ResponseStatus: 200,
+		RequestBody:    `{"channel":"U0123ABCDEF","text":"☺"}`,
+		SendPrep:       setSendUrl,
+	},
+	{
+		Label: "Send Text Error",
+		Text:  "Hello", URN: "slack:U0123ABCDEF",
+		Status:         "E",
+		ResponseBody:   `{"ok":false,"error":"invalid_auth"}`,
+		ResponseStatus: 200,
+		RequestBody:    `{"channel":"U0123ABCDEF","text":"Hello"}`,
 		SendPrep:       setSendUrl,
 	},
 }
@@ -35,7 +53,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SL", "2022", "US",
 		map[string]interface{}{
-			courier.ConfigAuthToken: "xoxb-123456789...",
+			configBotToken: "xoxb-123456789...",
 		},
 	)
 
