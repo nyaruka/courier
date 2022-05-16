@@ -7,6 +7,7 @@ build:
     - linux
   goarch:
     - amd64
+    - arm64
 
 archives:
   - files:
