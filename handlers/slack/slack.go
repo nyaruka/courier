@@ -25,6 +25,11 @@ const (
 	configValidationToken = "verification_token"
 )
 
+var (
+	ErrAlreadyPublic         = "already_public"
+	ErrPublicVideoNotAllowed = "public_video_not_allowed"
+)
+
 func init() {
 	courier.RegisterHandler(newHandler())
 }
@@ -97,7 +102,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 }
 
-func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file file) (string, error) {
+func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file moFile) (string, error) {
 	userToken := channel.StringConfigForKey(configUserToken, "")
 
 	fileApiURL := apiURL + "/files.sharedPublicURL"
@@ -126,15 +131,18 @@ func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file
 	currentFile := fResponse.File
 
 	if !fResponse.OK {
-		if fResponse.Error != "already_public" {
-			return "", errors.Errorf("couldn't resolve file for file id: %s. %s", file.ID, fResponse.Error)
+		if fResponse.Error != ErrAlreadyPublic {
+			if fResponse.Error == ErrPublicVideoNotAllowed {
+				return "", errors.Errorf("public sharing of videos is not available for a free instance of Slack. file id: %s. error: %s", file.ID, fResponse.Error)
+			}
+			return "", errors.Errorf("couldn't resolve file for file id: %s. error: %s", file.ID, fResponse.Error)
 		}
 		currentFile = file
 	}
 
 	pubLnkSplited := strings.Split(currentFile.PermalinkPublic, "-")
 	pubSecret := pubLnkSplited[len(pubLnkSplited)-1]
-	filePath := currentFile.URLPrivate + "?pub_secret=" + pubSecret
+	filePath := currentFile.URLPrivateDownload + "?pub_secret=" + pubSecret
 
 	return filePath, nil
 }
@@ -189,14 +197,14 @@ type moPayload struct {
 	TeamID   string `json:"team_id,omitempty"`
 	APIAppID string `json:"api_app_id,omitempty"`
 	Event    struct {
-		Type        string `json:"type,omitempty"`
-		Channel     string `json:"channel,omitempty"`
-		User        string `json:"user,omitempty"`
-		Text        string `json:"text,omitempty"`
-		Ts          string `json:"ts,omitempty"`
-		EventTs     string `json:"event_ts,omitempty"`
-		ChannelType string `json:"channel_type,omitempty"`
-		Files       []file `json:"files"`
+		Type        string   `json:"type,omitempty"`
+		Channel     string   `json:"channel,omitempty"`
+		User        string   `json:"user,omitempty"`
+		Text        string   `json:"text,omitempty"`
+		Ts          string   `json:"ts,omitempty"`
+		EventTs     string   `json:"event_ts,omitempty"`
+		ChannelType string   `json:"channel_type,omitempty"`
+		Files       []moFile `json:"files"`
 	} `json:"event,omitempty"`
 	Type           string   `json:"type,omitempty"`
 	AuthedUsers    []string `json:"authed_users,omitempty"`
@@ -219,7 +227,7 @@ type item struct {
 	Ts      string `json:"ts,omitempty"`
 }
 
-type file struct {
+type moFile struct {
 	ID                 string `json:"id"`
 	Created            int    `json:"created"`
 	Timestamp          int    `json:"timestamp"`
@@ -257,6 +265,6 @@ type file struct {
 
 type fileResponse struct {
 	OK    bool   `json:"ok"`
-	File  file   `json:"file"`
+	File  moFile `json:"file"`
 	Error string `json:"error"`
 }
