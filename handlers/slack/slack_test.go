@@ -19,7 +19,7 @@ const (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel(channelUUID, "SL", "2022", "US", map[string]interface{}{"bot_token": "xoxb-abc123"}),
+	courier.NewMockChannel(channelUUID, "SL", "2022", "US", map[string]interface{}{"bot_token": "xoxb-abc123", "verification_token": "one-long-verification-token"}),
 }
 
 const helloMsg = `{
@@ -350,7 +350,7 @@ func TestSending(t *testing.T) {
 func TestVerification(t *testing.T) {
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
 		{Label: "Valid token", URL: receiveURL, Status: 200,
-			Data:     `{"token":"xoxb-abc123","challenge":"challenge123","type":"url_verification"}`,
+			Data:     `{"token":"one-long-verification-token","challenge":"challenge123","type":"url_verification"}`,
 			Headers:  map[string]string{"content-type": "text/plain"},
 			Response: "challenge123", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		},
