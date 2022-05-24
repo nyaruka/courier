@@ -14,12 +14,14 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/pkg/errors"
 )
 
 var apiURL = "https://slack.com/api"
 
 const (
 	configBotToken        = "bot_token"
+	configUserToken       = "user_token"
 	configValidationToken = "verification_token"
 )
 
@@ -73,13 +75,68 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	// }
 
 	if strings.Contains(payload.Event.Type, "message") {
-		text := payload.Event.Text
+		attachmentURLs := make([]string, 0)
+		for _, file := range payload.Event.Files {
+			fileURL, err := h.resolveFile(ctx, channel, file)
+			if err != nil {
+				courier.LogRequestError(r, channel, err)
+			} else {
+				attachmentURLs = append(attachmentURLs, fileURL)
+			}
+		}
 
+		text := payload.Event.Text
 		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(payload.EventID).WithContactName("")
+
+		for _, attURL := range attachmentURLs {
+			msg.WithAttachment(attURL)
+		}
 
 		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 	}
 	return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
+}
+
+func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file file) (string, error) {
+	userToken := channel.StringConfigForKey(configUserToken, "")
+
+	fileApiURL := apiURL + "/files.sharedPublicURL"
+
+	data := strings.NewReader(fmt.Sprintf(`{"file":"%s"}`, file.ID))
+	req, err := http.NewRequest(http.MethodPost, fileApiURL, data)
+	if err != nil {
+		courier.LogRequestError(req, channel, err)
+		return "", err
+	}
+	req.Header.Add("Content-Type", "application/json; charset=utf-8")
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", userToken))
+
+	rr, err := utils.MakeHTTPRequest(req)
+	if err != nil {
+		log := courier.NewChannelLogFromRR("File Resolving", channel, courier.NilMsgID, rr).WithError("File Resolving Error", err)
+		h.Backend().WriteChannelLogs(ctx, []*courier.ChannelLog{log})
+		return "", err
+	}
+
+	var fResponse fileResponse
+	if err := json.Unmarshal([]byte(rr.Body), &fResponse); err != nil {
+		return "", errors.Errorf("couldn't unmarshal file response: %v", err)
+	}
+
+	currentFile := fResponse.File
+
+	if !fResponse.OK {
+		if fResponse.Error != "already_public" {
+			return "", errors.Errorf("couldn't resolve file for file id: %s. %s", file.ID, fResponse.Error)
+		}
+		currentFile = file
+	}
+
+	pubLnkSplited := strings.Split(currentFile.PermalinkPublic, "-")
+	pubSecret := pubLnkSplited[len(pubLnkSplited)-1]
+	filePath := currentFile.URLPrivate + "?pub_secret=" + pubSecret
+
+	return filePath, nil
 }
 
 func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
@@ -139,6 +196,7 @@ type moPayload struct {
 		Ts          string `json:"ts,omitempty"`
 		EventTs     string `json:"event_ts,omitempty"`
 		ChannelType string `json:"channel_type,omitempty"`
+		Files       []file `json:"files"`
 	} `json:"event,omitempty"`
 	Type           string   `json:"type,omitempty"`
 	AuthedUsers    []string `json:"authed_users,omitempty"`
@@ -159,4 +217,46 @@ type item struct {
 	Type    string `json:"type,omitempty"`
 	Channel string `json:"channel,omitempty"`
 	Ts      string `json:"ts,omitempty"`
+}
+
+type file struct {
+	ID                 string `json:"id"`
+	Created            int    `json:"created"`
+	Timestamp          int    `json:"timestamp"`
+	Name               string `json:"name"`
+	Title              string `json:"title"`
+	Mimetype           string `json:"mimetype"`
+	Filetype           string `json:"filetype"`
+	PrettyType         string `json:"pretty_type"`
+	User               string `json:"user"`
+	Editable           bool   `json:"editable"`
+	Size               int    `json:"size"`
+	Mode               string `json:"mode"`
+	IsExternal         bool   `json:"is_external"`
+	ExternalType       string `json:"external_type"`
+	IsPublic           bool   `json:"is_public"`
+	PublicURLShared    bool   `json:"public_url_shared"`
+	DisplayAsBot       bool   `json:"display_as_bot"`
+	Username           string `json:"username"`
+	URLPrivate         string `json:"url_private"`
+	URLPrivateDownload string `json:"url_private_download"`
+	MediaDisplayType   string `json:"media_display_type"`
+	Thumb64            string `json:"thumb_64"`
+	Thumb80            string `json:"thumb_80"`
+	Thumb360           string `json:"thumb_360"`
+	Thumb360W          int    `json:"thumb_360_w"`
+	Thumb360H          int    `json:"thumb_360_h"`
+	Thumb160           string `json:"thumb_160"`
+	OriginalW          int    `json:"original_w"`
+	OriginalH          int    `json:"original_h"`
+	ThumbTiny          string `json:"thumb_tiny"`
+	Permalink          string `json:"permalink"`
+	PermalinkPublic    string `json:"permalink_public"`
+	HasRichPreview     bool   `json:"has_rich_preview"`
+}
+
+type fileResponse struct {
+	OK    bool   `json:"ok"`
+	File  file   `json:"file"`
+	Error string `json:"error"`
 }
