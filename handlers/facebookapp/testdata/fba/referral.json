@@ -1,0 +1,27 @@
+{
+	"object": "page",
+	"entry": [
+		{
+			"id": "12345",
+			"messaging": [
+				{
+					"referral": {
+						"ref": "referral id",
+						"ad_id": "ad id",
+						"source": "referral source",
+						"type": "referral type"
+					},
+					"recipient": {
+						"id": "12345"
+					},
+					"sender": {
+						"id": "5678",
+						"user_ref": "5678"
+					},
+					"timestamp": 1459991487970
+				}
+			],
+			"time": 1459991487970
+		}
+	]
+}

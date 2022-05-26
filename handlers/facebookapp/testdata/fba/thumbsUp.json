@@ -1,0 +1,32 @@
+{
+	"object": "page",
+	"entry": [
+		{
+			"id": "12345",
+			"time": 1459991487970,
+			"messaging": [
+				{
+					"sender": {
+						"id": "5678"
+					},
+					"recipient": {
+						"id": "12345"
+					},
+					"timestamp": 1459991487970,
+					"message": {
+						"mid": "external_id",
+						"attachments": [
+							{
+								"type": "image",
+								"payload": {
+									"sticker_id": 369239263222822,
+									"url": "https://scontent.xx.fbcdn.net/v/arst"
+								}
+							}
+						]
+					}
+				}
+			]
+		}
+	]
+}

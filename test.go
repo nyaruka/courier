@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -726,3 +727,11 @@ type mockContact struct {
 }
 
 func (c *mockContact) UUID() ContactUUID { return c.uuid }
+
+func ReadFile(path string) []byte {
+	d, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
