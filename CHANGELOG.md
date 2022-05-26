@@ -1,3 +1,9 @@
+v7.3.9
+----------
+ * Add arm64 as a build target
+ * Add support for WA Cloud API
+ * Refactor FBA tests
+
 v7.3.8
 ----------
  * Add log to status first when handling telegram opt outs
