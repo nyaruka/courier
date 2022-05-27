@@ -5,7 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -169,36 +172,121 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	sendURL := apiURL + "/chat.postMessage"
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	msgPayload := &mtPayload{
-		Channel: msg.URN().Path(),
-		Text:    msg.Text(),
+
+	if msg.Text() != "" {
+		msgPayload := &mtPayload{
+			Channel: msg.URN().Path(),
+			Text:    msg.Text(),
+		}
+
+		body, err := json.Marshal(msgPayload)
+		if err != nil {
+			return status, err
+		}
+
+		req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(body))
+		if err != nil {
+			return status, err
+		}
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", botToken))
+
+		rr, err := utils.MakeHTTPRequest(req)
+
+		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		status.AddLog(log)
+
+		ok, err := jsonparser.GetBoolean([]byte(rr.Body), "ok")
+		if err != nil || !ok {
+			return status, err
+		}
 	}
 
-	body, err := json.Marshal(msgPayload)
-	if err != nil {
-		return status, err
-	}
+	if len(msg.Attachments()) > 0 {
+		fileAttachments := []FileParams{}
+		for _, attachment := range msg.Attachments() {
+			_, attURL := handlers.SplitAttachment(attachment)
 
-	req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(body))
-	if err != nil {
-		return status, err
-	}
-	req.Header.Set("Content-Type", "application/json; charset=utf-8")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", botToken))
+			req, err := http.NewRequest(http.MethodGet, attURL, nil)
+			if err != nil {
+				return status, errors.Wrapf(err, "error building file request")
+			}
+			resp, err := utils.MakeHTTPRequest(req)
+			log := courier.NewChannelLogFromRR("Fetching media", msg.Channel(), msg.ID(), resp).WithError("error fetching media", err)
+			status.AddLog(log)
+			if err != nil {
+				return status, err
+			}
+			filename, err := utils.BasePathForURL(attURL)
+			if err != nil {
+				return status, err
+			}
+			fileAttachments = append(fileAttachments, FileParams{
+				File:     resp.Body,
+				FileName: filename,
+				Channels: msg.URN().Path(),
+			})
+		}
 
-	rr, err := utils.MakeHTTPRequest(req)
+		for _, attParams := range fileAttachments {
+			uploadURL := apiURL + "/files.upload"
 
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-	status.AddLog(log)
+			body := &bytes.Buffer{}
+			writer := multipart.NewWriter(body)
+			mediaPart, err := writer.CreateFormFile("file", attParams.FileName)
+			if err != nil {
+				return status, errors.Wrapf(err, "failed to create file form field")
+			}
+			io.Copy(mediaPart, bytes.NewReader(attParams.File))
 
-	ok, err := jsonparser.GetBoolean([]byte(rr.Body), "ok")
-	if err != nil || !ok {
-		return status, err
+			filenamePart, err := writer.CreateFormField("filename")
+			if err != nil {
+				return status, errors.Wrapf(err, "failed to create filename form field")
+			}
+			io.Copy(filenamePart, strings.NewReader(attParams.FileName))
+
+			channelsPart, err := writer.CreateFormField("channels")
+			if err != nil {
+				return status, errors.Wrapf(err, "failed to create channels form field")
+			}
+			io.Copy(channelsPart, strings.NewReader(attParams.Channels))
+
+			writer.Close()
+
+			req, err := http.NewRequest(http.MethodPost, uploadURL, bytes.NewReader(body.Bytes()))
+			if err != nil {
+				return status, errors.Wrapf(err, "error building request to file upload endpoint")
+			}
+			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", botToken))
+			req.Header.Add("Content-Type", writer.FormDataContentType())
+			resp, err := utils.MakeHTTPRequest(req)
+			if err != nil {
+				return status, errors.Wrapf(err, "error uploading file to slack")
+			}
+			{
+				var fResponse fileResponse
+				if err := json.Unmarshal([]byte(resp.Body), &fResponse); err != nil {
+					return status, errors.Errorf("couldn't unmarshal file response: %v", err)
+				}
+
+				if !fResponse.OK {
+					return status, errors.Errorf("error uploading file to slack: %s.", fResponse.Error)
+				}
+			}
+			log := courier.NewChannelLogFromRR("uploading file to Slack", msg.Channel(), msg.ID(), resp).WithError("Error uploading file to Slack", err)
+
+			fmt.Println("Video uploaded to slack")
+			status.AddLog(log)
+		}
 	}
 
 	status.SetStatus(courier.MsgWired)
 
 	return status, nil
+}
+
+func (h *handler) sendMsgPart(msg courier.Msg, token string, form url.Values) (string, *courier.ChannelLog, error) {
+	return "", nil, nil
 }
 
 func (h handler) GetUserInfo(userSlackID string, channel courier.Channel) (*UserInfo, error) {
@@ -342,4 +430,10 @@ type UserInfo struct {
 			Team                  string `json:"team"`
 		} `json:"profile"`
 	} `json:"user"`
+}
+
+type FileParams struct {
+	File     []byte `json:"file,omitempty"`
+	FileName string `json:"filename,omitempty"`
+	Channels string `json:"channels,omitempty"`
 }
