@@ -1,3 +1,7 @@
+v7.3.10
+----------
+ * Make sure text are sent after audio attachments for WA channels
+
 v7.3.9
 ----------
  * Add arm64 as a build target
