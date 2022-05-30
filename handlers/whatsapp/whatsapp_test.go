@@ -413,7 +413,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		RequestBody: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
 		SendPrep:    setSendURL},
 	{Label: "Audio Send",
-		Text:   "audio has no caption",
+		Text:   "audio has no caption, sent as text",
 		URN:    "whatsapp:250788123123",
 		Status: "W", ExternalID: "157b5e14568e8",
 		Attachments: []string{"audio/mpeg:https://foo.bar/audio.mp3"},
@@ -422,6 +422,14 @@ var defaultSendTestCases = []ChannelSendTestCase{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`,
+			}: MockedResponse{
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+			MockedRequest{
+				Method: "POST",
+				Path:   "/v1/messages",
+				Body:   `{"to":"250788123123","type":"text","text":{"body":"audio has no caption, sent as text"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
