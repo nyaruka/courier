@@ -578,6 +578,8 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 	isInteractiveMsgCompatible := semver.Compare(wppVersion, interactiveMsgMinSupVersion)
 	isInteractiveMsg := (isInteractiveMsgCompatible >= 0) && (len(qrs) > 0)
 
+	textAsCaption := false
+
 	if len(msg.Attachments()) > 0 {
 		for attachmentCount, attachment := range msg.Attachments() {
 
@@ -608,6 +610,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				}
 				if attachmentCount == 0 && !isInteractiveMsg {
 					mediaPayload.Caption = msg.Text()
+					textAsCaption = true
 				}
 				mediaPayload.Filename, err = utils.BasePathForURL(fileURL)
 
@@ -624,6 +627,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				}
 				if attachmentCount == 0 && !isInteractiveMsg {
 					mediaPayload.Caption = msg.Text()
+					textAsCaption = true
 				}
 				payload.Image = mediaPayload
 				payloads = append(payloads, payload)
@@ -634,6 +638,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				}
 				if attachmentCount == 0 && !isInteractiveMsg {
 					mediaPayload.Caption = msg.Text()
+					textAsCaption = true
 				}
 				payload.Video = mediaPayload
 				payloads = append(payloads, payload)
@@ -643,6 +648,28 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				attachmentLogs := []*courier.ChannelLog{courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)}
 				logs = append(logs, attachmentLogs...)
 				break
+			}
+		}
+
+		if !textAsCaption && !isInteractiveMsg {
+			for _, part := range parts {
+
+				//check if you have a link
+				var payload mtTextPayload
+				if strings.Contains(part, "https://") || strings.Contains(part, "http://") {
+					payload = mtTextPayload{
+						To:         msg.URN().Path(),
+						Type:       "text",
+						PreviewURL: true,
+					}
+				} else {
+					payload = mtTextPayload{
+						To:   msg.URN().Path(),
+						Type: "text",
+					}
+				}
+				payload.Text.Body = part
+				payloads = append(payloads, payload)
 			}
 		}
 
