@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/buger/jsonparser"
@@ -256,7 +257,7 @@ func setSendUrl(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	apiURL = s.URL
 }
 
-var testCases = []ChannelHandleTestCase{
+var handleTestCases = []ChannelHandleTestCase{
 	{
 		Label:      "Receive Hello Msg",
 		URL:        receiveURL,
@@ -326,7 +327,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:       setSendUrl,
 	},
 	{
-		Label: "Send Text Error",
+		Label: "Send Text Auth Error",
 		Text:  "Hello", URN: "slack:U0123ABCDEF",
 		Status:         "E",
 		ResponseBody:   `{"ok":false,"error":"invalid_auth"}`,
@@ -336,15 +337,43 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
+var fileSendTestCases = []ChannelSendTestCase{
+	{
+		Label: "Send Image",
+		Text:  "", URN: "slack:U0123ABCDEF",
+		Status:      "W",
+		Attachments: []string{"image/jpeg:https://foo.bar/image.png"},
+		Responses: map[MockedRequest]MockedResponse{
+			{
+				Method:       "POST",
+				Path:         "/files.upload",
+				BodyContains: "image.png",
+			}: {
+				Status: 200,
+				Body:   `{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`,
+			},
+		},
+		SendPrep: setSendUrl,
+	},
+}
+
 func TestHandler(t *testing.T) {
-	slackServiceMock := buildMockSlackService(testCases)
+	slackServiceMock := buildMockSlackService(handleTestCases)
 	defer slackServiceMock.Close()
 
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
 func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, testChannels[0], newHandler(), defaultSendTestCases, nil)
+}
+
+func TestSendFiles(t *testing.T) {
+	fileServer := buildMockAttachmentFileServer()
+	defer fileServer.Close()
+	fileSendTestCases := mockAttachmentURLs(fileServer, fileSendTestCases)
+
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), fileSendTestCases, nil)
 }
 
 func TestVerification(t *testing.T) {
@@ -359,6 +388,14 @@ func TestVerification(t *testing.T) {
 			Headers: map[string]string{"content-type": "text/plain"},
 		},
 	})
+}
+
+func buildMockAttachmentFileServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		w.WriteHeader(200)
+		w.Write([]byte("filetype... ...file bytes... ...end"))
+	}))
 }
 
 func buildMockSlackService(testCases []ChannelHandleTestCase) *httptest.Server {
@@ -397,10 +434,23 @@ func buildMockSlackService(testCases []ChannelHandleTestCase) *httptest.Server {
 			w.Write([]byte(`{"ok": "false", "error": "file not found"}`))
 			return
 		}
-		json.NewEncoder(w).Encode(fileResponse{OK: true, Error: "", File: file})
+		json.NewEncoder(w).Encode(FileResponse{OK: true, Error: "", File: file})
 	}))
 
 	apiURL = server.URL
 
 	return server
+}
+
+func mockAttachmentURLs(fileServer *httptest.Server, testCases []ChannelSendTestCase) []ChannelSendTestCase {
+	casesWithMockedUrls := make([]ChannelSendTestCase, len(testCases))
+
+	for i, testCase := range testCases {
+		mockedCase := testCase
+		for j, attachment := range testCase.Attachments {
+			mockedCase.Attachments[j] = strings.Replace(attachment, "https://foo.bar", fileServer.URL, 1)
+		}
+		casesWithMockedUrls[i] = mockedCase
+	}
+	return casesWithMockedUrls
 }

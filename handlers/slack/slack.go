@@ -8,7 +8,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -81,12 +80,13 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 		var userName string
 		var path string
-		if payload.Event.ChannelType == "channel" {
+		if payload.Event.ChannelType == "channel" { //if is a message from a slack channel that bot is in
 			path = payload.Event.Channel
-		} else if payload.Event.ChannelType == "im" {
+		} else if payload.Event.ChannelType == "im" { // if is a direct message from a user
 			path = payload.Event.User
-			userInfo, err := h.GetUserInfo(payload.Event.User, channel)
+			userInfo, log, err := getUserInfo(payload.Event.User, channel)
 			if err != nil {
+				h.Backend().WriteChannelLogs(ctx, []*courier.ChannelLog{log})
 				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 			}
 			userName = userInfo.User.RealName
@@ -140,7 +140,7 @@ func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file
 		return "", err
 	}
 
-	var fResponse fileResponse
+	var fResponse FileResponse
 	if err := json.Unmarshal([]byte(rr.Body), &fResponse); err != nil {
 		return "", errors.Errorf("couldn't unmarshal file response: %v", err)
 	}
@@ -169,133 +169,151 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	if botToken == "" {
 		return nil, fmt.Errorf("missing bot token for SL/slack channel")
 	}
-	sendURL := apiURL + "/chat.postMessage"
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
-	if msg.Text() != "" {
-		msgPayload := &mtPayload{
-			Channel: msg.URN().Path(),
-			Text:    msg.Text(),
-		}
+	hasError := true
 
-		body, err := json.Marshal(msgPayload)
-		if err != nil {
-			return status, err
-		}
-
-		req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(body))
-		if err != nil {
-			return status, err
-		}
-		req.Header.Set("Content-Type", "application/json; charset=utf-8")
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", botToken))
-
-		rr, err := utils.MakeHTTPRequest(req)
-
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+	for _, attachment := range msg.Attachments() {
+		fileAttachment, log, err := parseAttachmentToFileParams(msg, attachment)
+		hasError = err != nil
 		status.AddLog(log)
 
-		ok, err := jsonparser.GetBoolean([]byte(rr.Body), "ok")
-		if err != nil || !ok {
-			return status, err
-		}
-	}
-
-	if len(msg.Attachments()) > 0 {
-		fileAttachments := []FileParams{}
-		for _, attachment := range msg.Attachments() {
-			_, attURL := handlers.SplitAttachment(attachment)
-
-			req, err := http.NewRequest(http.MethodGet, attURL, nil)
-			if err != nil {
-				return status, errors.Wrapf(err, "error building file request")
-			}
-			resp, err := utils.MakeHTTPRequest(req)
-			log := courier.NewChannelLogFromRR("Fetching media", msg.Channel(), msg.ID(), resp).WithError("error fetching media", err)
-			status.AddLog(log)
-			if err != nil {
-				return status, err
-			}
-			filename, err := utils.BasePathForURL(attURL)
-			if err != nil {
-				return status, err
-			}
-			fileAttachments = append(fileAttachments, FileParams{
-				File:     resp.Body,
-				FileName: filename,
-				Channels: msg.URN().Path(),
-			})
-		}
-
-		for _, attParams := range fileAttachments {
-			uploadURL := apiURL + "/files.upload"
-
-			body := &bytes.Buffer{}
-			writer := multipart.NewWriter(body)
-			mediaPart, err := writer.CreateFormFile("file", attParams.FileName)
-			if err != nil {
-				return status, errors.Wrapf(err, "failed to create file form field")
-			}
-			io.Copy(mediaPart, bytes.NewReader(attParams.File))
-
-			filenamePart, err := writer.CreateFormField("filename")
-			if err != nil {
-				return status, errors.Wrapf(err, "failed to create filename form field")
-			}
-			io.Copy(filenamePart, strings.NewReader(attParams.FileName))
-
-			channelsPart, err := writer.CreateFormField("channels")
-			if err != nil {
-				return status, errors.Wrapf(err, "failed to create channels form field")
-			}
-			io.Copy(channelsPart, strings.NewReader(attParams.Channels))
-
-			writer.Close()
-
-			req, err := http.NewRequest(http.MethodPost, uploadURL, bytes.NewReader(body.Bytes()))
-			if err != nil {
-				return status, errors.Wrapf(err, "error building request to file upload endpoint")
-			}
-			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", botToken))
-			req.Header.Add("Content-Type", writer.FormDataContentType())
-			resp, err := utils.MakeHTTPRequest(req)
-			if err != nil {
-				return status, errors.Wrapf(err, "error uploading file to slack")
-			}
-			{
-				var fResponse fileResponse
-				if err := json.Unmarshal([]byte(resp.Body), &fResponse); err != nil {
-					return status, errors.Errorf("couldn't unmarshal file response: %v", err)
-				}
-
-				if !fResponse.OK {
-					return status, errors.Errorf("error uploading file to slack: %s.", fResponse.Error)
-				}
-			}
-			log := courier.NewChannelLogFromRR("uploading file to Slack", msg.Channel(), msg.ID(), resp).WithError("Error uploading file to Slack", err)
-
-			fmt.Println("Video uploaded to slack")
+		if fileAttachment != nil {
+			log, err = sendFilePart(msg, botToken, fileAttachment)
+			hasError = err != nil
 			status.AddLog(log)
 		}
 	}
 
-	status.SetStatus(courier.MsgWired)
+	if msg.Text() != "" {
+		log, err := sendTextMsgPart(msg, botToken)
+		hasError = err != nil
+		status.AddLog(log)
+	}
+
+	if !hasError {
+		status.SetStatus(courier.MsgWired)
+	}
 
 	return status, nil
 }
 
-func (h *handler) sendMsgPart(msg courier.Msg, token string, form url.Values) (string, *courier.ChannelLog, error) {
-	return "", nil, nil
+func sendTextMsgPart(msg courier.Msg, token string) (*courier.ChannelLog, error) {
+	sendURL := apiURL + "/chat.postMessage"
+
+	msgPayload := &mtPayload{
+		Channel: msg.URN().Path(),
+		Text:    msg.Text(),
+	}
+
+	body, err := json.Marshal(msgPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	rr, err := utils.MakeHTTPRequest(req)
+
+	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+
+	ok, err := jsonparser.GetBoolean([]byte(rr.Body), "ok")
+	if err != nil {
+		return log, err
+	}
+
+	if !ok {
+		errDescription, err := jsonparser.GetString([]byte(rr.Body), "error")
+		if err != nil {
+			return log, err
+		}
+		return log, errors.New(errDescription)
+	}
+	return log, nil
 }
 
-func (h handler) GetUserInfo(userSlackID string, channel courier.Channel) (*UserInfo, error) {
+func parseAttachmentToFileParams(msg courier.Msg, attachment string) (*FileParams, *courier.ChannelLog, error) {
+	_, attURL := handlers.SplitAttachment(attachment)
+
+	req, err := http.NewRequest(http.MethodGet, attURL, nil)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "error building file request")
+	}
+	resp, err := utils.MakeHTTPRequest(req)
+	log := courier.NewChannelLogFromRR("Fetching attachment", msg.Channel(), msg.ID(), resp).WithError("error fetching media", err)
+
+	filename, err := utils.BasePathForURL(attURL)
+	if err != nil {
+		return nil, log, err
+	}
+	return &FileParams{
+		File:     resp.Body,
+		FileName: filename,
+		Channels: msg.URN().Path(),
+	}, log, nil
+}
+
+func sendFilePart(msg courier.Msg, token string, fileParams *FileParams) (*courier.ChannelLog, error) {
+	uploadURL := apiURL + "/files.upload"
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	mediaPart, err := writer.CreateFormFile("file", fileParams.FileName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create file form field")
+	}
+	io.Copy(mediaPart, bytes.NewReader(fileParams.File))
+
+	filenamePart, err := writer.CreateFormField("filename")
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create filename form field")
+	}
+	io.Copy(filenamePart, strings.NewReader(fileParams.FileName))
+
+	channelsPart, err := writer.CreateFormField("channels")
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create channels form field")
+	}
+	io.Copy(channelsPart, strings.NewReader(fileParams.Channels))
+
+	writer.Close()
+
+	req, err := http.NewRequest(http.MethodPost, uploadURL, bytes.NewReader(body.Bytes()))
+	if err != nil {
+		return nil, errors.Wrapf(err, "error building request to file upload endpoint")
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Add("Content-Type", writer.FormDataContentType())
+	resp, err := utils.MakeHTTPRequest(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error uploading file to slack")
+	}
+
+	var fr FileResponse
+	if err := json.Unmarshal([]byte(resp.Body), &fr); err != nil {
+		return nil, errors.Errorf("couldn't unmarshal file response: %v", err)
+	}
+
+	if !fr.OK {
+		return nil, errors.Errorf("error uploading file to slack: %s.", fr.Error)
+	}
+
+	return courier.NewChannelLogFromRR("uploading file to Slack", msg.Channel(), msg.ID(), resp).WithError("Error uploading file to Slack", err), nil
+}
+
+func getUserInfo(userSlackID string, channel courier.Channel) (*UserInfo, *courier.ChannelLog, error) {
 	resource := "/users.info"
 	urlStr := apiURL + resource
 
 	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -308,25 +326,25 @@ func (h handler) GetUserInfo(userSlackID string, channel courier.Channel) (*User
 	rr, err := utils.MakeHTTPRequest(req)
 	if err != nil {
 		log := courier.NewChannelLogFromRR("Get User info", channel, courier.NilMsgID, rr).WithError("Request User Info Error", err)
-		h.Backend().WriteChannelLogs(context.TODO(), []*courier.ChannelLog{log})
-		return nil, err
+		return nil, log, err
 	}
 
 	var uInfo *UserInfo
 	if err := json.Unmarshal(rr.Body, &uInfo); err != nil {
 		log := courier.NewChannelLogFromRR("Get User info", channel, courier.NilMsgID, rr).WithError("Unmarshal User Info Error", err)
-		h.Backend().WriteChannelLogs(context.TODO(), []*courier.ChannelLog{log})
-		return nil, err
+		return nil, log, err
 	}
 
-	return uInfo, nil
+	return uInfo, nil, nil
 }
 
+// mtPayload is a struct that represents the body of a SendMmsg text part
 type mtPayload struct {
 	Channel string `json:"channel"`
 	Text    string `json:"text"`
 }
 
+// moPayload is a struct that represents message payload from message type event
 type moPayload struct {
 	Token    string `json:"token,omitempty"`
 	TeamID   string `json:"team_id,omitempty"`
@@ -357,6 +375,7 @@ type moPayload struct {
 	Challenge    string `json:"challenge,omitempty"`
 }
 
+// File is a struct that represents file item that can be present in Files list in message event, or in FileResponse or in FileParams
 type File struct {
 	ID                 string `json:"id"`
 	Created            int    `json:"created"`
@@ -393,12 +412,22 @@ type File struct {
 	HasRichPreview     bool   `json:"has_rich_preview"`
 }
 
-type fileResponse struct {
+// FileResponse is a struct that represents the response from a request in files.sharedPublicURL to make public and shareable a file that is sent in a message, more information see https://api.slack.com/methods/files.sharedPublicURL.
+type FileResponse struct {
 	OK    bool   `json:"ok"`
 	File  File   `json:"file"`
 	Error string `json:"error"`
 }
 
+// FileParams is a struct that represents the request params send to slack api files.upload method to send a file to a channel conversation or a direct message conversation with a user, more
+// information see https://api.slack.com/methods/files.upload.
+type FileParams struct {
+	File     []byte `json:"file,omitempty"`
+	FileName string `json:"filename,omitempty"`
+	Channels string `json:"channels,omitempty"`
+}
+
+// UserInfo is a struct that represents the response from request in users.info slack api method, more information see https://api.slack.com/methods/users.info.
 type UserInfo struct {
 	Ok   bool `json:"ok"`
 	User struct {
@@ -430,10 +459,4 @@ type UserInfo struct {
 			Team                  string `json:"team"`
 		} `json:"profile"`
 	} `json:"user"`
-}
-
-type FileParams struct {
-	File     []byte `json:"file,omitempty"`
-	FileName string `json:"filename,omitempty"`
-	Channels string `json:"channels,omitempty"`
 }
