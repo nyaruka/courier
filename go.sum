@@ -1,3 +1,7 @@
+github.com/Ilhasoft/gocommon v1.16.2-slack-develop h1:pAd+LMH7BEOFxUIeJ1EGJeaMPbMolHpChHmalvjmQbQ=
+github.com/Ilhasoft/gocommon v1.16.2-slack-develop/go.mod h1:pk8L9T79VoKO8OWTiZbtUutFPI3sGGKB5u8nNWDKuGE=
+github.com/Ilhasoft/gocommon v1.19.1-slack-develop h1:aDh3PyVeFtqFgA/KVBaI/etVhQZ1pPXWnwQo4fM6R4I=
+github.com/Ilhasoft/gocommon v1.19.1-slack-develop/go.mod h1:JrQSLAPo9ezSy1AzsJ1zDr1HW0/eu+aipICJkN/+kpg=
 github.com/antchfx/xmlquery v0.0.0-20181223105952-355641961c92 h1:4EgP6xLAdrD/TRlbSw4n2W6h68K2P3+R7lKqFoL5U9Q=
 github.com/antchfx/xmlquery v0.0.0-20181223105952-355641961c92/go.mod h1:/+CnyD/DzHRnv2eRxrVbieRU/FIF6N0C+7oTtyUtCKk=
 github.com/antchfx/xpath v0.0.0-20181208024549-4bbdf6db12aa h1:lL66YnJWy1tHlhjSx8fXnpgmv8kQVYnI4ilbYpNB6Zs=

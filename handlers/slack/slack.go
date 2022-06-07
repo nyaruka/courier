@@ -71,15 +71,29 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return handleURLVerification(ctx, channel, w, r, payload)
 	}
 
-	date := time.Unix(int64(payload.EventTime), 0)
+	// if event is not a message or is from the bot ignore it
+	if strings.Contains(payload.Event.Type, "message") && payload.Event.BotID == "" {
 
-	urn := urns.URN(fmt.Sprintf("%s:%s", "slack", payload.Event.User))
-	// urn, err := urns.NewURNFromParts("slack", payload.Event.User, "", "")
-	// if err != nil {
-	// 	return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	// }
+		date := time.Unix(int64(payload.EventTime), 0)
 
-	if strings.Contains(payload.Event.Type, "message") {
+		var userName string
+		var path string
+		if payload.Event.ChannelType == "channel" {
+			path = payload.Event.Channel
+		} else if payload.Event.ChannelType == "im" {
+			path = payload.Event.User
+			userInfo, err := h.GetUserInfo(payload.Event.User, channel)
+			if err != nil {
+				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			}
+			userName = userInfo.User.RealName
+		}
+
+		urn, err := urns.NewURNFromParts(urns.SlackScheme, path, "", userName)
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		}
+
 		attachmentURLs := make([]string, 0)
 		for _, file := range payload.Event.Files {
 			fileURL, err := h.resolveFile(ctx, channel, file)
@@ -91,7 +105,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		text := payload.Event.Text
-		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(payload.EventID).WithContactName("")
+		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(payload.EventID).WithContactName(userName)
 
 		for _, attURL := range attachmentURLs {
 			msg.WithAttachment(attURL)
@@ -102,7 +116,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 }
 
-func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file moFile) (string, error) {
+func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file File) (string, error) {
 	userToken := channel.StringConfigForKey(configUserToken, "")
 
 	fileApiURL := apiURL + "/files.sharedPublicURL"
@@ -187,6 +201,39 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	return status, nil
 }
 
+func (h handler) GetUserInfo(userSlackID string, channel courier.Channel) (*UserInfo, error) {
+	resource := "/users.info"
+	urlStr := apiURL + resource
+
+	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Authorization", "Bearer "+channel.StringConfigForKey(configBotToken, ""))
+
+	q := req.URL.Query()
+	q.Add("user", userSlackID)
+	req.URL.RawQuery = q.Encode()
+
+	rr, err := utils.MakeHTTPRequest(req)
+	if err != nil {
+		log := courier.NewChannelLogFromRR("Get User info", channel, courier.NilMsgID, rr).WithError("Request User Info Error", err)
+		h.Backend().WriteChannelLogs(context.TODO(), []*courier.ChannelLog{log})
+		return nil, err
+	}
+
+	var uInfo *UserInfo
+	if err := json.Unmarshal(rr.Body, &uInfo); err != nil {
+		log := courier.NewChannelLogFromRR("Get User info", channel, courier.NilMsgID, rr).WithError("Unmarshal User Info Error", err)
+		h.Backend().WriteChannelLogs(context.TODO(), []*courier.ChannelLog{log})
+		return nil, err
+	}
+
+	return uInfo, nil
+}
+
 type mtPayload struct {
 	Channel string `json:"channel"`
 	Text    string `json:"text"`
@@ -197,14 +244,15 @@ type moPayload struct {
 	TeamID   string `json:"team_id,omitempty"`
 	APIAppID string `json:"api_app_id,omitempty"`
 	Event    struct {
-		Type        string   `json:"type,omitempty"`
-		Channel     string   `json:"channel,omitempty"`
-		User        string   `json:"user,omitempty"`
-		Text        string   `json:"text,omitempty"`
-		Ts          string   `json:"ts,omitempty"`
-		EventTs     string   `json:"event_ts,omitempty"`
-		ChannelType string   `json:"channel_type,omitempty"`
-		Files       []moFile `json:"files"`
+		Type        string `json:"type,omitempty"`
+		Channel     string `json:"channel,omitempty"`
+		User        string `json:"user,omitempty"`
+		Text        string `json:"text,omitempty"`
+		Ts          string `json:"ts,omitempty"`
+		EventTs     string `json:"event_ts,omitempty"`
+		ChannelType string `json:"channel_type,omitempty"`
+		Files       []File `json:"files"`
+		BotID       string `json:"bot_id,omitempty"`
 	} `json:"event,omitempty"`
 	Type           string   `json:"type,omitempty"`
 	AuthedUsers    []string `json:"authed_users,omitempty"`
@@ -221,13 +269,7 @@ type moPayload struct {
 	Challenge    string `json:"challenge,omitempty"`
 }
 
-type item struct {
-	Type    string `json:"type,omitempty"`
-	Channel string `json:"channel,omitempty"`
-	Ts      string `json:"ts,omitempty"`
-}
-
-type moFile struct {
+type File struct {
 	ID                 string `json:"id"`
 	Created            int    `json:"created"`
 	Timestamp          int    `json:"timestamp"`
@@ -265,6 +307,39 @@ type moFile struct {
 
 type fileResponse struct {
 	OK    bool   `json:"ok"`
-	File  moFile `json:"file"`
+	File  File   `json:"file"`
 	Error string `json:"error"`
+}
+
+type UserInfo struct {
+	Ok   bool `json:"ok"`
+	User struct {
+		ID       string `json:"id"`
+		TeamID   string `json:"team_id"`
+		Name     string `json:"name"`
+		Deleted  bool   `json:"deleted"`
+		Color    string `json:"color"`
+		RealName string `json:"real_name"`
+		Tz       string `json:"tz"`
+		TzLabel  string `json:"tz_label"`
+		TzOffset int    `json:"tz_offset"`
+		Profile  struct {
+			AvatarHash            string `json:"avatar_hash"`
+			StatusText            string `json:"status_text"`
+			StatusEmoji           string `json:"status_emoji"`
+			RealName              string `json:"real_name"`
+			DisplayName           string `json:"display_name"`
+			RealNameNormalized    string `json:"real_name_normalized"`
+			DisplayNameNormalized string `json:"display_name_normalized"`
+			Email                 string `json:"email"`
+			ImageOriginal         string `json:"image_original"`
+			Image24               string `json:"image_24"`
+			Image32               string `json:"image_32"`
+			Image48               string `json:"image_48"`
+			Image72               string `json:"image_72"`
+			Image192              string `json:"image_192"`
+			Image512              string `json:"image_512"`
+			Team                  string `json:"team"`
+		} `json:"profile"`
+	} `json:"user"`
 }

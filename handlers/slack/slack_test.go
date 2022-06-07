@@ -92,7 +92,7 @@ const imageFileMsg = `{
 			"display_as_bot": false,
 			"ts": "1653417052.881009",
 			"client_msg_id": "0e400b8f-07c4-452f-a13e-2744fcae2558",
-			"channel": "C03CUQQBHEF",
+			"channel": "C0123ABCDEF",
 			"subtype": "file_share",
 			"event_ts": "1653417052.881009",
 			"channel_type": "channel"
@@ -160,7 +160,7 @@ const audioFileMsg = `{
 			"display_as_bot": false,
 			"ts": "1653428835.192419",
 			"client_msg_id": "c827a681-2641-44ed-8cd5-854339499a1e",
-			"channel": "C03CUQQBHEF",
+			"channel": "C0123ABCDEF",
 			"subtype": "file_share",
 			"event_ts": "1653428835.192419",
 			"channel_type": "channel"
@@ -231,7 +231,7 @@ const videoFileMsg = `{
 			"display_as_bot": false,
 			"ts": "1653427243.620839",
 			"client_msg_id": "72df394d-bfbb-4d90-8db4-cbe5caa76b28",
-			"channel": "C03CUQQBHEF",
+			"channel": "C0123ABCDEF",
 			"subtype": "file_share",
 			"event_ts": "1653427243.620839",
 			"channel_type": "channel"
@@ -262,7 +262,7 @@ var testCases = []ChannelHandleTestCase{
 		URL:        receiveURL,
 		Headers:    map[string]string{},
 		Data:       helloMsg,
-		URN:        Sp("slack:U0123ABCDEF"),
+		URN:        Sp("slack:C0123ABCDEF"),
 		Text:       Sp("Hello World!"),
 		Status:     200,
 		Response:   "Accepted",
@@ -274,7 +274,7 @@ var testCases = []ChannelHandleTestCase{
 		Headers:    map[string]string{},
 		Data:       imageFileMsg,
 		Attachment: Sp("https://files.slack.com/files-pri/T03CN5KTA6S-F03GTH43SSF/download/batata.jpg?pub_secret=39fcf577f2"),
-		URN:        Sp("slack:U0123ABCDEF"),
+		URN:        Sp("slack:C0123ABCDEF"),
 		Text:       Sp(""),
 		Status:     200,
 		Response:   "Accepted",
@@ -286,19 +286,19 @@ var testCases = []ChannelHandleTestCase{
 		Headers:    map[string]string{},
 		Data:       audioFileMsg,
 		Attachment: Sp("https://files.slack.com/files-pri/T03CN5KTA6S-F03GWURCZL4/download/here_we_go_again.mp3?pub_secret=471020b300"),
-		URN:        Sp("slack:U0123ABCDEF"),
+		URN:        Sp("slack:C0123ABCDEF"),
 		Text:       Sp(""),
 		Status:     200,
 		Response:   "Accepted",
 		ExternalID: Sp("Ev0PV52K21"),
 	},
 	{
-		Label:      "Receive video file (not allowed,)",
+		Label:      "Receive video file (not allowed)",
 		URL:        receiveURL,
 		Headers:    map[string]string{},
 		Data:       videoFileMsg,
 		Attachment: nil,
-		URN:        Sp("slack:U0123ABCDEF"),
+		URN:        Sp("slack:C0123ABCDEF"),
 		Text:       Sp(""),
 		Status:     200,
 		Response:   "Accepted",
@@ -363,7 +363,7 @@ func TestVerification(t *testing.T) {
 
 func buildMockSlackService(testCases []ChannelHandleTestCase) *httptest.Server {
 
-	files := make(map[string]moFile)
+	files := make(map[string]File)
 
 	for _, tc := range testCases {
 		var mp moPayload
