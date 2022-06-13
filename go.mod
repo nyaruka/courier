@@ -15,7 +15,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/lib/pq v1.10.4
 	github.com/nyaruka/ezconf v0.2.1
-	github.com/nyaruka/gocommon v1.19.1
+	github.com/nyaruka/gocommon v1.22.0
 	github.com/nyaruka/librato v1.0.0
 	github.com/nyaruka/null v1.1.1
 	github.com/nyaruka/redisx v0.2.1
@@ -56,5 +56,3 @@ require (
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
-
-replace github.com/nyaruka/gocommon => github.com/Ilhasoft/gocommon v1.19.1-slack-develop
