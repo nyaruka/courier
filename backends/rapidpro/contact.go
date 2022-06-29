@@ -9,10 +9,10 @@ import (
 	"unicode/utf8"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
-	"github.com/nyaruka/librato"
 	"github.com/nyaruka/null"
 	"github.com/pkg/errors"
 
@@ -211,7 +211,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	contact.URNID_ = contactURN.ID
 
 	// log that we created a new contact to librato
-	librato.Gauge("courier.new_contact", float64(1))
+	analytics.Gauge("courier.new_contact", float64(1))
 
 	// and return it
 	return contact, nil

@@ -18,10 +18,10 @@ import (
 	"github.com/nyaruka/courier/batch"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/librato"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -473,14 +473,14 @@ func (b *backend) Heartbeat() error {
 	b.redisWaitDuration = redisStats.WaitDuration
 	b.redisWaitCount = redisStats.WaitCount
 
-	librato.Gauge("courier.db_busy", float64(dbStats.InUse))
-	librato.Gauge("courier.db_idle", float64(dbStats.Idle))
-	librato.Gauge("courier.db_wait_ms", float64(dbWaitDurationInPeriod/time.Millisecond))
-	librato.Gauge("courier.db_wait_count", float64(dbWaitCountInPeriod))
-	librato.Gauge("courier.redis_wait_ms", float64(redisWaitDurationInPeriod/time.Millisecond))
-	librato.Gauge("courier.redis_wait_count", float64(redisWaitCountInPeriod))
-	librato.Gauge("courier.bulk_queue", float64(bulkSize))
-	librato.Gauge("courier.priority_queue", float64(prioritySize))
+	analytics.Gauge("courier.db_busy", float64(dbStats.InUse))
+	analytics.Gauge("courier.db_idle", float64(dbStats.Idle))
+	analytics.Gauge("courier.db_wait_ms", float64(dbWaitDurationInPeriod/time.Millisecond))
+	analytics.Gauge("courier.db_wait_count", float64(dbWaitCountInPeriod))
+	analytics.Gauge("courier.redis_wait_ms", float64(redisWaitDurationInPeriod/time.Millisecond))
+	analytics.Gauge("courier.redis_wait_count", float64(redisWaitCountInPeriod))
+	analytics.Gauge("courier.bulk_queue", float64(bulkSize))
+	analytics.Gauge("courier.priority_queue", float64(prioritySize))
 
 	logrus.WithFields(logrus.Fields{
 		"db_busy":          dbStats.InUse,
