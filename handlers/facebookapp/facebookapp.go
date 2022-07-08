@@ -1041,11 +1041,18 @@ type wacMTResponse struct {
 	Messages []*struct {
 		ID string `json:"id"`
 	} `json:"messages"`
+	Contacts []*struct {
+		Input string `json:"input,omitempty"`
+		WaID  string `json:"wa_id,omitempty"`
+	} `json:"contacts,omitempty"`
 }
 
 func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
 	// can't do anything without an access token
 	accessToken := h.Server().Config().WhatsappAdminSystemUserToken
+
+	start := time.Now()
+	hasNewURN := false
 
 	base, _ := url.Parse(graphURL)
 	path, _ := url.Parse(fmt.Sprintf("/%s/messages", msg.Channel().Address()))
@@ -1263,6 +1270,22 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 		}
 		// this was wired successfully
 		status.SetStatus(courier.MsgWired)
+
+		// if payload.contacts[0].wa_id != payload.contacts[0].input | to fix cases with 9 extra
+		if len(respPayload.Contacts) > 0 && respPayload.Contacts[0].WaID != msg.URN().Path() {
+			if !hasNewURN {
+				toUpdateURN, err := urns.NewWhatsAppURN(respPayload.Contacts[0].WaID)
+				if err != nil {
+					return status, nil
+				}
+				err = status.SetUpdatedURN(msg.URN(), toUpdateURN)
+				if err != nil {
+					log := courier.NewChannelLogFromError("unable to update contact URN for a new based on  wa_id", msg.Channel(), msg.ID(), time.Since(start), err)
+					status.AddLog(log)
+				}
+				hasNewURN = true
+			}
+		}
 
 	}
 	return status, nil
