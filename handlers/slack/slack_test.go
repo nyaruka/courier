@@ -1,6 +1,7 @@
 package slack
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log"
@@ -12,6 +13,8 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/urns"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -221,6 +224,23 @@ var fileSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendUrl,
 	},
+	{
+		Label: "Send Image",
+		Text:  "", URN: "slack:U0123ABCDEF",
+		Status:      "W",
+		Attachments: []string{"image/jpeg:https://foo.bar/image.png"},
+		Responses: map[MockedRequest]MockedResponse{
+			{
+				Method:       "POST",
+				Path:         "/files.upload",
+				BodyContains: "image.png",
+			}: {
+				Status: 200,
+				Body:   `{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`,
+			},
+		},
+		SendPrep: setSendUrl,
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -332,4 +352,18 @@ func mockAttachmentURLs(fileServer *httptest.Server, testCases []ChannelSendTest
 		casesWithMockedUrls[i] = mockedCase
 	}
 	return casesWithMockedUrls
+}
+
+func TestDescribe(t *testing.T) {
+	server := buildMockSlackService([]ChannelHandleTestCase{})
+	defer server.Close()
+
+	handler := newHandler().(courier.URNDescriber)
+	urn, _ := urns.NewURNFromParts(urns.SlackScheme, "U012345", "", "")
+
+	data := map[string]string{"name": "dummy user"}
+
+	describe, err := handler.DescribeURN(context.Background(), testChannels[0], urn)
+	assert.Nil(t, err)
+	assert.Equal(t, data, describe)
 }

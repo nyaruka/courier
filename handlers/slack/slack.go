@@ -78,12 +78,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 		date := time.Unix(int64(payload.EventTime), 0)
 
-		userInfo, log, err := getUserInfo(payload.Event.User, channel)
-		if err != nil {
-			h.Backend().WriteChannelLogs(ctx, []*courier.ChannelLog{log})
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-		}
-
 		urn, err := urns.NewURNFromParts(urns.SlackScheme, payload.Event.User, "", "")
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -100,7 +94,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		text := payload.Event.Text
-		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(payload.EventID).WithContactName(userInfo.User.RealName)
+		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(payload.EventID)
 
 		for _, attURL := range attachmentURLs {
 			msg.WithAttachment(attURL)
@@ -299,35 +293,31 @@ func sendFilePart(msg courier.Msg, token string, fileParams *FileParams) (*couri
 	return courier.NewChannelLogFromRR("uploading file to Slack", msg.Channel(), msg.ID(), resp).WithError("Error uploading file to Slack", err), nil
 }
 
-func getUserInfo(userSlackID string, channel courier.Channel) (*UserInfo, *courier.ChannelLog, error) {
+// DescribeURN handles Slack user details
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
 	resource := "/users.info"
 	urlStr := apiURL + resource
 
-	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
-	if err != nil {
-		return nil, nil, err
-	}
+	req, _ := http.NewRequest(http.MethodGet, urlStr, nil)
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", "Bearer "+channel.StringConfigForKey(configBotToken, ""))
 
 	q := req.URL.Query()
-	q.Add("user", userSlackID)
+	q.Add("user", urn.Path())
 	req.URL.RawQuery = q.Encode()
 
 	rr, err := utils.MakeHTTPRequest(req)
 	if err != nil {
-		log := courier.NewChannelLogFromRR("Get User info", channel, courier.NilMsgID, rr).WithError("Request User Info Error", err)
-		return nil, log, err
+		return nil, fmt.Errorf("request user info error:%s\n%s", err, rr.Response)
 	}
 
 	var uInfo *UserInfo
 	if err := json.Unmarshal(rr.Body, &uInfo); err != nil {
-		log := courier.NewChannelLogFromRR("Get User info", channel, courier.NilMsgID, rr).WithError("Unmarshal User Info Error", err)
-		return nil, log, err
+		return nil, fmt.Errorf("unmarshal user info error:%s", err)
 	}
 
-	return uInfo, nil, nil
+	return map[string]string{"name": uInfo.User.RealName}, nil
 }
 
 // mtPayload is a struct that represents the body of a SendMmsg text part.
