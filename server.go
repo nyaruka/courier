@@ -20,7 +20,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/librato"
+	"github.com/nyaruka/gocommon/analytics"
 	"github.com/sirupsen/logrus"
 )
 
@@ -90,9 +90,10 @@ func (s *server) Start() error {
 	// configure librato if we have configuration options for it
 	host, _ := os.Hostname()
 	if s.config.LibratoUsername != "" {
-		librato.Configure(s.config.LibratoUsername, s.config.LibratoToken, host, time.Second, s.waitGroup)
-		librato.Start()
+		analytics.RegisterBackend(analytics.NewLibrato(s.config.LibratoUsername, s.config.LibratoToken, host, time.Second, s.waitGroup))
 	}
+
+	analytics.Start()
 
 	// start our backend
 	err := s.backend.Start()
@@ -189,8 +190,7 @@ func (s *server) Stop() error {
 		return err
 	}
 
-	// stop our librato sender
-	librato.Stop()
+	analytics.Stop()
 
 	// wait for everything to stop
 	s.waitGroup.Wait()
@@ -322,10 +322,10 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		if channel != nil && len(events) == 0 {
 			if err != nil {
 				logs = append(logs, NewChannelLog("Channel Error", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-				librato.Gauge(fmt.Sprintf("courier.channel_error_%s", channel.ChannelType()), secondDuration)
+				analytics.Gauge(fmt.Sprintf("courier.channel_error_%s", channel.ChannelType()), secondDuration)
 			} else {
 				logs = append(logs, NewChannelLog("Request Ignored", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-				librato.Gauge(fmt.Sprintf("courier.channel_ignored_%s", channel.ChannelType()), secondDuration)
+				analytics.Gauge(fmt.Sprintf("courier.channel_ignored_%s", channel.ChannelType()), secondDuration)
 			}
 		}
 
@@ -334,15 +334,15 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			switch e := event.(type) {
 			case Msg:
 				logs = append(logs, NewChannelLog("Message Received", channel, e.ID(), r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-				librato.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
+				analytics.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
 				LogMsgReceived(r, e)
 			case ChannelEvent:
 				logs = append(logs, NewChannelLog("Event Received", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-				librato.Gauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
+				analytics.Gauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
 				LogChannelEventReceived(r, e)
 			case MsgStatus:
 				logs = append(logs, NewChannelLog("Status Updated", channel, e.ID(), r.Method, url, ww.Status(), string(request), response.String(), duration, err))
-				librato.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
+				analytics.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
 				LogMsgStatusReceived(r, e)
 			}
 		}

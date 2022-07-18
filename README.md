@@ -4,28 +4,26 @@
 [![codecov](https://codecov.io/gh/nyaruka/courier/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/courier)
 [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/courier)](https://goreportcard.com/report/github.com/nyaruka/courier)
 
-# About 
-
 Courier is a messaging gateway for text-based messaging channels. It abstracts out various different
 texting mediums and providers, allowing applications to focus on the creation and processing of those messages.
 
-Current courier supports over 50 different channel types, ranging for SMS aggregators like Twilio to
+Currently it supports over 50 different channel types, ranging for SMS aggregators like Twilio to
 IP channels like Facebook and Telegram messenger. The goal is for Courier to support every popular
 messaging channels and aggregator and we are happy to accept pull requests to help accomplish that.
 
 Courier is currently used to power [RapidPro](https://rapidpro.io) and [TextIt](https://textit.com)
 but the backend is pluggable, so you can add your own backend to read and write messages.
 
-# Deploying
+## Deploying
 
-As courier is a go application, it compiles to a binary and that binary along with the config file is all
+As a Go application, it compiles to a binary and that binary along with the config file is all
 you need to run it on your server. You can find bundles for each platform in the
-[releases directory](https://github.com/nyaruka/courier/releases). We recommend running Courier
+[releases directory](https://github.com/nyaruka/courier/releases). We recommend running it
 behind a reverse proxy such as nginx or Elastic Load Balancer that provides HTTPs encryption.
 
-# Configuration
+## Configuration
 
-Courier uses a tiered configuration system, each option takes precendence over the ones above it:
+The service uses a tiered configuration system, each option takes precendence over the ones above it:
 
  1. The configuration file
  2. Environment variables starting with `COURIER_` 
@@ -35,7 +33,7 @@ We recommend running courier with no changes to the configuration and no paramet
 environment variables to configure it. You can use `% courier --help` to see a list of the
 environment variables and parameters and for more details on each option.
 
-# RapidPro Configuration
+### RapidPro
 
 For use with RapidPro, you will want to configure these settings:
 
@@ -58,9 +56,9 @@ Recommended settings for error and performance monitoring:
  * `COURIER_LIBRATO_TOKEN`: The token to use for logging of events to Librato
  * `COURIER_SENTRY_DSN`: The DSN to use when logging errors to Sentry
 
-# Development
+## Development
 
-Once you've checked out the code, you can build Courier with:
+Once you've checked out the code, you can build it with:
 
 ```
 go install github.com/nyaruka/courier/cmd/courier

@@ -1,3 +1,8 @@
+v7.4.0
+----------
+ * Update README
+ * Use analytics package from gocommon
+
 v7.3.10
 ----------
  * Make sure text are sent after audio attachments for WA channels
