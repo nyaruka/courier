@@ -499,13 +499,13 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		Text: "Simple Message", URN: "whatsapp:250788123123", Path: "/12345_ID/messages",
 		Status: "W", ExternalID: "157b5e14568e8",
 		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
-		RequestBody: `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Simple Message"}}`,
+		RequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Simple Message"}}`,
 		SendPrep:    setSendURL},
 	{Label: "Unicode Send",
 		Text: "☺", URN: "whatsapp:250788123123", Path: "/12345_ID/messages",
 		Status: "W", ExternalID: "157b5e14568e8",
 		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
-		RequestBody: `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"☺"}}`,
+		RequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"☺"}}`,
 		SendPrep:    setSendURL},
 	{Label: "Audio Send",
 		Text:   "audio caption",
@@ -516,7 +516,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
-				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`,
+				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -524,7 +524,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
-				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"audio caption"}}`,
+				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"audio caption"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -540,7 +540,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
-				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf"}}`,
+				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -548,7 +548,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
-				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"document caption"}}`,
+				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"document caption"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -565,7 +565,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
-				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`,
+				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -573,7 +573,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
-				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"document caption"}}`,
+				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"document caption"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -589,7 +589,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
-				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"video","video":{"link":"https://foo.bar/video.mp4"}}`,
+				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"video","video":{"link":"https://foo.bar/video.mp4"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -597,7 +597,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
-				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"video caption"}}`,
+				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"video caption"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -611,7 +611,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		Status: "W", ExternalID: "157b5e14568e8",
 		Metadata:     json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "variables": ["Chef", "tomorrow"]}}`),
 		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 200,
-		RequestBody: `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","sub_type":"","index":"","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		RequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","sub_type":"","index":"","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		SendPrep:    setSendURL,
 	},
 
@@ -621,7 +621,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		Status: "W", ExternalID: "157b5e14568e8",
 		Metadata:     json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "country": "US", "variables": ["Chef", "tomorrow"]}}`),
 		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 200,
-		RequestBody: `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","sub_type":"","index":"","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		RequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","sub_type":"","index":"","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		SendPrep:    setSendURL,
 	},
 	{Label: "Template Invalid Language",
@@ -633,13 +633,13 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		Text: "Interactive Button Msg", URN: "whatsapp:250788123123", QuickReplies: []string{"BUTTON1"},
 		Status: "W", ExternalID: "157b5e14568e8",
 		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
-		RequestBody: `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
+		RequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
 		SendPrep:    setSendURL},
 	{Label: "Interactive List Message Send",
 		Text: "Interactive List Msg", URN: "whatsapp:250788123123", QuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
 		Status: "W", ExternalID: "157b5e14568e8",
 		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
-		RequestBody: `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
+		RequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
 		SendPrep:    setSendURL},
 	{Label: "Interactive Button Message Send with attachment",
 		Text: "Interactive Button Msg", URN: "whatsapp:250788123123", QuickReplies: []string{"BUTTON1"},
@@ -649,7 +649,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
-				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`,
+				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -657,7 +657,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
-				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
+				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -672,7 +672,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
-				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`,
+				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
@@ -680,13 +680,19 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
-				Body:   `{"messaging_product":"whatsapp","preview_url":false,"recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
+				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
 			}: MockedResponse{
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
 		},
 		SendPrep: setSendURL},
+	{Label: "Link Sending",
+		Text: "Link Sending https://link.com", URN: "whatsapp:250788123123", Path: "/12345_ID/messages",
+		Status: "W", ExternalID: "157b5e14568e8",
+		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
+		RequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Link Sending https://link.com","preview_url":true}}`,
+		SendPrep:    setSendURL},
 }
 
 func TestSending(t *testing.T) {

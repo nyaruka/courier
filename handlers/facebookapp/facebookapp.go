@@ -982,7 +982,8 @@ type wacComponent struct {
 }
 
 type wacText struct {
-	Body string `json:"body"`
+	Body       string `json:"body"`
+	PreviewURL bool   `json:"preview_url,omitempty"`
 }
 
 type wacLanguage struct {
@@ -1020,7 +1021,6 @@ type wacInteractive struct {
 
 type wacMTPayload struct {
 	MessagingProduct string `json:"messaging_product"`
-	PreviewURL       bool   `json:"preview_url"`
 	RecipientType    string `json:"recipient_type"`
 	To               string `json:"to"`
 	Type             string `json:"type"`
@@ -1086,8 +1086,13 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 			} else {
 				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 					// this is still a msg part
+					text := &wacText{}
 					payload.Type = "text"
-					payload.Text = &wacText{Body: msgParts[i-len(msg.Attachments())]}
+					if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+						text.PreviewURL = true
+					}
+					text.Body = msgParts[i-len(msg.Attachments())]
+					payload.Text = text
 				} else {
 					if len(qrs) > 0 {
 						payload.Type = "interactive"
@@ -1140,8 +1145,13 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 						}
 					} else {
 						// this is still a msg part
+						text := &wacText{}
 						payload.Type = "text"
-						payload.Text = &wacText{Body: msgParts[i-len(msg.Attachments())]}
+						if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+							text.PreviewURL = true
+						}
+						text.Body = msgParts[i-len(msg.Attachments())]
+						payload.Text = text
 					}
 				}
 			}
@@ -1167,8 +1177,13 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 		} else {
 			if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 				// this is still a msg part
+				text := &wacText{}
 				payload.Type = "text"
-				payload.Text = &wacText{Body: msgParts[i-len(msg.Attachments())]}
+				if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+					text.PreviewURL = true
+				}
+				text.Body = msgParts[i-len(msg.Attachments())]
+				payload.Text = text
 			} else {
 				if len(qrs) > 0 {
 					payload.Type = "interactive"
@@ -1222,8 +1237,13 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 					}
 				} else {
 					// this is still a msg part
+					text := &wacText{}
 					payload.Type = "text"
-					payload.Text = &wacText{Body: msgParts[i-len(msg.Attachments())]}
+					if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+						text.PreviewURL = true
+					}
+					text.Body = msgParts[i-len(msg.Attachments())]
+					payload.Text = text
 				}
 			}
 
