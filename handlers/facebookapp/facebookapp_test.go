@@ -283,7 +283,7 @@ func TestHandler(t *testing.T) {
 		defer r.Body.Close()
 
 		// invalid auth token
-		if accessToken != "Bearer a123" {
+		if accessToken != "Bearer a123" && accessToken != "Bearer wac_admin_system_user_token" {
 			fmt.Printf("Access token: %s\n", accessToken)
 			http.Error(w, "invalid auth token", 403)
 			return

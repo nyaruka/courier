@@ -247,6 +247,11 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 		}
 	}
 
+	// to allow download media from wac when receive media message
+	if channel.ChannelType() == "WAC" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", b.config.WhatsappAdminSystemUserToken))
+	}
+
 	resp, err := utils.GetHTTPClient().Do(req)
 	if err != nil {
 		return "", err
