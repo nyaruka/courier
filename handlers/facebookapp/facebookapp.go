@@ -319,7 +319,7 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 	return nil, err
 }
 
-func resolveMediaURL(channel courier.Channel, mediaID string, token string) (string, error) {
+func resolveMediaURL(mediaID string, token string) (string, error) {
 	if token == "" {
 		return "", fmt.Errorf("missing token for WA channel")
 	}
@@ -425,21 +425,21 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					text = msg.Text.Body
 				} else if msg.Type == "audio" && msg.Audio != nil {
 					text = msg.Audio.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Audio.ID, token)
+					mediaURL, err = resolveMediaURL(msg.Audio.ID, token)
 				} else if msg.Type == "voice" && msg.Voice != nil {
 					text = msg.Voice.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Voice.ID, token)
+					mediaURL, err = resolveMediaURL(msg.Voice.ID, token)
 				} else if msg.Type == "button" && msg.Button != nil {
 					text = msg.Button.Text
 				} else if msg.Type == "document" && msg.Document != nil {
 					text = msg.Document.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Document.ID, token)
+					mediaURL, err = resolveMediaURL(msg.Document.ID, token)
 				} else if msg.Type == "image" && msg.Image != nil {
 					text = msg.Image.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Image.ID, token)
+					mediaURL, err = resolveMediaURL(msg.Image.ID, token)
 				} else if msg.Type == "video" && msg.Video != nil {
 					text = msg.Video.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Video.ID, token)
+					mediaURL, err = resolveMediaURL(msg.Video.ID, token)
 				} else if msg.Type == "location" && msg.Location != nil {
 					mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
 				} else {
