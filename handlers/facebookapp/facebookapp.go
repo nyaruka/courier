@@ -983,7 +983,7 @@ type wacComponent struct {
 
 type wacText struct {
 	Body       string `json:"body"`
-	PreviewURL bool   `json:"preview_url,omitempty"`
+	PreviewURL bool   `json:"preview_url"`
 }
 
 type wacLanguage struct {
@@ -1088,6 +1088,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 					// this is still a msg part
 					text := &wacText{}
 					payload.Type = "text"
+					text.PreviewURL = false
 					if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
 						text.PreviewURL = true
 					}
@@ -1147,6 +1148,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 						// this is still a msg part
 						text := &wacText{}
 						payload.Type = "text"
+						text.PreviewURL = false
 						if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
 							text.PreviewURL = true
 						}
@@ -1179,6 +1181,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 				// this is still a msg part
 				text := &wacText{}
 				payload.Type = "text"
+				text.PreviewURL = false
 				if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
 					text.PreviewURL = true
 				}
@@ -1239,6 +1242,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 					// this is still a msg part
 					text := &wacText{}
 					payload.Type = "text"
+					text.PreviewURL = false
 					if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
 						text.PreviewURL = true
 					}
