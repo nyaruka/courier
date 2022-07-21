@@ -175,6 +175,17 @@ type moPayload struct {
 						Text    string `json:"text"`
 						Payload string `json:"payload"`
 					} `json:"button"`
+					Interactive struct {
+						Type        string `json:"type"`
+						ButtonReply struct {
+							ID    string `json:"id"`
+							Title string `json:"title"`
+						} `json:"button_reply,omitempty"`
+						ListReply struct {
+							ID    string `json:"id"`
+							Title string `json:"title"`
+						} `json:"list_reply,omitempty"`
+					} `json:"interactive,omitempty"`
 				} `json:"messages"`
 				Statuses []struct {
 					ID           string `json:"id"`
@@ -441,6 +452,10 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					mediaURL, err = resolveMediaURL(channel, msg.Video.ID)
 				} else if msg.Type == "location" && msg.Location != nil {
 					mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
+				} else if msg.Type == "interactive" && msg.Interactive.Type == "button_reply" {
+					text = msg.Interactive.ButtonReply.Title
+				} else if msg.Type == "interactive" && msg.Interactive.Type == "list_reply" {
+					text = msg.Interactive.ListReply.Title
 				} else {
 					// we received a message type we do not support.
 					courier.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", msg.Type))
