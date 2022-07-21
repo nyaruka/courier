@@ -1,3 +1,8 @@
+v7.5.0
+----------
+ * Fix receiving quick replies and list replies in WAC
+ * Add link preview support in WAC
+
 v7.4.0
 ----------
  * Update README
