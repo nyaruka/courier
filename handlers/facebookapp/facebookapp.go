@@ -1086,9 +1086,8 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 			} else {
 				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 					// this is still a msg part
-					text := &wacText{}
+					text := &wacText{PreviewURL: false}
 					payload.Type = "text"
-					text.PreviewURL = false
 					if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
 						text.PreviewURL = true
 					}
@@ -1146,9 +1145,8 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 						}
 					} else {
 						// this is still a msg part
-						text := &wacText{}
+						text := &wacText{PreviewURL: false}
 						payload.Type = "text"
-						text.PreviewURL = false
 						if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
 							text.PreviewURL = true
 						}
@@ -1179,9 +1177,8 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 		} else {
 			if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 				// this is still a msg part
-				text := &wacText{}
+				text := &wacText{PreviewURL: false}
 				payload.Type = "text"
-				text.PreviewURL = false
 				if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
 					text.PreviewURL = true
 				}
@@ -1240,9 +1237,8 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 					}
 				} else {
 					// this is still a msg part
-					text := &wacText{}
+					text := &wacText{PreviewURL: false}
 					payload.Type = "text"
-					text.PreviewURL = false
 					if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
 						text.PreviewURL = true
 					}
