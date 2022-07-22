@@ -1,3 +1,7 @@
+v7.5.2
+----------
+ * Support receiving LINE attachments
+
 v7.5.1
 ----------
  * Support Quick replies for LINE channels
