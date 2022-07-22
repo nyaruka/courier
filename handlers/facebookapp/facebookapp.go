@@ -1395,6 +1395,22 @@ func (h *handler) getTemplate(msg courier.Msg) (*MsgTemplating, error) {
 	return templating, err
 }
 
+// BuildDownloadMediaRequest to download media for message attachment with Bearer token set
+func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+	token := h.Server().Config().WhatsappAdminSystemUserToken
+	if token == "" {
+		return nil, fmt.Errorf("missing token for WAC channel")
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
+
+	// set the access token as the authorization header for WAC
+	if channel.ChannelType() == "WAC" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	return req, nil
+}
+
 type TemplateMetadata struct {
 	Templating *MsgTemplating `json:"templating"`
 }

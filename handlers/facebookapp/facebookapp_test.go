@@ -721,3 +721,32 @@ func TestSigning(t *testing.T) {
 		assert.Equal(t, tc.Signature, sig, "%d: mismatched signature", i)
 	}
 }
+
+func newServer(backend courier.Backend) courier.Server {
+	config := courier.NewConfig()
+	config.WhatsappAdminSystemUserToken = "wac_admin_system_user_token"
+	return courier.NewServer(config, backend)
+}
+
+func TestBuildMediaRequest(t *testing.T) {
+	mb := courier.NewMockBackend()
+	s := newServer(mb)
+	wacHandler := &handler{NewBaseHandlerWithParams(courier.ChannelType("WAC"), "WhatsApp Cloud", false)}
+	wacHandler.Initialize(s)
+	req, _ := wacHandler.BuildDownloadMediaRequest(context.Background(), mb, testChannelsWAC[0], "https://example.org/v1/media/41")
+	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
+	assert.Equal(t, "Bearer wac_admin_system_user_token", req.Header.Get("Authorization"))
+
+	fbaHandler := &handler{NewBaseHandlerWithParams(courier.ChannelType("FBA"), "Facebook", false)}
+	fbaHandler.Initialize(s)
+	req, _ = fbaHandler.BuildDownloadMediaRequest(context.Background(), mb, testChannelsFBA[0], "https://example.org/v1/media/41")
+	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
+	assert.Equal(t, http.Header{}, req.Header)
+
+	igHandler := &handler{NewBaseHandlerWithParams(courier.ChannelType("IG"), "Instagram", false)}
+	igHandler.Initialize(s)
+	req, _ = igHandler.BuildDownloadMediaRequest(context.Background(), mb, testChannelsFBA[0], "https://example.org/v1/media/41")
+	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
+	assert.Equal(t, http.Header{}, req.Header)
+
+}
