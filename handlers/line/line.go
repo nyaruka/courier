@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 var (
 	replySendURL = "https://api.line.me/v2/bot/message/reply"
 	pushSendURL  = "https://api.line.me/v2/bot/message/push"
+	mediaDataURL = "https://api-data.line.me/v2/bot/message"
 	maxMsgLength = 2000
 	maxMsgSend   = 5
 
@@ -88,9 +90,17 @@ type moPayload struct {
 			UserID string `json:"userId"`
 		} `json:"source"`
 		Message struct {
-			ID   string `json:"id"`
-			Type string `json:"type"`
-			Text string `json:"text"`
+			ID              string  `json:"id"`
+			Type            string  `json:"type"`
+			Text            string  `json:"text"`
+			Title           string  `json:"title"`
+			Address         string  `json:"address"`
+			Latitude        float64 `json:"latitude"`
+			Longitude       float64 `json:"longitude"`
+			ContentProvider struct {
+				Type               string `json:"type"`
+				OriginalContentURL string `json:"originalContentUrl"`
+			} `json:"contentProvider"`
 		} `json:"message"`
 	} `json:"events"`
 }
@@ -111,7 +121,29 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	msgs := []courier.Msg{}
 
 	for _, lineEvent := range payload.Events {
-		if lineEvent.ReplyToken == "" || (lineEvent.Source.Type == "" && lineEvent.Source.UserID == "") || (lineEvent.Message.Type == "" && lineEvent.Message.ID == "" && lineEvent.Message.Text == "") || lineEvent.Message.Type != "text" {
+		if lineEvent.ReplyToken == "" || (lineEvent.Source.Type == "" && lineEvent.Source.UserID == "") || (lineEvent.Message.Type == "" && lineEvent.Message.ID == "") {
+			continue
+		}
+
+		text := ""
+		mediaURL := ""
+
+		lineEventMsgType := lineEvent.Message.Type
+
+		if lineEventMsgType == "text" {
+			text = lineEvent.Message.Text
+
+		} else if lineEventMsgType == "audio" || lineEventMsgType == "video" || lineEventMsgType == "image" || lineEventMsgType == "file" {
+			if lineEvent.Message.ContentProvider.Type == "line" || lineEventMsgType == "file" {
+				mediaURL = buildMediaURL(lineEvent.Message.ID)
+			} else if lineEvent.Message.ContentProvider.Type == "external" {
+				mediaURL = lineEvent.Message.ContentProvider.OriginalContentURL
+			}
+
+		} else if lineEventMsgType == "location" {
+			mediaURL = fmt.Sprintf("geo:%f,%f", lineEvent.Message.Latitude, lineEvent.Message.Longitude)
+			text = lineEvent.Message.Title
+		} else {
 			continue
 		}
 
@@ -123,7 +155,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
-		msg := h.Backend().NewIncomingMsg(channel, urn, lineEvent.Message.Text).WithExternalID(lineEvent.ReplyToken).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(lineEvent.ReplyToken).WithReceivedOn(date)
+
+		if mediaURL != "" {
+			msg.WithAttachment(mediaURL)
+		}
+
 		msgs = append(msgs, msg)
 	}
 
@@ -133,6 +170,24 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
 
+}
+
+func buildMediaURL(mediaID string) string {
+	mediaURL, _ := url.Parse(fmt.Sprintf("%s/%s/content", mediaDataURL, mediaID))
+	return mediaURL.String()
+}
+
+// BuildDownloadMediaRequest to download media for message attachment with Bearer token set
+func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	if token == "" {
+		return nil, fmt.Errorf("missing token for LN channel")
+	}
+
+	// set the access token as the authorization header
+	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	return req, nil
 }
 
 func (h *handler) validateSignature(channel courier.Channel, r *http.Request) error {

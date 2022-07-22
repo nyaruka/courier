@@ -1,6 +1,7 @@
 package line
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -110,6 +112,125 @@ var receiveValidMessageLast = `
 	}]
 }`
 
+var receiveValidImageMessage = `
+{
+	"events": [{
+		"replyToken": "abcdefghij",
+		"type": "message",
+		"timestamp": 1459991487970,
+		"source": {
+			"type": "user",
+			"userId": "uabcdefghij"
+		},
+		"message": {
+			"id": "100001",
+			"type": "image",
+			"contentProvider": {
+				"type": "line"
+			}
+		}
+	}]
+}`
+
+var receiveValidVideoMessage = `
+{
+	"events": [{
+		"replyToken": "abcdefghij",
+		"type": "message",
+		"timestamp": 1459991487970,
+		"source": {
+			"type": "user",
+			"userId": "uabcdefghij"
+		},
+		"message": {
+			"id": "100001",
+			"type": "video",
+			"contentProvider": {
+				"type": "line"
+			}
+		}
+	}]
+}`
+
+var receiveValidVideoExternalMessage = `
+{
+	"events": [{
+		"replyToken": "abcdefghij",
+		"type": "message",
+		"timestamp": 1459991487970,
+		"source": {
+			"type": "user",
+			"userId": "uabcdefghij"
+		},
+		"message": {
+			"id": "100001",
+			"type": "video",
+			"contentProvider": {
+				"type": "external",
+				"originalContentUrl": "https://example.com/original.mp4"
+			}
+		}
+	}]
+}`
+
+var receiveValidAudioMessage = `
+{
+	"events": [{
+		"replyToken": "abcdefghij",
+		"type": "message",
+		"timestamp": 1459991487970,
+		"source": {
+			"type": "user",
+			"userId": "uabcdefghij"
+		},
+		"message": {
+			"id": "100001",
+			"type": "audio",
+			"contentProvider": {
+				"type": "line"
+			}
+		}
+	}]
+}`
+
+var receiveValidFileMessage = `
+{
+	"events": [{
+		"replyToken": "abcdefghij",
+		"type": "message",
+		"timestamp": 1459991487970,
+		"source": {
+			"type": "user",
+			"userId": "uabcdefghij"
+		},
+		"message": {
+			"id": "100001",
+			"type": "audio"
+		}
+	}]
+}`
+
+var receiveValidLocationMessage = `
+{
+	"events": [{
+		"replyToken": "abcdefghij",
+		"type": "message",
+		"timestamp": 1459991487970,
+		"source": {
+			"type": "user",
+			"userId": "uabcdefghij"
+		},
+		"message": {
+			"id": "100001",
+			"type": "location",
+			"title": "my location",
+            "address": "Japan, 〒160-0004 Tokyo, Shinjuku City, Yotsuya, 1-chōme-6-1",
+            "latitude": 35.687574,
+            "longitude": 139.72922
+		}
+	}]
+}`
+
 var missingMessage = `{
 	"events": [{
 		"replyToken": "abcdefghij",
@@ -129,7 +250,8 @@ var noEvent = `{
 var testChannels = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US",
 		map[string]interface{}{
-			"secret": "Secret",
+			"secret":     "Secret",
+			"auth_token": "the-auth-token",
 		}),
 }
 
@@ -140,6 +262,23 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessageLast, Status: 200, Response: "Accepted",
 		Text: Sp("Last event"), URN: Sp("line:uabcdefghij"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
 		PrepRequest: addValidSignature},
+
+	{Label: "Receive Valid Image Message", URL: receiveURL, Data: receiveValidImageMessage, Status: 200, Response: "Accepted",
+		Text: Sp(""), Attachment: Sp("https://api-data.line.me/v2/bot/message/100001/content"), URN: Sp("line:uabcdefghij"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Valid Video Message", URL: receiveURL, Data: receiveValidVideoMessage, Status: 200, Response: "Accepted",
+		Text: Sp(""), Attachment: Sp("https://api-data.line.me/v2/bot/message/100001/content"), URN: Sp("line:uabcdefghij"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Valid Video External Message", URL: receiveURL, Data: receiveValidVideoExternalMessage, Status: 200, Response: "Accepted",
+		Text: Sp(""), Attachment: Sp("https://example.com/original.mp4"), URN: Sp("line:uabcdefghij"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Valid Audio Message", URL: receiveURL, Data: receiveValidAudioMessage, Status: 200, Response: "Accepted",
+		Text: Sp(""), Attachment: Sp("https://api-data.line.me/v2/bot/message/100001/content"), URN: Sp("line:uabcdefghij"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
+	{Label: "Receive Valid Location Message", URL: receiveURL, Data: receiveValidLocationMessage, Status: 200, Response: "Accepted",
+		Text: Sp("my location"), Attachment: Sp("geo:35.687574,139.729220"), URN: Sp("line:uabcdefghij"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		PrepRequest: addValidSignature},
+
 	{Label: "Missing message", URL: receiveURL, Data: missingMessage, Status: 200, Response: "ignoring request, no message",
 		PrepRequest: addValidSignature},
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "invalid line id",
@@ -316,4 +455,13 @@ func TestSending(t *testing.T) {
 	)
 
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+}
+
+func TestBuildMediaRequest(t *testing.T) {
+	mb := courier.NewMockBackend()
+
+	lnHandler := &handler{NewBaseHandler(courier.ChannelType("LN"), "Line")}
+	req, _ := lnHandler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
+	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
+	assert.Equal(t, "Bearer the-auth-token", req.Header.Get("Authorization"))
 }
