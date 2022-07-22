@@ -1,3 +1,8 @@
+v7.5.1
+----------
+ * Support Quick replies for LINE channels
+ * Slack channel support
+
 v7.5.0
 ----------
  * Fix receiving quick replies and list replies in WAC
