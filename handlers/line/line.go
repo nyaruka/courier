@@ -181,8 +181,22 @@ func calculateSignature(secret string, r *http.Request) ([]byte, error) {
 }
 
 type mtTextMsg struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
+	Type       string        `json:"type"`
+	Text       string        `json:"text"`
+	QuickReply *mtQuickReply `json:"quickReply,omitempty"`
+}
+
+type mtQuickReply struct {
+	Items []QuickReplyItem `json:"items"`
+}
+
+type QuickReplyItem struct {
+	Type   string `json:"type"`
+	Action struct {
+		Type  string `json:"type"`
+		Label string `json:"label"`
+		Text  string `json:"text"`
+	} `json:"action"`
 }
 
 type mtImageMsg struct {
@@ -208,10 +222,29 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	// all msg parts in JSON
 	var jsonMsgs []string
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
+	qrs := msg.QuickReplies()
+
 	// fill all msg parts with text parts
-	for _, part := range parts {
-		if jsonMsg, err := json.Marshal(mtTextMsg{Type: "text", Text: part}); err == nil {
-			jsonMsgs = append(jsonMsgs, string(jsonMsg))
+	for i, part := range parts {
+		if i < (len(parts) - 1) {
+			if jsonMsg, err := json.Marshal(mtTextMsg{Type: "text", Text: part}); err == nil {
+				jsonMsgs = append(jsonMsgs, string(jsonMsg))
+			}
+		} else {
+			mtTextMsg := mtTextMsg{Type: "text", Text: part}
+			items := make([]QuickReplyItem, len(qrs))
+			for j, qr := range qrs {
+				items[j] = QuickReplyItem{Type: "action"}
+				items[j].Action.Type = "message"
+				items[j].Action.Label = qr
+				items[j].Action.Text = qr
+			}
+			if len(items) > 0 {
+				mtTextMsg.QuickReply = &mtQuickReply{Items: items}
+			}
+			if jsonMsg, err := json.Marshal(mtTextMsg); err == nil {
+				jsonMsgs = append(jsonMsgs, string(jsonMsg))
+			}
 		}
 	}
 	// fill all msg parts with attachment parts
