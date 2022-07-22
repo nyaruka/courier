@@ -171,7 +171,7 @@ func BenchmarkHandler(b *testing.B) {
 // setSendURL takes care of setting the send_url to our test server host
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
 	replySendURL = s.URL + "/v2/bot/message/reply"
-	pushSendURL  = s.URL + "/v2/bot/message/push"
+	pushSendURL = s.URL + "/v2/bot/message/push"
 }
 
 const tooLongMsg = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis augue vel placerat congue.
@@ -265,6 +265,18 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		RequestBody: `{"replyToken":"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA","messages":[{"type":"text","text":"Simple Message"}]}`,
 		SendPrep:    setSendURL},
+	{Label: "Quick Reply",
+		Text: "Are you happy?", URN: "line:uabcdefghij",
+		QuickReplies: []string{"Yes", "No"},
+		Status:       "W",
+		ResponseBody: `{}`, ResponseStatus: 200,
+		Headers: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Bearer AccessToken",
+		},
+		RequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Are you happy?","quickReply":{"items":[{"type":"action","action":{"type":"message","label":"Yes","text":"Yes"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
+		SendPrep:    setSendURL},
 	{Label: "Send Push Message If Invalid Reply",
 		Text: "Simple Message", URN: "line:uabcdefghij", ResponseToExternalID: "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
 		Status: "W",
@@ -275,7 +287,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 				BodyContains: `{"replyToken":"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA","messages":[{"type":"text","text":"Simple Message"}]}`,
 			}: {
 				Status: 400,
-				Body: `{"message":"Invalid reply token"}`,
+				Body:   `{"message":"Invalid reply token"}`,
 			},
 			MockedRequest{
 				Method:       "POST",
@@ -283,7 +295,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 				BodyContains: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message"}]}`,
 			}: {
 				Status: 200,
-				Body: `{}`,
+				Body:   `{}`,
 			},
 		},
 		SendPrep: setSendURL},
