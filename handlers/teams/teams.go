@@ -163,7 +163,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	serviceURL := payload.ServiceUrl
+	serviceURL := strings.Split(payload.ServiceUrl, "https://")
 	var urn urns.URN
 
 	// the list of events we deal with
@@ -180,7 +180,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	if payload.Type == "message" {
 		sender := payload.Conversation.ID
 
-		urn, err = urns.NewTeamsURN(sender + ":serviceURL:" + serviceURL)
+		urn, err = urns.NewTeamsURN(sender + serviceURL[1])
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
@@ -267,7 +267,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			return nil, err
 		}
 
-		urn, err = urns.NewTeamsURN(body.ID + ":serviceURL:" + serviceURL)
+		urn, err = urns.NewTeamsURN(body.ID + serviceURL[1])
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
@@ -353,7 +353,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	path := strings.Split(msg.URN().Path(), ":")
 	conversationID := path[1]
 
-	msgURL := msg.URN().TeamsServiceURL() + "v3/conversations/a:" + conversationID + "/activities"
+	msgURL := "https://" + msg.URN().TeamsServiceURL() + "v3/conversations/a:" + conversationID + "/activities"
 
 	for _, attachment := range msg.Attachments() {
 		attType, attURL := handlers.SplitAttachment(attachment)
@@ -410,7 +410,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	// build a request to lookup the stats for this contact
 	pathSplit := strings.Split(urn.Path(), ":")
 	conversationID := pathSplit[1]
-	url := urn.TeamsServiceURL() + "v3/conversations/a:" + conversationID + "/members"
+	url := "https://" + urn.TeamsServiceURL() + "v3/conversations/a:" + conversationID + "/members"
 
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	req.Header.Set("Authorization", "Bearer "+accessToken)
