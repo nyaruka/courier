@@ -17,7 +17,7 @@ require (
 	github.com/lestrrat-go/jwx v1.2.25
 	github.com/lib/pq v1.10.6
 	github.com/nyaruka/ezconf v0.2.1
-	github.com/nyaruka/gocommon v1.22.2
+	github.com/nyaruka/gocommon v1.22.5
 	github.com/nyaruka/null v1.1.1
 	github.com/nyaruka/redisx v0.2.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
