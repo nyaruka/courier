@@ -330,8 +330,7 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 	return nil, err
 }
 
-func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
-	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+func resolveMediaURL(mediaID string, token string) (string, error) {
 	if token == "" {
 		return "", fmt.Errorf("missing token for WA channel")
 	}
@@ -401,6 +400,8 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 	// the list of data we will return in our response
 	data := make([]interface{}, 0, 2)
 
+	token := h.Server().Config().WhatsappAdminSystemUserToken
+
 	var contactNames = make(map[string]string)
 
 	// for each entry
@@ -435,21 +436,21 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					text = msg.Text.Body
 				} else if msg.Type == "audio" && msg.Audio != nil {
 					text = msg.Audio.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Audio.ID)
+					mediaURL, err = resolveMediaURL(msg.Audio.ID, token)
 				} else if msg.Type == "voice" && msg.Voice != nil {
 					text = msg.Voice.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Voice.ID)
+					mediaURL, err = resolveMediaURL(msg.Voice.ID, token)
 				} else if msg.Type == "button" && msg.Button != nil {
 					text = msg.Button.Text
 				} else if msg.Type == "document" && msg.Document != nil {
 					text = msg.Document.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Document.ID)
+					mediaURL, err = resolveMediaURL(msg.Document.ID, token)
 				} else if msg.Type == "image" && msg.Image != nil {
 					text = msg.Image.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Image.ID)
+					mediaURL, err = resolveMediaURL(msg.Image.ID, token)
 				} else if msg.Type == "video" && msg.Video != nil {
 					text = msg.Video.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Video.ID)
+					mediaURL, err = resolveMediaURL(msg.Video.ID, token)
 				} else if msg.Type == "location" && msg.Location != nil {
 					mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
 				} else if msg.Type == "interactive" && msg.Interactive.Type == "button_reply" {
@@ -1427,6 +1428,22 @@ func (h *handler) getTemplate(msg courier.Msg) (*MsgTemplating, error) {
 	templating.Language = language
 
 	return templating, err
+}
+
+// BuildDownloadMediaRequest to download media for message attachment with Bearer token set
+func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+	token := h.Server().Config().WhatsappAdminSystemUserToken
+	if token == "" {
+		return nil, fmt.Errorf("missing token for WAC channel")
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
+
+	// set the access token as the authorization header for WAC
+	if channel.ChannelType() == "WAC" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	return req, nil
 }
 
 type TemplateMetadata struct {
