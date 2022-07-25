@@ -1,3 +1,7 @@
+v7.5.3
+----------
+ * Fix receiving attachments in WAC
+
 v7.5.2
 ----------
  * Support receiving LINE attachments
