@@ -126,7 +126,7 @@ var testCases = []ChannelHandleTestCase{
 		Status:            200,
 		Response:          "Handled",
 		Text:              Sp("Hello World"),
-		URN:               Sp("teams:a:2811:serviceURL:https://smba.trafficmanager.net/br/"),
+		URN:               Sp("teams:2811:smba.trafficmanager.net/br/"),
 		ExternalID:        Sp("56834"),
 		Date:              Tp(time.Date(2022, 6, 6, 16, 51, 00, 0000000, time.UTC)),
 		Headers:           map[string]string{"Authorization": "Bearer " + access_token},
@@ -140,7 +140,7 @@ var testCases = []ChannelHandleTestCase{
 		Response:          "Handled",
 		Text:              Sp("Hello World"),
 		Attachments:       []string{"https://image-url/foo.png"},
-		URN:               Sp("teams:a:2811:serviceURL:https://smba.trafficmanager.net/br/"),
+		URN:               Sp("teams:2811:smba.trafficmanager.net/br/"),
 		ExternalID:        Sp("56834"),
 		Date:              Tp(time.Date(2022, 6, 6, 16, 51, 00, 0000000, time.UTC)),
 		Headers:           map[string]string{"Authorization": "Bearer " + access_token},
@@ -154,7 +154,7 @@ var testCases = []ChannelHandleTestCase{
 		Response:          "Handled",
 		Text:              Sp("Hello World"),
 		Attachments:       []string{"https://video-url/foo.mp4"},
-		URN:               Sp("teams:a:2811:serviceURL:https://smba.trafficmanager.net/br/"),
+		URN:               Sp("teams:2811:smba.trafficmanager.net/br/"),
 		ExternalID:        Sp("56834"),
 		Date:              Tp(time.Date(2022, 6, 6, 16, 51, 00, 0000000, time.UTC)),
 		Headers:           map[string]string{"Authorization": "Bearer " + access_token},
@@ -168,7 +168,7 @@ var testCases = []ChannelHandleTestCase{
 		Response:          "Handled",
 		Text:              Sp("Hello World"),
 		Attachments:       []string{"https://document-url/foo.pdf"},
-		URN:               Sp("teams:a:2811:serviceURL:https://smba.trafficmanager.net/br/"),
+		URN:               Sp("teams:2811:smba.trafficmanager.net/br/"),
 		ExternalID:        Sp("56834"),
 		Date:              Tp(time.Date(2022, 6, 6, 16, 51, 00, 0000000, time.UTC)),
 		Headers:           map[string]string{"Authorization": "Bearer " + access_token},
@@ -261,22 +261,22 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{
 		Label:  "Plain Send",
 		Text:   "Simple Message",
-		URN:    "teams:a:2022:serviceURL:https://smba.trafficmanager.net/br/",
+		URN:    "teams:2022:smba.trafficmanager.net/br/",
 		Status: "W", ExternalID: "1234567890",
 		ResponseBody: `{id:"1234567890"}`, ResponseStatus: 200,
 	},
 	{Label: "Send Photo",
-		URN: "teams:a:2022:serviceURL:https://smba.trafficmanager.net/br/", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		URN: "teams:2022:smba.trafficmanager.net/br/", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		Status: "W", ExternalID: "1234567890",
 		ResponseBody: `{"id": "1234567890"}`, ResponseStatus: 200,
 	},
 	{Label: "Send Video",
-		URN: "teams:a:2022:serviceURL:https://smba.trafficmanager.net/br/", Attachments: []string{"video/mp4:https://foo.bar/video.mp4"},
+		URN: "teams:2022:smba.trafficmanager.net/br/", Attachments: []string{"video/mp4:https://foo.bar/video.mp4"},
 		Status: "W", ExternalID: "1234567890",
 		ResponseBody: `{"id": "1234567890"}`, ResponseStatus: 200,
 	},
 	{Label: "Send Document",
-		URN: "teams:a:2022:serviceURL:https://smba.trafficmanager.net/br/", Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		URN: "teams:2022:smba.trafficmanager.net/br/", Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
 		Status: "W", ExternalID: "1234567890",
 		ResponseBody: `{"id": "1234567890"}`, ResponseStatus: 200,
 	},
@@ -285,8 +285,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 func newSendTestCases(testSendCases []ChannelSendTestCase, url string) []ChannelSendTestCase {
 	var newtestSendCases []ChannelSendTestCase
 	for _, tc := range testSendCases {
-		spTC := strings.Split(tc.URN, ":serviceURL:")
-		newURN := spTC[0] + ":serviceURL:" + url + "/"
+		spTC := strings.Split(tc.URN, ":")
+		newURN := spTC[0] + ":" + spTC[1] + ":" + url + "/"
 		tc.URN = newURN
 		newtestSendCases = append(newtestSendCases, tc)
 	}
@@ -298,19 +298,21 @@ func TestSending(t *testing.T) {
 		map[string]interface{}{courier.ConfigAuthToken: access_token, "tenantID": "cba321", "botID": "0123", "appID": "1596"})
 
 	serviceTM := buildMockTeams()
-	newSendTestCases := newSendTestCases(defaultSendTestCases, serviceTM.URL)
+	url := strings.Split(serviceTM.URL, "http://")
+	newSendTestCases := newSendTestCases(defaultSendTestCases, url[1])
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), newSendTestCases, nil)
 	serviceTM.Close()
 }
 
 func TestDescribe(t *testing.T) {
 	server := buildMockTeams()
+	url := strings.Split(server.URL, "http://")
 
 	handler := newHandler().(courier.URNDescriber)
 	tcs := []struct {
 		urn      urns.URN
 		metadata map[string]string
-	}{{urns.URN("teams:a:2022:serviceURL:" + string(server.URL) + "/"), map[string]string{"name": "John Doe"}}}
+	}{{urns.URN("teams:2022:" + string(url[1]) + "/"), map[string]string{"name": "John Doe"}}}
 
 	for _, tc := range tcs {
 		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn)

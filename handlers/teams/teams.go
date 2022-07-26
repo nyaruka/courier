@@ -163,7 +163,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	serviceURL := strings.Split(payload.ServiceUrl, "https://")
+	path := strings.Split(payload.ServiceUrl, "//")
+	serviceUrl := path[1]
+
 	var urn urns.URN
 
 	// the list of events we deal with
@@ -178,9 +180,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	}
 
 	if payload.Type == "message" {
-		sender := payload.Conversation.ID
+		sender := strings.Split(payload.Conversation.ID, "a:")
 
-		urn, err = urns.NewTeamsURN(sender + serviceURL[1])
+		urn, err = urns.NewTeamsURN(sender[1] + ":" + path[1])
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
@@ -247,7 +249,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			return nil, err
 		}
 		token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
-		req, err := http.NewRequest(http.MethodPost, serviceURL+"/v3/conversations", bytes.NewReader(jsonBody))
+		req, err := http.NewRequest(http.MethodPost, payload.ServiceUrl+"/v3/conversations", bytes.NewReader(jsonBody))
 
 		if err != nil {
 			return nil, err
@@ -266,8 +268,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		if err != nil {
 			return nil, err
 		}
-
-		urn, err = urns.NewTeamsURN(body.ID + serviceURL[1])
+		conversationID := strings.Split(body.ID, "a:")
+		urn, err = urns.NewTeamsURN(conversationID[1] + ":" + serviceUrl)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
@@ -351,9 +353,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	payload := Activity{}
 
 	path := strings.Split(msg.URN().Path(), ":")
-	conversationID := path[1]
+	conversationID := path[0]
+	url := "https://" + msg.URN().TeamsServiceURL()
 
-	msgURL := "https://" + msg.URN().TeamsServiceURL() + "v3/conversations/a:" + conversationID + "/activities"
+	if !strings.HasSuffix(url, "/") {
+		url = "http://" + msg.URN().TeamsServiceURL() + ":" + path[2]
+	}
+
+	msgURL := url + "v3/conversations/a:" + conversationID + "/activities"
 
 	for _, attachment := range msg.Attachments() {
 		attType, attURL := handlers.SplitAttachment(attachment)
@@ -409,9 +416,12 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 
 	// build a request to lookup the stats for this contact
 	pathSplit := strings.Split(urn.Path(), ":")
-	conversationID := pathSplit[1]
-	url := "https://" + urn.TeamsServiceURL() + "v3/conversations/a:" + conversationID + "/members"
-
+	conversationID := pathSplit[0]
+	serviceUrl := "https://" + urn.TeamsServiceURL()
+	if len(pathSplit) > 2 {
+		serviceUrl = "http://" + urn.TeamsServiceURL() + ":" + pathSplit[2]
+	}
+	url := serviceUrl + "v3/conversations/a:" + conversationID + "/members"
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	rr, err := utils.MakeHTTPRequest(req)
