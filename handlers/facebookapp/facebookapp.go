@@ -1175,11 +1175,15 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 		} else if i < len(msg.Attachments()) {
 			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
 			attType = strings.Split(attType, "/")[0]
+			parsedURL, err := url.Parse(attURL)
+			if err != nil {
+				return status, err
+			}
 			if attType == "application" {
 				attType = "document"
 			}
 			payload.Type = attType
-			media := wacMTMedia{Link: attURL}
+			media := wacMTMedia{Link: parsedURL.String()}
 
 			if attType == "image" {
 				payload.Image = &media
