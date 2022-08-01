@@ -1306,7 +1306,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 
 // DescribeURN looks up URN metadata for new contacts
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
-	if channel.ChannelType() == "WAC" {
+	if channel.ChannelType() == "WAC" || channel.ChannelType() == "IG" {
 		return map[string]string{}, nil
 
 	}

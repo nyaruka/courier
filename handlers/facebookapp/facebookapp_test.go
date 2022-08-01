@@ -209,8 +209,8 @@ func TestDescribeIG(t *testing.T) {
 	tcs := []struct {
 		urn      urns.URN
 		metadata map[string]string
-	}{{"instagram:1337", map[string]string{"name": "John Doe"}},
-		{"instagram:4567", map[string]string{"name": ""}}}
+	}{{"instagram:1337", map[string]string{}},
+		{"instagram:4567", map[string]string{}}}
 
 	for _, tc := range tcs {
 		metadata, _ := handler.DescribeURN(context.Background(), testChannelsIG[0], tc.urn)
