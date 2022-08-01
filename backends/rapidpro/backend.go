@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -403,6 +405,46 @@ func (b *backend) WriteExternalIDSeen(msg courier.Msg) {
 	writeExternalIDSeen(b, msg)
 }
 
+var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+
+// ResolveMedia resolves the passed in attachment (content_type:url) to a media object
+func (b *backend) ResolveMedia(ctx context.Context, a string) (courier.Media, error) {
+	// split into content-type and URL
+	parts := strings.SplitN(a, ":", 2)
+	var contentType, mediaUrl string
+	if len(parts) < 2 {
+		contentType, mediaUrl = "", parts[0]
+	} else {
+		contentType, mediaUrl = parts[0], parts[1]
+	}
+
+	// if we can't parse the URL or the hostname isn't our media domain, return as is
+	u, err := url.Parse(mediaUrl)
+	if err != nil || u.Hostname() != b.config.MediaDomain {
+		return &Media{URL_: mediaUrl, ContentType_: contentType}, nil
+	}
+
+	// likewise if path doesn't contain a UUID, return as is
+	mediaUUID := uuidRegex.FindString(u.Path)
+	if mediaUUID == "" {
+		return &Media{URL_: mediaUrl, ContentType_: contentType}, nil
+	}
+
+	// TODO: lock and cache
+
+	media, err := lookupMediaFromUUID(ctx, b.db, uuids.UUID(mediaUUID))
+	if err != nil {
+		return nil, errors.Wrap(err, "error looking up media")
+	}
+
+	// if we didn't find a media record or the one we found doesn't match the URL, return as is
+	if media == nil || media.URL() != mediaUrl {
+		return &Media{URL_: mediaUrl, ContentType_: contentType}, nil
+	}
+
+	return media, nil
+}
+
 // Health returns the health of this backend as a string, returning "" if all is well
 func (b *backend) Health() string {
 	// test redis
@@ -782,9 +824,9 @@ func (b *backend) RedisPool() *redis.Pool {
 }
 
 // NewBackend creates a new RapidPro backend
-func newBackend(config *courier.Config) courier.Backend {
+func newBackend(cfg *courier.Config) courier.Backend {
 	return &backend{
-		config: config,
+		config: cfg,
 
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 // BackendConstructorFunc defines a function to create a particular backend type
@@ -88,6 +89,8 @@ type Backend interface {
 	// Mark a external ID as seen for a period
 	WriteExternalIDSeen(Msg)
 
+	ResolveMedia(context.Context, string) (Media, error)
+
 	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string
 
@@ -99,6 +102,17 @@ type Backend interface {
 
 	// RedisPool returns the redisPool for this backend
 	RedisPool() *redis.Pool
+}
+
+// Media is a resolved media object that can be used as a message attachment
+type Media interface {
+	UUID() uuids.UUID
+	ContentType() string
+	URL() string
+	Alternates() []Media
+	Width() int
+	Height() int
+	Duration() int
 }
 
 // NewBackend creates the type of backend passed in

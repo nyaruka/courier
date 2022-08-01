@@ -28,6 +28,7 @@ type MockBackend struct {
 	channels          map[ChannelUUID]Channel
 	channelsByAddress map[ChannelAddress]Channel
 	contacts          map[urns.URN]Contact
+	media             map[string]Media
 	queueMsgs         []Msg
 	errorOnQueue      bool
 
@@ -72,6 +73,7 @@ func NewMockBackend() *MockBackend {
 		channels:          make(map[ChannelUUID]Channel),
 		channelsByAddress: make(map[ChannelAddress]Channel),
 		contacts:          make(map[urns.URN]Contact),
+		media:             make(map[string]Media),
 		sentMsgs:          make(map[MsgID]bool),
 		redisPool:         redisPool,
 	}
@@ -353,6 +355,12 @@ func (mb *MockBackend) CheckExternalIDSeen(msg Msg) Msg {
 // WriteExternalIDSeen marks a external ID as seen for a period
 func (mb *MockBackend) WriteExternalIDSeen(msg Msg) {
 	mb.seenExternalIDs = append(mb.seenExternalIDs, msg.ExternalID())
+}
+
+// ResolveMedia resolves the passed in media URL to a media object
+func (mb *MockBackend) ResolveMedia(ctx context.Context, a string) (Media, error) {
+	// TODO: implement
+	return nil, nil
 }
 
 // Health gives a string representing our health, empty for our mock
