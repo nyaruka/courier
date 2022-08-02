@@ -1199,7 +1199,7 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	dbE, err = readChannelEventFromDB(ts.b, dbE.ID_)
 	ts.NoError(err)
 	ts.Equal(dbE.EventType_, courier.Referral)
-	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra_.Map)
+	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra_.Map())
 	ts.Equal(contact.ID_, dbE.ContactID_)
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 }
@@ -1241,7 +1241,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	dbE, err = readChannelEventFromDB(ts.b, dbE.ID_)
 	ts.NoError(err)
 	ts.Equal(dbE.EventType_, courier.Referral)
-	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra_.Map)
+	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra_.Map())
 	ts.Equal(contact.ID_, dbE.ContactID_)
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 
