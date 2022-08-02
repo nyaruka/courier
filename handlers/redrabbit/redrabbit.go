@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/gsm7"
 )
 
 var (
@@ -68,8 +68,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	msgURL, _ := url.Parse(sendURL)
 	msgURL.RawQuery = form.Encode()
-	req, _ := http.NewRequest(http.MethodGet, msgURL.String(), nil)
+	req, err := http.NewRequest(http.MethodGet, msgURL.String(), nil)
 
+	if err != nil {
+		return nil, err
+	}
 	rr, err := utils.MakeHTTPRequest(req)
 	status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
 	if err != nil {

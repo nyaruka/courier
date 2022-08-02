@@ -22,7 +22,7 @@ import (
 
 var (
 	maxMsgLength = 1600
-	sendURL      = "http://bulk.startmobile.com.ua/clients.php"
+	sendURL      = "https://bulk.startmobile.ua/clients.php"
 )
 
 func init() {
@@ -134,7 +134,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
+	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for i, part := range parts {
 
 		payload := mtPayload{
@@ -158,9 +158,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		// build our request
-		req, _ := http.NewRequest(http.MethodPost, sendURL, requestBody)
+		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+		if err != nil {
+			return nil, err
+		}
 		req.Header.Set("Content-Type", "application/xml; charset=utf8")
 		req.SetBasicAuth(username, password)
+
 		rr, err := utils.MakeHTTPRequest(req)
 
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)

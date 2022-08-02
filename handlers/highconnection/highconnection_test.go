@@ -18,6 +18,7 @@ var (
 	statusURL  = "/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 
 	validReceive       = "FROM=+33610346460&TO=5151&MESSAGE=Hello+World&RECEPTION_DATE=2015-04-02T14%3A26%3A06"
+	validAccentReceive = "FROM=+33610346460&TO=5151&MESSAGE=je+suis+tr%E8s+satisfait+&RECEPTION_DATE=2015-04-02T14%3A26%3A06"
 	invalidURN         = "FROM=MTN&TO=5151&MESSAGE=Hello+World&RECEPTION_DATE=2015-04-02T14%3A26%3A06"
 	invalidDateReceive = "FROM=+33610346460&TO=5151&MESSAGE=Hello+World&RECEPTION_DATE=2015-04-02T14:26"
 	validStatus        = statusURL + "?ret_id=12345&status=6"
@@ -27,6 +28,10 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: validReceive, Status: 200, Response: "Accepted",
 		Text: Sp("Hello World"), URN: Sp("tel:+33610346460"),
 		Date: Tp(time.Date(2015, 04, 02, 14, 26, 06, 0, time.UTC))},
+	{Label: "Receive Valid Message with accents", URL: receiveURL, Data: validAccentReceive, Status: 200, Response: "Accepted",
+		Text: Sp("je suis très satisfait "), URN: Sp("tel:+33610346460"),
+		Date: Tp(time.Date(2015, 04, 02, 14, 26, 06, 0, time.UTC))},
+
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
 	{Label: "Receive Missing Params", URL: receiveURL, Data: " ", Status: 400, Response: "validation for 'From' failed"},
 	{Label: "Receive Invalid Date", URL: receiveURL, Data: invalidDateReceive, Status: 400, Response: "cannot parse"},
@@ -52,6 +57,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text:   "Simple Message",
 		URN:    "tel:+250788383383",
 		Status: "W",
+		Flow:   &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
 		URLParams: map[string]string{
 			"accountid":  "Username",
 			"password":   "Password",
@@ -59,7 +65,24 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"to":         "+250788383383",
 			"ret_id":     "10",
 			"datacoding": "8",
-			"userdata":   "textit",
+			"user_data":  "Favorites",
+			"ret_url":    "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+			"ret_mo_url": "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		},
+		ResponseStatus: 200,
+		SendPrep:       setSendURL},
+	{Label: "Plain Send without flow",
+		Text:   "Simple Message",
+		URN:    "tel:+250788383383",
+		Status: "W",
+		URLParams: map[string]string{
+			"accountid":  "Username",
+			"password":   "Password",
+			"text":       "Simple Message",
+			"to":         "+250788383383",
+			"ret_id":     "10",
+			"datacoding": "8",
+			"user_data":  "",
 			"ret_url":    "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
 			"ret_mo_url": "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		},
@@ -69,6 +92,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text:   "☺",
 		URN:    "tel:+250788383383",
 		Status: "W",
+		Flow:   &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
 		URLParams: map[string]string{
 			"accountid":  "Username",
 			"password":   "Password",
@@ -76,7 +100,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"to":         "+250788383383",
 			"ret_id":     "10",
 			"datacoding": "8",
-			"userdata":   "textit",
+			"user_data":  "Favorites",
 			"ret_url":    "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
 			"ret_mo_url": "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		},
@@ -86,6 +110,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Text:   "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
 		URN:    "tel:+250788383383",
 		Status: "W",
+		Flow:   &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
 		URLParams: map[string]string{
 			"accountid":  "Username",
 			"password":   "Password",
@@ -93,7 +118,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"to":         "+250788383383",
 			"ret_id":     "10",
 			"datacoding": "8",
-			"userdata":   "textit",
+			"user_data":  "Favorites",
 			"ret_url":    "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
 			"ret_mo_url": "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		},
@@ -104,6 +129,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		URN:         "tel:+250788383383",
 		Status:      "W",
+		Flow:        &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
 		URLParams: map[string]string{
 			"accountid":  "Username",
 			"password":   "Password",
@@ -111,7 +137,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"to":         "+250788383383",
 			"ret_id":     "10",
 			"datacoding": "8",
-			"userdata":   "textit",
+			"user_data":  "Favorites",
 			"ret_url":    "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
 			"ret_mo_url": "https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		},

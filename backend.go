@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -26,6 +26,9 @@ type Backend interface {
 	// GetChannel returns the channel with the passed in type and UUID
 	GetChannel(context.Context, ChannelType, ChannelUUID) (Channel, error)
 
+	// GetChannelByAddress returns the channel with the passed in type and address
+	GetChannelByAddress(context.Context, ChannelType, ChannelAddress) (Channel, error)
+
 	// GetContact returns (or creates) the contact for the passed in channel and URN
 	GetContact(context context.Context, channel Channel, urn urns.URN, auth string, name string) (Contact, error)
 
@@ -34,6 +37,9 @@ type Backend interface {
 
 	// RemoveURNFromcontact removes a URN from the passed in contact
 	RemoveURNfromContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error)
+
+	// DeleteMsgWithExternalID delete a message we receive an event that it should be deleted
+	DeleteMsgWithExternalID(ctx context.Context, channel Channel, externalID string) error
 
 	// NewIncomingMsg creates a new message from the given params
 	NewIncomingMsg(channel Channel, urn urns.URN, text string) Msg
@@ -65,11 +71,11 @@ type Backend interface {
 
 	// WasMsgSent returns whether the backend thinks the passed in message was already sent. This can be used in cases where
 	// a backend wants to implement a failsafe against double sending messages (say if they were double queued)
-	WasMsgSent(context.Context, Msg) (bool, error)
+	WasMsgSent(context.Context, MsgID) (bool, error)
 
-	// IsMsgLoop returns whether the passed in message is part of a message loop, possibly with another bot. Backends should
-	// implement their own logic to implement this.
-	IsMsgLoop(ctx context.Context, msg Msg) (bool, error)
+	// ClearMsgSent clears any internal status that a message was previously sent. This can be used in the case where
+	// a message is being forced in being resent by a user
+	ClearMsgSent(context.Context, MsgID) error
 
 	// MarkOutgoingMsgComplete marks the passed in message as having been processed. Note this should be called even in the case
 	// of errors during sending as it will manage the number of active workers per channel. The optional status parameter can be

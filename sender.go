@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/nyaruka/librato"
+	"github.com/nyaruka/gocommon/analytics"
 	"github.com/sirupsen/logrus"
 )
 
@@ -172,31 +172,27 @@ func (w *Sender) sendMessage(msg Msg) {
 
 	start := time.Now()
 
+	// if this is a resend, clear our sent status
+	if msg.IsResend() {
+		err := backend.ClearMsgSent(sendCTX, msg.ID())
+		if err != nil {
+			log.WithError(err).Error("error clearing sent status for msg")
+		}
+
+	}
+
 	// was this msg already sent? (from a double queue?)
-	sent, err := backend.WasMsgSent(sendCTX, msg)
+	sent, err := backend.WasMsgSent(sendCTX, msg.ID())
 
 	// failing on a lookup isn't a halting problem but we should log it
 	if err != nil {
 		log.WithError(err).Error("error looking up msg was sent")
 	}
 
-	// is this msg in a loop?
-	loop, err := backend.IsMsgLoop(sendCTX, msg)
-
-	// failing on loop lookup isn't permanent, but log
-	if err != nil {
-		log.WithError(err).Error("error looking up msg loop")
-	}
-
 	if sent {
 		// if this message was already sent, create a wired status for it
 		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired)
 		log.Warning("duplicate send, marking as wired")
-	} else if loop {
-		// if this contact is in a loop, fail the message immediately without sending
-		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgFailed)
-		status.AddLog(NewChannelLogFromError("Message Loop", msg.Channel(), msg.ID(), 0, fmt.Errorf("message loop detected, failing message without send")))
-		log.Error("message loop detected, failing message")
 	} else {
 		// send our message
 		status, err = server.SendMsg(sendCTX, msg)
@@ -214,10 +210,10 @@ func (w *Sender) sendMessage(msg Msg) {
 		// report to librato and log locally
 		if status.Status() == MsgErrored || status.Status() == MsgFailed {
 			log.WithField("elapsed", duration).Warning("msg errored")
-			librato.Gauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
+			analytics.Gauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
 		} else {
 			log.WithField("elapsed", duration).Info("msg sent")
-			librato.Gauge(fmt.Sprintf("courier.msg_send_%s", msg.Channel().ChannelType()), secondDuration)
+			analytics.Gauge(fmt.Sprintf("courier.msg_send_%s", msg.Channel().ChannelType()), secondDuration)
 		}
 	}
 

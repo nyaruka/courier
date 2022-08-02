@@ -278,7 +278,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
-		msgParts = handlers.SplitMsg(msg.Text(), maxMsgLength)
+		msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	}
 
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
@@ -487,7 +487,10 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 		"media_id": []string{mediaID},
 	}
 
-	twReq, _ = http.NewRequest(http.MethodPost, mediaUrl, strings.NewReader(form.Encode()))
+	twReq, err = http.NewRequest(http.MethodPost, mediaUrl, strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", nil, err
+	}
 	twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	twReq.Header.Set("Accept", "application/json")
 	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)

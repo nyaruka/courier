@@ -78,6 +78,11 @@ func NewMsgUUIDFromString(uuidString string) MsgUUID {
 	return MsgUUID{uuid}
 }
 
+type FlowReference struct {
+	UUID string `json:"uuid" validate:"uuid4"`
+	Name string `json:"name"`
+}
+
 //-----------------------------------------------------------------------------
 // Msg interface
 //-----------------------------------------------------------------------------
@@ -95,8 +100,12 @@ type Msg interface {
 	QuickReplies() []string
 	Topic() string
 	Metadata() json.RawMessage
-	ResponseToID() MsgID
 	ResponseToExternalID() string
+	IsResend() bool
+
+	Flow() *FlowReference
+	FlowName() string
+	FlowUUID() string
 
 	Channel() Channel
 
@@ -113,6 +122,8 @@ type Msg interface {
 	WithAttachment(url string) Msg
 	WithURNAuth(auth string) Msg
 	WithMetadata(metadata json.RawMessage) Msg
+	WithFlow(flow *FlowReference) Msg
 
 	EventID() int64
+	SessionStatus() string
 }

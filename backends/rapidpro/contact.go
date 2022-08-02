@@ -2,21 +2,21 @@ package rapidpro
 
 import (
 	"context"
+	"database/sql"
+	"database/sql/driver"
 	"strconv"
 	"time"
 	"unicode/utf8"
 
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/courier"
+	"github.com/nyaruka/gocommon/analytics"
+	"github.com/nyaruka/gocommon/dbutil"
+	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null"
-
-	"database/sql"
-	"database/sql/driver"
+	"github.com/pkg/errors"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
-	"github.com/nyaruka/courier"
-	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/librato"
 	"github.com/sirupsen/logrus"
 )
 
@@ -59,8 +59,8 @@ func (i ContactID) String() string {
 
 const insertContactSQL = `
 INSERT INTO 
-	contacts_contact(org_id, is_active, is_blocked, is_stopped, uuid, created_on, modified_on, created_by_id, modified_by_id, name) 
-              VALUES(:org_id, TRUE, FALSE, FALSE, :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name)
+	contacts_contact(org_id, is_active, status, uuid, created_on, modified_on, created_by_id, modified_by_id, name, ticket_count) 
+              VALUES(:org_id, TRUE, 'A', :uuid, :created_on, :modified_on, :created_by_id, :modified_by_id, :name, 0)
 RETURNING id
 `
 
@@ -103,7 +103,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	err := b.db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
 	if err != nil && err != sql.ErrNoRows {
 		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
-		return nil, err
+		return nil, errors.Wrap(err, "error looking up contact by URN")
 	}
 
 	// we found it, return it
@@ -112,21 +112,21 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 		tx, err := b.db.BeginTxx(ctx, nil)
 		if err != nil {
 			logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
-			return nil, err
+			return nil, errors.Wrap(err, "error beginning transaction")
 		}
 
-		err = setDefaultURN(tx, channel.ID(), contact, urn, auth)
+		err = setDefaultURN(tx, channel, contact, urn, auth)
 		if err != nil {
 			logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
 			tx.Rollback()
-			return nil, err
+			return nil, errors.Wrap(err, "error setting default URN for contact")
 		}
 		return contact, tx.Commit()
 	}
 
 	// didn't find it, we need to create it instead
 	contact.OrgID_ = org
-	contact.UUID_, _ = courier.NewContactUUID(utils.NewUUID())
+	contact.UUID_, _ = courier.NewContactUUID(string(uuids.New()))
 	contact.CreatedOn_ = time.Now()
 	contact.ModifiedOn_ = time.Now()
 	contact.IsNew_ = true
@@ -167,13 +167,13 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	// insert it
 	tx, err := b.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error beginning transaction")
 	}
 
 	err = insertContact(tx, contact)
 	if err != nil {
 		tx.Rollback()
-		return nil, err
+		return nil, errors.Wrap(err, "error inserting contact")
 	}
 
 	// used for unit testing contact races
@@ -184,16 +184,15 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	// associate our URN
 	// If we've inserted a duplicate URN then we'll get a uniqueness violation.
 	// That means this contact URN was written by someone else after we tried to look it up.
-	contactURN, err := contactURNForURN(tx, org, channel.ID(), contact.ID_, urn, auth)
+	contactURN, err := contactURNForURN(tx, channel, contact.ID_, urn, auth)
 	if err != nil {
 		tx.Rollback()
-		if pqErr, ok := err.(*pq.Error); ok {
+
+		if dbutil.IsUniqueViolation(err) {
 			// if this was a duplicate URN, start over with a contact lookup
-			if pqErr.Code.Name() == "unique_violation" {
-				return contactForURN(ctx, b, org, channel, urn, auth, name)
-			}
+			return contactForURN(ctx, b, org, channel, urn, auth, name)
 		}
-		return nil, err
+		return nil, errors.Wrap(err, "error getting URN for contact")
 	}
 
 	// we stole the URN from another contact, roll back and start over
@@ -205,14 +204,14 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	// all is well, we created the new contact, commit and move forward
 	err = tx.Commit()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error commiting transaction")
 	}
 
 	// store this URN on our contact
 	contact.URNID_ = contactURN.ID
 
 	// log that we created a new contact to librato
-	librato.Gauge("courier.new_contact", float64(1))
+	analytics.Gauge("courier.new_contact", float64(1))
 
 	// and return it
 	return contact, nil

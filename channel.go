@@ -49,6 +49,12 @@ const (
 
 	// ConfigUsername is a constant key for channel configs
 	ConfigUsername = "username"
+
+	// ConfigUseNational is a constant key for channel configs
+	ConfigUseNational = "use_national"
+
+	// ConfigSendHeaders is a constant key for channel configs
+	ConfigSendHeaders = "headers"
 )
 
 // ChannelType is our typing of the two char channel types
@@ -60,6 +66,17 @@ var AnyChannelType = ChannelType("")
 func (ct ChannelType) String() string {
 	return string(ct)
 }
+
+// ChannelRole is a role that a channel can perform
+type ChannelRole string
+
+// different roles that channels can perform
+const (
+	ChannelRoleSend    ChannelRole = "S"
+	ChannelRoleReceive ChannelRole = "R"
+	ChannelRoleCall    ChannelRole = "C"
+	ChannelRoleAnswer  ChannelRole = "A"
+)
 
 // ChannelUUID is our typing of a channel's UUID
 type ChannelUUID struct {
@@ -83,6 +100,16 @@ type ChannelID null.Int
 
 // NilChannelID represents a nil channel id
 const NilChannelID = ChannelID(0)
+
+// ChannelAddress is our SQL type for a channel address
+type ChannelAddress null.String
+
+// NilChannelAddress represents a nil channel address
+const NilChannelAddress = ChannelAddress("")
+
+func (address ChannelAddress) String() string {
+	return string(address)
+}
 
 // MarshalJSON marshals into JSON. 0 values will become null
 func (i ChannelID) MarshalJSON() ([]byte, error) {
@@ -130,6 +157,9 @@ type Channel interface {
 	Schemes() []string
 	Country() string
 	Address() string
+	ChannelAddress() ChannelAddress
+
+	Roles() []ChannelRole
 
 	// is this channel for the passed in scheme (and only that scheme)
 	IsScheme(string) bool

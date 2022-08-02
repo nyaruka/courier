@@ -6,15 +6,13 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"time"
-
-	"github.com/nyaruka/courier/gsm7"
-
 	"strings"
+	"time"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/gsm7"
 )
 
 var idRegex = regexp.MustCompile(`Success \"(.*)\"`)
@@ -158,7 +156,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	fullURL, _ := url.Parse(sendURL)
 	fullURL.RawQuery = form.Encode()
 
-	req, _ := http.NewRequest(http.MethodGet, fullURL.String(), nil)
+	req, err := http.NewRequest(http.MethodGet, fullURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log

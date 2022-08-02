@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 )
 
@@ -53,11 +53,11 @@ func main() {
 	// insert our messages
 	for i := 0; i < 1000; i++ {
 		json := fmt.Sprintf(msgJSON, i)
-		_, err := conn.Do("zadd", "msgs:"+channelUUID, 0.0, json)
+		_, err := conn.Do("ZADD", "msgs:"+channelUUID, 0.0, json)
 		if err != nil {
 			log.Fatalf("err inserting msg: %s", err)
 		}
-		_, err = conn.Do("zincrby", "msgs:active", 0.0, channelUUID)
+		_, err = conn.Do("ZINCRBY", "msgs:active", 0.0, channelUUID)
 		if err != nil {
 			log.Fatalf("err incrementing active: %s", err)
 		}

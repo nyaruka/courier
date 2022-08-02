@@ -91,6 +91,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 	"Buffered": courier.MsgSent,
 	"Rejected": courier.MsgFailed,
 	"Failed":   courier.MsgFailed,
+	"Expired":  courier.MsgFailed,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -105,7 +106,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	msgStatus, found := statusMapping[form.Status]
 	if !found {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
-			fmt.Errorf("unknown status '%s', must be one of 'Success','Sent','Buffered','Rejected' or 'Failed'", form.Status))
+			fmt.Errorf("unknown status '%s', must be one of 'Success','Sent','Buffered','Rejected', 'Failed', or 'Expired'", form.Status))
 	}
 
 	// write our status
@@ -140,10 +141,14 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		form["from"] = []string{msg.Channel().Address()}
 	}
 
-	req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("apikey", apiKey)
+
 	rr, err := utils.MakeHTTPRequest(req)
 
 	// record our status and log

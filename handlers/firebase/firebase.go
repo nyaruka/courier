@@ -23,8 +23,8 @@ const (
 )
 
 var (
-	sendURL    = "https://fcm.googleapis.com/fcm/send"
-	maxMsgSize = 1024
+	sendURL      = "https://fcm.googleapis.com/fcm/send"
+	maxMsgLength = 1024
 )
 
 func init() {
@@ -117,13 +117,14 @@ func (h *handler) registerContact(ctx context.Context, channel courier.Channel, 
 
 type mtPayload struct {
 	Data struct {
-		Type      string `json:"type"`
-		Title     string `json:"title"`
-		Message   string `json:"message"`
-		MessageID int64  `json:"message_id"`
+		Type          string   `json:"type"`
+		Title         string   `json:"title"`
+		Message       string   `json:"message"`
+		MessageID     int64    `json:"message_id"`
+		SessionStatus string   `json:"session_status"`
+		QuickReplies  []string `json:"quick_replies,omitempty"`
 	} `json:"data"`
 	Notification     *mtNotification `json:"notification,omitempty"`
-	QuickReplies     []mtQuickReply  `json:"quick_replies,omitempty"`
 	ContentAvailable bool            `json:"content_available"`
 	To               string          `json:"to"`
 	Priority         string          `json:"priority"`
@@ -132,11 +133,6 @@ type mtPayload struct {
 type mtNotification struct {
 	Title string `json:"title"`
 	Body  string `json:"body"`
-}
-
-type mtQuickReply struct {
-	Title   string `json:"title"`
-	Payload string `json:"payload"`
 }
 
 // SendMsg sends the passed in message, returning any error
@@ -154,14 +150,25 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	configNotification := msg.Channel().ConfigForKey(configNotification, false)
 	notification, _ := configNotification.(bool)
 
+	msgParts := make([]string, 0)
+	if msg.Text() != "" {
+		msgParts = handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
+	}
+
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	for i, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgSize) {
+	for i, part := range msgParts {
 		payload := mtPayload{}
 
 		payload.Data.Type = "rapidpro"
 		payload.Data.Title = title
 		payload.Data.Message = part
 		payload.Data.MessageID = int64(msg.ID())
+		payload.Data.SessionStatus = msg.SessionStatus()
+
+		// include any quick replies on the last piece we send
+		if i == len(msgParts)-1 {
+			payload.Data.QuickReplies = msg.QuickReplies()
+		}
 
 		payload.To = msg.URNAuth()
 		payload.Priority = "high"
@@ -174,24 +181,20 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			payload.ContentAvailable = true
 		}
 
-		if len(msg.QuickReplies()) > 0 {
-			quickReplies := make([]mtQuickReply, len(msg.QuickReplies()))
-			for i, qr := range msg.QuickReplies() {
-				quickReplies[i].Title = qr
-				quickReplies[i].Payload = qr
-			}
-			payload.QuickReplies = quickReplies
-		}
-
 		jsonPayload, err := json.Marshal(payload)
 		if err != nil {
 			return nil, err
 		}
 
-		req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonPayload))
+		req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonPayload))
+		if err != nil {
+			return nil, err
+		}
+
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("key=%s", fcmKey))
+
 		rr, err := utils.MakeHTTPRequest(req)
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 		status.AddLog(log)

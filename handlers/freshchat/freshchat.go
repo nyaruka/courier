@@ -61,7 +61,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// no message? ignore this
-	if payload.Data.Message.ActorID == "" {
+	if payload.Data.Message == nil || payload.Data.Message.ActorID == "" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 	}
 
@@ -160,6 +160,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(jsonBody))
+
 	if err != nil {
 		return nil, err
 	}

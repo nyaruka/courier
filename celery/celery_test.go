@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 )
 
 func getPool() *redis.Pool {
@@ -47,7 +47,7 @@ func TestQueue(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = conn.Do("exec")
+	_, err = conn.Do("EXEC")
 	if err != nil {
 		t.Error(err)
 	}

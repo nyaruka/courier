@@ -15,10 +15,11 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
+	"github.com/pkg/errors"
 
 	"mime"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
@@ -134,7 +135,7 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 
 	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error getting contact for message")
 	}
 
 	// set our contact and urn ids from our contact
@@ -143,14 +144,14 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
 
 	rows, err := b.db.NamedQueryContext(ctx, insertMsgSQL, m)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error inserting message")
 	}
 	defer rows.Close()
 
 	rows.Next()
 	err = rows.Scan(&m.ID_)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error scanning for inserted message id")
 	}
 
 	// queue this up to be handled by RapidPro
@@ -175,6 +176,7 @@ SELECT
 	attachments,
 	msg_count,
 	error_count,
+	failed_reason,
 	high_priority,
 	status,
 	visibility,
@@ -193,14 +195,24 @@ WHERE
 	id = $1
 `
 
-// for testing only, returned DBMsg object is not fully populated
-func readMsgFromDB(b *backend, id courier.MsgID) (*DBMsg, error) {
-	m := &DBMsg{
-		ID_: id,
-	}
-	err := b.db.Get(m, selectMsgSQL, id)
-	return m, err
-}
+const selectChannelSQL = `
+SELECT
+	org_id,
+	ch.id as id,
+	ch.uuid as uuid,
+	ch.name as name,
+	channel_type, schemes,
+	address, role,
+	ch.country as country,
+	ch.config as config,
+	org.config as org_config,
+	org.is_anon as org_is_anon
+FROM
+	channels_channel ch
+	JOIN orgs_org org on ch.org_id = org.id
+WHERE
+    ch.id = $1
+`
 
 //-----------------------------------------------------------------------------
 // Media download and classification
@@ -288,7 +300,7 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 		path = fmt.Sprintf("/%s", path)
 	}
 
-	s3URL, err := utils.PutS3File(b.s3Client, b.config.S3MediaBucket, path, mimeType, body)
+	s3URL, err := b.storage.Put(ctx, path, mimeType, body)
 	if err != nil {
 		return "", err
 	}
@@ -479,31 +491,34 @@ type DBMsg struct {
 	Text_                 string                 `json:"text"            db:"text"`
 	Attachments_          pq.StringArray         `json:"attachments"     db:"attachments"`
 	ExternalID_           null.String            `json:"external_id"     db:"external_id"`
-	ResponseToID_         courier.MsgID          `json:"response_to_id"  db:"response_to_id"`
 	ResponseToExternalID_ string                 `json:"response_to_external_id"`
+	IsResend_             bool                   `json:"is_resend,omitempty"`
 	Metadata_             json.RawMessage        `json:"metadata"        db:"metadata"`
 
 	ChannelID_    courier.ChannelID `json:"channel_id"      db:"channel_id"`
 	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
 	ContactURNID_ ContactURNID      `json:"contact_urn_id"  db:"contact_urn_id"`
 
-	MessageCount_ int `json:"msg_count"    db:"msg_count"`
-	ErrorCount_   int `json:"error_count"  db:"error_count"`
+	MessageCount_ int         `json:"msg_count"     db:"msg_count"`
+	ErrorCount_   int         `json:"error_count"   db:"error_count"`
+	FailedReason_ null.String `json:"failed_reason" db:"failed_reason"`
 
 	ChannelUUID_ courier.ChannelUUID `json:"channel_uuid"`
 	ContactName_ string              `json:"contact_name"`
 
-	NextAttempt_ time.Time `json:"next_attempt"  db:"next_attempt"`
-	CreatedOn_   time.Time `json:"created_on"    db:"created_on"`
-	ModifiedOn_  time.Time `json:"modified_on"   db:"modified_on"`
-	QueuedOn_    time.Time `json:"queued_on"     db:"queued_on"`
-	SentOn_      time.Time `json:"sent_on"       db:"sent_on"`
+	NextAttempt_ time.Time  `json:"next_attempt"  db:"next_attempt"`
+	CreatedOn_   time.Time  `json:"created_on"    db:"created_on"`
+	ModifiedOn_  time.Time  `json:"modified_on"   db:"modified_on"`
+	QueuedOn_    time.Time  `json:"queued_on"     db:"queued_on"`
+	SentOn_      *time.Time `json:"sent_on"       db:"sent_on"`
 
-	// fields used only for mailroom enabled orgs.. these allow courier to update a session's timeout when
-	// a message is sent for correct and efficient timeout behavior
+	// fields used to allow courier to update a session's timeout when a message is sent for efficient timeout behavior
 	SessionID_            SessionID  `json:"session_id,omitempty"`
 	SessionTimeout_       int        `json:"session_timeout,omitempty"`
 	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on,omitempty"`
+	SessionStatus_        string     `json:"session_status,omitempty"`
+
+	Flow_ *courier.FlowReference `json:"flow,omitempty"`
 
 	channel        *DBChannel
 	workerToken    queue.WorkerToken
@@ -521,12 +536,29 @@ func (m *DBMsg) URN() urns.URN                { return m.URN_ }
 func (m *DBMsg) URNAuth() string              { return m.URNAuth_ }
 func (m *DBMsg) ContactName() string          { return m.ContactName_ }
 func (m *DBMsg) HighPriority() bool           { return m.HighPriority_ }
-func (m *DBMsg) ReceivedOn() *time.Time       { return &m.SentOn_ }
-func (m *DBMsg) SentOn() *time.Time           { return &m.SentOn_ }
-func (m *DBMsg) ResponseToID() courier.MsgID  { return m.ResponseToID_ }
+func (m *DBMsg) ReceivedOn() *time.Time       { return m.SentOn_ }
+func (m *DBMsg) SentOn() *time.Time           { return m.SentOn_ }
 func (m *DBMsg) ResponseToExternalID() string { return m.ResponseToExternalID_ }
+func (m *DBMsg) IsResend() bool               { return m.IsResend_ }
 
 func (m *DBMsg) Channel() courier.Channel { return m.channel }
+func (m *DBMsg) SessionStatus() string    { return m.SessionStatus_ }
+
+func (m *DBMsg) Flow() *courier.FlowReference { return m.Flow_ }
+
+func (m *DBMsg) FlowName() string {
+	if m.Flow_ == nil {
+		return ""
+	}
+	return m.Flow_.Name
+}
+
+func (m *DBMsg) FlowUUID() string {
+	if m.Flow_ == nil {
+		return ""
+	}
+	return m.Flow_.UUID
+}
 
 func (m *DBMsg) QuickReplies() []string {
 	if m.quickReplies != nil {
@@ -569,7 +601,7 @@ func (m *DBMsg) urnFingerprint() string {
 func (m *DBMsg) WithContactName(name string) courier.Msg { m.ContactName_ = name; return m }
 
 // WithReceivedOn can be used to set sent_on on a msg in a chained call
-func (m *DBMsg) WithReceivedOn(date time.Time) courier.Msg { m.SentOn_ = date; return m }
+func (m *DBMsg) WithReceivedOn(date time.Time) courier.Msg { m.SentOn_ = &date; return m }
 
 // WithExternalID can be used to set the external id on a msg in a chained call
 func (m *DBMsg) WithExternalID(id string) courier.Msg { m.ExternalID_ = null.String(id); return m }
@@ -582,6 +614,9 @@ func (m *DBMsg) WithUUID(uuid courier.MsgUUID) courier.Msg { m.UUID_ = uuid; ret
 
 // WithMetadata can be used to add metadata to a Msg
 func (m *DBMsg) WithMetadata(metadata json.RawMessage) courier.Msg { m.Metadata_ = metadata; return m }
+
+// WithFlow can be used to add flow to a Msg
+func (m *DBMsg) WithFlow(flow *courier.FlowReference) courier.Msg { m.Flow_ = flow; return m }
 
 // WithAttachment can be used to append to the media urls for a message
 func (m *DBMsg) WithAttachment(url string) courier.Msg {

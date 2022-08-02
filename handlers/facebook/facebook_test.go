@@ -127,6 +127,35 @@ var attachment = `{
 	}]
 }`
 
+var locationAttachment = `{
+	"object":"page",
+	"entry": [{
+	  	"id": "208685479508187",
+	  	"messaging": [{
+				"message": {
+		  			"mid": "external_id",
+		  			"attachments":[{
+						"type":"location",
+      	      			"payload":{
+							"coordinates": {
+								"lat": 1.2,
+								"long": -1.3
+							}
+						}
+					}]
+				},
+				"recipient": {
+					"id": "1234"
+				},
+				"sender": {
+					"id": "5678"
+				},
+				"timestamp": 1459991487970
+	    }],
+	  	"time": 1459991487970
+	}]
+}`
+
 var thumbsUp = `{
 	"object":"page",
 	"entry":[{
@@ -269,7 +298,8 @@ var postbackReferral = `{
 				"referral": {
 				  "ref": "postback ref",
 				  "source": "postback source",
-				  "type": "postback type"
+				  "type": "postback type",
+				  "ad_id": "ad id"
 				}
 			},
 			"recipient": {
@@ -392,6 +422,10 @@ var testCases = []ChannelHandleTestCase{
 		Text: Sp("Hello World"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
 	{Label: "Receive Attachment", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: attachment, Status: 200, Response: "Handled",
 		Text: Sp(""), Attachments: []string{"https://image-url/foo.png"}, URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+
+	{Label: "Receive Location", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: locationAttachment, Status: 200, Response: "Handled",
+		Text: Sp(""), Attachments: []string{"geo:1.200000,-1.300000"}, URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+
 	{Label: "Receive Thumbs Up", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: thumbsUp, Status: 200, Response: "Handled",
 		Text: Sp("👍"), URN: Sp("facebook:5678"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
 
@@ -410,7 +444,7 @@ var testCases = []ChannelHandleTestCase{
 		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"}},
 	{Label: "Receive Referral", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: postbackReferral, Status: 200, Response: "Handled",
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
-		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"}},
+		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"}},
 
 	{Label: "Receive Referral", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: referral, Status: 200, Response: `"referrer_id":"referral id"`,
 		URN: Sp("facebook:5678"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
@@ -535,7 +569,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:    setSendURL},
 	{Label: "Plain Response",
 		Text: "Simple Message", URN: "facebook:12345",
-		Status: "W", ExternalID: "mid.133", ResponseToID: 23526,
+		Status: "W", ExternalID: "mid.133", ResponseToExternalID: "23526",
 		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
 		RequestBody: `{"messaging_type":"RESPONSE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		SendPrep:    setSendURL},
@@ -572,6 +606,12 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Status: "W", ExternalID: "mid.133",
 		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
 		RequestBody: `{"messaging_type":"MESSAGE_TAG","tag":"CONFIRMED_EVENT_UPDATE","recipient":{"id":"12345"},"message":{"text":"This is some text.","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
+		SendPrep:    setSendURL},
+	{Label: "Send Document",
+		URN: "facebook:12345", Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		Status: "W", ExternalID: "mid.133",
+		ResponseBody: `{"message_id": "mid.133"}`, ResponseStatus: 200,
+		RequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"file","payload":{"url":"https://foo.bar/document.pdf","is_reusable":true}}}}`,
 		SendPrep:    setSendURL},
 	{Label: "ID Error",
 		Text: "ID Error", URN: "facebook:12345",

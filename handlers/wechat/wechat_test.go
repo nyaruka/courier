@@ -245,7 +245,7 @@ func newServer(backend courier.Backend) courier.Server {
 	logger.Out = ioutil.Discard
 	logrus.SetOutput(ioutil.Discard)
 	config := courier.NewConfig()
-	config.DB = "postgres://courier@localhost/courier_test?sslmode=disable"
+	config.DB = "postgres://courier:courier@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
 	return courier.NewServerWithLogger(config, backend, logger)
 }
@@ -257,7 +257,7 @@ func TestDescribe(t *testing.T) {
 	mb := courier.NewMockBackend()
 	conn := mb.RedisPool().Get()
 
-	_, err := conn.Do("Set", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
+	_, err := conn.Do("SET", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -286,7 +286,7 @@ func TestBuildMediaRequest(t *testing.T) {
 	mb := courier.NewMockBackend()
 	conn := mb.RedisPool().Get()
 
-	_, err := conn.Do("Set", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
+	_, err := conn.Do("SET", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -366,7 +366,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 func setupBackend(mb *courier.MockBackend) {
 	conn := mb.RedisPool().Get()
 
-	_, err := conn.Do("Set", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
+	_, err := conn.Do("SET", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,0 +1,31 @@
+{
+  "object": "instagram",
+  "entry": [
+    {
+      "id": "12345",
+      "messaging": [
+        {
+          "message": {
+            "mid": "external_id",
+            "attachments": [
+              {
+                "type": "image",
+                "payload": {
+                  "url": "https://image-url/foo.png"
+                }
+              }
+            ]
+          },
+          "recipient": {
+            "id": "12345"
+          },
+          "sender": {
+            "id": "5678"
+          },
+          "timestamp": 1459991487970
+        }
+      ],
+      "time": 1459991487970
+    }
+  ]
+}

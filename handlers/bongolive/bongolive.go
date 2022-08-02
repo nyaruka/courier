@@ -8,15 +8,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/gsm7"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/gsm7"
+
+	"github.com/buger/jsonparser"
 )
 
 var (
-	sendURL      = "http://api.blsmsgw.com:8080/bin/send.json"
+	sendURL      = "https://api.blsmsgw.com:8443/bin/send.json"
 	maxMsgLength = 160
 )
 
@@ -136,7 +137,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
+	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
 			"USERNAME":   []string{username},
@@ -145,7 +146,6 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"DESTADDR":   []string{strings.TrimPrefix(msg.URN().Path(), "+")},
 			"MESSAGE":    []string{part},
 			"DLR":        []string{"1"},
-			"UDHI":       []string{"1"},
 		}
 
 		replaced := gsm7.ReplaceSubstitutions(part)
@@ -158,9 +158,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		partSendURL, _ := url.Parse(sendURL)
 		partSendURL.RawQuery = form.Encode()
 
-		req, _ := http.NewRequest(http.MethodGet, partSendURL.String(), nil)
+		req, err := http.NewRequest(http.MethodPost, partSendURL.String(), nil)
+		if err != nil {
+			return nil, err
+		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		rr, err := utils.MakeHTTPRequest(req)
+
+		rr, err := utils.MakeInsecureHTTPRequest(req)
 
 		// record our status and log
 		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Send Error", err)

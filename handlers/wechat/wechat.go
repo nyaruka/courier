@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
@@ -134,7 +134,7 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel)
 	defer rc.Close()
 
 	cacheKey := fmt.Sprintf("wechat_channel_access_token:%s", channel.UUID().String())
-	_, err = rc.Do("set", cacheKey, accessToken, expiration)
+	_, err = rc.Do("SET", cacheKey, accessToken, expiration)
 
 	if err != nil {
 		logrus.WithError(err).Error("error setting the access token to redis")
@@ -147,7 +147,7 @@ func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
 	defer rc.Close()
 
 	cacheKey := fmt.Sprintf("wechat_channel_access_token:%s", channel.UUID().String())
-	accessToken, err := redis.String(rc.Do(http.MethodGet, cacheKey))
+	accessToken, err := redis.String(rc.Do("GET", cacheKey))
 	if err != nil {
 		return "", err
 	}
@@ -250,7 +250,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	partSendURL.RawQuery = form.Encode()
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	parts := handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength)
+	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		wcMsg := &mtPayload{}
 		wcMsg.MsgType = "text"
@@ -261,9 +261,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		json.NewEncoder(requestBody).Encode(wcMsg)
 
 		// build our request
-		req, _ := http.NewRequest(http.MethodPost, partSendURL.String(), requestBody)
+		req, err := http.NewRequest(http.MethodPost, partSendURL.String(), requestBody)
+		if err != nil {
+			return nil, err
+		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
+
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log

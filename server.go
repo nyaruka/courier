@@ -2,12 +2,15 @@ package courier
 
 import (
 	"bytes"
+	"compress/flate"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"time"
@@ -17,7 +20,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/librato"
+	"github.com/nyaruka/gocommon/analytics"
 	"github.com/sirupsen/logrus"
 )
 
@@ -54,7 +57,7 @@ func NewServer(config *Config, backend Backend) Server {
 // afterwards, which is when configuration options are checked.
 func NewServerWithLogger(config *Config, backend Backend, logger *logrus.Logger) Server {
 	router := chi.NewRouter()
-	router.Use(middleware.DefaultCompress)
+	router.Use(middleware.Compress(flate.DefaultCompression))
 	router.Use(middleware.StripSlashes)
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
@@ -87,9 +90,10 @@ func (s *server) Start() error {
 	// configure librato if we have configuration options for it
 	host, _ := os.Hostname()
 	if s.config.LibratoUsername != "" {
-		librato.Configure(s.config.LibratoUsername, s.config.LibratoToken, host, time.Second, s.waitGroup)
-		librato.Start()
+		analytics.RegisterBackend(analytics.NewLibrato(s.config.LibratoUsername, s.config.LibratoToken, host, time.Second, s.waitGroup))
 	}
+
+	analytics.Start()
 
 	// start our backend
 	err := s.backend.Start()
@@ -186,8 +190,7 @@ func (s *server) Stop() error {
 		return err
 	}
 
-	// stop our librato sender
-	librato.Stop()
+	analytics.Stop()
 
 	// wait for everything to stop
 	s.waitGroup.Wait()
@@ -266,17 +269,11 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		baseCtx := context.WithValue(r.Context(), contextRequestURL, r.URL.String())
 		baseCtx = context.WithValue(baseCtx, contextRequestStart, time.Now())
 
-		// add a 25 second timeout
+		// add a 30 second timeout
 		ctx, cancel := context.WithTimeout(baseCtx, time.Second*30)
 		defer cancel()
 
-		uuid, err := NewChannelUUID(chi.URLParam(r, "uuid"))
-		if err != nil {
-			WriteError(ctx, w, r, err)
-			return
-		}
-
-		channel, err := s.backend.GetChannel(ctx, handler.ChannelType(), uuid)
+		channel, err := handler.GetChannel(ctx, r)
 		if err != nil {
 			WriteError(ctx, w, r, err)
 			return
@@ -286,6 +283,9 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 
 		// read the bytes from our body so we can create a channel log for this request
 		response := &bytes.Buffer{}
+
+		// Trim out cookie header, should never be part of authentication and can leak auth to channel logs
+		r.Header.Del("Cookie")
 		request, err := httputil.DumpRequest(r, true)
 		if err != nil {
 			writeAndLogRequestError(ctx, w, r, channel, err)
@@ -298,6 +298,16 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 
 		logs := make([]*ChannelLog, 0, 1)
 
+		defer func() {
+			// catch any panics and recover
+			panicLog := recover()
+			if panicLog != nil {
+				debug.PrintStack()
+				logrus.WithError(err).WithField("channel_uuid", channel.UUID()).WithField("url", url).WithField("request", string(request)).WithField("trace", panicLog).Error("panic handling request")
+				writeAndLogRequestError(ctx, ww, r, channel, errors.New("panic handling msg"))
+			}
+		}()
+
 		events, err := handlerFunc(ctx, channel, ww, r)
 		duration := time.Now().Sub(start)
 		secondDuration := float64(duration) / float64(time.Second)
@@ -308,14 +318,14 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			writeAndLogRequestError(ctx, ww, r, channel, err)
 		}
 
-		// if no events were created we still want to log this to the channel, do so
-		if len(events) == 0 {
+		// if we have a channel matched but no events were created we still want to log this to the channel, do so
+		if channel != nil && len(events) == 0 {
 			if err != nil {
 				logs = append(logs, NewChannelLog("Channel Error", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-				librato.Gauge(fmt.Sprintf("courier.channel_error_%s", channel.ChannelType()), secondDuration)
+				analytics.Gauge(fmt.Sprintf("courier.channel_error_%s", channel.ChannelType()), secondDuration)
 			} else {
 				logs = append(logs, NewChannelLog("Request Ignored", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-				librato.Gauge(fmt.Sprintf("courier.channel_ignored_%s", channel.ChannelType()), secondDuration)
+				analytics.Gauge(fmt.Sprintf("courier.channel_ignored_%s", channel.ChannelType()), secondDuration)
 			}
 		}
 
@@ -324,15 +334,15 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			switch e := event.(type) {
 			case Msg:
 				logs = append(logs, NewChannelLog("Message Received", channel, e.ID(), r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-				librato.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
+				analytics.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
 				LogMsgReceived(r, e)
 			case ChannelEvent:
 				logs = append(logs, NewChannelLog("Event Received", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-				librato.Gauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
+				analytics.Gauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
 				LogChannelEventReceived(r, e)
 			case MsgStatus:
 				logs = append(logs, NewChannelLog("Status Updated", channel, e.ID(), r.Method, url, ww.Status(), string(request), response.String(), duration, err))
-				librato.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
+				analytics.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
 				LogMsgStatusReceived(r, e)
 			}
 		}
@@ -352,6 +362,10 @@ func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action s
 	channelType := strings.ToLower(string(handler.ChannelType()))
 
 	path := fmt.Sprintf("/%s/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", channelType)
+	if !handler.UseChannelRouteUUID() {
+		path = fmt.Sprintf("/%s", channelType)
+	}
+
 	if action != "" {
 		path = fmt.Sprintf("%s/%s", path, action)
 	}

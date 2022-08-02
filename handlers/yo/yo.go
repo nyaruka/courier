@@ -112,7 +112,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 	var err error
 
-	for _, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
+	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		form := url.Values{
 			"origin":       []string{strings.TrimPrefix(msg.Channel().Address(), "+")},
 			"sms_content":  []string{part},
@@ -125,7 +125,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			sendURL, _ := url.Parse(sendURL)
 			sendURL.RawQuery = form.Encode()
 
-			req, _ := http.NewRequest(http.MethodGet, sendURL.String(), nil)
+			req, err := http.NewRequest(http.MethodGet, sendURL.String(), nil)
+
+			if err != nil {
+				return nil, err
+			}
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 			rr, err := utils.MakeHTTPRequest(req)

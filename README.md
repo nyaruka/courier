@@ -1,27 +1,30 @@
-# Courier [![Build Status](https://travis-ci.org/nyaruka/courier.svg?branch=master)](https://travis-ci.org/nyaruka/courier) [![codecov](https://codecov.io/gh/nyaruka/courier/branch/master/graph/badge.svg)](https://codecov.io/gh/nyaruka/courier) [![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/courier)](https://goreportcard.com/report/github.com/nyaruka/courier) 
+# Courier
 
-# About 
+[![Build Status](https://github.com/nyaruka/courier/workflows/CI/badge.svg)](https://github.com/nyaruka/courier/actions?query=workflow%3ACI) 
+[![codecov](https://codecov.io/gh/nyaruka/courier/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/courier)
+[![Go Report Card](https://goreportcard.com/badge/github.com/nyaruka/courier)](https://goreportcard.com/report/github.com/nyaruka/courier)
 
 Courier is a messaging gateway for text-based messaging channels. It abstracts out various different
 texting mediums and providers, allowing applications to focus on the creation and processing of those messages.
 
-Current courier supports over 36 different channel types, ranging for SMS aggregators like Twilio to
+Currently it supports over 50 different channel types, ranging for SMS aggregators like Twilio to
 IP channels like Facebook and Telegram messenger. The goal is for Courier to support every popular
 messaging channels and aggregator and we are happy to accept pull requests to help accomplish that.
 
-Courier is currently used to power [RapidPro](https://rapidpro.io) and [TextIt](https://textit.in)
+Courier is currently used to power [RapidPro](https://rapidpro.io) and [TextIt](https://textit.com)
 but the backend is pluggable, so you can add your own backend to read and write messages.
 
-# Deploying
+## Deploying
 
-As courier is a go application, it compiles to a binary and that binary along with the config file is all
+As a Go application, it compiles to a binary and that binary along with the config file is all
 you need to run it on your server. You can find bundles for each platform in the
-[releases directory](https://github.com/nyaruka/courier/releases). We recommend running Courier
+[releases directory](https://github.com/nyaruka/courier/releases). We recommend running it
 behind a reverse proxy such as nginx or Elastic Load Balancer that provides HTTPs encryption.
 
-# Configuration
+## Configuration
 
-Courier uses a tiered configuration system, each option takes precendence over the ones above it:
+The service uses a tiered configuration system, each option takes precendence over the ones above it:
+
  1. The configuration file
  2. Environment variables starting with `COURIER_` 
  3. Command line parameters
@@ -30,7 +33,7 @@ We recommend running courier with no changes to the configuration and no paramet
 environment variables to configure it. You can use `% courier --help` to see a list of the
 environment variables and parameters and for more details on each option.
 
-# RapidPro Configuration
+### RapidPro
 
 For use with RapidPro, you will want to configure these settings:
 
@@ -53,18 +56,12 @@ Recommended settings for error and performance monitoring:
  * `COURIER_LIBRATO_TOKEN`: The token to use for logging of events to Librato
  * `COURIER_SENTRY_DSN`: The DSN to use when logging errors to Sentry
 
-# Development
+## Development
 
-Install Courier source in your workspace with:
-
-```
-go get github.com/nyaruka/courier
-```
-
-Build Courier with:
+Once you've checked out the code, you can build it with:
 
 ```
-go install github.com/nyaruka/courier/cmd/...
+go install github.com/nyaruka/courier/cmd/courier
 ```
 
 This will create a new executable in $GOPATH/bin called `courier`. 
@@ -82,5 +79,5 @@ $ psql -d courier_test -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA publi
 To run all of the tests including benchmarks:
 
 ```
-go test github.com/nyaruka/courier/... -p=1 -bench=.
+go test ./... -p=1 -bench=.
 ```

@@ -1,3 +1,524 @@
+v7.5.3
+----------
+ * Fix receiving attachments in WAC
+
+v7.5.2
+----------
+ * Support receiving LINE attachments
+
+v7.5.1
+----------
+ * Support Quick replies for LINE channels
+ * Slack channel support
+
+v7.5.0
+----------
+ * Fix receiving quick replies and list replies in WAC
+ * Add link preview support in WAC
+
+v7.4.0
+----------
+ * Update README
+ * Use analytics package from gocommon
+
+v7.3.10
+----------
+ * Make sure text are sent after audio attachments for WA channels
+
+v7.3.9
+----------
+ * Add arm64 as a build target
+ * Add support for WA Cloud API
+ * Refactor FBA tests
+
+v7.3.8
+----------
+ * Add log to status first when handling telegram opt outs
+
+v7.3.7
+----------
+ * Fix to not stop contact for other errors
+
+v7.3.6
+----------
+ * Update to go 1.18 and latest gocommon/phonenumbers/jsonparser
+
+v7.3.5
+----------
+ * Update Start Mobile send URL
+
+v7.3.4
+----------
+ * Update WhatsApp handler so that we update the URN if the returned ID doesn't match
+ * Stop Telegram contact that have blocked the channel bot
+
+v7.3.3
+----------
+ * Quick fix to stop JSON content being omitted in logs
+
+v7.3.2
+----------
+ * Update to latest gocommon and start using httpx.DetectContentType
+ * Add link preview attribute for sending whatsapp
+ * Update golang.org/x/sys
+
+v7.3.1
+----------
+ * Fix handling stops via status callbacks on Twilio
+
+v7.3.0
+----------
+ * Support stopping contacts when we get stop events on status callbacks
+
+v7.2.0
+----------
+ * CI testing with go 1.17.7
+
+v7.1.19
+----------
+ * Update D3 handler to support check for whatsapp contact not in contact store
+
+v7.1.18
+----------
+ * Fix type for IsDeleted field for IG unsend events
+ * Fix metadata fetching for new Facebook contacts
+
+v7.1.17
+----------
+ * Fix whatsapp uploaded attachment file name
+ * Use deleted by sender visibity for message unsent on IG channels
+ * Add missing languages from whatsapp template
+ * Do not save any message when receiving IG story mentions
+
+v7.1.16
+----------
+ * Update to latest gocommon
+ * Pause WA channel bulk queue when we hit the spam rate limit
+
+v7.1.15
+----------
+ * Fix Gujarati whatsapp language code
+ * Send flow name as user_data to HX
+
+v7.1.14
+----------
+ * Allow more active redis connections
+ * Support sending WA quick replies when we have attachments too
+ * Add support to receive button text from Twilio WhatsApp
+
+v7.1.13
+----------
+ * Send db and redis stats to librato in backed heartbeat
+ * Include session_status in FCM payloads
+
+v7.1.12
+----------
+ * Update to latest gocommon
+ * Add instagram handler
+
+v7.1.11
+----------
+ * More bulk sql tweaks
+
+v7.1.10
+----------
+ * Update to latest gocommon
+
+v7.1.9
+----------
+ * Fix bulk status updates
+
+v7.1.8
+----------
+ * Do more error wrapping when creating contacts and URNs
+
+v7.1.7
+----------
+ * Use dbutil package from gocommon
+ * Add quick replies for vk
+
+v7.1.6
+----------
+ * Throttle WA queues when we get 429 responses
+
+v7.1.5
+----------
+ * Add Msg.failed_reason and set when msg fails due to reaching error limit
+
+v7.1.4
+----------
+ * Remove loop detection now that mailroom does this
+ * Smarter organization of quick replies for viber keyboards
+
+v7.1.3
+----------
+ * Use response_to_external_id instead of response_to_id
+
+v7.1.2
+----------
+ * External channel handler should use headers config setting if provided
+
+v7.1.1
+----------
+ * Pin to go 1.17.2
+
+v7.1.0
+----------
+ * Remove chatbase support
+ * Test with Redis 3.2.4
+ * Add support for 'Expired' status in the AT handler
+
+v7.0.0
+----------
+ * Tweak README
+
+v6.5.9
+----------
+ * Fix Viber attachments
+ * CI testing on PG12 and 13
+ * Update to latest gocommon and go 1.17
+
+v6.5.8
+----------
+ * Fix Facebook document attachment
+ * Update to latest gocommon and phonenumbers
+
+v6.5.7
+----------
+ * Fix to only set the quick replies keyboard for the last message
+ * Update to latest gocommon
+
+v6.5.6
+----------
+ * Fix FB signing checks by trimming prefix instead of stripping
+ * Improve layout of Telegram keyboards
+
+v6.5.5
+----------
+ * Send WhatsApp buttons and list buttons when supported (thanks Weni)
+
+v6.5.4
+----------
+ * trim prefix instead of strip when comparing FB sigs
+
+v6.5.3
+----------
+ * log body when calculating signatures, include expected and calculated
+
+v6.5.2
+----------
+ * Add ticket_count column to contact and set to zero when creating new contacts
+
+v6.5.1
+----------
+ * Give S3 storage test new context on startup
+ * Make DBMsg.SentOn nullable
+
+v6.5.0
+----------
+ * Always set sent_on for W/S/D statuses if not already set
+ * Update to latest gocommon
+
+v6.4.0
+----------
+ * 6.4.0 Release Candidate
+
+v6.3.5
+----------
+ * up max request size to 1M
+
+v6.3.4
+----------
+ * Include filename when sending WhatsApp attachments
+
+v6.3.3
+----------
+ * Support using namespace from the template translation
+ * Add is_resend to Msg payload to allow for resending messages manually
+
+v6.3.2
+----------
+ * Do not verify the SSL certificate for Bongo Live
+
+v6.3.1
+----------
+ * Update BL to remove UDH parameter and use HTTPS URL
+
+v6.2.2
+----------
+ * Handle whatsapp URNs sent to Twiml handler without prefix
+ * Add support for Zenvia SMS
+
+v6.2.1
+----------
+ * Add support for Zenvia WhatsApp
+
+v6.2.0
+----------
+ * Add handling for button whatsapp message type
+ * Bump CI testing to PG 11 and 12
+ * Add Kaleyra channel type
+ * 6.2.0 RC
+
+v6.1.7
+----------
+ * switch id to bigserial
+
+v6.1.6
+----------
+ * Cache media upload failures localy for 15m
+
+v6.1.5
+----------
+ * include header when sanitizing request/response
+
+v6.1.4
+----------
+ * Cleanup of whatsapp media handling
+ * Detect media type for uploading media
+
+v6.1.3
+----------
+ * Better logging of error cases when uploading WhatsApp media
+
+v6.1.2
+----------
+ * use url.parse to build media URL
+
+v6.1.1
+----------
+ * Add TextIt WhatsApp channel type
+
+v6.1.0
+----------
+ * Check and log errors when building URLs for sending
+
+v6.0.0
+----------
+ * Update README
+
+v5.7.12
+----------
+ * URN channel change only for channels with SEND role
+ * Update to gocommon v1.6.1
+ * Add RocketChat handler
+ * Add discord handler
+
+v5.7.11
+----------
+ * Cache media ids for WhatsApp attachments
+
+v5.7.10
+----------
+ * Support receiving Multipart form data requests for EX channels
+
+v5.7.9
+----------
+ * Update to latest gocommon 1.5.3 and golang 1.15
+ * Add session status from mailroom to MT message sent to external channel API call
+ * Remove incoming message prefix for Play Mobile free accounts
+
+v5.7.8
+----------
+ * deal with empty message in FreshChat incoming requests
+
+v5.7.7
+----------
+ * Update to gocommon v1.5.1
+
+v5.7.6
+----------
+ * Remove dummy values for AWS config values so you can use local file system for testing
+ * Use gsm7, storage, dates and uuids packages from gocommon
+
+v5.7.5
+----------
+ * No longer write contact.is_stopped or is_blocked
+
+v5.7.4
+----------
+ * Support receiving XML for CM channels
+ * Write status on new contacts
+ * Add support for Whatsapp 360dialog
+
+v5.7.3
+----------
+ * Include created_on in msg_event
+ * Include occurred_on when queueing channel events for mailroom
+
+v5.7.2
+----------
+ * Deal with Shaqodoon not properly escaping + in from
+
+v5.7.1
+----------
+ * Add ClickMobile channel type
+
+v5.7.0
+----------
+ * Save the Ad ID for Facebook postback referral 
+
+v5.6.0
+----------
+ * 5.6.0 Candidate Release
+
+v5.5.28 
+----------
+ * Fix FBA signature validation and channel lookup
+
+v5.5.27
+----------
+ * Add country field and support for more template languages on WhatsApp handler
+
+v5.5.26
+----------
+ * Only log channel events when we have a channel matched
+ * HX channel sends MO using ISO 8859-1 encoding
+
+v5.5.25
+----------
+ * Load FBA channel handler package
+
+v5.5.24
+----------
+ * Support loading channels with null address
+
+v5.5.23
+----------
+ * Add support for FBA channel type
+
+v5.5.22
+----------
+ * User reply endpoint when possible for LINE messages
+
+v5.5.21
+----------
+ * Fix FB location attachment to be handled at geo attachment
+
+v5.5.20
+----------
+ * TS expects national numbers only
+
+v5.5.19
+----------
+ * Upgrade FB graph API to 3.3
+
+v5.5.18
+----------
+ * TS sends should use mobile instead of from
+
+v5.5.17
+----------
+ * Support sending document attachments for Telegram
+
+v5.5.16
+----------
+ * Add option for Telesom Send URL
+ * Ignore received message request in Telegram handler when a file cannot be resolved
+
+v5.5.15
+----------
+ * Support using national number for EX channel if configured so
+
+v5.5.14
+----------
+ * Add Telesom channel type support
+
+v5.5.13
+----------
+ * Use Channel specific max_length config value if set
+
+v5.5.12
+----------
+ * Increase ArabiaCell max length to 1530
+
+v5.5.11
+----------
+ * Retry WhatsApp channel messaging after contact check with returned WhatsApp ID
+
+v5.5.10
+----------
+ * Fix sending WA template messages on new WhatsApp docker
+
+v5.5.9
+----------
+ * Add option for Kannel channels to ignore duplicative sent status
+
+v5.5.8
+----------
+ * More tweaks to slowing down batching of status commits when approaching max queue size
+
+v5.5.7
+----------
+ * slow queuing before reaching our max batch size
+
+v5.5.6
+----------
+ * Slow queuing into a batch when batches are full
+
+v5.5.5
+----------
+ * Increase buffer size
+ * Add support for Viber stickers as image attachments for incoming messages
+
+v5.5.4
+----------
+ * handle error cases for whatsapp callbacks
+
+v5.5.3
+----------
+ * add native panic handling
+
+v5.5.2
+----------
+ * Send msg in batches and add image msg type in the LINE channel
+
+v5.5.1
+----------
+ * Add contacts not already present for WhatsApp when sending error detected (thanks @koallann)
+
+v5.5.0
+----------
+ * add fabric to gitignore
+
+v5.6.0
+----------
+ * add fabric to gitignore
+
+v5.4.1
+----------
+ * Strip cookie from incoming requests
+
+v5.4.0
+----------
+ * touch README for 5.4 release
+
+v5.3.9
+----------
+ * Add VK Channel
+
+v5.3.8
+----------
+ * Fix Chatbase request body
+
+v5.3.7
+----------
+ * Fix quick replies variable replacement on external channel long msg
+
+v5.3.6
+----------
+ * Allow configuring and sending of quick replies for external channels
+
+v5.3.5
+----------
+ * Refactor FMC channel to support the fixed quick replies structure
+
+v5.3.4
+----------
+ * Change Arabia Cell max length to 670, fixes #274
+ * Add support for Twilio Whatsapp channel type
+ * Convert to use Github actions for CI
+
 v5.3.3
 ----------
  * Fix freshchat image handing

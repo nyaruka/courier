@@ -3,6 +3,7 @@ package rapidpro
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -11,20 +12,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/batch"
-	"github.com/nyaruka/courier/chatbase"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/analytics"
+	"github.com/nyaruka/gocommon/dbutil"
+	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/librato"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -35,16 +32,8 @@ const msgQueueName = "msgs"
 // the name of our set for tracking sends
 const sentSetName = "msgs_sent_%s"
 
-// constants used in org configs for chatbase
-const chatbaseAPIKey = "CHATBASE_API_KEY"
-const chatbaseVersion = "CHATBASE_VERSION"
-const chatbaseMessageType = "msg"
-
 // our timeout for backend operations
 const backendTimeout = time.Second * 20
-
-// number of messages for loop detection
-const msgLoopThreshold = 20
 
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
@@ -56,6 +45,14 @@ func (b *backend) GetChannel(ctx context.Context, ct courier.ChannelType, uuid c
 	defer cancel()
 
 	return getChannel(timeout, b.db, ct, uuid)
+}
+
+// GetChannelByAddress returns the channel with the passed in type and address
+func (b *backend) GetChannelByAddress(ctx context.Context, ct courier.ChannelType, address courier.ChannelAddress) (courier.Channel, error) {
+	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
+	defer cancel()
+
+	return getChannelByAddress(timeout, b.db, ct, address)
 }
 
 // GetContact returns the contact for the passed in channel and URN
@@ -72,7 +69,7 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 	}
 	dbChannel := c.(*DBChannel)
 	dbContact := contact.(*DBContact)
-	_, err = contactURNForURN(tx, dbChannel.OrgID(), dbChannel.ID(), dbContact.ID_, urn, "")
+	_, err = contactURNForURN(tx, dbChannel, dbContact.ID_, urn, "")
 	if err != nil {
 		return urns.NilURN, err
 	}
@@ -102,6 +99,28 @@ func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, c
 		return urns.NilURN, err
 	}
 	return urn, nil
+}
+
+const updateMsgVisibilityDeletedBySender = `
+UPDATE
+	msgs_msg
+SET
+	visibility = 'X',
+	text = '',
+	attachments = '{}'
+WHERE
+	msgs_msg.id = (SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (c."uuid" = $1 AND m."external_id" = $2 AND m."direction" = 'I'))
+RETURNING
+	msgs_msg.id
+`
+
+// DeleteMsgWithExternalID delete a message we receive an event that it should be deleted
+func (b *backend) DeleteMsgWithExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
+	_, err := b.db.ExecContext(ctx, updateMsgVisibilityDeletedBySender, string(channel.UUID().String()), externalID)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // NewIncomingMsg creates a new message from the given params
@@ -177,70 +196,29 @@ var luaSent = redis.NewScript(3,
 `)
 
 // WasMsgSent returns whether the passed in message has already been sent
-func (b *backend) WasMsgSent(ctx context.Context, msg courier.Msg) (bool, error) {
+func (b *backend) WasMsgSent(ctx context.Context, id courier.MsgID) (bool, error) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
 	todayKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
 	yesterdayKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).UTC().Format("2006_01_02"))
-	return redis.Bool(luaSent.Do(rc, todayKey, yesterdayKey, msg.ID().String()))
+	return redis.Bool(luaSent.Do(rc, todayKey, yesterdayKey, id.String()))
 }
 
-var luaMsgLoop = redis.NewScript(3, `-- KEYS: [key, contact_id, text]
-	local key = KEYS[1]
-	local contact_id = KEYS[2]
-	local text = KEYS[3]
-	local count = 1
-
-    -- try to look up in window
-	local record = redis.call("hget", key, contact_id)
-	if record then
-		local record_count = tonumber(string.sub(record, 1, 2))
-		local record_text = string.sub(record, 4, -1)
-
-		if record_text == text then 
-			count = math.min(record_count + 1, 99)
-		else
-			count = 1
-		end		
-	end
-
-	-- create our new record with our updated count
-	record = string.format("%02d:%s", count, text)
-
-	-- write our new record with updated count
-	redis.call("hset", key, contact_id, record)
-
-	-- sets its expiration
-	redis.call("expire", key, 300)
-
-	return count
+var luaClearSent = redis.NewScript(3,
+	`-- KEYS: [TodayKey, YesterdayKey, MsgID]
+	 redis.call("srem", KEYS[1], KEYS[3])
+     redis.call("srem", KEYS[2], KEYS[3])
 `)
 
-// IsMsgLoop checks whether the passed in message is part of a loop
-func (b *backend) IsMsgLoop(ctx context.Context, msg courier.Msg) (bool, error) {
-	m := msg.(*DBMsg)
-
-	// things that aren't replies can't be loops, neither do we count retries
-	if m.ResponseToID_ == courier.NilMsgID || m.ErrorCount_ > 0 {
-		return false, nil
-	}
-
-	// otherwise run our script to check whether this is a loop in the past 5 minutes
+func (b *backend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	keyTime := time.Now().UTC().Round(time.Minute * 5)
-	key := fmt.Sprintf(sentSetName, fmt.Sprintf("loop_msgs:%s", keyTime.Format("2006-01-02-15:04")))
-	count, err := redis.Int(luaMsgLoop.Do(rc, key, m.ContactID_, m.Text_))
-	if err != nil {
-		return false, errors.Wrapf(err, "error while checking for msg loop")
-	}
-
-	if count >= msgLoopThreshold {
-		return true, nil
-	}
-	return false, nil
+	todayKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
+	yesterdayKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).UTC().Format("2006_01_02"))
+	_, err := luaClearSent.Do(rc, todayKey, yesterdayKey, id.String())
+	return err
 }
 
 // MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel
@@ -270,16 +248,6 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 			}
 		}
 	}
-
-	// if this org has chatbase connected, notify chatbase
-	chatKey, _ := msg.Channel().OrgConfigForKey(chatbaseAPIKey, "").(string)
-	if chatKey != "" {
-		chatVersion, _ := msg.Channel().OrgConfigForKey(chatbaseVersion, "").(string)
-		err := chatbase.SendChatbaseMessage(chatKey, chatVersion, chatbaseMessageType, dbMsg.ContactID_.String(), msg.Channel().Name(), msg.Text(), time.Now().UTC())
-		if err != nil {
-			logrus.WithError(err).WithField("chatbase_api_key", chatKey).WithField("chatbase_version", chatVersion).WithField("msg_id", dbMsg.ID().String()).Error("unable to write chatbase message")
-		}
-	}
 }
 
 // WriteMsg writes the passed in message to our store
@@ -305,6 +273,12 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
+	if status.HasUpdatedURN() {
+		err := b.updateContactURN(ctx, status)
+		if err != nil {
+			return errors.Wrap(err, "error updating contact URN")
+		}
+	}
 	// if we have an ID, we can have our batch commit for us
 	if status.ID() != courier.NilMsgID {
 		b.statusCommitter.Queue(status.(*DBMsgStatus))
@@ -318,22 +292,71 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 
 	// if we have an id and are marking an outgoing msg as errored, then clear our sent flag
 	if status.ID() != courier.NilMsgID && status.Status() == courier.MsgErrored {
-		rc := b.redisPool.Get()
-		defer rc.Close()
-
-		dateKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
-		prevDateKey := fmt.Sprintf(sentSetName, time.Now().Add(time.Hour*-24).UTC().Format("2006_01_02"))
-
-		// we pipeline the removals because we don't care about the return value
-		rc.Send("srem", dateKey, status.ID().String())
-		rc.Send("srem", prevDateKey, status.ID().String())
-		_, err := rc.Do("")
+		err := b.ClearMsgSent(ctx, status.ID())
 		if err != nil {
 			logrus.WithError(err).WithField("msg", status.ID().String()).Error("error clearing sent flags")
 		}
 	}
 
 	return nil
+}
+
+// updateContactURN updates contact URN according to the old/new URNs from status
+func (b *backend) updateContactURN(ctx context.Context, status courier.MsgStatus) error {
+	old, new := status.UpdatedURN()
+
+	// retrieve channel
+	channel, err := b.GetChannel(ctx, courier.AnyChannelType, status.ChannelUUID())
+	if err != nil {
+		return errors.Wrap(err, "error retrieving channel")
+	}
+	dbChannel := channel.(*DBChannel)
+	tx, err := b.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	// retrieve the old URN
+	oldContactURN, err := selectContactURN(tx, dbChannel.OrgID(), old)
+	if err != nil {
+		return errors.Wrap(err, "error retrieving old contact URN")
+	}
+	// retrieve the new URN
+	newContactURN, err := selectContactURN(tx, dbChannel.OrgID(), new)
+	if err != nil {
+		// only update the old URN path if the new URN doesn't exist
+		if err == sql.ErrNoRows {
+			oldContactURN.Path = new.Path()
+			oldContactURN.Identity = string(new.Identity())
+
+			err = fullyUpdateContactURN(tx, oldContactURN)
+			if err != nil {
+				tx.Rollback()
+				return errors.Wrap(err, "error updating old contact URN")
+			}
+			return tx.Commit()
+		}
+		return errors.Wrap(err, "error retrieving new contact URN")
+	}
+
+	// only update the new URN if it doesn't have an associated contact
+	if newContactURN.ContactID == NilContactID {
+		newContactURN.ContactID = oldContactURN.ContactID
+	}
+	// remove contact association from old URN
+	oldContactURN.ContactID = NilContactID
+
+	// update URNs
+	err = fullyUpdateContactURN(tx, newContactURN)
+	if err != nil {
+		tx.Rollback()
+		return errors.Wrap(err, "error updating new contact URN")
+	}
+	err = fullyUpdateContactURN(tx, oldContactURN)
+	if err != nil {
+		tx.Rollback()
+		return errors.Wrap(err, "error updating old contact URN")
+	}
+	return tx.Commit()
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
@@ -408,11 +431,11 @@ func (b *backend) Heartbeat() error {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	active, err := redis.Strings(rc.Do("zrange", fmt.Sprintf("%s:active", msgQueueName), "0", "-1"))
+	active, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("%s:active", msgQueueName), "0", "-1"))
 	if err != nil {
 		return errors.Wrapf(err, "error getting active queues")
 	}
-	throttled, err := redis.Strings(rc.Do("zrange", fmt.Sprintf("%s:throttled", msgQueueName), "0", "-1"))
+	throttled, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("%s:throttled", msgQueueName), "0", "-1"))
 	if err != nil {
 		return errors.Wrapf(err, "error getting throttled queues")
 	}
@@ -422,24 +445,53 @@ func (b *backend) Heartbeat() error {
 	bulkSize := 0
 	for _, queue := range queues {
 		q := fmt.Sprintf("%s/1", queue)
-		count, err := redis.Int(rc.Do("zcard", q))
+		count, err := redis.Int(rc.Do("ZCARD", q))
 		if err != nil {
 			return errors.Wrapf(err, "error getting size of priority queue: %s", q)
 		}
 		prioritySize += count
 
 		q = fmt.Sprintf("%s/0", queue)
-		count, err = redis.Int(rc.Do("zcard", q))
+		count, err = redis.Int(rc.Do("ZCARD", q))
 		if err != nil {
 			return errors.Wrapf(err, "error getting size of bulk queue: %s", q)
 		}
 		bulkSize += count
 	}
 
-	// log our total
-	librato.Gauge("courier.bulk_queue", float64(bulkSize))
-	librato.Gauge("courier.priority_queue", float64(prioritySize))
-	logrus.WithField("bulk_queue", bulkSize).WithField("priority_queue", prioritySize).Info("heartbeat queue sizes calculated")
+	// get our DB and redis stats
+	dbStats := b.db.Stats()
+	redisStats := b.redisPool.Stats()
+
+	dbWaitDurationInPeriod := dbStats.WaitDuration - b.dbWaitDuration
+	dbWaitCountInPeriod := dbStats.WaitCount - b.dbWaitCount
+	redisWaitDurationInPeriod := redisStats.WaitDuration - b.redisWaitDuration
+	redisWaitCountInPeriod := redisStats.WaitCount - b.redisWaitCount
+
+	b.dbWaitDuration = dbStats.WaitDuration
+	b.dbWaitCount = dbStats.WaitCount
+	b.redisWaitDuration = redisStats.WaitDuration
+	b.redisWaitCount = redisStats.WaitCount
+
+	analytics.Gauge("courier.db_busy", float64(dbStats.InUse))
+	analytics.Gauge("courier.db_idle", float64(dbStats.Idle))
+	analytics.Gauge("courier.db_wait_ms", float64(dbWaitDurationInPeriod/time.Millisecond))
+	analytics.Gauge("courier.db_wait_count", float64(dbWaitCountInPeriod))
+	analytics.Gauge("courier.redis_wait_ms", float64(redisWaitDurationInPeriod/time.Millisecond))
+	analytics.Gauge("courier.redis_wait_count", float64(redisWaitCountInPeriod))
+	analytics.Gauge("courier.bulk_queue", float64(bulkSize))
+	analytics.Gauge("courier.priority_queue", float64(prioritySize))
+
+	logrus.WithFields(logrus.Fields{
+		"db_busy":          dbStats.InUse,
+		"db_idle":          dbStats.Idle,
+		"db_wait_time":     dbWaitDurationInPeriod,
+		"db_wait_count":    dbWaitCountInPeriod,
+		"redis_wait_time":  dbWaitDurationInPeriod,
+		"redis_wait_count": dbWaitCountInPeriod,
+		"priority_size":    prioritySize,
+		"bulk_size":        bulkSize,
+	}).Info("current analytics")
 
 	return nil
 }
@@ -496,13 +548,13 @@ func (b *backend) Status() string {
 		}
 
 		// get # of items in our normal queue
-		size, err := redis.Int64(rc.Do("zcard", fmt.Sprintf("%s:%s/1", msgQueueName, queue)))
+		size, err := redis.Int64(rc.Do("ZCARD", fmt.Sprintf("%s:%s/1", msgQueueName, queue)))
 		if err != nil {
 			return fmt.Sprintf("error reading queue size: %v", err)
 		}
 
 		// get # of items in the bulk queue
-		bulkSize, err := redis.Int64(rc.Do("zcard", fmt.Sprintf("%s:%s/0", msgQueueName, queue)))
+		bulkSize, err := redis.Int64(rc.Do("ZCARD", fmt.Sprintf("%s:%s/0", msgQueueName, queue)))
 		if err != nil {
 			return fmt.Sprintf("error reading bulk queue size: %v", err)
 		}
@@ -562,11 +614,11 @@ func (b *backend) Start() error {
 	// create our pool
 	redisPool := &redis.Pool{
 		Wait:        true,              // makes callers wait for a connection
-		MaxActive:   8,                 // only open this many concurrent connections at once
+		MaxActive:   36,                // only open this many concurrent connections at once
 		MaxIdle:     4,                 // only keep up to this many idle
 		IdleTimeout: 240 * time.Second, // how long to wait before reaping a connection
 		Dial: func() (redis.Conn, error) {
-			conn, err := redis.Dial("tcp", fmt.Sprintf("%s", redisURL.Host))
+			conn, err := redis.Dial("tcp", redisURL.Host)
 			if err != nil {
 				return nil, err
 			}
@@ -604,25 +656,33 @@ func (b *backend) Start() error {
 		queue.StartDethrottler(redisPool, b.stopChan, b.waitGroup, msgQueueName)
 	}
 
-	// create our s3 client
-	s3Session, err := session.NewSession(&aws.Config{
-		Credentials:      credentials.NewStaticCredentials(b.config.AWSAccessKeyID, b.config.AWSSecretAccessKey, ""),
-		Endpoint:         aws.String(b.config.S3Endpoint),
-		Region:           aws.String(b.config.S3Region),
-		DisableSSL:       aws.Bool(b.config.S3DisableSSL),
-		S3ForcePathStyle: aws.Bool(b.config.S3ForcePathStyle),
-	})
-	if err != nil {
-		return err
-	}
-	b.s3Client = s3.New(s3Session)
-
-	// test out our S3 credentials
-	err = utils.TestS3(b.s3Client, b.config.S3MediaBucket)
-	if err != nil {
-		log.WithError(err).Error("s3 bucket not reachable")
+	// create our storage (S3 or file system)
+	if b.config.AWSAccessKeyID != "" {
+		s3Client, err := storage.NewS3Client(&storage.S3Options{
+			AWSAccessKeyID:     b.config.AWSAccessKeyID,
+			AWSSecretAccessKey: b.config.AWSSecretAccessKey,
+			Endpoint:           b.config.S3Endpoint,
+			Region:             b.config.S3Region,
+			DisableSSL:         b.config.S3DisableSSL,
+			ForcePathStyle:     b.config.S3ForcePathStyle,
+			MaxRetries:         3,
+		})
+		if err != nil {
+			return err
+		}
+		b.storage = storage.NewS3(s3Client, b.config.S3MediaBucket, b.config.S3Region, 32)
 	} else {
-		log.Info("s3 bucket ok")
+		b.storage = storage.NewFS("_storage")
+	}
+
+	// test our storage
+	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	err = b.storage.Test(ctx)
+	cancel()
+	if err != nil {
+		log.WithError(err).Error(b.storage.Name() + " storage not available")
+	} else {
+		log.Info(b.storage.Name() + " storage ok")
 	}
 
 	// make sure our spool dirs are writable
@@ -642,7 +702,15 @@ func (b *backend) Start() error {
 	// create our status committer and start it
 	b.statusCommitter = batch.NewCommitter("status committer", b.db, bulkUpdateMsgStatusSQL, time.Millisecond*500, b.committerWG,
 		func(err error, value batch.Value) {
-			logrus.WithField("comp", "status committer").WithError(err).Error("error writing status")
+			log := logrus.WithField("comp", "status committer")
+
+			if qerr := dbutil.AsQueryError(err); qerr != nil {
+				query, params := qerr.Query()
+				log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
+			}
+
+			log.WithError(err).Error("error writing status")
+
 			err = courier.WriteToSpool(b.config.SpoolDir, "statuses", value)
 			if err != nil {
 				logrus.WithField("comp", "status committer").WithError(err).Error("error writing status to spool")
@@ -653,7 +721,14 @@ func (b *backend) Start() error {
 	// create our log committer and start it
 	b.logCommitter = batch.NewCommitter("log committer", b.db, insertLogSQL, time.Millisecond*500, b.committerWG,
 		func(err error, value batch.Value) {
-			logrus.WithField("comp", "log committer").WithError(err).Error("error writing channel log")
+			log := logrus.WithField("comp", "log committer")
+
+			if qerr := dbutil.AsQueryError(err); qerr != nil {
+				query, params := qerr.Query()
+				log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
+			}
+
+			log.WithError(err).Error("error writing channel log")
 		})
 	b.logCommitter.Start()
 
@@ -727,11 +802,14 @@ type backend struct {
 
 	db        *sqlx.DB
 	redisPool *redis.Pool
-	s3Client  s3iface.S3API
-	awsCreds  *credentials.Credentials
-
-	popScript *redis.Script
+	storage   storage.Storage
 
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
+
+	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments
+	dbWaitDuration    time.Duration
+	dbWaitCount       int64
+	redisWaitDuration time.Duration
+	redisWaitCount    int64
 }

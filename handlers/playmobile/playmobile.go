@@ -3,11 +3,12 @@ package playmobile
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"encoding/xml"
+	"errors"
 	"fmt"
 	"net/http"
-	"encoding/xml"
 	"strings"
-	"encoding/json"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
@@ -15,14 +16,15 @@ import (
 )
 
 const (
-	configBaseURL  = "base_url"
-	configUsername = "username"
-	configPassword = "password"
+	configBaseURL          = "base_url"
+	configUsername         = "username"
+	configPassword         = "password"
+	configIncomingPrefixes = "incoming_prefixes"
 )
 
 var (
 	maxMsgLength = 640
-	sendURL = "%s/broker-api/send"
+	sendURL      = "%s/broker-api/send"
 )
 
 func init() {
@@ -67,7 +69,7 @@ type mtMessage struct {
 	SMS       struct {
 		Originator string `json:"originator"`
 		Content    struct {
-			Text   string `json:"text"`
+			Text string `json:"text"`
 		} `json:"content"`
 	} `json:"sms"`
 }
@@ -84,7 +86,7 @@ type mtResponse struct {
 		ID         string `xml:"id,attr"`
 		MSIDSN     string `xml:"msisdn,attr"`
 		SubmitDate string `xml:"submit-date,attr"`
-		Content struct {
+		Content    struct {
 			Text string `xml:",chardata"`
 		} `xml:"content"`
 	} `xml:"message"`
@@ -117,7 +119,24 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
+		// remove message prefix according to a list of possible prefixes, useful for free accounts
+		incomingPrefixes := c.ConfigForKey(configIncomingPrefixes, []string{})
+		if prefixes, ok := incomingPrefixes.([]string); ok {
+			for _, prefix := range prefixes {
+				text := pmMsg.Content.Text
+
+				if strings.HasPrefix(strings.ToLower(text), strings.ToLower(prefix)) {
+					text = strings.TrimSpace(text[len(prefix):])
+					pmMsg.Content.Text = text
+					break
+				}
+			}
+		}
+
 		// build our msg
+		if pmMsg.Content.Text == "" {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("no text"))
+		}
 		msg := h.Backend().NewIncomingMsg(c, urn, pmMsg.Content.Text).WithExternalID(pmMsg.ID)
 		msgs = append(msgs, msg)
 	}
@@ -150,7 +169,7 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
-	for i, part := range handlers.SplitMsg(handlers.GetTextAndAttachments(msg), maxMsgLength) {
+	for i, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		payload := mtPayload{}
 		message := mtMessage{}
 
@@ -170,10 +189,14 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 			return nil, err
 		}
 
-		req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, baseURL), bytes.NewReader(jsonBody))
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, baseURL), bytes.NewReader(jsonBody))
+		if err != nil {
+			return nil, err
+		}
 		req.SetBasicAuth(username, password)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
+
 		rr, err := utils.MakeHTTPRequest(req)
 
 		// record our status and log

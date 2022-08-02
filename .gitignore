@@ -3,6 +3,8 @@
 *.a
 *.so
 *~
+deploy
+fabric
 fabfile.py
 fabfile.pyc
 fabconfig.py
@@ -33,3 +35,4 @@ _testmain.go
 dist/
 .envrc
 courier
+_storage
