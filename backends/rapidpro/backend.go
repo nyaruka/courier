@@ -21,9 +21,12 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/dbutil"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/storage"
+	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
+	"github.com/nyaruka/redisx"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -36,6 +39,8 @@ const sentSetName = "msgs_sent_%s"
 
 // our timeout for backend operations
 const backendTimeout = time.Second * 20
+
+var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
@@ -405,41 +410,57 @@ func (b *backend) WriteExternalIDSeen(msg courier.Msg) {
 	writeExternalIDSeen(b, msg)
 }
 
-var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
-
 // ResolveMedia resolves the passed in attachment (content_type:url) to a media object
 func (b *backend) ResolveMedia(ctx context.Context, a string) (courier.Media, error) {
 	// split into content-type and URL
 	parts := strings.SplitN(a, ":", 2)
 	var contentType, mediaUrl string
-	if len(parts) < 2 {
-		contentType, mediaUrl = "", parts[0]
-	} else {
-		contentType, mediaUrl = parts[0], parts[1]
+	if len(parts) <= 1 || strings.HasPrefix(parts[1], "//") {
+		return nil, errors.Errorf("invalid attachment format: %s", a)
 	}
 
-	// if we can't parse the URL or the hostname isn't our media domain, return as is
+	contentType, mediaUrl = parts[0], parts[1]
+	stub := &DBMedia{URL_: mediaUrl, ContentType_: contentType}
+
+	// if we can't parse the URL or the hostname isn't our media domain, return stub
 	u, err := url.Parse(mediaUrl)
 	if err != nil || u.Hostname() != b.config.MediaDomain {
-		return &Media{URL_: mediaUrl, ContentType_: contentType}, nil
+		return stub, nil
 	}
 
-	// likewise if path doesn't contain a UUID, return as is
+	// likewise if path doesn't contain a UUID, return stub
 	mediaUUID := uuidRegex.FindString(u.Path)
 	if mediaUUID == "" {
-		return &Media{URL_: mediaUrl, ContentType_: contentType}, nil
+		return stub, nil
 	}
 
-	// TODO: lock and cache
+	unlock := b.mediaMutexes.Lock(mediaUUID)
+	defer unlock()
 
-	media, err := lookupMediaFromUUID(ctx, b.db, uuids.UUID(mediaUUID))
+	rc := b.redisPool.Get()
+	defer rc.Close()
+
+	var media *DBMedia
+	mediaJSON, err := b.mediaCache.Get(rc, mediaUUID)
 	if err != nil {
-		return nil, errors.Wrap(err, "error looking up media")
+		return nil, errors.Wrap(err, "error looking up cached media")
+	}
+	if mediaJSON != "" {
+		jsonx.MustUnmarshal([]byte(mediaJSON), &media)
+	} else {
+		// lookup media in our database
+		media, err = lookupMediaFromUUID(ctx, b.db, uuids.UUID(mediaUUID))
+		if err != nil {
+			return nil, errors.Wrap(err, "error looking up media")
+		}
+
+		// cache it for future requests
+		b.mediaCache.Set(rc, mediaUUID, string(jsonx.MustMarshal(media)))
 	}
 
-	// if we didn't find a media record or the one we found doesn't match the URL, return as is
+	// if we didn't find a media record or the one we found doesn't match the URL, return stub
 	if media == nil || media.URL() != mediaUrl {
-		return &Media{URL_: mediaUrl, ContentType_: contentType}, nil
+		return stub, nil
 	}
 
 	return media, nil
@@ -837,6 +858,9 @@ func newBackend(cfg *courier.Config) courier.Backend {
 		waitGroup: &sync.WaitGroup{},
 
 		committerWG: &sync.WaitGroup{},
+
+		mediaCache:   redisx.NewIntervalHash("media-lookups", time.Hour*24, 2),
+		mediaMutexes: *syncx.NewHashMutex(8),
 	}
 }
 
@@ -853,6 +877,9 @@ type backend struct {
 
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
+
+	mediaCache   *redisx.IntervalHash
+	mediaMutexes syncx.HashMutex
 
 	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments
 	dbWaitDuration    time.Duration

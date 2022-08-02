@@ -109,10 +109,11 @@ type Media interface {
 	UUID() uuids.UUID
 	ContentType() string
 	URL() string
-	Alternates() []Media
+	Size() int
 	Width() int
 	Height() int
 	Duration() int
+	Alternates() []Media
 }
 
 // NewBackend creates the type of backend passed in

@@ -21,6 +21,7 @@ import (
 	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null"
+	"github.com/nyaruka/redisx/assertredis"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/sirupsen/logrus"
@@ -38,6 +39,7 @@ func testConfig() *courier.Config {
 	config := courier.NewConfig()
 	config.DB = "postgres://courier:courier@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
+	config.MediaDomain = "nyaruka.s3.com"
 	return config
 }
 
@@ -1273,6 +1275,101 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 		"org_id":      float64(1),
 		"urn_id":      float64(contact.URNID_),
 	}, body["task"])
+}
+
+func (ts *BackendTestSuite) TestResolveMedia() {
+	ctx := context.Background()
+
+	tcs := []struct {
+		attachment string
+		media      *DBMedia
+		err        string
+	}{
+		{ // user entered image URL
+			attachment: "image:https://example.com/test.png",
+			media:      &DBMedia{ContentType_: "image", URL_: "https://example.com/test.png"},
+		},
+		{ // user entered audio URL
+			attachment: "audio:https://example.com/test.mp3",
+			media:      &DBMedia{ContentType_: "audio", URL_: "https://example.com/test.mp3"},
+		},
+		{ // user entered unparseable URL
+			attachment: "video:https::/example.com/test.mp4",
+			media:      &DBMedia{ContentType_: "video", URL_: "https::/example.com/test.mp4"},
+		},
+		{ // image upload
+			attachment: "image/jpeg:http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+			media: &DBMedia{
+				UUID_:        "ec6972be-809c-4c8d-be59-ba9dbd74c977",
+				ContentType_: "image/jpeg",
+				URL_:         "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+				Size_:        123,
+				Width_:       1024,
+				Height_:      768,
+				Alternates_:  []*DBMedia{},
+			},
+		},
+		{ // same image upload, this time from cache
+			attachment: "image/jpeg:http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+			media: &DBMedia{
+				UUID_:        "ec6972be-809c-4c8d-be59-ba9dbd74c977",
+				ContentType_: "image/jpeg",
+				URL_:         "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+				Size_:        123,
+				Width_:       1024,
+				Height_:      768,
+				Alternates_:  []*DBMedia{},
+			},
+		},
+		{ // image upload but with wrong domain
+			attachment: "image/jpeg:http://temba.s2.com/orgs/1/media/f328/f32801ec-433a-4862-978d-56c1823b92b2/test.jpg",
+			media: &DBMedia{
+				ContentType_: "image/jpeg",
+				URL_:         "http://temba.s2.com/orgs/1/media/f328/f32801ec-433a-4862-978d-56c1823b92b2/test.jpg",
+			},
+		},
+		{ // audio upload
+			attachment: "audio/mp3:http://nyaruka.s3.com/orgs/1/media/5310/5310f50f-9c8e-4035-9150-be5a1f78f21a/test.mp3",
+			media: &DBMedia{
+				UUID_:        "5310f50f-9c8e-4035-9150-be5a1f78f21a",
+				ContentType_: "audio/mp3",
+				URL_:         "http://nyaruka.s3.com/orgs/1/media/5310/5310f50f-9c8e-4035-9150-be5a1f78f21a/test.mp3",
+				Size_:        123,
+				Duration_:    500,
+				Alternates_: []*DBMedia{
+					{
+						UUID_:        "514c552c-e585-40e2-938a-fe9450172da8",
+						ContentType_: "audio/mp4",
+						URL_:         "http://nyaruka.s3.com/orgs/1/media/514c/514c552c-e585-40e2-938a-fe9450172da8/test.m4a",
+						Size_:        114,
+						Duration_:    500,
+					},
+				},
+			},
+		},
+		{ // invalid attachment format
+			attachment: "foo",
+			err:        "invalid attachment format: foo",
+		},
+		{
+			// no content type
+			attachment: "http://example.com/test.png",
+			err:        "invalid attachment format: http://example.com/test.png",
+		},
+	}
+
+	for _, tc := range tcs {
+		media, err := ts.b.ResolveMedia(ctx, tc.attachment)
+		if tc.err != "" {
+			ts.EqualError(err, tc.err)
+		} else {
+			ts.NoError(err)
+			ts.Equal(tc.media, media)
+		}
+	}
+
+	// check we've cached 2 media lookups
+	assertredis.HLen(ts.T(), ts.b.redisPool, fmt.Sprintf("media-lookups:%s", time.Now().Format("2006-01-02")), 2)
 }
 
 func TestMsgSuite(t *testing.T) {
