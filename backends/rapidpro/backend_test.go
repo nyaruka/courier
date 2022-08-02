@@ -90,11 +90,11 @@ func (ts *BackendTestSuite) TearDownSuite() {
 
 func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *DBChannel {
 	channelUUID, err := courier.NewChannelUUID(cUUID)
-	ts.NoError(err, "error building channel uuid")
+	ts.Require().NoError(err, "error building channel uuid")
 
 	channel, err := ts.b.GetChannel(context.Background(), courier.ChannelType(cType), channelUUID)
-	ts.NoError(err, "error getting channel")
-	ts.NotNil(channel)
+	ts.Require().NoError(err, "error getting channel")
+	ts.Require().NotNil(channel)
 
 	return channel.(*DBChannel)
 }
