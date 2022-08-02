@@ -668,7 +668,7 @@ func (b *backend) Start() error {
 			MaxRetries:         3,
 		}
 		if b.config.AWSAccessKeyID != "" && !b.config.AWSUseCredChain {
-			s3config.AWSAccessKeyID =    b.config.AWSAccessKeyID
+			s3config.AWSAccessKeyID = b.config.AWSAccessKeyID
 			s3config.AWSSecretAccessKey = b.config.AWSSecretAccessKey
 		}
 		s3Client, err := storage.NewS3Client(s3config)
