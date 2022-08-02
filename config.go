@@ -20,6 +20,8 @@ type Config struct {
 	S3ForcePathStyle          bool   `help:"whether we force S3 path style. Should generally need to default to False unless you're hosting an S3 compatible service"`
 	AWSAccessKeyID            string `help:"the access key id to use when authenticating S3"`
 	AWSSecretAccessKey        string `help:"the secret access key id to use when authenticating S3"`
+	AWSUseCredChain   		  bool   `help:"whether to use the AWS credentials chain. Defaults to false."`
+
 	FacebookApplicationSecret string `help:"the Facebook app secret"`
 	FacebookWebhookSecret     string `help:"the secret for Facebook webhook URL verification"`
 	MaxWorkers                int    `help:"the maximum number of go routines that will be used for sending (set to 0 to disable sending)"`
@@ -57,6 +59,7 @@ func NewConfig() *Config {
 		S3ForcePathStyle:             false,
 		AWSAccessKeyID:               "",
 		AWSSecretAccessKey:           "",
+		AWSUseCredChain:			 false,
 		FacebookApplicationSecret:    "missing_facebook_app_secret",
 		FacebookWebhookSecret:        "missing_facebook_webhook_secret",
 		WhatsappAdminSystemUserToken: "missing_whatsapp_admin_system_user_token",
