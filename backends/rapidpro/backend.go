@@ -657,8 +657,8 @@ func (b *backend) Start() error {
 	}
 
 	// create our storage (S3 or file system)
-	if b.config.AWSAccessKeyID != "" {
-		s3Client, err := storage.NewS3Client(&storage.S3Options{
+	if b.config.AWSAccessKeyID != "" || b.config.AWSUseCredChain {
+		s3config := &storage.S3Options{
 			AWSAccessKeyID:     b.config.AWSAccessKeyID,
 			AWSSecretAccessKey: b.config.AWSSecretAccessKey,
 			Endpoint:           b.config.S3Endpoint,
@@ -666,7 +666,12 @@ func (b *backend) Start() error {
 			DisableSSL:         b.config.S3DisableSSL,
 			ForcePathStyle:     b.config.S3ForcePathStyle,
 			MaxRetries:         3,
-		})
+		}
+		if b.config.AWSAccessKeyID != "" && !b.config.AWSUseCredChain {
+			s3config.AWSAccessKeyID = b.config.AWSAccessKeyID
+			s3config.AWSSecretAccessKey = b.config.AWSSecretAccessKey
+		}
+		s3Client, err := storage.NewS3Client(s3config)
 		if err != nil {
 			return err
 		}
