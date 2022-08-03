@@ -12,7 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/null"
 )
 
 // getChannel will look up the channel with the passed in UUID and channel type.
@@ -50,32 +50,30 @@ func getChannel(ctx context.Context, db *sqlx.DB, channelType courier.ChannelTyp
 	return channel, nil
 }
 
-const lookupChannelFromUUIDSQL = `
-SELECT 
-	org_id, 
-	ch.id as id, 
-	ch.uuid as uuid, 
-	ch.name as name, 
-	channel_type, schemes, 
-	address, role,
-	ch.country as country, 
-	ch.config as config, 
-	org.config as org_config, 
-	org.is_anon as org_is_anon
-FROM 
-	channels_channel ch
-	JOIN orgs_org org on ch.org_id = org.id
-WHERE 
-	ch.uuid = $1 AND 
-	ch.is_active = true AND 
-	ch.org_id IS NOT NULL`
+const sqlLookupChannelFromUUID = `
+SELECT
+	c.uuid,
+	c.org_id,
+	c.id,
+	c.channel_type,
+	c.name,
+	c.schemes,
+	c.address,
+	c.country,
+	c.config,
+	c.role,
+	o.config AS org_config,
+	o.is_anon AS org_is_anon
+  FROM channels_channel c
+  JOIN orgs_org o ON c.org_id = o.id
+ WHERE c.uuid = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL`
 
 // ChannelForUUID attempts to look up the channel with the passed in UUID, returning it
 func loadChannelFromDB(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, uuid courier.ChannelUUID) (*DBChannel, error) {
 	channel := &DBChannel{UUID_: uuid}
 
 	// select just the fields we need
-	err := db.GetContext(ctx, channel, lookupChannelFromUUIDSQL, uuid)
+	err := db.GetContext(ctx, channel, sqlLookupChannelFromUUID, uuid)
 
 	// we didn't find a match
 	if err == sql.ErrNoRows {
@@ -175,32 +173,30 @@ func getChannelByAddress(ctx context.Context, db *sqlx.DB, channelType courier.C
 	return channel, nil
 }
 
-const lookupChannelFromAddressSQL = `
+const sqlLookupChannelFromAddress = `
 SELECT
-       org_id,
-       ch.id as id,
-       ch.uuid as uuid,
-       ch.name as name,
-       channel_type, schemes,
-       address,
-       ch.country as country,
-       ch.config as config,
-       org.config as org_config,
-       org.is_anon as org_is_anon
-FROM
-       channels_channel ch
-       JOIN orgs_org org on ch.org_id = org.id
-WHERE
-       ch.address = $1 AND
-       ch.is_active = true AND
-       ch.org_id IS NOT NULL`
+	c.uuid,
+	c.org_id,
+	c.id,
+	c.channel_type,
+	c.name,
+	c.schemes,
+	c.address,
+	c.country,
+	c.config,
+	c.role,
+	o.config AS org_config,
+	o.is_anon AS org_is_anon
+  FROM channels_channel c
+  JOIN orgs_org o ON c.org_id = o.id
+ WHERE c.address = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL`
 
 // loadChannelByAddressFromDB get the channel with the passed in channel type and address from the DB, returning it
 func loadChannelByAddressFromDB(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, address courier.ChannelAddress) (*DBChannel, error) {
 	channel := &DBChannel{Address_: sql.NullString{String: address.String(), Valid: address == courier.NilChannelAddress}}
 
 	// select just the fields we need
-	err := db.GetContext(ctx, channel, lookupChannelFromAddressSQL, address)
+	err := db.GetContext(ctx, channel, sqlLookupChannelFromAddress, address)
 
 	// we didn't find a match
 	if err == sql.ErrNoRows {
@@ -275,18 +271,18 @@ var channelByAddressCache = make(map[courier.ChannelAddress]*DBChannel)
 // DBChannel is the RapidPro specific concrete type satisfying the courier.Channel interface
 type DBChannel struct {
 	OrgID_       OrgID               `db:"org_id"`
+	UUID_        courier.ChannelUUID `db:"uuid"`
 	ID_          courier.ChannelID   `db:"id"`
 	ChannelType_ courier.ChannelType `db:"channel_type"`
 	Schemes_     pq.StringArray      `db:"schemes"`
-	UUID_        courier.ChannelUUID `db:"uuid"`
 	Name_        sql.NullString      `db:"name"`
 	Address_     sql.NullString      `db:"address"`
 	Country_     sql.NullString      `db:"country"`
-	Config_      utils.NullMap       `db:"config"`
+	Config_      null.Map            `db:"config"`
 	Role_        string              `db:"role"`
 
-	OrgConfig_ utils.NullMap `db:"org_config"`
-	OrgIsAnon_ bool          `db:"org_is_anon"`
+	OrgConfig_ null.Map `db:"org_config"`
+	OrgIsAnon_ bool     `db:"org_is_anon"`
 
 	expiration time.Time
 }
@@ -353,12 +349,7 @@ func (c *DBChannel) HasRole(role courier.ChannelRole) bool {
 
 // ConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
 func (c *DBChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
-	// no value, return our default value
-	if !c.Config_.Valid {
-		return defaultValue
-	}
-
-	value, found := c.Config_.Map[key]
+	value, found := c.Config_.Map()[key]
 	if !found {
 		return defaultValue
 	}
@@ -367,26 +358,11 @@ func (c *DBChannel) ConfigForKey(key string, defaultValue interface{}) interface
 
 // OrgConfigForKey returns the org config value for the passed in key, or defaultValue if it isn't found
 func (c *DBChannel) OrgConfigForKey(key string, defaultValue interface{}) interface{} {
-	// no value, return our default value
-	if !c.OrgConfig_.Valid {
-		return defaultValue
-	}
-
-	value, found := c.OrgConfig_.Map[key]
+	value, found := c.OrgConfig_.Map()[key]
 	if !found {
 		return defaultValue
 	}
 	return value
-}
-
-// CallbackDomain returns the callback domain to use for this channel
-func (c *DBChannel) CallbackDomain(fallbackDomain string) string {
-	value, found := c.Config_.Map[courier.ConfigCallbackDomain]
-	strValue, isStr := value.(string)
-	if !found || !isStr {
-		return fallbackDomain
-	}
-	return strValue
 }
 
 // StringConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
@@ -427,6 +403,11 @@ func (c *DBChannel) IntConfigForKey(key string, defaultValue int) int {
 		}
 	}
 	return defaultValue
+}
+
+// CallbackDomain is convenience utility to get the callback domain configured for this channel
+func (c *DBChannel) CallbackDomain(fallbackDomain string) string {
+	return c.StringConfigForKey(courier.ConfigCallbackDomain, fallbackDomain)
 }
 
 // supportsScheme returns whether the passed in channel supports the passed in scheme

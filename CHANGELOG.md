@@ -1,3 +1,8 @@
+v7.5.4
+----------
+ * Add AWS Cred Chain support for S3
+ * Update deps and fix incorrect errors import in some handler packages
+
 v7.5.3
 ----------
  * Fix receiving attachments in WAC

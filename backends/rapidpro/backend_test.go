@@ -92,11 +92,11 @@ func (ts *BackendTestSuite) TearDownSuite() {
 
 func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *DBChannel {
 	channelUUID, err := courier.NewChannelUUID(cUUID)
-	ts.NoError(err, "error building channel uuid")
+	ts.Require().NoError(err, "error building channel uuid")
 
 	channel, err := ts.b.GetChannel(context.Background(), courier.ChannelType(cType), channelUUID)
-	ts.NoError(err, "error getting channel")
-	ts.NotNil(channel)
+	ts.Require().NoError(err, "error getting channel")
+	ts.Require().NotNil(channel)
 
 	return channel.(*DBChannel)
 }
@@ -1201,7 +1201,7 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	dbE, err = readChannelEventFromDB(ts.b, dbE.ID_)
 	ts.NoError(err)
 	ts.Equal(dbE.EventType_, courier.Referral)
-	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra_.Map)
+	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra_.Map())
 	ts.Equal(contact.ID_, dbE.ContactID_)
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 }
@@ -1243,7 +1243,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	dbE, err = readChannelEventFromDB(ts.b, dbE.ID_)
 	ts.NoError(err)
 	ts.Equal(dbE.EventType_, courier.Referral)
-	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra_.Map)
+	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra_.Map())
 	ts.Equal(contact.ID_, dbE.ContactID_)
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 
