@@ -1,3 +1,7 @@
+v7.5.5
+----------
+ * Switch to using null.Map instead of utils.NullMap
+
 v7.5.4
 ----------
  * Add AWS Cred Chain support for S3
