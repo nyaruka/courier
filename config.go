@@ -1,6 +1,8 @@
 package courier
 
-import "github.com/nyaruka/ezconf"
+import (
+	"github.com/nyaruka/ezconf"
+)
 
 // Config is our top level configuration object
 type Config struct {
@@ -27,6 +29,7 @@ type Config struct {
 	FacebookWebhookSecret        string `help:"the secret for Facebook webhook URL verification"`
 	WhatsappAdminSystemUserToken string `help:"the token of the admin system user for WhatsApp"`
 
+	MediaDomain     string `help:"the domain on which we'll try to resolve outgoing media URLs"`
 	MaxWorkers      int    `help:"the maximum number of go routines that will be used for sending (set to 0 to disable sending)"`
 	LibratoUsername string `help:"the username that will be used to authenticate to Librato"`
 	LibratoToken    string `help:"the token that will be used to authenticate to Librato"`

@@ -122,5 +122,20 @@ CREATE TABLE flows_flowsession (
     wait_started_on timestamp with time zone
 );
 
+DROP TABLE IF EXISTS msgs_media CASCADE;
+CREATE TABLE IF NOT EXISTS msgs_media (
+    id serial primary key,
+    uuid uuid NOT NULL,
+    org_id integer NOT NULL,
+    content_type character varying(255) NOT NULL,
+    url character varying(2048) NOT NULL,
+    name character varying(255) NOT NULL,
+    size integer NOT NULL,
+    duration integer NOT NULL,
+    width integer NOT NULL,
+    height integer NOT NULL,
+    original_id integer
+);
+
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO courier;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO courier;
