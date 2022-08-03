@@ -410,28 +410,18 @@ func (b *backend) WriteExternalIDSeen(msg courier.Msg) {
 	writeExternalIDSeen(b, msg)
 }
 
-// ResolveMedia resolves the passed in attachment (content_type:url) to a media object
-func (b *backend) ResolveMedia(ctx context.Context, a string) (courier.Media, error) {
-	// split into content-type and URL
-	parts := strings.SplitN(a, ":", 2)
-	var contentType, mediaUrl string
-	if len(parts) <= 1 || strings.HasPrefix(parts[1], "//") {
-		return nil, errors.Errorf("invalid attachment format: %s", a)
-	}
-
-	contentType, mediaUrl = parts[0], parts[1]
-	stub := &DBMedia{URL_: mediaUrl, ContentType_: contentType}
-
-	// if we can't parse the URL or the hostname isn't our media domain, return stub
+// ResolveMedia resolves the passed in attachment URL to a media object
+func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Media, error) {
 	u, err := url.Parse(mediaUrl)
-	if err != nil || u.Hostname() != b.config.MediaDomain {
-		return stub, nil
+	if err != nil {
+		return nil, errors.Errorf("error parsing media URL: %s", mediaUrl)
 	}
 
-	// likewise if path doesn't contain a UUID, return stub
 	mediaUUID := uuidRegex.FindString(u.Path)
-	if mediaUUID == "" {
-		return stub, nil
+
+	// if hostname isn't our media domain, or path doesn't contain a UUID, don't try to resolve
+	if u.Hostname() != b.config.MediaDomain || mediaUUID == "" {
+		return nil, nil
 	}
 
 	unlock := b.mediaMutexes.Lock(mediaUUID)
@@ -458,9 +448,9 @@ func (b *backend) ResolveMedia(ctx context.Context, a string) (courier.Media, er
 		b.mediaCache.Set(rc, mediaUUID, string(jsonx.MustMarshal(media)))
 	}
 
-	// if we didn't find a media record or the one we found doesn't match the URL, return stub
+	// if we found a media record but it doesn't match the URL, don't use it
 	if media == nil || media.URL() != mediaUrl {
-		return stub, nil
+		return nil, nil
 	}
 
 	return media, nil

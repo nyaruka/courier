@@ -48,7 +48,10 @@ ORDER BY m.id`
 func lookupMediaFromUUID(ctx context.Context, db *sqlx.DB, uuid uuids.UUID) (*DBMedia, error) {
 	var records []*DBMedia
 	err := db.SelectContext(ctx, &records, sqlLookupMediaFromUUID, uuid)
-	if err == sql.ErrNoRows {
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	if len(records) == 0 {
 		return nil, nil
 	}
 
