@@ -10,7 +10,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/gsm7"
 
 	"github.com/buger/jsonparser"
@@ -164,23 +163,23 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		rr, err := utils.MakeInsecureHTTPRequest(req)
+		trace, err := handlers.MakeInsecureHTTPRequest(req)
 
 		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Send Error", err)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Send Error", err)
 		status.AddLog(log)
 		if err != nil {
 			return status, nil
 		}
 
 		// was this request successful?
-		msgStatus, _ := jsonparser.GetString([]byte(rr.Body), "results", "[0]", "status")
+		msgStatus, _ := jsonparser.GetString(trace.ResponseBody, "results", "[0]", "status")
 		if msgStatus != "0" {
 			status.SetStatus(courier.MsgErrored)
 			return status, nil
 		}
 		// grab the external id if we can
-		externalID, _ := jsonparser.GetString([]byte(rr.Body), "results", "[0]", "msgid")
+		externalID, _ := jsonparser.GetString(trace.ResponseBody, "results", "[0]", "msgid")
 		status.SetStatus(courier.MsgWired)
 		status.SetExternalID(externalID)
 

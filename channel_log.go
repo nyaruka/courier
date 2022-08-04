@@ -70,6 +70,27 @@ func NewChannelLogFromRR(description string, channel Channel, msgID MsgID, rr *u
 	return log
 }
 
+// NewChannelLogFromTrace creates a new channel log for the passed in channel, id, and http trace
+func NewChannelLogFromTrace(description string, channel Channel, msgID MsgID, trace *httpx.Trace) *ChannelLog {
+	log := &ChannelLog{
+		Description: description,
+		Channel:     channel,
+		MsgID:       msgID,
+		Method:      trace.Request.Method,
+		URL:         trace.Request.URL.String(),
+		Request:     sanitizeBody(string(trace.RequestTrace)),
+		CreatedOn:   trace.StartTime,
+		Elapsed:     trace.EndTime.Sub(trace.StartTime),
+	}
+
+	if trace.Response != nil {
+		log.StatusCode = trace.Response.StatusCode
+		log.Response = string(trace.SanitizedResponse("..."))
+	}
+
+	return log
+}
+
 // NewChannelLogFromError creates a new channel log for the passed in channel, msg id and error
 func NewChannelLogFromError(description string, channel Channel, msgID MsgID, elapsed time.Duration, err error) *ChannelLog {
 	log := &ChannelLog{

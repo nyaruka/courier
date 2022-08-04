@@ -11,7 +11,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 const configIsShared = "is_shared"
@@ -149,24 +148,24 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("apikey", apiKey)
 
-	rr, err := utils.MakeHTTPRequest(req)
+	trace, err := handlers.MakeHTTPRequest(req)
 
 	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
+	status.AddLog(courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err))
 	if err != nil {
 		return status, nil
 	}
 
 	// was this request successful?
-	msgStatus, _ := jsonparser.GetString([]byte(rr.Body), "SMSMessageData", "Recipients", "[0]", "status")
+	msgStatus, _ := jsonparser.GetString(trace.ResponseBody, "SMSMessageData", "Recipients", "[0]", "status")
 	if msgStatus != "Success" {
 		status.SetStatus(courier.MsgErrored)
 		return status, nil
 	}
 
 	// grab the external id if we can
-	externalID, _ := jsonparser.GetString([]byte(rr.Body), "SMSMessageData", "Recipients", "[0]", "messageId")
+	externalID, _ := jsonparser.GetString(trace.ResponseBody, "SMSMessageData", "Recipients", "[0]", "messageId")
 	status.SetStatus(courier.MsgWired)
 	status.SetExternalID(externalID)
 
