@@ -21,6 +21,14 @@ import (
 
 var apiURL = "https://api.telegram.org"
 
+// see https://core.telegram.org/bots/api#sending-files
+var mediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{
+	handlers.MediaTypeImage:       {MaxBytes: 10 * 1024 * 1024},
+	handlers.MediaTypeAudio:       {MaxBytes: 50 * 1024 * 1024},
+	handlers.MediaTypeVideo:       {MaxBytes: 50 * 1024 * 1024},
+	handlers.MediaTypeApplication: {Types: []string{"application/pdf"}, MaxBytes: 50 * 1024 * 1024},
+}
+
 func init() {
 	courier.RegisterHandler(newHandler())
 }
@@ -187,7 +195,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("invalid auth token config")
 	}
 
-	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), nil, true)
+	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "error resolving attachments")
 	}

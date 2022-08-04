@@ -17,6 +17,11 @@ const (
 	MediaTypeApplication MediaType = "application"
 )
 
+type MediaTypeSupport struct {
+	Types    []string
+	MaxBytes int
+}
+
 // Attachment is a resolved attachment
 type Attachment struct {
 	Type        MediaType
@@ -27,11 +32,11 @@ type Attachment struct {
 }
 
 // ResolveAttachments resolves the given attachment strings (content-type:url) into attachment objects
-func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []string, supportedTypes []string, allowURLOnly bool) ([]*Attachment, error) {
+func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []string, support map[MediaType]MediaTypeSupport, allowURLOnly bool) ([]*Attachment, error) {
 	resolved := make([]*Attachment, 0, len(attachments))
 
 	for _, as := range attachments {
-		att, err := resolveAttachment(ctx, b, as, supportedTypes, allowURLOnly)
+		att, err := resolveAttachment(ctx, b, as, support, allowURLOnly)
 		if err != nil {
 			return nil, err
 		}
@@ -43,7 +48,7 @@ func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []st
 	return resolved, nil
 }
 
-func resolveAttachment(ctx context.Context, b courier.Backend, attachment string, supportedTypes []string, allowURLOnly bool) (*Attachment, error) {
+func resolveAttachment(ctx context.Context, b courier.Backend, attachment string, support map[MediaType]MediaTypeSupport, allowURLOnly bool) (*Attachment, error) {
 	// split into content-type and URL
 	parts := strings.SplitN(attachment, ":", 2)
 	if len(parts) <= 1 || strings.HasPrefix(parts[1], "//") {
@@ -67,13 +72,19 @@ func resolveAttachment(ctx context.Context, b courier.Backend, attachment string
 	}
 
 	mediaType, _ := parseContentType(media.ContentType())
+	mediaSupport := support[mediaType]
 
 	// our candidates are the uploaded media and any alternates of the same media type
 	candidates := append([]courier.Media{media}, filterMediaByType(media.Alternates(), mediaType)...)
 
 	// narrow down the candidates to the ones we support
-	if len(supportedTypes) > 0 {
-		candidates = filterMediaByContentTypes(candidates, supportedTypes)
+	if len(mediaSupport.Types) > 0 {
+		candidates = filterMediaByContentTypes(candidates, mediaSupport.Types)
+	}
+
+	// narrow down the candidates to the ones that don't exceed our max bytes
+	if mediaSupport.MaxBytes > 0 {
+		candidates = filterMediaBySize(candidates, mediaSupport.MaxBytes)
 	}
 
 	// if we have no candidates, we can't use this media
@@ -114,6 +125,10 @@ func filterMediaByContentTypes(in []courier.Media, types []string) []courier.Med
 		}
 		return false
 	})
+}
+
+func filterMediaBySize(in []courier.Media, maxBytes int) []courier.Media {
+	return filterMedia(in, func(m courier.Media) bool { return m.Size() <= maxBytes })
 }
 
 func filterMedia(in []courier.Media, f func(courier.Media) bool) []courier.Media {
