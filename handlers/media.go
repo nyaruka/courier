@@ -26,11 +26,11 @@ type Attachment struct {
 }
 
 // ResolveAttachments resolves the given attachment strings (content-type:url) into attachment objects
-func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []string, supportedTypes []string, allowExternal bool) ([]*Attachment, error) {
+func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []string, supportedTypes []string, allowURLOnly bool) ([]*Attachment, error) {
 	resolved := make([]*Attachment, 0, len(attachments))
 
 	for _, as := range attachments {
-		att, err := resolveAttachment(ctx, b, as, supportedTypes, allowExternal)
+		att, err := resolveAttachment(ctx, b, as, supportedTypes, allowURLOnly)
 		if err != nil {
 			return nil, err
 		}
@@ -42,7 +42,7 @@ func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []st
 	return resolved, nil
 }
 
-func resolveAttachment(ctx context.Context, b courier.Backend, attachment string, supportedTypes []string, allowExternal bool) (*Attachment, error) {
+func resolveAttachment(ctx context.Context, b courier.Backend, attachment string, supportedTypes []string, allowURLOnly bool) (*Attachment, error) {
 	// split into content-type and URL
 	parts := strings.SplitN(attachment, ":", 2)
 	if len(parts) <= 1 || strings.HasPrefix(parts[1], "//") {
@@ -57,7 +57,7 @@ func resolveAttachment(ctx context.Context, b courier.Backend, attachment string
 
 	if media == nil {
 		// if the channel type allows it, we can still use the media URL without being able to resolve it
-		if allowExternal {
+		if allowURLOnly {
 			mediaType, _ := parseContentType(contentType)
 			return &Attachment{Type: mediaType, ContentType: contentType, URL: mediaUrl}, nil
 		} else {

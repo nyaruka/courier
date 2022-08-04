@@ -31,28 +31,28 @@ func TestResolveAttachments(t *testing.T) {
 	tcs := []struct {
 		attachments    []string
 		supportedTypes []string
-		allowExternal  bool
+		allowURLOnly   bool
 		resolved       []*handlers.Attachment
 		err            string
 	}{
 		{ // 0: user entered image URL
 			attachments:    []string{"image:https://example.com/image.jpg"},
 			supportedTypes: []string{"image/png"}, // ignored
-			allowExternal:  true,
+			allowURLOnly:   true,
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeImage, ContentType: "image", URL: "https://example.com/image.jpg"},
 			},
 		},
-		{ // 1: user entered image URL, external URLs not allowed
+		{ // 1: user entered image URL, URL only attachments not allowed
 			attachments:    []string{"image:https://example.com/image.jpg"},
 			supportedTypes: []string{"image/png"}, // ignored
-			allowExternal:  false,
+			allowURLOnly:   false,
 			resolved:       []*handlers.Attachment{},
 		},
 		{ // 2: resolveable uploaded image URL
 			attachments:    []string{"image/jpeg:http://mock.com/1234/test.jpg"},
 			supportedTypes: []string{"image/jpeg", "image/png"},
-			allowExternal:  true,
+			allowURLOnly:   true,
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeImage, ContentType: "image/jpeg", URL: "http://mock.com/1234/test.jpg", Media: imageJPG, Thumbnail: nil},
 			},
@@ -60,27 +60,27 @@ func TestResolveAttachments(t *testing.T) {
 		{ // 3: unresolveable uploaded image URL
 			attachments:    []string{"image/jpeg:http://mock.com/9876/gone.jpg"},
 			supportedTypes: []string{"image/jpeg", "image/png"},
-			allowExternal:  true,
+			allowURLOnly:   true,
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeImage, ContentType: "image/jpeg", URL: "http://mock.com/9876/gone.jpg", Media: nil, Thumbnail: nil},
 			},
 		},
-		{ // 4: unresolveable uploaded image URL, external URLs not allowed
+		{ // 4: unresolveable uploaded image URL, URL only attachments not allowed
 			attachments:    []string{"image/jpeg:http://mock.com/9876/gone.jpg"},
 			supportedTypes: []string{"image/jpeg", "image/png"},
-			allowExternal:  false,
+			allowURLOnly:   false,
 			resolved:       []*handlers.Attachment{},
 		},
 		{ // 5: resolveable uploaded image URL, type not in supported types
 			attachments:    []string{"image/jpeg:http://mock.com/1234/test.jpg"},
 			supportedTypes: []string{"image/png", "audio/mp4"},
-			allowExternal:  true,
+			allowURLOnly:   true,
 			resolved:       []*handlers.Attachment{},
 		},
 		{ // 6: resolveable uploaded audio URL, type in supported types
 			attachments:    []string{"audio/mp3:http://mock.com/3456/test.mp3"},
 			supportedTypes: []string{"image/jpeg", "audio/mp3", "audio/mp4"},
-			allowExternal:  true,
+			allowURLOnly:   true,
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeAudio, ContentType: "audio/mp3", URL: "http://mock.com/3456/test.mp3", Media: audioMP3, Thumbnail: nil},
 			},
@@ -88,7 +88,7 @@ func TestResolveAttachments(t *testing.T) {
 		{ // 7: resolveable uploaded audio URL, type not in supported types, but has alternate
 			attachments:    []string{"audio/mp3:http://mock.com/3456/test.mp3"},
 			supportedTypes: []string{"image/jpeg", "audio/mp4"},
-			allowExternal:  true,
+			allowURLOnly:   true,
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeAudio, ContentType: "audio/mp4", URL: "http://mock.com/2345/test.m4a", Media: audioM4A, Thumbnail: nil},
 			},
@@ -96,7 +96,7 @@ func TestResolveAttachments(t *testing.T) {
 		{ // 8: resolveable uploaded video URL, has thumbnail
 			attachments:    []string{"video/mp4:http://mock.com/5678/test.mp4"},
 			supportedTypes: []string{"image/jpeg", "audio/mp4", "video/mp4"},
-			allowExternal:  true,
+			allowURLOnly:   true,
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeVideo, ContentType: "video/mp4", URL: "http://mock.com/5678/test.mp4", Media: videoMP4, Thumbnail: thumbJPG},
 			},
@@ -104,7 +104,7 @@ func TestResolveAttachments(t *testing.T) {
 		{ // 9: resolveable uploaded video URL, no thumbnail
 			attachments:    []string{"video/quicktime:http://mock.com/6789/test.mov"},
 			supportedTypes: []string{"image/jpeg", "audio/mp4", "video/mp4", "video/quicktime"},
-			allowExternal:  true,
+			allowURLOnly:   true,
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeVideo, ContentType: "video/quicktime", URL: "http://mock.com/6789/test.mov", Media: videoMOV, Thumbnail: nil},
 			},
@@ -122,7 +122,7 @@ func TestResolveAttachments(t *testing.T) {
 	}
 
 	for i, tc := range tcs {
-		resolved, err := handlers.ResolveAttachments(ctx, mb, tc.attachments, tc.supportedTypes, tc.allowExternal)
+		resolved, err := handlers.ResolveAttachments(ctx, mb, tc.attachments, tc.supportedTypes, tc.allowURLOnly)
 		if tc.err != "" {
 			assert.EqualError(t, err, tc.err, "expected error for test %d", i)
 		} else {
