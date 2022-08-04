@@ -187,9 +187,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("invalid auth token config")
 	}
 
+	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), nil, true)
+	if err != nil {
+		return nil, errors.Wrap(err, "error resolving attachments")
+	}
+
 	// we only caption if there is only a single attachment
 	caption := ""
-	if len(msg.Attachments()) == 1 {
+	if len(attachments) == 1 {
 		caption = msg.Text()
 	}
 
@@ -209,7 +214,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	// if we have text, send that if we aren't sending it as a caption
 	if msg.Text() != "" && caption == "" {
 		var msgKeyBoard *ReplyKeyboardMarkup
-		if len(msg.Attachments()) == 0 {
+		if len(attachments) == 0 {
 			msgKeyBoard = keyboard
 		}
 
@@ -232,18 +237,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	// send each attachment
-	for i, attachment := range msg.Attachments() {
+	for i, attachment := range attachments {
 		var attachmentKeyBoard *ReplyKeyboardMarkup
 		if i == len(msg.Attachments())-1 {
 			attachmentKeyBoard = keyboard
 		}
 
-		mediaType, mediaURL := handlers.SplitAttachment(attachment)
-		switch strings.Split(mediaType, "/")[0] {
-		case "image":
+		switch attachment.Type {
+		case handlers.MediaTypeImage:
 			form := url.Values{
 				"chat_id": []string{msg.URN().Path()},
-				"photo":   []string{mediaURL},
+				"photo":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
 			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, attachmentKeyBoard)
@@ -257,10 +261,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			status.SetExternalID(externalID)
 			hasError = err != nil
 
-		case "video":
+		case handlers.MediaTypeVideo:
 			form := url.Values{
 				"chat_id": []string{msg.URN().Path()},
-				"video":   []string{mediaURL},
+				"video":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
 			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendVideo", form, attachmentKeyBoard)
@@ -274,10 +278,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			status.SetExternalID(externalID)
 			hasError = err != nil
 
-		case "audio":
+		case handlers.MediaTypeAudio:
 			form := url.Values{
 				"chat_id": []string{msg.URN().Path()},
-				"audio":   []string{mediaURL},
+				"audio":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
 			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendAudio", form, attachmentKeyBoard)
@@ -291,10 +295,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			status.SetExternalID(externalID)
 			hasError = err != nil
 
-		case "application":
+		case handlers.MediaTypeApplication:
 			form := url.Values{
 				"chat_id":  []string{msg.URN().Path()},
-				"document": []string{mediaURL},
+				"document": []string{attachment.URL},
 				"caption":  []string{caption},
 			}
 			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendDocument", form, attachmentKeyBoard)
@@ -309,12 +313,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			hasError = err != nil
 
 		default:
-			status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
-				"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
+			status.AddLog(courier.NewChannelLog("Unknown attachment content type: "+attachment.ContentType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
+				"", "", time.Duration(0), fmt.Errorf("unknown attachment content type: %s", attachment.ContentType)))
 			hasError = true
-
 		}
-
 	}
 
 	if !hasError {

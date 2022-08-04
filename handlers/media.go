@@ -11,9 +11,10 @@ import (
 type MediaType string
 
 const (
-	MediaTypeImage MediaType = "image"
-	MediaTypeAudio MediaType = "audio"
-	MediaTypeVideo MediaType = "video"
+	MediaTypeImage       MediaType = "image"
+	MediaTypeAudio       MediaType = "audio"
+	MediaTypeVideo       MediaType = "video"
+	MediaTypeApplication MediaType = "application"
 )
 
 // Attachment is a resolved attachment
