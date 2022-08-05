@@ -195,17 +195,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
+		trace, err := handlers.MakeHTTPRequest(req)
 
 		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Send Error", err)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Send Error", err)
 		status.AddLog(log)
 		if err != nil {
 			return status, nil
 		}
 
 		// try to read out our message id, if we can't then this was a failure
-		externalID, err := jsonparser.GetString(rr.Body, "messages", "[0]", "apiMessageId")
+		externalID, err := jsonparser.GetString(trace.ResponseBody, "messages", "[0]", "apiMessageId")
 		if err != nil {
 			log.WithError("Send Error", err)
 		} else {

@@ -14,7 +14,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/pkg/errors"
 )
 
@@ -126,21 +125,20 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			sendURL.RawQuery = form.Encode()
 
 			req, err := http.NewRequest(http.MethodGet, sendURL.String(), nil)
-
 			if err != nil {
 				return nil, err
 			}
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-			rr, err := utils.MakeHTTPRequest(req)
-			log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+			trace, err := handlers.MakeHTTPRequest(req)
+			log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 			status.AddLog(log)
 
 			if err != nil {
 				continue
 			}
 
-			responseQS, _ := url.ParseQuery(string(rr.Body))
+			responseQS, _ := url.ParseQuery(string(trace.ResponseBody))
 
 			// check whether we were blacklisted
 			createMessage, _ := responseQS["ybs_autocreate_message"]

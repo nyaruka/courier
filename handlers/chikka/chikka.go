@@ -12,7 +12,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 var (
@@ -141,11 +140,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		rr, err := utils.MakeHTTPRequest(req)
+		trace, err := handlers.MakeHTTPRequest(req)
 
-		if rr.StatusCode == 400 {
-			message, _ := jsonparser.GetString([]byte(rr.Body), "message")
-			description, _ := jsonparser.GetString([]byte(rr.Body), "description")
+		if trace.Response != nil && trace.Response.StatusCode == 400 {
+			message, _ := jsonparser.GetString(trace.ResponseBody, "message")
+			description, _ := jsonparser.GetString(trace.ResponseBody, "description")
 
 			if message == "BAD REQUEST" && description == `Invalid\/Used Request ID` {
 				delete(form, "request_id")
@@ -153,14 +152,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 				req, _ = http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				rr, err = utils.MakeHTTPRequest(req)
 
+				trace, err = handlers.MakeHTTPRequest(req)
 			}
-
 		}
 
 		// record our status and log
-		status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
+		status.AddLog(courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err))
 		if err != nil {
 			return status, nil
 		}
