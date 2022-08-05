@@ -105,6 +105,7 @@ type Backend interface {
 
 // Media is a resolved media object that can be used as a message attachment
 type Media interface {
+	Name() string
 	ContentType() string
 	URL() string
 	Size() int

@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"net/url"
+	"path"
 	"strings"
 
 	"github.com/nyaruka/courier"
@@ -25,6 +27,7 @@ type MediaTypeSupport struct {
 // Attachment is a resolved attachment
 type Attachment struct {
 	Type        MediaType
+	Name        string
 	ContentType string
 	URL         string
 	Media       courier.Media
@@ -65,7 +68,8 @@ func resolveAttachment(ctx context.Context, b courier.Backend, attachment string
 		// if the channel type allows it, we can still use the media URL without being able to resolve it
 		if allowURLOnly {
 			mediaType, _ := parseContentType(contentType)
-			return &Attachment{Type: mediaType, ContentType: contentType, URL: mediaUrl}, nil
+			name := filenameFromURL(mediaUrl)
+			return &Attachment{Type: mediaType, Name: name, ContentType: contentType, URL: mediaUrl}, nil
 		} else {
 			return nil, nil
 		}
@@ -102,6 +106,7 @@ func resolveAttachment(ctx context.Context, b courier.Backend, attachment string
 
 	return &Attachment{
 		Type:        mediaType,
+		Name:        media.Name(),
 		ContentType: media.ContentType(),
 		URL:         media.URL(),
 		Media:       media,
@@ -139,6 +144,15 @@ func filterMedia(in []courier.Media, f func(courier.Media) bool) []courier.Media
 		}
 	}
 	return filtered
+}
+
+func filenameFromURL(u string) string {
+	name := path.Base(u)
+	unescaped, err := url.PathUnescape(name)
+	if err == nil {
+		return unescaped
+	}
+	return name
 }
 
 func parseContentType(t string) (MediaType, string) {

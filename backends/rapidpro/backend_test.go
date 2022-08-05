@@ -1289,6 +1289,7 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 			url: "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
 			media: &DBMedia{
 				UUID_:        "ec6972be-809c-4c8d-be59-ba9dbd74c977",
+				Path_:        "/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
 				ContentType_: "image/jpeg",
 				URL_:         "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
 				Size_:        123,
@@ -1301,6 +1302,7 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 			url: "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
 			media: &DBMedia{
 				UUID_:        "ec6972be-809c-4c8d-be59-ba9dbd74c977",
+				Path_:        "/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
 				ContentType_: "image/jpeg",
 				URL_:         "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
 				Size_:        123,
@@ -1329,6 +1331,7 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 			url: "http://nyaruka.s3.com/orgs/1/media/5310/5310f50f-9c8e-4035-9150-be5a1f78f21a/test.mp3",
 			media: &DBMedia{
 				UUID_:        "5310f50f-9c8e-4035-9150-be5a1f78f21a",
+				Path_:        "/orgs/1/media/5310/5310f50f-9c8e-4035-9150-be5a1f78f21a/test.mp3",
 				ContentType_: "audio/mp3",
 				URL_:         "http://nyaruka.s3.com/orgs/1/media/5310/5310f50f-9c8e-4035-9150-be5a1f78f21a/test.mp3",
 				Size_:        123,
@@ -1336,6 +1339,7 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 				Alternates_: []*DBMedia{
 					{
 						UUID_:        "514c552c-e585-40e2-938a-fe9450172da8",
+						Path_:        "/orgs/1/media/514c/514c552c-e585-40e2-938a-fe9450172da8/test.m4a",
 						ContentType_: "audio/mp4",
 						URL_:         "http://nyaruka.s3.com/orgs/1/media/514c/514c552c-e585-40e2-938a-fe9450172da8/test.m4a",
 						Size_:        114,

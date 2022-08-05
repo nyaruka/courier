@@ -13,15 +13,15 @@ func TestResolveAttachments(t *testing.T) {
 	ctx := context.Background()
 	mb := courier.NewMockBackend()
 
-	imageJPG := courier.NewMockMedia("image/jpeg", "http://mock.com/1234/test.jpg", 1024*1024, 640, 480, 0, nil)
+	imageJPG := courier.NewMockMedia("test.jpg", "image/jpeg", "http://mock.com/1234/test.jpg", 1024*1024, 640, 480, 0, nil)
 
-	audioM4A := courier.NewMockMedia("audio/mp4", "http://mock.com/2345/test.m4a", 1024*1024, 0, 0, 200, nil)
-	audioMP3 := courier.NewMockMedia("audio/mp3", "http://mock.com/3456/test.mp3", 1024*1024, 0, 0, 200, []courier.Media{audioM4A})
+	audioM4A := courier.NewMockMedia("test.m4a", "audio/mp4", "http://mock.com/2345/test.m4a", 1024*1024, 0, 0, 200, nil)
+	audioMP3 := courier.NewMockMedia("test.mp3", "audio/mp3", "http://mock.com/3456/test.mp3", 1024*1024, 0, 0, 200, []courier.Media{audioM4A})
 
-	thumbJPG := courier.NewMockMedia("image/jpeg", "http://mock.com/4567/test.jpg", 1024*1024, 640, 480, 0, nil)
-	videoMP4 := courier.NewMockMedia("video/mp4", "http://mock.com/5678/test.mp4", 1024*1024, 0, 0, 1000, []courier.Media{thumbJPG})
+	thumbJPG := courier.NewMockMedia("test.jpg", "image/jpeg", "http://mock.com/4567/test.jpg", 1024*1024, 640, 480, 0, nil)
+	videoMP4 := courier.NewMockMedia("test.mp4", "video/mp4", "http://mock.com/5678/test.mp4", 1024*1024, 0, 0, 1000, []courier.Media{thumbJPG})
 
-	videoMOV := courier.NewMockMedia("video/quicktime", "http://mock.com/6789/test.mov", 100*1024*1024, 0, 0, 2000, nil)
+	videoMOV := courier.NewMockMedia("test.mov", "video/quicktime", "http://mock.com/6789/test.mov", 100*1024*1024, 0, 0, 2000, nil)
 
 	mb.MockMedia(imageJPG)
 	mb.MockMedia(audioMP3)
@@ -36,11 +36,11 @@ func TestResolveAttachments(t *testing.T) {
 		err          string
 	}{
 		{ // 0: user entered image URL
-			attachments:  []string{"image:https://example.com/image.jpg"},
+			attachments:  []string{"image:https://example.com/image%201.jpg"},
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/png"}}}, // ignored
 			allowURLOnly: true,
 			resolved: []*handlers.Attachment{
-				{Type: handlers.MediaTypeImage, ContentType: "image", URL: "https://example.com/image.jpg"},
+				{Type: handlers.MediaTypeImage, Name: "image 1.jpg", ContentType: "image", URL: "https://example.com/image%201.jpg"},
 			},
 		},
 		{ // 1: user entered image URL, URL only attachments not allowed
@@ -54,7 +54,7 @@ func TestResolveAttachments(t *testing.T) {
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/jpeg", "image/png"}}},
 			allowURLOnly: true,
 			resolved: []*handlers.Attachment{
-				{Type: handlers.MediaTypeImage, ContentType: "image/jpeg", URL: "http://mock.com/1234/test.jpg", Media: imageJPG, Thumbnail: nil},
+				{Type: handlers.MediaTypeImage, Name: "test.jpg", ContentType: "image/jpeg", URL: "http://mock.com/1234/test.jpg", Media: imageJPG, Thumbnail: nil},
 			},
 		},
 		{ // 3: unresolveable uploaded image URL
@@ -62,7 +62,7 @@ func TestResolveAttachments(t *testing.T) {
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/jpeg", "image/png"}}},
 			allowURLOnly: true,
 			resolved: []*handlers.Attachment{
-				{Type: handlers.MediaTypeImage, ContentType: "image/jpeg", URL: "http://mock.com/9876/gone.jpg", Media: nil, Thumbnail: nil},
+				{Type: handlers.MediaTypeImage, Name: "gone.jpg", ContentType: "image/jpeg", URL: "http://mock.com/9876/gone.jpg", Media: nil, Thumbnail: nil},
 			},
 		},
 		{ // 4: unresolveable uploaded image URL, URL only attachments not allowed
@@ -82,7 +82,7 @@ func TestResolveAttachments(t *testing.T) {
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeAudio: {Types: []string{"audio/mp3", "audio/mp4"}}},
 			allowURLOnly: true,
 			resolved: []*handlers.Attachment{
-				{Type: handlers.MediaTypeAudio, ContentType: "audio/mp3", URL: "http://mock.com/3456/test.mp3", Media: audioMP3, Thumbnail: nil},
+				{Type: handlers.MediaTypeAudio, Name: "test.mp3", ContentType: "audio/mp3", URL: "http://mock.com/3456/test.mp3", Media: audioMP3, Thumbnail: nil},
 			},
 		},
 		{ // 7: resolveable uploaded audio URL, type not in supported types, but has alternate
@@ -90,7 +90,7 @@ func TestResolveAttachments(t *testing.T) {
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeAudio: {Types: []string{"audio/mp4"}}},
 			allowURLOnly: true,
 			resolved: []*handlers.Attachment{
-				{Type: handlers.MediaTypeAudio, ContentType: "audio/mp4", URL: "http://mock.com/2345/test.m4a", Media: audioM4A, Thumbnail: nil},
+				{Type: handlers.MediaTypeAudio, Name: "test.m4a", ContentType: "audio/mp4", URL: "http://mock.com/2345/test.m4a", Media: audioM4A, Thumbnail: nil},
 			},
 		},
 		{ // 8: resolveable uploaded video URL, has thumbnail
@@ -98,7 +98,7 @@ func TestResolveAttachments(t *testing.T) {
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeVideo: {Types: []string{"video/mp4", "video/quicktime"}}},
 			allowURLOnly: true,
 			resolved: []*handlers.Attachment{
-				{Type: handlers.MediaTypeVideo, ContentType: "video/mp4", URL: "http://mock.com/5678/test.mp4", Media: videoMP4, Thumbnail: thumbJPG},
+				{Type: handlers.MediaTypeVideo, Name: "test.mp4", ContentType: "video/mp4", URL: "http://mock.com/5678/test.mp4", Media: videoMP4, Thumbnail: thumbJPG},
 			},
 		},
 		{ // 9: resolveable uploaded video URL, no thumbnail
@@ -106,7 +106,7 @@ func TestResolveAttachments(t *testing.T) {
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeVideo: {Types: []string{"video/mp4", "video/quicktime"}}},
 			allowURLOnly: true,
 			resolved: []*handlers.Attachment{
-				{Type: handlers.MediaTypeVideo, ContentType: "video/quicktime", URL: "http://mock.com/6789/test.mov", Media: videoMOV, Thumbnail: nil},
+				{Type: handlers.MediaTypeVideo, Name: "test.mov", ContentType: "video/quicktime", URL: "http://mock.com/6789/test.mov", Media: videoMOV, Thumbnail: nil},
 			},
 		},
 		{ // 10: resolveable uploaded video URL, too big
