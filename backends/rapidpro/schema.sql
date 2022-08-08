@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS msgs_media (
     org_id integer NOT NULL,
     content_type character varying(255) NOT NULL,
     url character varying(2048) NOT NULL,
-    name character varying(255) NOT NULL,
+    path character varying(2048) NOT NULL,
     size integer NOT NULL,
     duration integer NOT NULL,
     width integer NOT NULL,

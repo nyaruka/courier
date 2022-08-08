@@ -7,7 +7,6 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/gocommon/uuids"
 )
 
 // BackendConstructorFunc defines a function to create a particular backend type
@@ -106,7 +105,7 @@ type Backend interface {
 
 // Media is a resolved media object that can be used as a message attachment
 type Media interface {
-	UUID() uuids.UUID
+	Name() string
 	ContentType() string
 	URL() string
 	Size() int

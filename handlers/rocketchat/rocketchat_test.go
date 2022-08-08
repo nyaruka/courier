@@ -1,10 +1,11 @@
 package rocketchat
 
 import (
-	"github.com/nyaruka/courier"
-	. "github.com/nyaruka/courier/handlers"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/handlers"
 )
 
 const (
@@ -47,7 +48,7 @@ const attachmentMsg = `{
 	"attachments": [{"type": "image/jpg", "url": "https://link.to/image.jpg"}]
 }`
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []handlers.ChannelHandleTestCase{
 	{
 		Label: "Receive Hello Msg",
 		URL:   receiveURL,
@@ -55,8 +56,8 @@ var testCases = []ChannelHandleTestCase{
 			"Authorization": "Token 123456789",
 		},
 		Data:     helloMsg,
-		URN:      Sp("rocketchat:direct:john.doe#john.doe"),
-		Text:     Sp("Hello World"),
+		URN:      handlers.Sp("rocketchat:direct:john.doe#john.doe"),
+		Text:     handlers.Sp("Hello World"),
 		Status:   200,
 		Response: "Accepted",
 	},
@@ -67,8 +68,8 @@ var testCases = []ChannelHandleTestCase{
 			"Authorization": "Token 123456789",
 		},
 		Data:       attachmentMsg,
-		URN:        Sp("rocketchat:livechat:onrMgdKbpX9Qqtvoi"),
-		Attachment: Sp("https://link.to/image.jpg"),
+		URN:        handlers.Sp("rocketchat:livechat:onrMgdKbpX9Qqtvoi"),
+		Attachment: handlers.Sp("https://link.to/image.jpg"),
 		Status:     200,
 		Response:   "Accepted",
 	},
@@ -95,18 +96,18 @@ var testCases = []ChannelHandleTestCase{
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+	handlers.RunChannelTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
+	handlers.RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
 	c.(*courier.MockChannel).SetConfig(configBaseURL, s.URL)
 }
 
-var sendTestCases = []ChannelSendTestCase{
+var sendTestCases = []handlers.ChannelSendTestCase{
 	{
 		Label:          "Plain Send",
 		Text:           "Simple Message",
@@ -144,5 +145,5 @@ var sendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, nil)
+	handlers.RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, nil)
 }

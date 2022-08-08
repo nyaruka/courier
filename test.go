@@ -363,18 +363,10 @@ func (mb *MockBackend) WriteExternalIDSeen(msg Msg) {
 }
 
 // ResolveMedia resolves the passed in media URL to a media object
-func (mb *MockBackend) ResolveMedia(ctx context.Context, a string) (Media, error) {
-	// split into content-type and URL
-	parts := strings.SplitN(a, ":", 2)
-	var contentType, mediaUrl string
-	if len(parts) <= 1 || strings.HasPrefix(parts[1], "//") {
-		return nil, errors.Errorf("invalid attachment format: %s", a)
-	}
-
-	contentType, mediaUrl = parts[0], parts[1]
+func (mb *MockBackend) ResolveMedia(ctx context.Context, mediaUrl string) (Media, error) {
 	media := mb.media[mediaUrl]
 	if media == nil {
-		return &mockMedia{contentType: contentType, url: mediaUrl}, nil
+		return nil, nil
 	}
 
 	return media, nil
@@ -766,7 +758,7 @@ func ReadFile(path string) []byte {
 //-----------------------------------------------------------------------------
 
 type mockMedia struct {
-	uuid        uuids.UUID
+	name        string
 	contentType string
 	url         string
 	size        int
@@ -776,7 +768,7 @@ type mockMedia struct {
 	alternates  []Media
 }
 
-func (m *mockMedia) UUID() uuids.UUID    { return m.uuid }
+func (m *mockMedia) Name() string        { return m.name }
 func (m *mockMedia) ContentType() string { return m.contentType }
 func (m *mockMedia) URL() string         { return m.url }
 func (m *mockMedia) Size() int           { return m.size }
@@ -785,9 +777,9 @@ func (m *mockMedia) Height() int         { return m.height }
 func (m *mockMedia) Duration() int       { return m.duration }
 func (m *mockMedia) Alternates() []Media { return m.alternates }
 
-func NewMockMedia(uuid uuids.UUID, contentType, url string, size, width, height, duration int, alternates []Media) Media {
+func NewMockMedia(name, contentType, url string, size, width, height, duration int, alternates []Media) Media {
 	return &mockMedia{
-		uuid:        uuid,
+		name:        name,
 		contentType: contentType,
 		url:         url,
 		size:        size,
