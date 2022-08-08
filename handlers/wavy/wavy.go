@@ -12,7 +12,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 var (
@@ -171,15 +170,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	req.Header.Set("username", username)
 	req.Header.Set("authenticationtoken", token)
 
-	rr, err := utils.MakeHTTPRequest(req)
+	trace, err := handlers.MakeHTTPRequest(req)
 
 	// record our status and log
-	status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
+	status.AddLog(courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err))
 	if err != nil {
 		return status, nil
 	}
 
-	externalID, _ := jsonparser.GetString(rr.Body, "id")
+	externalID, _ := jsonparser.GetString(trace.ResponseBody, "id")
 	if externalID != "" {
 		status.SetExternalID(externalID)
 	}

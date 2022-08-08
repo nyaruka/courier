@@ -284,17 +284,18 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	params.Set(paramUserIds, urnPath)
 
 	req.URL.RawQuery = params.Encode()
-	res, err := utils.MakeHTTPRequest(req)
 
+	trace, err := handlers.MakeHTTPRequest(req)
 	if err != nil {
 		return nil, err
 	}
+
 	// parsing response
 	type responsePayload struct {
 		Users []userPayload `json:"response" validate:"required"`
 	}
 	payload := &responsePayload{}
-	err = json.Unmarshal(res.Body, payload)
+	err = json.Unmarshal(trace.ResponseBody, payload)
 
 	if err != nil {
 		return nil, err
@@ -404,21 +405,21 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionSendMessage, nil)
-
 	if err != nil {
 		return status, errors.New("Cannot create send message request")
 	}
 
 	req.URL.RawQuery = params.Encode()
-	res, err := utils.MakeHTTPRequest(req)
 
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), res).WithError("Message Send Error", err)
+	trace, err := handlers.MakeHTTPRequest(req)
+
+	log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 	status.AddLog(log)
 
 	if err != nil {
 		return status, err
 	}
-	externalMsgId, err := jsonparser.GetInt(res.Body, responseOutgoingMessageKey)
+	externalMsgId, err := jsonparser.GetInt(trace.ResponseBody, responseOutgoingMessageKey)
 
 	if err != nil {
 		return status, errors.Errorf("no '%s' value in response", responseOutgoingMessageKey)
@@ -516,14 +517,15 @@ func getUploadServerURL(channel courier.Channel, sendURL string) (string, error)
 	}
 	params := buildApiBaseParams(channel)
 	req.URL.RawQuery = params.Encode()
-	res, err := utils.MakeHTTPRequest(req)
 
+	trace, err := handlers.MakeHTTPRequest(req)
 	if err != nil {
 		return "", err
 	}
+
 	uploadServer := &uploadServerPayload{}
 
-	if err = json.Unmarshal(res.Body, uploadServer); err != nil {
+	if err = json.Unmarshal(trace.ResponseBody, uploadServer); err != nil {
 		return "", nil
 	}
 	return uploadServer.Server.UploadURL, nil
@@ -547,34 +549,34 @@ func downloadMedia(mediaURL string) (io.Reader, error) {
 func uploadMedia(serverURL, uploadKey, mediaExt string, media io.Reader) ([]byte, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-
 	fileName := fmt.Sprintf("%s.%s", uploadKey, mediaExt)
+
 	part, err := writer.CreateFormFile(uploadKey, fileName)
-
 	if err != nil {
 		return nil, err
 	}
+
 	_, err = io.Copy(part, media)
-
 	if err != nil {
 		return nil, err
 	}
+
 	err = writer.Close()
-
 	if err != nil {
 		return nil, err
 	}
+
 	req, err := http.NewRequest(http.MethodPost, serverURL, body)
-
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	if res, err := utils.MakeHTTPRequest(req); err != nil {
+	if trace, err := handlers.MakeHTTPRequest(req); err != nil {
 		return nil, err
 	} else {
-		return res.Body, nil
+		return trace.ResponseBody, nil
 	}
 }
 
@@ -584,17 +586,19 @@ func saveUploadedMediaInfo(channel courier.Channel, sendURL, serverId, hash, med
 	params.Set(paramServerId, serverId)
 	params.Set(paramHash, hash)
 	params.Set(mediaKey, mediaValue)
+
 	req, err := http.NewRequest(http.MethodPost, sendURL, nil)
-
 	if err != nil {
 		return nil, err
 	}
+
 	req.URL.RawQuery = params.Encode()
-	res, err := utils.MakeHTTPRequest(req)
 
+	trace, err := handlers.MakeHTTPRequest(req)
 	if err != nil {
 		return nil, err
 	}
+
 	// parsing response
 	type responsePayload struct {
 		Response []mediaUploadInfoPayload `json:"response"`
@@ -602,7 +606,7 @@ func saveUploadedMediaInfo(channel courier.Channel, sendURL, serverId, hash, med
 	medias := &responsePayload{}
 
 	// try get first object
-	if err = json.Unmarshal(res.Body, medias); err != nil || len(medias.Response) == 0 {
+	if err = json.Unmarshal(trace.ResponseBody, medias); err != nil || len(medias.Response) == 0 {
 		return nil, errors.New("no response")
 	} else {
 		return &medias.Response[0], nil

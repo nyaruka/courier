@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
 )
 
@@ -50,24 +49,6 @@ func sanitizeBody(body string) string {
 	}
 
 	return body
-}
-
-// NewChannelLogFromRR creates a new channel log for the passed in channel, id, and request/response log
-func NewChannelLogFromRR(description string, channel Channel, msgID MsgID, rr *utils.RequestResponse) *ChannelLog {
-	log := &ChannelLog{
-		Description: description,
-		Channel:     channel,
-		MsgID:       msgID,
-		Method:      rr.Method,
-		URL:         rr.URL,
-		StatusCode:  rr.StatusCode,
-		Request:     sanitizeBody(rr.Request),
-		Response:    sanitizeBody(rr.Response),
-		CreatedOn:   time.Now(),
-		Elapsed:     rr.Elapsed,
-	}
-
-	return log
 }
 
 // NewChannelLogFromTrace creates a new channel log for the passed in channel, id, and http trace

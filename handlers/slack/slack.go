@@ -119,15 +119,15 @@ func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", userToken))
 
-	rr, err := utils.MakeHTTPRequest(req)
+	trace, err := handlers.MakeHTTPRequest(req)
 	if err != nil {
-		log := courier.NewChannelLogFromRR("File Resolving", channel, courier.NilMsgID, rr).WithError("File Resolving Error", err)
+		log := courier.NewChannelLogFromTrace("File Resolving", channel, courier.NilMsgID, trace).WithError("File Resolving Error", err)
 		h.Backend().WriteChannelLogs(ctx, []*courier.ChannelLog{log})
 		return "", err
 	}
 
 	var fResponse FileResponse
-	if err := json.Unmarshal([]byte(rr.Body), &fResponse); err != nil {
+	if err := json.Unmarshal(trace.ResponseBody, &fResponse); err != nil {
 		return "", errors.Errorf("couldn't unmarshal file response: %v", err)
 	}
 
@@ -205,17 +205,17 @@ func sendTextMsgPart(msg courier.Msg, token string) (*courier.ChannelLog, error)
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-	rr, err := utils.MakeHTTPRequest(req)
+	trace, err := handlers.MakeHTTPRequest(req)
 
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+	log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 
-	ok, err := jsonparser.GetBoolean([]byte(rr.Body), "ok")
+	ok, err := jsonparser.GetBoolean(trace.ResponseBody, "ok")
 	if err != nil {
 		return log, err
 	}
 
 	if !ok {
-		errDescription, err := jsonparser.GetString([]byte(rr.Body), "error")
+		errDescription, err := jsonparser.GetString(trace.ResponseBody, "error")
 		if err != nil {
 			return log, err
 		}
@@ -231,15 +231,16 @@ func parseAttachmentToFileParams(msg courier.Msg, attachment string) (*FileParam
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "error building file request")
 	}
-	resp, err := utils.MakeHTTPRequest(req)
-	log := courier.NewChannelLogFromRR("Fetching attachment", msg.Channel(), msg.ID(), resp).WithError("error fetching media", err)
+
+	trace, err := handlers.MakeHTTPRequest(req)
+	log := courier.NewChannelLogFromTrace("Fetching attachment", msg.Channel(), msg.ID(), trace).WithError("error fetching media", err)
 
 	filename, err := utils.BasePathForURL(attURL)
 	if err != nil {
 		return nil, log, err
 	}
 	return &FileParams{
-		File:     resp.Body,
+		File:     trace.ResponseBody,
 		FileName: filename,
 		Channels: msg.URN().Path(),
 	}, log, nil
@@ -276,13 +277,14 @@ func sendFilePart(msg courier.Msg, token string, fileParams *FileParams) (*couri
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	req.Header.Add("Content-Type", writer.FormDataContentType())
-	resp, err := utils.MakeHTTPRequest(req)
+
+	trace, err := handlers.MakeHTTPRequest(req)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error uploading file to slack")
 	}
 
 	var fr FileResponse
-	if err := json.Unmarshal([]byte(resp.Body), &fr); err != nil {
+	if err := json.Unmarshal(trace.ResponseBody, &fr); err != nil {
 		return nil, errors.Errorf("couldn't unmarshal file response: %v", err)
 	}
 
@@ -290,7 +292,7 @@ func sendFilePart(msg courier.Msg, token string, fileParams *FileParams) (*couri
 		return nil, errors.Errorf("error uploading file to slack: %s.", fr.Error)
 	}
 
-	return courier.NewChannelLogFromRR("uploading file to Slack", msg.Channel(), msg.ID(), resp).WithError("Error uploading file to Slack", err), nil
+	return courier.NewChannelLogFromTrace("uploading file to Slack", msg.Channel(), msg.ID(), trace).WithError("Error uploading file to Slack", err), nil
 }
 
 // DescribeURN handles Slack user details
@@ -307,13 +309,13 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	q.Add("user", urn.Path())
 	req.URL.RawQuery = q.Encode()
 
-	rr, err := utils.MakeHTTPRequest(req)
+	trace, err := handlers.MakeHTTPRequest(req)
 	if err != nil {
-		return nil, fmt.Errorf("request user info error:%s\n%s", err, rr.Response)
+		return nil, fmt.Errorf("request user info error: %s", err)
 	}
 
 	var uInfo *UserInfo
-	if err := json.Unmarshal(rr.Body, &uInfo); err != nil {
+	if err := json.Unmarshal(trace.ResponseBody, &uInfo); err != nil {
 		return nil, fmt.Errorf("unmarshal user info error:%s", err)
 	}
 

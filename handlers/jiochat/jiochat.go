@@ -17,7 +17,6 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 )
@@ -190,14 +189,14 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	rr, err := utils.MakeHTTPRequest(req)
+	trace, err := handlers.MakeHTTPRequest(req)
 	if err != nil {
 		duration := time.Now().Sub(start)
 		logs = append(logs, courier.NewChannelLogFromError("failed to fetch access token", channel, courier.NilMsgID, duration, err))
 		return h.Backend().WriteChannelLogs(ctx, logs)
 	}
 
-	accessToken, err := jsonparser.GetString([]byte(rr.Body), "access_token")
+	accessToken, err := jsonparser.GetString(trace.ResponseBody, "access_token")
 	if err != nil {
 		duration := time.Now().Sub(start)
 		logs = append(logs, courier.NewChannelLogFromError("invalid json", channel, courier.NilMsgID, duration, err))
@@ -263,10 +262,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-		rr, err := utils.MakeHTTPRequest(req)
+
+		trace, err := handlers.MakeHTTPRequest(req)
 
 		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 		status.AddLog(log)
 
 		if err != nil {
@@ -297,11 +297,11 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	req, _ := http.NewRequest(http.MethodGet, reqURL.String(), nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 
-	rr, err := utils.MakeHTTPRequest(req)
+	trace, err := handlers.MakeHTTPRequest(req)
 	if err != nil {
-		return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
+		return nil, fmt.Errorf("unable to look up contact data: %s", err)
 	}
-	nickname, _ := jsonparser.GetString(rr.Body, "nickname")
+	nickname, _ := jsonparser.GetString(trace.ResponseBody, "nickname")
 	return map[string]string{"name": nickname}, nil
 }
 

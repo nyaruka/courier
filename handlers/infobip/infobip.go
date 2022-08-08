@@ -12,7 +12,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/pkg/errors"
 )
 
@@ -226,24 +225,24 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(username, password)
 
-	rr, err := utils.MakeHTTPRequest(req)
+	trace, err := handlers.MakeHTTPRequest(req)
 
 	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
+	log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace)
 	status.AddLog(log)
 	if err != nil {
 		log.WithError("Message Send Error", err)
 		return status, nil
 	}
 
-	groupID, err := jsonparser.GetInt(rr.Body, "messages", "[0]", "status", "groupId")
+	groupID, err := jsonparser.GetInt(trace.ResponseBody, "messages", "[0]", "status", "groupId")
 	if err != nil || (groupID != 1 && groupID != 3) {
 		log.WithError("Message Send Error", errors.Errorf("received error status: '%d'", groupID))
 		return status, nil
 	}
 
-	externalID, err := jsonparser.GetString(rr.Body, "messages", "[0]", "messageId")
+	externalID, err := jsonparser.GetString(trace.ResponseBody, "messages", "[0]", "messageId")
 	if externalID != "" {
 		status.SetExternalID(externalID)
 	}
