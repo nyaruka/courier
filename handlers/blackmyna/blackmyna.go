@@ -10,7 +10,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/pkg/errors"
 )
 
@@ -127,17 +126,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(username, password)
 
-	rr, err := utils.MakeHTTPRequest(req)
+	trace, err := handlers.MakeHTTPRequest(req)
 
 	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
+	status.AddLog(courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err))
 	if err != nil {
 		return status, nil
 	}
 
 	// get our external id
-	externalID, _ := jsonparser.GetString([]byte(rr.Body), "[0]", "id")
+	externalID, _ := jsonparser.GetString(trace.ResponseBody, "[0]", "id")
 	if externalID == "" {
 		return status, errors.Errorf("no external id returned in body")
 	}

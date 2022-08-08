@@ -16,7 +16,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
@@ -151,7 +151,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	sendURL := fmt.Sprintf("%s/v1/%s/messages", baseURL, accountSID)
 	var logs []*courier.ChannelLog
-	var kwaRes *utils.RequestResponse
+	var kwaRes *httpx.Trace
 	var kwaErr error
 
 	// make multipart form requests if we have attachments, the kaleyra api doesn't supports media url nor media upload before send
@@ -162,9 +162,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 			// download media
 			req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
-			res, err := utils.MakeHTTPRequest(req)
+			trace, err := handlers.MakeHTTPRequest(req)
 			if err != nil {
-				log := courier.NewChannelLogFromRR("Media Fetch", msg.Channel(), msg.ID(), res)
+				log := courier.NewChannelLogFromTrace("Media Fetch", msg.Channel(), msg.ID(), trace)
 				logs = append(logs, log)
 				kwaErr = err
 				break
@@ -176,7 +176,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			body := &bytes.Buffer{}
 			writer := multipart.NewWriter(body)
 			part, err := writer.CreateFormFile("media", fileName)
-			_, err = io.Copy(part, bytes.NewReader(res.Body))
+			_, err = io.Copy(part, bytes.NewReader(trace.ResponseBody))
 			if err != nil {
 				elapsed := time.Now().Sub(start)
 				log := courier.NewChannelLogFromError("Media Send APPEND media Field Error", msg.Channel(), msg.ID(), elapsed, err)
@@ -215,7 +215,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			// send multipart form
 			req, _ = http.NewRequest(http.MethodPost, sendURL, body)
 			req.Header.Set("Content-Type", writer.FormDataContentType())
-			kwaRes, kwaErr = utils.MakeHTTPRequest(req)
+			kwaRes, kwaErr = handlers.MakeHTTPRequest(req)
 		}
 	} else {
 		form := url.Values{}
@@ -231,11 +231,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		kwaRes, kwaErr = utils.MakeHTTPRequest(req)
+		kwaRes, kwaErr = handlers.MakeHTTPRequest(req)
 	}
 
 	if kwaRes != nil {
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), kwaRes).WithError("Message Send Error", kwaErr)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), kwaRes).WithError("Message Send Error", kwaErr)
 		logs = append(logs, log)
 	}
 	// add logs to status
@@ -249,7 +249,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	// record external id from the last sent msg request
-	externalID, err := jsonparser.GetString(kwaRes.Body, "id")
+	externalID, err := jsonparser.GetString(kwaRes.ResponseBody, "id")
 	if err == nil {
 		status.SetExternalID(externalID)
 	}

@@ -39,20 +39,17 @@ const (
 	RRStatusFailure RequestResponseStatus = "E"
 )
 
-// MakeInsecureHTTPRequest fires the passed in http request against a transport that does not validate
-// SSL certificates.
+// Deprecated: use handlers.MakeInsecureHTTPRequest instead
 func MakeInsecureHTTPRequest(req *http.Request) (*RequestResponse, error) {
 	return MakeHTTPRequestWithClient(req, GetInsecureHTTPClient())
 }
 
-// MakeHTTPRequest fires the passed in http request, returning any errors encountered. RequestResponse is always set
-// regardless of any errors being set
+// Deprecated: use handlers.MakeHTTPRequest instead
 func MakeHTTPRequest(req *http.Request) (*RequestResponse, error) {
 	return MakeHTTPRequestWithClient(req, GetHTTPClient())
 }
 
-// MakeHTTPRequestWithClient makes an HTTP request with the passed in client, returning a
-// RequestResponse containing logging information gathered during the request
+// Deprecated: use handlers.MakeHTTPRequestWithClient instead
 func MakeHTTPRequestWithClient(req *http.Request, client *http.Client) (*RequestResponse, error) {
 	req.Header.Set("User-Agent", HTTPUserAgent)
 
