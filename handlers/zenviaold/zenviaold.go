@@ -12,7 +12,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/pkg/errors"
 )
 
@@ -196,17 +195,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(username, password)
 
-		rr, err := utils.MakeHTTPRequest(req)
+		trace, err := handlers.MakeHTTPRequest(req)
 
 		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 		status.AddLog(log)
 		if err != nil {
 			return status, nil
 		}
 
 		// was this request successful?
-		responseMsgStatus, _ := jsonparser.GetString(rr.Body, "sendSmsResponse", "statusCode")
+		responseMsgStatus, _ := jsonparser.GetString(trace.ResponseBody, "sendSmsResponse", "statusCode")
 		msgStatus, found := statusMapping[responseMsgStatus]
 		if msgStatus == courier.MsgErrored || !found {
 			log.WithError("Message Send Error", errors.Errorf("received non-success response from Zenvia '%s'", responseMsgStatus))

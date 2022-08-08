@@ -10,7 +10,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 var (
@@ -77,7 +76,6 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		}
 
 		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
-
 		if err != nil {
 			return nil, err
 		}
@@ -85,10 +83,10 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
+		trace, err := handlers.MakeHTTPRequest(req)
 
 		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 		status.AddLog(log)
 		if err != nil {
 			return status, nil
@@ -96,7 +94,7 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 
 		// parse our response as json
 		response := &mtResponse{}
-		err = json.Unmarshal(rr.Body, response)
+		err = json.Unmarshal(trace.ResponseBody, response)
 		if err != nil {
 			log.WithError("Message Send Error", err)
 			break

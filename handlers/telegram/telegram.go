@@ -156,13 +156,13 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	rr, err := utils.MakeHTTPRequest(req)
+	trace, err := handlers.MakeHTTPRequest(req)
 
 	// build our channel log
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+	log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 
 	response := &mtResponse{}
-	err = json.Unmarshal(rr.Body, response)
+	err = json.Unmarshal(trace.ResponseBody, response)
 
 	if err != nil || !response.Ok {
 		if response.ErrorCode == 403 && response.Description == "Forbidden: bot was blocked by the user" {
@@ -343,15 +343,15 @@ func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fi
 		courier.LogRequestError(req, channel, err)
 	}
 
-	rr, err := utils.MakeHTTPRequest(req)
+	trace, err := handlers.MakeHTTPRequest(req)
 	if err != nil {
-		log := courier.NewChannelLogFromRR("File Resolving", channel, courier.NilMsgID, rr).WithError("File Resolving Error", err)
+		log := courier.NewChannelLogFromTrace("File Resolving", channel, courier.NilMsgID, trace).WithError("File Resolving Error", err)
 		h.Backend().WriteChannelLogs(ctx, []*courier.ChannelLog{log})
 		return "", err
 	}
 
 	// was this request successful?
-	ok, err := jsonparser.GetBoolean([]byte(rr.Body), "ok")
+	ok, err := jsonparser.GetBoolean(trace.ResponseBody, "ok")
 	if err != nil {
 		return "", errors.Errorf("no 'ok' in response")
 	}
@@ -361,7 +361,7 @@ func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fi
 	}
 
 	// grab the path for our file
-	filePath, err := jsonparser.GetString([]byte(rr.Body), "result", "file_path")
+	filePath, err := jsonparser.GetString(trace.ResponseBody, "result", "file_path")
 	if err != nil {
 		return "", errors.Errorf("no 'result.file_path' in response")
 	}

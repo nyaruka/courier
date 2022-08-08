@@ -10,7 +10,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/pkg/errors"
 )
 
@@ -94,22 +93,22 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(username, password)
 
-		rr, err := utils.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		trace, err := handlers.MakeHTTPRequest(req)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 		status.AddLog(log)
 		if err != nil {
 			return status, nil
 		}
 
 		// first read our status
-		s, err := jsonparser.GetString(rr.Body, "data", "messages", "[0]", "status")
+		s, err := jsonparser.GetString(trace.ResponseBody, "data", "messages", "[0]", "status")
 		if s != "SUCCESS" {
 			log.WithError("Message Send Error", errors.Errorf("received non SUCCESS status: %s", s))
 			return status, nil
 		}
 
 		// then get our external id
-		id, err := jsonparser.GetString(rr.Body, "data", "messages", "[0]", "message_id")
+		id, err := jsonparser.GetString(trace.ResponseBody, "data", "messages", "[0]", "message_id")
 		if err != nil {
 			log.WithError("Message Send Error", errors.Errorf("unable to get message_id for message"))
 			return status, nil
