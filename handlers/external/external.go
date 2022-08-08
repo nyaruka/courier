@@ -15,7 +15,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
 
@@ -364,19 +363,19 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			req.Header.Set(hKey, fmt.Sprint(hValue))
 		}
 
-		rr, err := utils.MakeHTTPRequest(req)
+		trace, err := handlers.MakeHTTPRequest(req)
 
 		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 		status.AddLog(log)
 		if err != nil {
 			return status, nil
 		}
 
-		if responseContent == "" || strings.Contains(string(rr.Body), responseContent) {
+		if responseContent == "" || strings.Contains(string(trace.ResponseBody), responseContent) {
 			status.SetStatus(courier.MsgWired)
 		} else {
-			log.WithError("Message Send Error", fmt.Errorf("Received invalid response content: %s", string(rr.Body)))
+			log.WithError("Message Send Error", fmt.Errorf("Received invalid response content: %s", string(trace.ResponseBody)))
 		}
 	}
 

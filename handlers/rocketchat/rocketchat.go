@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
-	"net/http"
 )
 
 const (
@@ -139,16 +139,16 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", secret))
 
-	res, err := utils.MakeHTTPRequest(req)
+	trace, err := handlers.MakeHTTPRequest(req)
 
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), res).WithError("Message Send Error", err)
+	log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 	status.AddLog(log)
 
 	if err != nil {
 		return status, err
 	}
 
-	msgID, err := jsonparser.GetString(res.Body, "id")
+	msgID, err := jsonparser.GetString(trace.ResponseBody, "id")
 	if err == nil {
 		status.SetExternalID(msgID)
 	}

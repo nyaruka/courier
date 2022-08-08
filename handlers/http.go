@@ -23,7 +23,7 @@ func MakeInsecureHTTPRequest(req *http.Request) (*httpx.Trace, error) {
 func MakeHTTPRequestWithClient(client *http.Client, req *http.Request) (*httpx.Trace, error) {
 	trace, err := httpx.DoTrace(client, req, nil, nil, 0)
 	if err != nil {
-		return nil, err
+		return trace, err
 	}
 
 	// return an error if we got a non-200 status

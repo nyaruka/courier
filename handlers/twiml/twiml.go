@@ -266,15 +266,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
+		trace, err := handlers.MakeHTTPRequest(req)
 
 		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 		status.AddLog(log)
 
 		// see if we can parse the error if we have one
-		if err != nil && rr.Body != nil {
-			errorCode, _ := jsonparser.GetInt([]byte(rr.Body), "code")
+		if err != nil && len(trace.ResponseBody) > 0 {
+			errorCode, _ := jsonparser.GetInt(trace.ResponseBody, "code")
 			if errorCode != 0 {
 				if errorCode == errorStopped {
 					status.SetStatus(courier.MsgFailed)
@@ -297,7 +297,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		// grab the external id
-		externalID, err := jsonparser.GetString([]byte(rr.Body), "sid")
+		externalID, err := jsonparser.GetString(trace.ResponseBody, "sid")
 		if err != nil {
 			log.WithError("Message Send Error", errors.Errorf("unable to get sid from body"))
 			return status, nil

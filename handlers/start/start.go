@@ -14,8 +14,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nyaruka/courier/utils"
-
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 )
@@ -165,9 +163,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/xml; charset=utf8")
 		req.SetBasicAuth(username, password)
 
-		rr, err := utils.MakeHTTPRequest(req)
+		trace, err := handlers.MakeHTTPRequest(req)
 
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace)
 		status.AddLog(log)
 		if err != nil {
 			log.WithError("Message Send Error", err)
@@ -175,7 +173,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		response := &mtResponse{}
-		err = xml.Unmarshal(rr.Body, response)
+		err = xml.Unmarshal(trace.ResponseBody, response)
 		if err == nil {
 			status.SetStatus(courier.MsgWired)
 			if i == 0 {

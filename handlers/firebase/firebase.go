@@ -11,7 +11,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
@@ -195,15 +194,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("key=%s", fcmKey))
 
-		rr, err := utils.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		trace, err := handlers.MakeHTTPRequest(req)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 		status.AddLog(log)
 		if err != nil {
 			return status, nil
 		}
 
 		// was this successful
-		success, _ := jsonparser.GetInt(rr.Body, "success")
+		success, _ := jsonparser.GetInt(trace.ResponseBody, "success")
 		if success != 1 {
 			log.WithError("Message Send Error", errors.Errorf("received non-1 value for success in response"))
 			return status, nil
@@ -211,7 +210,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		// grab the id if this is our first part
 		if i == 0 {
-			externalID, err := jsonparser.GetInt(rr.Body, "multicast_id")
+			externalID, err := jsonparser.GetInt(trace.ResponseBody, "multicast_id")
 			if err != nil {
 				log.WithError("Message Send Error", errors.Errorf("unable to get multicast_id from response"))
 				return status, nil

@@ -17,7 +17,6 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/nyaruka/courier/utils"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
@@ -171,14 +170,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(authID, authToken)
 
-		rr, err := utils.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		trace, err := handlers.MakeHTTPRequest(req)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 		status.AddLog(log)
 		if err != nil {
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString(rr.Body, "message_uuid", "[0]")
+		externalID, err := jsonparser.GetString(trace.ResponseBody, "message_uuid", "[0]")
 		if err != nil {
 			return status, fmt.Errorf("unable to parse response body from Plivo")
 		}

@@ -5,12 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
 )
-
-// NilStatusCode is used when we have an error before even sending anything
-const NilStatusCode int = 417
 
 // NewChannelLog creates a new channel log for the passed in channel, id, and request and response info
 func NewChannelLog(description string, channel Channel, msgID MsgID, method string, url string, statusCode int,
@@ -52,24 +48,6 @@ func sanitizeBody(body string) string {
 	return body
 }
 
-// NewChannelLogFromRR creates a new channel log for the passed in channel, id, and request/response log
-func NewChannelLogFromRR(description string, channel Channel, msgID MsgID, rr *utils.RequestResponse) *ChannelLog {
-	log := &ChannelLog{
-		Description: description,
-		Channel:     channel,
-		MsgID:       msgID,
-		Method:      rr.Method,
-		URL:         rr.URL,
-		StatusCode:  rr.StatusCode,
-		Request:     sanitizeBody(rr.Request),
-		Response:    sanitizeBody(rr.Response),
-		CreatedOn:   time.Now(),
-		Elapsed:     rr.Elapsed,
-	}
-
-	return log
-}
-
 // NewChannelLogFromTrace creates a new channel log for the passed in channel, id, and http trace
 func NewChannelLogFromTrace(description string, channel Channel, msgID MsgID, trace *httpx.Trace) *ChannelLog {
 	log := &ChannelLog{
@@ -93,7 +71,7 @@ func NewChannelLogFromTrace(description string, channel Channel, msgID MsgID, tr
 
 // NewChannelLogFromError creates a new channel log for the passed in channel, msg id and error
 func NewChannelLogFromError(description string, channel Channel, msgID MsgID, elapsed time.Duration, err error) *ChannelLog {
-	log := &ChannelLog{
+	return &ChannelLog{
 		Description: description,
 		Channel:     channel,
 		MsgID:       msgID,
@@ -101,8 +79,6 @@ func NewChannelLogFromError(description string, channel Channel, msgID MsgID, el
 		CreatedOn:   time.Now(),
 		Elapsed:     elapsed,
 	}
-
-	return log
 }
 
 // WithError augments the passed in ChannelLog with the passed in description and error if error is not nil

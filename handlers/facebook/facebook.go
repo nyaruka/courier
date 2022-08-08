@@ -107,12 +107,13 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 		form.Set("access_token", authToken)
 		req, _ := http.NewRequest(http.MethodPost, subscribeURL, strings.NewReader(form.Encode()))
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		rr, err := utils.MakeHTTPRequest(req)
+
+		trace, err := handlers.MakeHTTPRequest(req)
 
 		// log if we get any kind of error
-		success, _ := jsonparser.GetBoolean([]byte(rr.Body), "success")
+		success, _ := jsonparser.GetBoolean(trace.ResponseBody, "success")
 		if err != nil || !success {
-			logrus.WithField("channel_uuid", channel.UUID()).WithField("response", rr.Response).Error("error subscribing to Facebook page events")
+			logrus.WithField("channel_uuid", channel.UUID()).Error("error subscribing to Facebook page events")
 		}
 	}()
 
@@ -545,23 +546,23 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		req, err := http.NewRequest(http.MethodPost, msgURL.String(), bytes.NewReader(jsonBody))
-
 		if err != nil {
 			return nil, err
 		}
+
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
+		trace, err := handlers.MakeHTTPRequest(req)
 
 		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 		status.AddLog(log)
 		if err != nil {
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString(rr.Body, "message_id")
+		externalID, err := jsonparser.GetString(trace.ResponseBody, "message_id")
 		if err != nil {
 			log.WithError("Message Send Error", errors.Errorf("unable to get message_id from body"))
 			return status, nil
@@ -571,7 +572,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if i == 0 {
 			status.SetExternalID(externalID)
 			if msg.URN().IsFacebookRef() {
-				recipientID, err := jsonparser.GetString(rr.Body, "recipient_id")
+				recipientID, err := jsonparser.GetString(trace.ResponseBody, "recipient_id")
 				if err != nil {
 					log.WithError("Message Send Error", errors.Errorf("unable to get recipient_id from body"))
 					return status, nil
@@ -639,14 +640,15 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	query.Set("access_token", accessToken)
 	u.RawQuery = query.Encode()
 	req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
-	rr, err := utils.MakeHTTPRequest(req)
+
+	trace, err := handlers.MakeHTTPRequest(req)
 	if err != nil {
-		return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
+		return nil, fmt.Errorf("unable to look up contact data: %s", err)
 	}
 
 	// read our first and last name
-	firstName, _ := jsonparser.GetString(rr.Body, "first_name")
-	lastName, _ := jsonparser.GetString(rr.Body, "last_name")
+	firstName, _ := jsonparser.GetString(trace.ResponseBody, "first_name")
+	lastName, _ := jsonparser.GetString(trace.ResponseBody, "last_name")
 
 	return map[string]string{"name": utils.JoinNonEmpty(" ", firstName, lastName)}, nil
 }

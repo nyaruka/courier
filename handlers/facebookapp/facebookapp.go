@@ -337,19 +337,19 @@ func resolveMediaURL(mediaID string, token string) (string, error) {
 
 	base, _ := url.Parse(graphURL)
 	path, _ := url.Parse(fmt.Sprintf("/%s", mediaID))
-	retreiveURL := base.ResolveReference(path)
+	retrieveURL := base.ResolveReference(path)
 
 	// set the access token as the authorization header
-	req, _ := http.NewRequest(http.MethodGet, retreiveURL.String(), nil)
+	req, _ := http.NewRequest(http.MethodGet, retrieveURL.String(), nil)
 	//req.Header.Set("User-Agent", utils.HTTPUserAgent)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-	resp, err := utils.MakeHTTPRequest(req)
+	trace, err := handlers.MakeHTTPRequest(req)
 	if err != nil {
 		return "", err
 	}
 
-	mediaURL, err := jsonparser.GetString(resp.Body, "url")
+	mediaURL, err := jsonparser.GetString(trace.ResponseBody, "url")
 	return mediaURL, err
 }
 
@@ -894,16 +894,16 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
+		trace, err := handlers.MakeHTTPRequest(req)
 
 		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 		status.AddLog(log)
 		if err != nil {
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString(rr.Body, "message_id")
+		externalID, err := jsonparser.GetString(trace.ResponseBody, "message_id")
 		if err != nil {
 			log.WithError("Message Send Error", errors.Errorf("unable to get message_id from body"))
 			return status, nil
@@ -913,7 +913,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg)
 		if i == 0 {
 			status.SetExternalID(externalID)
 			if msg.URN().IsFacebookRef() {
-				recipientID, err := jsonparser.GetString(rr.Body, "recipient_id")
+				recipientID, err := jsonparser.GetString(trace.ResponseBody, "recipient_id")
 				if err != nil {
 					log.WithError("Message Send Error", errors.Errorf("unable to get recipient_id from body"))
 					return status, nil
@@ -1278,17 +1278,17 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
+		trace, err := handlers.MakeHTTPRequest(req)
 
 		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 		status.AddLog(log)
 		if err != nil {
 			return status, nil
 		}
 
 		respPayload := &wacMTResponse{}
-		err = json.Unmarshal(rr.Body, respPayload)
+		err = json.Unmarshal(trace.ResponseBody, respPayload)
 		if err != nil {
 			log.WithError("Message Send Error", errors.Errorf("unable to unmarshal response body"))
 			return status, nil
@@ -1335,18 +1335,19 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	query.Set("access_token", accessToken)
 	u.RawQuery = query.Encode()
 	req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
-	rr, err := utils.MakeHTTPRequest(req)
+
+	trace, err := handlers.MakeHTTPRequest(req)
 	if err != nil {
-		return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
+		return nil, fmt.Errorf("unable to look up contact data: %s", err)
 	}
 
 	// read our first and last name	or complete name
 	if fmt.Sprint(channel.ChannelType()) == "FBA" {
-		firstName, _ := jsonparser.GetString(rr.Body, "first_name")
-		lastName, _ := jsonparser.GetString(rr.Body, "last_name")
+		firstName, _ := jsonparser.GetString(trace.ResponseBody, "first_name")
+		lastName, _ := jsonparser.GetString(trace.ResponseBody, "last_name")
 		name = utils.JoinNonEmpty(" ", firstName, lastName)
 	} else {
-		name, _ = jsonparser.GetString(rr.Body, "name")
+		name, _ = jsonparser.GetString(trace.ResponseBody, "name")
 	}
 
 	return map[string]string{"name": name}, nil

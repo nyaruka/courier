@@ -11,7 +11,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/gsm7"
 
 	"github.com/buger/jsonparser"
@@ -192,14 +191,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		trace, err := handlers.MakeHTTPRequest(req)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 		status.AddLog(log)
 		if err != nil {
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString([]byte(rr.Body), "MsgID")
+		externalID, err := jsonparser.GetString(trace.ResponseBody, "MsgID")
 		if err != nil {
 			return status, fmt.Errorf("unable to parse response body from Macrokiosk")
 		}

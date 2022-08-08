@@ -13,7 +13,6 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 var (
@@ -181,8 +180,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return nil, err
 		}
 
-		rr, err := utils.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+		trace, err := handlers.MakeHTTPRequest(req)
+		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 		status.AddLog(log)
 		if err != nil {
 			break
@@ -198,8 +197,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		//		"ticket": "760eeaa0-5034-11e7-bb92-00000a0a643a"
 		//  }]
 		// }
-		code, _ := jsonparser.GetString(rr.Body, "results", "[0]", "code")
-		externalID, _ := jsonparser.GetString(rr.Body, "results", "[0]", "ticket")
+		code, _ := jsonparser.GetString(trace.ResponseBody, "results", "[0]", "code")
+		externalID, _ := jsonparser.GetString(trace.ResponseBody, "results", "[0]", "ticket")
 		if code == "0" && externalID != "" {
 			// all went well, set ourselves to wired
 			status.SetStatus(courier.MsgWired)

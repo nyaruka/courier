@@ -16,8 +16,6 @@ import (
 
 	"github.com/buger/jsonparser"
 
-	"github.com/nyaruka/courier/utils"
-
 	"github.com/nyaruka/gocommon/urns"
 
 	"github.com/nyaruka/courier"
@@ -332,8 +330,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			if err != nil {
 				return status, err
 			}
-			rr, err := utils.MakeHTTPRequest(req)
-			log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+
+			trace, err := handlers.MakeHTTPRequest(req)
+			log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 			status.AddLog(log)
 
 			if err == nil {
@@ -342,14 +341,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				continue
 			}
 			// retry without the reply token if it's invalid
-			errMsg, err := jsonparser.GetString(rr.Body, "message")
+			errMsg, err := jsonparser.GetString(trace.ResponseBody, "message")
 			if err == nil && errMsg == "Invalid reply token" {
 				req, err = buildSendMsgRequest(authToken, msg.URN().Path(), "", batch)
 				if err != nil {
 					return status, err
 				}
-				rr, err = utils.MakeHTTPRequest(req)
-				log = courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
+
+				trace, err = handlers.MakeHTTPRequest(req)
+				log = courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
 				status.AddLog(log)
 				if err != nil {
 					return status, err
