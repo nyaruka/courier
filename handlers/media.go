@@ -67,6 +67,12 @@ func resolveAttachment(ctx context.Context, b courier.Backend, attachment string
 	if media == nil {
 		// if the channel type allows it, we can still use the media URL without being able to resolve it
 		if allowURLOnly {
+			// potentially fix the URL which might not be properly encoded
+			parsedURL, err := url.Parse(mediaUrl)
+			if err == nil {
+				mediaUrl = parsedURL.String()
+			}
+
 			mediaType, _ := parseContentType(contentType)
 			name := filenameFromURL(mediaUrl)
 			return &Attachment{Type: mediaType, Name: name, ContentType: contentType, URL: mediaUrl}, nil
