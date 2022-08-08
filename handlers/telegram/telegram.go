@@ -321,8 +321,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			hasError = err != nil
 
 		default:
-			status.AddLog(courier.NewChannelLog("Unknown attachment content type: "+attachment.ContentType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
-				"", "", time.Duration(0), fmt.Errorf("unknown attachment content type: %s", attachment.ContentType)))
+			status.AddLog(courier.NewChannelLogFromError("Unknown attachment content type: "+attachment.ContentType,
+				msg.Channel(), msg.ID(), time.Duration(0), fmt.Errorf("unknown attachment content type: %s", attachment.ContentType)))
 			hasError = true
 		}
 	}

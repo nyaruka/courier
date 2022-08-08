@@ -376,9 +376,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				msgText = ""
 
 			default:
-				status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
-					"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
-
+				status.AddLog(courier.NewChannelLogFromError("Unknown media type: "+mediaType, msg.Channel(), msg.ID(),
+					time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
 			}
 
 		} else {
