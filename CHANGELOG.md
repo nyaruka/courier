@@ -1,3 +1,10 @@
+v7.5.6
+----------
+ * Fix URLs from non-resolved attachments that may not be properly escaped
+ * Use httpx.DoTrace for some channels
+ * Convert telegram handler to use ResolveAttachments
+ * Add support for resolving media on the backend
+
 v7.5.5
 ----------
  * Switch to using null.Map instead of utils.NullMap
