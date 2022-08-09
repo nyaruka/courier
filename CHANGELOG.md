@@ -1,3 +1,7 @@
+v7.5.7
+----------
+ * Convert remaining channel types to use httpx.Trace
+
 v7.5.6
 ----------
  * Fix URLs from non-resolved attachments that may not be properly escaped
