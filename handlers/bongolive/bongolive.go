@@ -123,8 +123,8 @@ func writeBongoLiveResponse(w http.ResponseWriter) error {
 
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for %s channel", msg.Channel().ChannelType())
@@ -163,23 +163,19 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		trace, err := handlers.MakeInsecureHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTPInsecure(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		// was this request successful?
-		msgStatus, _ := jsonparser.GetString(trace.ResponseBody, "results", "[0]", "status")
+		msgStatus, _ := jsonparser.GetString(respBody, "results", "[0]", "status")
 		if msgStatus != "0" {
 			status.SetStatus(courier.MsgErrored)
 			return status, nil
 		}
 		// grab the external id if we can
-		externalID, _ := jsonparser.GetString(trace.ResponseBody, "results", "[0]", "msgid")
+		externalID, _ := jsonparser.GetString(respBody, "results", "[0]", "msgid")
 		status.SetStatus(courier.MsgWired)
 		status.SetExternalID(externalID)
 

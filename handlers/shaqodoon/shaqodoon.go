@@ -83,8 +83,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
 		return nil, fmt.Errorf("missing send_url for SQ channel")
@@ -114,12 +114,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	trace, err := handlers.MakeInsecureHTTPRequest(req)
-
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err))
-	if err == nil {
-		status.SetStatus(courier.MsgWired)
+
+	resp, _, err := handlers.RequestHTTPInsecure(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return status, nil
 	}
+
+	status.SetStatus(courier.MsgWired)
 	return status, nil
 }

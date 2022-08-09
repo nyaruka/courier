@@ -154,7 +154,7 @@ type mtPayload struct {
 	EventAuthToken string `json:"event_auth_token,omitempty"`
 }
 
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
 		return nil, fmt.Errorf("No send_url set for JN channel")
@@ -197,18 +197,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(username, password)
 
-		trace, err := handlers.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString(trace.ResponseBody, "result", "message_id")
+		externalID, err := jsonparser.GetString(respBody, "result", "message_id")
 		if err != nil {
-			log.WithError("Message Send Error", errors.Errorf("unable to get result.message_id from body"))
+			logger.Error(errors.Errorf("unable to get result.message_id from body"))
 			return status, nil
 		}
 

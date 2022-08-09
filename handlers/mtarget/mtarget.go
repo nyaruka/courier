@@ -147,8 +147,8 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for MT channel")
@@ -175,16 +175,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		msgURL, _ := url.Parse(sendURL)
 		msgURL.RawQuery = params.Encode()
 		req, err := http.NewRequest(http.MethodPost, msgURL.String(), nil)
-
 		if err != nil {
 			return nil, err
 		}
 
-		trace, err := handlers.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
-			break
+		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
+			return status, nil
 		}
 
 		// parse our response for our status code and ticket (external id)
@@ -197,15 +194,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		//		"ticket": "760eeaa0-5034-11e7-bb92-00000a0a643a"
 		//  }]
 		// }
-		code, _ := jsonparser.GetString(trace.ResponseBody, "results", "[0]", "code")
-		externalID, _ := jsonparser.GetString(trace.ResponseBody, "results", "[0]", "ticket")
+		code, _ := jsonparser.GetString(respBody, "results", "[0]", "code")
+		externalID, _ := jsonparser.GetString(respBody, "results", "[0]", "ticket")
 		if code == "0" && externalID != "" {
 			// all went well, set ourselves to wired
 			status.SetStatus(courier.MsgWired)
 			status.SetExternalID(externalID)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			log.WithError("Message Send Error", fmt.Errorf("Error status code, failing permanently"))
+			logger.Error(fmt.Errorf("Error status code, failing permanently"))
 			break
 		}
 	}

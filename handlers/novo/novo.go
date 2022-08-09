@@ -77,8 +77,8 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	merchantID := msg.Channel().StringConfigForKey(configMerchantId, "")
 	if merchantID == "" {
 		return nil, fmt.Errorf("no merchant_id set for NV channel")
@@ -110,23 +110,19 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			return nil, err
 		}
 
-		trace, err := handlers.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		responseMsgStatus, _ := jsonparser.GetString(trace.ResponseBody, "status")
+		responseMsgStatus, _ := jsonparser.GetString(respBody, "status")
 
 		// we always get 204 on success
 		if responseMsgStatus == "FINISHED" {
 			status.SetStatus(courier.MsgWired)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			log.WithError("Message Send Error", fmt.Errorf("received invalid response"))
+			logger.Error(fmt.Errorf("received invalid response"))
 			break
 		}
 	}

@@ -195,8 +195,8 @@ type mtPayload struct {
 	Contents []mtContent `json:"contents"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	channel := msg.Channel()
 
 	token := channel.StringConfigForKey(courier.ConfigAPIKey, "")
@@ -259,18 +259,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-API-TOKEN", token)
 
-	trace, err := handlers.MakeHTTPRequest(req)
-
-	// record our status and log
-	log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-	status.AddLog(log)
-	if err != nil {
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}
 
-	externalID, err := jsonparser.GetString(trace.ResponseBody, "id")
+	externalID, err := jsonparser.GetString(respBody, "id")
 	if err != nil {
-		log.WithError("Message Send Error", errors.Errorf("unable to get id from body"))
+		logger.Error(errors.Errorf("unable to get id from body"))
 		return status, nil
 	}
 

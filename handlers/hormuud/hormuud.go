@@ -14,7 +14,6 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/gocommon/httpx"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -80,24 +79,13 @@ type mtPayload struct {
 	UDH      string `json:"UDH"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
-	token, trace, err := h.FetchToken(ctx, msg.Channel(), msg)
-	if trace == nil && err != nil {
-		return nil, errors.Wrapf(err, "unable to fetch token")
-	}
-
-	// if we made a request for our token, stash that in our status
-	if trace != nil {
-		log := courier.NewChannelLogFromTrace("Token Retrieved", msg.Channel(), msg.ID(), trace).WithError("Token Retrieval Error", err)
-		status.AddLog(log)
-	}
-
-	// failed getting a token? we are done
+	token, err := h.FetchToken(ctx, msg.Channel(), msg, logger)
 	if err != nil {
-		return status, nil
+		return status, errors.Wrapf(err, "unable to fetch token")
 	}
 
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
@@ -123,16 +111,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-		trace, err := handlers.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
+
 		status.SetStatus(courier.MsgWired)
 
 		// try to get the message id out
-		id, _ := jsonparser.GetString(trace.ResponseBody, "Data", "MessageID")
+		id, _ := jsonparser.GetString(respBody, "Data", "MessageID")
 		if id != "" && i == 0 {
 			status.SetExternalID(id)
 		}
@@ -146,7 +133,7 @@ type tokenResponse struct {
 }
 
 // FetchToken gets the current token for this channel, either from Redis if cached or by requesting it
-func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg courier.Msg) (string, *httpx.Trace, error) {
+func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg courier.Msg, logger *courier.ChannelLogger) (string, error) {
 	// first check whether we have it in redis
 	conn := h.Backend().RedisPool().Get()
 	token, err := redis.String(conn.Do("GET", fmt.Sprintf("hm_token_%s", channel.UUID())))
@@ -154,18 +141,18 @@ func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg c
 
 	// got a token, use it
 	if token != "" {
-		return token, nil, nil
+		return token, nil
 	}
 
 	// no token, lets go fetch one
 	username := channel.StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
-		return "", nil, fmt.Errorf("Missing 'username' config for HM channel")
+		return "", fmt.Errorf("Missing 'username' config for HM channel")
 	}
 
 	password := channel.StringConfigForKey(courier.ConfigPassword, "")
 	if password == "" {
-		return "", nil, fmt.Errorf("Missing 'password' config for HM channel")
+		return "", fmt.Errorf("Missing 'password' config for HM channel")
 	}
 
 	form := url.Values{
@@ -179,18 +166,17 @@ func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg c
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
 
-	trace, err := handlers.MakeHTTPRequest(req)
-	if err != nil {
-		return "", trace, errors.Wrapf(err, "error making token request")
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return "", errors.Wrapf(err, "error making token request")
 	}
 
-	token, err = jsonparser.GetString(trace.ResponseBody, "access_token")
+	token, err = jsonparser.GetString(respBody, "access_token")
 	if err != nil {
-		return "", trace, errors.Wrapf(err, "error getting access_token from response")
+		return "", errors.Wrapf(err, "error getting access_token from response")
 	}
-
 	if token == "" {
-		return "", trace, errors.Errorf("no access token returned")
+		return "", errors.Errorf("no access token returned")
 	}
 
 	// we got a token, cache it to redis with a 90 minute expiration
@@ -202,5 +188,5 @@ func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg c
 		logrus.WithError(err).Error("error caching HM access token")
 	}
 
-	return token, trace, nil
+	return token, nil
 }

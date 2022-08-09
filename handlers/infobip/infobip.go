@@ -174,8 +174,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for IB channel")
@@ -225,24 +225,20 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(username, password)
 
-	trace, err := handlers.MakeHTTPRequest(req)
-
-	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace)
-	status.AddLog(log)
-	if err != nil {
-		log.WithError("Message Send Error", err)
+
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}
 
-	groupID, err := jsonparser.GetInt(trace.ResponseBody, "messages", "[0]", "status", "groupId")
+	groupID, err := jsonparser.GetInt(respBody, "messages", "[0]", "status", "groupId")
 	if err != nil || (groupID != 1 && groupID != 3) {
-		log.WithError("Message Send Error", errors.Errorf("received error status: '%d'", groupID))
+		logger.Error(errors.Errorf("received error status: '%d'", groupID))
 		return status, nil
 	}
 
-	externalID, err := jsonparser.GetString(trace.ResponseBody, "messages", "[0]", "messageId")
+	externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "messageId")
 	if externalID != "" {
 		status.SetExternalID(externalID)
 	}

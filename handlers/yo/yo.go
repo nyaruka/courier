@@ -96,8 +96,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for YO channel")
@@ -130,15 +130,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			}
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-			trace, err := handlers.MakeHTTPRequest(req)
-			log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-			status.AddLog(log)
-
-			if err != nil {
-				continue
+			resp, respBody, err := handlers.RequestHTTP(req, logger)
+			if err != nil || resp.StatusCode/100 != 2 {
+				return status, nil
 			}
 
-			responseQS, _ := url.ParseQuery(string(trace.ResponseBody))
+			responseQS, _ := url.ParseQuery(string(respBody))
 
 			// check whether we were blacklisted
 			createMessage, _ := responseQS["ybs_autocreate_message"]
