@@ -360,7 +360,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgURN:             "wechat:12345",
 		ExpectedStatus:     "E",
 		MockResponseStatus: 401,
-		ExpectedError:      "received non 200 status: 401",
+		ExpectedErrors:     []string{"received non 200 status: 401"},
 		SendPrep:           setSendURL},
 }
 

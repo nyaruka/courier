@@ -160,7 +160,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 var invalidTokenSendTestCases = []ChannelSendTestCase{
-	{Label: "Invalid token", ExpectedError: "missing auth token in config"},
+	{
+		Label:          "Invalid token",
+		ExpectedErrors: []string{"missing auth token in config"},
+	},
 }
 
 var buttonLayoutSendTestCases = []ChannelSendTestCase{

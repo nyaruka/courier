@@ -759,11 +759,11 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		SendPrep:            setSendURL,
 	},
 	{
-		Label:         "Template Invalid Language",
-		MsgText:       "templated message",
-		MsgURN:        "whatsapp:250788123123",
-		MsgMetadata:   json.RawMessage(`{"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}}`),
-		ExpectedError: `unable to decode template: {"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}} for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c56ab: unable to find mapping for language: bnt`,
+		Label:          "Template Invalid Language",
+		MsgText:        "templated message",
+		MsgURN:         "whatsapp:250788123123",
+		MsgMetadata:    json.RawMessage(`{"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}}`),
+		ExpectedErrors: []string{`unable to decode template: {"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}} for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c56ab: unable to find mapping for language: bnt`},
 	},
 	{
 		Label:               "Interactive Button Message Send",

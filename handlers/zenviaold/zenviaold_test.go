@@ -136,11 +136,10 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
+	{
+		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "tel:+250788383383",
-		ExpectedStatus:     "W",
-		ExpectedExternalID: "",
 		MockResponseBody:   `{"sendSmsResponse":{"statusCode":"00","statusDescription":"Ok","detailCode":"000","detailDescription":"Message Sent"}}`,
 		MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
@@ -149,8 +148,12 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Basic enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 		},
 		ExpectedRequestBody: `{"sendSmsRequest":{"to":"250788383383","schedule":"","msg":"Simple Message ☺","callbackOption":"FINAL","id":"10","aggregateId":""}}`,
-		SendPrep:            setSendURL},
-	{Label: "Long Send",
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Long Send",
 		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
 		MsgURN:             "tel:+250788383383",
 		ExpectedStatus:     "W",
@@ -163,13 +166,13 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Basic enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 		},
 		ExpectedRequestBody: `{"sendSmsRequest":{"to":"250788383383","schedule":"","msg":"I need to keep adding more things to make it work","callbackOption":"FINAL","id":"10","aggregateId":""}}`,
-		SendPrep:            setSendURL},
-	{Label: "Send Attachment",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
 		MsgText:            "My pic!",
 		MsgURN:             "tel:+250788383383",
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedStatus:     "W",
-		ExpectedExternalID: "",
 		MockResponseBody:   `{"sendSmsResponse":{"statusCode":"00","statusDescription":"Ok","detailCode":"000","detailDescription":"Message Sent"}}`,
 		MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
@@ -178,11 +181,14 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Basic enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 		},
 		ExpectedRequestBody: `{"sendSmsRequest":{"to":"250788383383","schedule":"","msg":"My pic!\nhttps://foo.bar/image.jpg","callbackOption":"FINAL","id":"10","aggregateId":""}}`,
-		SendPrep:            setSendURL},
-	{Label: "No External ID",
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "No External ID",
 		MsgText:            "No External ID",
 		MsgURN:             "tel:+250788383383",
-		ExpectedStatus:     "E",
 		MockResponseBody:   `{"sendSmsResponse" :{"statusCode" :"05","statusDescription" :"Blocked","detailCode":"140","detailDescription":"Mobile number not covered"}}`,
 		MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
@@ -191,15 +197,19 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Basic enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 		},
 		ExpectedRequestBody: `{"sendSmsRequest":{"to":"250788383383","schedule":"","msg":"No External ID","callbackOption":"FINAL","id":"10","aggregateId":""}}`,
+		ExpectedStatus:      "E",
+		ExpectedErrors:      []string{"received non-success response: '05'"},
 		SendPrep:            setSendURL},
-	{Label: "Error Sending",
+	{
+		Label:               "Error Sending",
 		MsgText:             "Error Message",
 		MsgURN:              "tel:+250788383383",
-		ExpectedStatus:      "E",
 		MockResponseBody:    `{ "error": "failed" }`,
 		MockResponseStatus:  401,
 		ExpectedRequestBody: `{"sendSmsRequest":{"to":"250788383383","schedule":"","msg":"Error Message","callbackOption":"FINAL","id":"10","aggregateId":""}}`,
-		SendPrep:            setSendURL},
+		ExpectedStatus:      "E",
+		SendPrep:            setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {

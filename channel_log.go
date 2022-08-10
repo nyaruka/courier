@@ -130,7 +130,8 @@ type ChannelLogger struct {
 	type_ ChannelLogType
 	msg   Msg
 
-	logs []*ChannelLog
+	errors []string
+	logs   []*ChannelLog
 }
 
 func NewChannelLoggerForSend(msg Msg) *ChannelLogger {
@@ -150,6 +151,8 @@ func (l *ChannelLogger) HTTP(t *httpx.Trace) {
 }
 
 func (l *ChannelLogger) Error(err error) {
+	l.errors = append(l.errors, err.Error())
+
 	// if we have an existing log which isn't already an error, update it
 	if len(l.logs) > 0 && l.logs[len(l.logs)-1].Error == "" {
 		l.logs[len(l.logs)-1].Error = err.Error()
@@ -157,6 +160,10 @@ func (l *ChannelLogger) Error(err error) {
 	} else {
 		l.logs = append(l.logs, NewChannelLogFromError(logTypeErrorDescriptions[l.type_], l.msg.Channel(), l.msg.ID(), 0, err))
 	}
+}
+
+func (l *ChannelLogger) Errors() []string {
+	return l.errors
 }
 
 func (l *ChannelLogger) Logs() []*ChannelLog {

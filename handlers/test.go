@@ -19,6 +19,7 @@ import (
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -103,9 +104,9 @@ type ChannelSendTestCase struct {
 	ExpectedRequestBody string
 	ExpectedHeaders     map[string]string
 
-	ExpectedError      string
 	ExpectedStatus     string
 	ExpectedExternalID string
+	ExpectedErrors     []string
 
 	ExpectedStopEvent   bool
 	ExpectedContactURNs map[string]bool
@@ -272,15 +273,12 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			status, err := handler.Send(ctx, msg, logger)
 			cancel()
 
-			if testCase.ExpectedError != "" {
-				if err == nil {
-					t.Errorf("expected error: %s", testCase.ExpectedError)
-				} else {
-					require.Equal(testCase.ExpectedError, err.Error())
-				}
-			} else if err != nil {
-				t.Errorf("unexpected error: %s", err.Error())
+			// we don't currently distinguish between a returned error and logged errors
+			if err != nil {
+				logger.Error(err)
 			}
+
+			assert.Equal(t, testCase.ExpectedErrors, logger.Errors(), "unexpected errors logged")
 
 			if testCase.ExpectedRequestPath != "" {
 				require.NotNil(testRequest, "path should not be nil")
