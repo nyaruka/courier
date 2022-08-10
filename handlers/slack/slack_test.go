@@ -178,41 +178,41 @@ var handleTestCases = []ChannelHandleTestCase{
 
 var defaultSendTestCases = []ChannelSendTestCase{
 	{
-		Label: "Plain Send",
-		Text:  "Simple Message", URN: "slack:U0123ABCDEF",
-		Status:         "W",
-		ResponseBody:   `{"ok":true,"channel":"U0123ABCDEF"}`,
-		ResponseStatus: 200,
-		RequestBody:    `{"channel":"U0123ABCDEF","text":"Simple Message"}`,
-		SendPrep:       setSendUrl,
+		Label:   "Plain Send",
+		MsgText: "Simple Message", MsgURN: "slack:U0123ABCDEF",
+		ExpectedStatus:      "W",
+		MockResponseBody:    `{"ok":true,"channel":"U0123ABCDEF"}`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"Simple Message"}`,
+		SendPrep:            setSendUrl,
 	},
 	{
-		Label: "Unicode Send",
-		Text:  "☺", URN: "slack:U0123ABCDEF",
-		Status:         "W",
-		ResponseBody:   `{"ok":true,"channel":"U0123ABCDEF"}`,
-		ResponseStatus: 200,
-		RequestBody:    `{"channel":"U0123ABCDEF","text":"☺"}`,
-		SendPrep:       setSendUrl,
+		Label:   "Unicode Send",
+		MsgText: "☺", MsgURN: "slack:U0123ABCDEF",
+		ExpectedStatus:      "W",
+		MockResponseBody:    `{"ok":true,"channel":"U0123ABCDEF"}`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"☺"}`,
+		SendPrep:            setSendUrl,
 	},
 	{
-		Label: "Send Text Auth Error",
-		Text:  "Hello", URN: "slack:U0123ABCDEF",
-		Status:         "E",
-		ResponseBody:   `{"ok":false,"error":"invalid_auth"}`,
-		ResponseStatus: 200,
-		RequestBody:    `{"channel":"U0123ABCDEF","text":"Hello"}`,
-		SendPrep:       setSendUrl,
+		Label:   "Send Text Auth Error",
+		MsgText: "Hello", MsgURN: "slack:U0123ABCDEF",
+		ExpectedStatus:      "E",
+		MockResponseBody:    `{"ok":false,"error":"invalid_auth"}`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"Hello"}`,
+		SendPrep:            setSendUrl,
 	},
 }
 
 var fileSendTestCases = []ChannelSendTestCase{
 	{
-		Label: "Send Image",
-		Text:  "", URN: "slack:U0123ABCDEF",
-		Status:      "W",
-		Attachments: []string{"image/jpeg:https://foo.bar/image.png"},
-		Responses: map[MockedRequest]MockedResponse{
+		Label:   "Send Image",
+		MsgText: "", MsgURN: "slack:U0123ABCDEF",
+		ExpectedStatus: "W",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.png"},
+		MockResponses: map[MockedRequest]MockedResponse{
 			{
 				Method:       "POST",
 				Path:         "/files.upload",
@@ -225,11 +225,11 @@ var fileSendTestCases = []ChannelSendTestCase{
 		SendPrep: setSendUrl,
 	},
 	{
-		Label: "Send Image",
-		Text:  "", URN: "slack:U0123ABCDEF",
-		Status:      "W",
-		Attachments: []string{"image/jpeg:https://foo.bar/image.png"},
-		Responses: map[MockedRequest]MockedResponse{
+		Label:   "Send Image",
+		MsgText: "", MsgURN: "slack:U0123ABCDEF",
+		ExpectedStatus: "W",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.png"},
+		MockResponses: map[MockedRequest]MockedResponse{
 			{
 				Method:       "POST",
 				Path:         "/files.upload",
@@ -346,8 +346,8 @@ func mockAttachmentURLs(fileServer *httptest.Server, testCases []ChannelSendTest
 
 	for i, testCase := range testCases {
 		mockedCase := testCase
-		for j, attachment := range testCase.Attachments {
-			mockedCase.Attachments[j] = strings.Replace(attachment, "https://foo.bar", fileServer.URL, 1)
+		for j, attachment := range testCase.MsgAttachments {
+			mockedCase.MsgAttachments[j] = strings.Replace(attachment, "https://foo.bar", fileServer.URL, 1)
 		}
 		casesWithMockedUrls[i] = mockedCase
 	}

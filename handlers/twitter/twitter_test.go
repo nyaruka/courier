@@ -194,24 +194,24 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
-		Text: "Simple Message", URN: "twitterid:12345",
-		Status: "W", ExternalID: "133",
-		Path:         "/1.1/direct_messages/events/new.json",
-		ResponseBody: `{"event": { "id": "133"}}`, ResponseStatus: 200,
-		RequestBody: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"Simple Message"}}}}`,
-		SendPrep:    setSendURL},
+		MsgText: "Simple Message", MsgURN: "twitterid:12345",
+		ExpectedStatus: "W", ExpectedExternalID: "133",
+		ExpectedRequestPath: "/1.1/direct_messages/events/new.json",
+		MockResponseBody:    `{"event": { "id": "133"}}`, MockResponseStatus: 200,
+		ExpectedRequestBody: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"Simple Message"}}}}`,
+		SendPrep:            setSendURL},
 	{Label: "Quick Reply",
-		Text: "Are you happy?", URN: "twitterid:12345", QuickReplies: []string{"Yes", "No, but a really long no that is unreasonably long"},
-		Status: "W", ExternalID: "133",
-		ResponseBody: `{"event": { "id": "133"}}`, ResponseStatus: 200,
-		RequestBody: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"Are you happy?","quick_reply":{"type":"options","options":[{"label":"Yes"},{"label":"No, but a really long no that is unr"}]}}}}}`,
-		SendPrep:    setSendURL},
+		MsgText: "Are you happy?", MsgURN: "twitterid:12345", MsgQuickReplies: []string{"Yes", "No, but a really long no that is unreasonably long"},
+		ExpectedStatus: "W", ExpectedExternalID: "133",
+		MockResponseBody: `{"event": { "id": "133"}}`, MockResponseStatus: 200,
+		ExpectedRequestBody: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"Are you happy?","quick_reply":{"type":"options","options":[{"label":"Yes"},{"label":"No, but a really long no that is unr"}]}}}}}`,
+		SendPrep:            setSendURL},
 	{Label: "Image Send",
-		Text:   "document caption",
-		URN:    "twitterid:12345",
-		Status: "W", ExternalID: "133",
-		Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Responses: map[MockedRequest]MockedResponse{
+		MsgText:        "document caption",
+		MsgURN:         "twitterid:12345",
+		ExpectedStatus: "W", ExpectedExternalID: "133",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/1.1/media/upload.json",
@@ -265,11 +265,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep: setSendURL,
 	},
 	{Label: "Image Send",
-		Text:   "document caption",
-		URN:    "twitterid:12345",
-		Status: "W", ExternalID: "133",
-		Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Responses: map[MockedRequest]MockedResponse{
+		MsgText:        "document caption",
+		MsgURN:         "twitterid:12345",
+		ExpectedStatus: "W", ExpectedExternalID: "133",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/1.1/media/upload.json",
@@ -323,11 +323,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep: setSendURL,
 	},
 	{Label: "Video Send",
-		Text:   "document caption",
-		URN:    "twitterid:12345",
-		Status: "W", ExternalID: "133",
-		Attachments: []string{"video/mp4:https://foo.bar/video.mp4"},
-		Responses: map[MockedRequest]MockedResponse{
+		MsgText:        "document caption",
+		MsgURN:         "twitterid:12345",
+		ExpectedStatus: "W", ExpectedExternalID: "133",
+		MsgAttachments: []string{"video/mp4:https://foo.bar/video.mp4"},
+		MockResponses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/1.1/media/upload.json",
@@ -382,11 +382,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep: setSendURL,
 	},
 	{Label: "Send Audio",
-		Text:   "My audio!",
-		URN:    "twitterid:12345",
-		Status: "W", ExternalID: "133",
-		Attachments: []string{"audio/mp3:https://foo.bar/audio.mp3"},
-		Responses: map[MockedRequest]MockedResponse{
+		MsgText:        "My audio!",
+		MsgURN:         "twitterid:12345",
+		ExpectedStatus: "W", ExpectedExternalID: "133",
+		MsgAttachments: []string{"audio/mp3:https://foo.bar/audio.mp3"},
+		MockResponses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method: "POST",
 				Path:   "/1.1/direct_messages/events/new.json",
@@ -406,14 +406,14 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL},
 	{Label: "ID Error",
-		Text: "ID Error", URN: "twitterid:12345",
-		Status:       "E",
-		ResponseBody: `{ "is_error": true }`, ResponseStatus: 200,
+		MsgText: "ID Error", MsgURN: "twitterid:12345",
+		ExpectedStatus:   "E",
+		MockResponseBody: `{ "is_error": true }`, MockResponseStatus: 200,
 		SendPrep: setSendURL},
 	{Label: "Error",
-		Text: "Error", URN: "twitterid:12345",
-		Status:       "E",
-		ResponseBody: `{ "is_error": true }`, ResponseStatus: 403,
+		MsgText: "Error", MsgURN: "twitterid:12345",
+		ExpectedStatus:   "E",
+		MockResponseBody: `{ "is_error": true }`, MockResponseStatus: 403,
 		SendPrep: setSendURL},
 }
 
@@ -421,12 +421,12 @@ func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTes
 	casesWithMockedUrls := make([]ChannelSendTestCase, len(testCases))
 	for i, testCase := range testCases {
 		mockedCase := testCase
-		for j, attachment := range testCase.Attachments {
+		for j, attachment := range testCase.MsgAttachments {
 			parts := strings.SplitN(attachment, ":", 2)
 			mimeType := parts[0]
 			urlString := parts[1]
 			parsedURL, _ := url.Parse(urlString)
-			mockedCase.Attachments[j] = fmt.Sprintf("%s:%s%s", mimeType, mediaServer.URL, parsedURL.Path)
+			mockedCase.MsgAttachments[j] = fmt.Sprintf("%s:%s%s", mimeType, mediaServer.URL, parsedURL.Path)
 		}
 		casesWithMockedUrls[i] = mockedCase
 	}
