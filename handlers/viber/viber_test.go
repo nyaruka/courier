@@ -12,6 +12,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 // setSend takes care of setting the sendURL to call
@@ -181,14 +182,14 @@ func TestSending(t *testing.T) {
 
 	maxMsgLength = 160
 	descriptionMaxLength = 10
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		map[string]interface{}{
 			courier.ConfigAuthToken: "Token",
 		})
-	var invalidTokenChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
+	var invalidTokenChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		map[string]interface{}{},
 	)
-	var buttonLayoutChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2021", "",
+	var buttonLayoutChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2021", "",
 		map[string]interface{}{
 			courier.ConfigAuthToken: "Token",
 			"button_layout":         map[string]interface{}{"bg_color": "#f7bb3f", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
@@ -199,13 +200,13 @@ func TestSending(t *testing.T) {
 }
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{
 		courier.ConfigAuthToken: "Token",
 	}),
 }
 
 var testChannelsWithWelcomeMessage = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{
 		courier.ConfigAuthToken:   "Token",
 		configViberWelcomeMessage: "Welcome to VP, Please subscribe here for more.",
 	}),

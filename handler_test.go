@@ -1,4 +1,4 @@
-package courier
+package courier_test
 
 import (
 	"context"
@@ -8,35 +8,37 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
 
 func init() {
-	RegisterHandler(NewHandler())
+	courier.RegisterHandler(NewHandler())
 }
 
 type dummyHandler struct {
-	server  Server
-	backend Backend
+	server  courier.Server
+	backend courier.Backend
 }
 
 // NewHandler returns a new Dummy handler
-func NewHandler() ChannelHandler {
+func NewHandler() courier.ChannelHandler {
 	return &dummyHandler{}
 }
 
-func (h *dummyHandler) ChannelName() string       { return "Dummy Handler" }
-func (h *dummyHandler) ChannelType() ChannelType  { return ChannelType("DM") }
-func (h *dummyHandler) UseChannelRouteUUID() bool { return true }
+func (h *dummyHandler) ChannelName() string              { return "Dummy Handler" }
+func (h *dummyHandler) ChannelType() courier.ChannelType { return courier.ChannelType("DM") }
+func (h *dummyHandler) UseChannelRouteUUID() bool        { return true }
 
-func (h *dummyHandler) GetChannel(ctx context.Context, r *http.Request) (Channel, error) {
-	dmChannel := NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "DM", "2020", "US", map[string]interface{}{})
+func (h *dummyHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
+	dmChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "DM", "2020", "US", map[string]interface{}{})
 	return dmChannel, nil
 }
 
 // Initialize is called by the engine once everything is loaded
-func (h *dummyHandler) Initialize(s Server) error {
+func (h *dummyHandler) Initialize(s courier.Server) error {
 	h.server = s
 	h.backend = s.Backend()
 	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMsg)
@@ -44,12 +46,12 @@ func (h *dummyHandler) Initialize(s Server) error {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *dummyHandler) Send(ctx context.Context, msg Msg, logger *ChannelLogger) (MsgStatus, error) {
-	return h.backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgSent), nil
+func (h *dummyHandler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+	return h.backend.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgSent), nil
 }
 
 // ReceiveMsg sends the passed in message, returning any error
-func (h *dummyHandler) receiveMsg(ctx context.Context, channel Channel, w http.ResponseWriter, r *http.Request) ([]Event, error) {
+func (h *dummyHandler) receiveMsg(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	r.ParseForm()
 	from := r.Form.Get("from")
 	text := r.Form.Get("text")
@@ -61,11 +63,11 @@ func (h *dummyHandler) receiveMsg(ctx context.Context, channel Channel, w http.R
 	w.WriteHeader(200)
 	w.Write([]byte("ok"))
 	h.backend.WriteMsg(ctx, msg)
-	return []Event{msg}, nil
+	return []courier.Event{msg}, nil
 }
 
-func testConfig() *Config {
-	config := NewConfig()
+func testConfig() *courier.Config {
+	config := courier.NewConfig()
 	config.DB = "postgres://courier:courier@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
 	return config
@@ -75,8 +77,8 @@ func TestHandling(t *testing.T) {
 	assert := assert.New(t)
 
 	// create our backend and server
-	mb := NewMockBackend()
-	s := NewServer(testConfig(), mb)
+	mb := test.NewMockBackend()
+	s := courier.NewServer(testConfig(), mb)
 
 	// start everything
 	s.Start()
@@ -85,60 +87,46 @@ func TestHandling(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// create and add a new outgoing message
-	xxChannel := NewMockChannel("53e5aafa-8155-449d-9009-fcb30d54bd26", "XX", "2020", "US", map[string]interface{}{})
-	dmChannel := NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "DM", "2020", "US", map[string]interface{}{})
+	xxChannel := test.NewMockChannel("53e5aafa-8155-449d-9009-fcb30d54bd26", "XX", "2020", "US", map[string]interface{}{})
+	dmChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "DM", "2020", "US", map[string]interface{}{})
 	mb.AddChannel(dmChannel)
 
-	msg := &mockMsg{
-		channel: xxChannel,
-		id:      NewMsgID(101),
-		uuid:    NilMsgUUID,
-		text:    "test message",
-		urn:     "tel:+250788383383",
-	}
+	msg := test.NewMockMsg(courier.NewMsgID(101), courier.NilMsgUUID, xxChannel, "tel:+250788383383", "test message")
 	mb.PushOutgoingMsg(msg)
 
 	// sleep a second, sender should take care of it in that time
 	time.Sleep(time.Second)
 
 	// message should have errored because we don't have a registered handler
-	assert.Equal(1, len(mb.msgStatuses))
-	assert.Equal(msg.ID(), mb.msgStatuses[0].ID())
-	assert.Equal(MsgErrored, mb.msgStatuses[0].Status())
-	assert.Equal(1, len(mb.channelLogs))
+	assert.Equal(1, len(mb.MsgStatuses()))
+	assert.Equal(msg.ID(), mb.MsgStatuses()[0].ID())
+	assert.Equal(courier.MsgErrored, mb.MsgStatuses()[0].Status())
+	assert.Equal(1, len(mb.ChannelLogs()))
 
-	// clear our statuses
-	mb.msgStatuses = nil
+	mb.ClearMsgStatuses()
 
 	// change our channel to our dummy channel
-	msg = &mockMsg{
-		channel: dmChannel,
-		id:      NewMsgID(102),
-		uuid:    NilMsgUUID,
-		text:    "test message 2",
-		urn:     "tel:+250788383383",
-	}
+	msg = test.NewMockMsg(courier.NewMsgID(102), courier.NilMsgUUID, dmChannel, "tel:+250788383383", "test message 2")
 
 	// send it
 	mb.PushOutgoingMsg(msg)
 	time.Sleep(time.Second)
 
 	// message should be marked as wired
-	assert.Equal(1, len(mb.msgStatuses))
-	assert.Equal(msg.ID(), mb.msgStatuses[0].ID())
-	assert.Equal(MsgSent, mb.msgStatuses[0].Status())
+	assert.Equal(1, len(mb.MsgStatuses()))
+	assert.Equal(msg.ID(), mb.MsgStatuses()[0].ID())
+	assert.Equal(courier.MsgSent, mb.MsgStatuses()[0].Status())
 
-	// clear our statuses
-	mb.msgStatuses = nil
+	mb.ClearMsgStatuses()
 
 	// send the message again, should be skipped but again marked as wired
 	mb.PushOutgoingMsg(msg)
 	time.Sleep(time.Second)
 
 	// message should be marked as wired
-	assert.Equal(1, len(mb.msgStatuses))
-	assert.Equal(msg.ID(), mb.msgStatuses[0].ID())
-	assert.Equal(MsgWired, mb.msgStatuses[0].Status())
+	assert.Equal(1, len(mb.MsgStatuses()))
+	assert.Equal(msg.ID(), mb.MsgStatuses()[0].ID())
+	assert.Equal(courier.MsgWired, mb.MsgStatuses()[0].Status())
 
 	// try to receive a message instead
 	resp, err := http.Get("http://localhost:8080/c/dm/e4bb1578-29da-4fa5-a214-9da19dd24230/receive")

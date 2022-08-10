@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,13 +48,13 @@ func TestSplitMsg(t *testing.T) {
 
 func TestSplitMsgByChannel(t *testing.T) {
 	assert := assert.New(t)
-	var channelWithMaxLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US",
+	var channelWithMaxLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US",
 		map[string]interface{}{
 			courier.ConfigUsername:  "user1",
 			courier.ConfigPassword:  "pass1",
 			courier.ConfigMaxLength: 25,
 		})
-	var channelWithoutMaxLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US",
+	var channelWithoutMaxLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US",
 		map[string]interface{}{
 			courier.ConfigUsername: "user1",
 			courier.ConfigPassword: "pass1",

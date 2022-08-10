@@ -13,11 +13,12 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/urns"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FB", "1234", "",
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FB", "1234", "",
 		map[string]interface{}{courier.ConfigAuthToken: "a123", courier.ConfigSecret: "mysecret"}),
 }
 
@@ -628,6 +629,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FB", "2020", "US", map[string]interface{}{courier.ConfigAuthToken: "access_token"})
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FB", "2020", "US", map[string]interface{}{courier.ConfigAuthToken: "access_token"})
+
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 }

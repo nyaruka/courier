@@ -11,10 +11,11 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "TWT", "tweeter", "",
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "TWT", "tweeter", "",
 		map[string]interface{}{
 			configHandleID:          "835740314006511618",
 			configAPIKey:            "apiKey",

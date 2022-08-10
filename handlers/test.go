@@ -16,6 +16,7 @@ import (
 
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
@@ -207,8 +208,8 @@ func newServer(backend courier.Backend) courier.Server {
 }
 
 // RunChannelSendTestCases runs all the passed in test cases against the channel
-func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler courier.ChannelHandler, testCases []ChannelSendTestCase, setupBackend func(*courier.MockBackend)) {
-	mb := courier.NewMockBackend()
+func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler courier.ChannelHandler, testCases []ChannelSendTestCase, setupBackend func(*test.MockBackend)) {
+	mb := test.NewMockBackend()
 	if setupBackend != nil {
 		setupBackend(mb)
 	}
@@ -363,7 +364,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 // RunChannelTestCases runs all the passed in tests cases for the passed in channel configurations
 func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelHandleTestCase) {
-	mb := courier.NewMockBackend()
+	mb := test.NewMockBackend()
 	s := newServer(mb)
 
 	for _, ch := range channels {
@@ -475,7 +476,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 
 // RunChannelBenchmarks runs all the passed in test cases for the passed in channels
 func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelHandleTestCase) {
-	mb := courier.NewMockBackend()
+	mb := test.NewMockBackend()
 	s := newServer(mb)
 
 	for _, ch := range channels {

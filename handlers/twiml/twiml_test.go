@@ -9,23 +9,24 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/urns"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
 }
 
 var tmsTestChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TMS", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TMS", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
 }
 
 var twTestChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TW", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TW", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
 }
 
 var swTestChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
 }
 
 var (
@@ -255,7 +256,7 @@ func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, twTestChannels, newTWIMLHandler("TW", "TwiML API", true), twTestCases)
 	RunChannelTestCases(t, swTestChannels, newTWIMLHandler("SW", "SignalWire", false), swTestCases)
 
-	waChannel := courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
+	waChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
 		map[string]interface{}{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "6789",
@@ -264,7 +265,7 @@ func TestHandler(t *testing.T) {
 	waChannel.SetScheme(urns.WhatsAppScheme)
 	RunChannelTestCases(t, []courier.Channel{waChannel}, newTWIMLHandler("T", "TwilioWhatsApp", true), waTestCases)
 
-	twaChannel := courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
+	twaChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
 		map[string]interface{}{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "6789",
@@ -283,7 +284,7 @@ func BenchmarkHandler(b *testing.B) {
 // setSendURL takes care of setting the send_url to our test server host
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
 	if c.ChannelType().String() == "TW" || c.ChannelType().String() == "SW" {
-		c.(*courier.MockChannel).SetConfig("send_url", s.URL)
+		c.(*test.MockChannel).SetConfig("send_url", s.URL)
 	} else {
 		twilioBaseURL = s.URL
 	}
@@ -645,25 +646,25 @@ var twaSendTestCases = []ChannelSendTestCase{
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US",
 		map[string]interface{}{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken"})
 
-	var tmsDefaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56cd", "TMS", "2021", "US",
+	var tmsDefaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56cd", "TMS", "2021", "US",
 		map[string]interface{}{
 			configMessagingServiceSID: "messageServiceSID",
 			configAccountSID:          "accountSID",
 			courier.ConfigAuthToken:   "authToken"})
 
-	var twDefaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TW", "2020", "US",
+	var twDefaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TW", "2020", "US",
 		map[string]interface{}{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken",
 			configSendURL:           "SEND_URL",
 		})
 
-	var swChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US",
+	var swChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US",
 		map[string]interface{}{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken",
@@ -675,7 +676,7 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, twDefaultChannel, newTWIMLHandler("TW", "TwiML", true), twDefaultSendTestCases, nil)
 	RunChannelSendTestCases(t, swChannel, newTWIMLHandler("SW", "SignalWire", false), swSendTestCases, nil)
 
-	waChannel := courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
+	waChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
 		map[string]interface{}{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken",
@@ -685,7 +686,7 @@ func TestSending(t *testing.T) {
 
 	RunChannelSendTestCases(t, waChannel, newTWIMLHandler("T", "Twilio Whatsapp", true), waSendTestCases, nil)
 
-	twaChannel := courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
+	twaChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
 		map[string]interface{}{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken",

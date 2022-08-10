@@ -7,6 +7,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 // setSendURL takes care of setting the sendURL to call
@@ -52,7 +53,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US",
 		map[string]interface{}{
 			courier.ConfigAPIKey: "API-KEY",
 		})
@@ -61,7 +62,7 @@ func TestSending(t *testing.T) {
 }
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US",
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US",
 		map[string]interface{}{
 			courier.ConfigAPIKey: "12345",
 		}),

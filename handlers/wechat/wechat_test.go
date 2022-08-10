@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 
@@ -26,7 +27,7 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US",
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US",
 		map[string]interface{}{courier.ConfigSecret: "secret", configAppSecret: "app-secret", configAppID: "app-id"}),
 }
 
@@ -254,7 +255,7 @@ func TestDescribe(t *testing.T) {
 	WCAPI := buildMockWCAPI(testCases)
 	defer WCAPI.Close()
 
-	mb := courier.NewMockBackend()
+	mb := test.NewMockBackend()
 	conn := mb.RedisPool().Get()
 
 	_, err := conn.Do("SET", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
@@ -283,7 +284,7 @@ func TestDescribe(t *testing.T) {
 }
 
 func TestBuildMediaRequest(t *testing.T) {
-	mb := courier.NewMockBackend()
+	mb := test.NewMockBackend()
 	conn := mb.RedisPool().Get()
 
 	_, err := conn.Do("SET", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
@@ -363,7 +364,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:           setSendURL},
 }
 
-func setupBackend(mb *courier.MockBackend) {
+func setupBackend(mb *test.MockBackend) {
 	conn := mb.RedisPool().Get()
 
 	_, err := conn.Do("SET", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
@@ -376,6 +377,6 @@ func setupBackend(mb *courier.MockBackend) {
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US", map[string]interface{}{configAppSecret: "secret", configAppID: "app-id"})
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US", map[string]interface{}{configAppSecret: "secret", configAppID: "app-id"})
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, setupBackend)
 }

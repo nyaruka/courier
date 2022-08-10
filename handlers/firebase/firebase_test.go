@@ -7,6 +7,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 var (
@@ -35,12 +36,12 @@ Duis eu arcu pharetra, laoreet nunc at, pharetra sapien. Nulla eu libero diam.
 Donec euismod dapibus ligula, sit amet hendrerit neque vulputate ac.`
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCM", "1234", "",
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCM", "1234", "",
 		map[string]interface{}{
 			configKey:   "FCMKey",
 			configTitle: "FCMTitle",
 		}),
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCM", "1234", "",
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCM", "1234", "",
 		map[string]interface{}{
 			configKey:          "FCMKey",
 			configNotification: true,

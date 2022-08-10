@@ -14,6 +14,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel(
+	test.NewMockChannel(
 		channelUUID,
 		"VK",
 		"123456789",

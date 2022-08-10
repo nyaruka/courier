@@ -7,6 +7,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/dates"
 )
 
@@ -62,7 +63,7 @@ var (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CM", "2020", "MW", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CM", "2020", "MW", nil),
 }
 
 var handleTestCases = []ChannelHandleTestCase{
@@ -93,7 +94,7 @@ func BenchmarkHandler(b *testing.B) {
 
 // setSendURL takes care of setting the sendURL to call
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	c.(*courier.MockChannel).SetConfig(courier.ConfigSendURL, s.URL)
+	c.(*test.MockChannel).SetConfig(courier.ConfigSendURL, s.URL)
 	sendURL = s.URL
 
 }
@@ -130,7 +131,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CM", "2020", "MW",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CM", "2020", "MW",
 		map[string]interface{}{
 			"password": "Password",
 			"username": "Username",

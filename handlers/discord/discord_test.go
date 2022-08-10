@@ -6,6 +6,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils"
 )
 
@@ -18,7 +19,7 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("bac782c2-7aeb-4389-92f5-97887744f573", "DS", "discord", "US", map[string]interface{}{}),
+	test.NewMockChannel("bac782c2-7aeb-4389-92f5-97887744f573", "DS", "discord", "US", map[string]interface{}{}),
 }
 
 var testCases = []ChannelHandleTestCase{
@@ -42,7 +43,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	// this is actually a path, which we'll combine with the test server URL
 	sendURL := c.StringConfigForKey("send_path", "/discord/rp/send")
 	sendURL, _ = utils.AddURLPath(s.URL, sendURL)
-	c.(*courier.MockChannel).SetConfig(courier.ConfigSendURL, sendURL)
+	c.(*test.MockChannel).SetConfig(courier.ConfigSendURL, sendURL)
 }
 func TestSending(t *testing.T) {
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 const (
@@ -14,7 +15,7 @@ const (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "RC", "1234", "",
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "RC", "1234", "",
 		map[string]interface{}{
 			configBaseURL:     "https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c",
 			configSecret:      "123456789",
@@ -104,7 +105,7 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	c.(*courier.MockChannel).SetConfig(configBaseURL, s.URL)
+	c.(*test.MockChannel).SetConfig(configBaseURL, s.URL)
 }
 
 var sendTestCases = []handlers.ChannelSendTestCase{
