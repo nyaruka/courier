@@ -54,10 +54,10 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+63911231234",
-		Status:       "W",
-		ResponseBody: "Success", ResponseStatus: 200,
-		PostParams: map[string]string{
+		MsgText: "Simple Message", MsgURN: "tel:+63911231234",
+		ExpectedStatus:   "W",
+		MockResponseBody: "Success", MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{
 			"message":       "Simple Message",
 			"message_type":  "SEND",
 			"mobile_number": "63911231234",
@@ -69,11 +69,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL},
 	{Label: "Plain Reply",
-		Text: "Simple Message", URN: "tel:+63911231234",
-		Status:               "W",
-		ResponseToExternalID: "external-id",
-		ResponseBody:         "Success", ResponseStatus: 200,
-		PostParams: map[string]string{
+		MsgText: "Simple Message", MsgURN: "tel:+63911231234",
+		ExpectedStatus:          "W",
+		MsgResponseToExternalID: "external-id",
+		MockResponseBody:        "Success", MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{
 			"message":       "Simple Message",
 			"message_type":  "REPLY",
 			"request_id":    "external-id",
@@ -86,11 +86,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL},
 	{Label: "Failed Reply use Send",
-		Text: "Simple Message", URN: "tel:+63911231234",
-		ResponseToExternalID: "external-id",
-		ResponseBody:         `{"status":400,"message":"BAD REQUEST","description":"Invalid\\/Used Request ID"}`,
-		ResponseStatus:       400,
-		PostParams: map[string]string{
+		MsgText: "Simple Message", MsgURN: "tel:+63911231234",
+		MsgResponseToExternalID: "external-id",
+		MockResponseBody:        `{"status":400,"message":"BAD REQUEST","description":"Invalid\\/Used Request ID"}`,
+		MockResponseStatus:      400,
+		ExpectedPostParams: map[string]string{
 			"message":       "Simple Message",
 			"message_type":  "SEND",
 			"mobile_number": "63911231234",
@@ -102,10 +102,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL},
 	{Label: "Unicode Send",
-		Text: "☺", URN: "tel:+63911231234",
-		Status:       "W",
-		ResponseBody: "Success", ResponseStatus: 200,
-		PostParams: map[string]string{
+		MsgText: "☺", MsgURN: "tel:+63911231234",
+		ExpectedStatus:   "W",
+		MockResponseBody: "Success", MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{
 			"message":       "☺",
 			"message_type":  "SEND",
 			"mobile_number": "63911231234",
@@ -117,11 +117,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL},
 	{Label: "Long Send",
-		Text:         "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		URN:          "tel:+63911231234",
-		Status:       "W",
-		ResponseBody: "Success", ResponseStatus: 200,
-		PostParams: map[string]string{
+		MsgText:          "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:           "tel:+63911231234",
+		ExpectedStatus:   "W",
+		MockResponseBody: "Success", MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{
 			"message":       "I need to keep adding more things to make it work",
 			"message_type":  "SEND",
 			"mobile_number": "63911231234",
@@ -133,10 +133,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL},
 	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+63911231234", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "W",
-		ResponseBody: "Success", ResponseStatus: 200,
-		PostParams: map[string]string{
+		MsgText: "My pic!", MsgURN: "tel:+63911231234", MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		ExpectedStatus:   "W",
+		MockResponseBody: "Success", MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{
 			"message":       "My pic!\nhttps://foo.bar/image.jpg",
 			"message_type":  "SEND",
 			"mobile_number": "63911231234",
@@ -148,10 +148,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL},
 	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+63911231234",
-		Status:       "E",
-		ResponseBody: `ERROR`, ResponseStatus: 401,
-		PostParams: map[string]string{
+		MsgText: "Error Message", MsgURN: "tel:+63911231234",
+		ExpectedStatus:   "E",
+		MockResponseBody: `ERROR`, MockResponseStatus: 401,
+		ExpectedPostParams: map[string]string{
 			"message":       "Error Message",
 			"message_type":  "SEND",
 			"mobile_number": "63911231234",

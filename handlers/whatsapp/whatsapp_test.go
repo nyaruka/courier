@@ -370,506 +370,611 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Link Sending",
-		Text: "Link Sending https://link.com", URN: "whatsapp:250788123123", Path: "/v1/messages",
-		Status: "W", ExternalID: "157b5e14568e8",
-		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
-		RequestBody: `{"to":"250788123123","type":"text","preview_url":true,"text":{"body":"Link Sending https://link.com"}}`,
-		SendPrep:    setSendURL},
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "whatsapp:250788123123", Path: "/v1/messages",
-		Status: "W", ExternalID: "157b5e14568e8",
-		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
-		RequestBody: `{"to":"250788123123","type":"text","text":{"body":"Simple Message"}}`,
-		SendPrep:    setSendURL},
-	{Label: "Unicode Send",
-		Text: "☺", URN: "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
-		RequestBody: `{"to":"250788123123","type":"text","text":{"body":"☺"}}`,
-		SendPrep:    setSendURL},
-	{Label: "Error",
-		Text: "Error", URN: "whatsapp:250788123123",
-		Status:       "E",
-		ResponseBody: `{ "errors": [{ "title": "Error Sending" }] }`, ResponseStatus: 403,
-		RequestBody: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
-		SendPrep:    setSendURL},
-	{Label: "Rate Limit Engaged",
-		Text: "Error", URN: "whatsapp:250788123123",
-		Status:       "E",
-		ResponseBody: `{ "errors": [{ "title": "Too many requests" }] }`, ResponseStatus: 429,
-		RequestBody: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
-		SendPrep:    setSendURL},
-	{Label: "No Message ID",
-		Text: "Error", URN: "whatsapp:250788123123",
-		Status:       "E",
-		ResponseBody: `{ "messages": [] }`, ResponseStatus: 200,
-		RequestBody: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
-		SendPrep:    setSendURL},
-	{Label: "Error Field",
-		Text: "Error", URN: "whatsapp:250788123123",
-		Status:       "E",
-		ResponseBody: `{ "errors": [{"title":"Error Sending"}] }`, ResponseStatus: 200,
-		RequestBody: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
-		SendPrep:    setSendURL},
-	{Label: "Audio Send",
-		Text:   "audio has no caption, sent as text",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Attachments: []string{"audio/mpeg:https://foo.bar/audio.mp3"},
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+	{
+		Label:               "Link Sending",
+		MsgText:             "Link Sending https://link.com",
+		MsgURN:              "whatsapp:250788123123",
+		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  201,
+		ExpectedRequestBody: `{"to":"250788123123","type":"text","preview_url":true,"text":{"body":"Link Sending https://link.com"}}`,
+		ExpectedRequestPath: "/v1/messages",
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Plain Send",
+		MsgText:             "Simple Message",
+		MsgURN:              "whatsapp:250788123123",
+		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  201,
+		ExpectedRequestBody: `{"to":"250788123123","type":"text","text":{"body":"Simple Message"}}`,
+		ExpectedRequestPath: "/v1/messages",
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Unicode Send",
+		MsgText:             "☺",
+		MsgURN:              "whatsapp:250788123123",
+		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  201,
+		ExpectedRequestBody: `{"to":"250788123123","type":"text","text":{"body":"☺"}}`,
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Error",
+		MsgText:             "Error",
+		MsgURN:              "whatsapp:250788123123",
+		MockResponseBody:    `{ "errors": [{ "title": "Error Sending" }] }`,
+		MockResponseStatus:  403,
+		ExpectedRequestBody: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
+		ExpectedStatus:      "E",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Rate Limit Engaged",
+		MsgText:             "Error",
+		MsgURN:              "whatsapp:250788123123",
+		MockResponseBody:    `{ "errors": [{ "title": "Too many requests" }] }`,
+		MockResponseStatus:  429,
+		ExpectedRequestBody: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
+		ExpectedStatus:      "E",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "No Message ID",
+		MsgText:             "Error",
+		MsgURN:              "whatsapp:250788123123",
+		MockResponseBody:    `{ "messages": [] }`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
+		ExpectedStatus:      "E",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Error Field",
+		MsgText:             "Error",
+		MsgURN:              "whatsapp:250788123123",
+		MockResponseBody:    `{ "errors": [{"title":"Error Sending"}] }`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
+		ExpectedStatus:      "E",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:          "Audio Send",
+		MsgText:        "audio has no caption, sent as text",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"audio/mpeg:https://foo.bar/audio.mp3"},
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
-			MockedRequest{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"text","text":{"body":"audio has no caption, sent as text"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
 		},
-		SendPrep: setSendURL,
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
 	},
-	{Label: "Audio Send with link in text",
-		Text:   "audio has no caption, sent as text with a https://example.com",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Attachments: []string{"audio/mpeg:https://foo.bar/audio.mp3"},
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+	{
+		Label:          "Audio Send with link in text",
+		MsgText:        "audio has no caption, sent as text with a https://example.com",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"audio/mpeg:https://foo.bar/audio.mp3"},
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
-			MockedRequest{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"text","preview_url":true,"text":{"body":"audio has no caption, sent as text with a https://example.com"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
 		},
-		SendPrep: setSendURL,
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
 	},
-	{Label: "Document Send",
-		Text:   "document caption",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+	{
+		Label:          "Document Send",
+		MsgText:        "document caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
 		},
-		SendPrep: setSendURL,
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
 	},
-	{Label: "Image Send",
-		Text:   "document caption",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+	{
+		Label:          "Image Send",
+		MsgText:        "document caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg","caption":"document caption"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
 		},
-		SendPrep: setSendURL,
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
 	},
-	{Label: "Video Send",
-		Text:   "video caption",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Attachments: []string{"video/mp4:https://foo.bar/video.mp4"},
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+	{
+		Label:          "Video Send",
+		MsgText:        "video caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"video/mp4:https://foo.bar/video.mp4"},
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"video","video":{"link":"https://foo.bar/video.mp4","caption":"video caption"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
 		},
-		SendPrep: setSendURL,
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
 	},
-	{Label: "Template Send",
-		Text:   "templated message",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Metadata:     json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "variables": ["Chef", "tomorrow"]}}`),
-		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 200,
-		RequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
-		SendPrep:    setSendURL,
+	{
+		Label:               "Template Send",
+		MsgText:             "templated message",
+		MsgURN:              "whatsapp:250788123123",
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "variables": ["Chef", "tomorrow"]}}`),
+		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		SendPrep:            setSendURL,
 	},
-	{Label: "Template Country Language",
-		Text:   "templated message",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Metadata:     json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "country": "US", "variables": ["Chef", "tomorrow"]}}`),
-		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 200,
-		RequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
-		SendPrep:    setSendURL,
+	{
+		Label:               "Template Country Language",
+		MsgText:             "templated message",
+		MsgURN:              "whatsapp:250788123123",
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "country": "US", "variables": ["Chef", "tomorrow"]}}`),
+		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		SendPrep:            setSendURL,
 	},
-	{Label: "Template Namespace",
-		Text:   "templated message",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Metadata:     json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "namespace": "wa_template_namespace", "language": "eng", "country": "US", "variables": ["Chef", "tomorrow"]}}`),
-		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 200,
-		RequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"wa_template_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
-		SendPrep:    setSendURL,
+	{
+		Label:               "Template Namespace",
+		MsgText:             "templated message",
+		MsgURN:              "whatsapp:250788123123",
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "namespace": "wa_template_namespace", "language": "eng", "country": "US", "variables": ["Chef", "tomorrow"]}}`),
+		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"wa_template_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		SendPrep:            setSendURL,
 	},
-	{Label: "Template Invalid Language",
-		Text: "templated message", URN: "whatsapp:250788123123",
-		Error:    `unable to decode template: {"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}} for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c56ab: unable to find mapping for language: bnt`,
-		Metadata: json.RawMessage(`{"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}}`),
+	{
+		Label:         "Template Invalid Language",
+		MsgText:       "templated message",
+		MsgURN:        "whatsapp:250788123123",
+		ExpectedError: `unable to decode template: {"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}} for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c56ab: unable to find mapping for language: bnt`,
+		MsgMetadata:   json.RawMessage(`{"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}}`),
 	},
-	{Label: "WhatsApp Contact Error",
-		Text: "contact status error", URN: "whatsapp:250788123123",
-		Status: "E",
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+	{
+		Label:   "WhatsApp Contact Error",
+		MsgText: "contact status error",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"text","text":{"body":"contact status error"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 404,
 				Body:   `{"errors": [{"code":1006,"title":"Resource not found","details":"unknown contact"}]}`,
 			},
-			MockedRequest{
+			{
 				Method: "POST",
 				Path:   "/v1/contacts",
 				Body:   `{"blocking":"wait","contacts":["+250788123123"],"force_check":true}`,
-			}: MockedResponse{
+			}: {
 				Status: 200,
 				Body:   `{"contacts":[{"input":"+250788123123","status":"invalid"}]}`,
 			},
 		},
-		SendPrep: setSendURL,
+		ExpectedStatus: "E",
+		SendPrep:       setSendURL,
 	},
-	{Label: "Try Messaging Again After WhatsApp Contact Check",
-		Text: "try again", URN: "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+	{
+		Label:   "Try Messaging Again After WhatsApp Contact Check",
+		MsgText: "try again",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"text","text":{"body":"try again"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 404,
 				Body:   `{"errors": [{"code": 1006, "title": "Resource not found", "details": "unknown contact"}]}`,
 			},
-			MockedRequest{
+			{
 				Method: "POST",
 				Path:   "/v1/contacts",
 				Body:   `{"blocking":"wait","contacts":["+250788123123"],"force_check":true}`,
-			}: MockedResponse{
+			}: {
 				Status: 200,
 				Body:   `{"contacts": [{"input": "+250788123123", "status": "valid", "wa_id": "250788123123"}]}`,
 			},
-			MockedRequest{
+			{
 				Method:   "POST",
 				Path:     "/v1/messages",
 				RawQuery: "retry=1",
 				Body:     `{"to":"250788123123","type":"text","text":{"body":"try again"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{"messages": [{"id": "157b5e14568e8"}]}`,
 			},
 		},
-		SendPrep: setSendURL,
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
 	},
-	{Label: "Try Messaging Again After WhatsApp Contact Check",
-		Text: "try again", URN: "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+	{
+		Label:   "Try Messaging Again After WhatsApp Contact Check",
+		MsgText: "try again",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"text","text":{"body":"try again"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 404,
 				Body:   `{"errors": [{"code": 1006, "title": "Resource not found", "details": "Could not retrieve phone number from contact store"}]}`,
 			},
-			MockedRequest{
+			{
 				Method: "POST",
 				Path:   "/v1/contacts",
 				Body:   `{"blocking":"wait","contacts":["+250788123123"],"force_check":true}`,
-			}: MockedResponse{
+			}: {
 				Status: 200,
 				Body:   `{"contacts": [{"input": "+250788123123", "status": "valid", "wa_id": "250788123123"}]}`,
 			},
-			MockedRequest{
+			{
 				Method:   "POST",
 				Path:     "/v1/messages",
 				RawQuery: "retry=1",
 				Body:     `{"to":"250788123123","type":"text","text":{"body":"try again"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{"messages": [{"id": "157b5e14568e8"}]}`,
 			},
 		},
-		SendPrep: setSendURL,
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
 	},
-	{Label: "Try Messaging Again After WhatsApp Contact Check With Returned WhatsApp ID",
-		Text: "try again", URN: "whatsapp:5582999887766",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+	{
+		Label:   "Try Messaging Again After WhatsApp Contact Check With Returned WhatsApp ID",
+		MsgText: "try again",
+		MsgURN:  "whatsapp:5582999887766",
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"5582999887766","type":"text","text":{"body":"try again"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 404,
 				Body:   `{"errors": [{"code": 1006, "title": "Resource not found", "details": "unknown contact"}]}`,
 			},
-			MockedRequest{
+			{
 				Method: "POST",
 				Path:   "/v1/contacts",
 				Body:   `{"blocking":"wait","contacts":["+5582999887766"],"force_check":true}`,
-			}: MockedResponse{
+			}: {
 				Status: 200,
 				Body:   `{"contacts": [{"input": "+5582999887766", "status": "valid", "wa_id": "558299887766"}]}`,
 			},
-			MockedRequest{
+			{
 				Method:   "POST",
 				Path:     "/v1/messages",
 				RawQuery: "retry=1",
 				Body:     `{"to":"558299887766","type":"text","text":{"body":"try again"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{"messages": [{"id": "157b5e14568e8"}]}`,
 			},
 		},
-		SendPrep: setSendURL,
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
 	},
-	{Label: "Interactive Button Message Send",
-		Text: "Interactive Button Msg", URN: "whatsapp:250788123123", QuickReplies: []string{"BUTTON1"},
-		Status: "W", ExternalID: "157b5e14568e8",
-		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
-		RequestBody: `{"to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
-		SendPrep:    setSendURL},
-	{Label: "Interactive List Message Send",
-		Text: "Interactive List Msg", URN: "whatsapp:250788123123", QuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
-		Status: "W", ExternalID: "157b5e14568e8",
-		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
-		RequestBody: `{"to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
-		SendPrep:    setSendURL},
-	{Label: "Interactive Button Message Send with attachment",
-		Text: "Interactive Button Msg", URN: "whatsapp:250788123123", QuickReplies: []string{"BUTTON1"},
-		Status: "W", ExternalID: "157b5e14568e8",
-		Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+	{
+		Label:               "Interactive Button Message Send",
+		MsgText:             "Interactive Button Msg",
+		MsgURN:              "whatsapp:250788123123",
+		MsgQuickReplies:     []string{"BUTTON1"},
+		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  201,
+		ExpectedRequestBody: `{"to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		SendPrep:            setSendURL},
+	{
+		Label:               "Interactive List Message Send",
+		MsgText:             "Interactive List Msg",
+		MsgURN:              "whatsapp:250788123123",
+		MsgQuickReplies:     []string{"ROW1", "ROW2", "ROW3", "ROW4"},
+		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  201,
+		ExpectedRequestBody: `{"to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		SendPrep:            setSendURL},
+	{
+		Label:           "Interactive Button Message Send with attachment",
+		MsgText:         "Interactive Button Msg",
+		MsgURN:          "whatsapp:250788123123",
+		MsgQuickReplies: []string{"BUTTON1"},
+		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
-			MockedRequest{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
 		},
-		SendPrep: setSendURL},
-	{Label: "Interactive List Message Send with attachment",
-		Text: "Interactive List Msg", URN: "whatsapp:250788123123", QuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
-		Status: "W", ExternalID: "157b5e14568e8",
-		Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:           "Interactive List Message Send with attachment",
+		MsgText:         "Interactive List Msg",
+		MsgURN:          "whatsapp:250788123123",
+		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
+		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
-			MockedRequest{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
 		},
-		SendPrep: setSendURL},
-	{Label: "Update URN with wa_id returned",
-		Text: "Simple Message", URN: "whatsapp:5511987654321", Path: "/v1/messages",
-		Status: "W", ExternalID: "157b5e14568e8",
-		ResponseBody: `{ "contacts":[{"input":"5511987654321","wa_id":"551187654321"}], "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 201,
-		RequestBody: `{"to":"5511987654321","type":"text","text":{"body":"Simple Message"}}`,
-		SendPrep:    setSendURL,
-		NewURN:      "whatsapp:551187654321"},
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:               "Update URN with wa_id returned",
+		MsgText:             "Simple Message",
+		MsgURN:              "whatsapp:5511987654321",
+		MockResponseBody:    `{ "contacts":[{"input":"5511987654321","wa_id":"551187654321"}], "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  201,
+		ExpectedRequestBody: `{"to":"5511987654321","type":"text","text":{"body":"Simple Message"}}`,
+		ExpectedRequestPath: "/v1/messages",
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		ExpectedNewURN:      "whatsapp:551187654321",
+		SendPrep:            setSendURL,
+	},
 }
 
 var mediaCacheSendTestCases = []ChannelSendTestCase{
-	{Label: "Media Upload Error",
-		Text:   "document caption",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+	{
+		Label:          "Media Upload Error",
+		MsgText:        "document caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/media",
 				Body:   "media bytes",
-			}: MockedResponse{
+			}: {
 				Status: 401,
 				Body:   `{ "errors": [{"code":1005,"title":"Access denied","details":"Invalid credentials."}] }`,
 			},
-			MockedRequest{
+			{
 				Method:       "POST",
 				Path:         "/v1/messages",
 				BodyContains: `/document.pdf`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
 		},
-		SendPrep: setSendURL,
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
 	},
-	{Label: "Previous Media Upload Error",
-		Text:   "document caption",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+	{
+		Label:          "Previous Media Upload Error",
+		MsgText:        "document caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method:       "POST",
 				Path:         "/v1/messages",
 				BodyContains: `/document.pdf`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
 		},
-		SendPrep: setSendURL,
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
 	},
-	{Label: "Media Upload OK",
-		Text:   "video caption",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Attachments: []string{"video/mp4:https://foo.bar/video.mp4"},
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+	{
+		Label:          "Media Upload OK",
+		MsgText:        "video caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"video/mp4:https://foo.bar/video.mp4"},
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/media",
 				Body:   "media bytes",
-			}: MockedResponse{
+			}: {
 				Status: 200,
 				Body:   `{ "media" : [{"id": "36c484d1-1283-4b94-988d-7276bdec4de2"}] }`,
 			},
-			MockedRequest{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"video","video":{"id":"36c484d1-1283-4b94-988d-7276bdec4de2","caption":"video caption"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
 		},
-		SendPrep: setSendURL,
-	},
-	{Label: "Cached Media",
-		Text:   "video caption",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Attachments: []string{"video/mp4:https://foo.bar/video.mp4"},
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
-				Method: "POST",
-				Path:   "/v1/messages",
-				Body:   `{"to":"250788123123","type":"video","video":{"id":"36c484d1-1283-4b94-988d-7276bdec4de2","caption":"video caption"}}`,
-			}: MockedResponse{
-				Status: 201,
-				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-			},
-		},
-		SendPrep: setSendURL,
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
 	},
 	{
-		Label:  "Document Upload OK",
-		Text:   "document caption",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Attachments: []string{"application/pdf:https://foo.bar/document2.pdf"},
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		Label:          "Cached Media",
+		MsgText:        "video caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"video/mp4:https://foo.bar/video.mp4"},
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
+				Method: "POST",
+				Path:   "/v1/messages",
+				Body:   `{"to":"250788123123","type":"video","video":{"id":"36c484d1-1283-4b94-988d-7276bdec4de2","caption":"video caption"}}`,
+			}: {
+				Status: 201,
+				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
+			},
+		},
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:          "Document Upload OK",
+		MsgText:        "document caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"application/pdf:https://foo.bar/document2.pdf"},
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/media",
 				Body:   "media bytes",
-			}: MockedResponse{
+			}: {
 				Status: 200,
 				Body:   `{ "media" : [{"id": "25c484d1-1283-4b94-988d-7276bdec4ef3"}] }`,
 			},
-			MockedRequest{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"document","document":{"id":"25c484d1-1283-4b94-988d-7276bdec4ef3","caption":"document caption","filename":"document2.pdf"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
 		},
-		SendPrep: setSendURL,
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
 	},
-	{Label: "Cached Document",
-		Text:   "document caption",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Attachments: []string{"application/pdf:https://foo.bar/document2.pdf"},
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+	{
+		Label:          "Cached Document",
+		MsgText:        "document caption",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"application/pdf:https://foo.bar/document2.pdf"},
+		MockResponses: map[MockedRequest]MockedResponse{
+			{
 				Method: "POST",
 				Path:   "/v1/messages",
 				Body:   `{"to":"250788123123","type":"document","document":{"id":"25c484d1-1283-4b94-988d-7276bdec4ef3","caption":"document caption","filename":"document2.pdf"}}`,
-			}: MockedResponse{
+			}: {
 				Status: 201,
 				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
 			},
 		},
-		SendPrep: setSendURL,
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "157b5e14568e8",
+		SendPrep:           setSendURL,
 	},
 }
 
 var hsmSupportSendTestCases = []ChannelSendTestCase{
-	{Label: "Template Send",
-		Text:   "templated message",
-		URN:    "whatsapp:250788123123",
-		Status: "W", ExternalID: "157b5e14568e8",
-		Metadata:     json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "variables": ["Chef", "tomorrow"]}}`),
-		ResponseBody: `{ "messages": [{"id": "157b5e14568e8"}] }`, ResponseStatus: 200,
-		RequestBody: `{"to":"250788123123","type":"hsm","hsm":{"namespace":"waba_namespace","element_name":"revive_issue","language":{"policy":"deterministic","code":"en"},"localizable_params":[{"default":"Chef"},{"default":"tomorrow"}]}}`,
-		SendPrep:    setSendURL,
+	{
+		Label:               "Template Send",
+		MsgText:             "templated message",
+		MsgURN:              "whatsapp:250788123123",
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "variables": ["Chef", "tomorrow"]}}`),
+		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"to":"250788123123","type":"hsm","hsm":{"namespace":"waba_namespace","element_name":"revive_issue","language":{"policy":"deterministic","code":"en"},"localizable_params":[{"default":"Chef"},{"default":"tomorrow"}]}}`,
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		SendPrep:            setSendURL,
 	},
 }
 
@@ -879,8 +984,8 @@ func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTes
 	for i, testCase := range testCases {
 		mockedCase := testCase
 
-		for j, attachment := range testCase.Attachments {
-			mockedCase.Attachments[j] = strings.Replace(attachment, "https://foo.bar", mediaServer.URL, 1)
+		for j, attachment := range testCase.MsgAttachments {
+			mockedCase.MsgAttachments[j] = strings.Replace(attachment, "https://foo.bar", mediaServer.URL, 1)
 		}
 		casesWithMockedUrls[i] = mockedCase
 	}

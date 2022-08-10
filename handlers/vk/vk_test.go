@@ -385,13 +385,13 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 
 var sendTestCases = []ChannelSendTestCase{
 	{
-		Label:      "Send simple message",
-		Text:       "Simple message",
-		URN:        "vk:123456789",
-		Status:     "S",
-		SendPrep:   setSendURL,
-		ExternalID: "1",
-		Responses: map[MockedRequest]MockedResponse{
+		Label:              "Send simple message",
+		MsgText:            "Simple message",
+		MsgURN:             "vk:123456789",
+		ExpectedStatus:     "S",
+		SendPrep:           setSendURL,
+		ExpectedExternalID: "1",
+		MockResponses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method:   "POST",
 				Path:     actionSendMessage,
@@ -403,14 +403,14 @@ var sendTestCases = []ChannelSendTestCase{
 		},
 	},
 	{
-		Label:       "Send photo attachment",
-		Text:        "",
-		URN:         "vk:123456789",
-		Attachments: []string{"image/png:https://foo.bar/image.png"},
-		Status:      "S",
-		SendPrep:    setSendURL,
-		ExternalID:  "1",
-		Responses: map[MockedRequest]MockedResponse{
+		Label:              "Send photo attachment",
+		MsgText:            "",
+		MsgURN:             "vk:123456789",
+		MsgAttachments:     []string{"image/png:https://foo.bar/image.png"},
+		ExpectedStatus:     "S",
+		SendPrep:           setSendURL,
+		ExpectedExternalID: "1",
+		MockResponses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method:       "POST",
 				Path:         "/upload/photo",
@@ -438,14 +438,14 @@ var sendTestCases = []ChannelSendTestCase{
 		},
 	},
 	{
-		Label:       "Send photo and another attachment type",
-		Text:        "Attachments",
-		URN:         "vk:123456789",
-		Attachments: []string{"image/png:https://foo.bar/image.png", "audio/mp3:https://foo.bar/audio.mp3"},
-		Status:      "S",
-		SendPrep:    setSendURL,
-		ExternalID:  "1",
-		Responses: map[MockedRequest]MockedResponse{
+		Label:              "Send photo and another attachment type",
+		MsgText:            "Attachments",
+		MsgURN:             "vk:123456789",
+		MsgAttachments:     []string{"image/png:https://foo.bar/image.png", "audio/mp3:https://foo.bar/audio.mp3"},
+		ExpectedStatus:     "S",
+		SendPrep:           setSendURL,
+		ExpectedExternalID: "1",
+		MockResponses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method:       "POST",
 				Path:         "/upload/photo",
@@ -473,14 +473,14 @@ var sendTestCases = []ChannelSendTestCase{
 		},
 	},
 	{
-		Label:        "Send keyboard",
-		Text:         "Send keyboard",
-		URN:          "vk:123456789",
-		QuickReplies: []string{"A", "B", "C", "D", "E"},
-		Status:       "S",
-		SendPrep:     setSendURL,
-		ExternalID:   "1",
-		Responses: map[MockedRequest]MockedResponse{
+		Label:              "Send keyboard",
+		MsgText:            "Send keyboard",
+		MsgURN:             "vk:123456789",
+		MsgQuickReplies:    []string{"A", "B", "C", "D", "E"},
+		ExpectedStatus:     "S",
+		SendPrep:           setSendURL,
+		ExpectedExternalID: "1",
+		MockResponses: map[MockedRequest]MockedResponse{
 			MockedRequest{
 				Method:   "POST",
 				Path:     actionSendMessage,
@@ -499,12 +499,12 @@ func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTes
 	for i, testCase := range testCases {
 		mockedCase := testCase
 
-		for j, attachment := range testCase.Attachments {
+		for j, attachment := range testCase.MsgAttachments {
 			prefix, _ := SplitAttachment(attachment)
 			if mediaType := strings.Split(prefix, "/")[0]; mediaType != "image" {
 				continue
 			}
-			mockedCase.Attachments[j] = strings.Replace(attachment, "https://foo.bar", mediaServer.URL, 1)
+			mockedCase.MsgAttachments[j] = strings.Replace(attachment, "https://foo.bar", mediaServer.URL, 1)
 		}
 		casesWithMockedUrls[i] = mockedCase
 	}

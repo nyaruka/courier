@@ -8,12 +8,11 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 )
 
-
 var testChannels = []courier.Channel{
 	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NV", "2020", "TT", map[string]interface{}{
-		"merchant_id": "my-merchant-id",
+		"merchant_id":     "my-merchant-id",
 		"merchant_secret": "my-merchant-secret",
-		"secret": "sesame",
+		"secret":          "sesame",
 	}),
 }
 
@@ -45,48 +44,48 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL + "?%s"
 }
 
-var defaultSendTestCases = []ChannelSendTestCase {
+var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
-		Text: "Simple Message ☺", URN: "tel:+18686846481",
-		Status: "W", ExternalID: "",
-		ResponseBody: `{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`,
-		ResponseStatus: 200,
-		SendPrep: setSendURL},
+		MsgText: "Simple Message ☺", MsgURN: "tel:+18686846481",
+		ExpectedStatus: "W", ExpectedExternalID: "",
+		MockResponseBody:   `{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`,
+		MockResponseStatus: 200,
+		SendPrep:           setSendURL},
 	{Label: "Long Send",
-		Text: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		URN: "tel:+18686846481",
-		Status: "W",
-		ExternalID: "",
-		ResponseBody: `{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`,
-		ResponseStatus: 200,
-		SendPrep: setSendURL},
+		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:             "tel:+18686846481",
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "",
+		MockResponseBody:   `{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`,
+		MockResponseStatus: 200,
+		SendPrep:           setSendURL},
 	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+18686846481", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status: "W", ExternalID: "",
-		ResponseBody: `{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`,
-		ResponseStatus: 200,
-		SendPrep: setSendURL},
+		MsgText: "My pic!", MsgURN: "tel:+18686846481", MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		ExpectedStatus: "W", ExpectedExternalID: "",
+		MockResponseBody:   `{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`,
+		MockResponseStatus: 200,
+		SendPrep:           setSendURL},
 	{Label: "Invalid Parameters",
-		Text: "Invalid Parameters", URN: "tel:+18686846481",
-		Status: "F",
-		ResponseBody: `{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`,
-		ResponseStatus: 200,
-		SendPrep: setSendURL},
+		MsgText: "Invalid Parameters", MsgURN: "tel:+18686846481",
+		ExpectedStatus:     "F",
+		MockResponseBody:   `{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`,
+		MockResponseStatus: 200,
+		SendPrep:           setSendURL},
 	{Label: "Error Response",
-		Text: "Error Response", URN: "tel:+18686846481",
-		Status: "F",
-		ResponseBody: `{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`,
-		ResponseStatus: 200,
-		SendPrep: setSendURL},
+		MsgText: "Error Response", MsgURN: "tel:+18686846481",
+		ExpectedStatus:     "F",
+		MockResponseBody:   `{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`,
+		MockResponseStatus: 200,
+		SendPrep:           setSendURL},
 }
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NV", "2020", "TT",
 		map[string]interface{}{
-			"merchant_id": "my-merchant-id",
+			"merchant_id":     "my-merchant-id",
 			"merchant_secret": "my-merchant-secret",
-			"secret": "sesame",
+			"secret":          "sesame",
 		})
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 }
