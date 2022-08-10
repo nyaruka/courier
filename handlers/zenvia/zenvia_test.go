@@ -7,15 +7,16 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 var testWhatsappChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVW", "2020", "BR", map[string]interface{}{"api_key": "zv-api-token"}),
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", map[string]interface{}{"api_key": "zv-api-token"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVW", "2020", "BR", map[string]interface{}{"api_key": "zv-api-token"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", map[string]interface{}{"api_key": "zv-api-token"}),
 }
 
 var testSMSChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", map[string]interface{}{"api_key": "zv-api-token"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", map[string]interface{}{"api_key": "zv-api-token"}),
 }
 
 var (
@@ -388,9 +389,9 @@ var defaultSMSSendTestCases = []ChannelSendTestCase{
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultWhatsappChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVW", "2020", "BR", map[string]interface{}{"api_key": "zv-api-token"})
+	var defaultWhatsappChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVW", "2020", "BR", map[string]interface{}{"api_key": "zv-api-token"})
 	RunChannelSendTestCases(t, defaultWhatsappChannel, newHandler("ZVW", "Zenvia WhatsApp"), defaultWhatsappSendTestCases, nil)
 
-	var defaultSMSChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", map[string]interface{}{"api_key": "zv-api-token"})
+	var defaultSMSChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", map[string]interface{}{"api_key": "zv-api-token"})
 	RunChannelSendTestCases(t, defaultSMSChannel, newHandler("ZVS", "Zenvia SMS"), defaultSMSSendTestCases, nil)
 }

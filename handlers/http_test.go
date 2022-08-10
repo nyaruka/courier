@@ -6,6 +6,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
@@ -20,8 +21,8 @@ func TestDoHTTPRequest(t *testing.T) {
 	}))
 	defer httpx.SetRequestor(httpx.DefaultRequestor)
 
-	mb := courier.NewMockBackend()
-	mc := courier.NewMockChannel("7a8ff1d4-f211-4492-9d05-e1905f6da8c8", "NX", "1234", "EC", nil)
+	mb := test.NewMockBackend()
+	mc := test.NewMockChannel("7a8ff1d4-f211-4492-9d05-e1905f6da8c8", "NX", "1234", "EC", nil)
 	mm := mb.NewOutgoingMsg(mc, courier.NewMsgID(123), urns.URN("tel:+1234"), "Hello World", false, nil, "", "")
 	logger := courier.NewChannelLoggerForSend(mm)
 

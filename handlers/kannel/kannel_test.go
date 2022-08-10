@@ -7,6 +7,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 var (
@@ -23,11 +24,11 @@ var (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US", nil),
 }
 
 var ignoreChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US", map[string]interface{}{"ignore_sent": true}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US", map[string]interface{}{"ignore_sent": true}),
 }
 
 var handleTestCases = []ChannelHandleTestCase{
@@ -63,12 +64,12 @@ func BenchmarkHandler(b *testing.B) {
 
 // setSendURL takes care of setting the send_url to our test server host
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	c.(*courier.MockChannel).SetConfig("send_url", s.URL)
+	c.(*test.MockChannel).SetConfig("send_url", s.URL)
 }
 
 // setSendURLWithQuery takes care of setting the send_url to our test server host
 func setSendURLWithQuery(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	c.(*courier.MockChannel).SetConfig("send_url", s.URL+"?auth=foo")
+	c.(*test.MockChannel).SetConfig("send_url", s.URL+"?auth=foo")
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
@@ -127,12 +128,12 @@ var nationalSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		map[string]interface{}{
 			"password": "Password",
 			"username": "Username"})
 
-	var nationalChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
+	var nationalChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		map[string]interface{}{
 			"password":     "Password",
 			"username":     "Username",

@@ -7,10 +7,11 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US", nil),
 }
 
 var receiveURL = "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
@@ -291,7 +292,7 @@ var transSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
 		map[string]interface{}{
 			courier.ConfigPassword: "Password",
 			courier.ConfigUsername: "Username",
@@ -299,7 +300,7 @@ func TestSending(t *testing.T) {
 
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 
-	var transChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
+	var transChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
 		map[string]interface{}{
 			courier.ConfigPassword: "Password",
 			courier.ConfigUsername: "Username",

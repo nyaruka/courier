@@ -9,6 +9,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -248,7 +249,7 @@ var noEvent = `{
 }`
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US",
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US",
 		map[string]interface{}{
 			"secret":     "Secret",
 			"auth_token": "the-auth-token",
@@ -448,7 +449,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US",
 		map[string]interface{}{
 			"auth_token": "AccessToken",
 		},
@@ -458,7 +459,7 @@ func TestSending(t *testing.T) {
 }
 
 func TestBuildMediaRequest(t *testing.T) {
-	mb := courier.NewMockBackend()
+	mb := test.NewMockBackend()
 
 	lnHandler := &handler{NewBaseHandler(courier.ChannelType("LN"), "Line")}
 	req, _ := lnHandler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")

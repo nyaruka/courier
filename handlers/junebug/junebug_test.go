@@ -7,15 +7,16 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
-var testChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JN", "2020", "US", map[string]interface{}{
+var testChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JN", "2020", "US", map[string]interface{}{
 	"username": "user1",
 	"password": "pass1",
 	"send_url": "https://foo.bar/",
 })
 
-var authenticatedTestChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JN", "2020", "US", map[string]interface{}{
+var authenticatedTestChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JN", "2020", "US", map[string]interface{}{
 	"username": "user1",
 	"password": "pass1",
 	"send_url": "https://foo.bar/",
@@ -142,7 +143,7 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	c.(*courier.MockChannel).SetConfig("send_url", s.URL)
+	c.(*test.MockChannel).SetConfig("send_url", s.URL)
 }
 
 var sendTestCases = []ChannelSendTestCase{

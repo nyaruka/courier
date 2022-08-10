@@ -1,10 +1,12 @@
-package courier
+package courier_test
 
 import (
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -12,11 +14,11 @@ import (
 
 func TestServer(t *testing.T) {
 	logger := logrus.New()
-	config := NewConfig()
+	config := courier.NewConfig()
 	config.StatusUsername = "admin"
 	config.StatusPassword = "password123"
 
-	server := NewServerWithLogger(config, NewMockBackend(), logger)
+	server := courier.NewServerWithLogger(config, test.NewMockBackend(), logger)
 	server.Start()
 	defer server.Stop()
 
@@ -79,7 +81,7 @@ func TestSanitizeBody(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		result := sanitizeBody(tc.Body)
+		result := courier.SanitizeBody(tc.Body)
 		assert.Equal(t, tc.Result, result, "%s: unexpected result", tc.Label)
 	}
 }

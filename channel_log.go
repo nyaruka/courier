@@ -25,14 +25,14 @@ func NewChannelLog(description string, channel Channel, msgID MsgID, method stri
 		URL:         url,
 		StatusCode:  statusCode,
 		Error:       errString,
-		Request:     sanitizeBody(request),
-		Response:    sanitizeBody(response),
+		Request:     SanitizeBody(request),
+		Response:    SanitizeBody(response),
 		CreatedOn:   time.Now(),
 		Elapsed:     elapsed,
 	}
 }
 
-func sanitizeBody(body string) string {
+func SanitizeBody(body string) string {
 	parts := strings.SplitN(body, "\r\n\r\n", 2)
 	if len(parts) < 2 {
 		return body
@@ -56,7 +56,7 @@ func NewChannelLogFromTrace(description string, channel Channel, msgID MsgID, tr
 		MsgID:       msgID,
 		Method:      trace.Request.Method,
 		URL:         trace.Request.URL.String(),
-		Request:     sanitizeBody(string(trace.RequestTrace)),
+		Request:     SanitizeBody(string(trace.RequestTrace)),
 		CreatedOn:   trace.StartTime,
 		Elapsed:     trace.EndTime.Sub(trace.StartTime),
 	}

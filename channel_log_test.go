@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +19,7 @@ func TestNewChannelLogFromTrace(t *testing.T) {
 	}))
 	defer httpx.SetRequestor(httpx.DefaultRequestor)
 
-	channel := courier.NewMockChannel("fef91e9b-a6ed-44fb-b6ce-feed8af585a8", "NX", "1234", "US", nil)
+	channel := test.NewMockChannel("fef91e9b-a6ed-44fb-b6ce-feed8af585a8", "NX", "1234", "US", nil)
 
 	// make a request that will have a response
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)

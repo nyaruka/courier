@@ -6,6 +6,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 // setSendURL takes care of setting the send_url to our test server host
@@ -97,7 +98,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "RR", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "RR", "2020", "US",
 		map[string]interface{}{
 			"password": "Password",
 			"username": "Username",

@@ -11,11 +11,12 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 	"github.com/stretchr/testify/assert"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel(
+	test.NewMockChannel(
 		"8eb23e93-5ecb-45ba-b726-3b064e0c568c",
 		"WA",
 		"250788383383",
@@ -24,7 +25,7 @@ var testChannels = []courier.Channel{
 			"auth_token": "the-auth-token",
 			"base_url":   "https://foo.bar/",
 		}),
-	courier.NewMockChannel(
+	test.NewMockChannel(
 		"8eb23e93-5ecb-45ba-b726-3b064e0c568c",
 		"D3",
 		"250788383383",
@@ -33,7 +34,7 @@ var testChannels = []courier.Channel{
 			"auth_token": "the-auth-token",
 			"base_url":   "https://foo.bar/",
 		}),
-	courier.NewMockChannel(
+	test.NewMockChannel(
 		"8eb23e93-5ecb-45ba-b726-3b064e0c568c",
 		"TXW",
 		"250788383383",
@@ -324,7 +325,7 @@ var waTestCases = []ChannelHandleTestCase{
 }
 
 func TestBuildMediaRequest(t *testing.T) {
-	mb := courier.NewMockBackend()
+	mb := test.NewMockBackend()
 
 	waHandler := &handler{NewBaseHandler(courier.ChannelType("WA"), "WhatsApp")}
 	req, _ := waHandler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
@@ -366,7 +367,7 @@ func BenchmarkHandler(b *testing.B) {
 // setSendURL takes care of setting the base_url to our test server host
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
 	retryParam = "retry"
-	c.(*courier.MockChannel).SetConfig("base_url", s.URL)
+	c.(*test.MockChannel).SetConfig("base_url", s.URL)
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
@@ -993,7 +994,7 @@ func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTes
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WA", "250788383383", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WA", "250788383383", "US",
 		map[string]interface{}{
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",
@@ -1001,7 +1002,7 @@ func TestSending(t *testing.T) {
 			"version":      "v2.35.2",
 		})
 
-	var hsmSupportChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WA", "250788383383", "US",
+	var hsmSupportChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WA", "250788383383", "US",
 		map[string]interface{}{
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",
@@ -1010,7 +1011,7 @@ func TestSending(t *testing.T) {
 			"version":      "v2.35.2",
 		})
 
-	var d3Channel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "D3", "250788383383", "US",
+	var d3Channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "D3", "250788383383", "US",
 		map[string]interface{}{
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",
@@ -1018,7 +1019,7 @@ func TestSending(t *testing.T) {
 			"version":      "v2.35.2",
 		})
 
-	var txwChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TXW", "250788383383", "US",
+	var txwChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TXW", "250788383383", "US",
 		map[string]interface{}{
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",

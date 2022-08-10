@@ -13,6 +13,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,7 +24,7 @@ const (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel(channelUUID, "SL", "2022", "US", map[string]interface{}{"bot_token": "xoxb-abc123", "verification_token": "one-long-verification-token"}),
+	test.NewMockChannel(channelUUID, "SL", "2022", "US", map[string]interface{}{"bot_token": "xoxb-abc123", "verification_token": "one-long-verification-token"}),
 }
 
 const helloMsg = `{
