@@ -170,14 +170,12 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(authID, authToken)
 
-		trace, err := handlers.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString(trace.ResponseBody, "message_uuid", "[0]")
+		externalID, err := jsonparser.GetString(respBody, "message_uuid", "[0]")
 		if err != nil {
 			return status, fmt.Errorf("unable to parse response body from Plivo")
 		}

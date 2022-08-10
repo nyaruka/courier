@@ -38,20 +38,9 @@ func RequestHTTPWithClient(client *http.Client, req *http.Request, logger *couri
 	return resp, body, nil
 }
 
-// MakeHTTPRequest makes the given request and returns the trace
+// Deprecated: use RequestHTTP instead
 func MakeHTTPRequest(req *http.Request) (*httpx.Trace, error) {
-	return MakeHTTPRequestWithClient(utils.GetHTTPClient(), req)
-}
-
-// MakeInsecureHTTPRequest makes the given request using an insecure client that does not validate
-// SSL certificates, and returns the trace
-func MakeInsecureHTTPRequest(req *http.Request) (*httpx.Trace, error) {
-	return MakeHTTPRequestWithClient(utils.GetInsecureHTTPClient(), req)
-}
-
-// MakeHTTPRequestWithClient makes the given request using the given client, and returns the trace
-func MakeHTTPRequestWithClient(client *http.Client, req *http.Request) (*httpx.Trace, error) {
-	trace, err := httpx.DoTrace(client, req, nil, nil, 0)
+	trace, err := httpx.DoTrace(utils.GetHTTPClient(), req, nil, nil, 0)
 	if err != nil {
 		return trace, err
 	}

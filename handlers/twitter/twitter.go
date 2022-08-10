@@ -270,7 +270,6 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 	client := config.Client(ctx, token)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	var logs []*courier.ChannelLog
 
 	// we build these as needed since our unit tests manipulate apiURL
 	sendURL := sendDomain + "/1.1/direct_messages/events/new.json"
@@ -292,23 +291,16 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			// this is still a msg part
 			payload.Event.MessageCreate.MessageData.Text = msgParts[i]
 		} else {
-			start := time.Now()
 			attachment := msg.Attachments()[i-len(msgParts)]
 			mimeType, s3url := handlers.SplitAttachment(attachment)
 			mediaID := ""
 			if strings.HasPrefix(mimeType, "image") || strings.HasPrefix(mimeType, "video") {
-				mediaID, logs, err = uploadMediaToTwitter(msg, mediaURL, mimeType, s3url, client)
+				mediaID, err = uploadMediaToTwitter(msg, mediaURL, mimeType, s3url, client, logger)
 				if err != nil {
-					duration := time.Now().Sub(start)
-					logs = append(logs, courier.NewChannelLogFromError("Unable to upload media to Twitter server", msg.Channel(), msg.ID(), duration, err))
+					logger.Error(errors.Wrap(err, "unable to upload media to Twitter server"))
 				}
-				for _, log := range logs {
-					status.AddLog(log)
-				}
-
 			} else {
-				duration := time.Now().Sub(start)
-				status.AddLog(courier.NewChannelLogFromError("Unable to upload media, Unsupported Twitter attachment", msg.Channel(), msg.ID(), duration, fmt.Errorf("unknown attachment type")))
+				logger.Error(errors.New("unable to upload media, unsupported Twitter attachment"))
 			}
 
 			if mediaID != "" {
@@ -345,18 +337,15 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
-		trace, err := handlers.MakeHTTPRequestWithClient(client, req)
 
-		// record our status and log
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTPWithClient(client, req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString(trace.ResponseBody, "event", "id")
+		externalID, err := jsonparser.GetString(respBody, "event", "id")
 		if err != nil {
-			log.WithError("Message Send Error", errors.Errorf("unable to get message_id from body"))
+			logger.Error(errors.Errorf("unable to get message_id from body"))
 			return status, nil
 		}
 
@@ -381,20 +370,14 @@ func generateSignature(secret string, content string) string {
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
-func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType string, attachmentURL string, client *http.Client) (string, []*courier.ChannelLog, error) {
-	start := time.Now()
-	logs := make([]*courier.ChannelLog, 0, 1)
-
+func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType string, attachmentURL string, client *http.Client, logger *courier.ChannelLogger) (string, error) {
 	// retrieve the media to be sent from S3
 	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
-	s3Trace, err := handlers.MakeHTTPRequest(req)
-	log := courier.NewChannelLogFromTrace("Media Fetch", msg.Channel(), msg.ID(), s3Trace)
-	if err != nil {
-		log.WithError("Media Fetch Error", err)
-		logs = append(logs, log)
-		return "", logs, err
+
+	s3Resp, s3RespBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || s3Resp.StatusCode/100 != 2 {
+		return "", err
 	}
-	logs = append(logs, log)
 
 	mediaCategory := ""
 	if strings.HasPrefix(attachmentMimeType, "image") {
@@ -403,7 +386,7 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 		mediaCategory = "dm_video"
 	}
 
-	fileSize := int64(len(s3Trace.ResponseBody))
+	fileSize := int64(len(s3RespBody))
 
 	// upload it to WhatsApp in exchange for a media id
 	form := url.Values{
@@ -421,21 +404,16 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 	twReq.Header.Set("Accept", "application/json")
 	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
 
-	twTrace, err := handlers.MakeHTTPRequestWithClient(client, twReq)
-	log = courier.NewChannelLogFromTrace("Media Upload INIT", msg.Channel(), msg.ID(), twTrace)
-	if err != nil {
-		log.WithError("Media Upload INIT Error", err)
-		logs = append(logs, log)
-		return "", logs, err
+	twResp, twRespBody, err := handlers.RequestHTTPWithClient(client, twReq, logger)
+	if err != nil || twResp.StatusCode/100 != 2 {
+		return "", err
 	}
-	logs = append(logs, log)
 
-	mediaID, err := jsonparser.GetString(twTrace.ResponseBody, "media_id_string")
+	mediaID, err := jsonparser.GetString(twRespBody, "media_id_string")
 	if err != nil {
-		duration := time.Now().Sub(start)
-		logs = append(logs, courier.NewChannelLogFromError("Media Upload media_id Error", msg.Channel(), msg.ID(), duration, err))
-		return "", logs, err
+		return "", err
 	}
+
 	tokens := strings.Split(attachmentURL, "/")
 	fileName := tokens[len(tokens)-1]
 
@@ -447,25 +425,18 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 	for k, v := range params {
 		fieldWriter, err := bodyMultipartWriter.CreateFormField(k)
 		if err != nil {
-			duration := time.Now().Sub(start)
-			logs = append(logs, courier.NewChannelLogFromError(fmt.Sprintf("Media Upload APPEND field %s Error", k), msg.Channel(), msg.ID(), duration, err))
-			return "", logs, err
+			return "", err
 		}
 		_, err = fieldWriter.Write([]byte(v))
 		if err != nil {
-			duration := time.Now().Sub(start)
-			logs = append(logs, courier.NewChannelLogFromError(fmt.Sprintf("Media Upload APPEND field %s Error", k), msg.Channel(), msg.ID(), duration, err))
-			return "", logs, err
+			return "", err
 		}
-
 	}
 
 	mediaWriter, err := bodyMultipartWriter.CreateFormFile("media", fileName)
-	_, err = io.Copy(mediaWriter, bytes.NewReader(s3Trace.ResponseBody))
+	_, err = io.Copy(mediaWriter, bytes.NewReader(s3RespBody))
 	if err != nil {
-		duration := time.Now().Sub(start)
-		logs = append(logs, courier.NewChannelLogFromError("Media Upload APPEND field media Error", msg.Channel(), msg.ID(), duration, err))
-		return "", logs, err
+		return "", err
 	}
 
 	contentType := fmt.Sprintf("multipart/form-data;boundary=%v", bodyMultipartWriter.Boundary())
@@ -475,14 +446,12 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 	twReq.Header.Set("Content-Type", contentType)
 	twReq.Header.Set("Accept", "application/json")
 	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
-	twTrace, err = handlers.MakeHTTPRequestWithClient(client, twReq)
-	log = courier.NewChannelLogFromTrace("Media Upload APPEND request", msg.Channel(), msg.ID(), twTrace)
-	if err != nil {
-		log = log.WithError("Media Upload APPEND request Error", err)
-		logs = append(logs, log)
-		return "", logs, err
+
+	twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, logger)
+	if err != nil || twResp.StatusCode/100 != 2 {
+		return "", err
 	}
-	logs = append(logs, log)
+
 	form = url.Values{
 		"command":  []string{"FINALIZE"},
 		"media_id": []string{mediaID},
@@ -490,32 +459,27 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 
 	twReq, err = http.NewRequest(http.MethodPost, mediaUrl, strings.NewReader(form.Encode()))
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
+
 	twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	twReq.Header.Set("Accept", "application/json")
 	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
-	twTrace, err = handlers.MakeHTTPRequestWithClient(client, twReq)
 
-	log = courier.NewChannelLogFromTrace("Media Upload FINALIZE", msg.Channel(), msg.ID(), twTrace)
-
-	if err != nil {
-		log.WithError("Media Upload FINALIZE Error", err)
-		logs = append(logs, log)
-		return "", logs, err
+	twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, logger)
+	if err != nil || twResp.StatusCode/100 != 2 {
+		return "", err
 	}
-	logs = append(logs, log)
 
-	progressState, err := jsonparser.GetString(twTrace.ResponseBody, "processing_info", "state")
+	progressState, err := jsonparser.GetString(twRespBody, "processing_info", "state")
 	if err != nil {
-		return mediaID, logs, nil
+		return mediaID, nil
 	}
 
 	for {
-
-		checkAfter, err := jsonparser.GetInt(twTrace.ResponseBody, "processing_info", "check_after_secs")
+		checkAfter, err := jsonparser.GetInt(twRespBody, "processing_info", "check_after_secs")
 		if err != nil {
-			return "", logs, err
+			return "", err
 
 		}
 		time.Sleep(time.Duration(checkAfter * int64(time.Second)))
@@ -533,30 +497,22 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 		twReq.Header.Set("Accept", "application/json")
 		twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
 
-		twTrace, err = handlers.MakeHTTPRequestWithClient(client, twReq)
-		log = courier.NewChannelLogFromTrace("Media Upload STATUS", msg.Channel(), msg.ID(), twTrace)
-		if err != nil {
-			log.WithError("Media Upload STATUS Error", err)
-			logs = append(logs, log)
-			return "", logs, err
+		twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, logger)
+		if err != nil || twResp.StatusCode/100 != 2 {
+			return "", err
 		}
-		progressState, err = jsonparser.GetString(twTrace.ResponseBody, "processing_info", "state")
+
+		progressState, err = jsonparser.GetString(twRespBody, "processing_info", "state")
 		if err != nil {
-			log.WithError("Media Upload STATUS failed parse JSON", err)
-			logs = append(logs, log)
 			break
 		}
 		if progressState == "succeeded" {
-			logs = append(logs, log)
 			break
 		}
 		if progressState == "failed" {
-			logs = append(logs, log)
-			return "", logs, err
+			return "", err
 		}
-		logs = append(logs, log)
-
 	}
 
-	return mediaID, logs, nil
+	return mediaID, nil
 }

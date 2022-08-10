@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -165,19 +166,15 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(tokenUser, token)
 
-		trace, err := handlers.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		// try to get our external id
-		externalID, err := jsonparser.GetString(trace.ResponseBody, "guid")
+		externalID, err := jsonparser.GetString(respBody, "guid")
 		if err != nil {
-			log.WithError("Unable to read external ID", err)
+			logger.Error(errors.New("Unable to read external ID"))
 			return status, nil
 		}
 		status.SetStatus(courier.MsgWired)
@@ -202,19 +199,15 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			req.Header.Set("Accept", "application/json")
 			req.SetBasicAuth(tokenUser, token)
 
-			trace, err := handlers.MakeHTTPRequest(req)
-
-			// record our status and log
-			log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-			status.AddLog(log)
-			if err != nil {
+			resp, respBody, err := handlers.RequestHTTP(req, logger)
+			if err != nil || resp.StatusCode/100 != 2 {
 				return status, nil
 			}
 
 			// get our external id
-			externalID, err := jsonparser.GetString(trace.ResponseBody, "guid")
+			externalID, err := jsonparser.GetString(respBody, "guid")
 			if err != nil {
-				log.WithError("Unable to read external ID from guid field", err)
+				logger.Error(errors.New("Unable to read external ID from guid field"))
 				return status, nil
 			}
 

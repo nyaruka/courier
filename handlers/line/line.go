@@ -331,28 +331,24 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 				return status, err
 			}
 
-			trace, err := handlers.MakeHTTPRequest(req)
-			log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-			status.AddLog(log)
-
-			if err == nil {
+			resp, respBody, err := handlers.RequestHTTP(req, logger)
+			if err == nil && resp.StatusCode/100 == 2 {
 				batch = []string{}
 				batchCount = 0
 				continue
 			}
+
 			// retry without the reply token if it's invalid
-			errMsg, err := jsonparser.GetString(trace.ResponseBody, "message")
+			errMsg, err := jsonparser.GetString(respBody, "message")
 			if err == nil && errMsg == "Invalid reply token" {
 				req, err = buildSendMsgRequest(authToken, msg.URN().Path(), "", batch)
 				if err != nil {
 					return status, err
 				}
 
-				trace, err = handlers.MakeHTTPRequest(req)
-				log = courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-				status.AddLog(log)
-				if err != nil {
-					return status, err
+				resp, _, err := handlers.RequestHTTP(req, logger)
+				if err != nil || resp.StatusCode/100 != 2 {
+					return status, nil
 				}
 			} else {
 				return status, err

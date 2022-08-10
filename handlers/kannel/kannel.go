@@ -11,7 +11,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
-	"github.com/nyaruka/gocommon/httpx"
 )
 
 const (
@@ -201,22 +200,20 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		return nil, err
 	}
 
-	var trace *httpx.Trace
+	var resp *http.Response
 	if verifySSL {
-		trace, err = handlers.MakeHTTPRequest(req)
+		resp, _, err = handlers.RequestHTTP(req, logger)
 	} else {
-		trace, err = handlers.MakeInsecureHTTPRequest(req)
+		resp, _, err = handlers.RequestHTTPInsecure(req, logger)
 	}
 
-	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err))
-	if err == nil {
+	if err == nil && resp.StatusCode/100 == 2 {
 		status.SetStatus(courier.MsgWired)
 	}
 
 	// kannel will respond with a 403 for non-routable numbers, fail permanently in these cases
-	if trace.Response != nil && trace.Response.StatusCode == 403 {
+	if resp != nil && resp.StatusCode == 403 {
 		status.SetStatus(courier.MsgFailed)
 	}
 
