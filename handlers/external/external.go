@@ -272,8 +272,8 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
 		return nil, fmt.Errorf("no send url set for EX channel")
@@ -363,19 +363,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			req.Header.Set(hKey, fmt.Sprint(hValue))
 		}
 
-		trace, err := handlers.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		if responseContent == "" || strings.Contains(string(trace.ResponseBody), responseContent) {
+		if responseContent == "" || strings.Contains(string(respBody), responseContent) {
 			status.SetStatus(courier.MsgWired)
 		} else {
-			log.WithError("Message Send Error", fmt.Errorf("Received invalid response content: %s", string(trace.ResponseBody)))
+			logger.Error(fmt.Errorf("Received invalid response content: %s", string(respBody)))
 		}
 	}
 

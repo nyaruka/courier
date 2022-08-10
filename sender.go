@@ -154,7 +154,6 @@ func (w *Sender) Stop() {
 func (w *Sender) sendMessage(msg Msg) {
 	log := logrus.WithField("comp", "sender").WithField("sender_id", w.id).WithField("channel_uuid", msg.Channel().UUID())
 
-	var status MsgStatus
 	server := w.foreman.server
 	backend := server.Backend()
 
@@ -189,21 +188,31 @@ func (w *Sender) sendMessage(msg Msg) {
 		log.WithError(err).Error("error looking up msg was sent")
 	}
 
+	var status MsgStatus
+	logger := NewChannelLoggerForSend(msg)
+
 	if sent {
 		// if this message was already sent, create a wired status for it
 		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired)
 		log.Warning("duplicate send, marking as wired")
 	} else {
 		// send our message
-		status, err = server.SendMsg(sendCTX, msg)
+		status, err = server.SendMsg(sendCTX, msg, logger)
 		duration := time.Now().Sub(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
+		// handlers can currently return logs either via the logger or on the status object
+		if status != nil {
+			logger.logs = append(logger.logs, status.Logs()...)
+		}
+
 		if err != nil {
 			log.WithError(err).WithField("elapsed", duration).Error("error sending message")
+			logger.Error(err)
+
+			// possible for handlers to only return an error in which case we construct an error status
 			if status == nil {
 				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
-				status.AddLog(NewChannelLogFromError("Sending Error", msg.Channel(), msg.ID(), duration, err))
 			}
 		}
 
@@ -227,7 +236,7 @@ func (w *Sender) sendMessage(msg Msg) {
 	}
 
 	// write our logs as well
-	err = backend.WriteChannelLogs(writeCTX, status.Logs())
+	err = backend.WriteChannelLogs(writeCTX, logger.Logs())
 	if err != nil {
 		log.WithError(err).Info("error writing msg logs")
 	}

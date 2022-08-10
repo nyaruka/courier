@@ -4,9 +4,39 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
 )
+
+// RequestHTTP does the given request, logging the trace, and returns the response
+func RequestHTTP(req *http.Request, logger *courier.ChannelLogger) (*http.Response, []byte, error) {
+	return RequestHTTPWithClient(utils.GetHTTPClient(), req, logger)
+}
+
+// RequestHTTPInsecure does the given request using an insecure client that does not validate SSL certificates,
+// logging the trace, and returns the response
+func RequestHTTPInsecure(req *http.Request, logger *courier.ChannelLogger) (*http.Response, []byte, error) {
+	return RequestHTTPWithClient(utils.GetInsecureHTTPClient(), req, logger)
+}
+
+// RequestHTTP does the given request using the given client, logging the trace, and returns the response
+func RequestHTTPWithClient(client *http.Client, req *http.Request, logger *courier.ChannelLogger) (*http.Response, []byte, error) {
+	var resp *http.Response
+	var body []byte
+
+	trace, err := httpx.DoTrace(client, req, nil, nil, 0)
+	if trace != nil {
+		logger.HTTP(trace)
+		resp = trace.Response
+		body = trace.ResponseBody
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return resp, body, nil
+}
 
 // MakeHTTPRequest makes the given request and returns the trace
 func MakeHTTPRequest(req *http.Request) (*httpx.Trace, error) {

@@ -43,8 +43,8 @@ func (h *dummyHandler) Initialize(s Server) error {
 	return nil
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *dummyHandler) SendMsg(ctx context.Context, msg Msg) (MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *dummyHandler) Send(ctx context.Context, msg Msg, logger *ChannelLogger) (MsgStatus, error) {
 	return h.backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgSent), nil
 }
 
@@ -101,11 +101,11 @@ func TestHandling(t *testing.T) {
 	// sleep a second, sender should take care of it in that time
 	time.Sleep(time.Second)
 
-	// message should have errored because we have registered handlers
+	// message should have errored because we don't have a registered handler
 	assert.Equal(1, len(mb.msgStatuses))
 	assert.Equal(msg.ID(), mb.msgStatuses[0].ID())
 	assert.Equal(MsgErrored, mb.msgStatuses[0].Status())
-	assert.Equal(1, len(mb.msgStatuses[0].Logs()))
+	assert.Equal(1, len(mb.channelLogs))
 
 	// clear our statuses
 	mb.msgStatuses = nil

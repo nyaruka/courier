@@ -265,8 +265,10 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				testCase.SendPrep(server, handler, channel, msg)
 			}
 
+			logger := courier.NewChannelLoggerForSend(msg)
+
 			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
-			status, err := handler.SendMsg(ctx, msg)
+			status, err := handler.Send(ctx, msg, logger)
 			cancel()
 
 			if testCase.ExpectedError != "" {

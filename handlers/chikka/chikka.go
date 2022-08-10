@@ -103,8 +103,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for CK channel")
@@ -140,11 +140,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		trace, err := handlers.MakeHTTPRequest(req)
+		resp, respBody, err := handlers.RequestHTTP(req, logger)
 
-		if trace.Response != nil && trace.Response.StatusCode == 400 {
-			message, _ := jsonparser.GetString(trace.ResponseBody, "message")
-			description, _ := jsonparser.GetString(trace.ResponseBody, "description")
+		if resp != nil && resp.StatusCode == 400 {
+			message, _ := jsonparser.GetString(respBody, "message")
+			description, _ := jsonparser.GetString(respBody, "description")
 
 			if message == "BAD REQUEST" && description == `Invalid\/Used Request ID` {
 				delete(form, "request_id")
@@ -153,18 +153,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 				req, _ = http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-				trace, err = handlers.MakeHTTPRequest(req)
+				resp, _, err = handlers.RequestHTTP(req, logger)
 			}
 		}
 
-		// record our status and log
-		status.AddLog(courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err))
-		if err != nil {
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		status.SetStatus(courier.MsgWired)
-
 	}
 
 	return status, nil

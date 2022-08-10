@@ -101,7 +101,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 
 	agentID := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if agentID == "" {
@@ -168,14 +168,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	var bearer = "Bearer " + authToken
 	req.Header.Set("Authorization", bearer)
 
-	trace, err := handlers.MakeHTTPRequest(req)
-
-	// record our status and log
-	log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-	status.AddLog(log)
-	if err != nil {
-		return status, err
+	resp, _, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return status, nil
 	}
+
 	status.SetStatus(courier.MsgWired)
 
 	return status, nil

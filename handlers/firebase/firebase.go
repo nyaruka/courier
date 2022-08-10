@@ -134,8 +134,8 @@ type mtNotification struct {
 	Body  string `json:"body"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
 	if title == "" {
 		return nil, fmt.Errorf("no FCM_TITLE set for FCM channel")
@@ -194,25 +194,23 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("key=%s", fcmKey))
 
-		trace, err := handlers.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		// was this successful
-		success, _ := jsonparser.GetInt(trace.ResponseBody, "success")
+		success, _ := jsonparser.GetInt(respBody, "success")
 		if success != 1 {
-			log.WithError("Message Send Error", errors.Errorf("received non-1 value for success in response"))
+			logger.Error(errors.Errorf("received non-1 value for success in response"))
 			return status, nil
 		}
 
 		// grab the id if this is our first part
 		if i == 0 {
-			externalID, err := jsonparser.GetInt(trace.ResponseBody, "multicast_id")
+			externalID, err := jsonparser.GetInt(respBody, "multicast_id")
 			if err != nil {
-				log.WithError("Message Send Error", errors.Errorf("unable to get multicast_id from response"))
+				logger.Error(errors.Errorf("unable to get multicast_id from response"))
 				return status, nil
 			}
 			status.SetExternalID(fmt.Sprintf("%d", externalID))

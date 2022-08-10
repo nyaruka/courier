@@ -106,8 +106,8 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	// get our authentication token
 	auth := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if auth == "" {
@@ -135,19 +135,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Token %s", auth))
 
-		trace, err := handlers.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		// grab the external id
-		externalID, err := jsonparser.GetString(trace.ResponseBody, "sms_id")
+		externalID, err := jsonparser.GetString(respBody, "sms_id")
 		if err != nil {
-			log.WithError("Message Send Error", errors.Errorf("unable to get sms_id from body"))
+			logger.Error(errors.Errorf("unable to get sms_id from body"))
 			return status, nil
 		}
 

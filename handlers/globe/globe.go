@@ -125,8 +125,8 @@ type mtPayload struct {
 	AppSecret  string `json:"app_secret"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	appID := msg.Channel().StringConfigForKey(configAppID, "")
 	if appID == "" {
 		return nil, fmt.Errorf("Missing 'app_id' config for GL channel")
@@ -163,12 +163,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		trace, err := handlers.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, _, err := handlers.RequestHTTP(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
+
 		status.SetStatus(courier.MsgWired)
 	}
 

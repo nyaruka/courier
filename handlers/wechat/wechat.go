@@ -235,8 +235,8 @@ type mtPayload struct {
 	} `json:"text"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	accessToken, err := h.getAccessToken(msg.Channel())
 	if err != nil {
 		return nil, err

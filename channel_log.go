@@ -111,3 +111,54 @@ type ChannelLog struct {
 	Elapsed     time.Duration
 	CreatedOn   time.Time
 }
+
+// ChannelLogType is the type of channel interaction we are logging
+type ChannelLogType string
+
+const (
+	ChannelLogTypeSend ChannelLogType = "send"
+)
+
+var logTypeDescriptions = map[ChannelLogType]string{
+	ChannelLogTypeSend: "Message Send",
+}
+var logTypeErrorDescriptions = map[ChannelLogType]string{
+	ChannelLogTypeSend: "Message Send Error",
+}
+
+type ChannelLogger struct {
+	type_ ChannelLogType
+	msg   Msg
+
+	logs []*ChannelLog
+}
+
+func NewChannelLoggerForSend(msg Msg) *ChannelLogger {
+	return &ChannelLogger{type_: ChannelLogTypeSend, msg: msg}
+}
+
+// HTTP logs an HTTP request and response
+func (l *ChannelLogger) HTTP(t *httpx.Trace) {
+	var description string
+	if t.Response == nil || t.Response.StatusCode/100 != 2 {
+		description = logTypeErrorDescriptions[l.type_]
+	} else {
+		description = logTypeDescriptions[l.type_]
+	}
+
+	l.logs = append(l.logs, NewChannelLogFromTrace(description, l.msg.Channel(), l.msg.ID(), t))
+}
+
+func (l *ChannelLogger) Error(err error) {
+	// if we have an existing log which isn't already an error, update it
+	if len(l.logs) > 0 && l.logs[len(l.logs)-1].Error == "" {
+		l.logs[len(l.logs)-1].Error = err.Error()
+		l.logs[len(l.logs)-1].Description = logTypeErrorDescriptions[l.type_]
+	} else {
+		l.logs = append(l.logs, NewChannelLogFromError(logTypeErrorDescriptions[l.type_], l.msg.Channel(), l.msg.ID(), 0, err))
+	}
+}
+
+func (l *ChannelLogger) Logs() []*ChannelLog {
+	return l.logs
+}

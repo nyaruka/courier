@@ -118,8 +118,8 @@ func writeJasminACK(w http.ResponseWriter) error {
 	return err
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for JS channel")
@@ -160,17 +160,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, err
 	}
 
-	trace, err := handlers.MakeHTTPRequest(req)
-
-	// record our status and log
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err))
-	if err == nil {
-		status.SetStatus(courier.MsgWired)
+
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return status, nil
 	}
 
+	status.SetStatus(courier.MsgWired)
+
 	// try to read our external id out
-	matches := idRegex.FindSubmatch(trace.ResponseBody)
+	matches := idRegex.FindSubmatch(respBody)
 	if len(matches) == 2 {
 		status.SetExternalID(string(matches[1]))
 	}
