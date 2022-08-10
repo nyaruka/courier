@@ -70,6 +70,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `not xml`,
 		MockResponseStatus: 200,
 		ExpectedStatus:     "E",
+		ExpectedErrors:     []string{"EOF"},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -79,6 +80,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `<response><code>501</code><text>failure</text><message_id></message_id></response>`,
 		MockResponseStatus: 200,
 		ExpectedStatus:     "F",
+		ExpectedErrors:     []string{"Received invalid response code: 501"},
 		SendPrep:           setSendURL,
 	},
 	{
