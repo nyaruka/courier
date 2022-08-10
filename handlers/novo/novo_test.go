@@ -25,12 +25,12 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Msg"), URN: Sp("tel:+18686846481"), Headers: map[string]string{"Authorization": "sesame"}},
-	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, Status: 400, Response: "required field 'from'",
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+18686846481"), Headers: map[string]string{"Authorization": "sesame"}},
+	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, ExpectedStatus: 400, ExpectedResponse: "required field 'from'",
 		Headers: map[string]string{"Authorization": "sesame"}},
-	{Label: "Receive Missing Authorization", URL: receiveURL, Data: validReceive, Status: 401, Response: "invalid Authorization header",
-		Text: Sp("Msg"), URN: Sp("tel:+18686846481")},
+	{Label: "Receive Missing Authorization", URL: receiveURL, Data: validReceive, ExpectedStatus: 401, ExpectedResponse: "invalid Authorization header",
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+18686846481")},
 }
 
 func TestHandler(t *testing.T) {

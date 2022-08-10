@@ -30,16 +30,16 @@ var (
 )
 
 var daTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: validMessage, Status: 200, Response: "000", Text: Sp("Msg"), URN: Sp("tel:+6289881134560")},
-	{Label: "Receive Valid", URL: externalURN, Status: 200, Response: "000", Text: Sp("Msg"), URN: Sp("ext:cmp-oodddqddwdwdcd")},
-	{Label: "Receive Invalid", URL: invalidMessage, Status: 400, Response: "missing required parameters original and sendto"},
+	{Label: "Receive Valid", URL: validMessage, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+6289881134560")},
+	{Label: "Receive Valid", URL: externalURN, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("ext:cmp-oodddqddwdwdcd")},
+	{Label: "Receive Invalid", URL: invalidMessage, ExpectedStatus: 400, ExpectedResponse: "missing required parameters original and sendto"},
 
-	{Label: "Valid Status", URL: validStatus, Status: 200, Response: "000", MsgStatus: Sp("D")},
-	{Label: "Valid Status", URL: validPartStatus, Status: 200, Response: "000", MsgStatus: Sp("D")},
-	{Label: "Failed Status", URL: failedStatus, Status: 200, Response: "000", MsgStatus: Sp("F")},
-	{Label: "Missing Status", URL: missingStatus, Status: 400, Response: "parameters messageid and status should not be empty"},
-	{Label: "Missing Status", URL: badStatus, Status: 400, Response: "parsing failed: status 'foo' is not an integer"},
-	{Label: "Missing Status", URL: badStatusMessageID, Status: 400, Response: "parsing failed: messageid 'abc' is not an integer"},
+	{Label: "Valid Status", URL: validStatus, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgStatus: Sp("D")},
+	{Label: "Valid Status", URL: validPartStatus, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgStatus: Sp("D")},
+	{Label: "Failed Status", URL: failedStatus, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgStatus: Sp("F")},
+	{Label: "Missing Status", URL: missingStatus, ExpectedStatus: 400, ExpectedResponse: "parameters messageid and status should not be empty"},
+	{Label: "Missing Status", URL: badStatus, ExpectedStatus: 400, ExpectedResponse: "parsing failed: status 'foo' is not an integer"},
+	{Label: "Missing Status", URL: badStatusMessageID, ExpectedStatus: 400, ExpectedResponse: "parsing failed: messageid 'abc' is not an integer"},
 }
 
 func TestHandler(t *testing.T) {

@@ -196,45 +196,45 @@ var missingFieldsReceive = `{
 }`
 
 var testWhatappCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveWhatsappURL, Data: validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Msg"), URN: Sp("whatsapp:254791541111"), Date: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
+	{Label: "Receive Valid", URL: receiveWhatsappURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
 
-	{Label: "Receive file Valid", URL: receiveWhatsappURL, Data: fileReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:254791541111"), Date: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
+	{Label: "Receive file Valid", URL: receiveWhatsappURL, Data: fileReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
 
-	{Label: "Receive location Valid", URL: receiveWhatsappURL, Data: locationReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp(""), Attachment: Sp("geo:0.000000,1.000000"), URN: Sp("whatsapp:254791541111"), Date: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
+	{Label: "Receive location Valid", URL: receiveWhatsappURL, Data: locationReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:0.000000,1.000000"}, ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
 
-	{Label: "Not JSON body", URL: receiveWhatsappURL, Data: notJSON, Status: 400, Response: "unable to parse request JSON"},
-	{Label: "Wrong JSON schema", URL: receiveWhatsappURL, Data: wrongJSONSchema, Status: 400, Response: "request JSON doesn't match required schema"},
-	{Label: "Missing field", URL: receiveWhatsappURL, Data: missingFieldsReceive, Status: 400, Response: "validation for 'ID' failed on the 'required'"},
-	{Label: "Bad Date", URL: receiveWhatsappURL, Data: invalidDateReceive, Status: 400, Response: "invalid date format"},
+	{Label: "Not JSON body", URL: receiveWhatsappURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
+	{Label: "Wrong JSON schema", URL: receiveWhatsappURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
+	{Label: "Missing field", URL: receiveWhatsappURL, Data: missingFieldsReceive, ExpectedStatus: 400, ExpectedResponse: "validation for 'ID' failed on the 'required'"},
+	{Label: "Bad Date", URL: receiveWhatsappURL, Data: invalidDateReceive, ExpectedStatus: 400, ExpectedResponse: "invalid date format"},
 
-	{Label: "Valid Status", URL: statusWhatsppURL, Data: validStatus, Status: 200, Response: `Accepted`, MsgStatus: Sp("S")},
-	{Label: "Unkown Status", URL: statusWhatsppURL, Data: unknownStatus, Status: 200, Response: "Accepted", MsgStatus: Sp("E")},
-	{Label: "Not JSON body", URL: statusWhatsppURL, Data: notJSON, Status: 400, Response: "unable to parse request JSON"},
-	{Label: "Wrong JSON schema", URL: statusWhatsppURL, Data: wrongJSONSchema, Status: 400, Response: "request JSON doesn't match required schema"},
+	{Label: "Valid Status", URL: statusWhatsppURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: Sp("S")},
+	{Label: "Unkown Status", URL: statusWhatsppURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgStatus: Sp("E")},
+	{Label: "Not JSON body", URL: statusWhatsppURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
+	{Label: "Wrong JSON schema", URL: statusWhatsppURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
 }
 
 var testSMSCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveSMSURL, Data: validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Msg"), URN: Sp("whatsapp:254791541111"), Date: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
+	{Label: "Receive Valid", URL: receiveSMSURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
 
-	{Label: "Receive file Valid", URL: receiveSMSURL, Data: fileReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp(""), Attachment: Sp("https://foo.bar/v1/media/41"), URN: Sp("whatsapp:254791541111"), Date: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
+	{Label: "Receive file Valid", URL: receiveSMSURL, Data: fileReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
 
-	{Label: "Receive location Valid", URL: receiveSMSURL, Data: locationReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp(""), Attachment: Sp("geo:0.000000,1.000000"), URN: Sp("whatsapp:254791541111"), Date: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
+	{Label: "Receive location Valid", URL: receiveSMSURL, Data: locationReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:0.000000,1.000000"}, ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
 
-	{Label: "Not JSON body", URL: receiveSMSURL, Data: notJSON, Status: 400, Response: "unable to parse request JSON"},
-	{Label: "Wrong JSON schema", URL: receiveSMSURL, Data: wrongJSONSchema, Status: 400, Response: "request JSON doesn't match required schema"},
-	{Label: "Missing field", URL: receiveSMSURL, Data: missingFieldsReceive, Status: 400, Response: "validation for 'ID' failed on the 'required'"},
-	{Label: "Bad Date", URL: receiveSMSURL, Data: invalidDateReceive, Status: 400, Response: "invalid date format"},
+	{Label: "Not JSON body", URL: receiveSMSURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
+	{Label: "Wrong JSON schema", URL: receiveSMSURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
+	{Label: "Missing field", URL: receiveSMSURL, Data: missingFieldsReceive, ExpectedStatus: 400, ExpectedResponse: "validation for 'ID' failed on the 'required'"},
+	{Label: "Bad Date", URL: receiveSMSURL, Data: invalidDateReceive, ExpectedStatus: 400, ExpectedResponse: "invalid date format"},
 
-	{Label: "Valid Status", URL: statusSMSURL, Data: validStatus, Status: 200, Response: `Accepted`, MsgStatus: Sp("S")},
-	{Label: "Unkown Status", URL: statusSMSURL, Data: unknownStatus, Status: 200, Response: "Accepted", MsgStatus: Sp("E")},
-	{Label: "Not JSON body", URL: statusSMSURL, Data: notJSON, Status: 400, Response: "unable to parse request JSON"},
-	{Label: "Wrong JSON schema", URL: statusSMSURL, Data: wrongJSONSchema, Status: 400, Response: "request JSON doesn't match required schema"},
+	{Label: "Valid Status", URL: statusSMSURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: Sp("S")},
+	{Label: "Unkown Status", URL: statusSMSURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgStatus: Sp("E")},
+	{Label: "Not JSON body", URL: statusSMSURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
+	{Label: "Wrong JSON schema", URL: statusSMSURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
 }
 
 func TestHandler(t *testing.T) {

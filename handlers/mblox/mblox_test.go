@@ -62,16 +62,16 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Hello World"), URN: Sp("tel:+12067799294"), Date: Tp(time.Date(2016, 3, 30, 19, 33, 06, 643000000, time.UTC)),
-		ExternalID: Sp("OzQ5UqIOdoY8")},
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("tel:+12067799294"), ExpectedDate: Tp(time.Date(2016, 3, 30, 19, 33, 06, 643000000, time.UTC)),
+		ExpectedExternalID: Sp("OzQ5UqIOdoY8")},
 
-	{Label: "Receive Missing Params", URL: receiveURL, Data: missingParamsRecieve, Status: 400, Response: "missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
+	{Label: "Receive Missing Params", URL: receiveURL, Data: missingParamsRecieve, ExpectedStatus: 400, ExpectedResponse: "missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 
-	{Label: "Status Valid", URL: receiveURL, Data: validStatus, Status: 200, Response: `"status":"D"`},
-	{Label: "Status Unknown", URL: receiveURL, Data: unknownStatus, Status: 400, Response: `unknown status 'INVALID'`},
-	{Label: "Status Missing Batch ID", URL: receiveURL, Data: missingBatchID, Status: 400, Response: "missing one of 'batch_id' or 'status' in request body"},
+	{Label: "Status Valid", URL: receiveURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `"status":"D"`},
+	{Label: "Status Unknown", URL: receiveURL, Data: unknownStatus, ExpectedStatus: 400, ExpectedResponse: `unknown status 'INVALID'`},
+	{Label: "Status Missing Batch ID", URL: receiveURL, Data: missingBatchID, ExpectedStatus: 400, ExpectedResponse: "missing one of 'batch_id' or 'status' in request body"},
 }
 
 func TestHandler(t *testing.T) {

@@ -32,25 +32,25 @@ var ignoreChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), ExternalID: Sp("asdf-asdf"), Date: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
-	{Label: "Receive KI Message", URL: receiveKIMessage, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+68673076228"), ExternalID: Sp("asdf-asdf"), Date: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
-	{Label: "Receive Empty Message", URL: receiveEmptyMessage, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp(""), URN: Sp("tel:+2349067554729"), ExternalID: Sp("asdf-asdf"), Date: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
-	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", Status: 400, Response: "field 'sender' required"},
-	{Label: "Invalid URN", URL: receiveInvalidURN, Data: "empty", Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Status No Params", URL: statusNoParams, Status: 400, Response: "field 'status' required"},
-	{Label: "Status Invalid Status", URL: statusInvalidStatus, Status: 400, Response: "unknown status '66', must be one of 1,2,4,8,16"},
-	{Label: "Status Valid", URL: statusWired, Status: 200, Response: `"status":"S"`},
+	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedExternalID: Sp("asdf-asdf"), ExpectedDate: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
+	{Label: "Receive KI Message", URL: receiveKIMessage, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+68673076228"), ExpectedExternalID: Sp("asdf-asdf"), ExpectedDate: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
+	{Label: "Receive Empty Message", URL: receiveEmptyMessage, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp(""), ExpectedURN: Sp("tel:+2349067554729"), ExpectedExternalID: Sp("asdf-asdf"), ExpectedDate: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
+	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "field 'sender' required"},
+	{Label: "Invalid URN", URL: receiveInvalidURN, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Status No Params", URL: statusNoParams, ExpectedStatus: 400, ExpectedResponse: "field 'status' required"},
+	{Label: "Status Invalid Status", URL: statusInvalidStatus, ExpectedStatus: 400, ExpectedResponse: "unknown status '66', must be one of 1,2,4,8,16"},
+	{Label: "Status Valid", URL: statusWired, ExpectedStatus: 200, ExpectedResponse: `"status":"S"`},
 }
 
 var ignoreTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), ExternalID: Sp("asdf-asdf"), Date: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
-	{Label: "Write Status Delivered", URL: statusDelivered, Status: 200, Response: `"status":"D"`},
-	{Label: "Ignore Status Wired", URL: statusWired, Status: 200, Response: `ignoring sent report`},
-	{Label: "Ignore Status Sent", URL: statusSent, Status: 200, Response: `ignoring sent report`},
+	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedExternalID: Sp("asdf-asdf"), ExpectedDate: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
+	{Label: "Write Status Delivered", URL: statusDelivered, ExpectedStatus: 200, ExpectedResponse: `"status":"D"`},
+	{Label: "Ignore Status Wired", URL: statusWired, ExpectedStatus: 200, ExpectedResponse: `ignoring sent report`},
+	{Label: "Ignore Status Sent", URL: statusSent, ExpectedStatus: 200, ExpectedResponse: `ignoring sent report`},
 }
 
 func TestHandler(t *testing.T) {

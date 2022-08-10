@@ -29,16 +29,16 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Hello"), URN: Sp("tel:+60124361111"), ExternalID: Sp("abc1234")},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Invalid Address Params", URL: receiveURL, Data: invalidAddress, Status: 400, Response: "invalid to number [1515], expecting [2020]"},
-	{Label: "Missing Params", URL: receiveURL, Data: missingParams, Status: 400, Response: "Field validation for 'To' failed"},
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+		ExpectedMsgText: Sp("Hello"), ExpectedURN: Sp("tel:+60124361111"), ExpectedExternalID: Sp("abc1234")},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Invalid Address Params", URL: receiveURL, Data: invalidAddress, ExpectedStatus: 400, ExpectedResponse: "invalid to number [1515], expecting [2020]"},
+	{Label: "Missing Params", URL: receiveURL, Data: missingParams, ExpectedStatus: 400, ExpectedResponse: "Field validation for 'To' failed"},
 
-	{Label: "Valid Status", URL: statusURL, Data: validStatus, Status: 200, Response: `"status":"D"`},
-	{Label: "Sent Status", URL: statusURL, Data: validSentStatus, Status: 200, Response: `"status":"S"`},
-	{Label: "Invalid Status Address", URL: statusURL, Data: invalidStatusAddress, Status: 400, Response: "invalid to number [1515], expecting [2020]"},
-	{Label: "Unkown Status", URL: statusURL, Data: unknownStatus, Status: 200, Response: `ignoring unknown status 'UNKNOWN'`},
+	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `"status":"D"`},
+	{Label: "Sent Status", URL: statusURL, Data: validSentStatus, ExpectedStatus: 200, ExpectedResponse: `"status":"S"`},
+	{Label: "Invalid Status Address", URL: statusURL, Data: invalidStatusAddress, ExpectedStatus: 400, ExpectedResponse: "invalid to number [1515], expecting [2020]"},
+	{Label: "Unkown Status", URL: statusURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: `ignoring unknown status 'UNKNOWN'`},
 }
 
 func TestHandler(t *testing.T) {

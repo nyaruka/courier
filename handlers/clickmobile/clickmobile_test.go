@@ -67,21 +67,21 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: validReceive, Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+265990099333"), ExternalID: Sp("1232434354")},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURNReceive, Status: 400, Response: "phone number supplied is not a number"},
+	{Label: "Receive Valid Message", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+265990099333"), ExpectedExternalID: Sp("1232434354")},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURNReceive, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 
-	{Label: "Receive valid with empty text", URL: receiveURL, Data: validReceiveEmptyText, Status: 200, Response: "Accepted",
-		Text: Sp(""), URN: Sp("tel:+265990099333"), ExternalID: Sp("1232434354")},
-	{Label: "Receive valid missing text", URL: receiveURL, Data: validMissingText, Status: 200, Response: "Accepted",
-		Text: Sp(""), URN: Sp("tel:+265990099333"), ExternalID: Sp("1232434354")},
+	{Label: "Receive valid with empty text", URL: receiveURL, Data: validReceiveEmptyText, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp(""), ExpectedURN: Sp("tel:+265990099333"), ExpectedExternalID: Sp("1232434354")},
+	{Label: "Receive valid missing text", URL: receiveURL, Data: validMissingText, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp(""), ExpectedURN: Sp("tel:+265990099333"), ExpectedExternalID: Sp("1232434354")},
 
-	{Label: "Receive valid missing referenceID", URL: receiveURL, Data: validMissingReferenceID, Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+265990099333"), ExternalID: Sp("")},
+	{Label: "Receive valid missing referenceID", URL: receiveURL, Data: validMissingReferenceID, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+265990099333"), ExpectedExternalID: Sp("")},
 
-	{Label: "Missing Shortcode", URL: receiveURL, Data: missingShortcode, Status: 400, Response: "missing parameters, must have 'mobile' and 'shortcode'"},
-	{Label: "Missing Mobile", URL: receiveURL, Data: missingMobile, Status: 400, Response: "missing parameters, must have 'mobile' and 'shortcode'"},
-	{Label: "Receive invalid XML", URL: receiveURL, Data: notXML, Status: 400, Response: "unable to parse request XML"},
+	{Label: "Missing Shortcode", URL: receiveURL, Data: missingShortcode, ExpectedStatus: 400, ExpectedResponse: "missing parameters, must have 'mobile' and 'shortcode'"},
+	{Label: "Missing Mobile", URL: receiveURL, Data: missingMobile, ExpectedStatus: 400, ExpectedResponse: "missing parameters, must have 'mobile' and 'shortcode'"},
+	{Label: "Receive invalid XML", URL: receiveURL, Data: notXML, ExpectedStatus: 400, ExpectedResponse: "unable to parse request XML"},
 }
 
 func TestHandler(t *testing.T) {

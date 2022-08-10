@@ -93,44 +93,44 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: inboundURL, Data: validMsg, Status: 200, Response: "Accepted",
-		Text: Sp("hello world"), URN: Sp("tel:+250788383383"),
-		Date: Tp(time.Date(2017, 01, 01, 1, 2, 3, 50000000, time.UTC))},
+	{Label: "Receive Valid Message", URL: inboundURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+250788383383"),
+		ExpectedDate: Tp(time.Date(2017, 01, 01, 1, 2, 3, 50000000, time.UTC))},
 
 	{Label: "Invalid URN", URL: inboundURL, Data: invalidURN,
-		Status: 400, Response: "phone number supplied is not a number"},
+		ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Invalid Timestamp", URL: inboundURL, Data: invalidTimestamp,
-		Status: 400, Response: "unable to parse date"},
+		ExpectedStatus: 400, ExpectedResponse: "unable to parse date"},
 	{Label: "Missing Message ID", URL: inboundURL, Data: missingMessageID,
-		Status: 400, Response: "'MessageID' failed on the 'required'"},
+		ExpectedStatus: 400, ExpectedResponse: "'MessageID' failed on the 'required'"},
 
-	{Label: "Receive Pending Event", URL: eventURL, Data: pendingEvent, Status: 200, Response: "Ignored"},
-	{Label: "Receive Sent Event", URL: eventURL, Data: sentEvent, Status: 200, Response: "Accepted",
-		ExternalID: Sp("xx12345"), MsgStatus: Sp("S")},
-	{Label: "Receive Delivered Event", URL: eventURL, Data: deliveredEvent, Status: 200, Response: "Accepted",
-		ExternalID: Sp("xx12345"), MsgStatus: Sp("D")},
-	{Label: "Receive Failed Event", URL: eventURL, Data: failedEvent, Status: 200, Response: "Accepted",
-		ExternalID: Sp("xx12345"), MsgStatus: Sp("F")},
-	{Label: "Receive Unknown Event", URL: eventURL, Data: unknownEvent, Status: 200, Response: "Ignored"},
+	{Label: "Receive Pending Event", URL: eventURL, Data: pendingEvent, ExpectedStatus: 200, ExpectedResponse: "Ignored"},
+	{Label: "Receive Sent Event", URL: eventURL, Data: sentEvent, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedExternalID: Sp("xx12345"), ExpectedMsgStatus: Sp("S")},
+	{Label: "Receive Delivered Event", URL: eventURL, Data: deliveredEvent, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedExternalID: Sp("xx12345"), ExpectedMsgStatus: Sp("D")},
+	{Label: "Receive Failed Event", URL: eventURL, Data: failedEvent, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedExternalID: Sp("xx12345"), ExpectedMsgStatus: Sp("F")},
+	{Label: "Receive Unknown Event", URL: eventURL, Data: unknownEvent, ExpectedStatus: 200, ExpectedResponse: "Ignored"},
 
-	{Label: "Receive Invalid JSON", URL: eventURL, Data: "not json", Status: 400, Response: "Error"},
-	{Label: "Receive Missing Event Type", URL: eventURL, Data: missingEventType, Status: 400, Response: "Error"},
+	{Label: "Receive Invalid JSON", URL: eventURL, Data: "not json", ExpectedStatus: 400, ExpectedResponse: "Error"},
+	{Label: "Receive Missing Event Type", URL: eventURL, Data: missingEventType, ExpectedStatus: 400, ExpectedResponse: "Error"},
 }
 
 var authenticatedTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: inboundURL, Data: validMsg, Headers: map[string]string{"Authorization": "Token sesame"},
-		Status: 200, Response: "Accepted",
-		Text: Sp("hello world"), URN: Sp("tel:+250788383383"),
-		Date: Tp(time.Date(2017, 01, 01, 1, 2, 3, 50000000, time.UTC))},
+		ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+250788383383"),
+		ExpectedDate: Tp(time.Date(2017, 01, 01, 1, 2, 3, 50000000, time.UTC))},
 
 	{Label: "Invalid Incoming Authorization", URL: inboundURL, Data: validMsg, Headers: map[string]string{"Authorization": "Token foo"},
-		Status: 401, Response: "Unauthorized"},
+		ExpectedStatus: 401, ExpectedResponse: "Unauthorized"},
 
 	{Label: "Receive Sent Event", URL: eventURL, Data: sentEvent, Headers: map[string]string{"Authorization": "Token sesame"},
-		Status: 200, Response: "Accepted",
-		ExternalID: Sp("xx12345"), MsgStatus: Sp("S")},
+		ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedExternalID: Sp("xx12345"), ExpectedMsgStatus: Sp("S")},
 	{Label: "Invalid Incoming Authorization", URL: eventURL, Data: sentEvent, Headers: map[string]string{"Authorization": "Token foo"},
-		Status: 401, Response: "Unauthorized"},
+		ExpectedStatus: 401, ExpectedResponse: "Unauthorized"},
 }
 
 func TestHandler(t *testing.T) {

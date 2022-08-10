@@ -26,18 +26,18 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: receiveValid, Status: 200, Response: "Accepted",
-		Text: Sp("hello world"), URN: Sp("tel:+12065551234")},
-	{Label: "Receive No Params", URL: receiveURL, Data: " ", Status: 400, Response: `'From' failed on the 'required'`},
-	{Label: "Receive Media", URL: receiveURL, Data: receiveMedia, Status: 200, Response: "Accepted",
-		URN: Sp("tel:+12065551234"), Attachments: []string{"http://foo.bar/foo.png"}},
+	{Label: "Receive Valid", URL: receiveURL, Data: receiveValid, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+12065551234")},
+	{Label: "Receive No Params", URL: receiveURL, Data: " ", ExpectedStatus: 400, ExpectedResponse: `'From' failed on the 'required'`},
+	{Label: "Receive Media", URL: receiveURL, Data: receiveMedia, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedURN: Sp("tel:+12065551234"), ExpectedAttachments: []string{"http://foo.bar/foo.png"}},
 
-	{Label: "Status Valid", URL: statusURL, Data: statusValid, Status: 200,
-		ExternalID: Sp("1234"), Response: `"status":"D"`},
-	{Label: "Status Invalid", URL: statusURL, Data: statusInvalid, Status: 400,
-		ExternalID: Sp("1234"), Response: `"unknown status: 'UN'"`},
-	{Label: "Status Missing GUID", URL: statusURL, Data: missingGUID, Status: 400,
-		ExternalID: Sp("1234"), Response: `'GUID' failed on the 'required' tag`},
+	{Label: "Status Valid", URL: statusURL, Data: statusValid, ExpectedStatus: 200,
+		ExpectedExternalID: Sp("1234"), ExpectedResponse: `"status":"D"`},
+	{Label: "Status Invalid", URL: statusURL, Data: statusInvalid, ExpectedStatus: 400,
+		ExpectedExternalID: Sp("1234"), ExpectedResponse: `"unknown status: 'UN'"`},
+	{Label: "Status Missing GUID", URL: statusURL, Data: missingGUID, ExpectedStatus: 400,
+		ExpectedExternalID: Sp("1234"), ExpectedResponse: `'GUID' failed on the 'required' tag`},
 }
 
 func TestHandler(t *testing.T) {

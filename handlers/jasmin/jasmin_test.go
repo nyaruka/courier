@@ -27,20 +27,20 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, Status: 200, Response: "ACK/Jasmin",
-		Text: Sp("événement"), URN: Sp("tel:+2349067554729"), ExternalID: Sp("1001")},
-	{Label: "Receive Missing To", URL: receiveURL, Data: receiveMissingTo, Status: 400,
-		Response: "field 'to' required"},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400,
-		Response: "phone number supplied is not a number"},
-	{Label: "Status Delivered", URL: statusURL, Data: statusDelivered, Status: 200, Response: "ACK/Jasmin",
-		MsgStatus: Sp("D"), ExternalID: Sp("external1")},
-	{Label: "Status Failed", URL: statusURL, Data: statusFailed, Status: 200, Response: "ACK/Jasmin",
-		MsgStatus: Sp("F"), ExternalID: Sp("external1")},
-	{Label: "Status Missing", URL: statusURL, Status: 400, Data: "nothing",
-		Response: "field 'id' required"},
-	{Label: "Status Unknown", URL: statusURL, Status: 400, Data: statusUnknown,
-		Response: "must have either dlvrd or err set to 1"},
+	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, ExpectedStatus: 200, ExpectedResponse: "ACK/Jasmin",
+		ExpectedMsgText: Sp("événement"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedExternalID: Sp("1001")},
+	{Label: "Receive Missing To", URL: receiveURL, Data: receiveMissingTo, ExpectedStatus: 400,
+		ExpectedResponse: "field 'to' required"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400,
+		ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Status Delivered", URL: statusURL, Data: statusDelivered, ExpectedStatus: 200, ExpectedResponse: "ACK/Jasmin",
+		ExpectedMsgStatus: Sp("D"), ExpectedExternalID: Sp("external1")},
+	{Label: "Status Failed", URL: statusURL, Data: statusFailed, ExpectedStatus: 200, ExpectedResponse: "ACK/Jasmin",
+		ExpectedMsgStatus: Sp("F"), ExpectedExternalID: Sp("external1")},
+	{Label: "Status Missing", URL: statusURL, ExpectedStatus: 400, Data: "nothing",
+		ExpectedResponse: "field 'id' required"},
+	{Label: "Status Unknown", URL: statusURL, ExpectedStatus: 400, Data: statusUnknown,
+		ExpectedResponse: "must have either dlvrd or err set to 1"},
 }
 
 func TestHandler(t *testing.T) {

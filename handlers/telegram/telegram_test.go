@@ -452,49 +452,49 @@ var contactMsg = `
 }`
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: helloMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("Hello World"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: helloMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("41"), ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 
-	{Label: "Receive Start Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: startMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), ChannelEvent: Sp(string(courier.NewConversation)), URN: Sp("telegram:3527065#nicpottier"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Start Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: startMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ChannelEvent: Sp(string(courier.NewConversation)), ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
 
-	{Label: "Receive No Params", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, Status: 200, Response: "Ignoring"},
+	{Label: "Receive No Params", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, ExpectedStatus: 200, ExpectedResponse: "Ignoring"},
 
-	{Label: "Receive Invalid JSON", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: "foo", Status: 400, Response: "unable to parse"},
+	{Label: "Receive Invalid JSON", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: "foo", ExpectedStatus: 400, ExpectedResponse: "unable to parse"},
 
-	{Label: "Receive Sticker", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: stickerMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/sticker.jpg"), URN: Sp("telegram:3527065"), ExternalID: Sp("44"), Date: Tp(time.Date(2016, 1, 30, 2, 07, 48, 0, time.UTC))},
+	{Label: "Receive Sticker", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: stickerMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/sticker.jpg"}, ExpectedURN: Sp("telegram:3527065"), ExpectedExternalID: Sp("44"), ExpectedDate: Tp(time.Date(2016, 1, 30, 2, 07, 48, 0, time.UTC))},
 
-	{Label: "Receive Photo", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: photoMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("Photo Caption"), Attachment: Sp("/file/bota123/photo.jpg"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("85"), Date: Tp(time.Date(2017, 5, 3, 20, 28, 38, 0, time.UTC))},
+	{Label: "Receive Photo", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: photoMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Photo Caption"), ExpectedAttachments: []string{"/file/bota123/photo.jpg"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("85"), ExpectedDate: Tp(time.Date(2017, 5, 3, 20, 28, 38, 0, time.UTC))},
 
-	{Label: "Receive Video", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: videoMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/video.jpg"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("86"), Date: Tp(time.Date(2017, 5, 3, 20, 29, 24, 0, time.UTC))},
+	{Label: "Receive Video", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: videoMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/video.jpg"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("86"), ExpectedDate: Tp(time.Date(2017, 5, 3, 20, 29, 24, 0, time.UTC))},
 
-	{Label: "Receive Voice", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: voiceMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/voice.mp4"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("91"), Date: Tp(time.Date(2017, 5, 3, 20, 50, 46, 0, time.UTC))},
+	{Label: "Receive Voice", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: voiceMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/voice.mp4"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("91"), ExpectedDate: Tp(time.Date(2017, 5, 3, 20, 50, 46, 0, time.UTC))},
 
-	{Label: "Receive Document", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: documentMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/document.xls"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("92"), Date: Tp(time.Date(2017, 5, 3, 20, 58, 20, 0, time.UTC))},
+	{Label: "Receive Document", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: documentMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/document.xls"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("92"), ExpectedDate: Tp(time.Date(2017, 5, 3, 20, 58, 20, 0, time.UTC))},
 
-	{Label: "Receive Location", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: locationMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("-2.890287,-79.004333"), Attachment: Sp("geo:-2.890287,-79.004333"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("94"), Date: Tp(time.Date(2017, 5, 3, 21, 00, 44, 0, time.UTC))},
+	{Label: "Receive Location", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: locationMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("-2.890287,-79.004333"), ExpectedAttachments: []string{"geo:-2.890287,-79.004333"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("94"), ExpectedDate: Tp(time.Date(2017, 5, 3, 21, 00, 44, 0, time.UTC))},
 
-	{Label: "Receive Venue", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: venueMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("Cuenca, Provincia del Azuay"), Attachment: Sp("geo:-2.898944,-79.006835"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("95"), Date: Tp(time.Date(2017, 5, 3, 21, 05, 20, 0, time.UTC))},
+	{Label: "Receive Venue", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: venueMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Cuenca, Provincia del Azuay"), ExpectedAttachments: []string{"geo:-2.898944,-79.006835"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("95"), ExpectedDate: Tp(time.Date(2017, 5, 3, 21, 05, 20, 0, time.UTC))},
 
-	{Label: "Receive Contact", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: contactMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("Adolf Taxi (0788531373)"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("96"), Date: Tp(time.Date(2017, 5, 3, 21, 9, 15, 0, time.UTC))},
+	{Label: "Receive Contact", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: contactMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Adolf Taxi (0788531373)"), ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("96"), ExpectedDate: Tp(time.Date(2017, 5, 3, 21, 9, 15, 0, time.UTC))},
 
-	{Label: "Receive Empty", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, Status: 200, Response: "Ignoring"},
+	{Label: "Receive Empty", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, ExpectedStatus: 200, ExpectedResponse: "Ignoring"},
 
-	{Label: "Receive Invalid FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: invalidFileID, Status: 200, Response: "unable to resolve file"},
+	{Label: "Receive Invalid FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: invalidFileID, ExpectedStatus: 200, ExpectedResponse: "unable to resolve file"},
 
-	{Label: "Receive NoOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noOkFile, Status: 200, Response: "no 'ok' in response"},
+	{Label: "Receive NoOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noOkFile, ExpectedStatus: 200, ExpectedResponse: "no 'ok' in response"},
 
-	{Label: "Receive NotOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: notOkFile, Status: 200, Response: "not present"},
+	{Label: "Receive NotOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: notOkFile, ExpectedStatus: 200, ExpectedResponse: "not present"},
 
-	{Label: "Receive No FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noFile, Status: 200, Response: "result.file_path"},
+	{Label: "Receive No FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noFile, ExpectedStatus: 200, ExpectedResponse: "result.file_path"},
 }
 
 func buildMockTelegramService(testCases []ChannelHandleTestCase) *httptest.Server {
@@ -536,9 +536,11 @@ func buildMockTelegramService(testCases []ChannelHandleTestCase) *httptest.Serve
 	apiURL = server.URL
 
 	// update our tests media urls
-	for c := range testCases {
-		if testCases[c].Attachment != nil && !strings.HasPrefix(*testCases[c].Attachment, "geo") {
-			testCases[c].Attachment = Sp(fmt.Sprintf("%s%s", apiURL, *testCases[c].Attachment))
+	for _, tc := range testCases {
+		for i := range tc.ExpectedAttachments {
+			if !strings.HasPrefix(tc.ExpectedAttachments[i], "geo:") {
+				tc.ExpectedAttachments[i] = fmt.Sprintf("%s%s", apiURL, tc.ExpectedAttachments[i])
+			}
 		}
 	}
 

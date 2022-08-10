@@ -56,11 +56,11 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Headers: map[string]string{
 			"Authorization": "Token 123456789",
 		},
-		Data:     helloMsg,
-		URN:      handlers.Sp("rocketchat:direct:john.doe#john.doe"),
-		Text:     handlers.Sp("Hello World"),
-		Status:   200,
-		Response: "Accepted",
+		Data:             helloMsg,
+		ExpectedURN:      handlers.Sp("rocketchat:direct:john.doe#john.doe"),
+		ExpectedMsgText:  handlers.Sp("Hello World"),
+		ExpectedStatus:   200,
+		ExpectedResponse: "Accepted",
 	},
 	{
 		Label: "Receive Attachment Msg",
@@ -68,11 +68,11 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Headers: map[string]string{
 			"Authorization": "Token 123456789",
 		},
-		Data:       attachmentMsg,
-		URN:        handlers.Sp("rocketchat:livechat:onrMgdKbpX9Qqtvoi"),
-		Attachment: handlers.Sp("https://link.to/image.jpg"),
-		Status:     200,
-		Response:   "Accepted",
+		Data:                attachmentMsg,
+		ExpectedURN:         handlers.Sp("rocketchat:livechat:onrMgdKbpX9Qqtvoi"),
+		ExpectedAttachments: []string{"https://link.to/image.jpg"},
+		ExpectedStatus:      200,
+		ExpectedResponse:    "Accepted",
 	},
 	{
 		Label: "Don't Receive Empty Msg",
@@ -80,9 +80,9 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Headers: map[string]string{
 			"Authorization": "Token 123456789",
 		},
-		Data:     emptyMsg,
-		Status:   400,
-		Response: "no text or attachment",
+		Data:             emptyMsg,
+		ExpectedStatus:   400,
+		ExpectedResponse: "no text or attachment",
 	},
 	{
 		Label: "Invalid Authorization",
@@ -90,9 +90,9 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Headers: map[string]string{
 			"Authorization": "123456789",
 		},
-		Data:     emptyMsg,
-		Status:   401,
-		Response: "invalid Authorization header",
+		Data:             emptyMsg,
+		ExpectedStatus:   401,
+		ExpectedResponse: "invalid Authorization header",
 	},
 }
 

@@ -23,13 +23,13 @@ var testChannels = []courier.Channel{
 }
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Recieve Message", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `from=694634743521607802&text=hello`, Status: 200, Text: Sp("hello"), URN: Sp("discord:694634743521607802")},
-	{Label: "Recieve Message with attachment", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `from=694634743521607802&text=hello&attachments=https://test.test/foo.png`, Status: 200, Text: Sp("hello"), URN: Sp("discord:694634743521607802"), Attachments: []string{"https://test.test/foo.png"}},
-	{Label: "Invalid ID", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `from=somebody&text=hello`, Status: 400, Response: "Error"},
-	{Label: "Garbage Body", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `sdfaskdfajsdkfajsdfaksdf`, Status: 400, Response: "Error"},
-	{Label: "Missing Text", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `from=694634743521607802`, Status: 400, Response: "Error"},
-	{Label: "Message Sent Handler", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/sent/", Data: `id=12345`, Status: 200, Response: `"status":"S"`},
-	{Label: "Message Sent Handler Garbage", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/sent/", Data: `nothing`, Status: 400},
+	{Label: "Recieve Message", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `from=694634743521607802&text=hello`, ExpectedStatus: 200, ExpectedMsgText: Sp("hello"), ExpectedURN: Sp("discord:694634743521607802")},
+	{Label: "Recieve Message with attachment", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `from=694634743521607802&text=hello&attachments=https://test.test/foo.png`, ExpectedStatus: 200, ExpectedMsgText: Sp("hello"), ExpectedURN: Sp("discord:694634743521607802"), ExpectedAttachments: []string{"https://test.test/foo.png"}},
+	{Label: "Invalid ID", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `from=somebody&text=hello`, ExpectedStatus: 400, ExpectedResponse: "Error"},
+	{Label: "Garbage Body", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `sdfaskdfajsdkfajsdfaksdf`, ExpectedStatus: 400, ExpectedResponse: "Error"},
+	{Label: "Missing Text", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive", Data: `from=694634743521607802`, ExpectedStatus: 400, ExpectedResponse: "Error"},
+	{Label: "Message Sent Handler", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/sent/", Data: `id=12345`, ExpectedStatus: 200, ExpectedResponse: `"status":"S"`},
+	{Label: "Message Sent Handler Garbage", URL: "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/sent/", Data: `nothing`, ExpectedStatus: 400},
 }
 
 var sendTestCases = []ChannelSendTestCase{

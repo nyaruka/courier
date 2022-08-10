@@ -30,29 +30,26 @@ type RequestPrepFunc func(*http.Request)
 type ChannelHandleTestCase struct {
 	Label string
 
-	URL      string
-	Data     string
-	Status   int
-	Response string
-	Headers  map[string]string
-
+	URL                 string
+	Data                string
+	Headers             map[string]string
 	MultipartFormFields map[string]string
 
-	Name        *string
-	Text        *string
-	URN         *string
-	URNAuth     *string
-	Attachment  *string
-	Attachments []string
-	Date        *time.Time
+	ExpectedStatus   int
+	ExpectedResponse string
 
-	MsgStatus *string
+	ExpectedContactName *string
+	ExpectedMsgText     *string
+	ExpectedURN         *string
+	ExpectedURNAuth     *string
+	ExpectedAttachments []string
+	ExpectedDate        *time.Time
+	ExpectedMsgStatus   *string
+	ExpectedExternalID  *string
+	ExpectedMsgID       int64
 
 	ChannelEvent      *string
 	ChannelEventExtra map[string]interface{}
-
-	ExternalID *string
-	ID         int64
 
 	NoQueueErrorCheck     bool
 	NoInvalidChannelCheck bool
@@ -218,24 +215,24 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 	mb.AddChannel(channel)
 	handler.Initialize(s)
 
-	for _, testCase := range testCases {
+	for _, tc := range testCases {
 		mockRRCount := 0
-		t.Run(testCase.Label, func(t *testing.T) {
+		t.Run(tc.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(testCase.MsgURN), testCase.MsgText, testCase.MsgHighPriority, testCase.MsgQuickReplies, testCase.MsgTopic, testCase.MsgResponseToExternalID)
+			msg := mb.NewOutgoingMsg(channel, courier.NewMsgID(10), urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgTopic, tc.MsgResponseToExternalID)
 
-			for _, a := range testCase.MsgAttachments {
+			for _, a := range tc.MsgAttachments {
 				msg.WithAttachment(a)
 			}
-			if testCase.MsgURNAuth != "" {
-				msg.WithURNAuth(testCase.MsgURNAuth)
+			if tc.MsgURNAuth != "" {
+				msg.WithURNAuth(tc.MsgURNAuth)
 			}
-			if len(testCase.MsgMetadata) > 0 {
-				msg.WithMetadata(testCase.MsgMetadata)
+			if len(tc.MsgMetadata) > 0 {
+				msg.WithMetadata(tc.MsgMetadata)
 			}
-			if testCase.MsgFlow != nil {
-				msg.WithFlow(testCase.MsgFlow)
+			if tc.MsgFlow != nil {
+				msg.WithFlow(tc.MsgFlow)
 			}
 
 			var testRequest *http.Request
@@ -243,13 +240,13 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				body, _ := ioutil.ReadAll(r.Body)
 				testRequest = httptest.NewRequest(r.Method, r.URL.String(), bytes.NewBuffer(body))
 				testRequest.Header = r.Header
-				if (len(testCase.MockResponses)) == 0 {
-					w.WriteHeader(testCase.MockResponseStatus)
-					w.Write([]byte(testCase.MockResponseBody))
+				if (len(tc.MockResponses)) == 0 {
+					w.WriteHeader(tc.MockResponseStatus)
+					w.Write([]byte(tc.MockResponseBody))
 				} else {
-					require.Zero(testCase.MockResponseStatus, "ResponseStatus should not be used when using testcase.Responses")
-					require.Zero(testCase.MockResponseBody, "ResponseBody should not be used when using testcase.Responses")
-					for mockRequest, mockResponse := range testCase.MockResponses {
+					require.Zero(tc.MockResponseStatus, "ResponseStatus should not be used when using testcase.Responses")
+					require.Zero(tc.MockResponseBody, "ResponseBody should not be used when using testcase.Responses")
+					for mockRequest, mockResponse := range tc.MockResponses {
 						bodyStr := string(body)[:]
 						if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && mockRequest.RawQuery == r.URL.RawQuery && (mockRequest.Body == bodyStr || (mockRequest.BodyContains != "" && strings.Contains(bodyStr, mockRequest.BodyContains))) {
 							w.WriteHeader(mockResponse.Status)
@@ -263,8 +260,8 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			defer server.Close()
 
 			// call our prep function if we have one
-			if testCase.SendPrep != nil {
-				testCase.SendPrep(server, handler, channel, msg)
+			if tc.SendPrep != nil {
+				tc.SendPrep(server, handler, channel, msg)
 			}
 
 			logger := courier.NewChannelLoggerForSend(msg)
@@ -278,65 +275,65 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				logger.Error(err)
 			}
 
-			assert.Equal(t, testCase.ExpectedErrors, logger.Errors(), "unexpected errors logged")
+			assert.Equal(t, tc.ExpectedErrors, logger.Errors(), "unexpected errors logged")
 
-			if testCase.ExpectedRequestPath != "" {
+			if tc.ExpectedRequestPath != "" {
 				require.NotNil(testRequest, "path should not be nil")
-				require.Equal(testCase.ExpectedRequestPath, testRequest.URL.Path)
+				require.Equal(tc.ExpectedRequestPath, testRequest.URL.Path)
 			}
 
-			if testCase.ExpectedURLParams != nil {
+			if tc.ExpectedURLParams != nil {
 				require.NotNil(testRequest)
-				for k, v := range testCase.ExpectedURLParams {
+				for k, v := range tc.ExpectedURLParams {
 					value := testRequest.URL.Query().Get(k)
 					require.Equal(v, value, fmt.Sprintf("%s not equal", k))
 				}
 			}
 
-			if testCase.ExpectedPostParams != nil {
+			if tc.ExpectedPostParams != nil {
 				require.NotNil(testRequest, "post body should not be nil")
-				for k, v := range testCase.ExpectedPostParams {
+				for k, v := range tc.ExpectedPostParams {
 					value := testRequest.PostFormValue(k)
 					require.Equal(v, value)
 				}
 			}
 
-			if testCase.ExpectedRequestBody != "" {
+			if tc.ExpectedRequestBody != "" {
 				require.NotNil(testRequest, "request body should not be nil")
 				value, _ := ioutil.ReadAll(testRequest.Body)
-				require.Equal(testCase.ExpectedRequestBody, strings.Trim(string(value), "\n"))
+				require.Equal(tc.ExpectedRequestBody, strings.Trim(string(value), "\n"))
 			}
 
-			if (len(testCase.MockResponses)) != 0 {
-				require.Equal(mockRRCount, len(testCase.MockResponses))
+			if (len(tc.MockResponses)) != 0 {
+				require.Equal(mockRRCount, len(tc.MockResponses))
 			}
 
-			if testCase.ExpectedHeaders != nil {
+			if tc.ExpectedHeaders != nil {
 				require.NotNil(testRequest, "headers should not be nil")
-				for k, v := range testCase.ExpectedHeaders {
+				for k, v := range tc.ExpectedHeaders {
 					value := testRequest.Header.Get(k)
 					require.Equal(v, value)
 				}
 			}
 
-			if testCase.ExpectedExternalID != "" {
-				require.Equal(testCase.ExpectedExternalID, status.ExternalID())
+			if tc.ExpectedExternalID != "" {
+				require.Equal(tc.ExpectedExternalID, status.ExternalID())
 			}
 
-			if testCase.ExpectedStatus != "" {
+			if tc.ExpectedStatus != "" {
 				require.NotNil(status, "status should not be nil")
-				require.Equal(testCase.ExpectedStatus, string(status.Status()))
+				require.Equal(tc.ExpectedStatus, string(status.Status()))
 			}
 
-			if testCase.ExpectedStopEvent {
+			if tc.ExpectedStopEvent {
 				evt, err := mb.GetLastChannelEvent()
 				require.NoError(err)
 				require.Equal(courier.StopContact, evt.EventType())
 			}
 
-			if testCase.ExpectedContactURNs != nil {
+			if tc.ExpectedContactURNs != nil {
 				var contactUUID courier.ContactUUID
-				for urn, shouldBePresent := range testCase.ExpectedContactURNs {
+				for urn, shouldBePresent := range tc.ExpectedContactURNs {
 					contact, _ := mb.GetContact(ctx, channel, urns.URN(urn), "", "")
 					if contactUUID == courier.NilContactUUID && shouldBePresent {
 						contactUUID = contact.UUID()
@@ -350,10 +347,10 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				}
 			}
 
-			if testCase.ExpectedNewURN != "" {
+			if tc.ExpectedNewURN != "" {
 				old, new := status.UpdatedURN()
-				require.Equal(urns.URN(testCase.MsgURN), old)
-				require.Equal(urns.URN(testCase.ExpectedNewURN), new)
+				require.Equal(urns.URN(tc.MsgURN), old)
+				require.Equal(urns.URN(tc.ExpectedNewURN), new)
 			}
 		})
 	}
@@ -370,14 +367,14 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 	}
 	handler.Initialize(s)
 
-	for _, testCase := range testCases {
-		t.Run(testCase.Label, func(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(tc.Label, func(t *testing.T) {
 			require := require.New(t)
 
 			mb.ClearQueueMsgs()
 			mb.ClearSeenExternalIDs()
 
-			testHandlerRequest(t, s, testCase.URL, testCase.Headers, testCase.Data, testCase.MultipartFormFields, testCase.Status, &testCase.Response, testCase.PrepRequest)
+			testHandlerRequest(t, s, tc.URL, tc.Headers, tc.Data, tc.MultipartFormFields, tc.ExpectedStatus, &tc.ExpectedResponse, tc.PrepRequest)
 
 			// pop our message off and test against it
 			contactName := mb.GetLastContactName()
@@ -385,68 +382,65 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 			event, _ := mb.GetLastChannelEvent()
 			status, _ := mb.GetLastMsgStatus()
 
-			if testCase.Status == 200 {
-				if testCase.Name != nil {
-					require.Equal(*testCase.Name, contactName)
+			if tc.ExpectedStatus == 200 {
+				if tc.ExpectedContactName != nil {
+					require.Equal(*tc.ExpectedContactName, contactName)
 				}
-				if testCase.Text != nil {
+				if tc.ExpectedMsgText != nil {
 					require.NotNil(msg)
 					require.Equal(mb.LenQueuedMsgs(), 1)
-					require.Equal(*testCase.Text, msg.Text())
+					require.Equal(*tc.ExpectedMsgText, msg.Text())
 				}
-				if testCase.ChannelEvent != nil {
-					require.Equal(*testCase.ChannelEvent, string(event.EventType()))
+				if tc.ChannelEvent != nil {
+					require.Equal(*tc.ChannelEvent, string(event.EventType()))
 				}
-				if testCase.ChannelEventExtra != nil {
-					require.Equal(testCase.ChannelEventExtra, event.Extra())
+				if tc.ChannelEventExtra != nil {
+					require.Equal(tc.ChannelEventExtra, event.Extra())
 				}
-				if testCase.URN != nil {
+				if tc.ExpectedURN != nil {
 					if msg != nil {
-						require.Equal(*testCase.URN, string(msg.URN()))
+						require.Equal(*tc.ExpectedURN, string(msg.URN()))
 					} else if event != nil {
-						require.Equal(*testCase.URN, string(event.URN()))
+						require.Equal(*tc.ExpectedURN, string(event.URN()))
 					} else {
-						require.Equal(*testCase.URN, "")
+						require.Equal(*tc.ExpectedURN, "")
 					}
 				}
-				if testCase.URNAuth != nil {
+				if tc.ExpectedURNAuth != nil {
 					if msg != nil {
-						require.Equal(*testCase.URNAuth, msg.URNAuth())
+						require.Equal(*tc.ExpectedURNAuth, msg.URNAuth())
 					}
 				}
-				if testCase.ExternalID != nil {
+				if tc.ExpectedExternalID != nil {
 					if msg != nil {
-						require.Equal(*testCase.ExternalID, msg.ExternalID())
+						require.Equal(*tc.ExpectedExternalID, msg.ExternalID())
 					} else if status != nil {
-						require.Equal(*testCase.ExternalID, status.ExternalID())
+						require.Equal(*tc.ExpectedExternalID, status.ExternalID())
 					} else {
-						require.Equal(*testCase.ExternalID, "")
+						require.Equal(*tc.ExpectedExternalID, "")
 					}
 				}
-				if testCase.MsgStatus != nil {
+				if tc.ExpectedMsgStatus != nil {
 					require.NotNil(status)
-					require.Equal(*testCase.MsgStatus, string(status.Status()))
+					require.Equal(*tc.ExpectedMsgStatus, string(status.Status()))
 				}
-				if testCase.ID != 0 {
+				if tc.ExpectedMsgID != 0 {
 					if status != nil {
-						require.Equal(testCase.ID, int64(status.ID()))
+						require.Equal(tc.ExpectedMsgID, int64(status.ID()))
 					} else {
-						require.Equal(testCase.ID, -1)
+						require.Equal(tc.ExpectedMsgID, -1)
 					}
 				}
-				if testCase.Attachment != nil {
-					require.Equal([]string{*testCase.Attachment}, msg.Attachments())
+				if len(tc.ExpectedAttachments) > 0 {
+					require.Equal(tc.ExpectedAttachments, msg.Attachments())
 				}
-				if len(testCase.Attachments) > 0 {
-					require.Equal(testCase.Attachments, msg.Attachments())
-				}
-				if testCase.Date != nil {
+				if tc.ExpectedDate != nil {
 					if msg != nil {
-						require.Equal((*testCase.Date).Local(), (*msg.ReceivedOn()).Local())
+						require.Equal((*tc.ExpectedDate).Local(), (*msg.ReceivedOn()).Local())
 					} else if event != nil {
-						require.Equal(*testCase.Date, event.OccurredOn())
+						require.Equal(*tc.ExpectedDate, event.OccurredOn())
 					} else {
-						require.Equal(*testCase.Date, nil)
+						require.Equal(*tc.ExpectedDate, nil)
 					}
 				}
 			}
@@ -488,7 +482,7 @@ func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler cour
 
 		b.Run(testCase.Label, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				testHandlerRequest(b, s, testCase.URL, testCase.Headers, testCase.Data, testCase.MultipartFormFields, testCase.Status, nil, testCase.PrepRequest)
+				testHandlerRequest(b, s, testCase.URL, testCase.Headers, testCase.Data, testCase.MultipartFormFields, testCase.ExpectedStatus, nil, testCase.PrepRequest)
 			}
 		})
 	}

@@ -28,15 +28,15 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Msg"), URN: Sp("tel:+9779814641111")},
-	{Label: "Invalid URN", URL: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive Empty", URL: emptyReceive, Status: 400, Response: "field 'text' required"},
-	{Label: "Receive Missing Text", URL: missingText, Status: 400, Response: "field 'text' required"},
+	{Label: "Receive Valid", URL: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+9779814641111")},
+	{Label: "Invalid URN", URL: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Receive Empty", URL: emptyReceive, ExpectedStatus: 400, ExpectedResponse: "field 'text' required"},
+	{Label: "Receive Missing Text", URL: missingText, ExpectedStatus: 400, ExpectedResponse: "field 'text' required"},
 
-	{Label: "Status Invalid", URL: invalidStatus, Status: 400, Response: "unknown status"},
-	{Label: "Status Missing", URL: missingStatus, Status: 400, Response: "field 'status' required"},
-	{Label: "Valid Status", URL: validStatus, Status: 200, Response: `"status":"F"`},
+	{Label: "Status Invalid", URL: invalidStatus, ExpectedStatus: 400, ExpectedResponse: "unknown status"},
+	{Label: "Status Missing", URL: missingStatus, ExpectedStatus: 400, ExpectedResponse: "field 'status' required"},
+	{Label: "Valid Status", URL: validStatus, ExpectedStatus: 200, ExpectedResponse: `"status":"F"`},
 }
 
 func TestHandler(t *testing.T) {

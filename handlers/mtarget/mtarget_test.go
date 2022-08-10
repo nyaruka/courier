@@ -32,22 +32,22 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, Status: 200, Response: "Accepted",
-		Text: Sp("hello world"), URN: Sp("tel:+923161909799")},
-	{Label: "Invalid URN", URL: receiveURL, Data: receiveInvalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive Stop", URL: receiveURL, Data: receiveStop, Status: 200, Response: "Accepted",
-		URN: Sp("tel:+923161909799"), ChannelEvent: Sp("stop_contact")},
-	{Label: "Receive Missing From", URL: receiveURL, Data: receiveMissingFrom, Status: 400, Response: "missing required field 'Msisdn'"},
+	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+923161909799")},
+	{Label: "Invalid URN", URL: receiveURL, Data: receiveInvalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Receive Stop", URL: receiveURL, Data: receiveStop, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedURN: Sp("tel:+923161909799"), ChannelEvent: Sp("stop_contact")},
+	{Label: "Receive Missing From", URL: receiveURL, Data: receiveMissingFrom, ExpectedStatus: 400, ExpectedResponse: "missing required field 'Msisdn'"},
 
-	{Label: "Receive Part 2", URL: receiveURL, Data: receivePart2, Status: 200, Response: "received"},
-	{Label: "Receive Part 1", URL: receiveURL, Data: receivePart1, Status: 200, Response: "Accepted",
-		Text: Sp("hello world"), URN: Sp("tel:+923161909799")},
+	{Label: "Receive Part 2", URL: receiveURL, Data: receivePart2, ExpectedStatus: 200, ExpectedResponse: "received"},
+	{Label: "Receive Part 1", URL: receiveURL, Data: receivePart1, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+923161909799")},
 
-	{Label: "Status Delivered", URL: statusURL, Data: statusDelivered, Status: 200, Response: "Accepted",
-		ExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), MsgStatus: Sp("D")},
-	{Label: "Status Failed", URL: statusURL, Data: statusFailed, Status: 200, Response: "Accepted",
-		ExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), MsgStatus: Sp("F")},
-	{Label: "Status Missing ID", URL: statusURL, Data: statusMissingID, Status: 400, Response: "missing required field 'MsgId'"},
+	{Label: "Status Delivered", URL: statusURL, Data: statusDelivered, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), ExpectedMsgStatus: Sp("D")},
+	{Label: "Status Failed", URL: statusURL, Data: statusFailed, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), ExpectedMsgStatus: Sp("F")},
+	{Label: "Status Missing ID", URL: statusURL, Data: statusMissingID, ExpectedStatus: 400, ExpectedResponse: "missing required field 'MsgId'"},
 }
 
 func TestHandler(t *testing.T) {
