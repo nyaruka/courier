@@ -1,3 +1,8 @@
+v7.5.8
+----------
+ * Move testing code out of courier package and into new test package
+ * Rework some handler sending to record logs via a logger rather than on the status object
+
 v7.5.7
 ----------
  * Convert remaining channel types to use httpx.Trace
