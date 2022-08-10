@@ -79,20 +79,20 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Message", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Eu quero pizza"), URN: Sp("tel:+5516981562820"), ExternalID: Sp("external_id"), Date: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
-	{Label: "Invalid JSON receive", URL: receiveURL, Data: notJSON, Status: 400, Response: "unable to parse request JSON"},
-	{Label: "Missing Keys receive", URL: receiveURL, Data: missingRequiredKeys, Status: 400, Response: "validation for 'ID' failed on the 'required'"},
+	{Label: "Receive Message", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+		ExpectedMsgText: Sp("Eu quero pizza"), ExpectedURN: Sp("tel:+5516981562820"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+	{Label: "Invalid JSON receive", URL: receiveURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
+	{Label: "Missing Keys receive", URL: receiveURL, Data: missingRequiredKeys, ExpectedStatus: 400, ExpectedResponse: "validation for 'ID' failed on the 'required'"},
 
-	{Label: "Sent Status Valid", URL: sentStatusURL, Data: validSentStatus, Status: 200, Response: "Status Update Accepted", MsgStatus: Sp(courier.MsgSent)},
-	{Label: "Unknown Sent Status Valid", URL: sentStatusURL, Data: unknownSentStatus, Status: 400, Response: "unknown sent status code", MsgStatus: Sp(courier.MsgWired)},
-	{Label: "Invalid JSON sent Status", URL: sentStatusURL, Data: notJSON, Status: 400, Response: "unable to parse request JSON"},
-	{Label: "Missing Keys sent Status", URL: sentStatusURL, Data: missingRequiredKeys, Status: 400, Response: "validation for 'CollerationID' failed on the 'required'"},
+	{Label: "Sent Status Valid", URL: sentStatusURL, Data: validSentStatus, ExpectedStatus: 200, ExpectedResponse: "Status Update Accepted", ExpectedMsgStatus: Sp(courier.MsgSent)},
+	{Label: "Unknown Sent Status Valid", URL: sentStatusURL, Data: unknownSentStatus, ExpectedStatus: 400, ExpectedResponse: "unknown sent status code", ExpectedMsgStatus: Sp(courier.MsgWired)},
+	{Label: "Invalid JSON sent Status", URL: sentStatusURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
+	{Label: "Missing Keys sent Status", URL: sentStatusURL, Data: missingRequiredKeys, ExpectedStatus: 400, ExpectedResponse: "validation for 'CollerationID' failed on the 'required'"},
 
-	{Label: "Delivered Status Valid", URL: deliveredStatusURL, Data: validDeliveredStatus, Status: 200, Response: "Status Update Accepted", MsgStatus: Sp(courier.MsgDelivered)},
-	{Label: "Unknown Delivered Status Valid", URL: deliveredStatusURL, Data: unknownDeliveredStatus, Status: 400, Response: "unknown delivered status code", MsgStatus: Sp(courier.MsgSent)},
-	{Label: "Invalid JSON delivered Statu", URL: deliveredStatusURL, Data: notJSON, Status: 400, Response: "unable to parse request JSON"},
-	{Label: "Missing Keys sent Status", URL: deliveredStatusURL, Data: missingRequiredKeys, Status: 400, Response: "validation for 'CollerationID' failed on the 'required'"},
+	{Label: "Delivered Status Valid", URL: deliveredStatusURL, Data: validDeliveredStatus, ExpectedStatus: 200, ExpectedResponse: "Status Update Accepted", ExpectedMsgStatus: Sp(courier.MsgDelivered)},
+	{Label: "Unknown Delivered Status Valid", URL: deliveredStatusURL, Data: unknownDeliveredStatus, ExpectedStatus: 400, ExpectedResponse: "unknown delivered status code", ExpectedMsgStatus: Sp(courier.MsgSent)},
+	{Label: "Invalid JSON delivered Statu", URL: deliveredStatusURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
+	{Label: "Missing Keys sent Status", URL: deliveredStatusURL, Data: missingRequiredKeys, ExpectedStatus: 400, ExpectedResponse: "validation for 'CollerationID' failed on the 'required'"},
 }
 
 func TestHandler(t *testing.T) {

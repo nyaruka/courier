@@ -30,17 +30,17 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Msg"), URN: Sp("tel:+254791541111"),
-		Date: Tp(time.Date(2017, 10, 26, 15, 51, 32, 906335000, time.UTC))},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive Empty", URL: receiveURL, Data: emptyReceive, Status: 400, Response: "field 'msisdn' required"},
-	{Label: "Receive Missing Text", URL: receiveURL, Data: missingText, Status: 400, Response: "field 'text' required"},
-	{Label: "Receive Invalid TS", URL: receiveURL, Data: invalidTS, Status: 400, Response: "invalid tstamp"},
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+254791541111"),
+		ExpectedDate: Tp(time.Date(2017, 10, 26, 15, 51, 32, 906335000, time.UTC))},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Receive Empty", URL: receiveURL, Data: emptyReceive, ExpectedStatus: 400, ExpectedResponse: "field 'msisdn' required"},
+	{Label: "Receive Missing Text", URL: receiveURL, Data: missingText, ExpectedStatus: 400, ExpectedResponse: "field 'text' required"},
+	{Label: "Receive Invalid TS", URL: receiveURL, Data: invalidTS, ExpectedStatus: 400, ExpectedResponse: "invalid tstamp"},
 
-	{Label: "Status Invalid", URL: statusURL, Status: 400, Data: invalidStatus, Response: "unknown status"},
-	{Label: "Status Missing", URL: statusURL, Status: 400, Data: missingStatus, Response: "field 'status' required"},
-	{Label: "Status Valid", URL: statusURL, Status: 200, Data: validStatus, Response: `"status":"D"`},
+	{Label: "Status Invalid", URL: statusURL, ExpectedStatus: 400, Data: invalidStatus, ExpectedResponse: "unknown status"},
+	{Label: "Status Missing", URL: statusURL, ExpectedStatus: 400, Data: missingStatus, ExpectedResponse: "field 'status' required"},
+	{Label: "Status Valid", URL: statusURL, ExpectedStatus: 200, Data: validStatus, ExpectedResponse: `"status":"D"`},
 }
 
 func TestHandler(t *testing.T) {

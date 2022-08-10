@@ -112,13 +112,13 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: validMessage, Status: 200, Response: "Accepted",
-		Text: Sp("hello world"), URN: Sp("tel:+639171234567"), Date: Tp(time.Date(2013, 11, 22, 12, 12, 13, 0, time.UTC))},
-	{Label: "No Messages", URL: receiveURL, Data: noMessages, Status: 200, Response: "Ignored"},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Invalid Sender", URL: receiveURL, Data: invalidSender, Status: 400, Response: "invalid 'senderAddress' parameter"},
-	{Label: "Invalid Date", URL: receiveURL, Data: invalidDate, Status: 400, Response: "parsing time"},
-	{Label: "Invalid JSON", URL: receiveURL, Data: invalidJSON, Status: 400, Response: "unable to parse request JSON"},
+	{Label: "Receive Valid Message", URL: receiveURL, Data: validMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+639171234567"), ExpectedDate: Tp(time.Date(2013, 11, 22, 12, 12, 13, 0, time.UTC))},
+	{Label: "No Messages", URL: receiveURL, Data: noMessages, ExpectedStatus: 200, ExpectedResponse: "Ignored"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Invalid Sender", URL: receiveURL, Data: invalidSender, ExpectedStatus: 400, ExpectedResponse: "invalid 'senderAddress' parameter"},
+	{Label: "Invalid Date", URL: receiveURL, Data: invalidDate, ExpectedStatus: 400, ExpectedResponse: "parsing time"},
+	{Label: "Invalid JSON", URL: receiveURL, Data: invalidJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
 }
 
 func TestHandler(t *testing.T) {

@@ -27,15 +27,15 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "",
-		Text: Sp("Msg"), URN: Sp("tel:+254791541111")},
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceiveNoMsgType, Status: 200, Response: "",
-		Text: Sp("Msg"), URN: Sp("tel:+254791541111")},
-	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, Status: 400, Response: ""},
-	{Label: "Status No params", URL: receiveURL, Data: "", Status: 405, Response: ""},
-	{Label: "Status invalid params", URL: receiveURL, Data: invalidStatus, Status: 400, Response: ""},
-	{Label: "Status valid", URL: receiveURL, Data: validStatus, Status: 200, Response: ""},
-	{Label: "Invalid Msg Type", URL: receiveURL, Data: invalidMsgType, Status: 400, Response: ""},
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "",
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+254791541111")},
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceiveNoMsgType, ExpectedStatus: 200, ExpectedResponse: "",
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+254791541111")},
+	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, ExpectedStatus: 400, ExpectedResponse: ""},
+	{Label: "Status No params", URL: receiveURL, Data: "", ExpectedStatus: 405, ExpectedResponse: ""},
+	{Label: "Status invalid params", URL: receiveURL, Data: invalidStatus, ExpectedStatus: 400, ExpectedResponse: ""},
+	{Label: "Status valid", URL: receiveURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: ""},
+	{Label: "Invalid Msg Type", URL: receiveURL, Data: invalidMsgType, ExpectedStatus: 400, ExpectedResponse: ""},
 }
 
 func TestHandler(t *testing.T) {

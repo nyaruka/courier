@@ -21,9 +21,9 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "",
-		Text: Sp("Msg"), URN: Sp("tel:+254791541111")},
-	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, Status: 400, Response: "required field 'mobile'"},
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "",
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+254791541111")},
+	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, ExpectedStatus: 400, ExpectedResponse: "required field 'mobile'"},
 }
 
 func TestHandler(t *testing.T) {

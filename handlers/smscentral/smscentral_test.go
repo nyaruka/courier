@@ -23,13 +23,13 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive No Message", URL: receiveURL, Data: receiveNoMessage, Status: 200, Response: "Accepted",
-		Text: Sp(""), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive No Params", URL: receiveURL, Data: receiveNoParams, Status: 400, Response: "field 'mobile' required"},
-	{Label: "Receive No Sender", URL: receiveURL, Data: receiveNoSender, Status: 400, Response: "field 'mobile' required"},
+	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729")},
+	{Label: "Receive No Message", URL: receiveURL, Data: receiveNoMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp(""), ExpectedURN: Sp("tel:+2349067554729")},
+	{Label: "Receive invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Receive No Params", URL: receiveURL, Data: receiveNoParams, ExpectedStatus: 400, ExpectedResponse: "field 'mobile' required"},
+	{Label: "Receive No Sender", URL: receiveURL, Data: receiveNoSender, ExpectedStatus: 400, ExpectedResponse: "field 'mobile' required"},
 }
 
 func TestHandler(t *testing.T) {

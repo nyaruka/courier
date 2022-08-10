@@ -19,9 +19,9 @@ var testChannels = []courier.Channel{
 
 var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: `from=639171234567&body=hello+world`, Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		Status: 200, Response: "Accepted", Text: Sp("hello world"), URN: Sp("tel:+639171234567")},
+		ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+639171234567")},
 	{Label: "Receive Missing From", URL: receiveURL, Data: `body=hello+world`, Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		Status: 400, Response: "Error"},
+		ExpectedStatus: 400, ExpectedResponse: "Error"},
 }
 
 func TestHandler(t *testing.T) {

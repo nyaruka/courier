@@ -143,27 +143,27 @@ func addInvalidSignature(r *http.Request) {
 }
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Message", URL: receiveURL, Data: validMsg, Status: 200, Response: "",
-		Text: Sp("Simple Message"), URN: Sp("wechat:1234"), ExternalID: Sp("123456"),
-		Date: Tp(time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC))},
+	{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: "",
+		ExpectedMsgText: Sp("Simple Message"), ExpectedURN: Sp("wechat:1234"), ExpectedExternalID: Sp("123456"),
+		ExpectedDate: Tp(time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC))},
 
-	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, Status: 400, Response: "Error:Field validation"},
-	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, Status: 400, Response: "missing parameters, must have either 'MsgId' or 'Event'"},
+	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, ExpectedStatus: 400, ExpectedResponse: "Error:Field validation"},
+	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, ExpectedStatus: 400, ExpectedResponse: "missing parameters, must have either 'MsgId' or 'Event'"},
 
-	{Label: "Receive Image", URL: receiveURL, Data: imageMessage, Status: 200, Response: "",
-		Text: Sp(""), URN: Sp("wechat:1234"), ExternalID: Sp("123456"),
-		Attachment: Sp("https://api.weixin.qq.com/cgi-bin/media/get?media_id=12"),
-		Date:       Tp(time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC))},
+	{Label: "Receive Image", URL: receiveURL, Data: imageMessage, ExpectedStatus: 200, ExpectedResponse: "",
+		ExpectedMsgText: Sp(""), ExpectedURN: Sp("wechat:1234"), ExpectedExternalID: Sp("123456"),
+		ExpectedAttachments: []string{"https://api.weixin.qq.com/cgi-bin/media/get?media_id=12"},
+		ExpectedDate:        Tp(time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC))},
 
-	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, Status: 200, Response: "Event Accepted",
-		ChannelEvent: Sp(courier.NewConversation), URN: Sp("wechat:1234")},
+	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, ExpectedStatus: 200, ExpectedResponse: "Event Accepted",
+		ChannelEvent: Sp(courier.NewConversation), ExpectedURN: Sp("wechat:1234")},
 
-	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, Status: 200, Response: "unknown event"},
+	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, ExpectedStatus: 200, ExpectedResponse: "unknown event"},
 
-	{Label: "Verify URL", URL: receiveURL, Status: 200, Response: "SUCCESS",
+	{Label: "Verify URL", URL: receiveURL, ExpectedStatus: 200, ExpectedResponse: "SUCCESS",
 		PrepRequest: addValidSignature},
 
-	{Label: "Verify URL Invalid signature", URL: receiveURL, Status: 400, Response: "unknown request",
+	{Label: "Verify URL Invalid signature", URL: receiveURL, ExpectedStatus: 400, ExpectedResponse: "unknown request",
 		PrepRequest: addInvalidSignature},
 }
 
@@ -191,12 +191,12 @@ func TestFetchAccessToken(t *testing.T) {
 	fetchTimeout = time.Millisecond
 
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
-		{Label: "Receive Message", URL: receiveURL, Data: validMsg, Status: 200, Response: ""},
+		{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: ""},
 
-		{Label: "Verify URL", URL: receiveURL, Status: 200, Response: "SUCCESS",
+		{Label: "Verify URL", URL: receiveURL, ExpectedStatus: 200, ExpectedResponse: "SUCCESS",
 			PrepRequest: addValidSignature},
 
-		{Label: "Verify URL Invalid signature", URL: receiveURL, Status: 400, Response: "unknown request",
+		{Label: "Verify URL Invalid signature", URL: receiveURL, ExpectedStatus: 400, ExpectedResponse: "unknown request",
 			PrepRequest: addInvalidSignature},
 	})
 

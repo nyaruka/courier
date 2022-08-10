@@ -30,20 +30,20 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Valid Receive", URL: receiveValidMessage, Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Invalid URN", URL: receiveInvalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Valid Receive Post", URL: receiveURL, Status: 200, Response: "Accepted", Data: receiveValidMessageBody,
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive URL check", URL: receiveURL, Status: 200, Response: "no to parameter, ignored"},
-	{Label: "Status URL check", URL: statusURL, Status: 200, Response: "no messageId parameter, ignored"},
+	{Label: "Valid Receive", URL: receiveValidMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729")},
+	{Label: "Invalid URN", URL: receiveInvalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Valid Receive Post", URL: receiveURL, ExpectedStatus: 200, ExpectedResponse: "Accepted", Data: receiveValidMessageBody,
+		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729")},
+	{Label: "Receive URL check", URL: receiveURL, ExpectedStatus: 200, ExpectedResponse: "no to parameter, ignored"},
+	{Label: "Status URL check", URL: statusURL, ExpectedStatus: 200, ExpectedResponse: "no messageId parameter, ignored"},
 
-	{Label: "Status delivered", URL: statusDelivered, Status: 200, Response: `"status":"D"`, ExternalID: Sp("external1")},
-	{Label: "Status expired", URL: statusExpired, Status: 200, Response: `"status":"F"`, ExternalID: Sp("external1")},
-	{Label: "Status failed", URL: statusFailed, Status: 200, Response: `"status":"F"`, ExternalID: Sp("external1")},
-	{Label: "Status accepted", URL: statusAccepted, Status: 200, Response: `"status":"S"`, ExternalID: Sp("external1")},
-	{Label: "Status buffered", URL: statusBuffered, Status: 200, Response: `"status":"S"`, ExternalID: Sp("external1")},
-	{Label: "Status unexpected", URL: statusUnexpected, Status: 200, Response: "ignoring unknown status report", ExternalID: Sp("external1")},
+	{Label: "Status delivered", URL: statusDelivered, ExpectedStatus: 200, ExpectedResponse: `"status":"D"`, ExpectedExternalID: Sp("external1")},
+	{Label: "Status expired", URL: statusExpired, ExpectedStatus: 200, ExpectedResponse: `"status":"F"`, ExpectedExternalID: Sp("external1")},
+	{Label: "Status failed", URL: statusFailed, ExpectedStatus: 200, ExpectedResponse: `"status":"F"`, ExpectedExternalID: Sp("external1")},
+	{Label: "Status accepted", URL: statusAccepted, ExpectedStatus: 200, ExpectedResponse: `"status":"S"`, ExpectedExternalID: Sp("external1")},
+	{Label: "Status buffered", URL: statusBuffered, ExpectedStatus: 200, ExpectedResponse: `"status":"S"`, ExpectedExternalID: Sp("external1")},
+	{Label: "Status unexpected", URL: statusUnexpected, ExpectedStatus: 200, ExpectedResponse: "ignoring unknown status report", ExpectedExternalID: Sp("external1")},
 }
 
 func TestHandler(t *testing.T) {

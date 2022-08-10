@@ -14,38 +14,90 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AT", "2020", "US", nil),
 }
 
-var (
+const (
 	receiveURL = "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	statusURL  = "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
-
-	emptyReceive          = "empty"
-	validReceive          = "linkId=03090445075804249226&text=Msg&to=21512&id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3&date=2017-05-03T06%3A04%3A45Z&from=%2B254791541111"
-	validOtherDateReceive = "linkId=03090445075804249226&text=Msg&to=21512&id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3&date=2017-05-03+06%3A04%3A45&from=%2B254791541111"
-	invalidURN            = "linkId=03090445075804249226&text=Msg&to=21512&id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3&date=2017-05-03T06%3A04%3A45Z&from=MTN"
-	missingText           = "linkId=03090445075804249226&to=21512&id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3&date=2017-05-03T06%3A04%3A45Z&from=%2B254791541111"
-	invalidDate           = "linkId=03090445075804249226&text=Msg&to=21512&id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3&date=2017-05-03T06%3A04&from=%2B254791541111"
-
-	missingStatus = "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7"
-	invalidStatus = "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Borked"
-	successStatus = "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Success"
-	expiredStatus = "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Expired"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Msg"), URN: Sp("tel:+254791541111"), ExternalID: Sp("ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3"),
-		Date: Tp(time.Date(2017, 5, 3, 06, 04, 45, 0, time.UTC))},
-	{Label: "Receive Valid", URL: receiveURL, Data: validOtherDateReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Msg"), URN: Sp("tel:+254791541111"), ExternalID: Sp("ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3"),
-		Date: Tp(time.Date(2017, 5, 3, 06, 04, 45, 0, time.UTC))},
-	{Label: "Receive Empty", URL: receiveURL, Data: emptyReceive, Status: 400, Response: "field 'id' required"},
-	{Label: "Receive Missing Text", URL: receiveURL, Data: missingText, Status: 400, Response: "field 'text' required"},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Invalid Date", URL: receiveURL, Data: invalidDate, Status: 400, Response: "invalid date format"},
-	{Label: "Status Invalid", URL: statusURL, Status: 400, Data: invalidStatus, Response: "unknown status"},
-	{Label: "Status Missing", URL: statusURL, Status: 400, Data: missingStatus, Response: "field 'status' required"},
-	{Label: "Status Success", URL: statusURL, Status: 200, Data: successStatus, Response: `"status":"D"`},
-	{Label: "Status Expired", URL: statusURL, Status: 200, Data: expiredStatus, Response: `"status":"F"`},
+	{
+		Label:              "Receive Valid",
+		URL:                receiveURL,
+		Data:               "linkId=03090445075804249226&text=Msg&to=21512&id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3&date=2017-05-03T06%3A04%3A45Z&from=%2B254791541111",
+		ExpectedStatus:     200,
+		ExpectedResponse:   "Message Accepted",
+		ExpectedMsgText:    Sp("Msg"),
+		ExpectedURN:        Sp("tel:+254791541111"),
+		ExpectedExternalID: Sp("ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3"),
+		ExpectedDate:       Tp(time.Date(2017, 5, 3, 06, 04, 45, 0, time.UTC)),
+	},
+	{
+		Label:              "Receive Valid",
+		URL:                receiveURL,
+		Data:               "linkId=03090445075804249226&text=Msg&to=21512&id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3&date=2017-05-03+06%3A04%3A45&from=%2B254791541111",
+		ExpectedStatus:     200,
+		ExpectedResponse:   "Message Accepted",
+		ExpectedMsgText:    Sp("Msg"),
+		ExpectedURN:        Sp("tel:+254791541111"),
+		ExpectedExternalID: Sp("ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3"),
+		ExpectedDate:       Tp(time.Date(2017, 5, 3, 06, 04, 45, 0, time.UTC)),
+	},
+	{
+		Label:            "Receive Empty",
+		URL:              receiveURL,
+		Data:             "empty",
+		ExpectedStatus:   400,
+		ExpectedResponse: "field 'id' required",
+	},
+	{
+		Label:            "Receive Missing Text",
+		URL:              receiveURL,
+		Data:             "linkId=03090445075804249226&to=21512&id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3&date=2017-05-03T06%3A04%3A45Z&from=%2B254791541111",
+		ExpectedStatus:   400,
+		ExpectedResponse: "field 'text' required",
+	},
+	{
+		Label:            "Invalid URN",
+		URL:              receiveURL,
+		Data:             "linkId=03090445075804249226&text=Msg&to=21512&id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3&date=2017-05-03T06%3A04%3A45Z&from=MTN",
+		ExpectedStatus:   400,
+		ExpectedResponse: "phone number supplied is not a number",
+	},
+	{
+		Label:            "Invalid Date",
+		URL:              receiveURL,
+		Data:             "linkId=03090445075804249226&text=Msg&to=21512&id=ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3&date=2017-05-03T06%3A04&from=%2B254791541111",
+		ExpectedStatus:   400,
+		ExpectedResponse: "invalid date format",
+	},
+	{
+		Label:            "Status Invalid",
+		URL:              statusURL,
+		ExpectedStatus:   400,
+		Data:             "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Borked",
+		ExpectedResponse: "unknown status",
+	},
+	{
+		Label:            "Status Missing",
+		URL:              statusURL,
+		ExpectedStatus:   400,
+		Data:             "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7",
+		ExpectedResponse: "field 'status' required",
+	},
+	{
+		Label:            "Status Success",
+		URL:              statusURL,
+		ExpectedStatus:   200,
+		Data:             "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Success",
+		ExpectedResponse: `"status":"D"`,
+	},
+	{
+		Label:            "Status Expired",
+		URL:              statusURL,
+		ExpectedStatus:   200,
+		Data:             "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Expired",
+		ExpectedResponse: `"status":"F"`,
+	},
 }
 
 func TestHandler(t *testing.T) {

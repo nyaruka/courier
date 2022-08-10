@@ -20,10 +20,10 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: " ", Status: 200, Response: "SMS Accepted",
-		Text: Sp("hello world"), URN: Sp("tel:+923161909799")},
-	{Label: "Invalid URN", URL: receiveInvalidURN, Data: " ", Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive No From", URL: receiveMissingFrom, Data: " ", Status: 400, Response: "missing required field 'from'"},
+	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: " ", ExpectedStatus: 200, ExpectedResponse: "SMS Accepted",
+		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+923161909799")},
+	{Label: "Invalid URN", URL: receiveInvalidURN, Data: " ", ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Receive No From", URL: receiveMissingFrom, Data: " ", ExpectedStatus: 400, ExpectedResponse: "missing required field 'from'"},
 }
 
 func TestHandler(t *testing.T) {
