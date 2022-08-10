@@ -163,17 +163,13 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Content-Type", "application/xml; charset=utf8")
 		req.SetBasicAuth(username, password)
 
-		trace, err := handlers.MakeHTTPRequest(req)
-
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace)
-		status.AddLog(log)
-		if err != nil {
-			log.WithError("Message Send Error", err)
+		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		response := &mtResponse{}
-		err = xml.Unmarshal(trace.ResponseBody, response)
+		err = xml.Unmarshal(respBody, response)
 		if err == nil {
 			status.SetStatus(courier.MsgWired)
 			if i == 0 {

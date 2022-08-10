@@ -139,16 +139,12 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", secret))
 
-	trace, err := handlers.MakeHTTPRequest(req)
-
-	log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-	status.AddLog(log)
-
-	if err != nil {
-		return status, err
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return status, nil
 	}
 
-	msgID, err := jsonparser.GetString(trace.ResponseBody, "id")
+	msgID, err := jsonparser.GetString(respBody, "id")
 	if err == nil {
 		status.SetExternalID(msgID)
 	}
