@@ -1,3 +1,8 @@
+v7.5.9
+----------
+ * Rename S3MediaBucket to S3AttachmentsBucket and S3MediaPrefix to S3AttachmentsPrefix
+ * More handlers to use new HTTP functions
+
 v7.5.8
 ----------
  * Move testing code out of courier package and into new test package
