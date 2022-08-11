@@ -263,15 +263,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 
-		trace, err := handlers.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
-
-		if err != nil {
-			return status, err
+		resp, _, err := handlers.RequestHTTP(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
+			return status, nil
 		}
+
 		status.SetStatus(courier.MsgWired)
 	}
 

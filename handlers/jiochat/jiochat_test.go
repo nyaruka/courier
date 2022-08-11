@@ -325,11 +325,10 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
+	{
+		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "jiochat:12345",
-		ExpectedStatus:     "W",
-		ExpectedExternalID: "",
 		MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/json",
@@ -337,12 +336,14 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Bearer ACCESS_TOKEN",
 		},
 		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"Simple Message ☺"}}`,
-		SendPrep:            setSendURL},
-	{Label: "Long Send",
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Long Send",
 		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
 		MsgURN:             "jiochat:12345",
-		ExpectedStatus:     "W",
-		ExpectedExternalID: "",
 		MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/json",
@@ -350,13 +351,15 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Bearer ACCESS_TOKEN",
 		},
 		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"I need to keep adding more things to make it work"}}`,
-		SendPrep:            setSendURL},
-	{Label: "Send Attachment",
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
 		MsgText:            "My pic!",
 		MsgURN:             "jiochat:12345",
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedStatus:     "W",
-		ExpectedExternalID: "",
 		MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/json",
@@ -364,14 +367,18 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Bearer ACCESS_TOKEN",
 		},
 		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"My pic!\nhttps://foo.bar/image.jpg"}}`,
-		SendPrep:            setSendURL},
-	{Label: "Error Sending",
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Error Sending",
 		MsgText:            "Error Message",
 		MsgURN:             "jiochat:12345",
-		ExpectedStatus:     "E",
 		MockResponseStatus: 401,
-		ExpectedErrors:     []string{"received non 200 status: 401"},
-		SendPrep:           setSendURL},
+		ExpectedStatus:     "E",
+		SendPrep:           setSendURL,
+	},
 }
 
 func setupBackend(mb *test.MockBackend) {
