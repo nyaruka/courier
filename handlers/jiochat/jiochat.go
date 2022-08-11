@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -275,7 +276,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 }
 
 // DescribeURN handles Jiochat contact details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, logger *courier.ChannelLogger) (map[string]string, error) {
 	accessToken, err := h.getAccessToken(channel)
 	if err != nil {
 		return nil, err
@@ -293,11 +294,12 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	req, _ := http.NewRequest(http.MethodGet, reqURL.String(), nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 
-	trace, err := handlers.MakeHTTPRequest(req)
-	if err != nil {
-		return nil, fmt.Errorf("unable to look up contact data: %s", err)
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("unable to look up contact data")
 	}
-	nickname, _ := jsonparser.GetString(trace.ResponseBody, "nickname")
+
+	nickname, _ := jsonparser.GetString(respBody, "nickname")
 	return map[string]string{"name": nickname}, nil
 }
 

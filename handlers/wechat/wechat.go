@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -268,15 +269,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		trace, err := handlers.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
-
-		if err != nil {
-			return status, err
+		resp, _, err := handlers.RequestHTTP(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
+			return status, nil
 		}
+
 		status.SetStatus(courier.MsgWired)
 	}
 
@@ -284,7 +281,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 }
 
 // DescribeURN handles WeChat contact details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, logger *courier.ChannelLogger) (map[string]string, error) {
 	accessToken, err := h.getAccessToken(channel)
 	if err != nil {
 		return nil, err
@@ -302,11 +299,12 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 
 	req, _ := http.NewRequest(http.MethodGet, reqURL.String(), nil)
 
-	trace, err := handlers.MakeHTTPRequest(req)
-	if err != nil {
-		return nil, fmt.Errorf("unable to look up contact data: %s", err)
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("unable to look up contact data")
 	}
-	nickname, err := jsonparser.GetString(trace.ResponseBody, "nickname")
+
+	nickname, err := jsonparser.GetString(respBody, "nickname")
 	if err != nil {
 		return nil, err
 	}

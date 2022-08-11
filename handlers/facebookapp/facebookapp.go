@@ -759,22 +759,22 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 	return events, data, nil
 }
 
-// {
-//     "messaging_type": "<MESSAGING_TYPE>"
-//     "recipient":{
-//         "id":"<PSID>"
-//     },
-//     "message":{
-//	       "text":"hello, world!"
-//         "attachment":{
-//             "type":"image",
-//             "payload":{
-//                 "url":"http://www.messenger-rocks.com/image.jpg",
-//                 "is_reusable":true
-//             }
-//         }
-//     }
-// }
+//	{
+//	  "messaging_type": "<MESSAGING_TYPE>"
+//	  "recipient": {
+//	    "id":"<PSID>"
+//	  },
+//	  "message": {
+//	    "text":"hello, world!"
+//	    "attachment":{
+//	      "type":"image",
+//	      "payload":{
+//	        "url":"http://www.messenger-rocks.com/image.jpg",
+//	        "is_reusable":true
+//	      }
+//	    }
+//	  }
+//	}
 type mtPayload struct {
 	MessagingType string `json:"messaging_type"`
 	Tag           string `json:"tag,omitempty"`
@@ -1305,10 +1305,9 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg) 
 }
 
 // DescribeURN looks up URN metadata for new contacts
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, logger *courier.ChannelLogger) (map[string]string, error) {
 	if channel.ChannelType() == "WAC" {
 		return map[string]string{}, nil
-
 	}
 
 	// can't do anything with facebook refs, ignore them
@@ -1336,18 +1335,18 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	u.RawQuery = query.Encode()
 	req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
 
-	trace, err := handlers.MakeHTTPRequest(req)
-	if err != nil {
-		return nil, fmt.Errorf("unable to look up contact data: %s", err)
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("unable to look up contact data")
 	}
 
 	// read our first and last name	or complete name
 	if fmt.Sprint(channel.ChannelType()) == "FBA" {
-		firstName, _ := jsonparser.GetString(trace.ResponseBody, "first_name")
-		lastName, _ := jsonparser.GetString(trace.ResponseBody, "last_name")
+		firstName, _ := jsonparser.GetString(respBody, "first_name")
+		lastName, _ := jsonparser.GetString(respBody, "last_name")
 		name = utils.JoinNonEmpty(" ", firstName, lastName)
 	} else {
-		name, _ = jsonparser.GetString(trace.ResponseBody, "name")
+		name, _ = jsonparser.GetString(respBody, "name")
 	}
 
 	return map[string]string{"name": name}, nil

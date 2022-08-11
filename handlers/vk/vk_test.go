@@ -362,20 +362,18 @@ func buildMockVKService(testCases []ChannelHandleTestCase) *httptest.Server {
 	return server
 }
 
-func TestDescribe(t *testing.T) {
+func TestDescribeURN(t *testing.T) {
 	server := buildMockVKService([]ChannelHandleTestCase{})
 	defer server.Close()
 
 	handler := newHandler().(courier.URNDescriber)
-	urn, _ :=
-		urns.NewURNFromParts(urns.VKScheme, "123456789", "", "")
+	logger := courier.NewChannelLoggerForReceive(testChannels[0])
+	urn, _ := urns.NewURNFromParts(urns.VKScheme, "123456789", "", "")
 	data := map[string]string{"name": "John Doe"}
 
-	describe, err := handler.DescribeURN(context.Background(), testChannels[0],
-		urn)
+	describe, err := handler.DescribeURN(context.Background(), testChannels[0], urn, logger)
 	assert.Nil(t, err)
-	assert.Equal(t,
-		data, describe)
+	assert.Equal(t, data, describe)
 }
 
 // setSendURL takes care of setting the send_url to our test server host

@@ -30,7 +30,7 @@ type ChannelHandler interface {
 
 // URNDescriber is the interface handlers which can look up URN metadata for new contacts should satisfy.
 type URNDescriber interface {
-	DescribeURN(context.Context, Channel, urns.URN) (map[string]string, error)
+	DescribeURN(context.Context, Channel, urns.URN, *ChannelLogger) (map[string]string, error)
 }
 
 // MediaDownloadRequestBuilder is the interface handlers which can allow a custom way to download attachment media for messages should satisfy

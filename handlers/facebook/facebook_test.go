@@ -493,17 +493,22 @@ func TestDescribe(t *testing.T) {
 	fbGraph := buildMockFBGraph(testCases)
 	defer fbGraph.Close()
 
+	channel := testChannels[0]
 	handler := newHandler().(courier.URNDescriber)
+	logger := courier.NewChannelLoggerForReceive(channel)
+
 	tcs := []struct {
-		urn      urns.URN
-		metadata map[string]string
-	}{{"facebook:1337", map[string]string{"name": "John Doe"}},
+		urn              urns.URN
+		expectedMetadata map[string]string
+	}{
+		{"facebook:1337", map[string]string{"name": "John Doe"}},
 		{"facebook:4567", map[string]string{"name": ""}},
-		{"facebook:ref:1337", map[string]string{}}}
+		{"facebook:ref:1337", map[string]string{}},
+	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn)
-		assert.Equal(t, metadata, tc.metadata)
+		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, logger)
+		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 }
 

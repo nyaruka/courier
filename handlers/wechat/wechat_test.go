@@ -101,7 +101,7 @@ func addValidSignature(r *http.Request) {
 	nonce := "nonce"
 
 	stringSlice := []string{"secret", timestamp, nonce}
-	sort.Sort(sort.StringSlice(stringSlice))
+	sort.Strings(stringSlice)
 
 	value := strings.Join(stringSlice, "")
 
@@ -125,7 +125,7 @@ func addInvalidSignature(r *http.Request) {
 	nonce := "nonce"
 
 	stringSlice := []string{"secret", timestamp, nonce}
-	sort.Sort(sort.StringSlice(stringSlice))
+	sort.Strings(stringSlice)
 
 	value := strings.Join(stringSlice, "")
 
@@ -268,18 +268,19 @@ func TestDescribe(t *testing.T) {
 	s := newServer(mb)
 	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("WC"), "WeChat")}
 	handler.Initialize(s)
+	logger := courier.NewChannelLoggerForReceive(testChannels[0])
 
 	tcs := []struct {
-		urn      urns.URN
-		metadata map[string]string
+		urn              urns.URN
+		expectedMetadata map[string]string
 	}{
 		{"wechat:abcdeKNOWN_OPEN_ID", map[string]string{"name": "John Doe"}},
 		{"wechat:foo__NOT__KNOWN", map[string]string{"name": ""}},
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn)
-		assert.Equal(t, metadata, tc.metadata)
+		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn, logger)
+		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 }
 
@@ -318,50 +319,57 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
+	{
+		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "wechat:12345",
-		ExpectedStatus:     "W",
-		ExpectedExternalID: "",
 		MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
 		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"Simple Message ☺"}}`,
-		SendPrep:            setSendURL},
-	{Label: "Long Send",
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Long Send",
 		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
 		MsgURN:             "wechat:12345",
-		ExpectedStatus:     "W",
-		ExpectedExternalID: "",
 		MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
 		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"I need to keep adding more things to make it work"}}`,
-		SendPrep:            setSendURL},
-	{Label: "Send Attachment",
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
 		MsgText:            "My pic!",
 		MsgURN:             "wechat:12345",
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedStatus:     "W",
-		ExpectedExternalID: "",
 		MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
 		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"My pic!\nhttps://foo.bar/image.jpg"}}`,
-		SendPrep:            setSendURL},
-	{Label: "Error Sending",
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Error Sending",
 		MsgText:            "Error Message",
 		MsgURN:             "wechat:12345",
-		ExpectedStatus:     "E",
 		MockResponseStatus: 401,
-		ExpectedErrors:     []string{"received non 200 status: 401"},
-		SendPrep:           setSendURL},
+		ExpectedStatus:     "E",
+		SendPrep:           setSendURL,
+	},
 }
 
 func setupBackend(mb *test.MockBackend) {

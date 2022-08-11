@@ -255,7 +255,7 @@ func newServer(backend courier.Backend) courier.Server {
 	return courier.NewServerWithLogger(config, backend, logger)
 }
 
-func TestDescribe(t *testing.T) {
+func TestDescribeURN(t *testing.T) {
 	JCAPI := buildMockJCAPI(testCases)
 	defer JCAPI.Close()
 
@@ -272,18 +272,19 @@ func TestDescribe(t *testing.T) {
 	s := newServer(mb)
 	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
 	handler.Initialize(s)
+	logger := courier.NewChannelLoggerForReceive(testChannels[0])
 
 	tcs := []struct {
-		urn      urns.URN
-		metadata map[string]string
+		urn              urns.URN
+		expectedMetadata map[string]string
 	}{
 		{"jiochat:1337", map[string]string{"name": "John Doe"}},
 		{"jiochat:4567", map[string]string{"name": ""}},
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn)
-		assert.Equal(t, metadata, tc.metadata)
+		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn, logger)
+		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 }
 
