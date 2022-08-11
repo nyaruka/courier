@@ -728,7 +728,7 @@ func (b *backend) Start() error {
 		if err != nil {
 			return err
 		}
-		b.storage = storage.NewS3(s3Client, b.config.S3MediaBucket, b.config.S3Region, 32)
+		b.storage = storage.NewS3(s3Client, b.config.S3AttachmentsBucket, b.config.S3Region, 32)
 	} else {
 		b.storage = storage.NewFS("_storage")
 	}
