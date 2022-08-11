@@ -13,7 +13,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
-	"github.com/nyaruka/gocommon/httpx"
 
 	"github.com/buger/jsonparser"
 	"github.com/pkg/errors"
@@ -153,8 +152,10 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			"type":              []string{textType},
 		}
 
-		var trace *httpx.Trace
+		var resp *http.Response
+		var respBody []byte
 		var requestErr error
+
 		for i := 0; i < 3; i++ {
 			req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 			if err != nil {
@@ -162,8 +163,8 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			}
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-			trace, requestErr = handlers.MakeHTTPRequest(req)
-			matched := throttledRE.FindAllStringSubmatch(string(trace.ResponseBody), -1)
+			resp, respBody, requestErr = handlers.RequestHTTP(req, logger)
+			matched := throttledRE.FindAllStringSubmatch(string(respBody), -1)
 			if len(matched) > 0 && len(matched[0]) > 0 {
 				sleepTime, _ := strconv.Atoi(matched[0][1])
 				time.Sleep(time.Duration(sleepTime) * time.Millisecond)
@@ -172,21 +173,17 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			}
 		}
 
-		// record our status and log
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace)
-		status.AddLog(log)
-		if requestErr != nil {
-			log.WithError("Message Send Error", requestErr)
+		if requestErr != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		nexmoStatus, err := jsonparser.GetString(trace.ResponseBody, "messages", "[0]", "status")
+		nexmoStatus, err := jsonparser.GetString(respBody, "messages", "[0]", "status")
 		if err != nil || nexmoStatus != "0" {
-			log.WithError("Message Send Error", errors.Errorf("failed to send message, received error status [%s]", nexmoStatus))
+			logger.Error(errors.Errorf("failed to send message, received error status [%s]", nexmoStatus))
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString(trace.ResponseBody, "messages", "[0]", "message-id")
+		externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "message-id")
 		if err == nil {
 			status.SetExternalID(externalID)
 		}

@@ -149,7 +149,7 @@ type mtResponse struct {
 	} `json:"result"`
 }
 
-func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, keyboard *ReplyKeyboardMarkup) (string, *courier.ChannelLog, bool, error) {
+func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, keyboard *ReplyKeyboardMarkup, logger *courier.ChannelLogger) (string, bool, error) {
 	// either include or remove our keyboard
 	if keyboard == nil {
 		form.Add("reply_markup", `{"remove_keyboard":true}`)
@@ -160,31 +160,27 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 	sendURL := fmt.Sprintf("%s/bot%s/%s", apiURL, token, path)
 	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		return "", nil, false, err
+		return "", false, err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	trace, err := handlers.MakeHTTPRequest(req)
-
-	// build our channel log
-	log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
+	resp, respBody, _ := handlers.RequestHTTP(req, logger)
 
 	response := &mtResponse{}
-	err = json.Unmarshal(trace.ResponseBody, response)
+	err = json.Unmarshal(respBody, response)
 
-	if err != nil || !response.Ok {
+	if err != nil || resp.StatusCode/100 != 2 || !response.Ok {
 		if response.ErrorCode == 403 && response.Description == "Forbidden: bot was blocked by the user" {
-			return "", log, true, errors.Errorf("response not 'ok'")
-
+			return "", true, errors.Errorf("response not 'ok'")
 		}
-		return "", log, false, errors.Errorf("response not 'ok'")
+		return "", false, errors.Errorf("response not 'ok'")
 
 	}
 
 	if response.Result.MessageID > 0 {
-		return strconv.FormatInt(response.Result.MessageID, 10), log, false, nil
+		return strconv.FormatInt(response.Result.MessageID, 10), false, nil
 	}
-	return "", log, false, errors.Errorf("no 'result.message_id' in response")
+	return "", false, errors.Errorf("no 'result.message_id' in response")
 }
 
 // Send sends the given message, logging any HTTP calls or errors
@@ -231,8 +227,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			"text":    []string{msg.Text()},
 		}
 
-		externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendMessage", form, msgKeyBoard)
-		status.AddLog(log)
+		externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendMessage", form, msgKeyBoard, logger)
 		if botBlocked {
 			status.SetStatus(courier.MsgFailed)
 			channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -258,8 +253,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 				"photo":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
-			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, attachmentKeyBoard)
-			status.AddLog(log)
+			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, attachmentKeyBoard, logger)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -275,8 +269,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 				"video":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
-			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendVideo", form, attachmentKeyBoard)
-			status.AddLog(log)
+			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendVideo", form, attachmentKeyBoard, logger)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -292,8 +285,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 				"audio":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
-			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendAudio", form, attachmentKeyBoard)
-			status.AddLog(log)
+			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendAudio", form, attachmentKeyBoard, logger)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -309,8 +301,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 				"document": []string{attachment.URL},
 				"caption":  []string{caption},
 			}
-			externalID, log, botBlocked, err := h.sendMsgPart(msg, authToken, "sendDocument", form, attachmentKeyBoard)
-			status.AddLog(log)
+			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendDocument", form, attachmentKeyBoard, logger)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -390,26 +381,26 @@ type moLocation struct {
 	Longitude float64 `json:"longitude"`
 }
 
-// {
-// 	"update_id": 174114370,
-// 	"message": {
-// 	  "message_id": 41,
-//      "from": {
-// 		  "id": 3527065,
-// 		  "first_name": "Nic",
-// 		  "last_name": "Pottier",
-//        "username": "nicpottier"
-// 	    },
-//     "chat": {
-//       "id": 3527065,
-// 		 "first_name": "Nic",
-//       "last_name": "Pottier",
-//       "type": "private"
-//     },
-// 	   "date": 1454119029,
-//     "text": "Hello World"
-// 	 }
-// }
+//	{
+//	  "update_id": 174114370,
+//	  "message": {
+//	    "message_id": 41,
+//	    "from": {
+//	      "id": 3527065,
+//	      "first_name": "Nic",
+//	      "last_name": "Pottier",
+//	      "username": "nicpottier"
+//	    },
+//	    "chat": {
+//	      "id": 3527065,
+//	      "first_name": "Nic",
+//	      "last_name": "Pottier",
+//	      "type": "private"
+//	    },
+//	    "date": 1454119029,
+//	    "text": "Hello World"
+//	   }
+//	}
 type moPayload struct {
 	UpdateID int64 `json:"update_id" validate:"required"`
 	Message  struct {
