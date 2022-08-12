@@ -349,16 +349,17 @@ func mockAttachmentURLs(fileServer *httptest.Server, testCases []ChannelSendTest
 	return casesWithMockedUrls
 }
 
-func TestDescribe(t *testing.T) {
+func TestDescribeURN(t *testing.T) {
 	server := buildMockSlackService([]ChannelHandleTestCase{})
 	defer server.Close()
 
 	handler := newHandler().(courier.URNDescriber)
+	logger := courier.NewChannelLoggerForReceive(testChannels[0])
 	urn, _ := urns.NewURNFromParts(urns.SlackScheme, "U012345", "", "")
 
 	data := map[string]string{"name": "dummy user"}
 
-	describe, err := handler.DescribeURN(context.Background(), testChannels[0], urn)
+	describe, err := handler.DescribeURN(context.Background(), testChannels[0], urn, logger)
 	assert.Nil(t, err)
 	assert.Equal(t, data, describe)
 }

@@ -126,23 +126,25 @@ type fbUser struct {
 	ID string `json:"id"`
 }
 
-// {
-//   "object":"page",
-//   "entry":[{
-//     "id":"180005062406476",
-//     "time":1514924367082,
-//     "messaging":[{
-//       "sender":  {"id":"1630934236957797"},
-//       "recipient":{"id":"180005062406476"},
-//       "timestamp":1514924366807,
-//       "message":{
-//         "mid":"mid.$cAAD5QiNHkz1m6cyj11guxokwkhi2",
-//         "seq":33116,
-//         "text":"65863634"
-//       }
-//     }]
-//   }]
-// }
+//	{
+//	  "object":"page",
+//	  "entry":[{
+//	    "id":"180005062406476",
+//	    "time":1514924367082,
+//	    "messaging":[
+//	      {
+//	        "sender": {"id":"1630934236957797"},
+//	        "recipient":{"id":"180005062406476"},
+//	        "timestamp":1514924366807,
+//	        "message":{
+//	          "mid":"mid.$cAAD5QiNHkz1m6cyj11guxokwkhi2",
+//	          "seq":33116,
+//	          "text":"65863634"
+//	        }
+//	      }
+//	    ]
+//	  }]
+//	}
 type moPayload struct {
 	Object string `json:"object"`
 	Entry  []struct {
@@ -427,22 +429,22 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
 }
 
-// {
-//     "messaging_type": "<MESSAGING_TYPE>"
-//     "recipient":{
-//         "id":"<PSID>"
-//     },
-//     "message":{
-//	       "text":"hello, world!"
-//         "attachment":{
-//             "type":"image",
-//             "payload":{
-//                 "url":"http://www.messenger-rocks.com/image.jpg",
-//                 "is_reusable":true
-//             }
-//         }
-//     }
-// }
+//	{
+//	  "messaging_type": "<MESSAGING_TYPE>"
+//	  "recipient": {
+//	    "id":"<PSID>"
+//	  },
+//	  "message": {
+//	    "text":"hello, world!"
+//	    "attachment":{
+//	      "type":"image",
+//	      "payload":{
+//	        "url":"http://www.messenger-rocks.com/image.jpg",
+//	        "is_reusable":true
+//	      }
+//	    }
+//	  }
+//	}
 type mtPayload struct {
 	MessagingType string `json:"messaging_type"`
 	Tag           string `json:"tag,omitempty"`
@@ -619,7 +621,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 }
 
 // DescribeURN looks up URN metadata for new contacts
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, logger *courier.ChannelLogger) (map[string]string, error) {
 	// can't do anything with facebook refs, ignore them
 	if urn.IsFacebookRef() {
 		return map[string]string{}, nil
@@ -641,14 +643,14 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	u.RawQuery = query.Encode()
 	req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
 
-	trace, err := handlers.MakeHTTPRequest(req)
-	if err != nil {
-		return nil, fmt.Errorf("unable to look up contact data: %s", err)
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("unable to look up contact data")
 	}
 
 	// read our first and last name
-	firstName, _ := jsonparser.GetString(trace.ResponseBody, "first_name")
-	lastName, _ := jsonparser.GetString(trace.ResponseBody, "last_name")
+	firstName, _ := jsonparser.GetString(respBody, "first_name")
+	lastName, _ := jsonparser.GetString(respBody, "last_name")
 
 	return map[string]string{"name": utils.JoinNonEmpty(" ", firstName, lastName)}, nil
 }

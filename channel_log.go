@@ -116,26 +116,34 @@ type ChannelLog struct {
 type ChannelLogType string
 
 const (
-	ChannelLogTypeSend ChannelLogType = "send"
+	ChannelLogTypeMessageSend    ChannelLogType = "message_send"
+	ChannelLogTypeMessageReceive ChannelLogType = "message_receive"
 )
 
 var logTypeDescriptions = map[ChannelLogType]string{
-	ChannelLogTypeSend: "Message Send",
+	ChannelLogTypeMessageSend:    "Message Sent",
+	ChannelLogTypeMessageReceive: "Message Received",
 }
 var logTypeErrorDescriptions = map[ChannelLogType]string{
-	ChannelLogTypeSend: "Message Send Error",
+	ChannelLogTypeMessageSend:    "Message Sending Error",
+	ChannelLogTypeMessageReceive: "Message Receive Error",
 }
 
 type ChannelLogger struct {
-	type_ ChannelLogType
-	msg   Msg
+	type_   ChannelLogType
+	channel Channel
+	msgID   MsgID
 
 	errors []string
 	logs   []*ChannelLog
 }
 
 func NewChannelLoggerForSend(msg Msg) *ChannelLogger {
-	return &ChannelLogger{type_: ChannelLogTypeSend, msg: msg}
+	return &ChannelLogger{type_: ChannelLogTypeMessageSend, channel: msg.Channel(), msgID: msg.ID()}
+}
+
+func NewChannelLoggerForReceive(channel Channel) *ChannelLogger {
+	return &ChannelLogger{type_: ChannelLogTypeMessageSend, channel: channel}
 }
 
 // HTTP logs an HTTP request and response
@@ -147,7 +155,7 @@ func (l *ChannelLogger) HTTP(t *httpx.Trace) {
 		description = logTypeDescriptions[l.type_]
 	}
 
-	l.logs = append(l.logs, NewChannelLogFromTrace(description, l.msg.Channel(), l.msg.ID(), t))
+	l.logs = append(l.logs, NewChannelLogFromTrace(description, l.channel, l.msgID, t))
 }
 
 func (l *ChannelLogger) Error(err error) {
@@ -158,7 +166,7 @@ func (l *ChannelLogger) Error(err error) {
 		l.logs[len(l.logs)-1].Error = err.Error()
 		l.logs[len(l.logs)-1].Description = logTypeErrorDescriptions[l.type_]
 	} else {
-		l.logs = append(l.logs, NewChannelLogFromError(logTypeErrorDescriptions[l.type_], l.msg.Channel(), l.msg.ID(), 0, err))
+		l.logs = append(l.logs, NewChannelLogFromError(logTypeErrorDescriptions[l.type_], l.channel, l.msgID, 0, err))
 	}
 }
 

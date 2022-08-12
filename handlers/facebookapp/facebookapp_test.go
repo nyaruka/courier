@@ -189,17 +189,22 @@ func TestDescribeFBA(t *testing.T) {
 	fbGraph := buildMockFBGraphFBA(testCasesFBA)
 	defer fbGraph.Close()
 
+	channel := testChannelsFBA[0]
 	handler := newHandler("FBA", "Facebook", false).(courier.URNDescriber)
+	logger := courier.NewChannelLoggerForReceive(channel)
+
 	tcs := []struct {
-		urn      urns.URN
-		metadata map[string]string
-	}{{"facebook:1337", map[string]string{"name": "John Doe"}},
+		urn              urns.URN
+		expectedMetadata map[string]string
+	}{
+		{"facebook:1337", map[string]string{"name": "John Doe"}},
 		{"facebook:4567", map[string]string{"name": ""}},
-		{"facebook:ref:1337", map[string]string{}}}
+		{"facebook:ref:1337", map[string]string{}},
+	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), testChannelsFBA[0], tc.urn)
-		assert.Equal(t, metadata, tc.metadata)
+		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, logger)
+		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 }
 
@@ -207,31 +212,40 @@ func TestDescribeIG(t *testing.T) {
 	fbGraph := buildMockFBGraphIG(testCasesIG)
 	defer fbGraph.Close()
 
+	channel := testChannelsIG[0]
 	handler := newHandler("IG", "Instagram", false).(courier.URNDescriber)
+	logger := courier.NewChannelLoggerForReceive(channel)
+
 	tcs := []struct {
-		urn      urns.URN
-		metadata map[string]string
-	}{{"instagram:1337", map[string]string{"name": "John Doe"}},
-		{"instagram:4567", map[string]string{"name": ""}}}
+		urn              urns.URN
+		expectedMetadata map[string]string
+	}{
+		{"instagram:1337", map[string]string{"name": "John Doe"}},
+		{"instagram:4567", map[string]string{"name": ""}},
+	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), testChannelsIG[0], tc.urn)
-		assert.Equal(t, metadata, tc.metadata)
+		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, logger)
+		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 }
 
 func TestDescribeWAC(t *testing.T) {
+	channel := testChannelsWAC[0]
 	handler := newHandler("WAC", "Cloud API WhatsApp", false).(courier.URNDescriber)
+	logger := courier.NewChannelLoggerForReceive(channel)
 
 	tcs := []struct {
-		urn      urns.URN
-		metadata map[string]string
-	}{{"whatsapp:1337", map[string]string{}},
-		{"whatsapp:4567", map[string]string{}}}
+		urn              urns.URN
+		expectedMetadata map[string]string
+	}{
+		{"whatsapp:1337", map[string]string{}},
+		{"whatsapp:4567", map[string]string{}},
+	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), testChannelsWAC[0], tc.urn)
-		assert.Equal(t, metadata, tc.metadata)
+		metadata, _ := handler.DescribeURN(context.Background(), testChannelsWAC[0], tc.urn, logger)
+		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 }
 

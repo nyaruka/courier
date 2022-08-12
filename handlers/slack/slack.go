@@ -296,7 +296,7 @@ func sendFilePart(msg courier.Msg, token string, fileParams *FileParams) (*couri
 }
 
 // DescribeURN handles Slack user details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, logger *courier.ChannelLogger) (map[string]string, error) {
 	resource := "/users.info"
 	urlStr := apiURL + resource
 
@@ -309,13 +309,13 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	q.Add("user", urn.Path())
 	req.URL.RawQuery = q.Encode()
 
-	trace, err := handlers.MakeHTTPRequest(req)
-	if err != nil {
-		return nil, fmt.Errorf("request user info error: %s", err)
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("unable to look up user info")
 	}
 
 	var uInfo *UserInfo
-	if err := json.Unmarshal(trace.ResponseBody, &uInfo); err != nil {
+	if err := json.Unmarshal(respBody, &uInfo); err != nil {
 		return nil, fmt.Errorf("unmarshal user info error:%s", err)
 	}
 

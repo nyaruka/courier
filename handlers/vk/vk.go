@@ -273,21 +273,21 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // DescribeURN handles VK contact details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, logger *courier.ChannelLogger) (map[string]string, error) {
 	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionGetUser, nil)
-
 	if err != nil {
 		return nil, err
 	}
+
 	params := buildApiBaseParams(channel)
 	_, urnPath, _, _ := urn.ToParts()
 	params.Set(paramUserIds, urnPath)
 
 	req.URL.RawQuery = params.Encode()
 
-	trace, err := handlers.MakeHTTPRequest(req)
-	if err != nil {
-		return nil, err
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("unable to look up user info")
 	}
 
 	// parsing response
@@ -295,7 +295,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 		Users []userPayload `json:"response" validate:"required"`
 	}
 	payload := &responsePayload{}
-	err = json.Unmarshal(trace.ResponseBody, payload)
+	err = json.Unmarshal(respBody, payload)
 
 	if err != nil {
 		return nil, err
