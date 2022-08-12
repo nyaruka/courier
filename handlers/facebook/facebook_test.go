@@ -418,41 +418,41 @@ var notJSON = `blargh`
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Message", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)},
 	{Label: "No Duplicate Receive Message", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: duplicateMsg, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)},
 	{Label: "Receive Attachment", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: attachment, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://image-url/foo.png"}, ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://image-url/foo.png"}, ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)},
 
 	{Label: "Receive Location", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: locationAttachment, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:1.200000,-1.300000"}, ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:1.200000,-1.300000"}, ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)},
 
 	{Label: "Receive Thumbs Up", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: thumbsUp, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp("👍"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC))},
+		ExpectedMsgText: Sp("👍"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)},
 
 	{Label: "Receive OptIn UserRef", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: optInUserRef, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:ref:optin_user_ref"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedURN: Sp("facebook:ref:optin_user_ref"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ChannelEvent: Sp(courier.Referral), ChannelEventExtra: map[string]interface{}{"referrer_id": "optin_ref"}},
 	{Label: "Receive OptIn", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: optIn, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ChannelEvent: Sp(courier.Referral), ChannelEventExtra: map[string]interface{}{"referrer_id": "optin_ref"}},
 
 	{Label: "Receive Get Started", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: postbackGetStarted, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.NewConversation),
+		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ChannelEvent: Sp(courier.NewConversation),
 		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started"}},
 	{Label: "Receive Referral Postback", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: postback, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
+		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ChannelEvent: Sp(courier.Referral),
 		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"}},
 	{Label: "Receive Referral", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: postbackReferral, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
+		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ChannelEvent: Sp(courier.Referral),
 		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"}},
 
 	{Label: "Receive Referral", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: referral, ExpectedStatus: 200, ExpectedResponse: `"referrer_id":"referral id"`,
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
+		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ChannelEvent: Sp(courier.Referral),
 		ChannelEventExtra: map[string]interface{}{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"}},
 
 	{Label: "Receive DLR", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: dlr, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ExpectedMsgStatus: Sp(courier.MsgDelivered), ExpectedExternalID: Sp("mid.1458668856218:ed81099e15d3f4f233")},
+		ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ExpectedMsgStatus: Sp(courier.MsgDelivered), ExpectedExternalID: Sp("mid.1458668856218:ed81099e15d3f4f233")},
 
 	{Label: "Different Page", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: differentPage, ExpectedStatus: 200, ExpectedResponse: `"data":[]`},
 	{Label: "Echo", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: echo, ExpectedStatus: 200, ExpectedResponse: `ignoring echo`},

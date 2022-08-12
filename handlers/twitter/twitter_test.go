@@ -169,9 +169,9 @@ var notJSON = `blargh`
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Message", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
 		ExpectedContactName: Sp("Nicolas Pottier"), ExpectedURN: Sp("twitterid:272953809#nicpottier"),
-		ExpectedMsgText: Sp("Hello World & good wishes."), ExpectedExternalID: Sp("958501034212564996"), ExpectedDate: Tp(time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC))},
+		ExpectedMsgText: Sp("Hello World & good wishes."), ExpectedExternalID: Sp("958501034212564996"), ExpectedDate: time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC)},
 	{Label: "Receive Attachment", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: attachment, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Hello"), ExpectedAttachments: []string{"https://image.foo.com/image.jpg"}, ExpectedURN: Sp("twitterid:272953809#nicpottier"), ExpectedExternalID: Sp("958501034212564996"), ExpectedDate: Tp(time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC))},
+		ExpectedMsgText: Sp("Hello"), ExpectedAttachments: []string{"https://image.foo.com/image.jpg"}, ExpectedURN: Sp("twitterid:272953809#nicpottier"), ExpectedExternalID: Sp("958501034212564996"), ExpectedDate: time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC)},
 	{Label: "Not JSON", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "Error"},
 	{Label: "Invalid Twitter handle", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTwitterHandle, ExpectedStatus: 400, ExpectedResponse: "invalid twitter handle"},
 	{Label: "Invalid Twitter ID", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTwitterID, ExpectedStatus: 400, ExpectedResponse: "invalid twitter id"},

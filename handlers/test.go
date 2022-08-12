@@ -44,7 +44,7 @@ type ChannelHandleTestCase struct {
 	ExpectedURN         *string
 	ExpectedURNAuth     *string
 	ExpectedAttachments []string
-	ExpectedDate        *time.Time
+	ExpectedDate        time.Time
 	ExpectedMsgStatus   *string
 	ExpectedExternalID  *string
 	ExpectedMsgID       int64
@@ -108,20 +108,6 @@ type ChannelSendTestCase struct {
 // Sp is a utility method to get the pointer to the passed in string
 func Sp(str interface{}) *string { asStr := fmt.Sprintf("%s", str); return &asStr }
 
-// Tp is utility method to get the pointer to the passed in time
-func Tp(tm time.Time) *time.Time { return &tm }
-
-// utility method to make sure the passed in host is up, prevents races with our test server
-func ensureTestServerUp(host string) {
-	for i := 0; i < 20; i++ {
-		_, err := http.Get(host)
-		if err == nil {
-			break
-		}
-		time.Sleep(time.Microsecond * 100)
-	}
-}
-
 // utility method to make a request to a handler URL
 func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
 	var req *http.Request
@@ -159,10 +145,8 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers ma
 		req, err = http.NewRequest(http.MethodGet, url, nil)
 	}
 
-	if headers != nil {
-		for key, val := range headers {
-			req.Header.Set(key, val)
-		}
+	for key, val := range headers {
+		req.Header.Set(key, val)
 	}
 
 	require.Nil(tb, err)
@@ -429,13 +413,13 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 				if len(tc.ExpectedAttachments) > 0 {
 					require.Equal(tc.ExpectedAttachments, msg.Attachments())
 				}
-				if tc.ExpectedDate != nil {
+				if !tc.ExpectedDate.IsZero() {
 					if msg != nil {
-						require.Equal((*tc.ExpectedDate).Local(), (*msg.ReceivedOn()).Local())
+						require.Equal((tc.ExpectedDate).Local(), (*msg.ReceivedOn()).Local())
 					} else if event != nil {
-						require.Equal(*tc.ExpectedDate, event.OccurredOn())
+						require.Equal(tc.ExpectedDate, event.OccurredOn())
 					} else {
-						require.Equal(*tc.ExpectedDate, nil)
+						require.Equal(tc.ExpectedDate, nil)
 					}
 				}
 			}
