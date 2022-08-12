@@ -12,8 +12,6 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
-const statusMsgNotFoundDetail = "message not found, ignored"
-
 // writeAndLogRequestError writes a JSON response for the passed in message and logs an info messages
 func writeAndLogRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
 	LogRequestError(r, c, err)
