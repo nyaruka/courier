@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -68,6 +68,10 @@ type MockedRequest struct {
 	RawQuery     string
 	Body         string
 	BodyContains string
+}
+
+func (m MockedRequest) Matches(r *http.Request, body []byte) bool {
+	return m.Method == r.Method && m.Path == r.URL.Path && m.RawQuery == r.URL.RawQuery && (m.Body == string(body) || (m.BodyContains != "" && strings.Contains(string(body), m.BodyContains)))
 }
 
 // ChannelSendTestCase defines the test values for a particular test case
@@ -172,8 +176,8 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers ma
 func newServer(backend courier.Backend) courier.Server {
 	// for benchmarks, log to null
 	logger := logrus.New()
-	logger.Out = ioutil.Discard
-	logrus.SetOutput(ioutil.Discard)
+	logger.Out = io.Discard
+	logrus.SetOutput(io.Discard)
 
 	config := courier.NewConfig()
 	config.FacebookWebhookSecret = "fb_webhook_secret"
@@ -196,6 +200,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 	for _, tc := range testCases {
 		mockRRCount := 0
+
 		t.Run(tc.Label, func(t *testing.T) {
 			require := require.New(t)
 
@@ -216,18 +221,16 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 			var testRequest *http.Request
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				body, _ := ioutil.ReadAll(r.Body)
+				body, _ := io.ReadAll(r.Body)
 				testRequest = httptest.NewRequest(r.Method, r.URL.String(), bytes.NewBuffer(body))
 				testRequest.Header = r.Header
+
 				if (len(tc.MockResponses)) == 0 {
 					w.WriteHeader(tc.MockResponseStatus)
 					w.Write([]byte(tc.MockResponseBody))
 				} else {
-					require.Zero(tc.MockResponseStatus, "ResponseStatus should not be used when using testcase.Responses")
-					require.Zero(tc.MockResponseBody, "ResponseBody should not be used when using testcase.Responses")
 					for mockRequest, mockResponse := range tc.MockResponses {
-						bodyStr := string(body)[:]
-						if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && mockRequest.RawQuery == r.URL.RawQuery && (mockRequest.Body == bodyStr || (mockRequest.BodyContains != "" && strings.Contains(bodyStr, mockRequest.BodyContains))) {
+						if mockRequest == (MockedRequest{}) || mockRequest.Matches(r, body) {
 							w.WriteHeader(mockResponse.Status)
 							w.Write(mockResponse.Body)
 							mockRRCount++
@@ -279,7 +282,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 			if tc.ExpectedRequestBody != "" {
 				require.NotNil(testRequest, "request body should not be nil")
-				value, _ := ioutil.ReadAll(testRequest.Body)
+				value, _ := io.ReadAll(testRequest.Body)
 				require.Equal(tc.ExpectedRequestBody, strings.Trim(string(value), "\n"))
 			}
 
