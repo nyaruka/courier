@@ -65,7 +65,7 @@ func (f *Foreman) Assign() {
 	backend := f.server.Backend()
 	lastSleep := false
 
-	for true {
+	for {
 		select {
 		// return if we have been told to stop
 		case <-f.quit:
@@ -106,7 +106,6 @@ type Sender struct {
 	id      int
 	foreman *Foreman
 	job     chan Msg
-	log     *logrus.Entry
 }
 
 // NewSender creates a new sender responsible for sending messages
@@ -121,14 +120,15 @@ func NewSender(foreman *Foreman, id int) *Sender {
 
 // Start starts our Sender's goroutine and has it start waiting for tasks from the foreman
 func (w *Sender) Start() {
+	w.foreman.server.WaitGroup().Add(1)
+
 	go func() {
-		w.foreman.server.WaitGroup().Add(1)
 		defer w.foreman.server.WaitGroup().Done()
 
 		log := logrus.WithField("comp", "sender").WithField("sender_id", w.id)
 		log.Debug("started")
 
-		for true {
+		for {
 			// list ourselves as available for work
 			w.foreman.availableSenders <- w
 
@@ -198,7 +198,7 @@ func (w *Sender) sendMessage(msg Msg) {
 	} else {
 		// send our message
 		status, err = server.SendMsg(sendCTX, msg, logger)
-		duration := time.Now().Sub(start)
+		duration := time.Since(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
 		// handlers can currently return logs either via the logger or on the status object

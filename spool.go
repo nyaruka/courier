@@ -42,8 +42,9 @@ func startSpoolFlushers(s Server) {
 		flushers[i] = newSpoolFlusher(s, reg.directory, reg.flusher)
 	}
 
+	s.WaitGroup().Add(1)
+
 	go func() {
-		s.WaitGroup().Add(1)
 		defer s.WaitGroup().Done()
 
 		log := logrus.WithField("comp", "spool")

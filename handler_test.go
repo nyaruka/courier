@@ -3,7 +3,7 @@ package courier_test
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -133,7 +133,7 @@ func TestHandling(t *testing.T) {
 	assert.NoError(err)
 	assert.Equal(400, resp.StatusCode)
 	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	assert.Contains(string(body), "missing from or text")
 
 	req, _ := http.NewRequest("GET", "http://localhost:8080/c/dm/e4bb1578-29da-4fa5-a214-9da19dd24230/receive?from=2065551212&text=hello", nil)
@@ -142,7 +142,7 @@ func TestHandling(t *testing.T) {
 	assert.NoError(err)
 	assert.Equal(200, resp.StatusCode)
 	defer resp.Body.Close()
-	body, _ = ioutil.ReadAll(resp.Body)
+	body, _ = io.ReadAll(resp.Body)
 	assert.Contains(string(body), "ok")
 
 	// cookie stripped

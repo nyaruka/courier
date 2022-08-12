@@ -13,7 +13,7 @@ import (
 )
 
 func TestDoHTTPRequest(t *testing.T) {
-	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]httpx.MockResponse{
+	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
 		"https://api.messages.com/send.json": {
 			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
 			httpx.NewMockResponse(400, nil, []byte(`{"status":"error"}`)),
@@ -53,7 +53,7 @@ func TestDoHTTPRequest(t *testing.T) {
 }
 
 func TestMakeHTTPRequest(t *testing.T) {
-	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]httpx.MockResponse{
+	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
 		"https://api.messages.com/send.json": {
 			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
 			httpx.NewMockResponse(400, nil, []byte(`{"status":"error"}`)),
