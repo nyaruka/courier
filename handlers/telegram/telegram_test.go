@@ -453,38 +453,38 @@ var contactMsg = `
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: helloMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("41"), ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("41"), ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
 
 	{Label: "Receive Start Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: startMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedContactName: Sp("Nic Pottier"), ChannelEvent: Sp(string(courier.NewConversation)), ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+		ExpectedContactName: Sp("Nic Pottier"), ChannelEvent: Sp(string(courier.NewConversation)), ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
 
 	{Label: "Receive No Params", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, ExpectedStatus: 200, ExpectedResponse: "Ignoring"},
 
 	{Label: "Receive Invalid JSON", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: "foo", ExpectedStatus: 400, ExpectedResponse: "unable to parse"},
 
 	{Label: "Receive Sticker", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: stickerMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/sticker.jpg"}, ExpectedURN: Sp("telegram:3527065"), ExpectedExternalID: Sp("44"), ExpectedDate: Tp(time.Date(2016, 1, 30, 2, 07, 48, 0, time.UTC))},
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/sticker.jpg"}, ExpectedURN: Sp("telegram:3527065"), ExpectedExternalID: Sp("44"), ExpectedDate: time.Date(2016, 1, 30, 2, 07, 48, 0, time.UTC)},
 
 	{Label: "Receive Photo", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: photoMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Photo Caption"), ExpectedAttachments: []string{"/file/bota123/photo.jpg"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("85"), ExpectedDate: Tp(time.Date(2017, 5, 3, 20, 28, 38, 0, time.UTC))},
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Photo Caption"), ExpectedAttachments: []string{"/file/bota123/photo.jpg"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("85"), ExpectedDate: time.Date(2017, 5, 3, 20, 28, 38, 0, time.UTC)},
 
 	{Label: "Receive Video", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: videoMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/video.jpg"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("86"), ExpectedDate: Tp(time.Date(2017, 5, 3, 20, 29, 24, 0, time.UTC))},
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/video.jpg"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("86"), ExpectedDate: time.Date(2017, 5, 3, 20, 29, 24, 0, time.UTC)},
 
 	{Label: "Receive Voice", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: voiceMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/voice.mp4"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("91"), ExpectedDate: Tp(time.Date(2017, 5, 3, 20, 50, 46, 0, time.UTC))},
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/voice.mp4"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("91"), ExpectedDate: time.Date(2017, 5, 3, 20, 50, 46, 0, time.UTC)},
 
 	{Label: "Receive Document", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: documentMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/document.xls"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("92"), ExpectedDate: Tp(time.Date(2017, 5, 3, 20, 58, 20, 0, time.UTC))},
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/document.xls"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("92"), ExpectedDate: time.Date(2017, 5, 3, 20, 58, 20, 0, time.UTC)},
 
 	{Label: "Receive Location", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: locationMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("-2.890287,-79.004333"), ExpectedAttachments: []string{"geo:-2.890287,-79.004333"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("94"), ExpectedDate: Tp(time.Date(2017, 5, 3, 21, 00, 44, 0, time.UTC))},
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("-2.890287,-79.004333"), ExpectedAttachments: []string{"geo:-2.890287,-79.004333"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("94"), ExpectedDate: time.Date(2017, 5, 3, 21, 00, 44, 0, time.UTC)},
 
 	{Label: "Receive Venue", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: venueMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Cuenca, Provincia del Azuay"), ExpectedAttachments: []string{"geo:-2.898944,-79.006835"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("95"), ExpectedDate: Tp(time.Date(2017, 5, 3, 21, 05, 20, 0, time.UTC))},
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Cuenca, Provincia del Azuay"), ExpectedAttachments: []string{"geo:-2.898944,-79.006835"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("95"), ExpectedDate: time.Date(2017, 5, 3, 21, 05, 20, 0, time.UTC)},
 
 	{Label: "Receive Contact", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: contactMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Adolf Taxi (0788531373)"), ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("96"), ExpectedDate: Tp(time.Date(2017, 5, 3, 21, 9, 15, 0, time.UTC))},
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Adolf Taxi (0788531373)"), ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("96"), ExpectedDate: time.Date(2017, 5, 3, 21, 9, 15, 0, time.UTC)},
 
 	{Label: "Receive Empty", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, ExpectedStatus: 200, ExpectedResponse: "Ignoring"},
 

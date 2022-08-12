@@ -6,7 +6,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -96,8 +95,8 @@ func DecodeAndValidateXML(envelope interface{}, r *http.Request) error {
 
 // ReadBody of a HTTP request up to limit bytes and make sure the Body is not consumed
 func ReadBody(r *http.Request, limit int64) ([]byte, error) {
-	body, err := ioutil.ReadAll(io.LimitReader(r.Body, limit))
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	body, err := io.ReadAll(io.LimitReader(r.Body, limit))
+	r.Body = io.NopCloser(bytes.NewBuffer(body))
 	return body, err
 
 }

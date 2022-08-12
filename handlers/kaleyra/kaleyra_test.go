@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 const (
@@ -175,23 +176,17 @@ var sendTestCases = []ChannelSendTestCase{
 		MsgURN:             "whatsapp:14133881111",
 		ExpectedStatus:     "W",
 		ExpectedExternalID: "f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0",
-		MockResponses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:       "POST",
 				Path:         "/v1/SID/messages",
 				BodyContains: "image bytes",
-			}: {
-				Status: 200,
-				Body:   `{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(200, nil, []byte(`{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`)),
+			{
 				Method:       "POST",
 				Path:         "/v1/SID/messages",
 				BodyContains: "video bytes",
-			}: {
-				Status: 200,
-				Body:   `{"id":"f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0"}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"id":"f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0"}`)),
 		},
 		SendPrep: setSendURL,
 	},
@@ -201,23 +196,17 @@ var sendTestCases = []ChannelSendTestCase{
 		MsgAttachments: []string{"image/jpg:https://foo.bar/image.jpg", "image/png:https://foo.bar/video.wmv"},
 		MsgURN:         "whatsapp:14133881111",
 		ExpectedStatus: "F",
-		MockResponses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:       "POST",
 				Path:         "/v1/SID/messages",
 				BodyContains: "image bytes",
-			}: {
-				Status: 200,
-				Body:   `{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(200, nil, []byte(`{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`)),
+			{
 				Method:       "POST",
 				Path:         "/v1/SID/messages",
 				BodyContains: "video bytes",
-			}: {
-				Status: 400,
-				Body:   `{"error":{"media":"invalid media type"}}`,
-			},
+			}: httpx.NewMockResponse(400, nil, []byte(`{"error":{"media":"invalid media type"}}`)),
 		},
 		SendPrep: setSendURL,
 	},

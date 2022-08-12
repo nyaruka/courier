@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +17,7 @@ import (
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -43,7 +44,7 @@ type ChannelHandleTestCase struct {
 	ExpectedURN         *string
 	ExpectedURNAuth     *string
 	ExpectedAttachments []string
-	ExpectedDate        *time.Time
+	ExpectedDate        time.Time
 	ExpectedMsgStatus   *string
 	ExpectedExternalID  *string
 	ExpectedMsgID       int64
@@ -69,10 +70,8 @@ type MockedRequest struct {
 	BodyContains string
 }
 
-// MockedResponse is a fake HTTP response
-type MockedResponse struct {
-	Status int
-	Body   string
+func (m MockedRequest) Matches(r *http.Request, body []byte) bool {
+	return m.Method == r.Method && m.Path == r.URL.Path && m.RawQuery == r.URL.RawQuery && (m.Body == string(body) || (m.BodyContains != "" && strings.Contains(string(body), m.BodyContains)))
 }
 
 // ChannelSendTestCase defines the test values for a particular test case
@@ -93,7 +92,7 @@ type ChannelSendTestCase struct {
 
 	MockResponseStatus int
 	MockResponseBody   string
-	MockResponses      map[MockedRequest]MockedResponse
+	MockResponses      map[MockedRequest]*httpx.MockResponse
 
 	ExpectedRequestPath string
 	ExpectedURLParams   map[string]string
@@ -112,20 +111,6 @@ type ChannelSendTestCase struct {
 
 // Sp is a utility method to get the pointer to the passed in string
 func Sp(str interface{}) *string { asStr := fmt.Sprintf("%s", str); return &asStr }
-
-// Tp is utility method to get the pointer to the passed in time
-func Tp(tm time.Time) *time.Time { return &tm }
-
-// utility method to make sure the passed in host is up, prevents races with our test server
-func ensureTestServerUp(host string) {
-	for i := 0; i < 20; i++ {
-		_, err := http.Get(host)
-		if err == nil {
-			break
-		}
-		time.Sleep(time.Microsecond * 100)
-	}
-}
 
 // utility method to make a request to a handler URL
 func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
@@ -164,10 +149,8 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers ma
 		req, err = http.NewRequest(http.MethodGet, url, nil)
 	}
 
-	if headers != nil {
-		for key, val := range headers {
-			req.Header.Set(key, val)
-		}
+	for key, val := range headers {
+		req.Header.Set(key, val)
 	}
 
 	require.Nil(tb, err)
@@ -193,8 +176,8 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers ma
 func newServer(backend courier.Backend) courier.Server {
 	// for benchmarks, log to null
 	logger := logrus.New()
-	logger.Out = ioutil.Discard
-	logrus.SetOutput(ioutil.Discard)
+	logger.Out = io.Discard
+	logrus.SetOutput(io.Discard)
 
 	config := courier.NewConfig()
 	config.FacebookWebhookSecret = "fb_webhook_secret"
@@ -217,6 +200,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 	for _, tc := range testCases {
 		mockRRCount := 0
+
 		t.Run(tc.Label, func(t *testing.T) {
 			require := require.New(t)
 
@@ -237,20 +221,18 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 			var testRequest *http.Request
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				body, _ := ioutil.ReadAll(r.Body)
+				body, _ := io.ReadAll(r.Body)
 				testRequest = httptest.NewRequest(r.Method, r.URL.String(), bytes.NewBuffer(body))
 				testRequest.Header = r.Header
+
 				if (len(tc.MockResponses)) == 0 {
 					w.WriteHeader(tc.MockResponseStatus)
 					w.Write([]byte(tc.MockResponseBody))
 				} else {
-					require.Zero(tc.MockResponseStatus, "ResponseStatus should not be used when using testcase.Responses")
-					require.Zero(tc.MockResponseBody, "ResponseBody should not be used when using testcase.Responses")
 					for mockRequest, mockResponse := range tc.MockResponses {
-						bodyStr := string(body)[:]
-						if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && mockRequest.RawQuery == r.URL.RawQuery && (mockRequest.Body == bodyStr || (mockRequest.BodyContains != "" && strings.Contains(bodyStr, mockRequest.BodyContains))) {
+						if mockRequest == (MockedRequest{}) || mockRequest.Matches(r, body) {
 							w.WriteHeader(mockResponse.Status)
-							w.Write([]byte(mockResponse.Body))
+							w.Write(mockResponse.Body)
 							mockRRCount++
 							break
 						}
@@ -300,7 +282,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 			if tc.ExpectedRequestBody != "" {
 				require.NotNil(testRequest, "request body should not be nil")
-				value, _ := ioutil.ReadAll(testRequest.Body)
+				value, _ := io.ReadAll(testRequest.Body)
 				require.Equal(tc.ExpectedRequestBody, strings.Trim(string(value), "\n"))
 			}
 
@@ -434,13 +416,13 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 				if len(tc.ExpectedAttachments) > 0 {
 					require.Equal(tc.ExpectedAttachments, msg.Attachments())
 				}
-				if tc.ExpectedDate != nil {
+				if !tc.ExpectedDate.IsZero() {
 					if msg != nil {
-						require.Equal((*tc.ExpectedDate).Local(), (*msg.ReceivedOn()).Local())
+						require.Equal((tc.ExpectedDate).Local(), (*msg.ReceivedOn()).Local())
 					} else if event != nil {
-						require.Equal(*tc.ExpectedDate, event.OccurredOn())
+						require.Equal(tc.ExpectedDate, event.OccurredOn())
 					} else {
-						require.Equal(*tc.ExpectedDate, nil)
+						require.Equal(tc.ExpectedDate, nil)
 					}
 				}
 			}

@@ -55,9 +55,9 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Country Parse", URL: receiveValidNoPlus, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
 		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729")},
 	{Label: "Receive Valid Message With Date", URL: receiveValidMessageWithDate, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedDate: Tp(time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC))},
+		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedDate: time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC)},
 	{Label: "Receive Valid Message With Time", URL: receiveValidMessageWithTime, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedDate: Tp(time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC))},
+		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedDate: time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC)},
 	{Label: "Invalid URN", URL: invalidURN, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "must have one of 'sender' or 'from' set"},
 	{Label: "Receive No Sender", URL: receiveNoSender, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "must have one of 'sender' or 'from' set"},
@@ -106,7 +106,7 @@ var customChannels = []courier.Channel{
 
 var customTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Custom Message", URL: "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from_number=12067799192&messageText=Join&timestamp=2017-06-23T12:30:00Z", Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+12067799192"), ExpectedDate: Tp(time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC))},
+		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+12067799192"), ExpectedDate: time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC)},
 	{Label: "Receive Custom Missing", URL: "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sent_from=12067799192&messageText=Join", Data: "empty", ExpectedStatus: 400, ExpectedResponse: "must have one of 'sender' or 'from' set"},
 }
 

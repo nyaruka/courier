@@ -95,7 +95,7 @@ var (
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: inboundURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
 		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+250788383383"),
-		ExpectedDate: Tp(time.Date(2017, 01, 01, 1, 2, 3, 50000000, time.UTC))},
+		ExpectedDate: time.Date(2017, 01, 01, 1, 2, 3, 50000000, time.UTC)},
 
 	{Label: "Invalid URN", URL: inboundURL, Data: invalidURN,
 		ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
@@ -121,7 +121,7 @@ var authenticatedTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: inboundURL, Data: validMsg, Headers: map[string]string{"Authorization": "Token sesame"},
 		ExpectedStatus: 200, ExpectedResponse: "Accepted",
 		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+250788383383"),
-		ExpectedDate: Tp(time.Date(2017, 01, 01, 1, 2, 3, 50000000, time.UTC))},
+		ExpectedDate: time.Date(2017, 01, 01, 1, 2, 3, 50000000, time.UTC)},
 
 	{Label: "Invalid Incoming Authorization", URL: inboundURL, Data: validMsg, Headers: map[string]string{"Authorization": "Token foo"},
 		ExpectedStatus: 401, ExpectedResponse: "Unauthorized"},

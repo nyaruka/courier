@@ -63,7 +63,7 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("tel:+12067799294"), ExpectedDate: Tp(time.Date(2016, 3, 30, 19, 33, 06, 643000000, time.UTC)),
+		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("tel:+12067799294"), ExpectedDate: time.Date(2016, 3, 30, 19, 33, 06, 643000000, time.UTC),
 		ExpectedExternalID: Sp("OzQ5UqIOdoY8")},
 
 	{Label: "Receive Missing Params", URL: receiveURL, Data: missingParamsRecieve, ExpectedStatus: 400, ExpectedResponse: "missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"},
