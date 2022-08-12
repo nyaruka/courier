@@ -51,7 +51,7 @@ var testChannels = []courier.Channel{
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("fcm:12345"), ExpectedDate: Tp(time.Date(2017, 1, 1, 8, 50, 0, 0, time.UTC)), ExpectedURNAuth: Sp("token"), ExpectedContactName: Sp("fred")},
+		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("fcm:12345"), ExpectedDate: time.Date(2017, 1, 1, 8, 50, 0, 0, time.UTC), ExpectedURNAuth: Sp("token"), ExpectedContactName: Sp("fred")},
 	{Label: "Receive Invalid Date", URL: receiveURL, Data: invalidDate, ExpectedStatus: 400, ExpectedResponse: "unable to parse date"},
 	{Label: "Receive Missing From", URL: receiveURL, Data: missingFrom, ExpectedStatus: 400, ExpectedResponse: "field 'from' required"},
 

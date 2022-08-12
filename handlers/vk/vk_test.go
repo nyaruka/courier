@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 
@@ -237,7 +238,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedResponse:   "ok",
 		ExpectedURN:        Sp("vk:123456"),
 		ExpectedExternalID: Sp("1"),
-		ExpectedDate:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)),
+		ExpectedDate:       time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
 	},
 	{
 		Label:              "Receive Empty Message",
@@ -247,57 +248,62 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedResponse:   "no text or attachment",
 		ExpectedURN:        Sp("vk:123456"),
 		ExpectedExternalID: Sp("1"),
-		ExpectedDate:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)),
+		ExpectedDate:       time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
 	},
 	{
-		Label:              "Receive First Photo Attachment",
-		URL:                receiveURL,
-		Data:               msgFirstPhotoAttachment,
-		ExpectedStatus:     200,
-		ExpectedResponse:   "ok",
-		ExpectedURN:        Sp("vk:123456"),
-		ExpectedExternalID: Sp("1"),
-		ExpectedDate:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), ExpectedAttachments: []string{"https://foo.bar/x-photo.jpg"},
+		Label:               "Receive First Photo Attachment",
+		URL:                 receiveURL,
+		Data:                msgFirstPhotoAttachment,
+		ExpectedStatus:      200,
+		ExpectedResponse:    "ok",
+		ExpectedURN:         Sp("vk:123456"),
+		ExpectedExternalID:  Sp("1"),
+		ExpectedDate:        time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
+		ExpectedAttachments: []string{"https://foo.bar/x-photo.jpg"},
 	},
 	{
-		Label:              "Receive First Graffiti Attachment",
-		URL:                receiveURL,
-		Data:               msgFirstGraffitiAttachment,
-		ExpectedStatus:     200,
-		ExpectedResponse:   "ok",
-		ExpectedURN:        Sp("vk:123456"),
-		ExpectedExternalID: Sp("1"),
-		ExpectedDate:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), ExpectedAttachments: []string{"https://foo.bar/graffiti.png"},
+		Label:               "Receive First Graffiti Attachment",
+		URL:                 receiveURL,
+		Data:                msgFirstGraffitiAttachment,
+		ExpectedStatus:      200,
+		ExpectedResponse:    "ok",
+		ExpectedURN:         Sp("vk:123456"),
+		ExpectedExternalID:  Sp("1"),
+		ExpectedDate:        time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
+		ExpectedAttachments: []string{"https://foo.bar/graffiti.png"},
 	},
 	{
-		Label:              "Receive First Sticker Attachment",
-		URL:                receiveURL,
-		Data:               msgFirstStickerAttachment,
-		ExpectedStatus:     200,
-		ExpectedResponse:   "ok",
-		ExpectedURN:        Sp("vk:123456"),
-		ExpectedExternalID: Sp("1"),
-		ExpectedDate:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), ExpectedAttachments: []string{"https://foo.bar/128x128_sticker.png"},
+		Label:               "Receive First Sticker Attachment",
+		URL:                 receiveURL,
+		Data:                msgFirstStickerAttachment,
+		ExpectedStatus:      200,
+		ExpectedResponse:    "ok",
+		ExpectedURN:         Sp("vk:123456"),
+		ExpectedExternalID:  Sp("1"),
+		ExpectedDate:        time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
+		ExpectedAttachments: []string{"https://foo.bar/128x128_sticker.png"},
 	},
 	{
-		Label:              "Receive First Audio Attachment",
-		URL:                receiveURL,
-		Data:               msgFirstAudioAttachment,
-		ExpectedStatus:     200,
-		ExpectedResponse:   "ok",
-		ExpectedURN:        Sp("vk:123456"),
-		ExpectedExternalID: Sp("1"),
-		ExpectedDate:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), ExpectedAttachments: []string{"https://foo.bar/audio.mp3"},
+		Label:               "Receive First Audio Attachment",
+		URL:                 receiveURL,
+		Data:                msgFirstAudioAttachment,
+		ExpectedStatus:      200,
+		ExpectedResponse:    "ok",
+		ExpectedURN:         Sp("vk:123456"),
+		ExpectedExternalID:  Sp("1"),
+		ExpectedDate:        time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
+		ExpectedAttachments: []string{"https://foo.bar/audio.mp3"},
 	},
 	{
-		Label:              "Receive First Audio Attachment",
-		URL:                receiveURL,
-		Data:               msgFirstDocAttachment,
-		ExpectedStatus:     200,
-		ExpectedResponse:   "ok",
-		ExpectedURN:        Sp("vk:123456"),
-		ExpectedExternalID: Sp("1"),
-		ExpectedDate:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), ExpectedAttachments: []string{"https://foo.bar/doc.pdf"},
+		Label:               "Receive First Audio Attachment",
+		URL:                 receiveURL,
+		Data:                msgFirstDocAttachment,
+		ExpectedStatus:      200,
+		ExpectedResponse:    "ok",
+		ExpectedURN:         Sp("vk:123456"),
+		ExpectedExternalID:  Sp("1"),
+		ExpectedDate:        time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
+		ExpectedAttachments: []string{"https://foo.bar/doc.pdf"},
 	},
 	{
 		Label:              "Receive Message Keyboard",
@@ -307,17 +313,18 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedResponse:   "ok",
 		ExpectedURN:        Sp("vk:123456"),
 		ExpectedExternalID: Sp("1"),
-		ExpectedDate:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)),
+		ExpectedDate:       time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
 	},
 	{
-		Label:              "Receive Geolocation Attachment",
-		URL:                receiveURL,
-		Data:               msgGeolocationOnly,
-		ExpectedStatus:     200,
-		ExpectedResponse:   "ok",
-		ExpectedURN:        Sp("vk:123456"),
-		ExpectedExternalID: Sp("1"),
-		ExpectedDate:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), ExpectedAttachments: []string{"geo:-9.652278,-35.701095"},
+		Label:               "Receive Geolocation Attachment",
+		URL:                 receiveURL,
+		Data:                msgGeolocationOnly,
+		ExpectedStatus:      200,
+		ExpectedResponse:    "ok",
+		ExpectedURN:         Sp("vk:123456"),
+		ExpectedExternalID:  Sp("1"),
+		ExpectedDate:        time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
+		ExpectedAttachments: []string{"geo:-9.652278,-35.701095"},
 	},
 	{
 		Label:            "Validate secret",
@@ -390,15 +397,12 @@ var sendTestCases = []ChannelSendTestCase{
 		ExpectedStatus:     "S",
 		SendPrep:           setSendURL,
 		ExpectedExternalID: "1",
-		MockResponses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=&message=Simple+message&random_id=10&user_id=123456789&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": 1}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
 		},
 	},
 	{
@@ -409,31 +413,22 @@ var sendTestCases = []ChannelSendTestCase{
 		ExpectedStatus:     "S",
 		SendPrep:           setSendURL,
 		ExpectedExternalID: "1",
-		MockResponses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:       "POST",
 				Path:         "/upload/photo",
 				BodyContains: `media body`,
-			}: {
-				Status: 200,
-				Body:   `{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(200, nil, []byte(`{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`)),
+			{
 				Method:   "POST",
 				Path:     actionSaveUploadedPhotoInfo,
 				RawQuery: "access_token=token123xyz&hash=zxc987qwe&photo=...&server=109876&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": [{"id": 1, "owner_id": 1901234}]}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": [{"id": 1, "owner_id": 1901234}]}`)),
+			{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=&random_id=10&user_id=123456789&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": 1}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
 		},
 	},
 	{
@@ -444,31 +439,22 @@ var sendTestCases = []ChannelSendTestCase{
 		ExpectedStatus:     "S",
 		SendPrep:           setSendURL,
 		ExpectedExternalID: "1",
-		MockResponses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:       "POST",
 				Path:         "/upload/photo",
 				BodyContains: `media body`,
-			}: {
-				Status: 200,
-				Body:   `{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(200, nil, []byte(`{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`)),
+			{
 				Method:   "POST",
 				Path:     actionSaveUploadedPhotoInfo,
 				RawQuery: "access_token=token123xyz&hash=zxc987qwe&photo=...&server=109876&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": [{"id": 1, "owner_id": 1901234}]}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": [{"id": 1, "owner_id": 1901234}]}`)),
+			{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=Attachments" + url.QueryEscape("\n\nhttps://foo.bar/audio.mp3") + "&random_id=10&user_id=123456789&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": 1}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
 		},
 	},
 	{
@@ -479,15 +465,12 @@ var sendTestCases = []ChannelSendTestCase{
 		ExpectedStatus:     "S",
 		SendPrep:           setSendURL,
 		ExpectedExternalID: "1",
-		MockResponses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=&keyboard=" + url.QueryEscape(keyboardJson) + "&message=Send+keyboard&random_id=10&user_id=123456789&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": 1}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
 		},
 	},
 }

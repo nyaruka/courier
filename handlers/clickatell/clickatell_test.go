@@ -146,16 +146,16 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Valid Receive", URL: receiveURL, Data: receiveValidMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Hello World!"), ExpectedURN: Sp("tel:+250788383383"), ExpectedExternalID: Sp("1234"), ExpectedDate: Tp(time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC))},
+		ExpectedMsgText: Sp("Hello World!"), ExpectedURN: Sp("tel:+250788383383"), ExpectedExternalID: Sp("1234"), ExpectedDate: time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC)},
 	{Label: "Valid Receive ISO-8859-1", URL: receiveURL, Data: receiveValidMessageISO8859_1, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp(`hello!`), ExpectedURN: Sp("tel:+250788383383"), ExpectedExternalID: Sp("1234"), ExpectedDate: Tp(time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC))},
+		ExpectedMsgText: Sp(`hello!`), ExpectedURN: Sp("tel:+250788383383"), ExpectedExternalID: Sp("1234"), ExpectedDate: time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC)},
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Error invalid JSON", URL: receiveURL, Data: "foo", ExpectedStatus: 400, ExpectedResponse: `unable to parse request JSON`},
 	{Label: "Error missing JSON", URL: receiveURL, Data: "{}", ExpectedStatus: 400, ExpectedResponse: `missing one of 'messageId`},
 	{Label: "Valid Receive UTF-16BE", URL: receiveURL, Data: receiveValidMessageUTF16BE, ExpectedStatus: 200, ExpectedResponse: "Accepted",
 		ExpectedMsgText: Sp("mexico k mis papas no tenýa dinero para comprarnos lo q querýamos.."), ExpectedURN: Sp("tel:+250788383383"),
-		ExpectedExternalID: Sp("1234"), ExpectedDate: Tp(time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC))},
-
+		ExpectedExternalID: Sp("1234"), ExpectedDate: time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC),
+	},
 	{Label: "Valid Failed status report", URL: statusURL, Data: statusFailed, ExpectedStatus: 200, ExpectedResponse: `"status":"F"`},
 	{Label: "Valid Delivered status report", URL: statusURL, Data: statusSent, ExpectedStatus: 200, ExpectedResponse: `"status":"S"`},
 	{Label: "Unexpected status report", URL: statusURL, Data: statusUnexpected, ExpectedStatus: 400, ExpectedResponse: `unknown status '-1', must be one`},

@@ -106,7 +106,7 @@ var missingFieldsReceive = `{
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+254791541111"), ExpectedDate: Tp(time.Date(2017, 5, 3, 06, 04, 45, 123000000, time.UTC))},
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+254791541111"), ExpectedDate: time.Date(2017, 5, 3, 06, 04, 45, 123000000, time.UTC)},
 
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Not JSON body", URL: receiveURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},

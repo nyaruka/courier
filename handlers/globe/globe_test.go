@@ -113,7 +113,7 @@ var testChannels = []courier.Channel{
 
 var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: validMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+639171234567"), ExpectedDate: Tp(time.Date(2013, 11, 22, 12, 12, 13, 0, time.UTC))},
+		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+639171234567"), ExpectedDate: time.Date(2013, 11, 22, 12, 12, 13, 0, time.UTC)},
 	{Label: "No Messages", URL: receiveURL, Data: noMessages, ExpectedStatus: 200, ExpectedResponse: "Ignored"},
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Invalid Sender", URL: receiveURL, Data: invalidSender, ExpectedStatus: 400, ExpectedResponse: "invalid 'senderAddress' parameter"},

@@ -33,11 +33,11 @@ var ignoreChannels = []courier.Channel{
 
 var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedExternalID: Sp("asdf-asdf"), ExpectedDate: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
+		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedExternalID: Sp("asdf-asdf"), ExpectedDate: time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC)},
 	{Label: "Receive KI Message", URL: receiveKIMessage, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+68673076228"), ExpectedExternalID: Sp("asdf-asdf"), ExpectedDate: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
+		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+68673076228"), ExpectedExternalID: Sp("asdf-asdf"), ExpectedDate: time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC)},
 	{Label: "Receive Empty Message", URL: receiveEmptyMessage, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp(""), ExpectedURN: Sp("tel:+2349067554729"), ExpectedExternalID: Sp("asdf-asdf"), ExpectedDate: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
+		ExpectedMsgText: Sp(""), ExpectedURN: Sp("tel:+2349067554729"), ExpectedExternalID: Sp("asdf-asdf"), ExpectedDate: time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC)},
 	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "field 'sender' required"},
 	{Label: "Invalid URN", URL: receiveInvalidURN, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Status No Params", URL: statusNoParams, ExpectedStatus: 400, ExpectedResponse: "field 'status' required"},
@@ -47,7 +47,7 @@ var handleTestCases = []ChannelHandleTestCase{
 
 var ignoreTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedExternalID: Sp("asdf-asdf"), ExpectedDate: Tp(time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC))},
+		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedExternalID: Sp("asdf-asdf"), ExpectedDate: time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC)},
 	{Label: "Write Status Delivered", URL: statusDelivered, ExpectedStatus: 200, ExpectedResponse: `"status":"D"`},
 	{Label: "Ignore Status Wired", URL: statusWired, ExpectedStatus: 200, ExpectedResponse: `ignoring sent report`},
 	{Label: "Ignore Status Sent", URL: statusSent, ExpectedStatus: 200, ExpectedResponse: `ignoring sent report`},

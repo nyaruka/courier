@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -258,26 +259,26 @@ var testChannels = []courier.Channel{
 
 var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Hello, world"), ExpectedURN: Sp("line:uabcdefghij"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp("Hello, world"), ExpectedURN: Sp("line:uabcdefghij"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessageLast, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Last event"), ExpectedURN: Sp("line:uabcdefghij"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp("Last event"), ExpectedURN: Sp("line:uabcdefghij"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive Valid Image Message", URL: receiveURL, Data: receiveValidImageMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://api-data.line.me/v2/bot/message/100001/content"}, ExpectedURN: Sp("line:uabcdefghij"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://api-data.line.me/v2/bot/message/100001/content"}, ExpectedURN: Sp("line:uabcdefghij"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Video Message", URL: receiveURL, Data: receiveValidVideoMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://api-data.line.me/v2/bot/message/100001/content"}, ExpectedURN: Sp("line:uabcdefghij"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://api-data.line.me/v2/bot/message/100001/content"}, ExpectedURN: Sp("line:uabcdefghij"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Video External Message", URL: receiveURL, Data: receiveValidVideoExternalMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://example.com/original.mp4"}, ExpectedURN: Sp("line:uabcdefghij"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://example.com/original.mp4"}, ExpectedURN: Sp("line:uabcdefghij"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Audio Message", URL: receiveURL, Data: receiveValidAudioMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://api-data.line.me/v2/bot/message/100001/content"}, ExpectedURN: Sp("line:uabcdefghij"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://api-data.line.me/v2/bot/message/100001/content"}, ExpectedURN: Sp("line:uabcdefghij"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Location Message", URL: receiveURL, Data: receiveValidLocationMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("my location"), ExpectedAttachments: []string{"geo:35.687574,139.729220"}, ExpectedURN: Sp("line:uabcdefghij"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp("my location"), ExpectedAttachments: []string{"geo:35.687574,139.729220"}, ExpectedURN: Sp("line:uabcdefghij"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 
 	{Label: "Missing message", URL: receiveURL, Data: missingMessage, ExpectedStatus: 200, ExpectedResponse: "ignoring request, no message",
@@ -420,23 +421,17 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Send Push Message If Invalid Reply",
 		MsgText: "Simple Message", MsgURN: "line:uabcdefghij", MsgResponseToExternalID: "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
 		ExpectedStatus: "W",
-		MockResponses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:       "POST",
 				Path:         "/v2/bot/message/reply",
 				BodyContains: `{"replyToken":"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA","messages":[{"type":"text","text":"Simple Message"}]}`,
-			}: {
-				Status: 400,
-				Body:   `{"message":"Invalid reply token"}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(400, nil, []byte(`{"message":"Invalid reply token"}`)),
+			{
 				Method:       "POST",
 				Path:         "/v2/bot/message/push",
 				BodyContains: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message"}]}`,
-			}: {
-				Status: 200,
-				Body:   `{}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{}`)),
 		},
 		SendPrep: setSendURL},
 	{Label: "Error Sending",

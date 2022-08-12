@@ -197,13 +197,13 @@ var missingFieldsReceive = `{
 
 var testWhatappCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveWhatsappURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
 	{Label: "Receive file Valid", URL: receiveWhatsappURL, Data: fileReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
 	{Label: "Receive location Valid", URL: receiveWhatsappURL, Data: locationReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:0.000000,1.000000"}, ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:0.000000,1.000000"}, ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
 	{Label: "Not JSON body", URL: receiveWhatsappURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
 	{Label: "Wrong JSON schema", URL: receiveWhatsappURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
@@ -218,13 +218,13 @@ var testWhatappCases = []ChannelHandleTestCase{
 
 var testSMSCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveSMSURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
 	{Label: "Receive file Valid", URL: receiveSMSURL, Data: fileReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
 	{Label: "Receive location Valid", URL: receiveSMSURL, Data: locationReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:0.000000,1.000000"}, ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: Tp(time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC))},
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:0.000000,1.000000"}, ExpectedURN: Sp("whatsapp:254791541111"), ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
 	{Label: "Not JSON body", URL: receiveSMSURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
 	{Label: "Wrong JSON schema", URL: receiveSMSURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},

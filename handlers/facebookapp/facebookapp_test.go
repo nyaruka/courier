@@ -14,6 +14,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,53 +33,53 @@ var testChannelsWAC = []courier.Channel{
 
 var testCasesFBA = []ChannelHandleTestCase{
 	{Label: "Receive Message FBA", URL: "/c/fba/receive", Data: string(test.ReadFile("./testdata/fba/helloMsgFBA.json")), ExpectedStatus: 200, ExpectedResponse: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Invalid Signature", URL: "/c/fba/receive", Data: string(test.ReadFile("./testdata/fba/helloMsgFBA.json")), ExpectedStatus: 400, ExpectedResponse: "invalid request signature", PrepRequest: addInvalidSignature},
 
 	{Label: "No Duplicate Receive Message", URL: "/c/fba/receive", Data: string(test.ReadFile("./testdata/fba/duplicateMsgFBA.json")), ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Attachment", URL: "/c/fba/receive", Data: string(test.ReadFile("./testdata/fba/attachmentFBA.json")), ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://image-url/foo.png"}, ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://image-url/foo.png"}, ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive Location", URL: "/c/fba/receive", Data: string(test.ReadFile("./testdata/fba/locationAttachment.json")), ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:1.200000,-1.300000"}, ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:1.200000,-1.300000"}, ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Thumbs Up", URL: "/c/fba/receive", Data: string(test.ReadFile("./testdata/fba/thumbsUp.json")), ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp("👍"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp("👍"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive OptIn UserRef", URL: "/c/fba/receive", Data: string(test.ReadFile("./testdata/fba/optInUserRef.json")), ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:ref:optin_user_ref"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedURN: Sp("facebook:ref:optin_user_ref"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ChannelEvent: Sp(courier.Referral), ChannelEventExtra: map[string]interface{}{"referrer_id": "optin_ref"},
 		PrepRequest: addValidSignature},
 	{Label: "Receive OptIn", URL: "/c/fba/receive", Data: string(test.ReadFile("./testdata/fba/optIn.json")), ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ChannelEvent: Sp(courier.Referral), ChannelEventExtra: map[string]interface{}{"referrer_id": "optin_ref"},
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive Get Started", URL: "/c/fba/receive", Data: string(test.ReadFile("./testdata/fba/postbackGetStarted.json")), ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.NewConversation),
+		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ChannelEvent: Sp(courier.NewConversation),
 		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started"},
 		PrepRequest:       addValidSignature},
 	{Label: "Receive Referral Postback", URL: "/c/fba/receive", Data: string(test.ReadFile("./testdata/fba/postback.json")), ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
+		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ChannelEvent: Sp(courier.Referral),
 		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"},
 		PrepRequest:       addValidSignature},
 	{Label: "Receive Referral", URL: "/c/fba/receive", Data: string(test.ReadFile("./testdata/fba/postbackReferral.json")), ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
+		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ChannelEvent: Sp(courier.Referral),
 		ChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"},
 		PrepRequest:       addValidSignature},
 
 	{Label: "Receive Referral", URL: "/c/fba/receive", Data: string(test.ReadFile("./testdata/fba/referral.json")), ExpectedStatus: 200, ExpectedResponse: `"referrer_id":"referral id"`,
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.Referral),
+		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ChannelEvent: Sp(courier.Referral),
 		ChannelEventExtra: map[string]interface{}{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"},
 		PrepRequest:       addValidSignature},
 
 	{Label: "Receive DLR", URL: "/c/fba/receive", Data: string(test.ReadFile("./testdata/fba/dlr.json")), ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ExpectedMsgStatus: Sp(courier.MsgDelivered), ExpectedExternalID: Sp("mid.1458668856218:ed81099e15d3f4f233"),
+		ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ExpectedMsgStatus: Sp(courier.MsgDelivered), ExpectedExternalID: Sp("mid.1458668856218:ed81099e15d3f4f233"),
 		PrepRequest: addValidSignature},
 
 	{Label: "Different Page", URL: "/c/fba/receive", Data: string(test.ReadFile("./testdata/fba/differentPageFBA.json")), ExpectedStatus: 200, ExpectedResponse: `"data":[]`, PrepRequest: addValidSignature},
@@ -92,25 +93,25 @@ var testCasesFBA = []ChannelHandleTestCase{
 }
 var testCasesIG = []ChannelHandleTestCase{
 	{Label: "Receive Message", URL: "/c/ig/receive", Data: string(test.ReadFile("./testdata/ig/helloMsgIG.json")), ExpectedStatus: 200, ExpectedResponse: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("instagram:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("instagram:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive Invalid Signature", URL: "/c/ig/receive", Data: string(test.ReadFile("./testdata/ig/helloMsgIG.json")), ExpectedStatus: 400, ExpectedResponse: "invalid request signature", PrepRequest: addInvalidSignature},
 
 	{Label: "No Duplicate Receive Message", URL: "/c/ig/receive", Data: string(test.ReadFile("./testdata/ig/duplicateMsgIG.json")), ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("instagram:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("instagram:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive Attachment", URL: "/c/ig/receive", Data: string(test.ReadFile("./testdata/ig/attachmentIG.json")), ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://image-url/foo.png"}, ExpectedURN: Sp("instagram:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://image-url/foo.png"}, ExpectedURN: Sp("instagram:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive Like Heart", URL: "/c/ig/receive", Data: string(test.ReadFile("./testdata/ig/like_heart.json")), ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp(""), ExpectedURN: Sp("instagram:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)),
+		ExpectedMsgText: Sp(""), ExpectedURN: Sp("instagram:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive Icebreaker Get Started", URL: "/c/ig/receive", Data: string(test.ReadFile("./testdata/ig/icebreakerGetStarted.json")), ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("instagram:5678"), ExpectedDate: Tp(time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)), ChannelEvent: Sp(courier.NewConversation),
+		ExpectedURN: Sp("instagram:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ChannelEvent: Sp(courier.NewConversation),
 		ChannelEventExtra: map[string]interface{}{"title": "icebreaker question", "payload": "get_started"},
 		PrepRequest:       addValidSignature},
 	{Label: "Different Page", URL: "/c/ig/receive", Data: string(test.ReadFile("./testdata/ig/differentPageIG.json")), ExpectedStatus: 200, ExpectedResponse: `"data":[]`, PrepRequest: addValidSignature},
@@ -252,34 +253,34 @@ var wacReceiveURL = "/c/wac/receive"
 
 var testCasesWAC = []ChannelHandleTestCase{
 	{Label: "Receive Message WAC", URL: wacReceiveURL, Data: string(test.ReadFile("./testdata/wac/helloWAC.json")), ExpectedStatus: 200, ExpectedResponse: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Duplicate Valid Message", URL: wacReceiveURL, Data: string(test.ReadFile("./testdata/wac/duplicateWAC.json")), ExpectedStatus: 200, ExpectedResponse: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive Valid Voice Message", URL: wacReceiveURL, Data: string(test.ReadFile("./testdata/wac/voiceWAC.json")), ExpectedStatus: 200, ExpectedResponse: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		ExpectedMsgText: Sp(""), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedAttachments: []string{"https://foo.bar/attachmentURL_Voice"}, ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		ExpectedMsgText: Sp(""), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedAttachments: []string{"https://foo.bar/attachmentURL_Voice"}, ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive Valid Button Message", URL: wacReceiveURL, Data: string(test.ReadFile("./testdata/wac/buttonWAC.json")), ExpectedStatus: 200, ExpectedResponse: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		ExpectedMsgText: Sp("No"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		ExpectedMsgText: Sp("No"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive Valid Document Message", URL: wacReceiveURL, Data: string(test.ReadFile("./testdata/wac/documentWAC.json")), ExpectedStatus: 200, ExpectedResponse: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		ExpectedMsgText: Sp("80skaraokesonglistartist"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedAttachments: []string{"https://foo.bar/attachmentURL_Document"}, ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		ExpectedMsgText: Sp("80skaraokesonglistartist"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedAttachments: []string{"https://foo.bar/attachmentURL_Document"}, ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Image Message", URL: wacReceiveURL, Data: string(test.ReadFile("./testdata/wac/imageWAC.json")), ExpectedStatus: 200, ExpectedResponse: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		ExpectedMsgText: Sp("Check out my new phone!"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedAttachments: []string{"https://foo.bar/attachmentURL_Image"}, ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		ExpectedMsgText: Sp("Check out my new phone!"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedAttachments: []string{"https://foo.bar/attachmentURL_Image"}, ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Video Message", URL: wacReceiveURL, Data: string(test.ReadFile("./testdata/wac/videoWAC.json")), ExpectedStatus: 200, ExpectedResponse: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		ExpectedMsgText: Sp("Check out my new phone!"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedAttachments: []string{"https://foo.bar/attachmentURL_Video"}, ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		ExpectedMsgText: Sp("Check out my new phone!"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedAttachments: []string{"https://foo.bar/attachmentURL_Video"}, ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Audio Message", URL: wacReceiveURL, Data: string(test.ReadFile("./testdata/wac/audioWAC.json")), ExpectedStatus: 200, ExpectedResponse: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		ExpectedMsgText: Sp("Check out my new phone!"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedAttachments: []string{"https://foo.bar/attachmentURL_Audio"}, ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		ExpectedMsgText: Sp("Check out my new phone!"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedAttachments: []string{"https://foo.bar/attachmentURL_Audio"}, ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Location Message", URL: wacReceiveURL, Data: string(test.ReadFile("./testdata/wac/locationWAC.json")), ExpectedStatus: 200, ExpectedResponse: `"type":"msg"`,
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:0.000000,1.000000"}, ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:0.000000,1.000000"}, ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		PrepRequest: addValidSignature},
 
 	{Label: "Receive Invalid JSON", URL: wacReceiveURL, Data: "not json", ExpectedStatus: 400, ExpectedResponse: "unable to parse", PrepRequest: addValidSignature},
@@ -291,10 +292,10 @@ var testCasesWAC = []ChannelHandleTestCase{
 	{Label: "Receive Invalid Status", URL: wacReceiveURL, Data: string(test.ReadFile("./testdata/wac/invalidStatusWAC.json")), ExpectedStatus: 400, ExpectedResponse: `"unknown status: in_orbit"`, PrepRequest: addValidSignature},
 	{Label: "Receive Ignore Status", URL: wacReceiveURL, Data: string(test.ReadFile("./testdata/wac/ignoreStatusWAC.json")), ExpectedStatus: 200, ExpectedResponse: `"ignoring status: deleted"`, PrepRequest: addValidSignature},
 	{Label: "Receive Valid Interactive Button Reply Message", URL: wacReceiveURL, Data: string(test.ReadFile("./testdata/wac/buttonReplyWAC.json")), ExpectedStatus: 200, ExpectedResponse: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		ExpectedMsgText: Sp("Yes"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		ExpectedMsgText: Sp("Yes"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		PrepRequest: addValidSignature},
 	{Label: "Receive Valid Interactive List Reply Message", URL: wacReceiveURL, Data: string(test.ReadFile("./testdata/wac/listReplyWAC.json")), ExpectedStatus: 200, ExpectedResponse: "Handled", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
-		ExpectedMsgText: Sp("Yes"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)),
+		ExpectedMsgText: Sp("Yes"), ExpectedURN: Sp("whatsapp:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		PrepRequest: addValidSignature},
 }
 
@@ -645,23 +646,17 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		MsgText:        "audio caption",
 		MsgURN:         "whatsapp:250788123123",
 		MsgAttachments: []string{"audio/mpeg:https://foo.bar/audio.mp3"},
-		MockResponses: map[MockedRequest]MockedResponse{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`,
-			}: {
-				Status: 201,
-				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-			},
+			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"audio caption","preview_url":false}}`,
-			}: {
-				Status: 201,
-				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-			},
+			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 		},
 		ExpectedStatus:     "W",
 		ExpectedExternalID: "157b5e14568e8",
@@ -672,23 +667,17 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		MsgText:        "document caption",
 		MsgURN:         "whatsapp:250788123123",
 		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
-		MockResponses: map[MockedRequest]MockedResponse{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf"}}`,
-			}: {
-				Status: 201,
-				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-			},
+			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"document caption","preview_url":false}}`,
-			}: {
-				Status: 201,
-				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-			},
+			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 		},
 		ExpectedStatus:     "W",
 		ExpectedExternalID: "157b5e14568e8",
@@ -699,23 +688,17 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		MsgText:        "document caption",
 		MsgURN:         "whatsapp:250788123123",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponses: map[MockedRequest]MockedResponse{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`,
-			}: {
-				Status: 201,
-				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-			},
+			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"document caption","preview_url":false}}`,
-			}: {
-				Status: 201,
-				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-			},
+			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 		},
 		ExpectedStatus:     "W",
 		ExpectedExternalID: "157b5e14568e8",
@@ -726,23 +709,17 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		MsgText:        "video caption",
 		MsgURN:         "whatsapp:250788123123",
 		MsgAttachments: []string{"video/mp4:https://foo.bar/video.mp4"},
-		MockResponses: map[MockedRequest]MockedResponse{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"video","video":{"link":"https://foo.bar/video.mp4"}}`,
-			}: {
-				Status: 201,
-				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-			},
+			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"video caption","preview_url":false}}`,
-			}: {
-				Status: 201,
-				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-			},
+			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 		},
 		ExpectedStatus:     "W",
 		ExpectedExternalID: "157b5e14568e8",
@@ -809,23 +786,17 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		MsgURN:          "whatsapp:250788123123",
 		MsgQuickReplies: []string{"BUTTON1"},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponses: map[MockedRequest]MockedResponse{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`,
-			}: {
-				Status: 201,
-				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-			},
+			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
-			}: {
-				Status: 201,
-				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-			},
+			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 		},
 		ExpectedStatus:     "W",
 		ExpectedExternalID: "157b5e14568e8",
@@ -837,23 +808,17 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		MsgURN:          "whatsapp:250788123123",
 		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponses: map[MockedRequest]MockedResponse{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`,
-			}: {
-				Status: 201,
-				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-			},
+			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			{
 				Method: "POST",
 				Path:   "/12345_ID/messages",
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
-			}: {
-				Status: 201,
-				Body:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-			},
+			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 		},
 		ExpectedStatus:     "W",
 		ExpectedExternalID: "157b5e14568e8",

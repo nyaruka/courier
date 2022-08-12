@@ -192,7 +192,7 @@ var invalidStatus = `{
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: helloMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("QUIZ Correct answer is Paris"), ExpectedURN: Sp("tel:+385916242493"), ExpectedExternalID: Sp("817790313235066447"), ExpectedDate: Tp(time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.FixedZone("", 0)))},
+		ExpectedMsgText: Sp("QUIZ Correct answer is Paris"), ExpectedURN: Sp("tel:+385916242493"), ExpectedExternalID: Sp("817790313235066447"), ExpectedDate: time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.FixedZone("", 0))},
 	{Label: "Receive missing results key", URL: receiveURL, Data: missingResults, ExpectedStatus: 400, ExpectedResponse: "validation for 'Results' failed"},
 	{Label: "Receive missing text key", URL: receiveURL, Data: missingText, ExpectedStatus: 200, ExpectedResponse: "ignoring request, no message"},
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},

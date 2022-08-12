@@ -12,6 +12,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -168,9 +169,9 @@ var notJSON = `blargh`
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Message", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
 		ExpectedContactName: Sp("Nicolas Pottier"), ExpectedURN: Sp("twitterid:272953809#nicpottier"),
-		ExpectedMsgText: Sp("Hello World & good wishes."), ExpectedExternalID: Sp("958501034212564996"), ExpectedDate: Tp(time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC))},
+		ExpectedMsgText: Sp("Hello World & good wishes."), ExpectedExternalID: Sp("958501034212564996"), ExpectedDate: time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC)},
 	{Label: "Receive Attachment", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: attachment, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Hello"), ExpectedAttachments: []string{"https://image.foo.com/image.jpg"}, ExpectedURN: Sp("twitterid:272953809#nicpottier"), ExpectedExternalID: Sp("958501034212564996"), ExpectedDate: Tp(time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC))},
+		ExpectedMsgText: Sp("Hello"), ExpectedAttachments: []string{"https://image.foo.com/image.jpg"}, ExpectedURN: Sp("twitterid:272953809#nicpottier"), ExpectedExternalID: Sp("958501034212564996"), ExpectedDate: time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC)},
 	{Label: "Not JSON", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "Error"},
 	{Label: "Invalid Twitter handle", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTwitterHandle, ExpectedStatus: 400, ExpectedResponse: "invalid twitter handle"},
 	{Label: "Invalid Twitter ID", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTwitterID, ExpectedStatus: 400, ExpectedResponse: "invalid twitter id"},
@@ -223,56 +224,32 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgText:        "document caption",
 		MsgURN:         "twitterid:12345",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponses: map[MockedRequest]MockedResponse{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method: "POST",
 				Path:   "/1.1/media/upload.json",
 				Body:   `command=INIT&media_category=dm_image&media_type=image%2Fjpeg&total_bytes=10`,
-			}: {
-				Status: 200,
-				Body: `{
-					"media_id": 710511363345354753,
-					"media_id_string": "710511363345354753",
-				  }`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"media_id": 710511363345354753, "media_id_string": "710511363345354753"}`)),
 			{
 				Method:       "POST",
 				Path:         "/1.1/media/upload.json",
 				BodyContains: "APPEND",
-			}: {
-				Status: 200,
-				Body: `{
-					"media_id": 710511363345354753,
-					"media_id_string": "710511363345354753",
-				  }`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"media_id": 710511363345354753, "media_id_string": "710511363345354753"}`)),
 			{
 				Method: "POST",
 				Path:   "/1.1/media/upload.json",
 				Body:   `command=FINALIZE&media_id=710511363345354753`,
-			}: {
-				Status: 200,
-				Body: `{
-					"media_id": 710511363345354753,
-					"media_id_string": "710511363345354753",
-				  }`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"media_id": 710511363345354753, "media_id_string": "710511363345354753"}`)),
 			{
 				Method: "POST",
 				Path:   "/1.1/direct_messages/events/new.json",
 				Body:   `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"document caption"}}}}`,
-			}: {
-				Status: 200,
-				Body:   `{"event": { "id": "133"}}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"event": { "id": "133"}}`)),
 			{
 				Method: "POST",
 				Path:   "/1.1/direct_messages/events/new.json",
 				Body:   `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"","attachment":{"type":"media","media":{"id":"710511363345354753"}}}}}}`,
-			}: {
-				Status: 200,
-				Body:   `{"event": { "id": "133"}}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"event": { "id": "133"}}`)),
 		},
 		ExpectedStatus:     "W",
 		ExpectedExternalID: "133",
@@ -283,56 +260,32 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgText:        "document caption",
 		MsgURN:         "twitterid:12345",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponses: map[MockedRequest]MockedResponse{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method: "POST",
 				Path:   "/1.1/media/upload.json",
 				Body:   `command=INIT&media_category=dm_image&media_type=image%2Fjpeg&total_bytes=10`,
-			}: {
-				Status: 200,
-				Body: `{
-					"media_id": 710511363345354753,
-					"media_id_string": "710511363345354753",
-				  }`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"media_id": 710511363345354753, "media_id_string": "710511363345354753"}`)),
 			{
 				Method:       "POST",
 				Path:         "/1.1/media/upload.json",
 				BodyContains: "APPEND",
-			}: {
-				Status: 200,
-				Body: `{
-					"media_id": 710511363345354753,
-					"media_id_string": "710511363345354753",
-				  }`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"media_id": 710511363345354753, "media_id_string": "710511363345354753"}`)),
 			{
 				Method: "POST",
 				Path:   "/1.1/media/upload.json",
 				Body:   `command=FINALIZE&media_id=710511363345354753`,
-			}: {
-				Status: 200,
-				Body: `{
-					"media_id": 710511363345354753,
-					"media_id_string": "710511363345354753",
-				  }`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"media_id": 710511363345354753, "media_id_string": "710511363345354753"}`)),
 			{
 				Method: "POST",
 				Path:   "/1.1/direct_messages/events/new.json",
 				Body:   `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"document caption"}}}}`,
-			}: {
-				Status: 200,
-				Body:   `{"event": { "id": "133"}}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"event": { "id": "133"}}`)),
 			{
 				Method: "POST",
 				Path:   "/1.1/direct_messages/events/new.json",
 				Body:   `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"","attachment":{"type":"media","media":{"id":"710511363345354753"}}}}}}`,
-			}: {
-				Status: 200,
-				Body:   `{"event": { "id": "133"}}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"event": { "id": "133"}}`)),
 		},
 		ExpectedStatus:     "W",
 		ExpectedExternalID: "133",
@@ -343,57 +296,32 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgText:        "document caption",
 		MsgURN:         "twitterid:12345",
 		MsgAttachments: []string{"video/mp4:https://foo.bar/video.mp4"},
-		MockResponses: map[MockedRequest]MockedResponse{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method: "POST",
 				Path:   "/1.1/media/upload.json",
 				Body:   `command=INIT&media_category=dm_video&media_type=video%2Fmp4&total_bytes=10`,
-			}: {
-				Status: 200,
-				Body: `{
-					"media_id": 710511363345354753,
-					"media_id_string": "710511363345354753",
-				  }`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"media_id": 710511363345354753, "media_id_string": "710511363345354753"}`)),
 			{
 				Method:       "POST",
 				Path:         "/1.1/media/upload.json",
 				BodyContains: "APPEND",
-			}: {
-				Status: 200,
-				Body: `{
-					"media_id": 710511363345354753,
-					"media_id_string": "710511363345354753",
-				  }`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"media_id": 710511363345354753, "media_id_string": "710511363345354753"}`)),
 			{
 				Method: "POST",
 				Path:   "/1.1/media/upload.json",
 				Body:   `command=FINALIZE&media_id=710511363345354753`,
-			}: {
-				Status: 200,
-				Body: `{
-					"media_id": 710511363345354753,
-					"media_id_string": "710511363345354753",
-					"processing_info" : {"state": "pending", "check_after_secs": 2},
-				  }`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"media_id": 710511363345354753, "media_id_string": "710511363345354753"}`)),
 			{
 				Method: "POST",
 				Path:   "/1.1/direct_messages/events/new.json",
 				Body:   `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"document caption"}}}}`,
-			}: {
-				Status: 200,
-				Body:   `{"event": { "id": "133"}}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"event": { "id": "133"}}`)),
 			{
 				Method: "POST",
 				Path:   "/1.1/direct_messages/events/new.json",
 				Body:   `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"","attachment":{"type":"media","media":{"id":"710511363345354753"}}}}}}`,
-			}: {
-				Status: 200,
-				Body:   `{"event": { "id": "133"}}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"event": { "id": "133"}}`)),
 		},
 		ExpectedStatus:     "W",
 		ExpectedExternalID: "133",
@@ -404,23 +332,17 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgText:        "My audio!",
 		MsgURN:         "twitterid:12345",
 		MsgAttachments: []string{"audio/mp3:https://foo.bar/audio.mp3"},
-		MockResponses: map[MockedRequest]MockedResponse{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method: "POST",
 				Path:   "/1.1/direct_messages/events/new.json",
 				Body:   `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"My audio!"}}}}`,
-			}: {
-				Status: 200,
-				Body:   `{"event": { "id": "133"}}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"event": { "id": "133"}}`)),
 			{
 				Method:       "POST",
 				Path:         "/1.1/direct_messages/events/new.json",
 				BodyContains: `"text":"http`, // audio link send as text
-			}: {
-				Status: 200,
-				Body:   `{"event": { "id": "133"}}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"event": { "id": "133"}}`)),
 		},
 		ExpectedStatus:     "W",
 		ExpectedExternalID: "133",

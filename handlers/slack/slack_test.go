@@ -14,6 +14,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
@@ -212,15 +213,12 @@ var fileSendTestCases = []ChannelSendTestCase{
 		MsgText: "", MsgURN: "slack:U0123ABCDEF",
 		ExpectedStatus: "W",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.png"},
-		MockResponses: map[MockedRequest]MockedResponse{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method:       "POST",
 				Path:         "/files.upload",
 				BodyContains: "image.png",
-			}: {
-				Status: 200,
-				Body:   `{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`)),
 		},
 		SendPrep: setSendUrl,
 	},
@@ -229,15 +227,12 @@ var fileSendTestCases = []ChannelSendTestCase{
 		MsgText: "", MsgURN: "slack:U0123ABCDEF",
 		ExpectedStatus: "W",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.png"},
-		MockResponses: map[MockedRequest]MockedResponse{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method:       "POST",
 				Path:         "/files.upload",
 				BodyContains: "image.png",
-			}: {
-				Status: 200,
-				Body:   `{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`)),
 		},
 		SendPrep: setSendUrl,
 	},

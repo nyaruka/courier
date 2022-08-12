@@ -32,7 +32,8 @@ var (
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+254791541111"),
-		ExpectedDate: Tp(time.Date(2017, 10, 26, 15, 51, 32, 906335000, time.UTC))},
+		ExpectedDate: time.Date(2017, 10, 26, 15, 51, 32, 906335000, time.UTC),
+	},
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Receive Empty", URL: receiveURL, Data: emptyReceive, ExpectedStatus: 400, ExpectedResponse: "field 'msisdn' required"},
 	{Label: "Receive Missing Text", URL: receiveURL, Data: missingText, ExpectedStatus: 400, ExpectedResponse: "field 'text' required"},

@@ -32,13 +32,13 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "-1",
-		ExpectedMsgText: Sp("Hello"), ExpectedURN: Sp("tel:+60124361111"), ExpectedDate: Tp(time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC)),
+		ExpectedMsgText: Sp("Hello"), ExpectedURN: Sp("tel:+60124361111"), ExpectedDate: time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC),
 		ExpectedExternalID: Sp("abc1234")},
 	{Label: "Receive Valid via GET", URL: receiveURL + "?" + validReceive, ExpectedStatus: 200, ExpectedResponse: "-1",
-		ExpectedMsgText: Sp("Hello"), ExpectedURN: Sp("tel:+60124361111"), ExpectedDate: Tp(time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC)),
+		ExpectedMsgText: Sp("Hello"), ExpectedURN: Sp("tel:+60124361111"), ExpectedDate: time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC),
 		ExpectedExternalID: Sp("abc1234")},
 	{Label: "Receive Valid", URL: receiveURL, Data: validLongcodeReceive, ExpectedStatus: 200, ExpectedResponse: "-1",
-		ExpectedMsgText: Sp("Hello"), ExpectedURN: Sp("tel:+60124361111"), ExpectedDate: Tp(time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC)),
+		ExpectedMsgText: Sp("Hello"), ExpectedURN: Sp("tel:+60124361111"), ExpectedDate: time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC),
 		ExpectedExternalID: Sp("abc1234")},
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Missing Params", URL: receiveURL, Data: missingParamsReceive, ExpectedStatus: 400, ExpectedResponse: "missing shortcode, longcode, from or msisdn parameters"},
