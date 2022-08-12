@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -420,23 +421,17 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Send Push Message If Invalid Reply",
 		MsgText: "Simple Message", MsgURN: "line:uabcdefghij", MsgResponseToExternalID: "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
 		ExpectedStatus: "W",
-		MockResponses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:       "POST",
 				Path:         "/v2/bot/message/reply",
 				BodyContains: `{"replyToken":"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA","messages":[{"type":"text","text":"Simple Message"}]}`,
-			}: {
-				Status: 400,
-				Body:   `{"message":"Invalid reply token"}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(400, nil, []byte(`{"message":"Invalid reply token"}`)),
+			{
 				Method:       "POST",
 				Path:         "/v2/bot/message/push",
 				BodyContains: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message"}]}`,
-			}: {
-				Status: 200,
-				Body:   `{}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{}`)),
 		},
 		SendPrep: setSendURL},
 	{Label: "Error Sending",

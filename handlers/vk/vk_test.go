@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 
@@ -392,15 +393,12 @@ var sendTestCases = []ChannelSendTestCase{
 		ExpectedStatus:     "S",
 		SendPrep:           setSendURL,
 		ExpectedExternalID: "1",
-		MockResponses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=&message=Simple+message&random_id=10&user_id=123456789&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": 1}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
 		},
 	},
 	{
@@ -411,31 +409,22 @@ var sendTestCases = []ChannelSendTestCase{
 		ExpectedStatus:     "S",
 		SendPrep:           setSendURL,
 		ExpectedExternalID: "1",
-		MockResponses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:       "POST",
 				Path:         "/upload/photo",
 				BodyContains: `media body`,
-			}: {
-				Status: 200,
-				Body:   `{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(200, nil, []byte(`{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`)),
+			{
 				Method:   "POST",
 				Path:     actionSaveUploadedPhotoInfo,
 				RawQuery: "access_token=token123xyz&hash=zxc987qwe&photo=...&server=109876&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": [{"id": 1, "owner_id": 1901234}]}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": [{"id": 1, "owner_id": 1901234}]}`)),
+			{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=&random_id=10&user_id=123456789&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": 1}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
 		},
 	},
 	{
@@ -446,31 +435,22 @@ var sendTestCases = []ChannelSendTestCase{
 		ExpectedStatus:     "S",
 		SendPrep:           setSendURL,
 		ExpectedExternalID: "1",
-		MockResponses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:       "POST",
 				Path:         "/upload/photo",
 				BodyContains: `media body`,
-			}: {
-				Status: 200,
-				Body:   `{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(200, nil, []byte(`{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`)),
+			{
 				Method:   "POST",
 				Path:     actionSaveUploadedPhotoInfo,
 				RawQuery: "access_token=token123xyz&hash=zxc987qwe&photo=...&server=109876&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": [{"id": 1, "owner_id": 1901234}]}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": [{"id": 1, "owner_id": 1901234}]}`)),
+			{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=Attachments" + url.QueryEscape("\n\nhttps://foo.bar/audio.mp3") + "&random_id=10&user_id=123456789&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": 1}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
 		},
 	},
 	{
@@ -481,15 +461,12 @@ var sendTestCases = []ChannelSendTestCase{
 		ExpectedStatus:     "S",
 		SendPrep:           setSendURL,
 		ExpectedExternalID: "1",
-		MockResponses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=&keyboard=" + url.QueryEscape(keyboardJson) + "&message=Send+keyboard&random_id=10&user_id=123456789&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": 1}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
 		},
 	},
 }

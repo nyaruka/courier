@@ -17,6 +17,7 @@ import (
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -69,12 +70,6 @@ type MockedRequest struct {
 	BodyContains string
 }
 
-// MockedResponse is a fake HTTP response
-type MockedResponse struct {
-	Status int
-	Body   string
-}
-
 // ChannelSendTestCase defines the test values for a particular test case
 type ChannelSendTestCase struct {
 	Label    string
@@ -93,7 +88,7 @@ type ChannelSendTestCase struct {
 
 	MockResponseStatus int
 	MockResponseBody   string
-	MockResponses      map[MockedRequest]MockedResponse
+	MockResponses      map[MockedRequest]*httpx.MockResponse
 
 	ExpectedRequestPath string
 	ExpectedURLParams   map[string]string
@@ -250,7 +245,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 						bodyStr := string(body)[:]
 						if mockRequest.Method == r.Method && mockRequest.Path == r.URL.Path && mockRequest.RawQuery == r.URL.RawQuery && (mockRequest.Body == bodyStr || (mockRequest.BodyContains != "" && strings.Contains(bodyStr, mockRequest.BodyContains))) {
 							w.WriteHeader(mockResponse.Status)
-							w.Write([]byte(mockResponse.Body))
+							w.Write(mockResponse.Body)
 							mockRRCount++
 							break
 						}
