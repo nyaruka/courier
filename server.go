@@ -121,9 +121,10 @@ func (s *server) Start() error {
 		WriteTimeout: 30 * time.Second,
 	}
 
+	s.waitGroup.Add(1)
+
 	// and start serving HTTP
 	go func() {
-		s.waitGroup.Add(1)
 		defer s.waitGroup.Done()
 		err := s.httpServer.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
@@ -135,9 +136,10 @@ func (s *server) Start() error {
 		}
 	}()
 
+	s.waitGroup.Add(1)
+
 	// start our heartbeat
 	go func() {
-		s.waitGroup.Add(1)
 		defer s.waitGroup.Done()
 
 		for !s.stopped {
@@ -309,7 +311,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		}()
 
 		events, err := handlerFunc(ctx, channel, ww, r)
-		duration := time.Now().Sub(start)
+		duration := time.Since(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
 		// if we received an error, write it out and report it

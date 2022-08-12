@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewChannelLogFromTrace(t *testing.T) {
-	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]httpx.MockResponse{
+	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
 		"https://api.messages.com/send.json": {
 			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
 			httpx.MockConnectionError,
