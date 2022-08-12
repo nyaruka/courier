@@ -360,8 +360,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"},{"type":"text","text":"I need to keep adding more things to make it work"}]}`,
 		SendPrep:            setSendURL},
-	{Label: "Send Image Attachment",
-		MsgText: "My pic!", MsgURN: "line:uabcdefghij", MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+	{Label: "Send Audio Attachment",
+		MsgText: "My Audio!", MsgURN: "line:uabcdefghij", MsgAttachments: []string{"audio/mp3:http://mock.com/3456/test.mp3"},
 		ExpectedStatus:   "W",
 		MockResponseBody: `{}`, MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
@@ -369,10 +369,33 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":        "application/json",
 			"Authorization": "Bearer AccessToken",
 		},
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"My pic!"},{"type":"image","originalContentUrl":"https://foo.bar/image.jpg","previewImageUrl":"https://foo.bar/image.jpg"}]}`,
+		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"My Audio!"},{"type":"audio","originalContentUrl":"http://mock.com/2345/test.m4a","duration":200}]}`,
+		SendPrep:            setSendURL},
+	{Label: "Send Video Attachment",
+		MsgText: "My Video!", MsgURN: "line:uabcdefghij", MsgAttachments: []string{"video/mp4:http://mock.com/5678/test.mp4"},
+		ExpectedStatus:   "W",
+		MockResponseBody: `{}`, MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Bearer AccessToken",
+		},
+		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"My Video!"},{"type":"video","originalContentUrl":"http://mock.com/5678/test.mp4","previewImageUrl":"http://mock.com/4567/test.jpg"}]}`,
+		SendPrep:            setSendURL},
+
+	{Label: "Send Image Attachment",
+		MsgText: "My pic!", MsgURN: "line:uabcdefghij", MsgAttachments: []string{"image/jpeg:http://mock.com/1234/test.jpg"},
+		ExpectedStatus:   "W",
+		MockResponseBody: `{}`, MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Bearer AccessToken",
+		},
+		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"My pic!"},{"type":"image","originalContentUrl":"http://mock.com/1234/test.jpg","previewImageUrl":"http://mock.com/1234/test.jpg"}]}`,
 		SendPrep:            setSendURL},
 	{Label: "Send Other Attachment",
-		MsgText: "My video!", MsgURN: "line:uabcdefghij", MsgAttachments: []string{"video/mp4:https://foo.bar/video.mp4"},
+		MsgText: "My doc!", MsgURN: "line:uabcdefghij", MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
 		ExpectedStatus:   "W",
 		MockResponseBody: `{}`, MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
@@ -380,7 +403,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":        "application/json",
 			"Authorization": "Bearer AccessToken",
 		},
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"My video!"},{"type":"text","text":"https://foo.bar/video.mp4"}]}`,
+		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"My doc!"},{"type":"text","text":"https://foo.bar/document.pdf"}]}`,
 		SendPrep:            setSendURL},
 	{Label: "Send Message Batches",
 		MsgText:          tooLongMsg,
@@ -447,7 +470,26 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:            setSendURL},
 }
 
+// setSendURL takes care of setting the base_url to our test server host
+func setupMedia(mb *test.MockBackend) {
+	imageJPG := test.NewMockMedia("test.jpg", "image/jpeg", "http://mock.com/1234/test.jpg", 1024*1024, 640, 480, 0, nil)
+
+	audioM4A := test.NewMockMedia("test.m4a", "audio/mp4", "http://mock.com/2345/test.m4a", 1024*1024, 0, 0, 200, nil)
+	audioMP3 := test.NewMockMedia("test.mp3", "audio/mp3", "http://mock.com/3456/test.mp3", 1024*1024, 0, 0, 200, []courier.Media{audioM4A})
+
+	thumbJPG := test.NewMockMedia("test.jpg", "image/jpeg", "http://mock.com/4567/test.jpg", 1024*1024, 640, 480, 0, nil)
+	videoMP4 := test.NewMockMedia("test.mp4", "video/mp4", "http://mock.com/5678/test.mp4", 1024*1024, 0, 0, 1000, []courier.Media{thumbJPG})
+
+	videoMOV := test.NewMockMedia("test.mov", "video/quicktime", "http://mock.com/6789/test.mov", 100*1024*1024, 0, 0, 2000, nil)
+
+	mb.MockMedia(imageJPG)
+	mb.MockMedia(audioMP3)
+	mb.MockMedia(videoMP4)
+	mb.MockMedia(videoMOV)
+}
+
 func TestSending(t *testing.T) {
+
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US",
 		map[string]interface{}{
@@ -455,7 +497,7 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, setupMedia)
 }
 
 func TestBuildMediaRequest(t *testing.T) {
