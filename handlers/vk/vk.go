@@ -393,7 +393,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 	params.Set(paramUserId, msg.URN().Path())
 	params.Set(paramRandomId, msg.ID().String())
 
-	text, attachments := buildTextAndAttachmentParams(msg, status)
+	text, attachments := buildTextAndAttachmentParams(msg, logger)
 	params.Set(paramMessage, text)
 	params.Set(paramAttachments, attachments)
 
@@ -411,15 +411,12 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 
 	req.URL.RawQuery = params.Encode()
 
-	trace, err := handlers.MakeHTTPRequest(req)
-
-	log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-	status.AddLog(log)
-
-	if err != nil {
-		return status, err
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return status, nil
 	}
-	externalMsgId, err := jsonparser.GetInt(trace.ResponseBody, responseOutgoingMessageKey)
+
+	externalMsgId, err := jsonparser.GetInt(respBody, responseOutgoingMessageKey)
 
 	if err != nil {
 		return status, errors.Errorf("no '%s' value in response", responseOutgoingMessageKey)
@@ -431,14 +428,13 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 }
 
 // buildTextAndAttachmentParams builds msg text with attachment links (if needed) and attachments list param, also returns the errors that occurred
-func buildTextAndAttachmentParams(msg courier.Msg, status courier.MsgStatus) (string, string) {
+func buildTextAndAttachmentParams(msg courier.Msg, logger *courier.ChannelLogger) (string, string) {
 	var msgAttachments []string
 
 	textBuf := bytes.Buffer{}
 	textBuf.WriteString(msg.Text())
 
 	for _, attachment := range msg.Attachments() {
-		start := time.Now()
 		// handle attachment type
 		mediaPrefix, mediaURL := handlers.SplitAttachment(attachment)
 		mediaPrefixParts := strings.Split(mediaPrefix, "/")
@@ -453,9 +449,7 @@ func buildTextAndAttachmentParams(msg courier.Msg, status courier.MsgStatus) (st
 			if attachment, err := handleMediaUploadAndGetAttachment(msg.Channel(), mediaTypeImage, mediaExt, mediaURL); err == nil {
 				msgAttachments = append(msgAttachments, attachment)
 			} else {
-				duration := time.Now().Sub(start)
-				log := courier.NewChannelLogFromError("Unable to upload photo attachment", msg.Channel(), msg.ID(), duration, err)
-				status.AddLog(log)
+				logger.Error(err)
 			}
 
 		default:

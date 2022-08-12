@@ -670,6 +670,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `{ "is_error": true }`,
 		MockResponseStatus: 200,
 		ExpectedStatus:     "E",
+		ExpectedErrors:     []string{"unable to get message_id from body"},
 		SendPrep:           setSendURL,
 	},
 	{

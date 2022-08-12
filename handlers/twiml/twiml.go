@@ -266,15 +266,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
-		trace, err := handlers.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
+		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		if err != nil {
+			return status, nil
+		}
 
 		// see if we can parse the error if we have one
-		if err != nil && len(trace.ResponseBody) > 0 {
-			errorCode, _ := jsonparser.GetInt(trace.ResponseBody, "code")
+		if resp.StatusCode/100 != 2 && len(respBody) > 0 {
+			errorCode, _ := jsonparser.GetInt(respBody, "code")
 			if errorCode != 0 {
 				if errorCode == errorStopped {
 					status.SetStatus(courier.MsgFailed)
@@ -286,20 +285,15 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 						return nil, err
 					}
 				}
-				log.WithError("Message Send Error", errors.Errorf("received error code from twilio '%d'", errorCode))
+				logger.Error(errors.Errorf("received error code from twilio '%d'", errorCode))
 				return status, nil
 			}
 		}
 
-		// fail if we received an error
-		if err != nil {
-			return status, nil
-		}
-
 		// grab the external id
-		externalID, err := jsonparser.GetString(trace.ResponseBody, "sid")
+		externalID, err := jsonparser.GetString(respBody, "sid")
 		if err != nil {
-			log.WithError("Message Send Error", errors.Errorf("unable to get sid from body"))
+			logger.Error(errors.Errorf("unable to get sid from body"))
 			return status, nil
 		}
 

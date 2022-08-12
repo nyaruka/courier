@@ -287,7 +287,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if (len(tc.MockResponses)) != 0 {
-				require.Equal(mockRRCount, len(tc.MockResponses))
+				assert.Equal(t, len(tc.MockResponses), mockRRCount, "mocked request count mismatch")
 			}
 
 			if tc.ExpectedHeaders != nil {
