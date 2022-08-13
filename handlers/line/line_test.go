@@ -395,7 +395,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"My pic!"},{"type":"image","originalContentUrl":"http://mock.com/1234/test.jpg","previewImageUrl":"http://mock.com/1234/test.jpg"}]}`,
 		SendPrep:            setSendURL},
 	{Label: "Send Other Attachment",
-		MsgText: "My doc!", MsgURN: "line:uabcdefghij", MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		MsgText: "My doc!", MsgURN: "line:uabcdefghij", MsgAttachments: []string{"application/pdf:http://mock.com/7890/test.pdf"},
 		ExpectedStatus:   "W",
 		MockResponseBody: `{}`, MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
@@ -403,7 +403,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":        "application/json",
 			"Authorization": "Bearer AccessToken",
 		},
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"My doc!"},{"type":"text","text":"https://foo.bar/document.pdf"}]}`,
+		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"My doc!"},{"type":"text","text":"http://mock.com/7890/test.pdf"}]}`,
 		SendPrep:            setSendURL},
 	{Label: "Send Message Batches",
 		MsgText:          tooLongMsg,
@@ -470,7 +470,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:            setSendURL},
 }
 
-// setSendURL takes care of setting the base_url to our test server host
+// setupMedia takes care of having the media files needed to our test server host
 func setupMedia(mb *test.MockBackend) {
 	imageJPG := test.NewMockMedia("test.jpg", "image/jpeg", "http://mock.com/1234/test.jpg", 1024*1024, 640, 480, 0, nil)
 
@@ -482,10 +482,13 @@ func setupMedia(mb *test.MockBackend) {
 
 	videoMOV := test.NewMockMedia("test.mov", "video/quicktime", "http://mock.com/6789/test.mov", 100*1024*1024, 0, 0, 2000, nil)
 
+	filePDF := test.NewMockMedia("test.pdf", "application/pdf", "http://mock.com/7890/test.pdf", 100*1024*1024, 0, 0, 0, nil)
+
 	mb.MockMedia(imageJPG)
 	mb.MockMedia(audioMP3)
 	mb.MockMedia(videoMP4)
 	mb.MockMedia(videoMOV)
+	mb.MockMedia(filePDF)
 }
 
 func TestSending(t *testing.T) {

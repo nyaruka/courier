@@ -32,10 +32,10 @@ var (
 	signatureHeader = "X-Line-Signature"
 )
 
-// see https://core.telegram.org/bots/api#sending-files
+// see https://developers.line.biz/en/reference/messaging-api/#message-objects
 var mediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{
-	handlers.MediaTypeImage:       {Types: []string{"image/jpe", "image/jpg", "image/jpeg", "image/png"}, MaxBytes: 10 * 1024 * 1024},
-	handlers.MediaTypeAudio:       {Types: []string{"audio/mp4", "audio/m4a"}, MaxBytes: 200 * 1024 * 1024},
+	handlers.MediaTypeImage:       {Types: []string{"image/jpeg", "image/png"}, MaxBytes: 10 * 1024 * 1024},
+	handlers.MediaTypeAudio:       {Types: []string{"audio/mp4"}, MaxBytes: 200 * 1024 * 1024},
 	handlers.MediaTypeVideo:       {Types: []string{"video/mp4"}, MaxBytes: 200 * 1024 * 1024},
 	handlers.MediaTypeApplication: {},
 }
@@ -321,7 +321,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		}
 	}
 
-	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, true)
+	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "error resolving attachments")
 	}
