@@ -1,3 +1,10 @@
+v7.5.10
+----------
+ * Update to latest gocommon and fix some go warnings
+ * Support media attachments for LINE
+ * Rework handler DescribeURN methods to take a channel logger
+ * Update more sending to use channel logger
+
 v7.5.9
 ----------
  * Rename S3MediaBucket to S3AttachmentsBucket and S3MediaPrefix to S3AttachmentsPrefix
