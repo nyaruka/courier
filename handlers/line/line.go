@@ -11,10 +11,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
+	"github.com/pkg/errors"
 
 	"github.com/nyaruka/gocommon/urns"
 
@@ -31,6 +31,14 @@ var (
 
 	signatureHeader = "X-Line-Signature"
 )
+
+// see https://developers.line.biz/en/reference/messaging-api/#message-objects
+var mediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{
+	handlers.MediaTypeImage:       {Types: []string{"image/jpeg", "image/png"}, MaxBytes: 10 * 1024 * 1024},
+	handlers.MediaTypeAudio:       {Types: []string{"audio/mp4"}, MaxBytes: 200 * 1024 * 1024},
+	handlers.MediaTypeVideo:       {Types: []string{"video/mp4"}, MaxBytes: 200 * 1024 * 1024},
+	handlers.MediaTypeApplication: {},
+}
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -258,6 +266,18 @@ type mtImageMsg struct {
 	PreviewURL string `json:"previewImageUrl"`
 }
 
+type mtVideoMsg struct {
+	Type       string `json:"type"`
+	URL        string `json:"originalContentUrl"`
+	PreviewURL string `json:"previewImageUrl"`
+}
+
+type mtAudioMsg struct {
+	Type     string `json:"type"`
+	URL      string `json:"originalContentUrl"`
+	Duration int    `json:"duration"`
+}
+
 type mtPayload struct {
 	To         string          `json:"to,omitempty"`
 	ReplyToken string          `json:"replyToken,omitempty"`
@@ -300,19 +320,29 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			}
 		}
 	}
+
+	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, false)
+	if err != nil {
+		return nil, errors.Wrap(err, "error resolving attachments")
+	}
+
 	// fill all msg parts with attachment parts
-	for _, attachment := range msg.Attachments() {
+	for _, attachment := range attachments {
+
 		var jsonMsg []byte
 		var err error
 
-		prefix, url := handlers.SplitAttachment(attachment)
-
-		switch mediaType := strings.Split(prefix, "/")[0]; mediaType {
-		case "image":
-			jsonMsg, err = json.Marshal(mtImageMsg{Type: "image", URL: url, PreviewURL: url})
+		switch attachment.Type {
+		case handlers.MediaTypeImage:
+			jsonMsg, err = json.Marshal(mtImageMsg{Type: "image", URL: attachment.Media.URL(), PreviewURL: attachment.Media.URL()})
+		case handlers.MediaTypeVideo:
+			jsonMsg, err = json.Marshal(mtVideoMsg{Type: "video", URL: attachment.Media.URL(), PreviewURL: attachment.Thumbnail.URL()})
+		case handlers.MediaTypeAudio:
+			jsonMsg, err = json.Marshal(mtAudioMsg{Type: "audio", URL: attachment.Media.URL(), Duration: attachment.Media.Duration()})
 		default:
-			jsonMsg, err = json.Marshal(mtTextMsg{Type: "text", Text: url})
+			jsonMsg, err = json.Marshal(mtTextMsg{Type: "text", Text: attachment.URL})
 		}
+
 		if err == nil {
 			jsonMsgs = append(jsonMsgs, string(jsonMsg))
 		}
