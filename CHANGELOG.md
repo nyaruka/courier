@@ -1,3 +1,7 @@
+v7.5.12
+----------
+ * Adjust LINE to support sending attachments with quick replies later
+
 v7.5.11
 ----------
  * Rework more channel types to pass back traces and errors via logger instead of on status object
