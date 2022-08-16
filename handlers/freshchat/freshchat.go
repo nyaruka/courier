@@ -148,8 +148,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			msgimage.Image = &Image{URL: mediaURL}
 			payload.Messages[0].MessageParts = append(payload.Messages[0].MessageParts, *msgimage)
 		default:
-			status.AddLog(courier.NewChannelLogFromError("Unknown media type: "+mediaType, msg.Channel(), msg.ID(),
-				time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
+			logger.Error(fmt.Errorf("unknown media type: %s", mediaType))
 		}
 	}
 

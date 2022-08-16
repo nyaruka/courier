@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
@@ -376,8 +375,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 				msgText = ""
 
 			default:
-				status.AddLog(courier.NewChannelLogFromError("Unknown media type: "+mediaType, msg.Channel(), msg.ID(),
-					time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
+				logger.Error(fmt.Errorf("unknown media type: %s", mediaType))
 			}
 
 		} else {
@@ -413,22 +411,17 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		trace, err := handlers.MakeHTTPRequest(req)
-
-		// record log
-		log := courier.NewChannelLogFromTrace("Message Sent", msg.Channel(), msg.ID(), trace).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
-
-		responseStatus, err := jsonparser.GetInt(trace.ResponseBody, "status")
+		responseStatus, err := jsonparser.GetInt(respBody, "status")
 		if err != nil {
-			log.WithError("Message Send Error", errors.Errorf("received invalid JSON response"))
+			logger.Error(errors.Errorf("received invalid JSON response"))
 			return status, nil
 		}
 		if responseStatus != 0 {
-			log.WithError("Message Send Error", errors.Errorf("received non-0 status: '%d'", responseStatus))
+			logger.Error(errors.Errorf("received non-0 status: '%d'", responseStatus))
 			return status, nil
 		}
 

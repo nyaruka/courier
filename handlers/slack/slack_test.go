@@ -179,39 +179,43 @@ var handleTestCases = []ChannelHandleTestCase{
 
 var defaultSendTestCases = []ChannelSendTestCase{
 	{
-		Label:   "Plain Send",
-		MsgText: "Simple Message", MsgURN: "slack:U0123ABCDEF",
-		ExpectedStatus:      "W",
+		Label:               "Plain Send",
+		MsgText:             "Simple Message",
+		MsgURN:              "slack:U0123ABCDEF",
 		MockResponseBody:    `{"ok":true,"channel":"U0123ABCDEF"}`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"Simple Message"}`,
+		ExpectedStatus:      "W",
 		SendPrep:            setSendUrl,
 	},
 	{
-		Label:   "Unicode Send",
-		MsgText: "☺", MsgURN: "slack:U0123ABCDEF",
-		ExpectedStatus:      "W",
+		Label:               "Unicode Send",
+		MsgText:             "☺",
+		MsgURN:              "slack:U0123ABCDEF",
 		MockResponseBody:    `{"ok":true,"channel":"U0123ABCDEF"}`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"☺"}`,
+		ExpectedStatus:      "W",
 		SendPrep:            setSendUrl,
 	},
 	{
-		Label:   "Send Text Auth Error",
-		MsgText: "Hello", MsgURN: "slack:U0123ABCDEF",
-		ExpectedStatus:      "E",
+		Label:               "Send Text Auth Error",
+		MsgText:             "Hello",
+		MsgURN:              "slack:U0123ABCDEF",
 		MockResponseBody:    `{"ok":false,"error":"invalid_auth"}`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"Hello"}`,
+		ExpectedStatus:      "E",
+		ExpectedErrors:      []string{"invalid_auth"},
 		SendPrep:            setSendUrl,
 	},
 }
 
 var fileSendTestCases = []ChannelSendTestCase{
 	{
-		Label:   "Send Image",
-		MsgText: "", MsgURN: "slack:U0123ABCDEF",
-		ExpectedStatus: "W",
+		Label:          "Send Image",
+		MsgText:        "",
+		MsgURN:         "slack:U0123ABCDEF",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.png"},
 		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
@@ -220,12 +224,13 @@ var fileSendTestCases = []ChannelSendTestCase{
 				BodyContains: "image.png",
 			}: httpx.NewMockResponse(200, nil, []byte(`{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`)),
 		},
-		SendPrep: setSendUrl,
+		ExpectedStatus: "W",
+		SendPrep:       setSendUrl,
 	},
 	{
-		Label:   "Send Image",
-		MsgText: "", MsgURN: "slack:U0123ABCDEF",
-		ExpectedStatus: "W",
+		Label:          "Send Image",
+		MsgText:        "",
+		MsgURN:         "slack:U0123ABCDEF",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.png"},
 		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
@@ -234,7 +239,8 @@ var fileSendTestCases = []ChannelSendTestCase{
 				BodyContains: "image.png",
 			}: httpx.NewMockResponse(200, nil, []byte(`{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`)),
 		},
-		SendPrep: setSendUrl,
+		ExpectedStatus: "W",
+		SendPrep:       setSendUrl,
 	},
 }
 
