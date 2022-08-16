@@ -297,30 +297,6 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	qrs := msg.QuickReplies()
 
-	// fill all msg parts with text parts
-	for i, part := range parts {
-		if i < (len(parts) - 1) {
-			if jsonMsg, err := json.Marshal(mtTextMsg{Type: "text", Text: part}); err == nil {
-				jsonMsgs = append(jsonMsgs, string(jsonMsg))
-			}
-		} else {
-			mtTextMsg := mtTextMsg{Type: "text", Text: part}
-			items := make([]QuickReplyItem, len(qrs))
-			for j, qr := range qrs {
-				items[j] = QuickReplyItem{Type: "action"}
-				items[j].Action.Type = "message"
-				items[j].Action.Label = qr
-				items[j].Action.Text = qr
-			}
-			if len(items) > 0 {
-				mtTextMsg.QuickReply = &mtQuickReply{Items: items}
-			}
-			if jsonMsg, err := json.Marshal(mtTextMsg); err == nil {
-				jsonMsgs = append(jsonMsgs, string(jsonMsg))
-			}
-		}
-	}
-
 	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "error resolving attachments")
@@ -347,6 +323,31 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			jsonMsgs = append(jsonMsgs, string(jsonMsg))
 		}
 	}
+
+	// fill all msg parts with text parts
+	for i, part := range parts {
+		if i < (len(parts) - 1) {
+			if jsonMsg, err := json.Marshal(mtTextMsg{Type: "text", Text: part}); err == nil {
+				jsonMsgs = append(jsonMsgs, string(jsonMsg))
+			}
+		} else {
+			mtTextMsg := mtTextMsg{Type: "text", Text: part}
+			items := make([]QuickReplyItem, len(qrs))
+			for j, qr := range qrs {
+				items[j] = QuickReplyItem{Type: "action"}
+				items[j].Action.Type = "message"
+				items[j].Action.Label = qr
+				items[j].Action.Text = qr
+			}
+			if len(items) > 0 {
+				mtTextMsg.QuickReply = &mtQuickReply{Items: items}
+			}
+			if jsonMsg, err := json.Marshal(mtTextMsg); err == nil {
+				jsonMsgs = append(jsonMsgs, string(jsonMsg))
+			}
+		}
+	}
+
 	// send msg parts in batches
 	var batch []string
 	batchCount := 0
