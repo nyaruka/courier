@@ -1,3 +1,7 @@
+v7.5.11
+----------
+ * Rework more channel types to pass back traces and errors via logger instead of on status object
+
 v7.5.10
 ----------
  * Update to latest gocommon and fix some go warnings
