@@ -197,7 +197,6 @@ type DBChannelEvent struct {
 	ContactURNID_ ContactURNID `json:"-"               db:"contact_urn_id"`
 
 	channel *DBChannel
-	logs    []*courier.ChannelLog
 }
 
 func (e *DBChannelEvent) EventID() int64                      { return int64(e.ID_) }
@@ -224,6 +223,3 @@ func (e *DBChannelEvent) WithOccurredOn(time time.Time) courier.ChannelEvent {
 	e.OccurredOn_ = time
 	return e
 }
-
-func (e *DBChannelEvent) Logs() []*courier.ChannelLog    { return e.logs }
-func (e *DBChannelEvent) AddLog(log *courier.ChannelLog) { e.logs = append(e.logs, log) }

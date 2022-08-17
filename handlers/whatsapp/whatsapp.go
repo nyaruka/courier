@@ -915,6 +915,9 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload 
 	req.Header = buildWhatsAppHeaders(msg.Channel())
 
 	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil {
+		return "", "", err
+	}
 
 	if resp != nil && (resp.StatusCode == 429 || resp.StatusCode == 503) {
 		rateLimitKey := fmt.Sprintf("rate_limit:%s", msg.Channel().UUID().String())
@@ -925,7 +928,7 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload 
 		// TODO: In the future we should the header value when available
 		rc.Do("EXPIRE", rateLimitKey, 2)
 
-		return "", "", err
+		return "", "", errors.New("received rate-limit response from send endpoint")
 	}
 
 	errPayload := &mtErrorPayload{}
