@@ -8,30 +8,6 @@ import (
 	"github.com/nyaruka/gocommon/httpx"
 )
 
-// NewChannelLog creates a new channel log for the passed in channel, id, and request and response info
-func NewChannelLog(description string, channel Channel, msgID MsgID, method string, url string, statusCode int,
-	request string, response string, elapsed time.Duration, err error) *ChannelLog {
-
-	errString := ""
-	if err != nil {
-		errString = err.Error()
-	}
-
-	return &ChannelLog{
-		Description: description,
-		Channel:     channel,
-		MsgID:       msgID,
-		Method:      method,
-		URL:         url,
-		StatusCode:  statusCode,
-		Error:       errString,
-		Request:     SanitizeBody(request),
-		Response:    SanitizeBody(response),
-		CreatedOn:   time.Now(),
-		Elapsed:     elapsed,
-	}
-}
-
 func SanitizeBody(body string) string {
 	parts := strings.SplitN(body, "\r\n\r\n", 2)
 	if len(parts) < 2 {
