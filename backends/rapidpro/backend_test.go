@@ -18,6 +18,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null"
@@ -948,10 +949,21 @@ func (ts *BackendTestSuite) TestChanneLog() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ctx := context.Background()
 
-	log := courier.NewChannelLog("Message Send Error", knChannel, courier.NilMsgID, "POST", "/null/value", 400,
-		"request with null \x00 content", "response with null \x00 content", time.Millisecond, nil)
+	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
+		"https://api.messages.com/send.json": {
+			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
+		},
+	}))
+	defer httpx.SetRequestor(httpx.DefaultRequestor)
 
-	err := writeChannelLog(ctx, ts.b, log)
+	// make a request that will have a response
+	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
+	trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
+	ts.NoError(err)
+
+	log := courier.NewChannelLogFromTrace("Message Send Error", knChannel, courier.NilMsgID, trace)
+
+	err = writeChannelLog(ctx, ts.b, log)
 	ts.NoError(err)
 }
 
