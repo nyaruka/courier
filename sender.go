@@ -201,11 +201,6 @@ func (w *Sender) sendMessage(msg Msg) {
 		duration := time.Since(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
-		// handlers can currently return logs either via the logger or on the status object
-		if status != nil {
-			logger.logs = append(logger.logs, status.Logs()...)
-		}
-
 		if err != nil {
 			log.WithError(err).WithField("elapsed", duration).Error("error sending message")
 			logger.Error(err)

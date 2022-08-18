@@ -16,8 +16,6 @@ type mockChannelEvent struct {
 
 	contactName string
 	extra       map[string]interface{}
-
-	logs []*courier.ChannelLog
 }
 
 func (e *mockChannelEvent) EventID() int64                      { return 0 }
@@ -41,6 +39,3 @@ func (e *mockChannelEvent) WithOccurredOn(time time.Time) courier.ChannelEvent {
 	e.occurredOn = time
 	return e
 }
-
-func (e *mockChannelEvent) Logs() []*courier.ChannelLog    { return e.logs }
-func (e *mockChannelEvent) AddLog(log *courier.ChannelLog) { e.logs = append(e.logs, log) }

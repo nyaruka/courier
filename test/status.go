@@ -43,6 +43,3 @@ func (m *mockMsgStatus) SetExternalID(id string) { m.externalID = id }
 
 func (m *mockMsgStatus) Status() courier.MsgStatusValue          { return m.status }
 func (m *mockMsgStatus) SetStatus(status courier.MsgStatusValue) { m.status = status }
-
-func (m *mockMsgStatus) Logs() []*courier.ChannelLog    { return m.logs }
-func (m *mockMsgStatus) AddLog(log *courier.ChannelLog) { m.logs = append(m.logs, log) }

@@ -37,7 +37,4 @@ type MsgStatus interface {
 
 	Status() MsgStatusValue
 	SetStatus(MsgStatusValue)
-
-	Logs() []*ChannelLog
-	AddLog(log *ChannelLog)
 }
