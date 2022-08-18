@@ -1,3 +1,8 @@
+v7.5.13
+----------
+ * Use httpx.Recorder to generate traces of incoming requests
+ * Rework WhatsApp handler to use logger, remove code for storing logs on status objects
+
 v7.5.12
 ----------
  * Adjust LINE to support sending attachments with quick replies later
