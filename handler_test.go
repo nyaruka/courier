@@ -144,8 +144,4 @@ func TestHandling(t *testing.T) {
 	defer resp.Body.Close()
 	body, _ = io.ReadAll(resp.Body)
 	assert.Contains(string(body), "ok")
-
-	// cookie stripped
-	log, _ := mb.GetLastChannelLog()
-	assert.NotContains(log.Request, "secret")
 }

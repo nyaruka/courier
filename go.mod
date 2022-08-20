@@ -14,7 +14,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.6
 	github.com/nyaruka/ezconf v0.2.1
-	github.com/nyaruka/gocommon v1.27.0
+	github.com/nyaruka/gocommon v1.28.1
 	github.com/nyaruka/null v1.2.0
 	github.com/nyaruka/redisx v0.2.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
