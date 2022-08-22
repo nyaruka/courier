@@ -1012,11 +1012,11 @@ type wacTemplate struct {
 type wacInteractive struct {
 	Type   string `json:"type"`
 	Header *struct {
-		Type     string `json:"type"`
-		Text     string `json:"text,omitempty"`
-		Video    string `json:"video,omitempty"`
-		Image    string `json:"image,omitempty"`
-		Document string `json:"document,omitempty"`
+		Type     string     `json:"type"`
+		Text     string     `json:"text,omitempty"`
+		Video    wacMTMedia `json:"video,omitempty"`
+		Image    wacMTMedia `json:"image,omitempty"`
+		Document wacMTMedia `json:"document,omitempty"`
 	} `json:"header,omitempty"`
 	Body struct {
 		Text string `json:"text"`
@@ -1065,11 +1065,15 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
+	hasCaption := false
+
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	}
 	qrs := msg.QuickReplies()
+
+	var payloadAudio wacMTPayload
 
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
 		payload := wacMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
@@ -1168,26 +1172,150 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 				}
 			}
 
-		} else if i < len(msg.Attachments()) {
+		} else if i < len(msg.Attachments()) && len(qrs) == 0 || len(qrs) > 3 && i < len(msg.Attachments()) {
 			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
 			attType = strings.Split(attType, "/")[0]
 			if attType == "application" {
 				attType = "document"
 			}
 			payload.Type = attType
-			media := wacMTMedia{Link: attURL}
+			media := &wacMTMedia{Link: attURL}
+
+			if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(msg.QuickReplies()) == 0 {
+				media.Caption = msgParts[i]
+				hasCaption = true
+			}
 
 			if attType == "image" {
-				payload.Image = &media
+				payload.Image = media
 			} else if attType == "audio" {
-				payload.Audio = &media
+				payload.Audio = media
 			} else if attType == "video" {
-				payload.Video = &media
+				payload.Video = media
 			} else if attType == "document" {
-				payload.Document = &media
+				payload.Document = media
 			}
 		} else {
-			if i < (len(msgParts) + len(msg.Attachments()) - 1) {
+			if len(qrs) > 0 {
+				payload.Type = "interactive"
+				// We can use buttons
+				if len(qrs) <= 3 {
+					interactive := wacInteractive{Type: "button", Body: struct {
+						Text string "json:\"text\""
+					}{Text: msgParts[i]}}
+
+					if len(msg.Attachments()) > 0 {
+						hasCaption = true
+						attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
+						attType = strings.Split(attType, "/")[0]
+						if attType == "application" {
+							attType = "document"
+						}
+						if attType == "image" {
+							image := wacMTMedia{
+								Link: attURL,
+							}
+							interactive.Header = &struct {
+								Type     string     "json:\"type\""
+								Text     string     "json:\"text,omitempty\""
+								Video    wacMTMedia "json:\"video,omitempty\""
+								Image    wacMTMedia "json:\"image,omitempty\""
+								Document wacMTMedia "json:\"document,omitempty\""
+							}{Type: "image", Image: image}
+						} else if attType == "video" {
+							video := wacMTMedia{
+								Link: attURL,
+							}
+							interactive.Header = &struct {
+								Type     string     "json:\"type\""
+								Text     string     "json:\"text,omitempty\""
+								Video    wacMTMedia "json:\"video,omitempty\""
+								Image    wacMTMedia "json:\"image,omitempty\""
+								Document wacMTMedia "json:\"document,omitempty\""
+							}{Type: "video", Video: video}
+						} else if attType == "document" {
+							filename, err := utils.BasePathForURL(attURL)
+							if err != nil {
+								return nil, err
+							}
+							document := wacMTMedia{
+								Link:     attURL,
+								Filename: filename,
+							}
+							interactive.Header = &struct {
+								Type     string     "json:\"type\""
+								Text     string     "json:\"text,omitempty\""
+								Video    wacMTMedia "json:\"video,omitempty\""
+								Image    wacMTMedia "json:\"image,omitempty\""
+								Document wacMTMedia "json:\"document,omitempty\""
+							}{Type: "document", Document: document}
+						} else if attType == "audio" {
+							var zeroIndex bool
+							if i == 0 {
+								zeroIndex = true
+							}
+							payloadAudio = wacMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &wacMTMedia{Link: attURL}}
+							status, err := requestWAC(payloadAudio, accessToken, status, wacPhoneURL, zeroIndex, logger)
+							if err != nil {
+								return status, nil
+							}
+						} else {
+							interactive.Type = "button"
+							interactive.Body.Text = msgParts[i]
+						}
+					}
+
+					btns := make([]wacMTButton, len(qrs))
+					for i, qr := range qrs {
+						btns[i] = wacMTButton{
+							Type: "reply",
+						}
+						btns[i].Reply.ID = fmt.Sprint(i)
+						btns[i].Reply.Title = qr
+					}
+					interactive.Action = &struct {
+						Button   string         "json:\"button,omitempty\""
+						Sections []wacMTSection "json:\"sections,omitempty\""
+						Buttons  []wacMTButton  "json:\"buttons,omitempty\""
+					}{Buttons: btns}
+					payload.Interactive = &interactive
+
+				} else if len(qrs) <= 10 {
+					interactive := wacInteractive{Type: "list", Body: struct {
+						Text string "json:\"text\""
+					}{Text: msgParts[i-len(msg.Attachments())]}}
+
+					section := wacMTSection{
+						Rows: make([]wacMTSectionRow, len(qrs)),
+					}
+					for i, qr := range qrs {
+						section.Rows[i] = wacMTSectionRow{
+							ID:    fmt.Sprint(i),
+							Title: qr,
+						}
+					}
+
+					interactive.Action = &struct {
+						Button   string         "json:\"button,omitempty\""
+						Sections []wacMTSection "json:\"sections,omitempty\""
+						Buttons  []wacMTButton  "json:\"buttons,omitempty\""
+					}{Button: "Menu", Sections: []wacMTSection{
+						section,
+					}}
+
+					interactive.Action = &struct {
+						Button   string         "json:\"button,omitempty\""
+						Sections []wacMTSection "json:\"sections,omitempty\""
+						Buttons  []wacMTButton  "json:\"buttons,omitempty\""
+					}{Button: "Menu", Sections: []wacMTSection{
+						section,
+					}}
+
+					payload.Interactive = &interactive
+				} else {
+					return nil, fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
+				}
+			} else {
 				// this is still a msg part
 				text := &wacText{PreviewURL: false}
 				payload.Type = "text"
@@ -1196,103 +1324,56 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 				}
 				text.Body = msgParts[i-len(msg.Attachments())]
 				payload.Text = text
-			} else {
-				if len(qrs) > 0 {
-					payload.Type = "interactive"
-					// We can use buttons
-					if len(qrs) <= 3 {
-						interactive := wacInteractive{Type: "button", Body: struct {
-							Text string "json:\"text\""
-						}{Text: msgParts[i-len(msg.Attachments())]}}
-
-						btns := make([]wacMTButton, len(qrs))
-						for i, qr := range qrs {
-							btns[i] = wacMTButton{
-								Type: "reply",
-							}
-							btns[i].Reply.ID = fmt.Sprint(i)
-							btns[i].Reply.Title = qr
-						}
-						interactive.Action = &struct {
-							Button   string         "json:\"button,omitempty\""
-							Sections []wacMTSection "json:\"sections,omitempty\""
-							Buttons  []wacMTButton  "json:\"buttons,omitempty\""
-						}{Buttons: btns}
-						payload.Interactive = &interactive
-
-					} else if len(qrs) <= 10 {
-						interactive := wacInteractive{Type: "list", Body: struct {
-							Text string "json:\"text\""
-						}{Text: msgParts[i-len(msg.Attachments())]}}
-
-						section := wacMTSection{
-							Rows: make([]wacMTSectionRow, len(qrs)),
-						}
-						for i, qr := range qrs {
-							section.Rows[i] = wacMTSectionRow{
-								ID:    fmt.Sprint(i),
-								Title: qr,
-							}
-						}
-
-						interactive.Action = &struct {
-							Button   string         "json:\"button,omitempty\""
-							Sections []wacMTSection "json:\"sections,omitempty\""
-							Buttons  []wacMTButton  "json:\"buttons,omitempty\""
-						}{Button: "Menu", Sections: []wacMTSection{
-							section,
-						}}
-
-						payload.Interactive = &interactive
-					} else {
-						return nil, fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
-					}
-				} else {
-					// this is still a msg part
-					text := &wacText{PreviewURL: false}
-					payload.Type = "text"
-					if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
-						text.PreviewURL = true
-					}
-					text.Body = msgParts[i-len(msg.Attachments())]
-					payload.Text = text
-				}
 			}
-
+		}
+		var zeroIndex bool
+		if i == 0 {
+			zeroIndex = true
 		}
 
-		jsonBody, err := json.Marshal(payload)
+		status, err := requestWAC(payload, accessToken, status, wacPhoneURL, zeroIndex, logger)
 		if err != nil {
 			return status, err
 		}
 
-		req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))
-		if err != nil {
-			return nil, err
+		if hasCaption {
+			break
 		}
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json")
-
-		resp, respBody, err := handlers.RequestHTTP(req, logger)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
-		}
-
-		respPayload := &wacMTResponse{}
-		err = json.Unmarshal(respBody, respPayload)
-		if err != nil {
-			logger.Error(errors.Errorf("unable to unmarshal response body"))
-			return status, nil
-		}
-		externalID := respPayload.Messages[0].ID
-		if i == 0 && externalID != "" {
-			status.SetExternalID(externalID)
-		}
-		// this was wired successfully
-		status.SetStatus(courier.MsgWired)
-
 	}
+	return status, nil
+}
+
+func requestWAC(payload wacMTPayload, accessToken string, status courier.MsgStatus, wacPhoneURL *url.URL, zeroIndex bool, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+	jsonBody, err := json.Marshal(payload)
+	if err != nil {
+		return status, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))
+	if err != nil {
+		return status, err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return status, err
+	}
+
+	respPayload := &wacMTResponse{}
+	err = json.Unmarshal(respBody, respPayload)
+	if err != nil {
+		logger.Error(errors.Errorf("unable to unmarshal response body"))
+		return status, err
+	}
+	externalID := respPayload.Messages[0].ID
+	if zeroIndex && externalID != "" {
+		status.SetExternalID(externalID)
+	}
+	// this was wired successfully
+	status.SetStatus(courier.MsgWired)
 	return status, nil
 }
 
