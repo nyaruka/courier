@@ -272,7 +272,7 @@ func TestDescribeURN(t *testing.T) {
 	s := newServer(mb)
 	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
 	handler.Initialize(s)
-	logger := courier.NewChannelLogger(testChannels[0])
+	logger := courier.NewChannelLogger(courier.ChannelLogTypeUnknown, testChannels[0])
 
 	tcs := []struct {
 		urn              urns.URN

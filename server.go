@@ -298,7 +298,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			}
 		}()
 
-		logger := NewChannelLogger(channel)
+		logger := NewChannelLogger(ChannelLogTypeUnknown, channel)
 
 		events, hErr := handlerFunc(ctx, channel, recorder.ResponseWriter, r, logger)
 		duration := time.Since(start)

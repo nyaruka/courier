@@ -191,7 +191,7 @@ func TestDescribeFBA(t *testing.T) {
 
 	channel := testChannelsFBA[0]
 	handler := newHandler("FBA", "Facebook", false).(courier.URNDescriber)
-	logger := courier.NewChannelLogger(channel)
+	logger := courier.NewChannelLogger(courier.ChannelLogTypeUnknown, channel)
 
 	tcs := []struct {
 		urn              urns.URN
@@ -214,7 +214,7 @@ func TestDescribeIG(t *testing.T) {
 
 	channel := testChannelsIG[0]
 	handler := newHandler("IG", "Instagram", false).(courier.URNDescriber)
-	logger := courier.NewChannelLogger(channel)
+	logger := courier.NewChannelLogger(courier.ChannelLogTypeUnknown, channel)
 
 	tcs := []struct {
 		urn              urns.URN
@@ -233,7 +233,7 @@ func TestDescribeIG(t *testing.T) {
 func TestDescribeWAC(t *testing.T) {
 	channel := testChannelsWAC[0]
 	handler := newHandler("WAC", "Cloud API WhatsApp", false).(courier.URNDescriber)
-	logger := courier.NewChannelLogger(channel)
+	logger := courier.NewChannelLogger(courier.ChannelLogTypeUnknown, channel)
 
 	tcs := []struct {
 		urn              urns.URN

@@ -121,8 +121,8 @@ func NewChannelLoggerForSend(msg Msg) *ChannelLogger {
 	return &ChannelLogger{type_: ChannelLogTypeMsgSend, channel: msg.Channel(), msgID: msg.ID()}
 }
 
-func NewChannelLogger(channel Channel) *ChannelLogger {
-	return &ChannelLogger{type_: ChannelLogTypeUnknown, channel: channel}
+func NewChannelLogger(t ChannelLogType, channel Channel) *ChannelLogger {
+	return &ChannelLogger{type_: t, channel: channel}
 }
 
 func (l *ChannelLogger) SetType(t ChannelLogType) {
