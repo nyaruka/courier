@@ -374,7 +374,7 @@ func TestDescribeURN(t *testing.T) {
 	defer server.Close()
 
 	handler := newHandler().(courier.URNDescriber)
-	logger := courier.NewChannelLoggerForReceive(testChannels[0])
+	logger := courier.NewChannelLogger(testChannels[0])
 	urn, _ := urns.NewURNFromParts(urns.VKScheme, "123456789", "", "")
 	data := map[string]string{"name": "John Doe"}
 

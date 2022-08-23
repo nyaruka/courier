@@ -275,6 +275,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		defer cancel()
 		r = r.WithContext(ctx)
 
+		// get the channel for this request - can be nil, e.g. FBA verification requests
 		channel, err := handler.GetChannel(ctx, r)
 		if err != nil {
 			WriteError(ctx, w, r, err)
@@ -287,8 +288,6 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			return
 		}
 
-		logs := make([]*ChannelLog, 0, 1)
-
 		defer func() {
 			// catch any panics and recover
 			panicLog := recover()
@@ -299,16 +298,16 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			}
 		}()
 
-		logger := NewChannelLoggerForReceive(channel)
+		logger := NewChannelLogger(channel)
 
-		events, err := handlerFunc(ctx, channel, recorder.ResponseWriter, r, logger)
+		events, hErr := handlerFunc(ctx, channel, recorder.ResponseWriter, r, logger)
 		duration := time.Since(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
 		// if we received an error, write it out and report it
-		if err != nil {
-			logrus.WithError(err).WithField("channel_uuid", channel.UUID()).WithField("request", string(recorder.Trace.RequestTrace)).Error("error handling request")
-			writeAndLogRequestError(ctx, recorder.ResponseWriter, r, channel, err)
+		if hErr != nil {
+			logrus.WithError(hErr).WithField("channel_uuid", channel.UUID()).WithField("request", string(recorder.Trace.RequestTrace)).Error("error handling request")
+			writeAndLogRequestError(ctx, recorder.ResponseWriter, r, channel, hErr)
 		}
 
 		// end recording of the request so that we have a response trace
@@ -317,39 +316,40 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			writeAndLogRequestError(ctx, w, r, channel, err)
 		}
 
-		// if we have a channel matched but no events were created we still want to log this to the channel, do so
-		if channel != nil && len(events) == 0 {
-			if err != nil {
-				logs = append(logs, NewChannelLogFromTrace("Channel Error", channel, NilMsgID, recorder.Trace).WithError("Channel Error", err))
-				analytics.Gauge(fmt.Sprintf("courier.channel_error_%s", channel.ChannelType()), secondDuration)
-			} else {
-				logs = append(logs, NewChannelLogFromTrace("Request Ignored", channel, NilMsgID, recorder.Trace))
-				analytics.Gauge(fmt.Sprintf("courier.channel_ignored_%s", channel.ChannelType()), secondDuration)
-			}
-		}
+		logger.Recorder(recorder)
 
-		// otherwise, log the request for each message
-		for _, event := range events {
-			switch e := event.(type) {
-			case Msg:
-				logs = append(logs, NewChannelLogFromTrace("Message Receive", channel, e.ID(), recorder.Trace).WithError("Message Receive", err))
-				analytics.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
-				LogMsgReceived(r, e)
-			case ChannelEvent:
-				logs = append(logs, NewChannelLogFromTrace("Event Receive", channel, NilMsgID, recorder.Trace).WithError("Event Receive", err))
-				analytics.Gauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
-				LogChannelEventReceived(r, e)
-			case MsgStatus:
-				logs = append(logs, NewChannelLogFromTrace("Status Update", channel, e.ID(), recorder.Trace).WithError("Status Update", err))
-				analytics.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
-				LogMsgStatusReceived(r, e)
+		if channel != nil {
+			// if we have a channel but no events were created, we still log this to analytics
+			if len(events) == 0 {
+				if hErr != nil {
+					analytics.Gauge(fmt.Sprintf("courier.channel_error_%s", channel.ChannelType()), secondDuration)
+				} else {
+					analytics.Gauge(fmt.Sprintf("courier.channel_ignored_%s", channel.ChannelType()), secondDuration)
+				}
 			}
-		}
 
-		// and write these out, logging if there's an error
-		err = s.backend.WriteChannelLogs(ctx, logs)
-		if err != nil {
-			logrus.WithError(err).Error("error writing channel log")
+			for _, event := range events {
+				switch e := event.(type) {
+				case Msg:
+					logger.SetMsgID(e.ID())
+					logger.SetType(ChannelLogTypeMsgReceive)
+					analytics.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
+					LogMsgReceived(r, e)
+				case MsgStatus:
+					logger.SetMsgID(e.ID())
+					logger.SetType(ChannelLogTypeMsgStatus)
+					analytics.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
+					LogMsgStatusReceived(r, e)
+				case ChannelEvent:
+					logger.SetType(ChannelLogTypeEventReceive)
+					analytics.Gauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
+					LogChannelEventReceived(r, e)
+				}
+			}
+
+			if err := s.backend.WriteChannelLogs(ctx, logger.Logs()); err != nil {
+				logrus.WithError(err).Error("error writing channel log")
+			}
 		}
 	}
 }

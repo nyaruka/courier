@@ -92,17 +92,19 @@ type ChannelLog struct {
 type ChannelLogType string
 
 const (
-	ChannelLogTypeMessageSend    ChannelLogType = "message_send"
-	ChannelLogTypeMessageReceive ChannelLogType = "message_receive"
+	ChannelLogTypeUnknown      ChannelLogType = "unknown"
+	ChannelLogTypeMsgSend      ChannelLogType = "msg_send"
+	ChannelLogTypeMsgStatus    ChannelLogType = "msg_status"
+	ChannelLogTypeMsgReceive   ChannelLogType = "msg_receive"
+	ChannelLogTypeEventReceive ChannelLogType = "event_receive"
 )
 
 var logTypeDescriptions = map[ChannelLogType]string{
-	ChannelLogTypeMessageSend:    "Message Send",
-	ChannelLogTypeMessageReceive: "Message Receive",
-}
-var logTypeErrorDescriptions = map[ChannelLogType]string{
-	ChannelLogTypeMessageSend:    "Message Sending Error",
-	ChannelLogTypeMessageReceive: "Message Receive Error",
+	ChannelLogTypeUnknown:      "Other Event",
+	ChannelLogTypeMsgSend:      "Message Send",
+	ChannelLogTypeMsgStatus:    "Message Status",
+	ChannelLogTypeMsgReceive:   "Message Receive",
+	ChannelLogTypeEventReceive: "Event Receive",
 }
 
 type ChannelLogger struct {
@@ -110,39 +112,56 @@ type ChannelLogger struct {
 	channel Channel
 	msgID   MsgID
 
+	traces []*httpx.Trace
 	errors []string
 	logs   []*ChannelLog
 }
 
 func NewChannelLoggerForSend(msg Msg) *ChannelLogger {
-	return &ChannelLogger{type_: ChannelLogTypeMessageSend, channel: msg.Channel(), msgID: msg.ID()}
+	return &ChannelLogger{type_: ChannelLogTypeMsgSend, channel: msg.Channel(), msgID: msg.ID()}
 }
 
-func NewChannelLoggerForReceive(channel Channel) *ChannelLogger {
-	return &ChannelLogger{type_: ChannelLogTypeMessageReceive, channel: channel}
+func NewChannelLogger(channel Channel) *ChannelLogger {
+	return &ChannelLogger{type_: ChannelLogTypeUnknown, channel: channel}
 }
 
-// HTTP logs an HTTP request and response
-func (l *ChannelLogger) HTTP(t *httpx.Trace) {
-	var description string
-	if t.Response == nil || t.Response.StatusCode/100 != 2 {
-		description = logTypeErrorDescriptions[l.type_]
-	} else {
-		description = logTypeDescriptions[l.type_]
+func (l *ChannelLogger) SetType(t ChannelLogType) {
+	l.type_ = t
+}
+
+func (l *ChannelLogger) SetMsgID(id MsgID) {
+	l.msgID = id
+}
+
+// Recorder logs a recording of an incoming HTTP request
+func (l *ChannelLogger) Recorder(r *httpx.Recorder) {
+	// prepend so it's the first HTTP request in the log
+	l.traces = append([]*httpx.Trace{r.Trace}, l.traces...)
+
+	if l.channel != nil {
+		l.logs = append(l.logs, NewChannelLogFromTrace(logTypeDescriptions[l.type_], l.channel, l.msgID, r.Trace))
 	}
+}
 
-	l.logs = append(l.logs, NewChannelLogFromTrace(description, l.channel, l.msgID, t))
+// HTTP logs an outgoing HTTP request and response
+func (l *ChannelLogger) HTTP(t *httpx.Trace) {
+	l.traces = append(l.traces, t)
+
+	if l.channel != nil {
+		l.logs = append(l.logs, NewChannelLogFromTrace(logTypeDescriptions[l.type_], l.channel, l.msgID, t))
+	}
 }
 
 func (l *ChannelLogger) Error(err error) {
 	l.errors = append(l.errors, err.Error())
 
-	// if we have an existing log which isn't already an error, update it
-	if len(l.logs) > 0 && l.logs[len(l.logs)-1].Error == "" {
-		l.logs[len(l.logs)-1].Error = err.Error()
-		l.logs[len(l.logs)-1].Description = logTypeErrorDescriptions[l.type_]
-	} else {
-		l.logs = append(l.logs, NewChannelLogFromError(logTypeErrorDescriptions[l.type_], l.channel, l.msgID, 0, err))
+	if l.channel != nil {
+		// if we have an existing log which isn't already an error, update it
+		if len(l.logs) > 0 && l.logs[len(l.logs)-1].Error == "" {
+			l.logs[len(l.logs)-1].Error = err.Error()
+		} else {
+			l.logs = append(l.logs, NewChannelLogFromError(logTypeDescriptions[l.type_], l.channel, l.msgID, 0, err))
+		}
 	}
 }
 

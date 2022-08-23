@@ -140,7 +140,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 				describer, isDescriber := handler.(courier.URNDescriber)
 				if isDescriber {
 					// TODO: this should be created by the server and passed down
-					logger := courier.NewChannelLoggerForReceive(channel)
+					logger := courier.NewChannelLogger(channel)
 
 					atts, err := describer.DescribeURN(ctx, channel, urn, logger)
 

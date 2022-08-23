@@ -495,7 +495,7 @@ func TestDescribe(t *testing.T) {
 
 	channel := testChannels[0]
 	handler := newHandler().(courier.URNDescriber)
-	logger := courier.NewChannelLoggerForReceive(channel)
+	logger := courier.NewChannelLogger(channel)
 
 	tcs := []struct {
 		urn              urns.URN
