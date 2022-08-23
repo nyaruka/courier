@@ -8,14 +8,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"runtime/debug"
 	"sort"
 	"strings"
-	"time"
-
 	"sync"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -283,18 +281,11 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			return
 		}
 
-		// trim out cookie header, should never be part of authentication and can leak auth to channel logs
-		r.Header.Del("Cookie")
-
-		recorder, err := httpx.NewRecorder(r, w)
+		recorder, err := httpx.NewRecorder(r, w, true)
 		if err != nil {
 			writeAndLogRequestError(ctx, w, r, channel, err)
 			return
 		}
-
-		// change the URL of the request to be our www facing hostname
-		requestURL, _ := url.Parse(fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI()))
-		recorder.Trace.Request.URL = requestURL
 
 		logs := make([]*ChannelLog, 0, 1)
 
