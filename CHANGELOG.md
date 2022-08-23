@@ -1,3 +1,7 @@
+v7.5.14
+----------
+ * Update to latest gocommon and use new recorder reconstruct option
+
 v7.5.13
 ----------
  * Use httpx.Recorder to generate traces of incoming requests
