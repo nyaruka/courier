@@ -40,17 +40,17 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// {
-//     "callbackMoRequest": {
-// 	    	"id": "20690090",
-//         	"mobile": "555191951711",
-//         	"shortCode": "40001",
-//         	"account": "zenvia.envio",
-//         	"body": "Content of reply SMS",
-//         	"received": "2014-08-26T12:27:08.488-03:00",
-//         	"correlatedMessageSmsId": "hs765939061"
-//  	}
-// }
+//	{
+//	    "callbackMoRequest": {
+//		    	"id": "20690090",
+//	        	"mobile": "555191951711",
+//	        	"shortCode": "40001",
+//	        	"account": "zenvia.envio",
+//	        	"body": "Content of reply SMS",
+//	        	"received": "2014-08-26T12:27:08.488-03:00",
+//	        	"correlatedMessageSmsId": "hs765939061"
+//	 	}
+//	}
 type moPayload struct {
 	CallbackMORequest struct {
 		ID         string `json:"id"                      validate:"required" `
@@ -61,17 +61,17 @@ type moPayload struct {
 	} `json:"callbackMoRequest"`
 }
 
-// {
-// 		"callbackMtRequest": {
-//      	"status": "03",
-//         	"statusMessage": "Delivered",
-//         	"statusDetail": "120",
-//         	"statusDetailMessage": "Message received by mobile",
-//         	"id": "hs765939216",
-//         	"received": "2014-08-26T12:55:48.593-03:00",
-//         	"mobileOperatorName": "Claro"
-// 		}
-// }
+//	{
+//			"callbackMtRequest": {
+//	     	"status": "03",
+//	        	"statusMessage": "Delivered",
+//	        	"statusDetail": "120",
+//	        	"statusDetailMessage": "Message received by mobile",
+//	        	"id": "hs765939216",
+//	        	"received": "2014-08-26T12:55:48.593-03:00",
+//	        	"mobileOperatorName": "Claro"
+//			}
+//	}
 type statusPayload struct {
 	CallbackMTRequest struct {
 		StatusCode string `json:"status" validate:"required"`
@@ -79,16 +79,16 @@ type statusPayload struct {
 	}
 }
 
-// {
-//     "sendSmsRequest": {
-//         "to": "555199999999",
-//         "schedule": "2014-08-22T14:55:00",
-//         "msg": "Test message.",
-//         "callbackOption": "NONE",
-//         "id": "002",
-//         "aggregateId": "1111"
-//     }
-// }
+//	{
+//	    "sendSmsRequest": {
+//	        "to": "555199999999",
+//	        "schedule": "2014-08-22T14:55:00",
+//	        "msg": "Test message.",
+//	        "callbackOption": "NONE",
+//	        "id": "002",
+//	        "aggregateId": "1111"
+//	    }
+//	}
 type mtPayload struct {
 	SendSMSRequest struct {
 		To             string `json:"to"`
@@ -115,7 +115,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
 	// get our params
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
@@ -143,7 +143,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
 	// get our params
 	payload := &statusPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)

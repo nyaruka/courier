@@ -97,8 +97,8 @@ const (
 )
 
 var logTypeDescriptions = map[ChannelLogType]string{
-	ChannelLogTypeMessageSend:    "Message Sent",
-	ChannelLogTypeMessageReceive: "Message Received",
+	ChannelLogTypeMessageSend:    "Message Send",
+	ChannelLogTypeMessageReceive: "Message Receive",
 }
 var logTypeErrorDescriptions = map[ChannelLogType]string{
 	ChannelLogTypeMessageSend:    "Message Sending Error",
@@ -119,7 +119,7 @@ func NewChannelLoggerForSend(msg Msg) *ChannelLogger {
 }
 
 func NewChannelLoggerForReceive(channel Channel) *ChannelLogger {
-	return &ChannelLogger{type_: ChannelLogTypeMessageSend, channel: channel}
+	return &ChannelLogger{type_: ChannelLogTypeMessageReceive, channel: channel}
 }
 
 // HTTP logs an HTTP request and response

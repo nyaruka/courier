@@ -59,33 +59,33 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// {
-// 	"events": [
-// 	  {
-// 		"replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
-// 		"type": "message",
-// 		"timestamp": 1462629479859,
-// 		"source": {
-// 		  "type": "user",
-// 		  "userId": "U4af4980629..."
-// 		},
-// 		"message": {
-// 		  "id": "325708",
-// 		  "type": "text",
-// 		  "text": "Hello, world"
-// 		}
-// 	  },
-// 	  {
-// 		"replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
-// 		"type": "follow",
-// 		"timestamp": 1462629479859,
-// 		"source": {
-// 		  "type": "user",
-// 		  "userId": "U4af4980629..."
-// 		}
-// 	  }
-// 	]
-// }
+//	{
+//		"events": [
+//		  {
+//			"replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
+//			"type": "message",
+//			"timestamp": 1462629479859,
+//			"source": {
+//			  "type": "user",
+//			  "userId": "U4af4980629..."
+//			},
+//			"message": {
+//			  "id": "325708",
+//			  "type": "text",
+//			  "text": "Hello, world"
+//			}
+//		  },
+//		  {
+//			"replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
+//			"type": "follow",
+//			"timestamp": 1462629479859,
+//			"source": {
+//			  "type": "user",
+//			  "userId": "U4af4980629..."
+//			}
+//		  }
+//		]
+//	}
 type moPayload struct {
 	Events []struct {
 		ReplyToken string `json:"replyToken"`
@@ -112,7 +112,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err

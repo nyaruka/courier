@@ -16,7 +16,7 @@ type Event interface {
 // The Server will take care of looking up the channel by UUID before passing it to this function.
 // Errors in format of the request or by the caller should be handled and logged internally. Errors in
 // execution or in courier itself should be passed back.
-type ChannelHandleFunc func(context.Context, Channel, http.ResponseWriter, *http.Request) ([]Event, error)
+type ChannelHandleFunc func(context.Context, Channel, http.ResponseWriter, *http.Request, *ChannelLogger) ([]Event, error)
 
 // ChannelHandler is the interface all handlers must satisfy
 type ChannelHandler interface {

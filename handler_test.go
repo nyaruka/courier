@@ -51,7 +51,7 @@ func (h *dummyHandler) Send(ctx context.Context, msg courier.Msg, logger *courie
 }
 
 // ReceiveMsg sends the passed in message, returning any error
-func (h *dummyHandler) receiveMsg(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *dummyHandler) receiveMsg(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
 	r.ParseForm()
 	from := r.Form.Get("from")
 	text := r.Form.Get("text")

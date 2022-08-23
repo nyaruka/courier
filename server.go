@@ -299,7 +299,9 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			}
 		}()
 
-		events, err := handlerFunc(ctx, channel, recorder.ResponseWriter, r)
+		logger := NewChannelLoggerForReceive(channel)
+
+		events, err := handlerFunc(ctx, channel, recorder.ResponseWriter, r, logger)
 		duration := time.Since(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
