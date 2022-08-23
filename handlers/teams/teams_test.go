@@ -2,12 +2,15 @@ package teams
 
 import (
 	"context"
+	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
@@ -179,6 +182,7 @@ var testCases = []ChannelHandleTestCase{
 		URL:               "/c/tm/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
 		Data:              messageReaction,
 		Status:            200,
+		Text:              nil,
 		URN:               Sp(""),
 		Response:          "ignoring messageReaction",
 		Headers:           map[string]string{"Authorization": "Bearer " + access_token},
@@ -188,6 +192,7 @@ var testCases = []ChannelHandleTestCase{
 		Label:             "Receive Conversation Update",
 		URL:               "/c/tm/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive",
 		Data:              "",
+		Text:              nil,
 		Status:            200,
 		Response:          "Handled",
 		Headers:           map[string]string{"Authorization": "Bearer " + access_token},
@@ -211,7 +216,7 @@ func buildMockJwksURL() *httptest.Server {
 		w.Write([]byte(`{"keys":[{"kty":"RSA","use":"sig","kid":"abc123","x5t":"abc123","n":"abcd","e":"AQAB","endorsements":["msteams"]}]}`))
 	}))
 
-	jwks_uri = server.URL
+	jwksURI = server.URL
 
 	return server
 }
@@ -220,6 +225,7 @@ func buildMockTeams() *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		accessToken := r.Header.Get("Authorization")
 		tokenH := strings.Replace(accessToken, "Bearer ", "", 1)
+		// payload := r.GetBody
 		defer r.Body.Close()
 
 		// invalid auth token
@@ -233,6 +239,18 @@ func buildMockTeams() *httptest.Server {
 		}
 
 		if r.URL.Path == "/v3/conversations/a:2022/activities" {
+			byteBody, err := io.ReadAll(r.Body)
+			if err != nil {
+				log.Fatal(err)
+			}
+			text, err := jsonparser.GetString(byteBody, "text")
+			if err != nil {
+				log.Fatal(err)
+			}
+			if text == "Error" {
+				w.Header().Add("Content-Type", "application/json")
+				w.Write([]byte(`{"is_error": true}`))
+			}
 			w.Header().Add("Content-Type", "application/json")
 			w.Write([]byte(`{"id":"1234567890"}`))
 		}
@@ -279,6 +297,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		URN: "teams:2022:smba.trafficmanager.net/br/", Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
 		Status: "W", ExternalID: "1234567890",
 		ResponseBody: `{"id": "1234567890"}`, ResponseStatus: 200,
+	},
+	{Label: "Error",
+		Text: "Error", URN: "teams:2022:smba.trafficmanager.net/br/",
+		Status:       "E",
+		ResponseBody: `{"is_error": true}`, ResponseStatus: 400,
 	},
 }
 

@@ -21,10 +21,10 @@ import (
 )
 
 var (
-	jv                          = JwtTokenValidator{}
+	jwtTokenValidator           = JwtTokenValidator{}
 	AllowedSigningAlgorithms    = []string{"RS256", "RS384", "RS512"}
 	ToBotFromChannelTokenIssuer = "https://api.botframework.com"
-	jwks_uri                    = "https://login.botframework.com/v1/.well-known/keys"
+	jwksURI                     = "https://login.botframework.com/v1/.well-known/keys"
 )
 
 const fetchTimeout = 20
@@ -85,17 +85,17 @@ func validateToken(channel courier.Channel, w http.ResponseWriter, r *http.Reque
 	tokenHeader := strings.Replace(tokenH, "Bearer ", "", 1)
 	getKey := func(token *jwt.Token) (interface{}, error) {
 		// Get new JWKs if the cache is expired
-		if jv.AuthCache.IsExpired() {
+		if jwtTokenValidator.AuthCache.IsExpired() {
 
 			ctx, cancel := context.WithTimeout(context.Background(), fetchTimeout*time.Second)
 			defer cancel()
-			set, err := jwk.Fetch(ctx, jwks_uri)
+			set, err := jwk.Fetch(ctx, jwksURI)
 			if err != nil {
 				return nil, err
 			}
 			// Update the cache
 			// The expiry time is set to be of 5 days
-			jv.AuthCache = AuthCache{
+			jwtTokenValidator.AuthCache = AuthCache{
 				Keys:   set,
 				Expiry: time.Now().Add(time.Hour * 24 * 5),
 			}
@@ -107,7 +107,7 @@ func validateToken(channel courier.Channel, w http.ResponseWriter, r *http.Reque
 		}
 
 		// Return cached JWKs
-		key, ok := jv.AuthCache.Keys.(jwk.Set).LookupKeyID(keyID)
+		key, ok := jwtTokenValidator.AuthCache.Keys.(jwk.Set).LookupKeyID(keyID)
 		if ok {
 			var rawKey interface{}
 			err := key.Raw(&rawKey)
@@ -145,7 +145,7 @@ func validateToken(channel courier.Channel, w http.ResponseWriter, r *http.Reque
 	appID := channel.StringConfigForKey("appID", "")
 
 	if audience != appID {
-		return fmt.Errorf("Unauthorized: invalid AppId passed on token")
+		return fmt.Errorf("Unauthorized: invalid AppID passed on token")
 	}
 
 	return nil
@@ -163,8 +163,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	path := strings.Split(payload.ServiceUrl, "//")
-	serviceUrl := path[1]
+	path := strings.Split(payload.ServiceURL, "//")
+	serviceURL := path[1]
 
 	var urn urns.URN
 
@@ -191,12 +191,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		attachmentURLs := make([]string, 0, 2)
 
 		for _, att := range payload.Attachments {
-			if att.ContentType != "" && att.ContentUrl != "" {
-				attachmentURLs = append(attachmentURLs, att.ContentUrl)
+			if att.ContentType != "" && att.ContentURL != "" {
+				attachmentURLs = append(attachmentURLs, att.ContentURL)
 			}
 		}
 
-		ev := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(payload.Id).WithReceivedOn(date)
+		ev := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(payload.ID).WithReceivedOn(date)
 		event := h.Backend().CheckExternalIDSeen(ev)
 
 		// add any attachment URL found
@@ -222,11 +222,6 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			return nil, nil
 		}
 
-		act := Activity{}
-
-		act.Text = "Create Conversation"
-		act.Type = "message"
-
 		bot := ChannelAccount{}
 
 		bot.ID = channel.StringConfigForKey("botID", "")
@@ -238,18 +233,17 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		tenantID := channel.StringConfigForKey("tenantID", "")
 
 		ConversationJson := &mtPayload{
-			Activity: act,
 			Bot:      bot,
 			Members:  members,
 			IsGroup:  false,
-			TenantId: tenantID,
+			TenantID: tenantID,
 		}
 		jsonBody, err := json.Marshal(ConversationJson)
 		if err != nil {
 			return nil, err
 		}
 		token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
-		req, err := http.NewRequest(http.MethodPost, payload.ServiceUrl+"/v3/conversations", bytes.NewReader(jsonBody))
+		req, err := http.NewRequest(http.MethodPost, payload.ServiceURL+"/v3/conversations", bytes.NewReader(jsonBody))
 
 		if err != nil {
 			return nil, err
@@ -269,7 +263,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			return nil, err
 		}
 		conversationID := strings.Split(body.ID, "a:")
-		urn, err = urns.NewTeamsURN(conversationID[1] + ":" + serviceUrl)
+		urn, err = urns.NewTeamsURN(conversationID[1] + ":" + serviceURL)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
@@ -287,17 +281,17 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 }
 
 type mtPayload struct {
-	Activity    Activity         `json:"activity"`
+	Activity    Activity         `json:"activity,omitempty"`
 	TopicName   string           `json:"topicname,omitempty"`
 	Bot         ChannelAccount   `json:"bot,omitempty"`
 	Members     []ChannelAccount `json:"members,omitempty"`
 	IsGroup     bool             `json:"isGroup,omitempty"`
-	TenantId    string           `json:"tenantId,omitempty"`
+	TenantID    string           `json:"tenantId,omitempty"`
 	ChannelData ChannelData      `json:"channelData,omitempty"`
 }
 
 type ChannelData struct {
-	AadObjectId string `json:"aadObjectId"`
+	AadObjectID string `json:"aadObjectId"`
 	Tenant      struct {
 		ID string `json:"id"`
 	} `json:"tenant"`
@@ -307,7 +301,7 @@ type ChannelAccount struct {
 	ID          string `json:"id"`
 	Name        string `json:"name,omitempty"`
 	Role        string `json:"role"`
-	AadObjectId string `json:"aadObjectId,omitempty"`
+	AadObjectID string `json:"aadObjectId,omitempty"`
 }
 
 type ConversationAccount struct {
@@ -317,25 +311,25 @@ type ConversationAccount struct {
 	Role             string `json:"role"`
 	Name             string `json:"name"`
 	IsGroup          bool   `json:"isGroup"`
-	AadObjectId      string `json:"aadObjectId"`
+	AadObjectID      string `json:"aadObjectId"`
 }
 
 type Attachment struct {
 	ContentType string `json:"contentType"`
-	ContentUrl  string `json:"contentUrl"`
+	ContentURL  string `json:"contentUrl"`
 	Name        string `json:"name,omitempty"`
 }
 
 type Activity struct {
 	Action       string              `json:"action,omitempty"`
 	Attachments  []Attachment        `json:"attachments,omitempty"`
-	ChannelId    string              `json:"channelId,omitempty"`
+	ChannelID    string              `json:"channelId,omitempty"`
 	Conversation ConversationAccount `json:"conversation,omitempty"`
-	Id           string              `json:"id,omitempty"`
+	ID           string              `json:"id,omitempty"`
 	MembersAdded []ChannelAccount    `json:"membersAdded,omitempty"`
 	Name         string              `json:"name,omitempty"`
 	Recipient    ChannelAccount      `json:"recipient,omitempty"`
-	ServiceUrl   string              `json:"serviceUrl,omitempty"`
+	ServiceURL   string              `json:"serviceUrl,omitempty"`
 	Text         string              `json:"text"`
 	Type         string              `json:"type"`
 	Timestamp    string              `json:"timestamp,omitempty"`
@@ -397,12 +391,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	if err != nil {
 		return status, err
 	}
-	status.SetStatus(courier.MsgWired)
+
 	externalID, err := jsonparser.GetString(rr.Body, "id")
 	if err != nil {
-		log.WithError("Message Send Error", errors.Errorf("unable to get message_id from body"))
+		log.WithError("Message Send Error", errors.Errorf("unable to get id from body"))
 		return status, nil
 	}
+	status.SetStatus(courier.MsgWired)
 	status.SetExternalID(externalID)
 	return status, nil
 }
@@ -417,11 +412,11 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	// build a request to lookup the stats for this contact
 	pathSplit := strings.Split(urn.Path(), ":")
 	conversationID := pathSplit[0]
-	serviceUrl := "https://" + urn.TeamsServiceURL()
+	serviceURL := "https://" + urn.TeamsServiceURL()
 	if len(pathSplit) > 2 {
-		serviceUrl = "http://" + urn.TeamsServiceURL() + ":" + pathSplit[2]
+		serviceURL = "http://" + urn.TeamsServiceURL() + ":" + pathSplit[2]
 	}
-	url := serviceUrl + "v3/conversations/a:" + conversationID + "/members"
+	url := serviceURL + "v3/conversations/a:" + conversationID + "/members"
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	rr, err := utils.MakeHTTPRequest(req)
