@@ -24,16 +24,16 @@ func TestDoHTTPRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 	mc := test.NewMockChannel("7a8ff1d4-f211-4492-9d05-e1905f6da8c8", "NX", "1234", "EC", nil)
 	mm := mb.NewOutgoingMsg(mc, courier.NewMsgID(123), urns.URN("tel:+1234"), "Hello World", false, nil, "", "")
-	logger := courier.NewChannelLoggerForSend(mm)
+	logger := courier.NewChannelLogForSend(mm)
 
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
 	resp, respBody, err := handlers.RequestHTTP(req, logger)
 	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode)
 	assert.Equal(t, []byte(`{"status":"success"}`), respBody)
-	assert.Len(t, logger.Logs(), 1)
+	assert.Len(t, logger.LegacyLogs(), 1)
 
-	log1 := logger.Logs()[0]
+	log1 := logger.LegacyLogs()[0]
 	assert.Equal(t, 200, log1.StatusCode)
 	assert.Equal(t, mc, log1.Channel)
 	assert.Equal(t, courier.NewMsgID(123), log1.MsgID)
@@ -43,9 +43,9 @@ func TestDoHTTPRequest(t *testing.T) {
 	resp, respBody, err = handlers.RequestHTTP(req, logger)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode)
-	assert.Len(t, logger.Logs(), 2)
+	assert.Len(t, logger.LegacyLogs(), 2)
 
-	log2 := logger.Logs()[1]
+	log2 := logger.LegacyLogs()[1]
 	assert.Equal(t, 400, log2.StatusCode)
 	assert.Equal(t, mc, log2.Channel)
 	assert.Equal(t, courier.NewMsgID(123), log2.MsgID)

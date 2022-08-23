@@ -298,7 +298,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			}
 		}()
 
-		logger := NewChannelLogger(ChannelLogTypeUnknown, channel)
+		logger := NewChannelLog(ChannelLogTypeUnknown, channel)
 
 		events, hErr := handlerFunc(ctx, channel, recorder.ResponseWriter, r, logger)
 		duration := time.Since(start)
@@ -347,7 +347,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 				}
 			}
 
-			if err := s.backend.WriteChannelLogs(ctx, logger.Logs()); err != nil {
+			if err := s.backend.WriteChannelLog(ctx, logger); err != nil {
 				logrus.WithError(err).Error("error writing channel log")
 			}
 		}

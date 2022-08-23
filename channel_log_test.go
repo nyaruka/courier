@@ -26,7 +26,7 @@ func TestNewChannelLogFromTrace(t *testing.T) {
 	trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
 	assert.NoError(t, err)
 
-	log := courier.NewChannelLogFromTrace("Send message", channel, courier.NewMsgID(1234), trace)
+	log := courier.NewLegacyChannelLog("Send message", channel, courier.NewMsgID(1234), trace)
 
 	assert.Equal(t, "Send message", log.Description)
 	assert.Equal(t, channel, log.Channel)
@@ -45,7 +45,7 @@ func TestNewChannelLogFromTrace(t *testing.T) {
 	trace, err = httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
 	assert.EqualError(t, err, "unable to connect to server")
 
-	log = courier.NewChannelLogFromTrace("Send message", channel, courier.NewMsgID(1234), trace)
+	log = courier.NewLegacyChannelLog("Send message", channel, courier.NewMsgID(1234), trace)
 
 	assert.Equal(t, 0, log.StatusCode)
 	assert.Equal(t, "", log.Error)

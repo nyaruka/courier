@@ -97,7 +97,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel) error {
-	logger := courier.NewChannelLogger(courier.ChannelLogTypeTokenFetch, channel)
+	logger := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
 
 	form := url.Values{
 		"grant_type": []string{"client_credential"},
@@ -113,13 +113,13 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel)
 
 	resp, respBody, err := handlers.RequestHTTP(req, logger)
 	if err != nil || resp.StatusCode/100 != 2 {
-		return h.Backend().WriteChannelLogs(ctx, logger.Logs())
+		return h.Backend().WriteChannelLog(ctx, logger)
 	}
 
 	accessToken, err := jsonparser.GetString(respBody, "access_token")
 	if err != nil {
 		logger.Error(errors.New("access_token not found in response"))
-		return h.Backend().WriteChannelLogs(ctx, logger.Logs())
+		return h.Backend().WriteChannelLog(ctx, logger)
 	}
 
 	expiration, err := jsonparser.GetInt(respBody, "expires_in")

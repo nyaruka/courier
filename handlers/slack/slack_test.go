@@ -360,7 +360,7 @@ func TestDescribeURN(t *testing.T) {
 	defer server.Close()
 
 	handler := newHandler().(courier.URNDescriber)
-	logger := courier.NewChannelLogger(courier.ChannelLogTypeUnknown, testChannels[0])
+	logger := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0])
 	urn, _ := urns.NewURNFromParts(urns.SlackScheme, "U012345", "", "")
 
 	data := map[string]string{"name": "dummy user"}

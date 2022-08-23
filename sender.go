@@ -189,7 +189,7 @@ func (w *Sender) sendMessage(msg Msg) {
 	}
 
 	var status MsgStatus
-	logger := NewChannelLoggerForSend(msg)
+	logger := NewChannelLogForSend(msg)
 
 	if sent {
 		// if this message was already sent, create a wired status for it
@@ -231,7 +231,7 @@ func (w *Sender) sendMessage(msg Msg) {
 	}
 
 	// write our logs as well
-	err = backend.WriteChannelLogs(writeCTX, logger.Logs())
+	err = backend.WriteChannelLog(writeCTX, logger)
 	if err != nil {
 		log.WithError(err).Info("error writing msg logs")
 	}
