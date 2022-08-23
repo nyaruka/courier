@@ -18,6 +18,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 )
@@ -71,7 +72,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	}
 
 	dictOrder := []string{channel.StringConfigForKey(configAppSecret, ""), form.Timestamp, form.Nonce}
-	sort.Sort(sort.StringSlice(dictOrder))
+	sort.Strings(dictOrder)
 
 	combinedParams := strings.Join(dictOrder, "")
 
@@ -167,41 +168,31 @@ type fetchPayload struct {
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel) error {
-	start := time.Now()
-	logs := make([]*courier.ChannelLog, 0, 1)
+	logger := courier.NewChannelLogger(courier.ChannelLogTypeTokenFetch, channel)
 
 	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "auth/token.action"))
-
 	payload := &fetchPayload{
 		GrantType:    "client_credentials",
 		ClientID:     channel.StringConfigForKey(configAppID, ""),
 		ClientSecret: channel.StringConfigForKey(configAppSecret, ""),
 	}
 
-	jsonBody, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, tokenURL.String(), bytes.NewReader(jsonBody))
+	req, err := http.NewRequest(http.MethodPost, tokenURL.String(), bytes.NewReader(jsonx.MustMarshal(payload)))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	trace, err := handlers.MakeHTTPRequest(req)
-	if err != nil {
-		duration := time.Now().Sub(start)
-		logs = append(logs, courier.NewChannelLogFromError("failed to fetch access token", channel, courier.NilMsgID, duration, err))
-		return h.Backend().WriteChannelLogs(ctx, logs)
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return h.Backend().WriteChannelLogs(ctx, logger.Logs())
 	}
 
-	accessToken, err := jsonparser.GetString(trace.ResponseBody, "access_token")
+	accessToken, err := jsonparser.GetString(respBody, "access_token")
 	if err != nil {
-		duration := time.Now().Sub(start)
-		logs = append(logs, courier.NewChannelLogFromError("invalid json", channel, courier.NilMsgID, duration, err))
-		return h.Backend().WriteChannelLogs(ctx, logs)
+		logger.Error(errors.New("access_token not found in response"))
+		return h.Backend().WriteChannelLogs(ctx, logger.Logs())
 	}
 
 	rc := h.Backend().RedisPool().Get()

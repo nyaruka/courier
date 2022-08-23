@@ -45,8 +45,7 @@ func NewChannelLogFromTrace(description string, channel Channel, msgID MsgID, tr
 	return log
 }
 
-// NewChannelLogFromError creates a new channel log for the passed in channel, msg id and error
-func NewChannelLogFromError(description string, channel Channel, msgID MsgID, elapsed time.Duration, err error) *ChannelLog {
+func newChannelLogFromError(description string, channel Channel, msgID MsgID, elapsed time.Duration, err error) *ChannelLog {
 	return &ChannelLog{
 		Description: description,
 		Channel:     channel,
@@ -97,6 +96,7 @@ const (
 	ChannelLogTypeMsgStatus    ChannelLogType = "msg_status"
 	ChannelLogTypeMsgReceive   ChannelLogType = "msg_receive"
 	ChannelLogTypeEventReceive ChannelLogType = "event_receive"
+	ChannelLogTypeTokenFetch   ChannelLogType = "token_fetch"
 )
 
 var logTypeDescriptions = map[ChannelLogType]string{
@@ -105,6 +105,7 @@ var logTypeDescriptions = map[ChannelLogType]string{
 	ChannelLogTypeMsgStatus:    "Message Status",
 	ChannelLogTypeMsgReceive:   "Message Receive",
 	ChannelLogTypeEventReceive: "Event Receive",
+	ChannelLogTypeTokenFetch:   "Token Fetch",
 }
 
 type ChannelLogger struct {
@@ -160,7 +161,7 @@ func (l *ChannelLogger) Error(err error) {
 		if len(l.logs) > 0 && l.logs[len(l.logs)-1].Error == "" {
 			l.logs[len(l.logs)-1].Error = err.Error()
 		} else {
-			l.logs = append(l.logs, NewChannelLogFromError(logTypeDescriptions[l.type_], l.channel, l.msgID, 0, err))
+			l.logs = append(l.logs, newChannelLogFromError(logTypeDescriptions[l.type_], l.channel, l.msgID, 0, err))
 		}
 	}
 }

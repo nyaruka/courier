@@ -102,15 +102,15 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			}
 			photo = payload.Message.Photo[i]
 		}
-		mediaURL, err = h.resolveFileID(ctx, channel, photo.FileID)
+		mediaURL, err = h.resolveFileID(ctx, channel, photo.FileID, logger)
 	} else if payload.Message.Video != nil {
-		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Video.FileID)
+		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Video.FileID, logger)
 	} else if payload.Message.Voice != nil {
-		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Voice.FileID)
+		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Voice.FileID, logger)
 	} else if payload.Message.Sticker != nil {
-		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Sticker.Thumb.FileID)
+		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Sticker.Thumb.FileID, logger)
 	} else if payload.Message.Document != nil {
-		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Document.FileID)
+		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Document.FileID, logger)
 	} else if payload.Message.Venue != nil {
 		text = utils.JoinNonEmpty(", ", payload.Message.Venue.Title, payload.Message.Venue.Address)
 		mediaURL = fmt.Sprintf("geo:%f,%f", payload.Message.Location.Latitude, payload.Message.Location.Longitude)
@@ -324,7 +324,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 	return status, nil
 }
 
-func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fileID string) (string, error) {
+func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fileID string, logger *courier.ChannelLogger) (string, error) {
 	confAuth := channel.ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
@@ -343,15 +343,13 @@ func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fi
 		courier.LogRequestError(req, channel, err)
 	}
 
-	trace, err := handlers.MakeHTTPRequest(req)
-	if err != nil {
-		log := courier.NewChannelLogFromTrace("File Resolving", channel, courier.NilMsgID, trace).WithError("File Resolving Error", err)
-		h.Backend().WriteChannelLogs(ctx, []*courier.ChannelLog{log})
-		return "", err
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return "", errors.New("unable to resolve file")
 	}
 
 	// was this request successful?
-	ok, err := jsonparser.GetBoolean(trace.ResponseBody, "ok")
+	ok, err := jsonparser.GetBoolean(respBody, "ok")
 	if err != nil {
 		return "", errors.Errorf("no 'ok' in response")
 	}
@@ -361,7 +359,7 @@ func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fi
 	}
 
 	// grab the path for our file
-	filePath, err := jsonparser.GetString(trace.ResponseBody, "result", "file_path")
+	filePath, err := jsonparser.GetString(respBody, "result", "file_path")
 	if err != nil {
 		return "", errors.Errorf("no 'result.file_path' in response")
 	}

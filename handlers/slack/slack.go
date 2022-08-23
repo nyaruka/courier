@@ -85,7 +85,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 		attachmentURLs := make([]string, 0)
 		for _, file := range payload.Event.Files {
-			fileURL, err := h.resolveFile(ctx, channel, file)
+			fileURL, err := h.resolveFile(ctx, channel, file, logger)
 			if err != nil {
 				courier.LogRequestError(r, channel, err)
 			} else {
@@ -105,7 +105,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 }
 
-func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file File) (string, error) {
+func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file File, logger *courier.ChannelLogger) (string, error) {
 	userToken := channel.StringConfigForKey(configUserToken, "")
 
 	fileApiURL := apiURL + "/files.sharedPublicURL"
@@ -119,15 +119,13 @@ func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", userToken))
 
-	trace, err := handlers.MakeHTTPRequest(req)
-	if err != nil {
-		log := courier.NewChannelLogFromTrace("File Resolving", channel, courier.NilMsgID, trace).WithError("File Resolving Error", err)
-		h.Backend().WriteChannelLogs(ctx, []*courier.ChannelLog{log})
-		return "", err
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return "", errors.New("unable to resolve file")
 	}
 
 	var fResponse FileResponse
-	if err := json.Unmarshal(trace.ResponseBody, &fResponse); err != nil {
+	if err := json.Unmarshal(respBody, &fResponse); err != nil {
 		return "", errors.Errorf("couldn't unmarshal file response: %v", err)
 	}
 
