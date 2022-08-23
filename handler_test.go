@@ -46,12 +46,12 @@ func (h *dummyHandler) Initialize(s courier.Server) error {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *dummyHandler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *dummyHandler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	return h.backend.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgSent), nil
 }
 
 // ReceiveMsg sends the passed in message, returning any error
-func (h *dummyHandler) receiveMsg(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *dummyHandler) receiveMsg(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	r.ParseForm()
 	from := r.Form.Get("from")
 	text := r.Form.Get("text")

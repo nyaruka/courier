@@ -76,7 +76,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	// get our params
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
@@ -156,7 +156,7 @@ type statusPayload struct {
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	// get our params
 	payload := &statusPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
@@ -194,7 +194,7 @@ type mtPayload struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	channel := msg.Channel()
 
 	token := channel.StringConfigForKey(courier.ConfigAPIKey, "")
@@ -257,14 +257,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-API-TOKEN", token)
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}
 
 	externalID, err := jsonparser.GetString(respBody, "id")
 	if err != nil {
-		logger.Error(errors.Errorf("unable to get id from body"))
+		clog.Error(errors.Errorf("unable to get id from body"))
 		return status, nil
 	}
 

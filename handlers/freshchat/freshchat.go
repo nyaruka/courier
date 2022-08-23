@@ -48,7 +48,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	return nil
 }
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -101,7 +101,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 
 	agentID := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if agentID == "" {
@@ -148,7 +148,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			msgimage.Image = &Image{URL: mediaURL}
 			payload.Messages[0].MessageParts = append(payload.Messages[0].MessageParts, *msgimage)
 		default:
-			logger.Error(fmt.Errorf("unknown media type: %s", mediaType))
+			clog.Error(fmt.Errorf("unknown media type: %s", mediaType))
 		}
 	}
 
@@ -167,7 +167,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 	var bearer = "Bearer " + authToken
 	req.Header.Set("Authorization", bearer)
 
-	resp, _, err := handlers.RequestHTTP(req, logger)
+	resp, _, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}

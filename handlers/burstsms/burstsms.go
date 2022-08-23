@@ -46,17 +46,17 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// {
-//     message_id: 19835,
-//     recipients: 3,
-//     cost: 1.000
-// }
+//	{
+//	    message_id: 19835,
+//	    recipients: 3,
+//	    cost: 1.000
+//	}
 type mtResponse struct {
 	MessageID int64 `json:"message_id"`
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for BS channel")
@@ -83,7 +83,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
-		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
@@ -92,7 +92,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		response := &mtResponse{}
 		err = json.Unmarshal(respBody, response)
 		if err != nil {
-			logger.Error(err)
+			clog.Error(err)
 			break
 		}
 
@@ -101,7 +101,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			status.SetExternalID(fmt.Sprintf("%d", response.MessageID))
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			logger.Error(fmt.Errorf("Received invalid message id: %d", response.MessageID))
+			clog.Error(fmt.Errorf("Received invalid message id: %d", response.MessageID))
 			break
 		}
 	}

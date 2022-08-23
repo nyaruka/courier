@@ -203,7 +203,7 @@ func (s *server) Stop() error {
 	return nil
 }
 
-func (s *server) SendMsg(ctx context.Context, msg Msg, logger *ChannelLogger) (MsgStatus, error) {
+func (s *server) SendMsg(ctx context.Context, msg Msg, clog *ChannelLogger) (MsgStatus, error) {
 	// find the handler for this message type
 	handler, found := activeHandlers[msg.Channel().ChannelType()]
 	if !found {
@@ -211,7 +211,7 @@ func (s *server) SendMsg(ctx context.Context, msg Msg, logger *ChannelLogger) (M
 	}
 
 	// have the handler send it
-	return handler.Send(ctx, msg, logger)
+	return handler.Send(ctx, msg, clog)
 }
 
 func (s *server) WaitGroup() *sync.WaitGroup { return s.waitGroup }

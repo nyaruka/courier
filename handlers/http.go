@@ -10,24 +10,24 @@ import (
 )
 
 // RequestHTTP does the given request, logging the trace, and returns the response
-func RequestHTTP(req *http.Request, logger *courier.ChannelLogger) (*http.Response, []byte, error) {
-	return RequestHTTPWithClient(utils.GetHTTPClient(), req, logger)
+func RequestHTTP(req *http.Request, clog *courier.ChannelLogger) (*http.Response, []byte, error) {
+	return RequestHTTPWithClient(utils.GetHTTPClient(), req, clog)
 }
 
 // RequestHTTPInsecure does the given request using an insecure client that does not validate SSL certificates,
 // logging the trace, and returns the response
-func RequestHTTPInsecure(req *http.Request, logger *courier.ChannelLogger) (*http.Response, []byte, error) {
-	return RequestHTTPWithClient(utils.GetInsecureHTTPClient(), req, logger)
+func RequestHTTPInsecure(req *http.Request, clog *courier.ChannelLogger) (*http.Response, []byte, error) {
+	return RequestHTTPWithClient(utils.GetInsecureHTTPClient(), req, clog)
 }
 
 // RequestHTTP does the given request using the given client, logging the trace, and returns the response
-func RequestHTTPWithClient(client *http.Client, req *http.Request, logger *courier.ChannelLogger) (*http.Response, []byte, error) {
+func RequestHTTPWithClient(client *http.Client, req *http.Request, clog *courier.ChannelLogger) (*http.Response, []byte, error) {
 	var resp *http.Response
 	var body []byte
 
 	trace, err := httpx.DoTrace(client, req, nil, nil, 0)
 	if trace != nil {
-		logger.HTTP(trace)
+		clog.HTTP(trace)
 		resp = trace.Response
 		body = trace.ResponseBody
 	}
