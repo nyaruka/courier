@@ -151,7 +151,7 @@ func validateToken(channel courier.Channel, w http.ResponseWriter, r *http.Reque
 	return nil
 }
 
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &Activity{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -251,14 +251,14 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)
 
-		rr, err := utils.MakeHTTPRequest(req)
-		if err != nil {
-			return nil, err
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
+			return nil, errors.New("unable to look up contact data")
 		}
 
 		var body ConversationAccount
 
-		err = json.Unmarshal(rr.Body, &body)
+		err = json.Unmarshal(respBody, &body)
 		if err != nil {
 			return nil, err
 		}
@@ -314,7 +314,7 @@ type ConversationAccount struct {
 	AadObjectID      string `json:"aadObjectId"`
 }
 
-type Attachment struct {
+type mtAttachment struct {
 	ContentType string `json:"contentType"`
 	ContentURL  string `json:"contentUrl"`
 	Name        string `json:"name,omitempty"`
@@ -322,7 +322,7 @@ type Attachment struct {
 
 type Activity struct {
 	Action       string              `json:"action,omitempty"`
-	Attachments  []Attachment        `json:"attachments,omitempty"`
+	Attachments  []mtAttachment      `json:"attachments,omitempty"`
 	ChannelID    string              `json:"channelId,omitempty"`
 	Conversation ConversationAccount `json:"conversation,omitempty"`
 	ID           string              `json:"id,omitempty"`
@@ -335,7 +335,7 @@ type Activity struct {
 	Timestamp    string              `json:"timestamp,omitempty"`
 }
 
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 
 	token := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if token == "" {
@@ -362,7 +362,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if err != nil {
 			logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("Error while parsing the media URL")
 		}
-		payload.Attachments = append(payload.Attachments, Attachment{attType, attURL, filename})
+		payload.Attachments = append(payload.Attachments, mtAttachment{attType, attURL, filename})
 	}
 
 	if msg.Text() != "" {
@@ -383,18 +383,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 
-	rr, err := utils.MakeHTTPRequest(req)
-
-	// record our status and log
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-	status.AddLog(log)
-	if err != nil {
-		return status, err
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return status, nil
 	}
 
-	externalID, err := jsonparser.GetString(rr.Body, "id")
+	externalID, err := jsonparser.GetString(respBody, "id")
 	if err != nil {
-		log.WithError("Message Send Error", errors.Errorf("unable to get id from body"))
+		clog.Error(errors.Errorf("unable to get message_id from body"))
 		return status, nil
 	}
 	status.SetStatus(courier.MsgWired)
@@ -402,7 +398,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	return status, nil
 }
 
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLogger) (map[string]string, error) {
 
 	accessToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
 	if accessToken == "" {
@@ -419,14 +415,14 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	url := serviceURL + "v3/conversations/a:" + conversationID + "/members"
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	req.Header.Set("Authorization", "Bearer "+accessToken)
-	rr, err := utils.MakeHTTPRequest(req)
-	if err != nil {
-		return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("unable to look up contact data")
 	}
 
 	// read our first and last name
-	givenName, _ := jsonparser.GetString(rr.Body, "[0]", "givenName")
-	surname, _ := jsonparser.GetString(rr.Body, "[0]", "surname")
+	givenName, _ := jsonparser.GetString(respBody, "[0]", "givenName")
+	surname, _ := jsonparser.GetString(respBody, "[0]", "surname")
 
 	return map[string]string{"name": utils.JoinNonEmpty(" ", givenName, surname)}, nil
 }
