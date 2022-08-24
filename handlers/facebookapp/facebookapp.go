@@ -330,7 +330,7 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 	return nil, err
 }
 
-func resolveMediaURL(mediaID string, token string) (string, error) {
+func resolveMediaURL(mediaID string, token string, clog *courier.ChannelLog) (string, error) {
 	if token == "" {
 		return "", fmt.Errorf("missing token for WA channel")
 	}
@@ -344,12 +344,12 @@ func resolveMediaURL(mediaID string, token string) (string, error) {
 	//req.Header.Set("User-Agent", utils.HTTPUserAgent)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-	trace, err := handlers.MakeHTTPRequest(req)
-	if err != nil {
-		return "", err
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return "", errors.New("error resolving media URL")
 	}
 
-	mediaURL, err := jsonparser.GetString(trace.ResponseBody, "url")
+	mediaURL, err := jsonparser.GetString(respBody, "url")
 	return mediaURL, err
 }
 
@@ -382,7 +382,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	if channel.ChannelType() == "FBA" || channel.ChannelType() == "IG" {
 		events, data, err = h.processFacebookInstagramPayload(ctx, channel, payload, w, r)
 	} else {
-		events, data, err = h.processCloudWhatsAppPayload(ctx, channel, payload, w, r)
+		events, data, err = h.processCloudWhatsAppPayload(ctx, channel, payload, w, r, clog)
 
 	}
 
@@ -393,7 +393,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
 }
 
-func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request) ([]courier.Event, []interface{}, error) {
+func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []interface{}, error) {
 	// the list of events we deal with
 	events := make([]courier.Event, 0, 2)
 
@@ -436,21 +436,21 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					text = msg.Text.Body
 				} else if msg.Type == "audio" && msg.Audio != nil {
 					text = msg.Audio.Caption
-					mediaURL, err = resolveMediaURL(msg.Audio.ID, token)
+					mediaURL, err = resolveMediaURL(msg.Audio.ID, token, clog)
 				} else if msg.Type == "voice" && msg.Voice != nil {
 					text = msg.Voice.Caption
-					mediaURL, err = resolveMediaURL(msg.Voice.ID, token)
+					mediaURL, err = resolveMediaURL(msg.Voice.ID, token, clog)
 				} else if msg.Type == "button" && msg.Button != nil {
 					text = msg.Button.Text
 				} else if msg.Type == "document" && msg.Document != nil {
 					text = msg.Document.Caption
-					mediaURL, err = resolveMediaURL(msg.Document.ID, token)
+					mediaURL, err = resolveMediaURL(msg.Document.ID, token, clog)
 				} else if msg.Type == "image" && msg.Image != nil {
 					text = msg.Image.Caption
-					mediaURL, err = resolveMediaURL(msg.Image.ID, token)
+					mediaURL, err = resolveMediaURL(msg.Image.ID, token, clog)
 				} else if msg.Type == "video" && msg.Video != nil {
 					text = msg.Video.Caption
-					mediaURL, err = resolveMediaURL(msg.Video.ID, token)
+					mediaURL, err = resolveMediaURL(msg.Video.ID, token, clog)
 				} else if msg.Type == "location" && msg.Location != nil {
 					mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
 				} else if msg.Type == "interactive" && msg.Interactive.Type == "button_reply" {

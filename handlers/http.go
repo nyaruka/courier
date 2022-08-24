@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/nyaruka/courier"
@@ -36,19 +35,4 @@ func RequestHTTPWithClient(client *http.Client, req *http.Request, clog *courier
 	}
 
 	return resp, body, nil
-}
-
-// Deprecated: use RequestHTTP instead
-func MakeHTTPRequest(req *http.Request) (*httpx.Trace, error) {
-	trace, err := httpx.DoTrace(utils.GetHTTPClient(), req, nil, nil, 0)
-	if err != nil {
-		return trace, err
-	}
-
-	// return an error if we got a non-200 status
-	if trace.Response != nil && trace.Response.StatusCode/100 != 2 {
-		return trace, fmt.Errorf("received non 200 status: %d", trace.Response.StatusCode)
-	}
-
-	return trace, nil
 }
