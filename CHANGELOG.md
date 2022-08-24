@@ -1,3 +1,7 @@
+v7.5.15
+----------
+ * Use logger for handler func calls
+
 v7.5.14
 ----------
  * Update to latest gocommon and use new recorder reconstruct option
