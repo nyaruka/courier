@@ -31,6 +31,7 @@ func NewHandler() courier.ChannelHandler {
 func (h *dummyHandler) ChannelName() string              { return "Dummy Handler" }
 func (h *dummyHandler) ChannelType() courier.ChannelType { return courier.ChannelType("DM") }
 func (h *dummyHandler) UseChannelRouteUUID() bool        { return true }
+func (h *dummyHandler) RedactValues() []string           { return []string{"sesame"} }
 
 func (h *dummyHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
 	dmChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "DM", "2020", "US", map[string]interface{}{})

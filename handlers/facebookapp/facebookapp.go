@@ -29,8 +29,6 @@ var (
 
 	signatureHeader = "X-Hub-Signature"
 
-	configWACPhoneNumberID = "wac_phone_number_id"
-
 	// max for the body
 	maxMsgLength = 1000
 
@@ -265,6 +263,14 @@ type moPayload struct {
 			} `json:"delivery"`
 		} `json:"messaging"`
 	} `json:"entry"`
+}
+
+func (h *handler) RedactValues() []string {
+	return []string{
+		h.Server().Config().FacebookApplicationSecret,
+		h.Server().Config().FacebookWebhookSecret,
+		h.Server().Config().WhatsappAdminSystemUserToken,
+	}
 }
 
 // GetChannel returns the channel

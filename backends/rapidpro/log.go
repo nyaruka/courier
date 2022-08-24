@@ -3,7 +3,6 @@ package rapidpro
 import (
 	"context"
 	"encoding/json"
-
 	"time"
 
 	"github.com/nyaruka/courier"
@@ -41,6 +40,7 @@ type channelError struct {
 func writeChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) error {
 	dbChan := clog.Channel().(*DBChannel)
 
+	// if we have an error or a non 2XX/3XX http response then this log is marked as an error
 	isError := len(clog.Errors()) > 0
 	if !isError {
 		for _, l := range clog.HTTPLogs() {
