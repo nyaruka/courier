@@ -49,7 +49,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -149,7 +149,7 @@ type mtResponse struct {
 	} `json:"result"`
 }
 
-func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, keyboard *ReplyKeyboardMarkup, clog *courier.ChannelLogger) (string, bool, error) {
+func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, keyboard *ReplyKeyboardMarkup, clog *courier.ChannelLog) (string, bool, error) {
 	// either include or remove our keyboard
 	if keyboard == nil {
 		form.Add("reply_markup", `{"remove_keyboard":true}`)
@@ -184,7 +184,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	confAuth := msg.Channel().ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
@@ -324,7 +324,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return status, nil
 }
 
-func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fileID string, clog *courier.ChannelLogger) (string, error) {
+func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fileID string, clog *courier.ChannelLog) (string, error) {
 	confAuth := channel.ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {

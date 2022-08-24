@@ -312,7 +312,7 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 }
 
 // receiveVerify handles Facebook's webhook verification callback
-func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	mode := r.URL.Query().Get("hub.mode")
 
 	// this isn't a subscribe verification, that's an error
@@ -354,7 +354,7 @@ func resolveMediaURL(mediaID string, token string) (string, error) {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -803,7 +803,7 @@ type mtQuickReply struct {
 	ContentType string `json:"content_type"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	if msg.Channel().ChannelType() == "FBA" || msg.Channel().ChannelType() == "IG" {
 		return h.sendFacebookInstagramMsg(ctx, msg, clog)
 	} else if msg.Channel().ChannelType() == "WAC" {
@@ -813,7 +813,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return nil, fmt.Errorf("unssuported channel type")
 }
 
-func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	// can't do anything without an access token
 	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if accessToken == "" {
@@ -1055,7 +1055,7 @@ type wacMTResponse struct {
 	} `json:"messages"`
 }
 
-func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	// can't do anything without an access token
 	accessToken := h.Server().Config().WhatsappAdminSystemUserToken
 
@@ -1297,7 +1297,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 }
 
 // DescribeURN looks up URN metadata for new contacts
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLogger) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLog) (map[string]string, error) {
 	if channel.ChannelType() == "WAC" {
 		return map[string]string{}, nil
 	}

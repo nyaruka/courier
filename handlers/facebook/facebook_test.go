@@ -495,7 +495,7 @@ func TestDescribe(t *testing.T) {
 
 	channel := testChannels[0]
 	handler := newHandler().(courier.URNDescriber)
-	logger := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
 
 	tcs := []struct {
 		urn              urns.URN
@@ -507,7 +507,7 @@ func TestDescribe(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, logger)
+		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 }

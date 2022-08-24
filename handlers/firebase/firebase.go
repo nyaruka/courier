@@ -54,7 +54,7 @@ type receiveForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &receiveForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -89,7 +89,7 @@ type registerForm struct {
 }
 
 // registerContact is our HTTP handler function for when a contact is registered (or renewed)
-func (h *handler) registerContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) registerContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &registerForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -135,7 +135,7 @@ type mtNotification struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
 	if title == "" {
 		return nil, fmt.Errorf("no FCM_TITLE set for FCM channel")

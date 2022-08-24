@@ -268,7 +268,7 @@ func TestDescribe(t *testing.T) {
 	s := newServer(mb)
 	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("WC"), "WeChat")}
 	handler.Initialize(s)
-	logger := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0])
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0])
 
 	tcs := []struct {
 		urn              urns.URN
@@ -279,7 +279,7 @@ func TestDescribe(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn, logger)
+		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 }

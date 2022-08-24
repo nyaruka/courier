@@ -60,7 +60,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &eventPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -115,7 +115,7 @@ type mtPayload struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	if username == "" || password == "" {

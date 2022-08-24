@@ -191,7 +191,7 @@ func TestDescribeFBA(t *testing.T) {
 
 	channel := testChannelsFBA[0]
 	handler := newHandler("FBA", "Facebook", false).(courier.URNDescriber)
-	logger := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
 
 	tcs := []struct {
 		urn              urns.URN
@@ -203,7 +203,7 @@ func TestDescribeFBA(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, logger)
+		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 }
@@ -214,7 +214,7 @@ func TestDescribeIG(t *testing.T) {
 
 	channel := testChannelsIG[0]
 	handler := newHandler("IG", "Instagram", false).(courier.URNDescriber)
-	logger := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
 
 	tcs := []struct {
 		urn              urns.URN
@@ -225,7 +225,7 @@ func TestDescribeIG(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, logger)
+		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 }
@@ -233,7 +233,7 @@ func TestDescribeIG(t *testing.T) {
 func TestDescribeWAC(t *testing.T) {
 	channel := testChannelsWAC[0]
 	handler := newHandler("WAC", "Cloud API WhatsApp", false).(courier.URNDescriber)
-	logger := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
 
 	tcs := []struct {
 		urn              urns.URN
@@ -244,7 +244,7 @@ func TestDescribeWAC(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), testChannelsWAC[0], tc.urn, logger)
+		metadata, _ := handler.DescribeURN(context.Background(), testChannelsWAC[0], tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 }

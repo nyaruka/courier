@@ -30,7 +30,7 @@ type Server interface {
 
 	AddHandlerRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelHandleFunc)
 
-	SendMsg(context.Context, Msg, *ChannelLogger) (MsgStatus, error)
+	SendMsg(context.Context, Msg, *ChannelLog) (MsgStatus, error)
 
 	Backend() Backend
 
@@ -203,7 +203,7 @@ func (s *server) Stop() error {
 	return nil
 }
 
-func (s *server) SendMsg(ctx context.Context, msg Msg, clog *ChannelLogger) (MsgStatus, error) {
+func (s *server) SendMsg(ctx context.Context, msg Msg, clog *ChannelLog) (MsgStatus, error) {
 	// find the handler for this message type
 	handler, found := activeHandlers[msg.Channel().ChannelType()]
 	if !found {

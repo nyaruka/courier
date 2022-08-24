@@ -36,7 +36,7 @@ func (e *ChannelError) Code() string {
 	return e.code
 }
 
-type ChannelLogger struct {
+type ChannelLog struct {
 	type_     ChannelLogType
 	channel   Channel
 	msgID     MsgID
@@ -47,28 +47,28 @@ type ChannelLogger struct {
 	elapsed   time.Duration
 }
 
-func NewChannelLogForIncoming(r *httpx.Recorder, channel Channel) *ChannelLogger {
-	return &ChannelLogger{type_: ChannelLogTypeUnknown, recorder: r, channel: channel, createdOn: dates.Now()}
+func NewChannelLogForIncoming(r *httpx.Recorder, channel Channel) *ChannelLog {
+	return &ChannelLog{type_: ChannelLogTypeUnknown, recorder: r, channel: channel, createdOn: dates.Now()}
 }
 
-func NewChannelLogForSend(msg Msg) *ChannelLogger {
-	return &ChannelLogger{type_: ChannelLogTypeMsgSend, channel: msg.Channel(), msgID: msg.ID(), createdOn: dates.Now()}
+func NewChannelLogForSend(msg Msg) *ChannelLog {
+	return &ChannelLog{type_: ChannelLogTypeMsgSend, channel: msg.Channel(), msgID: msg.ID(), createdOn: dates.Now()}
 }
 
-func NewChannelLog(t ChannelLogType, channel Channel) *ChannelLogger {
-	return &ChannelLogger{type_: t, channel: channel, createdOn: dates.Now()}
+func NewChannelLog(t ChannelLogType, channel Channel) *ChannelLog {
+	return &ChannelLog{type_: t, channel: channel, createdOn: dates.Now()}
 }
 
 // HTTP logs an outgoing HTTP request and response
-func (l *ChannelLogger) HTTP(t *httpx.Trace) {
+func (l *ChannelLog) HTTP(t *httpx.Trace) {
 	l.httpLogs = append(l.httpLogs, l.traceToLog(t))
 }
 
-func (l *ChannelLogger) Error(err error) {
+func (l *ChannelLog) Error(err error) {
 	l.errors = append(l.errors, NewChannelError(err.Error(), ""))
 }
 
-func (l *ChannelLogger) End() {
+func (l *ChannelLog) End() {
 	if l.recorder != nil {
 		// prepend so it's the first HTTP request in the log
 		l.httpLogs = append([]*httpx.Log{l.traceToLog(l.recorder.Trace)}, l.httpLogs...)
@@ -77,42 +77,42 @@ func (l *ChannelLogger) End() {
 	l.elapsed = time.Since(l.createdOn)
 }
 
-func (l *ChannelLogger) Type() ChannelLogType {
+func (l *ChannelLog) Type() ChannelLogType {
 	return l.type_
 }
 
-func (l *ChannelLogger) SetType(t ChannelLogType) {
+func (l *ChannelLog) SetType(t ChannelLogType) {
 	l.type_ = t
 }
 
-func (l *ChannelLogger) Channel() Channel {
+func (l *ChannelLog) Channel() Channel {
 	return l.channel
 }
 
-func (l *ChannelLogger) MsgID() MsgID {
+func (l *ChannelLog) MsgID() MsgID {
 	return l.msgID
 }
 
-func (l *ChannelLogger) SetMsgID(id MsgID) {
+func (l *ChannelLog) SetMsgID(id MsgID) {
 	l.msgID = id
 }
 
-func (l *ChannelLogger) HTTPLogs() []*httpx.Log {
+func (l *ChannelLog) HTTPLogs() []*httpx.Log {
 	return l.httpLogs
 }
 
-func (l *ChannelLogger) Errors() []ChannelError {
+func (l *ChannelLog) Errors() []ChannelError {
 	return l.errors
 }
 
-func (l *ChannelLogger) CreatedOn() time.Time {
+func (l *ChannelLog) CreatedOn() time.Time {
 	return l.createdOn
 }
 
-func (l *ChannelLogger) Elapsed() time.Duration {
+func (l *ChannelLog) Elapsed() time.Duration {
 	return l.elapsed
 }
 
-func (l *ChannelLogger) traceToLog(t *httpx.Trace) *httpx.Log {
+func (l *ChannelLog) traceToLog(t *httpx.Trace) *httpx.Log {
 	return httpx.NewLog(t, 2048, 50000, nil)
 }

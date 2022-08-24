@@ -10,18 +10,18 @@ import (
 )
 
 // RequestHTTP does the given request, logging the trace, and returns the response
-func RequestHTTP(req *http.Request, clog *courier.ChannelLogger) (*http.Response, []byte, error) {
+func RequestHTTP(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
 	return RequestHTTPWithClient(utils.GetHTTPClient(), req, clog)
 }
 
 // RequestHTTPInsecure does the given request using an insecure client that does not validate SSL certificates,
 // logging the trace, and returns the response
-func RequestHTTPInsecure(req *http.Request, clog *courier.ChannelLogger) (*http.Response, []byte, error) {
+func RequestHTTPInsecure(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
 	return RequestHTTPWithClient(utils.GetInsecureHTTPClient(), req, clog)
 }
 
 // RequestHTTP does the given request using the given client, logging the trace, and returns the response
-func RequestHTTPWithClient(client *http.Client, req *http.Request, clog *courier.ChannelLogger) (*http.Response, []byte, error) {
+func RequestHTTPWithClient(client *http.Client, req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
 	var resp *http.Response
 	var body []byte
 

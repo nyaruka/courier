@@ -77,7 +77,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receiveVerify handles Facebook's webhook verification callback
-func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	mode := r.URL.Query().Get("hub.mode")
 
 	// this isn't a subscribe verification, that's an error
@@ -206,7 +206,7 @@ type moPayload struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -473,7 +473,7 @@ type mtQuickReply struct {
 	ContentType string `json:"content_type"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	// can't do anything without an access token
 	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if accessToken == "" {
@@ -615,7 +615,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 }
 
 // DescribeURN looks up URN metadata for new contacts
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLogger) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLog) (map[string]string, error) {
 	// can't do anything with facebook refs, ignore them
 	if urn.IsFacebookRef() {
 		return map[string]string{}, nil

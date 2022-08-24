@@ -172,7 +172,7 @@ type eventPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &eventPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -496,7 +496,7 @@ type mtErrorPayload struct {
 const maxMsgLength = 4096
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	conn := h.Backend().RedisPool().Get()
 	defer conn.Close()
 
@@ -554,7 +554,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return status, nil
 }
 
-func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLogger) ([]interface{}, error) {
+func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]interface{}, error) {
 	var payloads []interface{}
 	var err error
 
@@ -834,7 +834,7 @@ func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLogger) ([]
 }
 
 // fetchMediaID tries to fetch the id for the uploaded media, setting the result in redis.
-func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string, clog *courier.ChannelLogger) (string, error) {
+func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string, clog *courier.ChannelLog) (string, error) {
 	// check in cache first
 	rc := h.Backend().RedisPool().Get()
 	defer rc.Close()
@@ -905,7 +905,7 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string, clog 
 	return mediaID, nil
 }
 
-func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload interface{}, clog *courier.ChannelLogger) (string, string, error) {
+func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload interface{}, clog *courier.ChannelLog) (string, string, error) {
 	jsonBody, err := json.Marshal(payload)
 
 	if err != nil {
@@ -1082,7 +1082,7 @@ type mtContactCheckPayload struct {
 	ForceCheck bool     `json:"force_check"`
 }
 
-func checkWhatsAppContact(channel courier.Channel, baseURL string, urn urns.URN, clog *courier.ChannelLogger) ([]byte, error) {
+func checkWhatsAppContact(channel courier.Channel, baseURL string, urn urns.URN, clog *courier.ChannelLog) ([]byte, error) {
 	payload := mtContactCheckPayload{
 		Blocking:   "wait",
 		Contacts:   []string{fmt.Sprintf("+%s", urn.Path())},

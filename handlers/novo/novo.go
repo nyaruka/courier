@@ -45,7 +45,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// check authentication
 	secret := c.StringConfigForKey(courier.ConfigSecret, "")
 	if secret != "" {
@@ -78,7 +78,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	merchantID := msg.Channel().StringConfigForKey(configMerchantId, "")
 	if merchantID == "" {
 		return nil, fmt.Errorf("no merchant_id set for NV channel")

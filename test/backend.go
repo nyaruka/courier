@@ -34,7 +34,7 @@ type MockBackend struct {
 	outgoingMsgs    []courier.Msg
 	msgStatuses     []courier.MsgStatus
 	channelEvents   []courier.ChannelEvent
-	channelLogs     []*courier.ChannelLogger
+	channelLogs     []*courier.ChannelLog
 	lastContactName string
 	sentMsgs        map[courier.MsgID]bool
 	seenExternalIDs []string
@@ -74,9 +74,9 @@ func NewMockBackend() *MockBackend {
 	}
 }
 
-func (mb *MockBackend) ChannelLogs() []*courier.ChannelLogger { return mb.channelLogs }
-func (mb *MockBackend) MsgStatuses() []courier.MsgStatus      { return mb.msgStatuses }
-func (mb *MockBackend) ClearMsgStatuses()                     { mb.msgStatuses = nil }
+func (mb *MockBackend) ChannelLogs() []*courier.ChannelLog { return mb.channelLogs }
+func (mb *MockBackend) MsgStatuses() []courier.MsgStatus   { return mb.msgStatuses }
+func (mb *MockBackend) ClearMsgStatuses()                  { mb.msgStatuses = nil }
 
 // GetLastQueueMsg returns the last message queued to the server
 func (mb *MockBackend) GetLastQueueMsg() (courier.Msg, error) {
@@ -95,7 +95,7 @@ func (mb *MockBackend) GetLastChannelEvent() (courier.ChannelEvent, error) {
 }
 
 // GetLastChannelLog returns the last channel log written to the server
-func (mb *MockBackend) GetLastChannelLog() (*courier.ChannelLogger, error) {
+func (mb *MockBackend) GetLastChannelLog() (*courier.ChannelLog, error) {
 	if len(mb.channelLogs) == 0 {
 		return nil, errors.New("no channel logs")
 	}
@@ -182,7 +182,7 @@ func (mb *MockBackend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.
 }
 
 // WriteChannelLog writes the passed in channel log to the DB
-func (mb *MockBackend) WriteChannelLog(ctx context.Context, clog *courier.ChannelLogger) error {
+func (mb *MockBackend) WriteChannelLog(ctx context.Context, clog *courier.ChannelLog) error {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 

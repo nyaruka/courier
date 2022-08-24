@@ -60,7 +60,7 @@ type mtResponse struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	publicKey := msg.Channel().StringConfigForKey(configPublicKey, "")
 	if publicKey == "" {
 		return nil, fmt.Errorf("no public_key set for MG channel")
