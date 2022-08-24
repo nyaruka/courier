@@ -189,7 +189,7 @@ func (w *Sender) sendMessage(msg Msg) {
 	}
 
 	var status MsgStatus
-	logger := NewChannelLoggerForSend(msg)
+	clog := NewChannelLogForSend(msg)
 
 	if sent {
 		// if this message was already sent, create a wired status for it
@@ -197,13 +197,13 @@ func (w *Sender) sendMessage(msg Msg) {
 		log.Warning("duplicate send, marking as wired")
 	} else {
 		// send our message
-		status, err = server.SendMsg(sendCTX, msg, logger)
+		status, err = server.SendMsg(sendCTX, msg, clog)
 		duration := time.Since(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
 		if err != nil {
 			log.WithError(err).WithField("elapsed", duration).Error("error sending message")
-			logger.Error(err)
+			clog.Error(err)
 
 			// possible for handlers to only return an error in which case we construct an error status
 			if status == nil {
@@ -231,7 +231,7 @@ func (w *Sender) sendMessage(msg Msg) {
 	}
 
 	// write our logs as well
-	err = backend.WriteChannelLogs(writeCTX, logger.Logs())
+	err = backend.WriteChannelLog(writeCTX, clog)
 	if err != nil {
 		log.WithError(err).Info("error writing msg logs")
 	}

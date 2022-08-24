@@ -51,7 +51,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateForm(payload, r)
 	if err != nil {
@@ -80,10 +80,10 @@ type mtPayload struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
-	token, err := h.FetchToken(ctx, msg.Channel(), msg, logger)
+	token, err := h.FetchToken(ctx, msg.Channel(), msg, clog)
 	if err != nil {
 		return status, errors.Wrapf(err, "unable to fetch token")
 	}
@@ -111,7 +111,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
@@ -133,7 +133,7 @@ type tokenResponse struct {
 }
 
 // FetchToken gets the current token for this channel, either from Redis if cached or by requesting it
-func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg courier.Msg, logger *courier.ChannelLogger) (string, error) {
+func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg courier.Msg, clog *courier.ChannelLogger) (string, error) {
 	// first check whether we have it in redis
 	conn := h.Backend().RedisPool().Get()
 	token, err := redis.String(conn.Do("GET", fmt.Sprintf("hm_token_%s", channel.UUID())))
@@ -166,7 +166,7 @@ func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg c
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return "", errors.Wrapf(err, "error making token request")
 	}

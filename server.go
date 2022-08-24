@@ -203,7 +203,7 @@ func (s *server) Stop() error {
 	return nil
 }
 
-func (s *server) SendMsg(ctx context.Context, msg Msg, logger *ChannelLogger) (MsgStatus, error) {
+func (s *server) SendMsg(ctx context.Context, msg Msg, clog *ChannelLogger) (MsgStatus, error) {
 	// find the handler for this message type
 	handler, found := activeHandlers[msg.Channel().ChannelType()]
 	if !found {
@@ -211,7 +211,7 @@ func (s *server) SendMsg(ctx context.Context, msg Msg, logger *ChannelLogger) (M
 	}
 
 	// have the handler send it
-	return handler.Send(ctx, msg, logger)
+	return handler.Send(ctx, msg, clog)
 }
 
 func (s *server) WaitGroup() *sync.WaitGroup { return s.waitGroup }
@@ -298,7 +298,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			}
 		}()
 
-		logger := NewChannelLogger(ChannelLogTypeUnknown, channel)
+		logger := NewChannelLog(ChannelLogTypeUnknown, channel)
 
 		events, hErr := handlerFunc(ctx, channel, recorder.ResponseWriter, r, logger)
 		duration := time.Since(start)
@@ -347,7 +347,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 				}
 			}
 
-			if err := s.backend.WriteChannelLogs(ctx, logger.Logs()); err != nil {
+			if err := s.backend.WriteChannelLog(ctx, logger); err != nil {
 				logrus.WithError(err).Error("error writing channel log")
 			}
 		}

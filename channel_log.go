@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 )
 
@@ -24,8 +25,8 @@ func SanitizeBody(body string) string {
 	return body
 }
 
-// NewChannelLogFromTrace creates a new channel log for the passed in channel, id, and http trace
-func NewChannelLogFromTrace(description string, channel Channel, msgID MsgID, trace *httpx.Trace) *ChannelLog {
+// NewLegacyChannelLog creates a new channel log for the passed in channel, id, and http trace
+func NewLegacyChannelLog(description string, channel Channel, msgID MsgID, trace *httpx.Trace) *ChannelLog {
 	log := &ChannelLog{
 		Description: description,
 		Channel:     channel,
@@ -45,7 +46,7 @@ func NewChannelLogFromTrace(description string, channel Channel, msgID MsgID, tr
 	return log
 }
 
-func newChannelLogFromError(description string, channel Channel, msgID MsgID, elapsed time.Duration, err error) *ChannelLog {
+func newLegacyChannelLogFromError(description string, channel Channel, msgID MsgID, elapsed time.Duration, err error) *ChannelLog {
 	return &ChannelLog{
 		Description: description,
 		Channel:     channel,
@@ -113,17 +114,20 @@ type ChannelLogger struct {
 	channel Channel
 	msgID   MsgID
 
-	traces []*httpx.Trace
-	errors []string
-	logs   []*ChannelLog
+	traces    []*httpx.Trace
+	errors    []string
+	createdOn time.Time
+
+	// deprecated
+	logs []*ChannelLog
 }
 
-func NewChannelLoggerForSend(msg Msg) *ChannelLogger {
-	return &ChannelLogger{type_: ChannelLogTypeMsgSend, channel: msg.Channel(), msgID: msg.ID()}
+func NewChannelLogForSend(msg Msg) *ChannelLogger {
+	return &ChannelLogger{type_: ChannelLogTypeMsgSend, channel: msg.Channel(), msgID: msg.ID(), createdOn: dates.Now()}
 }
 
-func NewChannelLogger(t ChannelLogType, channel Channel) *ChannelLogger {
-	return &ChannelLogger{type_: t, channel: channel}
+func NewChannelLog(t ChannelLogType, channel Channel) *ChannelLogger {
+	return &ChannelLogger{type_: t, channel: channel, createdOn: dates.Now()}
 }
 
 func (l *ChannelLogger) SetType(t ChannelLogType) {
@@ -140,7 +144,7 @@ func (l *ChannelLogger) Recorder(r *httpx.Recorder) {
 	l.traces = append([]*httpx.Trace{r.Trace}, l.traces...)
 
 	if l.channel != nil {
-		l.logs = append(l.logs, NewChannelLogFromTrace(logTypeDescriptions[l.type_], l.channel, l.msgID, r.Trace))
+		l.logs = append(l.logs, NewLegacyChannelLog(logTypeDescriptions[l.type_], l.channel, l.msgID, r.Trace))
 	}
 }
 
@@ -149,7 +153,7 @@ func (l *ChannelLogger) HTTP(t *httpx.Trace) {
 	l.traces = append(l.traces, t)
 
 	if l.channel != nil {
-		l.logs = append(l.logs, NewChannelLogFromTrace(logTypeDescriptions[l.type_], l.channel, l.msgID, t))
+		l.logs = append(l.logs, NewLegacyChannelLog(logTypeDescriptions[l.type_], l.channel, l.msgID, t))
 	}
 }
 
@@ -161,15 +165,27 @@ func (l *ChannelLogger) Error(err error) {
 		if len(l.logs) > 0 && l.logs[len(l.logs)-1].Error == "" {
 			l.logs[len(l.logs)-1].Error = err.Error()
 		} else {
-			l.logs = append(l.logs, newChannelLogFromError(logTypeDescriptions[l.type_], l.channel, l.msgID, 0, err))
+			l.logs = append(l.logs, newLegacyChannelLogFromError(logTypeDescriptions[l.type_], l.channel, l.msgID, 0, err))
 		}
 	}
+}
+
+func (l *ChannelLogger) Type() ChannelLogType {
+	return l.type_
+}
+
+func (l *ChannelLogger) Traces() []*httpx.Trace {
+	return l.traces
 }
 
 func (l *ChannelLogger) Errors() []string {
 	return l.errors
 }
 
-func (l *ChannelLogger) Logs() []*ChannelLog {
+func (l *ChannelLogger) LegacyLogs() []*ChannelLog {
 	return l.logs
+}
+
+func (l *ChannelLogger) CreatedOn() time.Time {
+	return l.createdOn
 }

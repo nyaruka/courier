@@ -36,7 +36,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	if username == "" || password == "" {
@@ -72,7 +72,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		return nil, err
 	}
 
-	resp, _, err := handlers.RequestHTTP(req, logger)
+	resp, _, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}

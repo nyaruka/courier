@@ -62,8 +62,8 @@ type Backend interface {
 	// WriteChannelEvent writes the passed in channel even returning any error
 	WriteChannelEvent(context.Context, ChannelEvent) error
 
-	// WriteChannelLogs writes the passed in channel logs to our backend
-	WriteChannelLogs(context.Context, []*ChannelLog) error
+	// WriteChannelLog writes the passed in channel log to our backend
+	WriteChannelLog(context.Context, *ChannelLogger) error
 
 	// PopNextOutgoingMsg returns the next message that needs to be sent, callers should call MarkOutgoingMsgComplete with the
 	// returned message when they have dealt with the message (regardless of whether it was sent or not)

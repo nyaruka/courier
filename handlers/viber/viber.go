@@ -89,7 +89,7 @@ type welcomeMessagePayload struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -309,7 +309,7 @@ type mtPayload struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if authToken == "" {
 		return nil, fmt.Errorf("missing auth token in config")
@@ -375,7 +375,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 				msgText = ""
 
 			default:
-				logger.Error(fmt.Errorf("unknown media type: %s", mediaType))
+				clog.Error(fmt.Errorf("unknown media type: %s", mediaType))
 			}
 
 		} else {
@@ -411,17 +411,17 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 		responseStatus, err := jsonparser.GetInt(respBody, "status")
 		if err != nil {
-			logger.Error(errors.Errorf("received invalid JSON response"))
+			clog.Error(errors.Errorf("received invalid JSON response"))
 			return status, nil
 		}
 		if responseStatus != 0 {
-			logger.Error(errors.Errorf("received non-0 status: '%d'", responseStatus))
+			clog.Error(errors.Errorf("received non-0 status: '%d'", responseStatus))
 			return status, nil
 		}
 

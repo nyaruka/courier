@@ -54,7 +54,7 @@ type receiveForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	form := &receiveForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -89,7 +89,7 @@ type registerForm struct {
 }
 
 // registerContact is our HTTP handler function for when a contact is registered (or renewed)
-func (h *handler) registerContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) registerContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	form := &registerForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -135,7 +135,7 @@ type mtNotification struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
 	if title == "" {
 		return nil, fmt.Errorf("no FCM_TITLE set for FCM channel")
@@ -194,7 +194,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("key=%s", fcmKey))
 
-		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
@@ -202,7 +202,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		// was this successful
 		success, _ := jsonparser.GetInt(respBody, "success")
 		if success != 1 {
-			logger.Error(errors.Errorf("received non-1 value for success in response"))
+			clog.Error(errors.Errorf("received non-1 value for success in response"))
 			return status, nil
 		}
 
@@ -210,7 +210,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		if i == 0 {
 			externalID, err := jsonparser.GetInt(respBody, "multicast_id")
 			if err != nil {
-				logger.Error(errors.Errorf("unable to get multicast_id from response"))
+				clog.Error(errors.Errorf("unable to get multicast_id from response"))
 				return status, nil
 			}
 			status.SetExternalID(fmt.Sprintf("%d", externalID))

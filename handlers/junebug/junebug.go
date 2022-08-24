@@ -56,7 +56,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -108,7 +108,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveEvent is our HTTP handler function for incoming events
-func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &eventPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -154,7 +154,7 @@ type mtPayload struct {
 	EventAuthToken string `json:"event_auth_token,omitempty"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
 		return nil, fmt.Errorf("No send_url set for JN channel")
@@ -197,14 +197,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(username, password)
 
-		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		externalID, err := jsonparser.GetString(respBody, "result", "message_id")
 		if err != nil {
-			logger.Error(errors.Errorf("unable to get result.message_id from body"))
+			clog.Error(errors.Errorf("unable to get result.message_id from body"))
 			return status, nil
 		}
 

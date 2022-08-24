@@ -312,7 +312,7 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 }
 
 // receiveVerify handles Facebook's webhook verification callback
-func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	mode := r.URL.Query().Get("hub.mode")
 
 	// this isn't a subscribe verification, that's an error
@@ -354,7 +354,7 @@ func resolveMediaURL(mediaID string, token string) (string, error) {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	err := h.validateSignature(r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -803,17 +803,17 @@ type mtQuickReply struct {
 	ContentType string `json:"content_type"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	if msg.Channel().ChannelType() == "FBA" || msg.Channel().ChannelType() == "IG" {
-		return h.sendFacebookInstagramMsg(ctx, msg, logger)
+		return h.sendFacebookInstagramMsg(ctx, msg, clog)
 	} else if msg.Channel().ChannelType() == "WAC" {
-		return h.sendCloudAPIWhatsappMsg(ctx, msg, logger)
+		return h.sendCloudAPIWhatsappMsg(ctx, msg, clog)
 	}
 
 	return nil, fmt.Errorf("unssuported channel type")
 }
 
-func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	// can't do anything without an access token
 	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if accessToken == "" {
@@ -894,14 +894,14 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		externalID, err := jsonparser.GetString(respBody, "message_id")
 		if err != nil {
-			logger.Error(errors.Errorf("unable to get message_id from body"))
+			clog.Error(errors.Errorf("unable to get message_id from body"))
 			return status, nil
 		}
 
@@ -911,7 +911,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 			if msg.URN().IsFacebookRef() {
 				recipientID, err := jsonparser.GetString(respBody, "recipient_id")
 				if err != nil {
-					logger.Error(errors.Errorf("unable to get recipient_id from body"))
+					clog.Error(errors.Errorf("unable to get recipient_id from body"))
 					return status, nil
 				}
 
@@ -919,29 +919,29 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 
 				realIDURN, err := urns.NewFacebookURN(recipientID)
 				if err != nil {
-					logger.Error(errors.Errorf("unable to make facebook urn from %s", recipientID))
+					clog.Error(errors.Errorf("unable to make facebook urn from %s", recipientID))
 				}
 
 				contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), "", "")
 				if err != nil {
-					logger.Error(errors.Errorf("unable to get contact for %s", msg.URN().String()))
+					clog.Error(errors.Errorf("unable to get contact for %s", msg.URN().String()))
 				}
 				realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN)
 				if err != nil {
-					logger.Error(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
+					clog.Error(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
 				}
 				referralIDExtURN, err := urns.NewURNFromParts(urns.ExternalScheme, referralID, "", "")
 				if err != nil {
-					logger.Error(errors.Errorf("unable to make ext urn from %s", referralID))
+					clog.Error(errors.Errorf("unable to make ext urn from %s", referralID))
 				}
 				extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN)
 				if err != nil {
-					logger.Error(errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
+					clog.Error(errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
 				}
 
 				referralFacebookURN, err := h.Backend().RemoveURNfromContact(ctx, msg.Channel(), contact, msg.URN())
 				if err != nil {
-					logger.Error(errors.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
+					clog.Error(errors.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
 				}
 
 			}
@@ -1055,7 +1055,7 @@ type wacMTResponse struct {
 	} `json:"messages"`
 }
 
-func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	// can't do anything without an access token
 	accessToken := h.Server().Config().WhatsappAdminSystemUserToken
 
@@ -1274,7 +1274,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
@@ -1282,7 +1282,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 		respPayload := &wacMTResponse{}
 		err = json.Unmarshal(respBody, respPayload)
 		if err != nil {
-			logger.Error(errors.Errorf("unable to unmarshal response body"))
+			clog.Error(errors.Errorf("unable to unmarshal response body"))
 			return status, nil
 		}
 		externalID := respPayload.Messages[0].ID
@@ -1297,7 +1297,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 }
 
 // DescribeURN looks up URN metadata for new contacts
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, logger *courier.ChannelLogger) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLogger) (map[string]string, error) {
 	if channel.ChannelType() == "WAC" {
 		return map[string]string{}, nil
 	}
@@ -1327,7 +1327,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	u.RawQuery = query.Encode()
 	req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return nil, errors.New("unable to look up contact data")
 	}

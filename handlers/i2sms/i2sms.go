@@ -42,7 +42,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receive is our handler for MO messages
-func (h *handler) receive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	err := r.ParseForm()
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
@@ -83,7 +83,7 @@ type mtResponse struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for I2 channel")
@@ -116,7 +116,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
-		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
@@ -125,7 +125,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		response := &mtResponse{}
 		err = json.Unmarshal(respBody, response)
 		if err != nil {
-			logger.Error(err)
+			clog.Error(err)
 			break
 		}
 
@@ -135,7 +135,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			status.SetExternalID(response.Result.SessionID)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			logger.Error(fmt.Errorf("Received invalid response code: %s", response.ErrorCode))
+			clog.Error(fmt.Errorf("Received invalid response code: %s", response.ErrorCode))
 			break
 		}
 	}

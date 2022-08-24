@@ -246,18 +246,18 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				tc.SendPrep(server, handler, channel, msg)
 			}
 
-			logger := courier.NewChannelLoggerForSend(msg)
+			clog := courier.NewChannelLogForSend(msg)
 
 			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
-			status, err := handler.Send(ctx, msg, logger)
+			status, err := handler.Send(ctx, msg, clog)
 			cancel()
 
 			// we don't currently distinguish between a returned error and logged errors
 			if err != nil {
-				logger.Error(err)
+				clog.Error(err)
 			}
 
-			assert.Equal(t, tc.ExpectedErrors, logger.Errors(), "unexpected errors logged")
+			assert.Equal(t, tc.ExpectedErrors, clog.Errors(), "unexpected errors logged")
 
 			if tc.ExpectedRequestPath != "" {
 				require.NotNil(testRequest, "path should not be nil")

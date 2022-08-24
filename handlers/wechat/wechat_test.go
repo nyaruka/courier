@@ -268,7 +268,7 @@ func TestDescribe(t *testing.T) {
 	s := newServer(mb)
 	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("WC"), "WeChat")}
 	handler.Initialize(s)
-	logger := courier.NewChannelLogger(courier.ChannelLogTypeUnknown, testChannels[0])
+	logger := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0])
 
 	tcs := []struct {
 		urn              urns.URN

@@ -961,7 +961,7 @@ func (ts *BackendTestSuite) TestChanneLog() {
 	trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
 	ts.NoError(err)
 
-	log := courier.NewChannelLogFromTrace("Message Send Error", knChannel, courier.NilMsgID, trace)
+	log := courier.NewLegacyChannelLog("Message Send Error", knChannel, courier.NilMsgID, trace)
 
 	err = writeChannelLog(ctx, ts.b, log)
 	ts.NoError(err)

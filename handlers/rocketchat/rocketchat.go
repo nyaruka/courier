@@ -57,7 +57,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	// check authorization
 	secret := channel.StringConfigForKey(configSecret, "")
 	if fmt.Sprintf("Token %s", secret) != r.Header.Get("Authorization") {
@@ -109,7 +109,7 @@ type mtPayload struct {
 	Attachments []Attachment `json:"attachments,omitempty"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	baseURL := msg.Channel().StringConfigForKey(configBaseURL, "")
 	secret := msg.Channel().StringConfigForKey(configSecret, "")
 	botUsername := msg.Channel().StringConfigForKey(configBotUsername, "")
@@ -139,7 +139,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", secret))
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}

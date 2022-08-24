@@ -37,20 +37,20 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// {
-// 	"messages": [
-// 	  {
-// 		"to": "+61411111111",
-// 		"source": "sdk",
-// 		"body": "body"
-// 	  },
-// 	  {
-// 		"list_id": 0,
-// 		"source": "sdk",
-// 		"body": "body"
-// 	  }
-// 	]
-// }
+//	{
+//		"messages": [
+//		  {
+//			"to": "+61411111111",
+//			"source": "sdk",
+//			"body": "body"
+//		  },
+//		  {
+//			"list_id": 0,
+//			"source": "sdk",
+//			"body": "body"
+//		  }
+//		]
+//	}
 type mtPayload struct {
 	Messages [1]struct {
 		To     string `json:"to"`
@@ -61,7 +61,7 @@ type mtPayload struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("Missing 'username' config for CS channel")
@@ -93,7 +93,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(username, password)
 
-		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
@@ -101,14 +101,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		// first read our status
 		s, err := jsonparser.GetString(respBody, "data", "messages", "[0]", "status")
 		if s != "SUCCESS" {
-			logger.Error(errors.Errorf("received non SUCCESS status: %s", s))
+			clog.Error(errors.Errorf("received non SUCCESS status: %s", s))
 			return status, nil
 		}
 
 		// then get our external id
 		id, err := jsonparser.GetString(respBody, "data", "messages", "[0]", "message_id")
 		if err != nil {
-			logger.Error(errors.Errorf("unable to get message_id for message"))
+			clog.Error(errors.Errorf("unable to get message_id for message"))
 			return status, nil
 		}
 
