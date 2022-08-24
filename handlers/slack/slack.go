@@ -62,7 +62,7 @@ func handleURLVerification(ctx context.Context, channel courier.Channel, w http.
 	return nil, nil
 }
 
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -85,7 +85,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 		attachmentURLs := make([]string, 0)
 		for _, file := range payload.Event.Files {
-			fileURL, err := h.resolveFile(ctx, channel, file, logger)
+			fileURL, err := h.resolveFile(ctx, channel, file, clog)
 			if err != nil {
 				courier.LogRequestError(r, channel, err)
 			} else {
@@ -105,7 +105,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 }
 
-func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file File, logger *courier.ChannelLogger) (string, error) {
+func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file File, clog *courier.ChannelLogger) (string, error) {
 	userToken := channel.StringConfigForKey(configUserToken, "")
 
 	fileApiURL := apiURL + "/files.sharedPublicURL"
@@ -119,7 +119,7 @@ func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", userToken))
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return "", errors.New("unable to resolve file")
 	}
@@ -148,7 +148,7 @@ func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file
 	return filePath, nil
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	botToken := msg.Channel().StringConfigForKey(configBotToken, "")
 	if botToken == "" {
 		return nil, fmt.Errorf("missing bot token for SL/slack channel")
@@ -157,25 +157,25 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
 	for _, attachment := range msg.Attachments() {
-		fileAttachment, err := parseAttachmentToFileParams(msg, attachment, logger)
+		fileAttachment, err := parseAttachmentToFileParams(msg, attachment, clog)
 		if err != nil {
-			logger.Error(err)
+			clog.Error(err)
 			return status, nil
 		}
 
 		if fileAttachment != nil {
-			err = sendFilePart(msg, botToken, fileAttachment, logger)
+			err = sendFilePart(msg, botToken, fileAttachment, clog)
 			if err != nil {
-				logger.Error(err)
+				clog.Error(err)
 				return status, nil
 			}
 		}
 	}
 
 	if msg.Text() != "" {
-		err := sendTextMsgPart(msg, botToken, logger)
+		err := sendTextMsgPart(msg, botToken, clog)
 		if err != nil {
-			logger.Error(err)
+			clog.Error(err)
 			return status, nil
 		}
 	}
@@ -184,7 +184,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 	return status, nil
 }
 
-func sendTextMsgPart(msg courier.Msg, token string, logger *courier.ChannelLogger) error {
+func sendTextMsgPart(msg courier.Msg, token string, clog *courier.ChannelLogger) error {
 	sendURL := apiURL + "/chat.postMessage"
 
 	msgPayload := &mtPayload{
@@ -204,7 +204,7 @@ func sendTextMsgPart(msg courier.Msg, token string, logger *courier.ChannelLogge
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return errors.New("error sending message")
 	}
@@ -224,7 +224,7 @@ func sendTextMsgPart(msg courier.Msg, token string, logger *courier.ChannelLogge
 	return nil
 }
 
-func parseAttachmentToFileParams(msg courier.Msg, attachment string, logger *courier.ChannelLogger) (*FileParams, error) {
+func parseAttachmentToFileParams(msg courier.Msg, attachment string, clog *courier.ChannelLogger) (*FileParams, error) {
 	_, attURL := handlers.SplitAttachment(attachment)
 
 	req, err := http.NewRequest(http.MethodGet, attURL, nil)
@@ -232,7 +232,7 @@ func parseAttachmentToFileParams(msg courier.Msg, attachment string, logger *cou
 		return nil, errors.Wrapf(err, "error building file request")
 	}
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return nil, errors.New("error fetching attachment")
 	}
@@ -244,7 +244,7 @@ func parseAttachmentToFileParams(msg courier.Msg, attachment string, logger *cou
 	return &FileParams{File: respBody, FileName: filename, Channels: msg.URN().Path()}, nil
 }
 
-func sendFilePart(msg courier.Msg, token string, fileParams *FileParams, logger *courier.ChannelLogger) error {
+func sendFilePart(msg courier.Msg, token string, fileParams *FileParams, clog *courier.ChannelLogger) error {
 	uploadURL := apiURL + "/files.upload"
 
 	body := &bytes.Buffer{}
@@ -276,7 +276,7 @@ func sendFilePart(msg courier.Msg, token string, fileParams *FileParams, logger 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	req.Header.Add("Content-Type", writer.FormDataContentType())
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return errors.New("error uploading file to slack")
 	}
@@ -294,7 +294,7 @@ func sendFilePart(msg courier.Msg, token string, fileParams *FileParams, logger 
 }
 
 // DescribeURN handles Slack user details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, logger *courier.ChannelLogger) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLogger) (map[string]string, error) {
 	resource := "/users.info"
 	urlStr := apiURL + resource
 
@@ -307,7 +307,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	q.Add("user", urn.Path())
 	req.URL.RawQuery = q.Encode()
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return nil, errors.New("unable to look up user info")
 	}

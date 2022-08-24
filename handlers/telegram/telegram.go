@@ -49,7 +49,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -102,15 +102,15 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			}
 			photo = payload.Message.Photo[i]
 		}
-		mediaURL, err = h.resolveFileID(ctx, channel, photo.FileID, logger)
+		mediaURL, err = h.resolveFileID(ctx, channel, photo.FileID, clog)
 	} else if payload.Message.Video != nil {
-		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Video.FileID, logger)
+		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Video.FileID, clog)
 	} else if payload.Message.Voice != nil {
-		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Voice.FileID, logger)
+		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Voice.FileID, clog)
 	} else if payload.Message.Sticker != nil {
-		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Sticker.Thumb.FileID, logger)
+		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Sticker.Thumb.FileID, clog)
 	} else if payload.Message.Document != nil {
-		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Document.FileID, logger)
+		mediaURL, err = h.resolveFileID(ctx, channel, payload.Message.Document.FileID, clog)
 	} else if payload.Message.Venue != nil {
 		text = utils.JoinNonEmpty(", ", payload.Message.Venue.Title, payload.Message.Venue.Address)
 		mediaURL = fmt.Sprintf("geo:%f,%f", payload.Message.Location.Latitude, payload.Message.Location.Longitude)
@@ -149,7 +149,7 @@ type mtResponse struct {
 	} `json:"result"`
 }
 
-func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, keyboard *ReplyKeyboardMarkup, logger *courier.ChannelLogger) (string, bool, error) {
+func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, keyboard *ReplyKeyboardMarkup, clog *courier.ChannelLogger) (string, bool, error) {
 	// either include or remove our keyboard
 	if keyboard == nil {
 		form.Add("reply_markup", `{"remove_keyboard":true}`)
@@ -164,7 +164,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, respBody, _ := handlers.RequestHTTP(req, logger)
+	resp, respBody, _ := handlers.RequestHTTP(req, clog)
 
 	response := &mtResponse{}
 	err = json.Unmarshal(respBody, response)
@@ -184,7 +184,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	confAuth := msg.Channel().ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
@@ -227,7 +227,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			"text":    []string{msg.Text()},
 		}
 
-		externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendMessage", form, msgKeyBoard, logger)
+		externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendMessage", form, msgKeyBoard, clog)
 		if botBlocked {
 			status.SetStatus(courier.MsgFailed)
 			channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -253,7 +253,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 				"photo":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
-			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, attachmentKeyBoard, logger)
+			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, attachmentKeyBoard, clog)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -269,7 +269,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 				"video":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
-			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendVideo", form, attachmentKeyBoard, logger)
+			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendVideo", form, attachmentKeyBoard, clog)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -285,7 +285,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 				"audio":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
-			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendAudio", form, attachmentKeyBoard, logger)
+			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendAudio", form, attachmentKeyBoard, clog)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -301,7 +301,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 				"document": []string{attachment.URL},
 				"caption":  []string{caption},
 			}
-			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendDocument", form, attachmentKeyBoard, logger)
+			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendDocument", form, attachmentKeyBoard, clog)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
@@ -312,7 +312,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			hasError = err != nil
 
 		default:
-			logger.Error(fmt.Errorf("unknown attachment content type: %s", attachment.ContentType))
+			clog.Error(fmt.Errorf("unknown attachment content type: %s", attachment.ContentType))
 			hasError = true
 		}
 	}
@@ -324,7 +324,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 	return status, nil
 }
 
-func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fileID string, logger *courier.ChannelLogger) (string, error) {
+func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fileID string, clog *courier.ChannelLogger) (string, error) {
 	confAuth := channel.ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
@@ -343,7 +343,7 @@ func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fi
 		courier.LogRequestError(req, channel, err)
 	}
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return "", errors.New("unable to resolve file")
 	}

@@ -133,7 +133,7 @@ type tokenResponse struct {
 }
 
 // FetchToken gets the current token for this channel, either from Redis if cached or by requesting it
-func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg courier.Msg, logger *courier.ChannelLogger) (string, error) {
+func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg courier.Msg, clog *courier.ChannelLogger) (string, error) {
 	// first check whether we have it in redis
 	conn := h.Backend().RedisPool().Get()
 	token, err := redis.String(conn.Do("GET", fmt.Sprintf("hm_token_%s", channel.UUID())))
@@ -166,7 +166,7 @@ func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg c
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return "", errors.Wrapf(err, "error making token request")
 	}

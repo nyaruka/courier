@@ -193,7 +193,7 @@ type mediaUploadInfoPayload struct {
 }
 
 // receiveEvent handles request event type
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	// read request body
 	bodyBytes, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
 
@@ -273,7 +273,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // DescribeURN handles VK contact details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, logger *courier.ChannelLogger) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLogger) (map[string]string, error) {
 	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionGetUser, nil)
 	if err != nil {
 		return nil, err
@@ -285,7 +285,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 
 	req.URL.RawQuery = params.Encode()
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return nil, errors.New("unable to look up user info")
 	}
@@ -386,14 +386,14 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 	return ""
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
 	params := buildApiBaseParams(msg.Channel())
 	params.Set(paramUserId, msg.URN().Path())
 	params.Set(paramRandomId, msg.ID().String())
 
-	text, attachments := buildTextAndAttachmentParams(msg, logger)
+	text, attachments := buildTextAndAttachmentParams(msg, clog)
 	params.Set(paramMessage, text)
 	params.Set(paramAttachments, attachments)
 
@@ -411,7 +411,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 
 	req.URL.RawQuery = params.Encode()
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}
@@ -428,7 +428,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 }
 
 // buildTextAndAttachmentParams builds msg text with attachment links (if needed) and attachments list param, also returns the errors that occurred
-func buildTextAndAttachmentParams(msg courier.Msg, logger *courier.ChannelLogger) (string, string) {
+func buildTextAndAttachmentParams(msg courier.Msg, clog *courier.ChannelLogger) (string, string) {
 	var msgAttachments []string
 
 	textBuf := bytes.Buffer{}
@@ -449,7 +449,7 @@ func buildTextAndAttachmentParams(msg courier.Msg, logger *courier.ChannelLogger
 			if attachment, err := handleMediaUploadAndGetAttachment(msg.Channel(), mediaTypeImage, mediaExt, mediaURL); err == nil {
 				msgAttachments = append(msgAttachments, attachment)
 			} else {
-				logger.Error(err)
+				clog.Error(err)
 			}
 
 		default:

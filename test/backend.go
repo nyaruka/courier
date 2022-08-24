@@ -182,11 +182,11 @@ func (mb *MockBackend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.
 }
 
 // WriteChannelLog writes the passed in channel log to the DB
-func (mb *MockBackend) WriteChannelLog(ctx context.Context, log *courier.ChannelLogger) error {
+func (mb *MockBackend) WriteChannelLog(ctx context.Context, clog *courier.ChannelLogger) error {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	mb.channelLogs = append(mb.channelLogs, log)
+	mb.channelLogs = append(mb.channelLogs, clog)
 	return nil
 }
 

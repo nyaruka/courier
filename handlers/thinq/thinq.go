@@ -55,7 +55,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	// get our params
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -103,7 +103,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	// get our params
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -129,7 +129,7 @@ type mtMessage struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	accountID := msg.Channel().StringConfigForKey(configAccountID, "")
 	if accountID == "" {
 		return nil, fmt.Errorf("no account id set for TQ channel")
@@ -166,7 +166,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(tokenUser, token)
 
-		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
@@ -174,7 +174,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		// try to get our external id
 		externalID, err := jsonparser.GetString(respBody, "guid")
 		if err != nil {
-			logger.Error(errors.New("Unable to read external ID"))
+			clog.Error(errors.New("Unable to read external ID"))
 			return status, nil
 		}
 		status.SetStatus(courier.MsgWired)
@@ -199,7 +199,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			req.Header.Set("Accept", "application/json")
 			req.SetBasicAuth(tokenUser, token)
 
-			resp, respBody, err := handlers.RequestHTTP(req, logger)
+			resp, respBody, err := handlers.RequestHTTP(req, clog)
 			if err != nil || resp.StatusCode/100 != 2 {
 				return status, nil
 			}
@@ -207,7 +207,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			// get our external id
 			externalID, err := jsonparser.GetString(respBody, "guid")
 			if err != nil {
-				logger.Error(errors.New("Unable to read external ID from guid field"))
+				clog.Error(errors.New("Unable to read external ID from guid field"))
 				return status, nil
 			}
 

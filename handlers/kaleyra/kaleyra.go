@@ -65,7 +65,7 @@ type moStatusForm struct {
 }
 
 // receiveMsg is our HTTP handler function for incoming messages
-func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	form := &moMsgForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -113,7 +113,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveStatus is our HTTP handler function for outgoing messages statuses
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	form := &moStatusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -137,7 +137,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	apiKey := msg.Channel().StringConfigForKey(configApiKey, "")
 
@@ -160,7 +160,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 
 			// download media
 			req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
-			resp, attBody, err := handlers.RequestHTTP(req, logger)
+			resp, attBody, err := handlers.RequestHTTP(req, clog)
 			if err != nil || resp.StatusCode/100 != 2 {
 				kwaErr = errors.New("unable to fetch media")
 				break
@@ -174,7 +174,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			part, err := writer.CreateFormFile("media", fileName)
 			_, err = io.Copy(part, bytes.NewReader(attBody))
 			if err != nil {
-				logger.Error(err)
+				clog.Error(err)
 				kwaErr = err
 				break
 			}
@@ -187,14 +187,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			for k, v := range baseForm {
 				part, err := writer.CreateFormField(k)
 				if err != nil {
-					logger.Error(err)
+					clog.Error(err)
 					kwaErr = err
 					break attachmentsLoop
 				}
 
 				_, err = part.Write([]byte(v))
 				if err != nil {
-					logger.Error(err)
+					clog.Error(err)
 					kwaErr = err
 					break attachmentsLoop
 				}
@@ -205,7 +205,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			// send multipart form
 			req, _ = http.NewRequest(http.MethodPost, sendURL, body)
 			req.Header.Set("Content-Type", writer.FormDataContentType())
-			kwaResp, kwaRespBody, kwaErr = handlers.RequestHTTP(req, logger)
+			kwaResp, kwaRespBody, kwaErr = handlers.RequestHTTP(req, clog)
 		}
 	} else {
 		form := url.Values{}
@@ -221,7 +221,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 
 		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		kwaResp, kwaRespBody, kwaErr = handlers.RequestHTTP(req, logger)
+		kwaResp, kwaRespBody, kwaErr = handlers.RequestHTTP(req, clog)
 	}
 
 	if kwaErr != nil || kwaResp.StatusCode/100 != 2 {

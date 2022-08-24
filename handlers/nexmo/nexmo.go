@@ -70,7 +70,7 @@ var statusMappings = map[string]courier.MsgStatusValue{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	form := &statusForm{}
 	handlers.DecodeAndValidateForm(form, r)
 
@@ -96,7 +96,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	form := &moForm{}
 	handlers.DecodeAndValidateForm(form, r)
 
@@ -117,7 +117,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	nexmoAPIKey := msg.Channel().StringConfigForKey(configNexmoAPIKey, "")
 	if nexmoAPIKey == "" {
 		return nil, fmt.Errorf("no nexmo API key set for NX channel")
@@ -163,7 +163,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			}
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-			resp, respBody, requestErr = handlers.RequestHTTP(req, logger)
+			resp, respBody, requestErr = handlers.RequestHTTP(req, clog)
 			matched := throttledRE.FindAllStringSubmatch(string(respBody), -1)
 			if len(matched) > 0 && len(matched[0]) > 0 {
 				sleepTime, _ := strconv.Atoi(matched[0][1])
@@ -179,7 +179,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 
 		nexmoStatus, err := jsonparser.GetString(respBody, "messages", "[0]", "status")
 		if err != nil || nexmoStatus != "0" {
-			logger.Error(errors.Errorf("failed to send message, received error status [%s]", nexmoStatus))
+			clog.Error(errors.Errorf("failed to send message, received error status [%s]", nexmoStatus))
 			return status, nil
 		}
 

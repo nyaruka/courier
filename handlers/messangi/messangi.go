@@ -46,11 +46,13 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-//<response>
+// <response>
+//
 //	<input>sendMT</input>
 //	<status>OK</status>
 //	<description>Completed</description>
-//</response>
+//
+// </response>
 type mtResponse struct {
 	Input       string `xml:"input"`
 	Status      string `xml:"status"`
@@ -58,7 +60,7 @@ type mtResponse struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	publicKey := msg.Channel().StringConfigForKey(configPublicKey, "")
 	if publicKey == "" {
 		return nil, fmt.Errorf("no public_key set for MG channel")
@@ -94,7 +96,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			return nil, err
 		}
 
-		resp, respBody, err := handlers.RequestHTTP(req, logger)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
@@ -103,7 +105,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		response := &mtResponse{}
 		err = xml.Unmarshal(respBody, response)
 		if err != nil {
-			logger.Error(err)
+			clog.Error(err)
 			break
 		}
 
@@ -112,7 +114,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			status.SetStatus(courier.MsgWired)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			logger.Error(fmt.Errorf("Received invalid response description: %s", response.Description))
+			clog.Error(fmt.Errorf("Received invalid response description: %s", response.Description))
 			break
 		}
 	}

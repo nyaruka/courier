@@ -65,7 +65,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receiveVerify handles Twitter's webhook verification callback
-func (h *handler) receiveVerify(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveVerify(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	crcToken := r.URL.Query().Get("crc_token")
 	if crcToken == "" {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf(`missing required 'crc_token' query parameter`))
@@ -134,7 +134,7 @@ type moPayload struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming events
-func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	// read our handle id
 	handleID := c.StringConfigForKey(configHandleID, "")
 	if handleID == "" {
@@ -255,7 +255,7 @@ type mtAttachment struct {
 	} `json:"media"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	apiKey := msg.Channel().StringConfigForKey(configAPIKey, "")
 	apiSecret := msg.Channel().StringConfigForKey(configAPISecret, "")
 	accessToken := msg.Channel().StringConfigForKey(configAccessToken, "")
@@ -295,12 +295,12 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 			mimeType, s3url := handlers.SplitAttachment(attachment)
 			mediaID := ""
 			if strings.HasPrefix(mimeType, "image") || strings.HasPrefix(mimeType, "video") {
-				mediaID, err = uploadMediaToTwitter(msg, mediaURL, mimeType, s3url, client, logger)
+				mediaID, err = uploadMediaToTwitter(msg, mediaURL, mimeType, s3url, client, clog)
 				if err != nil {
-					logger.Error(errors.Wrap(err, "unable to upload media to Twitter server"))
+					clog.Error(errors.Wrap(err, "unable to upload media to Twitter server"))
 				}
 			} else {
-				logger.Error(errors.New("unable to upload media, unsupported Twitter attachment"))
+				clog.Error(errors.New("unable to upload media, unsupported Twitter attachment"))
 			}
 
 			if mediaID != "" {
@@ -338,14 +338,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, logger *courier.Cha
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		resp, respBody, err := handlers.RequestHTTPWithClient(client, req, logger)
+		resp, respBody, err := handlers.RequestHTTPWithClient(client, req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		externalID, err := jsonparser.GetString(respBody, "event", "id")
 		if err != nil {
-			logger.Error(errors.Errorf("unable to get message_id from body"))
+			clog.Error(errors.Errorf("unable to get message_id from body"))
 			return status, nil
 		}
 
@@ -370,11 +370,11 @@ func generateSignature(secret string, content string) string {
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
-func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType string, attachmentURL string, client *http.Client, logger *courier.ChannelLogger) (string, error) {
+func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType string, attachmentURL string, client *http.Client, clog *courier.ChannelLogger) (string, error) {
 	// retrieve the media to be sent from S3
 	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
 
-	s3Resp, s3RespBody, err := handlers.RequestHTTP(req, logger)
+	s3Resp, s3RespBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || s3Resp.StatusCode/100 != 2 {
 		return "", err
 	}
@@ -404,7 +404,7 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 	twReq.Header.Set("Accept", "application/json")
 	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
 
-	twResp, twRespBody, err := handlers.RequestHTTPWithClient(client, twReq, logger)
+	twResp, twRespBody, err := handlers.RequestHTTPWithClient(client, twReq, clog)
 	if err != nil || twResp.StatusCode/100 != 2 {
 		return "", err
 	}
@@ -447,7 +447,7 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 	twReq.Header.Set("Accept", "application/json")
 	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
 
-	twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, logger)
+	twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, clog)
 	if err != nil || twResp.StatusCode/100 != 2 {
 		return "", err
 	}
@@ -466,7 +466,7 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 	twReq.Header.Set("Accept", "application/json")
 	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
 
-	twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, logger)
+	twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, clog)
 	if err != nil || twResp.StatusCode/100 != 2 {
 		return "", err
 	}
@@ -497,7 +497,7 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 		twReq.Header.Set("Accept", "application/json")
 		twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
 
-		twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, logger)
+		twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, clog)
 		if err != nil || twResp.StatusCode/100 != 2 {
 			return "", err
 		}
