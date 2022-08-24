@@ -6,6 +6,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 var (
@@ -27,26 +28,26 @@ var (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MT", "2020", "FR", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MT", "2020", "FR", nil),
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, Status: 200, Response: "Accepted",
-		Text: Sp("hello world"), URN: Sp("tel:+923161909799")},
-	{Label: "Invalid URN", URL: receiveURL, Data: receiveInvalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive Stop", URL: receiveURL, Data: receiveStop, Status: 200, Response: "Accepted",
-		URN: Sp("tel:+923161909799"), ChannelEvent: Sp("stop_contact")},
-	{Label: "Receive Missing From", URL: receiveURL, Data: receiveMissingFrom, Status: 400, Response: "missing required field 'Msisdn'"},
+	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+923161909799")},
+	{Label: "Invalid URN", URL: receiveURL, Data: receiveInvalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Receive Stop", URL: receiveURL, Data: receiveStop, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedURN: Sp("tel:+923161909799"), ChannelEvent: Sp("stop_contact")},
+	{Label: "Receive Missing From", URL: receiveURL, Data: receiveMissingFrom, ExpectedStatus: 400, ExpectedResponse: "missing required field 'Msisdn'"},
 
-	{Label: "Receive Part 2", URL: receiveURL, Data: receivePart2, Status: 200, Response: "received"},
-	{Label: "Receive Part 1", URL: receiveURL, Data: receivePart1, Status: 200, Response: "Accepted",
-		Text: Sp("hello world"), URN: Sp("tel:+923161909799")},
+	{Label: "Receive Part 2", URL: receiveURL, Data: receivePart2, ExpectedStatus: 200, ExpectedResponse: "received"},
+	{Label: "Receive Part 1", URL: receiveURL, Data: receivePart1, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+923161909799")},
 
-	{Label: "Status Delivered", URL: statusURL, Data: statusDelivered, Status: 200, Response: "Accepted",
-		ExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), MsgStatus: Sp("D")},
-	{Label: "Status Failed", URL: statusURL, Data: statusFailed, Status: 200, Response: "Accepted",
-		ExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), MsgStatus: Sp("F")},
-	{Label: "Status Missing ID", URL: statusURL, Data: statusMissingID, Status: 400, Response: "missing required field 'MsgId'"},
+	{Label: "Status Delivered", URL: statusURL, Data: statusDelivered, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), ExpectedMsgStatus: Sp("D")},
+	{Label: "Status Failed", URL: statusURL, Data: statusFailed, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), ExpectedMsgStatus: Sp("F")},
+	{Label: "Status Missing ID", URL: statusURL, Data: statusMissingID, ExpectedStatus: 400, ExpectedResponse: "missing required field 'MsgId'"},
 }
 
 func TestHandler(t *testing.T) {
@@ -63,11 +64,13 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: `{"results":[{"code": "0", "ticket": "externalID"}]}`, ResponseStatus: 200,
-		URLParams: map[string]string{
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"results":[{"code": "0", "ticket": "externalID"}]}`,
+		MockResponseStatus: 200,
+		ExpectedURLParams: map[string]string{
 			"msisdn":       "+250788383383",
 			"msg":          "Simple Message",
 			"username":     "Username",
@@ -75,33 +78,53 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"serviceid":    "2020",
 			"allowunicode": "true",
 		},
-		SendPrep: setSendURL},
-	{Label: "Unicode Send",
-		Text: "☺", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: `{"results":[{"code": "0", "ticket": "externalID"}]}`, ResponseStatus: 200,
-		URLParams: map[string]string{"msg": "☺"},
-		SendPrep:  setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "W",
-		ResponseBody: `{"results":[{"code": "0", "ticket": "externalID"}]}`, ResponseStatus: 200,
-		URLParams: map[string]string{"msg": "My pic!\nhttps://foo.bar/image.jpg"},
-		SendPrep:  setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Sending", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: `{"results":[{"code": "3", "ticket": "null"}]}`, ResponseStatus: 403,
-		SendPrep: setSendURL},
-	{Label: "Error Response",
-		Text: "Error Sending", URN: "tel:+250788383383",
-		Status:       "F",
-		ResponseBody: `{"results":[{"code": "3", "ticket": "null"}]}`, ResponseStatus: 200,
-		SendPrep: setSendURL},
+		ExpectedStatus: "W",
+		SendPrep:       setSendURL,
+	},
+	{
+		Label:              "Unicode Send",
+		MsgText:            "☺",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"results":[{"code": "0", "ticket": "externalID"}]}`,
+		MockResponseStatus: 200,
+		ExpectedURLParams:  map[string]string{"msg": "☺"},
+		ExpectedStatus:     "W",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
+		MsgText:            "My pic!",
+		MsgURN:             "tel:+250788383383",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:   `{"results":[{"code": "0", "ticket": "externalID"}]}`,
+		MockResponseStatus: 200,
+		ExpectedURLParams:  map[string]string{"msg": "My pic!\nhttps://foo.bar/image.jpg"},
+		ExpectedStatus:     "W",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Error Sending",
+		MsgText:            "Error Sending",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"results":[{"code": "3", "ticket": "null"}]}`,
+		MockResponseStatus: 403,
+		ExpectedStatus:     "E",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Error Response",
+		MsgText:            "Error Sending",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"results":[{"code": "3", "ticket": "null"}]}`,
+		MockResponseStatus: 200,
+		ExpectedStatus:     "F",
+		ExpectedErrors:     []string{"Error status code, failing permanently"},
+		SendPrep:           setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MT", "2020", "FR",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MT", "2020", "FR",
 		map[string]interface{}{
 			"password": "Password",
 			"username": "Username",

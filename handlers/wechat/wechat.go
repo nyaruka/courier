@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -17,7 +18,6 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 )
@@ -61,7 +61,7 @@ type verifyForm struct {
 }
 
 // VerifyURL is our HTTP handler function for WeChat config URL verification callbacks
-func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -97,35 +97,32 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel) error {
-	start := time.Now()
-	logs := make([]*courier.ChannelLog, 0, 1)
+	logger := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
 
 	form := url.Values{
 		"grant_type": []string{"client_credential"},
 		"appid":      []string{channel.StringConfigForKey(configAppID, "")},
 		"secret":     []string{channel.StringConfigForKey(configAppSecret, "")},
 	}
-
 	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "token"))
 	tokenURL.RawQuery = form.Encode()
 
 	req, _ := http.NewRequest(http.MethodGet, tokenURL.String(), nil)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
-	rr, err := utils.MakeHTTPRequest(req)
-	if err != nil {
-		duration := time.Now().Sub(start)
-		logs = append(logs, courier.NewChannelLogFromError("failed to fetch access token", channel, courier.NilMsgID, duration, err))
-		return h.Backend().WriteChannelLogs(ctx, logs)
+
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return h.Backend().WriteChannelLog(ctx, logger)
 	}
 
-	accessToken, err := jsonparser.GetString(rr.Body, "access_token")
+	accessToken, err := jsonparser.GetString(respBody, "access_token")
 	if err != nil {
-		duration := time.Now().Sub(start)
-		logs = append(logs, courier.NewChannelLogFromError("invalid json", channel, courier.NilMsgID, duration, err))
-		return h.Backend().WriteChannelLogs(ctx, logs)
+		logger.Error(errors.New("access_token not found in response"))
+		return h.Backend().WriteChannelLog(ctx, logger)
 	}
-	expiration, err := jsonparser.GetInt(rr.Body, "expires_in")
+
+	expiration, err := jsonparser.GetInt(respBody, "expires_in")
 	if err != nil {
 		expiration = 7200
 	}
@@ -169,7 +166,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateXML(payload, r)
 	if err != nil {
@@ -235,8 +232,8 @@ type mtPayload struct {
 	} `json:"text"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	accessToken, err := h.getAccessToken(msg.Channel())
 	if err != nil {
 		return nil, err
@@ -268,15 +265,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-
-		if err != nil {
-			return status, err
+		resp, _, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
+			return status, nil
 		}
+
 		status.SetStatus(courier.MsgWired)
 	}
 
@@ -284,7 +277,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 }
 
 // DescribeURN handles WeChat contact details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLogger) (map[string]string, error) {
 	accessToken, err := h.getAccessToken(channel)
 	if err != nil {
 		return nil, err
@@ -302,11 +295,12 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 
 	req, _ := http.NewRequest(http.MethodGet, reqURL.String(), nil)
 
-	rr, err := utils.MakeHTTPRequest(req)
-	if err != nil {
-		return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("unable to look up contact data")
 	}
-	nickname, err := jsonparser.GetString(rr.Body, "nickname")
+
+	nickname, err := jsonparser.GetString(respBody, "nickname")
 	if err != nil {
 		return nil, err
 	}

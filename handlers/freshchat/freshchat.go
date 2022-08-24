@@ -21,7 +21,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -49,7 +48,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	return nil
 }
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -102,7 +101,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 
 	agentID := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if agentID == "" {
@@ -149,8 +148,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			msgimage.Image = &Image{URL: mediaURL}
 			payload.Messages[0].MessageParts = append(payload.Messages[0].MessageParts, *msgimage)
 		default:
-			status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
-				"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
+			clog.Error(fmt.Errorf("unknown media type: %s", mediaType))
 		}
 	}
 
@@ -169,14 +167,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	var bearer = "Bearer " + authToken
 	req.Header.Set("Authorization", bearer)
 
-	rr, err := utils.MakeHTTPRequest(req)
-
-	// record our status and log
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-	status.AddLog(log)
-	if err != nil {
-		return status, err
+	resp, _, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return status, nil
 	}
+
 	status.SetStatus(courier.MsgWired)
 
 	return status, nil

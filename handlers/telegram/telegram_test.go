@@ -10,10 +10,11 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "TG", "2020", "US", map[string]interface{}{"auth_token": "a123"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "TG", "2020", "US", map[string]interface{}{"auth_token": "a123"}),
 }
 
 var helloMsg = `{
@@ -451,49 +452,49 @@ var contactMsg = `
 }`
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: helloMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("Hello World"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("41"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Valid Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: helloMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("41"), ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
 
-	{Label: "Receive Start Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: startMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), ChannelEvent: Sp(string(courier.NewConversation)), URN: Sp("telegram:3527065#nicpottier"), Date: Tp(time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC))},
+	{Label: "Receive Start Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: startMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ChannelEvent: Sp(string(courier.NewConversation)), ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
 
-	{Label: "Receive No Params", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, Status: 200, Response: "Ignoring"},
+	{Label: "Receive No Params", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, ExpectedStatus: 200, ExpectedResponse: "Ignoring"},
 
-	{Label: "Receive Invalid JSON", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: "foo", Status: 400, Response: "unable to parse"},
+	{Label: "Receive Invalid JSON", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: "foo", ExpectedStatus: 400, ExpectedResponse: "unable to parse"},
 
-	{Label: "Receive Sticker", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: stickerMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/sticker.jpg"), URN: Sp("telegram:3527065"), ExternalID: Sp("44"), Date: Tp(time.Date(2016, 1, 30, 2, 07, 48, 0, time.UTC))},
+	{Label: "Receive Sticker", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: stickerMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/sticker.jpg"}, ExpectedURN: Sp("telegram:3527065"), ExpectedExternalID: Sp("44"), ExpectedDate: time.Date(2016, 1, 30, 2, 07, 48, 0, time.UTC)},
 
-	{Label: "Receive Photo", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: photoMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("Photo Caption"), Attachment: Sp("/file/bota123/photo.jpg"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("85"), Date: Tp(time.Date(2017, 5, 3, 20, 28, 38, 0, time.UTC))},
+	{Label: "Receive Photo", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: photoMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Photo Caption"), ExpectedAttachments: []string{"/file/bota123/photo.jpg"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("85"), ExpectedDate: time.Date(2017, 5, 3, 20, 28, 38, 0, time.UTC)},
 
-	{Label: "Receive Video", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: videoMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/video.jpg"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("86"), Date: Tp(time.Date(2017, 5, 3, 20, 29, 24, 0, time.UTC))},
+	{Label: "Receive Video", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: videoMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/video.jpg"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("86"), ExpectedDate: time.Date(2017, 5, 3, 20, 29, 24, 0, time.UTC)},
 
-	{Label: "Receive Voice", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: voiceMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/voice.mp4"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("91"), Date: Tp(time.Date(2017, 5, 3, 20, 50, 46, 0, time.UTC))},
+	{Label: "Receive Voice", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: voiceMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/voice.mp4"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("91"), ExpectedDate: time.Date(2017, 5, 3, 20, 50, 46, 0, time.UTC)},
 
-	{Label: "Receive Document", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: documentMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp(""), Attachment: Sp("/file/bota123/document.xls"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("92"), Date: Tp(time.Date(2017, 5, 3, 20, 58, 20, 0, time.UTC))},
+	{Label: "Receive Document", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: documentMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"/file/bota123/document.xls"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("92"), ExpectedDate: time.Date(2017, 5, 3, 20, 58, 20, 0, time.UTC)},
 
-	{Label: "Receive Location", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: locationMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("-2.890287,-79.004333"), Attachment: Sp("geo:-2.890287,-79.004333"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("94"), Date: Tp(time.Date(2017, 5, 3, 21, 00, 44, 0, time.UTC))},
+	{Label: "Receive Location", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: locationMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("-2.890287,-79.004333"), ExpectedAttachments: []string{"geo:-2.890287,-79.004333"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("94"), ExpectedDate: time.Date(2017, 5, 3, 21, 00, 44, 0, time.UTC)},
 
-	{Label: "Receive Venue", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: venueMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("Cuenca, Provincia del Azuay"), Attachment: Sp("geo:-2.898944,-79.006835"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("95"), Date: Tp(time.Date(2017, 5, 3, 21, 05, 20, 0, time.UTC))},
+	{Label: "Receive Venue", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: venueMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Cuenca, Provincia del Azuay"), ExpectedAttachments: []string{"geo:-2.898944,-79.006835"}, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("95"), ExpectedDate: time.Date(2017, 5, 3, 21, 05, 20, 0, time.UTC)},
 
-	{Label: "Receive Contact", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: contactMsg, Status: 200, Response: "Accepted",
-		Name: Sp("Nic Pottier"), Text: Sp("Adolf Taxi (0788531373)"), URN: Sp("telegram:3527065#nicpottier"), ExternalID: Sp("96"), Date: Tp(time.Date(2017, 5, 3, 21, 9, 15, 0, time.UTC))},
+	{Label: "Receive Contact", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: contactMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Adolf Taxi (0788531373)"), ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("96"), ExpectedDate: time.Date(2017, 5, 3, 21, 9, 15, 0, time.UTC)},
 
-	{Label: "Receive Empty", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, Status: 200, Response: "Ignoring"},
+	{Label: "Receive Empty", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, ExpectedStatus: 200, ExpectedResponse: "Ignoring"},
 
-	{Label: "Receive Invalid FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: invalidFileID, Status: 200, Response: "unable to resolve file"},
+	{Label: "Receive Invalid FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: invalidFileID, ExpectedStatus: 200, ExpectedResponse: "unable to resolve file"},
 
-	{Label: "Receive NoOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noOkFile, Status: 200, Response: "no 'ok' in response"},
+	{Label: "Receive NoOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noOkFile, ExpectedStatus: 200, ExpectedResponse: "no 'ok' in response"},
 
-	{Label: "Receive NotOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: notOkFile, Status: 200, Response: "not present"},
+	{Label: "Receive NotOk FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: notOkFile, ExpectedStatus: 200, ExpectedResponse: "not present"},
 
-	{Label: "Receive No FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noFile, Status: 200, Response: "result.file_path"},
+	{Label: "Receive No FileID", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: noFile, ExpectedStatus: 200, ExpectedResponse: "result.file_path"},
 }
 
 func buildMockTelegramService(testCases []ChannelHandleTestCase) *httptest.Server {
@@ -535,9 +536,11 @@ func buildMockTelegramService(testCases []ChannelHandleTestCase) *httptest.Serve
 	apiURL = server.URL
 
 	// update our tests media urls
-	for c := range testCases {
-		if testCases[c].Attachment != nil && !strings.HasPrefix(*testCases[c].Attachment, "geo") {
-			testCases[c].Attachment = Sp(fmt.Sprintf("%s%s", apiURL, *testCases[c].Attachment))
+	for _, tc := range testCases {
+		for i := range tc.ExpectedAttachments {
+			if !strings.HasPrefix(tc.ExpectedAttachments[i], "geo:") {
+				tc.ExpectedAttachments[i] = fmt.Sprintf("%s%s", apiURL, tc.ExpectedAttachments[i])
+			}
 		}
 	}
 
@@ -564,100 +567,158 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "telegram:12345",
-		Status: "W", ExternalID: "133",
-		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
-		PostParams: map[string]string{
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "telegram:12345",
+		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{
 			"text":         "Simple Message",
 			"chat_id":      "12345",
 			"reply_markup": `{"remove_keyboard":true}`,
 		},
-		SendPrep: setSendURL},
-	{Label: "Quick Reply",
-		Text: "Are you happy?", URN: "telegram:12345", QuickReplies: []string{"Yes", "No"},
-		Status: "W", ExternalID: "133",
-		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
-		PostParams: map[string]string{
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "133",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Quick Reply",
+		MsgText:            "Are you happy?",
+		MsgURN:             "telegram:12345",
+		MsgQuickReplies:    []string{"Yes", "No"},
+		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{
 			"text":         "Are you happy?",
 			"chat_id":      "12345",
 			"reply_markup": `{"keyboard":[[{"text":"Yes"},{"text":"No"}]],"resize_keyboard":true,"one_time_keyboard":true}`,
 		},
-		SendPrep: setSendURL},
-	{Label: "Quick Reply with multiple attachments",
-		Text: "Are you happy?", URN: "telegram:12345", QuickReplies: []string{"Yes", "No"},
-		Attachments: []string{"application/pdf:https://foo.bar/doc1.pdf", "application/pdf:https://foo.bar/document.pdf"},
-		Status:      "W", ExternalID: "133",
-		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
-		PostParams: map[string]string{
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "133",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Quick Reply with multiple attachments",
+		MsgText:            "Are you happy?",
+		MsgURN:             "telegram:12345",
+		MsgQuickReplies:    []string{"Yes", "No"},
+		MsgAttachments:     []string{"application/pdf:https://foo.bar/doc1.pdf", "application/pdf:https://foo.bar/document.pdf"},
+		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{
 			"chat_id":      "12345",
 			"document":     "https://foo.bar/document.pdf",
 			"reply_markup": `{"keyboard":[[{"text":"Yes"},{"text":"No"}]],"resize_keyboard":true,"one_time_keyboard":true}`,
 		},
-		SendPrep: setSendURL},
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "133",
+		SendPrep:           setSendURL,
+	},
 
-	{Label: "Unicode Send",
-		Text: "☺", URN: "telegram:12345",
-		Status: "W", ExternalID: "133",
-		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
-		PostParams: map[string]string{"text": "☺", "chat_id": "12345"},
-		SendPrep:   setSendURL},
-	{Label: "Error",
-		Text: "Error", URN: "telegram:12345",
-		Status:       "E",
-		ResponseBody: `{ "ok": false }`, ResponseStatus: 403,
-		PostParams: map[string]string{"text": `Error`, "chat_id": "12345"},
-		SendPrep:   setSendURL},
-	{Label: "Stopped Contact Code",
-		Text: "Stopped Contact", URN: "telegram:12345",
-		Status:       "F",
-		ResponseBody: `{ "ok": false, "error_code":403, "description":"Forbidden: bot was blocked by the user"}`, ResponseStatus: 403,
-		PostParams: map[string]string{"text": `Stopped Contact`, "chat_id": "12345"},
-		SendPrep:   setSendURL,
-		Stopped:    true},
-	{Label: "Should not stop other error",
-		Text: "Simple Message", URN: "telegram:12345",
-		Status:       "E",
-		ResponseBody: `{ "ok": true }`, ResponseStatus: 200,
-		PostParams: map[string]string{
+	{
+		Label:              "Unicode Send",
+		MsgText:            "☺",
+		MsgURN:             "telegram:12345",
+		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"text": "☺", "chat_id": "12345"},
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "133",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Error",
+		MsgText:            "Error",
+		MsgURN:             "telegram:12345",
+		MockResponseBody:   `{ "ok": false }`,
+		MockResponseStatus: 403,
+		ExpectedPostParams: map[string]string{"text": `Error`, "chat_id": "12345"},
+		ExpectedStatus:     "E",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Stopped Contact Code",
+		MsgText:            "Stopped Contact",
+		MsgURN:             "telegram:12345",
+		MockResponseBody:   `{ "ok": false, "error_code":403, "description":"Forbidden: bot was blocked by the user"}`,
+		MockResponseStatus: 403,
+		ExpectedPostParams: map[string]string{"text": `Stopped Contact`, "chat_id": "12345"},
+		ExpectedStatus:     "F",
+		ExpectedStopEvent:  true,
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Should not stop other error",
+		MsgText:            "Simple Message",
+		MsgURN:             "telegram:12345",
+		MockResponseBody:   `{ "ok": true }`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{
 			"text":         "Simple Message",
 			"chat_id":      "12345",
 			"reply_markup": `{"remove_keyboard":true}`,
 		},
-		SendPrep: setSendURL,
-		Stopped:  false},
-	{Label: "Send Photo",
-		Text: "My pic!", URN: "telegram:12345", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "W",
-		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
-		PostParams: map[string]string{"caption": "My pic!", "chat_id": "12345", "photo": "https://foo.bar/image.jpg"},
-		SendPrep:   setSendURL},
-	{Label: "Send Video",
-		Text: "My vid!", URN: "telegram:12345", Attachments: []string{"video/mpeg:https://foo.bar/video.mpeg"},
-		Status:       "W",
-		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
-		PostParams: map[string]string{"caption": "My vid!", "chat_id": "12345", "video": "https://foo.bar/video.mpeg"},
-		SendPrep:   setSendURL},
-	{Label: "Send Audio",
-		Text: "My audio!", URN: "telegram:12345", Attachments: []string{"audio/mp3:https://foo.bar/audio.mp3"},
-		Status:       "W",
-		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
-		PostParams: map[string]string{"caption": "My audio!", "chat_id": "12345", "audio": "https://foo.bar/audio.mp3"},
-		SendPrep:   setSendURL},
-	{Label: "Send Document",
-		Text: "My document!", URN: "telegram:12345", Attachments: []string{"application/pdf:https://foo.bar/document.pdf"},
-		Status:       "W",
-		ResponseBody: `{ "ok": true, "result": { "message_id": 133 } }`, ResponseStatus: 200,
-		PostParams: map[string]string{"caption": "My document!", "chat_id": "12345", "document": "https://foo.bar/document.pdf"},
-		SendPrep:   setSendURL},
-	{Label: "Unknown Attachment",
-		Text: "My pic!", URN: "telegram:12345", Attachments: []string{"unknown/foo:https://foo.bar/unknown.foo"},
-		Status:   "E",
-		SendPrep: setSendURL},
+		ExpectedStatus: "E",
+		SendPrep:       setSendURL,
+	},
+	{
+		Label:              "Send Photo",
+		MsgText:            "My pic!",
+		MsgURN:             "telegram:12345",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"caption": "My pic!", "chat_id": "12345", "photo": "https://foo.bar/image.jpg"},
+		ExpectedStatus:     "W",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Send Video",
+		MsgText:            "My vid!",
+		MsgURN:             "telegram:12345",
+		MsgAttachments:     []string{"video/mpeg:https://foo.bar/video.mpeg"},
+		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"caption": "My vid!", "chat_id": "12345", "video": "https://foo.bar/video.mpeg"},
+		ExpectedStatus:     "W",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Send Audio",
+		MsgText:            "My audio!",
+		MsgURN:             "telegram:12345",
+		MsgAttachments:     []string{"audio/mp3:https://foo.bar/audio.mp3"},
+		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"caption": "My audio!", "chat_id": "12345", "audio": "https://foo.bar/audio.mp3"},
+		ExpectedStatus:     "W",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Send Document",
+		MsgText:            "My document!",
+		MsgURN:             "telegram:12345",
+		MsgAttachments:     []string{"application/pdf:https://foo.bar/document.pdf"},
+		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"caption": "My document!", "chat_id": "12345", "document": "https://foo.bar/document.pdf"},
+		ExpectedStatus:     "W",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:          "Unknown Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "telegram:12345",
+		MsgAttachments: []string{"unknown/foo:https://foo.bar/unknown.foo"},
+		ExpectedStatus: "E",
+		ExpectedErrors: []string{"unknown attachment content type: unknown/foo"},
+		SendPrep:       setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US",
 		map[string]interface{}{courier.ConfigAuthToken: "auth_token"})
 
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)

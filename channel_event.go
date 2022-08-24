@@ -30,9 +30,6 @@ type ChannelEvent interface {
 	CreatedOn() time.Time
 	OccurredOn() time.Time
 
-	Logs() []*ChannelLog
-	AddLog(log *ChannelLog)
-
 	WithContactName(name string) ChannelEvent
 	WithExtra(extra map[string]interface{}) ChannelEvent
 	WithOccurredOn(time.Time) ChannelEvent

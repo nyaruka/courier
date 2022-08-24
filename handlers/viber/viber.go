@@ -10,13 +10,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
-	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
@@ -90,7 +89,7 @@ type welcomeMessagePayload struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -309,8 +308,8 @@ type mtPayload struct {
 	Keyboard     *Keyboard         `json:"keyboard,omitempty"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if authToken == "" {
 		return nil, fmt.Errorf("missing auth token in config")
@@ -346,6 +345,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		attURL := ""
 		filename := ""
 		msgText := ""
+		var err error
 
 		if i < len(msg.Attachments()) {
 			mediaType, mediaURL := handlers.SplitAttachment(msg.Attachments()[0])
@@ -358,37 +358,24 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			case "video":
 				msgType = "video"
 				attURL = mediaURL
-				req, err := http.NewRequest(http.MethodHead, mediaURL, nil)
+				attSize, err = getAttachmentSize(mediaURL)
 				if err != nil {
 					return nil, err
 				}
-				rr, err := utils.MakeHTTPRequest(req)
-				if err != nil {
-					return nil, err
-				}
-
-				attSize = rr.ContentLength
 				msgText = ""
 
 			case "audio":
 				msgType = "file"
 				attURL = mediaURL
-				req, err := http.NewRequest(http.MethodHead, mediaURL, nil)
+				attSize, err = getAttachmentSize(mediaURL)
 				if err != nil {
 					return nil, err
 				}
-				rr, err := utils.MakeHTTPRequest(req)
-				if err != nil {
-					return nil, err
-				}
-				attSize = rr.ContentLength
 				filename = "Audio"
 				msgText = ""
 
 			default:
-				status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
-					"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
-
+				clog.Error(fmt.Errorf("unknown media type: %s", mediaType))
 			}
 
 		} else {
@@ -411,7 +398,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		requestBody := &bytes.Buffer{}
-		err := json.NewEncoder(requestBody).Encode(payload)
+		err = json.NewEncoder(requestBody).Encode(payload)
 		if err != nil {
 			return nil, err
 		}
@@ -424,22 +411,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
-
-		responseStatus, err := jsonparser.GetInt(rr.Body, "status")
+		responseStatus, err := jsonparser.GetInt(respBody, "status")
 		if err != nil {
-			log.WithError("Message Send Error", errors.Errorf("received invalid JSON response"))
+			clog.Error(errors.Errorf("received invalid JSON response"))
 			return status, nil
 		}
 		if responseStatus != 0 {
-			log.WithError("Message Send Error", errors.Errorf("received non-0 status: '%d'", responseStatus))
+			clog.Error(errors.Errorf("received non-0 status: '%d'", responseStatus))
 			return status, nil
 		}
 
@@ -447,4 +429,27 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		keyboard = nil
 	}
 	return status, nil
+}
+
+func getAttachmentSize(u string) (int, error) {
+	req, err := http.NewRequest(http.MethodHead, u, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	trace, err := handlers.MakeHTTPRequest(req)
+	if err != nil {
+		return 0, err
+	}
+
+	contentLenHdr := trace.Response.Header.Get("Content-Length")
+
+	if trace.Response.Header.Get("Content-Length") != "" {
+		contentLength, err := strconv.Atoi(contentLenHdr)
+		if err == nil {
+			return contentLength, nil
+		}
+	}
+
+	return 0, nil
 }

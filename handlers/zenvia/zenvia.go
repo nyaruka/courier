@@ -12,7 +12,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
@@ -77,7 +76,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	// get our params
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
@@ -157,7 +156,7 @@ type statusPayload struct {
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	// get our params
 	payload := &statusPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
@@ -177,10 +176,8 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	// write our status
 	status := h.Backend().NewMsgStatusForExternalID(channel, payload.MessageID, msgStatus)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
-
 }
 
-//
 type mtContent struct {
 	Type         string `json:"type"`
 	Text         string `json:"text,omitempty"`
@@ -196,8 +193,8 @@ type mtPayload struct {
 	Contents []mtContent `json:"contents"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	channel := msg.Channel()
 
 	token := channel.StringConfigForKey(courier.ConfigAPIKey, "")
@@ -260,18 +257,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-API-TOKEN", token)
 
-	rr, err := utils.MakeHTTPRequest(req)
-
-	// record our status and log
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-	status.AddLog(log)
-	if err != nil {
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}
 
-	externalID, err := jsonparser.GetString(rr.Body, "id")
+	externalID, err := jsonparser.GetString(respBody, "id")
 	if err != nil {
-		log.WithError("Message Send Error", errors.Errorf("unable to get id from body"))
+		clog.Error(errors.Errorf("unable to get id from body"))
 		return status, nil
 	}
 

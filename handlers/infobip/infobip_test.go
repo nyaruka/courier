@@ -7,10 +7,11 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US", nil),
 }
 
 var receiveURL = "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
@@ -190,19 +191,19 @@ var invalidStatus = `{
 }`
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: helloMsg, Status: 200, Response: "Accepted",
-		Text: Sp("QUIZ Correct answer is Paris"), URN: Sp("tel:+385916242493"), ExternalID: Sp("817790313235066447"), Date: Tp(time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.FixedZone("", 0)))},
-	{Label: "Receive missing results key", URL: receiveURL, Data: missingResults, Status: 400, Response: "validation for 'Results' failed"},
-	{Label: "Receive missing text key", URL: receiveURL, Data: missingText, Status: 200, Response: "ignoring request, no message"},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Status report invalid JSON", URL: statusURL, Data: invalidJSONStatus, Status: 400, Response: "unable to parse request JSON"},
-	{Label: "Status report missing results key", URL: statusURL, Data: statusMissingResultsKey, Status: 400, Response: "Field validation for 'Results' failed"},
-	{Label: "Status delivered", URL: statusURL, Data: validStatusDelivered, Status: 200, Response: `"status":"D"`},
-	{Label: "Status rejected", URL: statusURL, Data: validStatusRejected, Status: 200, Response: `"status":"F"`},
-	{Label: "Status undeliverable", URL: statusURL, Data: validStatusUndeliverable, Status: 200, Response: `"status":"F"`},
-	{Label: "Status pending", URL: statusURL, Data: validStatusPending, Status: 200, Response: `"status":"S"`},
-	{Label: "Status expired", URL: statusURL, Data: validStatusExpired, Status: 200, Response: `"status":"S"`},
-	{Label: "Status group name unexpected", URL: statusURL, Data: invalidStatus, Status: 400, Response: `unknown status 'UNEXPECTED'`},
+	{Label: "Receive Valid Message", URL: receiveURL, Data: helloMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("QUIZ Correct answer is Paris"), ExpectedURN: Sp("tel:+385916242493"), ExpectedExternalID: Sp("817790313235066447"), ExpectedDate: time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.FixedZone("", 0))},
+	{Label: "Receive missing results key", URL: receiveURL, Data: missingResults, ExpectedStatus: 400, ExpectedResponse: "validation for 'Results' failed"},
+	{Label: "Receive missing text key", URL: receiveURL, Data: missingText, ExpectedStatus: 200, ExpectedResponse: "ignoring request, no message"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Status report invalid JSON", URL: statusURL, Data: invalidJSONStatus, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
+	{Label: "Status report missing results key", URL: statusURL, Data: statusMissingResultsKey, ExpectedStatus: 400, ExpectedResponse: "Field validation for 'Results' failed"},
+	{Label: "Status delivered", URL: statusURL, Data: validStatusDelivered, ExpectedStatus: 200, ExpectedResponse: `"status":"D"`},
+	{Label: "Status rejected", URL: statusURL, Data: validStatusRejected, ExpectedStatus: 200, ExpectedResponse: `"status":"F"`},
+	{Label: "Status undeliverable", URL: statusURL, Data: validStatusUndeliverable, ExpectedStatus: 200, ExpectedResponse: `"status":"F"`},
+	{Label: "Status pending", URL: statusURL, Data: validStatusPending, ExpectedStatus: 200, ExpectedResponse: `"status":"S"`},
+	{Label: "Status expired", URL: statusURL, Data: validStatusExpired, ExpectedStatus: 200, ExpectedResponse: `"status":"S"`},
+	{Label: "Status group name unexpected", URL: statusURL, Data: invalidStatus, ExpectedStatus: 400, ExpectedResponse: `unknown status 'UNEXPECTED'`},
 }
 
 func TestHandler(t *testing.T) {
@@ -219,79 +220,107 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status: "W", ExternalID: "12345",
-		ResponseBody: `{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`, ResponseStatus: 200,
-		Headers: map[string]string{
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "12345",
+		MockResponseBody:   `{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
-		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
-		SendPrep:    setSendURL},
-	{Label: "Unicode Send",
-		Text: "☺", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: `{"messages":[{"status":{"groupId": 1}}}`, ResponseStatus: 200,
-		Headers: map[string]string{
+		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Unicode Send",
+		MsgText:            "☺",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"messages":[{"status":{"groupId": 1}}}`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
-		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"☺","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
-		SendPrep:    setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "W",
-		ResponseBody: `{"messages":[{"status":{"groupId": 1}}}`, ResponseStatus: 200,
-		Headers: map[string]string{
+		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"☺","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		ExpectedStatus:      "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
+		MsgText:            "My pic!",
+		MsgURN:             "tel:+250788383383",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:   `{"messages":[{"status":{"groupId": 1}}}`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
-		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"My pic!\nhttps://foo.bar/image.jpg","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
-		SendPrep:    setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: `{ "error": "failed" }`, ResponseStatus: 401,
-		Headers: map[string]string{
+		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"My pic!\nhttps://foo.bar/image.jpg","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		ExpectedStatus:      "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Error Sending",
+		MsgText:            "Error Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{ "error": "failed" }`,
+		MockResponseStatus: 401,
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
-		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Error Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
-		SendPrep:    setSendURL},
-	{Label: "Error groupId",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: `{"messages":[{"status":{"groupId": 2}}}`, ResponseStatus: 200,
-		Headers: map[string]string{
+		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Error Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		ExpectedStatus:      "E",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Error groupId",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"messages":[{"status":{"groupId": 2}}}`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
-		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
-		SendPrep:    setSendURL},
+		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		ExpectedStatus:      "E",
+		ExpectedErrors:      []string{"received error status: '2'"},
+		SendPrep:            setSendURL,
+	},
 }
 
 var transSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status: "W", ExternalID: "12345",
-		ResponseBody: `{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`, ResponseStatus: 200,
-		Headers: map[string]string{
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
-		RequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","transliteration":"COLOMBIAN"}]}`,
-		SendPrep:    setSendURL},
+		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","transliteration":"COLOMBIAN"}]}`,
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "12345",
+		SendPrep:            setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
 		map[string]interface{}{
 			courier.ConfigPassword: "Password",
 			courier.ConfigUsername: "Username",
@@ -299,7 +328,7 @@ func TestSending(t *testing.T) {
 
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
 
-	var transChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
+	var transChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
 		map[string]interface{}{
 			courier.ConfigPassword: "Password",
 			courier.ConfigUsername: "Username",

@@ -100,7 +100,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -140,7 +140,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -199,8 +199,8 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	// build our callback URL
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?id=%d&action=callback", callbackDomain, strings.ToLower(h.ChannelType().String()), msg.Channel().UUID(), msg.ID())
@@ -266,15 +266,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil {
+			return status, nil
+		}
 
 		// see if we can parse the error if we have one
-		if err != nil && rr.Body != nil {
-			errorCode, _ := jsonparser.GetInt([]byte(rr.Body), "code")
+		if resp.StatusCode/100 != 2 && len(respBody) > 0 {
+			errorCode, _ := jsonparser.GetInt(respBody, "code")
 			if errorCode != 0 {
 				if errorCode == errorStopped {
 					status.SetStatus(courier.MsgFailed)
@@ -286,20 +285,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 						return nil, err
 					}
 				}
-				log.WithError("Message Send Error", errors.Errorf("received error code from twilio '%d'", errorCode))
+				clog.Error(errors.Errorf("received error code from twilio '%d'", errorCode))
 				return status, nil
 			}
 		}
 
-		// fail if we received an error
-		if err != nil {
-			return status, nil
-		}
-
 		// grab the external id
-		externalID, err := jsonparser.GetString([]byte(rr.Body), "sid")
+		externalID, err := jsonparser.GetString(respBody, "sid")
 		if err != nil {
-			log.WithError("Message Send Error", errors.Errorf("unable to get sid from body"))
+			clog.Error(errors.Errorf("unable to get sid from body"))
 			return status, nil
 		}
 

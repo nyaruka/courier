@@ -7,10 +7,11 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MK", "2020", "MY", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MK", "2020", "MY", nil),
 }
 
 var (
@@ -30,23 +31,23 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "-1",
-		Text: Sp("Hello"), URN: Sp("tel:+60124361111"), Date: Tp(time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC)),
-		ExternalID: Sp("abc1234")},
-	{Label: "Receive Valid via GET", URL: receiveURL + "?" + validReceive, Status: 200, Response: "-1",
-		Text: Sp("Hello"), URN: Sp("tel:+60124361111"), Date: Tp(time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC)),
-		ExternalID: Sp("abc1234")},
-	{Label: "Receive Valid", URL: receiveURL, Data: validLongcodeReceive, Status: 200, Response: "-1",
-		Text: Sp("Hello"), URN: Sp("tel:+60124361111"), Date: Tp(time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC)),
-		ExternalID: Sp("abc1234")},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Missing Params", URL: receiveURL, Data: missingParamsReceive, Status: 400, Response: "missing shortcode, longcode, from or msisdn parameters"},
-	{Label: "Invalid Params", URL: receiveURL, Data: invalidParamsReceive, Status: 400, Response: "missing shortcode, longcode, from or msisdn parameters"},
-	{Label: "Invalid Address Params", URL: receiveURL, Data: invalidAddress, Status: 400, Response: "invalid to number [1515], expecting [2020]"},
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "-1",
+		ExpectedMsgText: Sp("Hello"), ExpectedURN: Sp("tel:+60124361111"), ExpectedDate: time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC),
+		ExpectedExternalID: Sp("abc1234")},
+	{Label: "Receive Valid via GET", URL: receiveURL + "?" + validReceive, ExpectedStatus: 200, ExpectedResponse: "-1",
+		ExpectedMsgText: Sp("Hello"), ExpectedURN: Sp("tel:+60124361111"), ExpectedDate: time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC),
+		ExpectedExternalID: Sp("abc1234")},
+	{Label: "Receive Valid", URL: receiveURL, Data: validLongcodeReceive, ExpectedStatus: 200, ExpectedResponse: "-1",
+		ExpectedMsgText: Sp("Hello"), ExpectedURN: Sp("tel:+60124361111"), ExpectedDate: time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC),
+		ExpectedExternalID: Sp("abc1234")},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Missing Params", URL: receiveURL, Data: missingParamsReceive, ExpectedStatus: 400, ExpectedResponse: "missing shortcode, longcode, from or msisdn parameters"},
+	{Label: "Invalid Params", URL: receiveURL, Data: invalidParamsReceive, ExpectedStatus: 400, ExpectedResponse: "missing shortcode, longcode, from or msisdn parameters"},
+	{Label: "Invalid Address Params", URL: receiveURL, Data: invalidAddress, ExpectedStatus: 400, ExpectedResponse: "invalid to number [1515], expecting [2020]"},
 
-	{Label: "Valid Status", URL: statusURL, Data: validStatus, Status: 200, Response: `"status":"S"`},
-	{Label: "Wired Status", URL: statusURL, Data: processingStatus, Status: 200, Response: `"status":"W"`},
-	{Label: "Unknown Status", URL: statusURL, Data: unknownStatus, Status: 200, Response: `ignoring unknown status 'UNKNOWN'`},
+	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `"status":"S"`},
+	{Label: "Wired Status", URL: statusURL, Data: processingStatus, ExpectedStatus: 200, ExpectedResponse: `"status":"W"`},
+	{Label: "Unknown Status", URL: statusURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: `ignoring unknown status 'UNKNOWN'`},
 }
 
 func TestHandler(t *testing.T) {
@@ -64,71 +65,71 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
-		Text:           "Simple Message ☺",
-		URN:            "tel:+250788383383",
-		Status:         "W",
-		ExternalID:     "abc123",
-		ResponseBody:   `{ "MsgID":"abc123" }`,
-		ResponseStatus: 200,
-		Headers: map[string]string{
+		MsgText:            "Simple Message ☺",
+		MsgURN:             "tel:+250788383383",
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "abc123",
+		MockResponseBody:   `{ "MsgID":"abc123" }`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"Simple Message ☺","from":"macro","servid":"service-id","type":"5"}`,
-		SendPrep:    setSendURL},
+		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"Simple Message ☺","from":"macro","servid":"service-id","type":"5"}`,
+		SendPrep:            setSendURL},
 	{Label: "Long Send",
-		Text:           "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		URN:            "tel:+250788383383",
-		Status:         "W",
-		ExternalID:     "abc123",
-		ResponseBody:   `{ "MsgID":"abc123" }`,
-		ResponseStatus: 200,
-		Headers: map[string]string{
+		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:             "tel:+250788383383",
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "abc123",
+		MockResponseBody:   `{ "MsgID":"abc123" }`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"I need to keep adding more things to make it work","from":"macro","servid":"service-id","type":"0"}`,
-		SendPrep:    setSendURL},
+		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"I need to keep adding more things to make it work","from":"macro","servid":"service-id","type":"0"}`,
+		SendPrep:            setSendURL},
 	{Label: "Send Attachment",
-		Text:           "My pic!",
-		URN:            "tel:+250788383383",
-		Attachments:    []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:         "W",
-		ExternalID:     "abc123",
-		ResponseBody:   `{ "MsgID":"abc123" }`,
-		ResponseStatus: 200,
-		Headers: map[string]string{
+		MsgText:            "My pic!",
+		MsgURN:             "tel:+250788383383",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "abc123",
+		MockResponseBody:   `{ "MsgID":"abc123" }`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"My pic!\nhttps://foo.bar/image.jpg","from":"macro","servid":"service-id","type":"0"}`,
-		SendPrep:    setSendURL},
+		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"My pic!\nhttps://foo.bar/image.jpg","from":"macro","servid":"service-id","type":"0"}`,
+		SendPrep:            setSendURL},
 	{Label: "No External Id",
-		Text:           "No External ID",
-		URN:            "tel:+250788383383",
-		Status:         "E",
-		ResponseBody:   `{ "missing":"OzYDlvf3SQVc" }`,
-		ResponseStatus: 200,
-		Error:          "unable to parse response body from Macrokiosk",
-		Headers: map[string]string{
+		MsgText:            "No External ID",
+		MsgURN:             "tel:+250788383383",
+		ExpectedStatus:     "E",
+		MockResponseBody:   `{ "missing":"OzYDlvf3SQVc" }`,
+		MockResponseStatus: 200,
+		ExpectedErrors:     []string{"unable to parse response body from Macrokiosk"},
+		ExpectedHeaders: map[string]string{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"No External ID","from":"macro","servid":"service-id","type":"0"}`,
-		SendPrep:    setSendURL},
+		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"No External ID","from":"macro","servid":"service-id","type":"0"}`,
+		SendPrep:            setSendURL},
 	{Label: "Error Sending",
-		Text:           "Error Message",
-		URN:            "tel:+250788383383",
-		Status:         "E",
-		ResponseBody:   `{ "error": "failed" }`,
-		ResponseStatus: 401,
-		RequestBody:    `{"user":"Username","pass":"Password","to":"250788383383","text":"Error Message","from":"macro","servid":"service-id","type":"0"}`,
-		SendPrep:       setSendURL},
+		MsgText:             "Error Message",
+		MsgURN:              "tel:+250788383383",
+		ExpectedStatus:      "E",
+		MockResponseBody:    `{ "error": "failed" }`,
+		MockResponseStatus:  401,
+		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"Error Message","from":"macro","servid":"service-id","type":"0"}`,
+		SendPrep:            setSendURL},
 }
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MK", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MK", "2020", "US",
 		map[string]interface{}{
 			"password":                "Password",
 			"username":                "Username",

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 const configAccountID = "account_id"
@@ -55,7 +55,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	// get our params
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -103,7 +103,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	// get our params
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -128,8 +128,8 @@ type mtMessage struct {
 	Message string `json:"message"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	accountID := msg.Channel().StringConfigForKey(configAccountID, "")
 	if accountID == "" {
 		return nil, fmt.Errorf("no account id set for TQ channel")
@@ -166,19 +166,15 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(tokenUser, token)
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		// try to get our external id
-		externalID, err := jsonparser.GetString([]byte(rr.Body), "guid")
+		externalID, err := jsonparser.GetString(respBody, "guid")
 		if err != nil {
-			log.WithError("Unable to read external ID", err)
+			clog.Error(errors.New("Unable to read external ID"))
 			return status, nil
 		}
 		status.SetStatus(courier.MsgWired)
@@ -202,19 +198,16 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Accept", "application/json")
 			req.SetBasicAuth(tokenUser, token)
-			rr, err := utils.MakeHTTPRequest(req)
 
-			// record our status and log
-			log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-			status.AddLog(log)
-			if err != nil {
+			resp, respBody, err := handlers.RequestHTTP(req, clog)
+			if err != nil || resp.StatusCode/100 != 2 {
 				return status, nil
 			}
 
 			// get our external id
-			externalID, err := jsonparser.GetString([]byte(rr.Body), "guid")
+			externalID, err := jsonparser.GetString(respBody, "guid")
 			if err != nil {
-				log.WithError("Unable to read external ID from guid field", err)
+				clog.Error(errors.New("Unable to read external ID from guid field"))
 				return status, nil
 			}
 

@@ -11,7 +11,7 @@ import (
 
 // NewTelReceiveHandler creates a new receive handler given the passed in text and from fields
 func NewTelReceiveHandler(h *BaseHandler, fromField string, bodyField string) courier.ChannelHandleFunc {
-	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 		err := r.ParseForm()
 		if err != nil {
 			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
@@ -35,7 +35,7 @@ func NewTelReceiveHandler(h *BaseHandler, fromField string, bodyField string) co
 
 // NewExternalIDStatusHandler creates a new status handler given the passed in status map and fields
 func NewExternalIDStatusHandler(h *BaseHandler, statuses map[string]courier.MsgStatusValue, externalIDField string, statusField string) courier.ChannelHandleFunc {
-	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 		err := r.ParseForm()
 		if err != nil {
 			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)

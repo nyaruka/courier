@@ -11,7 +11,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 const (
@@ -43,7 +42,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receive is our handler for MO messages
-func (h *handler) receive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	err := r.ParseForm()
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
@@ -66,16 +65,16 @@ func (h *handler) receive(ctx context.Context, c courier.Channel, w http.Respons
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
-// {
-//	 "​result​":{
-//	   "submit_result":"OK",
-//     "session_id":"5b8fc97d58795484819426",
-//     "status_code":"00",
-//     "status_message":"Submitted ok"
-//   },
-//   "​error_code​":"00",
-//   "error_desc​":"Completed OK"
-// }
+//	{
+//		 "​result​":{
+//		   "submit_result":"OK",
+//	    "session_id":"5b8fc97d58795484819426",
+//	    "status_code":"00",
+//	    "status_message":"Submitted ok"
+//	  },
+//	  "​error_code​":"00",
+//	  "error_desc​":"Completed OK"
+//	}
 type mtResponse struct {
 	Result struct {
 		SessionID string `json:"session_id"`
@@ -83,8 +82,8 @@ type mtResponse struct {
 	ErrorCode string `json:"error_code"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for I2 channel")
@@ -117,32 +116,26 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		// parse our response as JSON
 		response := &mtResponse{}
-		err = json.Unmarshal(rr.Body, response)
+		err = json.Unmarshal(respBody, response)
 		if err != nil {
-			log.WithError("Message Send Error", err)
+			clog.Error(err)
 			break
 		}
 
 		// we always get 00 on success
-		fmt.Println(string(rr.Body))
-		fmt.Printf("%++v\n", response)
 		if response.ErrorCode == "00" {
 			status.SetStatus(courier.MsgWired)
 			status.SetExternalID(response.Result.SessionID)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			log.WithError("Message Send Error", fmt.Errorf("Received invalid response code: %s", response.ErrorCode))
+			clog.Error(fmt.Errorf("Received invalid response code: %s", response.ErrorCode))
 			break
 		}
 	}

@@ -18,9 +18,11 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null"
+	"github.com/nyaruka/redisx/assertredis"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/sirupsen/logrus"
@@ -38,6 +40,7 @@ func testConfig() *courier.Config {
 	config := courier.NewConfig()
 	config.DB = "postgres://courier:courier@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
+	config.MediaDomain = "nyaruka.s3.com"
 	return config
 }
 
@@ -90,11 +93,11 @@ func (ts *BackendTestSuite) TearDownSuite() {
 
 func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *DBChannel {
 	channelUUID, err := courier.NewChannelUUID(cUUID)
-	ts.NoError(err, "error building channel uuid")
+	ts.Require().NoError(err, "error building channel uuid")
 
 	channel, err := ts.b.GetChannel(context.Background(), courier.ChannelType(cType), channelUUID)
-	ts.NoError(err, "error getting channel")
-	ts.NotNil(channel)
+	ts.Require().NoError(err, "error getting channel")
+	ts.Require().NotNil(channel)
 
 	return channel.(*DBChannel)
 }
@@ -946,10 +949,21 @@ func (ts *BackendTestSuite) TestChanneLog() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ctx := context.Background()
 
-	log := courier.NewChannelLog("Message Send Error", knChannel, courier.NilMsgID, "POST", "/null/value", 400,
-		"request with null \x00 content", "response with null \x00 content", time.Millisecond, nil)
+	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
+		"https://api.messages.com/send.json": {
+			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
+		},
+	}))
+	defer httpx.SetRequestor(httpx.DefaultRequestor)
 
-	err := writeChannelLog(ctx, ts.b, log)
+	// make a request that will have a response
+	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
+	trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
+	ts.NoError(err)
+
+	log := courier.NewLegacyChannelLog("Message Send Error", knChannel, courier.NilMsgID, trace)
+
+	err = writeChannelLog(ctx, ts.b, log)
 	ts.NoError(err)
 }
 
@@ -1199,7 +1213,7 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	dbE, err = readChannelEventFromDB(ts.b, dbE.ID_)
 	ts.NoError(err)
 	ts.Equal(dbE.EventType_, courier.Referral)
-	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra_.Map)
+	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra_.Map())
 	ts.Equal(contact.ID_, dbE.ContactID_)
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 }
@@ -1241,7 +1255,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	dbE, err = readChannelEventFromDB(ts.b, dbE.ID_)
 	ts.NoError(err)
 	ts.Equal(dbE.EventType_, courier.Referral)
-	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra_.Map)
+	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra_.Map())
 	ts.Equal(contact.ID_, dbE.ContactID_)
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 
@@ -1273,6 +1287,97 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 		"org_id":      float64(1),
 		"urn_id":      float64(contact.URNID_),
 	}, body["task"])
+}
+
+func (ts *BackendTestSuite) TestResolveMedia() {
+	ctx := context.Background()
+
+	tcs := []struct {
+		url   string
+		media courier.Media
+		err   string
+	}{
+		{ // image upload that can be resolved
+			url: "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+			media: &DBMedia{
+				UUID_:        "ec6972be-809c-4c8d-be59-ba9dbd74c977",
+				Path_:        "/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+				ContentType_: "image/jpeg",
+				URL_:         "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+				Size_:        123,
+				Width_:       1024,
+				Height_:      768,
+				Alternates_:  []*DBMedia{},
+			},
+		},
+		{ // same image upload, this time from cache
+			url: "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+			media: &DBMedia{
+				UUID_:        "ec6972be-809c-4c8d-be59-ba9dbd74c977",
+				Path_:        "/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+				ContentType_: "image/jpeg",
+				URL_:         "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+				Size_:        123,
+				Width_:       1024,
+				Height_:      768,
+				Alternates_:  []*DBMedia{},
+			},
+		},
+		{ // image upload that can't be resolved
+			url:   "http://nyaruka.s3.com/orgs/1/media/9790/97904d00-1e64-4f92-b4a0-156e21239d24/test.jpg",
+			media: nil,
+		},
+		{ // image upload that can't be resolved, this time from cache
+			url:   "http://nyaruka.s3.com/orgs/1/media/9790/97904d00-1e64-4f92-b4a0-156e21239d24/test.jpg",
+			media: nil,
+		},
+		{ // image upload but with wrong domain
+			url:   "http://temba.s2.com/orgs/1/media/f328/f32801ec-433a-4862-978d-56c1823b92b2/test.jpg",
+			media: nil,
+		},
+		{ // image upload but no UUID in URL
+			url:   "http://nyaruka.s3.com/orgs/1/media/test.jpg",
+			media: nil,
+		},
+		{ // audio upload
+			url: "http://nyaruka.s3.com/orgs/1/media/5310/5310f50f-9c8e-4035-9150-be5a1f78f21a/test.mp3",
+			media: &DBMedia{
+				UUID_:        "5310f50f-9c8e-4035-9150-be5a1f78f21a",
+				Path_:        "/orgs/1/media/5310/5310f50f-9c8e-4035-9150-be5a1f78f21a/test.mp3",
+				ContentType_: "audio/mp3",
+				URL_:         "http://nyaruka.s3.com/orgs/1/media/5310/5310f50f-9c8e-4035-9150-be5a1f78f21a/test.mp3",
+				Size_:        123,
+				Duration_:    500,
+				Alternates_: []*DBMedia{
+					{
+						UUID_:        "514c552c-e585-40e2-938a-fe9450172da8",
+						Path_:        "/orgs/1/media/514c/514c552c-e585-40e2-938a-fe9450172da8/test.m4a",
+						ContentType_: "audio/mp4",
+						URL_:         "http://nyaruka.s3.com/orgs/1/media/514c/514c552c-e585-40e2-938a-fe9450172da8/test.m4a",
+						Size_:        114,
+						Duration_:    500,
+					},
+				},
+			},
+		},
+		{ // user entered unparseable URL
+			url: "::::",
+			err: "error parsing media URL: ::::",
+		},
+	}
+
+	for _, tc := range tcs {
+		media, err := ts.b.ResolveMedia(ctx, tc.url)
+		if tc.err != "" {
+			ts.EqualError(err, tc.err)
+		} else {
+			ts.NoError(err, "unexpected error for url '%s'", tc.url)
+			ts.Equal(tc.media, media, "media mismatch for url '%s'", tc.url)
+		}
+	}
+
+	// check we've cached 3 media lookups
+	assertredis.HLen(ts.T(), ts.b.redisPool, fmt.Sprintf("media-lookups:%s", time.Now().Format("2006-01-02")), 3)
 }
 
 func TestMsgSuite(t *testing.T) {

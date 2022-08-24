@@ -1,3 +1,74 @@
+v7.5.15
+----------
+ * Use logger for handler func calls
+
+v7.5.14
+----------
+ * Update to latest gocommon and use new recorder reconstruct option
+
+v7.5.13
+----------
+ * Use httpx.Recorder to generate traces of incoming requests
+ * Rework WhatsApp handler to use logger, remove code for storing logs on status objects
+
+v7.5.12
+----------
+ * Adjust LINE to support sending attachments with quick replies later
+
+v7.5.11
+----------
+ * Rework more channel types to pass back traces and errors via logger instead of on status object
+
+v7.5.10
+----------
+ * Update to latest gocommon and fix some go warnings
+ * Support media attachments for LINE
+ * Rework handler DescribeURN methods to take a channel logger
+ * Update more sending to use channel logger
+
+v7.5.9
+----------
+ * Rename S3MediaBucket to S3AttachmentsBucket and S3MediaPrefix to S3AttachmentsPrefix
+ * More handlers to use new HTTP functions
+
+v7.5.8
+----------
+ * Move testing code out of courier package and into new test package
+ * Rework some handler sending to record logs via a logger rather than on the status object
+
+v7.5.7
+----------
+ * Convert remaining channel types to use httpx.Trace
+
+v7.5.6
+----------
+ * Fix URLs from non-resolved attachments that may not be properly escaped
+ * Use httpx.DoTrace for some channels
+ * Convert telegram handler to use ResolveAttachments
+ * Add support for resolving media on the backend
+
+v7.5.5
+----------
+ * Switch to using null.Map instead of utils.NullMap
+
+v7.5.4
+----------
+ * Add AWS Cred Chain support for S3
+ * Update deps and fix incorrect errors import in some handler packages
+
+v7.5.3
+----------
+ * Fix receiving attachments in WAC
+
+v7.5.2
+----------
+ * Support receiving LINE attachments
+
+v7.5.1
+----------
+ * Support Quick replies for LINE channels
+ * Slack channel support
+
 v7.5.0
 ----------
  * Fix receiving quick replies and list replies in WAC

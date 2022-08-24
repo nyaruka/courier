@@ -10,7 +10,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 const (
@@ -44,9 +43,11 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // <response>
-//   <code>XXX</code>
-//   <text>response_text</text>
-//   <message_id>message_id_in_case_of_success_sending</message_id>
+//
+//	<code>XXX</code>
+//	<text>response_text</text>
+//	<message_id>message_id_in_case_of_success_sending</message_id>
+//
 // </response>
 type mtResponse struct {
 	Code      string `xml:"code"`
@@ -54,8 +55,8 @@ type mtResponse struct {
 	MessageID string `xml:"message_id"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for AC channel")
@@ -95,20 +96,16 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/xml")
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		// parse our response as XML
 		response := &mtResponse{}
-		err = xml.Unmarshal(rr.Body, response)
+		err = xml.Unmarshal(respBody, response)
 		if err != nil {
-			log.WithError("Message Send Error", err)
+			clog.Error(err)
 			break
 		}
 
@@ -118,7 +115,7 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 			status.SetExternalID(response.MessageID)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			log.WithError("Message Send Error", fmt.Errorf("Received invalid response code: %s", response.Code))
+			clog.Error(fmt.Errorf("Received invalid response code: %s", response.Code))
 			break
 		}
 	}

@@ -45,7 +45,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	// check authentication
 	secret := c.StringConfigForKey(courier.ConfigSecret, "")
 	if secret != "" {
@@ -77,8 +77,8 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	merchantID := msg.Channel().StringConfigForKey(configMerchantId, "")
 	if merchantID == "" {
 		return nil, fmt.Errorf("no merchant_id set for NV channel")
@@ -109,23 +109,20 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if err != nil {
 			return nil, err
 		}
-		rr, err := utils.MakeHTTPRequest(req)
 
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		responseMsgStatus, _ := jsonparser.GetString(rr.Body, "status")
+		responseMsgStatus, _ := jsonparser.GetString(respBody, "status")
 
 		// we always get 204 on success
 		if responseMsgStatus == "FINISHED" {
 			status.SetStatus(courier.MsgWired)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			log.WithError("Message Send Error", fmt.Errorf("received invalid response"))
+			clog.Error(fmt.Errorf("received invalid response"))
 			break
 		}
 	}

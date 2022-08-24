@@ -11,7 +11,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/pkg/errors"
 )
 
@@ -39,14 +38,14 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// {
-//   "from": "+27123456789",
-//   "timestamp": "2017-01-01 00:00:00.00",
-//   "content": "content",
-//   "to": "to-addr",
-//   "reply_to": null,
-//   "message_id": "message-id"
-// }
+//	{
+//	  "from": "+27123456789",
+//	  "timestamp": "2017-01-01 00:00:00.00",
+//	  "content": "content",
+//	  "to": "to-addr",
+//	  "reply_to": null,
+//	  "message_id": "message-id"
+//	}
 type moPayload struct {
 	From      string `json:"from"       validate:"required"`
 	Timestamp string `json:"timestamp"  validate:"required"`
@@ -57,7 +56,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -90,11 +89,11 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
-// {
-//   'event_type': 'submitted',
-//   'message_id': 'message-id',
-//   'timestamp': '2017-01-01 00:00:00+0000',
-// }
+//	{
+//	  'event_type': 'submitted',
+//	  'message_id': 'message-id',
+//	  'timestamp': '2017-01-01 00:00:00+0000',
+//	}
 type eventPayload struct {
 	EventType string `json:"event_type" validate:"required"`
 	MessageID string `json:"message_id" validate:"required"`
@@ -109,7 +108,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveEvent is our HTTP handler function for incoming events
-func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &eventPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -140,13 +139,13 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 }
 
-// {
-//     "event_url": "https://callback.com/event",
-//     "content": "hello world",
-//     "from": "2020",
-//     "to": "+250788383383",
-//     "event_auth_token": "secret",
-// }
+//	{
+//	    "event_url": "https://callback.com/event",
+//	    "content": "hello world",
+//	    "from": "2020",
+//	    "to": "+250788383383",
+//	    "event_auth_token": "secret",
+//	}
 type mtPayload struct {
 	EventURL       string `json:"event_url"`
 	Content        string `json:"content"`
@@ -155,7 +154,7 @@ type mtPayload struct {
 	EventAuthToken string `json:"event_auth_token,omitempty"`
 }
 
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
 		return nil, fmt.Errorf("No send_url set for JN channel")
@@ -198,18 +197,14 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(username, password)
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString(rr.Body, "result", "message_id")
+		externalID, err := jsonparser.GetString(respBody, "result", "message_id")
 		if err != nil {
-			log.WithError("Message Send Error", errors.Errorf("unable to get result.message_id from body"))
+			clog.Error(errors.Errorf("unable to get result.message_id from body"))
 			return status, nil
 		}
 

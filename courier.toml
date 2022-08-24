@@ -32,10 +32,10 @@ aws_secret_access_key = ""
 s3_region = "us-east-2"
 
 # The S3 bucket we will write our media files to
-s3_media_bucket = "courier-test"
+s3_attachments_bucket = "courier-test"
 
 # prefix to our filenames for media (files will be named after the msg uuid)
-s3_media_prefix = "media"
+s3_attachments_prefix = "media"
 
 # the DSN token for reporting errors to sentry
 sentry_dsn = ""

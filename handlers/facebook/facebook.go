@@ -77,7 +77,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receiveVerify handles Facebook's webhook verification callback
-func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	mode := r.URL.Query().Get("hub.mode")
 
 	// this isn't a subscribe verification, that's an error
@@ -107,12 +107,13 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 		form.Set("access_token", authToken)
 		req, _ := http.NewRequest(http.MethodPost, subscribeURL, strings.NewReader(form.Encode()))
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		rr, err := utils.MakeHTTPRequest(req)
+
+		trace, err := handlers.MakeHTTPRequest(req)
 
 		// log if we get any kind of error
-		success, _ := jsonparser.GetBoolean([]byte(rr.Body), "success")
+		success, _ := jsonparser.GetBoolean(trace.ResponseBody, "success")
 		if err != nil || !success {
-			logrus.WithField("channel_uuid", channel.UUID()).WithField("response", rr.Response).Error("error subscribing to Facebook page events")
+			logrus.WithField("channel_uuid", channel.UUID()).Error("error subscribing to Facebook page events")
 		}
 	}()
 
@@ -125,23 +126,25 @@ type fbUser struct {
 	ID string `json:"id"`
 }
 
-// {
-//   "object":"page",
-//   "entry":[{
-//     "id":"180005062406476",
-//     "time":1514924367082,
-//     "messaging":[{
-//       "sender":  {"id":"1630934236957797"},
-//       "recipient":{"id":"180005062406476"},
-//       "timestamp":1514924366807,
-//       "message":{
-//         "mid":"mid.$cAAD5QiNHkz1m6cyj11guxokwkhi2",
-//         "seq":33116,
-//         "text":"65863634"
-//       }
-//     }]
-//   }]
-// }
+//	{
+//	  "object":"page",
+//	  "entry":[{
+//	    "id":"180005062406476",
+//	    "time":1514924367082,
+//	    "messaging":[
+//	      {
+//	        "sender": {"id":"1630934236957797"},
+//	        "recipient":{"id":"180005062406476"},
+//	        "timestamp":1514924366807,
+//	        "message":{
+//	          "mid":"mid.$cAAD5QiNHkz1m6cyj11guxokwkhi2",
+//	          "seq":33116,
+//	          "text":"65863634"
+//	        }
+//	      }
+//	    ]
+//	  }]
+//	}
 type moPayload struct {
 	Object string `json:"object"`
 	Entry  []struct {
@@ -203,7 +206,7 @@ type moPayload struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -426,22 +429,22 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
 }
 
-// {
-//     "messaging_type": "<MESSAGING_TYPE>"
-//     "recipient":{
-//         "id":"<PSID>"
-//     },
-//     "message":{
-//	       "text":"hello, world!"
-//         "attachment":{
-//             "type":"image",
-//             "payload":{
-//                 "url":"http://www.messenger-rocks.com/image.jpg",
-//                 "is_reusable":true
-//             }
-//         }
-//     }
-// }
+//	{
+//	  "messaging_type": "<MESSAGING_TYPE>"
+//	  "recipient": {
+//	    "id":"<PSID>"
+//	  },
+//	  "message": {
+//	    "text":"hello, world!"
+//	    "attachment":{
+//	      "type":"image",
+//	      "payload":{
+//	        "url":"http://www.messenger-rocks.com/image.jpg",
+//	        "is_reusable":true
+//	      }
+//	    }
+//	  }
+//	}
 type mtPayload struct {
 	MessagingType string `json:"messaging_type"`
 	Tag           string `json:"tag,omitempty"`
@@ -470,7 +473,7 @@ type mtQuickReply struct {
 	ContentType string `json:"content_type"`
 }
 
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	// can't do anything without an access token
 	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if accessToken == "" {
@@ -545,25 +548,21 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 
 		req, err := http.NewRequest(http.MethodPost, msgURL.String(), bytes.NewReader(jsonBody))
-
 		if err != nil {
 			return nil, err
 		}
+
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString(rr.Body, "message_id")
+		externalID, err := jsonparser.GetString(respBody, "message_id")
 		if err != nil {
-			log.WithError("Message Send Error", errors.Errorf("unable to get message_id from body"))
+			clog.Error(errors.Errorf("unable to get message_id from body"))
 			return status, nil
 		}
 
@@ -571,9 +570,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if i == 0 {
 			status.SetExternalID(externalID)
 			if msg.URN().IsFacebookRef() {
-				recipientID, err := jsonparser.GetString(rr.Body, "recipient_id")
+				recipientID, err := jsonparser.GetString(respBody, "recipient_id")
 				if err != nil {
-					log.WithError("Message Send Error", errors.Errorf("unable to get recipient_id from body"))
+					clog.Error(errors.Errorf("unable to get recipient_id from body"))
 					return status, nil
 				}
 
@@ -581,33 +580,31 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 				realIDURN, err := urns.NewFacebookURN(recipientID)
 				if err != nil {
-					log.WithError("Message Send Error", errors.Errorf("unable to make facebook urn from %s", recipientID))
+					clog.Error(errors.Errorf("unable to make facebook urn from %s", recipientID))
 				}
 
 				contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), "", "")
 				if err != nil {
-					log.WithError("Message Send Error", errors.Errorf("unable to get contact for %s", msg.URN().String()))
+					clog.Error(errors.Errorf("unable to get contact for %s", msg.URN().String()))
 				}
 				realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN)
 				if err != nil {
-					log.WithError("Message Send Error", errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
+					clog.Error(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
 				}
 				referralIDExtURN, err := urns.NewURNFromParts(urns.ExternalScheme, referralID, "", "")
 				if err != nil {
-					log.WithError("Message Send Error", errors.Errorf("unable to make ext urn from %s", referralID))
+					clog.Error(errors.Errorf("unable to make ext urn from %s", referralID))
 				}
 				extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN)
 				if err != nil {
-					log.WithError("Message Send Error", errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
+					clog.Error(errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
 				}
 
 				referralFacebookURN, err := h.Backend().RemoveURNfromContact(ctx, msg.Channel(), contact, msg.URN())
 				if err != nil {
-					log.WithError("Message Send Error", errors.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
+					clog.Error(errors.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
 				}
-
 			}
-
 		}
 
 		// this was wired successfully
@@ -618,7 +615,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 }
 
 // DescribeURN looks up URN metadata for new contacts
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLogger) (map[string]string, error) {
 	// can't do anything with facebook refs, ignore them
 	if urn.IsFacebookRef() {
 		return map[string]string{}, nil
@@ -639,14 +636,15 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	query.Set("access_token", accessToken)
 	u.RawQuery = query.Encode()
 	req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
-	rr, err := utils.MakeHTTPRequest(req)
-	if err != nil {
-		return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
+
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("unable to look up contact data")
 	}
 
 	// read our first and last name
-	firstName, _ := jsonparser.GetString(rr.Body, "first_name")
-	lastName, _ := jsonparser.GetString(rr.Body, "last_name")
+	firstName, _ := jsonparser.GetString(respBody, "first_name")
+	lastName, _ := jsonparser.GetString(respBody, "last_name")
 
 	return map[string]string{"name": utils.JoinNonEmpty(" ", firstName, lastName)}, nil
 }

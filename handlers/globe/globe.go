@@ -11,7 +11,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 var (
@@ -44,23 +43,23 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// {
-//	"inboundSMSMessageList":{
-//		"inboundSMSMessage":[
-//		   {
-//			  "dateTime":"Fri Nov 22 2013 12:12:13 GMT+0000 (UTC)",
-//			  "destinationAddress":"tel:21581234",
-//			  "messageId":null,
-//			  "message":"Hello",
-//			  "resourceURL":null,
-//			  "senderAddress":"tel:+639171234567"
-//		   }
-//		 ],
-//		 "numberOfMessagesInThisBatch":1,
-//		 "resourceURL":null,
-//		 "totalNumberOfPendingMessages":null
-//	 }
-// }
+//	{
+//		"inboundSMSMessageList":{
+//			"inboundSMSMessage":[
+//			   {
+//				  "dateTime":"Fri Nov 22 2013 12:12:13 GMT+0000 (UTC)",
+//				  "destinationAddress":"tel:21581234",
+//				  "messageId":null,
+//				  "message":"Hello",
+//				  "resourceURL":null,
+//				  "senderAddress":"tel:+639171234567"
+//			   }
+//			 ],
+//			 "numberOfMessagesInThisBatch":1,
+//			 "resourceURL":null,
+//			 "totalNumberOfPendingMessages":null
+//		 }
+//	}
 type moPayload struct {
 	InboundSMSMessageList struct {
 		InboundSMSMessage []struct {
@@ -74,7 +73,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -111,13 +110,13 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
 }
 
-// {
-//	  "address": "250788383383",
-//    "message": "hello world",
-//    "passphrase": "my passphrase",
-//    "app_id": "my app id",
-//    "app_secret": "my app secret"
-// }
+//	{
+//		  "address": "250788383383",
+//	   "message": "hello world",
+//	   "passphrase": "my passphrase",
+//	   "app_id": "my app id",
+//	   "app_secret": "my app secret"
+//	}
 type mtPayload struct {
 	Address    string `json:"address"`
 	Message    string `json:"message"`
@@ -126,8 +125,8 @@ type mtPayload struct {
 	AppSecret  string `json:"app_secret"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	appID := msg.Channel().StringConfigForKey(configAppID, "")
 	if appID == "" {
 		return nil, fmt.Errorf("Missing 'app_id' config for GL channel")
@@ -164,12 +163,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, _, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
+
 		status.SetStatus(courier.MsgWired)
 	}
 

@@ -15,12 +15,12 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/go-errors/errors"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -193,7 +193,7 @@ type mediaUploadInfoPayload struct {
 }
 
 // receiveEvent handles request event type
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	// read request body
 	bodyBytes, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
 
@@ -273,28 +273,29 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // DescribeURN handles VK contact details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLogger) (map[string]string, error) {
 	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionGetUser, nil)
-
 	if err != nil {
 		return nil, err
 	}
+
 	params := buildApiBaseParams(channel)
 	_, urnPath, _, _ := urn.ToParts()
 	params.Set(paramUserIds, urnPath)
 
 	req.URL.RawQuery = params.Encode()
-	res, err := utils.MakeHTTPRequest(req)
 
-	if err != nil {
-		return nil, err
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("unable to look up user info")
 	}
+
 	// parsing response
 	type responsePayload struct {
 		Users []userPayload `json:"response" validate:"required"`
 	}
 	payload := &responsePayload{}
-	err = json.Unmarshal(res.Body, payload)
+	err = json.Unmarshal(respBody, payload)
 
 	if err != nil {
 		return nil, err
@@ -385,14 +386,14 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 	return ""
 }
 
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
 	params := buildApiBaseParams(msg.Channel())
 	params.Set(paramUserId, msg.URN().Path())
 	params.Set(paramRandomId, msg.ID().String())
 
-	text, attachments := buildTextAndAttachmentParams(msg, status)
+	text, attachments := buildTextAndAttachmentParams(msg, clog)
 	params.Set(paramMessage, text)
 	params.Set(paramAttachments, attachments)
 
@@ -404,21 +405,18 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionSendMessage, nil)
-
 	if err != nil {
 		return status, errors.New("Cannot create send message request")
 	}
 
 	req.URL.RawQuery = params.Encode()
-	res, err := utils.MakeHTTPRequest(req)
 
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), res).WithError("Message Send Error", err)
-	status.AddLog(log)
-
-	if err != nil {
-		return status, err
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return status, nil
 	}
-	externalMsgId, err := jsonparser.GetInt(res.Body, responseOutgoingMessageKey)
+
+	externalMsgId, err := jsonparser.GetInt(respBody, responseOutgoingMessageKey)
 
 	if err != nil {
 		return status, errors.Errorf("no '%s' value in response", responseOutgoingMessageKey)
@@ -430,14 +428,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 }
 
 // buildTextAndAttachmentParams builds msg text with attachment links (if needed) and attachments list param, also returns the errors that occurred
-func buildTextAndAttachmentParams(msg courier.Msg, status courier.MsgStatus) (string, string) {
+func buildTextAndAttachmentParams(msg courier.Msg, clog *courier.ChannelLogger) (string, string) {
 	var msgAttachments []string
 
 	textBuf := bytes.Buffer{}
 	textBuf.WriteString(msg.Text())
 
 	for _, attachment := range msg.Attachments() {
-		start := time.Now()
 		// handle attachment type
 		mediaPrefix, mediaURL := handlers.SplitAttachment(attachment)
 		mediaPrefixParts := strings.Split(mediaPrefix, "/")
@@ -452,9 +449,7 @@ func buildTextAndAttachmentParams(msg courier.Msg, status courier.MsgStatus) (st
 			if attachment, err := handleMediaUploadAndGetAttachment(msg.Channel(), mediaTypeImage, mediaExt, mediaURL); err == nil {
 				msgAttachments = append(msgAttachments, attachment)
 			} else {
-				duration := time.Now().Sub(start)
-				log := courier.NewChannelLogFromError("Unable to upload photo attachment", msg.Channel(), msg.ID(), duration, err)
-				status.AddLog(log)
+				clog.Error(err)
 			}
 
 		default:
@@ -516,14 +511,15 @@ func getUploadServerURL(channel courier.Channel, sendURL string) (string, error)
 	}
 	params := buildApiBaseParams(channel)
 	req.URL.RawQuery = params.Encode()
-	res, err := utils.MakeHTTPRequest(req)
 
+	trace, err := handlers.MakeHTTPRequest(req)
 	if err != nil {
 		return "", err
 	}
+
 	uploadServer := &uploadServerPayload{}
 
-	if err = json.Unmarshal(res.Body, uploadServer); err != nil {
+	if err = json.Unmarshal(trace.ResponseBody, uploadServer); err != nil {
 		return "", nil
 	}
 	return uploadServer.Server.UploadURL, nil
@@ -547,34 +543,34 @@ func downloadMedia(mediaURL string) (io.Reader, error) {
 func uploadMedia(serverURL, uploadKey, mediaExt string, media io.Reader) ([]byte, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-
 	fileName := fmt.Sprintf("%s.%s", uploadKey, mediaExt)
+
 	part, err := writer.CreateFormFile(uploadKey, fileName)
-
 	if err != nil {
 		return nil, err
 	}
+
 	_, err = io.Copy(part, media)
-
 	if err != nil {
 		return nil, err
 	}
+
 	err = writer.Close()
-
 	if err != nil {
 		return nil, err
 	}
+
 	req, err := http.NewRequest(http.MethodPost, serverURL, body)
-
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	if res, err := utils.MakeHTTPRequest(req); err != nil {
+	if trace, err := handlers.MakeHTTPRequest(req); err != nil {
 		return nil, err
 	} else {
-		return res.Body, nil
+		return trace.ResponseBody, nil
 	}
 }
 
@@ -584,17 +580,19 @@ func saveUploadedMediaInfo(channel courier.Channel, sendURL, serverId, hash, med
 	params.Set(paramServerId, serverId)
 	params.Set(paramHash, hash)
 	params.Set(mediaKey, mediaValue)
+
 	req, err := http.NewRequest(http.MethodPost, sendURL, nil)
-
 	if err != nil {
 		return nil, err
 	}
+
 	req.URL.RawQuery = params.Encode()
-	res, err := utils.MakeHTTPRequest(req)
 
+	trace, err := handlers.MakeHTTPRequest(req)
 	if err != nil {
 		return nil, err
 	}
+
 	// parsing response
 	type responsePayload struct {
 		Response []mediaUploadInfoPayload `json:"response"`
@@ -602,7 +600,7 @@ func saveUploadedMediaInfo(channel courier.Channel, sendURL, serverId, hash, med
 	medias := &responsePayload{}
 
 	// try get first object
-	if err = json.Unmarshal(res.Body, medias); err != nil || len(medias.Response) == 0 {
+	if err = json.Unmarshal(trace.ResponseBody, medias); err != nil || len(medias.Response) == 0 {
 		return nil, errors.New("no response")
 	} else {
 		return &medias.Response[0], nil

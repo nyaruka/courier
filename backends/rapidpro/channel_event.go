@@ -13,7 +13,6 @@ import (
 	"github.com/nyaruka/null"
 
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 )
@@ -189,7 +188,7 @@ type DBChannelEvent struct {
 	ChannelID_   courier.ChannelID        `json:"channel_id"              db:"channel_id"`
 	URN_         urns.URN                 `json:"urn"                     db:"urn"`
 	EventType_   courier.ChannelEventType `json:"event_type"              db:"event_type"`
-	Extra_       *utils.NullMap           `json:"extra"                   db:"extra"`
+	Extra_       null.Map                 `json:"extra"                   db:"extra"`
 	OccurredOn_  time.Time                `json:"occurred_on"             db:"occurred_on"`
 	CreatedOn_   time.Time                `json:"created_on"              db:"created_on"`
 
@@ -198,20 +197,14 @@ type DBChannelEvent struct {
 	ContactURNID_ ContactURNID `json:"-"               db:"contact_urn_id"`
 
 	channel *DBChannel
-	logs    []*courier.ChannelLog
 }
 
-func (e *DBChannelEvent) EventID() int64                   { return int64(e.ID_) }
-func (e *DBChannelEvent) ChannelID() courier.ChannelID     { return e.ChannelID_ }
-func (e *DBChannelEvent) ChannelUUID() courier.ChannelUUID { return e.ChannelUUID_ }
-func (e *DBChannelEvent) ContactName() string              { return e.ContactName_ }
-func (e *DBChannelEvent) URN() urns.URN                    { return e.URN_ }
-func (e *DBChannelEvent) Extra() map[string]interface{} {
-	if e.Extra_ != nil {
-		return e.Extra_.Map
-	}
-	return nil
-}
+func (e *DBChannelEvent) EventID() int64                      { return int64(e.ID_) }
+func (e *DBChannelEvent) ChannelID() courier.ChannelID        { return e.ChannelID_ }
+func (e *DBChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.ChannelUUID_ }
+func (e *DBChannelEvent) ContactName() string                 { return e.ContactName_ }
+func (e *DBChannelEvent) URN() urns.URN                       { return e.URN_ }
+func (e *DBChannelEvent) Extra() map[string]interface{}       { return e.Extra_.Map() }
 func (e *DBChannelEvent) EventType() courier.ChannelEventType { return e.EventType_ }
 func (e *DBChannelEvent) OccurredOn() time.Time               { return e.OccurredOn_ }
 func (e *DBChannelEvent) CreatedOn() time.Time                { return e.CreatedOn_ }
@@ -222,8 +215,7 @@ func (e *DBChannelEvent) WithContactName(name string) courier.ChannelEvent {
 	return e
 }
 func (e *DBChannelEvent) WithExtra(extra map[string]interface{}) courier.ChannelEvent {
-	newExtra := utils.NewNullMap(extra)
-	e.Extra_ = &newExtra
+	e.Extra_ = null.NewMap(extra)
 	return e
 }
 
@@ -231,6 +223,3 @@ func (e *DBChannelEvent) WithOccurredOn(time time.Time) courier.ChannelEvent {
 	e.OccurredOn_ = time
 	return e
 }
-
-func (e *DBChannelEvent) Logs() []*courier.ChannelLog    { return e.logs }
-func (e *DBChannelEvent) AddLog(log *courier.ChannelLog) { e.logs = append(e.logs, log) }

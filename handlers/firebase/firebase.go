@@ -11,7 +11,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
@@ -55,7 +54,7 @@ type receiveForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	form := &receiveForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -90,7 +89,7 @@ type registerForm struct {
 }
 
 // registerContact is our HTTP handler function for when a contact is registered (or renewed)
-func (h *handler) registerContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) registerContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	form := &registerForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -135,8 +134,8 @@ type mtNotification struct {
 	Body  string `json:"body"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
 	if title == "" {
 		return nil, fmt.Errorf("no FCM_TITLE set for FCM channel")
@@ -195,25 +194,23 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("key=%s", fcmKey))
 
-		rr, err := utils.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		// was this successful
-		success, _ := jsonparser.GetInt(rr.Body, "success")
+		success, _ := jsonparser.GetInt(respBody, "success")
 		if success != 1 {
-			log.WithError("Message Send Error", errors.Errorf("received non-1 value for success in response"))
+			clog.Error(errors.Errorf("received non-1 value for success in response"))
 			return status, nil
 		}
 
 		// grab the id if this is our first part
 		if i == 0 {
-			externalID, err := jsonparser.GetInt(rr.Body, "multicast_id")
+			externalID, err := jsonparser.GetInt(respBody, "multicast_id")
 			if err != nil {
-				log.WithError("Message Send Error", errors.Errorf("unable to get multicast_id from response"))
+				clog.Error(errors.Errorf("unable to get multicast_id from response"))
 				return status, nil
 			}
 			status.SetExternalID(fmt.Sprintf("%d", externalID))

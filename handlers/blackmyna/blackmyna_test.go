@@ -6,10 +6,11 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BM", "2020", "US", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BM", "2020", "US", nil),
 }
 
 var (
@@ -27,15 +28,15 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Msg"), URN: Sp("tel:+9779814641111")},
-	{Label: "Invalid URN", URL: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive Empty", URL: emptyReceive, Status: 400, Response: "field 'text' required"},
-	{Label: "Receive Missing Text", URL: missingText, Status: 400, Response: "field 'text' required"},
+	{Label: "Receive Valid", URL: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+9779814641111")},
+	{Label: "Invalid URN", URL: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Receive Empty", URL: emptyReceive, ExpectedStatus: 400, ExpectedResponse: "field 'text' required"},
+	{Label: "Receive Missing Text", URL: missingText, ExpectedStatus: 400, ExpectedResponse: "field 'text' required"},
 
-	{Label: "Status Invalid", URL: invalidStatus, Status: 400, Response: "unknown status"},
-	{Label: "Status Missing", URL: missingStatus, Status: 400, Response: "field 'status' required"},
-	{Label: "Valid Status", URL: validStatus, Status: 200, Response: `"status":"F"`},
+	{Label: "Status Invalid", URL: invalidStatus, ExpectedStatus: 400, ExpectedResponse: "unknown status"},
+	{Label: "Status Missing", URL: missingStatus, ExpectedStatus: 400, ExpectedResponse: "field 'status' required"},
+	{Label: "Valid Status", URL: validStatus, ExpectedStatus: 200, ExpectedResponse: `"status":"F"`},
 }
 
 func TestHandler(t *testing.T) {
@@ -52,42 +53,66 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status: "W", ExternalID: "1002",
-		ResponseBody: `[{"id": "1002"}]`, ResponseStatus: 200,
-		Headers:    map[string]string{"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ="},
-		PostParams: map[string]string{"message": "Simple Message", "address": "+250788383383", "senderaddress": "2020"},
-		SendPrep:   setSendURL},
-	{Label: "Unicode Send",
-		Text: "☺", URN: "tel:+250788383383",
-		Status: "W", ExternalID: "1002",
-		ResponseBody: `[{"id": "1002"}]`, ResponseStatus: 200,
-		PostParams: map[string]string{"message": "☺", "address": "+250788383383", "senderaddress": "2020"},
-		SendPrep:   setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status: "W", ExternalID: "1002",
-		ResponseBody: `[{ "id": "1002" }]`, ResponseStatus: 200,
-		PostParams: map[string]string{"message": "My pic!\nhttps://foo.bar/image.jpg", "address": "+250788383383", "senderaddress": "2020"},
-		SendPrep:   setSendURL},
-	{Label: "No External Id",
-		Text: "No External ID", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: `{ "error": "failed" }`, ResponseStatus: 200,
-		Error:      "no external id returned in body",
-		PostParams: map[string]string{"message": `No External ID`, "address": "+250788383383", "senderaddress": "2020"},
-		SendPrep:   setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: `{ "error": "failed" }`, ResponseStatus: 401,
-		PostParams: map[string]string{"message": `Error Message`, "address": "+250788383383", "senderaddress": "2020"},
-		SendPrep:   setSendURL},
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `[{"id": "1002"}]`,
+		MockResponseStatus: 200,
+		ExpectedHeaders:    map[string]string{"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ="},
+		ExpectedPostParams: map[string]string{"message": "Simple Message", "address": "+250788383383", "senderaddress": "2020"},
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "1002",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Unicode Send",
+		MsgText:            "☺",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `[{"id": "1002"}]`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"message": "☺", "address": "+250788383383", "senderaddress": "2020"},
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "1002",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
+		MsgText:            "My pic!",
+		MsgURN:             "tel:+250788383383",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:   `[{ "id": "1002" }]`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"message": "My pic!\nhttps://foo.bar/image.jpg", "address": "+250788383383", "senderaddress": "2020"},
+		ExpectedStatus:     "W",
+		ExpectedExternalID: "1002",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "No External Id",
+		MsgText:            "No External ID",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{ "error": "failed" }`,
+		MockResponseStatus: 200,
+		ExpectedErrors:     []string{"no external id returned in body"},
+		ExpectedPostParams: map[string]string{"message": `No External ID`, "address": "+250788383383", "senderaddress": "2020"},
+		ExpectedStatus:     "E",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Error Sending",
+		MsgText:            "Error Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{ "error": "failed" }`,
+		MockResponseStatus: 401,
+		ExpectedPostParams: map[string]string{"message": `Error Message`, "address": "+250788383383", "senderaddress": "2020"},
+		ExpectedStatus:     "E",
+		SendPrep:           setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BM", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BM", "2020", "US",
 		map[string]interface{}{
 			courier.ConfigPassword: "Password",
 			courier.ConfigUsername: "Username",

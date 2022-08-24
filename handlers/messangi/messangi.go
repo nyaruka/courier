@@ -46,19 +46,21 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-//<response>
+// <response>
+//
 //	<input>sendMT</input>
 //	<status>OK</status>
 //	<description>Completed</description>
-//</response>
+//
+// </response>
 type mtResponse struct {
 	Input       string `xml:"input"`
 	Status      string `xml:"status"`
 	Description string `xml:"description"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	publicKey := msg.Channel().StringConfigForKey(configPublicKey, "")
 	if publicKey == "" {
 		return nil, fmt.Errorf("no public_key set for MG channel")
@@ -90,24 +92,20 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		fullURL := fmt.Sprintf("%s/%s/%s/%s", sendURL, params, publicKey, signature)
 
 		req, err := http.NewRequest(http.MethodGet, fullURL, nil)
-
 		if err != nil {
 			return nil, err
 		}
-		rr, err := utils.MakeHTTPRequest(req)
 
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		// parse our response as XML
 		response := &mtResponse{}
-		err = xml.Unmarshal(rr.Body, response)
+		err = xml.Unmarshal(respBody, response)
 		if err != nil {
-			log.WithError("Message Send Error", err)
+			clog.Error(err)
 			break
 		}
 
@@ -116,7 +114,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			status.SetStatus(courier.MsgWired)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			log.WithError("Message Send Error", fmt.Errorf("Received invalid response description: %s", response.Description))
+			clog.Error(fmt.Errorf("Received invalid response description: %s", response.Description))
 			break
 		}
 	}

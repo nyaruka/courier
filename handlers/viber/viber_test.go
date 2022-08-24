@@ -12,6 +12,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 // setSend takes care of setting the sendURL to call
@@ -30,149 +31,168 @@ func buildMockAttachmentService(testCases []ChannelSendTestCase) *httptest.Serve
 
 	// update our tests media urls
 	for c := range testCases {
-		if len(testCases[c].Attachments) > 0 {
-			for i, a := range testCases[c].Attachments {
+		if len(testCases[c].MsgAttachments) > 0 {
+			for i, a := range testCases[c].MsgAttachments {
 				mediaType, mediaURL := SplitAttachment(a)
 				parts := strings.Split(mediaURL, "/")
-				testCases[c].Attachments[i] = fmt.Sprintf("%s:%s/%s", mediaType, server.URL, parts[len(parts)-1])
+				testCases[c].MsgAttachments[i] = fmt.Sprintf("%s:%s/%s", mediaType, server.URL, parts[len(parts)-1])
 			}
 		}
-		testCases[c].RequestBody = strings.Replace(testCases[c].RequestBody, "{{ SERVER_URL }}", server.URL, -1)
+		testCases[c].ExpectedRequestBody = strings.Replace(testCases[c].ExpectedRequestBody, "{{ SERVER_URL }}", server.URL, -1)
 	}
 
 	return server
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		Status: "W", ResponseStatus: 200,
-		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
-		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
-		SendPrep:    setSendURL},
-	{Label: "Long Send",
-		Text:   "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		URN:    "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		Status: "W", ResponseStatus: 200,
-		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
-		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"I need to keep adding more things to make it work","type":"text","tracking_data":"10"}`,
-		SendPrep:    setSendURL},
-	{Label: "Unicode Send",
-		Text: "☺", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		Status: "W", ResponseStatus: 200,
-		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
-		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"☺","type":"text","tracking_data":"10"}`,
-		SendPrep:    setSendURL},
-	{Label: "Quick Reply",
-		Text: "Are you happy?", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", QuickReplies: []string{"Yes", "No"},
-		Status: "W", ResponseStatus: 200,
-		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
-		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular","Columns":"3"},{"ActionType":"reply","ActionBody":"No","Text":"No","TextSize":"regular","Columns":"3"}]}}`,
-		SendPrep:    setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"image/jpeg:https://localhost/image.jpg"},
-		Status: "W", ResponseStatus: 200,
-		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
-		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My pic!","type":"picture","tracking_data":"10","media":"{{ SERVER_URL }}/image.jpg"}`,
-		SendPrep:    setSendURL},
-	{Label: "Long Description with Attachment",
-		Text: "Text description is longer that 10 characters",
-		URN:  "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"image/jpeg:https://localhost/image.jpg"},
-		Status: "W", ResponseStatus: 200,
-		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
-		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Text description is longer that 10 characters","type":"text","tracking_data":"10"}`,
-		SendPrep:    setSendURL},
-	{Label: "Send Attachment Video",
-		Text: "My video!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"video/mp4:https://localhost/video.mp4"},
-		Status: "W", ResponseStatus: 200,
-		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
-		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My video!","type":"text","tracking_data":"10"}`,
-		SendPrep:    setSendURL},
-	{Label: "Send Attachment Audio",
-		Text: "My audio!", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", Attachments: []string{"audio/mp3:https://localhost/audio.mp3"},
-		Status: "W", ResponseStatus: 200,
-		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
-		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My audio!","type":"text","tracking_data":"10"}`,
-		SendPrep:    setSendURL},
-	{Label: "Got non-0 response",
-		Text: "Simple Message", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		Status: "E", ResponseStatus: 200,
-		ResponseBody: `{"status":3,"status_message":"InvalidToken"}`,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
-		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
-		SendPrep:    setSendURL},
-	{Label: "Got Invalid JSON response",
-		Text: "Simple Message", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		Status: "E", ResponseStatus: 200,
-		ResponseBody: `invalidJSON`,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
-		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
-		SendPrep:    setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Message", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		Status: "E", ResponseStatus: 401,
-		ResponseBody: `{"status":"5"}`,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
-		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Error Message","type":"text","tracking_data":"10"}`,
-		SendPrep:    setSendURL},
+	{
+		Label:               "Plain Send",
+		MsgText:             "Simple Message",
+		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponseStatus:  200,
+		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
+		ExpectedStatus:      "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Long Send",
+		MsgText:             "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponseStatus:  200,
+		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"I need to keep adding more things to make it work","type":"text","tracking_data":"10"}`,
+		ExpectedStatus:      "W",
+		SendPrep:            setSendURL},
+	{
+		Label:               "Unicode Send",
+		MsgText:             "☺",
+		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponseStatus:  200,
+		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"☺","type":"text","tracking_data":"10"}`,
+		ExpectedStatus:      "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Quick Reply",
+		MsgText:             "Are you happy?",
+		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgQuickReplies:     []string{"Yes", "No"},
+		MockResponseStatus:  200,
+		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular","Columns":"3"},{"ActionType":"reply","ActionBody":"No","Text":"No","TextSize":"regular","Columns":"3"}]}}`,
+		ExpectedStatus:      "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Send Attachment",
+		MsgText:             "My pic!",
+		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgAttachments:      []string{"image/jpeg:https://localhost/image.jpg"},
+		MockResponseStatus:  200,
+		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My pic!","type":"picture","tracking_data":"10","media":"{{ SERVER_URL }}/image.jpg"}`,
+		ExpectedStatus:      "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Long Description with Attachment",
+		MsgText:             "Text description is longer that 10 characters",
+		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgAttachments:      []string{"image/jpeg:https://localhost/image.jpg"},
+		MockResponseStatus:  200,
+		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Text description is longer that 10 characters","type":"text","tracking_data":"10"}`,
+		ExpectedStatus:      "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Send Attachment Video",
+		MsgText:             "My video!",
+		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgAttachments:      []string{"video/mp4:https://localhost/video.mp4"},
+		MockResponseStatus:  200,
+		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My video!","type":"text","tracking_data":"10"}`,
+		ExpectedStatus:      "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Send Attachment Audio",
+		MsgText:             "My audio!",
+		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgAttachments:      []string{"audio/mp3:https://localhost/audio.mp3"},
+		MockResponseStatus:  200,
+		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My audio!","type":"text","tracking_data":"10"}`,
+		ExpectedStatus:      "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Got non-0 response",
+		MsgText:             "Simple Message",
+		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponseStatus:  200,
+		MockResponseBody:    `{"status":3,"status_message":"InvalidToken"}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
+		ExpectedStatus:      "E",
+		ExpectedErrors:      []string{"received non-0 status: '3'"},
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Got Invalid JSON response",
+		MsgText:             "Simple Message",
+		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponseStatus:  200,
+		MockResponseBody:    `invalidJSON`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
+		ExpectedStatus:      "E",
+		ExpectedErrors:      []string{"received invalid JSON response"},
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Error Sending",
+		MsgText:             "Error Message",
+		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponseStatus:  401,
+		MockResponseBody:    `{"status":"5"}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Error Message","type":"text","tracking_data":"10"}`,
+		ExpectedStatus:      "E",
+		SendPrep:            setSendURL,
+	},
 }
 
 var invalidTokenSendTestCases = []ChannelSendTestCase{
-	{Label: "Invalid token", Error: "missing auth token in config"},
+	{
+		Label:          "Invalid token",
+		ExpectedErrors: []string{"missing auth token in config"},
+	},
 }
 
 var buttonLayoutSendTestCases = []ChannelSendTestCase{
-	{Label: "Quick Reply With Layout With Column, Row and BgColor definitions",
-		Text: "Select a, b, c or d.", URN: "viber:xy5/5y6O81+/kbWHpLhBoA==", QuickReplies: []string{"a", "b", "c", "d"},
-		Status: "W", ResponseStatus: 200,
-		ResponseBody: `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
-		},
-		RequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Select a, b, c or d.","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"a","Text":"\u003cfont color=\"#ffffff\"\u003ea\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"b","Text":"\u003cfont color=\"#ffffff\"\u003eb\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"c","Text":"\u003cfont color=\"#ffffff\"\u003ec\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"d","Text":"\u003cfont color=\"#ffffff\"\u003ed\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"6","BgColor":"#f7bb3f"}]}}`,
-		SendPrep:    setSendURL},
+	{
+		Label:               "Quick Reply With Layout With Column, Row and BgColor definitions",
+		MsgText:             "Select a, b, c or d.",
+		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgQuickReplies:     []string{"a", "b", "c", "d"},
+		MockResponseStatus:  200,
+		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
+		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Select a, b, c or d.","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"a","Text":"\u003cfont color=\"#ffffff\"\u003ea\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"b","Text":"\u003cfont color=\"#ffffff\"\u003eb\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"c","Text":"\u003cfont color=\"#ffffff\"\u003ec\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"d","Text":"\u003cfont color=\"#ffffff\"\u003ed\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"6","BgColor":"#f7bb3f"}]}}`,
+		ExpectedStatus:      "W",
+		SendPrep:            setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
@@ -181,14 +201,14 @@ func TestSending(t *testing.T) {
 
 	maxMsgLength = 160
 	descriptionMaxLength = 10
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		map[string]interface{}{
 			courier.ConfigAuthToken: "Token",
 		})
-	var invalidTokenChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
+	var invalidTokenChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		map[string]interface{}{},
 	)
-	var buttonLayoutChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2021", "",
+	var buttonLayoutChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2021", "",
 		map[string]interface{}{
 			courier.ConfigAuthToken: "Token",
 			"button_layout":         map[string]interface{}{"bg_color": "#f7bb3f", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
@@ -199,13 +219,13 @@ func TestSending(t *testing.T) {
 }
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{
 		courier.ConfigAuthToken: "Token",
 	}),
 }
 
 var testChannelsWithWelcomeMessage = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{
 		courier.ConfigAuthToken:   "Token",
 		configViberWelcomeMessage: "Welcome to VP, Please subscribe here for more.",
 	}),
@@ -461,51 +481,51 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, Status: 200, Response: "Accepted",
-		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExpectedExternalID: Sp("4987381189870374000"),
 		PrepRequest: addValidSignature},
-	{Label: "Receive invalid signature", URL: receiveURL, Data: validMsg, Status: 400, Response: "invalid request signature",
+	{Label: "Receive invalid signature", URL: receiveURL, Data: validMsg, ExpectedStatus: 400, ExpectedResponse: "invalid request signature",
 		PrepRequest: addInvalidSignature},
-	{Label: "Receive invalid JSON", URL: receiveURL, Data: invalidJSON, Status: 400, Response: "unable to parse request JSON",
+	{Label: "Receive invalid JSON", URL: receiveURL, Data: invalidJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON",
 		PrepRequest: addValidSignature},
-	{Label: "Receive invalid URN", URL: receiveURL, Data: invalidURNMsg, Status: 400, Response: "invalid viber id",
+	{Label: "Receive invalid URN", URL: receiveURL, Data: invalidURNMsg, ExpectedStatus: 400, ExpectedResponse: "invalid viber id",
 		PrepRequest: addValidSignature},
-	{Label: "Receive invalid Message Type", URL: receiveURL, Data: receiveInvalidMessageType, Status: 400, Response: "unknown message type",
+	{Label: "Receive invalid Message Type", URL: receiveURL, Data: receiveInvalidMessageType, ExpectedStatus: 400, ExpectedResponse: "unknown message type",
 		PrepRequest: addValidSignature},
-	{Label: "Webhook validation", URL: receiveURL, Data: webhookCheck, Status: 200, Response: "webhook valid", PrepRequest: addValidSignature},
-	{Label: "Failed Status Report", URL: receiveURL, Data: failedStatusReport, Status: 200, Response: `"status":"F"`, PrepRequest: addValidSignature},
-	{Label: "Delivered Status Report", URL: receiveURL, Data: deliveredStatusReport, Status: 200, Response: `Ignored`, PrepRequest: addValidSignature},
-	{Label: "Subcribe", URL: receiveURL, Data: validSubscribed, Status: 200, Response: "Accepted", PrepRequest: addValidSignature},
-	{Label: "Subcribe Invalid URN", URL: receiveURL, Data: invalidURNSubscribed, Status: 400, Response: "invalid viber id", PrepRequest: addValidSignature},
-	{Label: "Unsubcribe", URL: receiveURL, Data: validUnsubscribed, Status: 200, Response: "Accepted", ChannelEvent: Sp(string(courier.StopContact)), PrepRequest: addValidSignature},
-	{Label: "Unsubcribe Invalid URN", URL: receiveURL, Data: invalidURNUnsubscribed, Status: 400, Response: "invalid viber id", PrepRequest: addValidSignature},
-	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, Status: 200, Response: "ignored conversation start", PrepRequest: addValidSignature},
-	{Label: "Unexpected event", URL: receiveURL, Data: unexpectedEvent, Status: 400,
-		Response: "not handled, unknown event: unexpected", PrepRequest: addValidSignature},
-	{Label: "Message missing text", URL: receiveURL, Data: rejectedMessage, Status: 400, Response: "missing text or media in message in request body", PrepRequest: addValidSignature},
-	{Label: "Picture missing media", URL: receiveURL, Data: rejectedPicture, Status: 400, Response: "missing text or media in message in request body", PrepRequest: addValidSignature},
-	{Label: "Video missing media", URL: receiveURL, Data: rejectedVideo, Status: 400, Response: "missing text or media in message in request body", PrepRequest: addValidSignature},
+	{Label: "Webhook validation", URL: receiveURL, Data: webhookCheck, ExpectedStatus: 200, ExpectedResponse: "webhook valid", PrepRequest: addValidSignature},
+	{Label: "Failed Status Report", URL: receiveURL, Data: failedStatusReport, ExpectedStatus: 200, ExpectedResponse: `"status":"F"`, PrepRequest: addValidSignature},
+	{Label: "Delivered Status Report", URL: receiveURL, Data: deliveredStatusReport, ExpectedStatus: 200, ExpectedResponse: `Ignored`, PrepRequest: addValidSignature},
+	{Label: "Subcribe", URL: receiveURL, Data: validSubscribed, ExpectedStatus: 200, ExpectedResponse: "Accepted", PrepRequest: addValidSignature},
+	{Label: "Subcribe Invalid URN", URL: receiveURL, Data: invalidURNSubscribed, ExpectedStatus: 400, ExpectedResponse: "invalid viber id", PrepRequest: addValidSignature},
+	{Label: "Unsubcribe", URL: receiveURL, Data: validUnsubscribed, ExpectedStatus: 200, ExpectedResponse: "Accepted", ChannelEvent: Sp(string(courier.StopContact)), PrepRequest: addValidSignature},
+	{Label: "Unsubcribe Invalid URN", URL: receiveURL, Data: invalidURNUnsubscribed, ExpectedStatus: 400, ExpectedResponse: "invalid viber id", PrepRequest: addValidSignature},
+	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, ExpectedStatus: 200, ExpectedResponse: "ignored conversation start", PrepRequest: addValidSignature},
+	{Label: "Unexpected event", URL: receiveURL, Data: unexpectedEvent, ExpectedStatus: 400,
+		ExpectedResponse: "not handled, unknown event: unexpected", PrepRequest: addValidSignature},
+	{Label: "Message missing text", URL: receiveURL, Data: rejectedMessage, ExpectedStatus: 400, ExpectedResponse: "missing text or media in message in request body", PrepRequest: addValidSignature},
+	{Label: "Picture missing media", URL: receiveURL, Data: rejectedPicture, ExpectedStatus: 400, ExpectedResponse: "missing text or media in message in request body", PrepRequest: addValidSignature},
+	{Label: "Video missing media", URL: receiveURL, Data: rejectedVideo, ExpectedStatus: 400, ExpectedResponse: "missing text or media in message in request body", PrepRequest: addValidSignature},
 
-	{Label: "Valid Contact receive", URL: receiveURL, Data: validReceiveContact, Status: 200, Response: "Accepted",
-		Text: Sp("Alex: +12067799191"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+	{Label: "Valid Contact receive", URL: receiveURL, Data: validReceiveContact, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("Alex: +12067799191"), ExpectedURN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExpectedExternalID: Sp("4987381189870374000"),
 		PrepRequest: addValidSignature},
-	{Label: "Valid URL receive", URL: receiveURL, Data: validReceiveURL, Status: 200, Response: "Accepted",
-		Text: Sp("http://foo.com/"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+	{Label: "Valid URL receive", URL: receiveURL, Data: validReceiveURL, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("http://foo.com/"), ExpectedURN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExpectedExternalID: Sp("4987381189870374000"),
 		PrepRequest: addValidSignature},
 
-	{Label: "Valid Location receive", URL: receiveURL, Data: validReceiveLocation, Status: 200, Response: "Accepted",
-		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
-		Attachment: Sp("geo:1.200000,-1.300000"), PrepRequest: addValidSignature},
-	{Label: "Valid Sticker", URL: receiveURL, Data: validSticker, Status: 200, Response: "Accepted",
-		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
-		Attachment: Sp("https://viber.github.io/docs/img/stickers/40133.png"), PrepRequest: addValidSignature},
+	{Label: "Valid Location receive", URL: receiveURL, Data: validReceiveLocation, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExpectedExternalID: Sp("4987381189870374000"),
+		ExpectedAttachments: []string{"geo:1.200000,-1.300000"}, PrepRequest: addValidSignature},
+	{Label: "Valid Sticker", URL: receiveURL, Data: validSticker, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExpectedExternalID: Sp("4987381189870374000"),
+		ExpectedAttachments: []string{"https://viber.github.io/docs/img/stickers/40133.png"}, PrepRequest: addValidSignature},
 }
 
 var testWelcomeMessageCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, Status: 200, Response: "Accepted",
-		Text: Sp("incoming msg"), URN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExternalID: Sp("4987381189870374000"),
+	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExpectedExternalID: Sp("4987381189870374000"),
 		PrepRequest: addValidSignature},
-	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, Status: 200, Response: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0"}`, PrepRequest: addValidSignature},
+	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, ExpectedStatus: 200, ExpectedResponse: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0"}`, PrepRequest: addValidSignature},
 }
 
 func addValidSignature(r *http.Request) {

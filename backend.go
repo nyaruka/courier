@@ -62,8 +62,8 @@ type Backend interface {
 	// WriteChannelEvent writes the passed in channel even returning any error
 	WriteChannelEvent(context.Context, ChannelEvent) error
 
-	// WriteChannelLogs writes the passed in channel logs to our backend
-	WriteChannelLogs(context.Context, []*ChannelLog) error
+	// WriteChannelLog writes the passed in channel log to our backend
+	WriteChannelLog(context.Context, *ChannelLogger) error
 
 	// PopNextOutgoingMsg returns the next message that needs to be sent, callers should call MarkOutgoingMsgComplete with the
 	// returned message when they have dealt with the message (regardless of whether it was sent or not)
@@ -88,6 +88,8 @@ type Backend interface {
 	// Mark a external ID as seen for a period
 	WriteExternalIDSeen(Msg)
 
+	ResolveMedia(context.Context, string) (Media, error)
+
 	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string
 
@@ -99,6 +101,18 @@ type Backend interface {
 
 	// RedisPool returns the redisPool for this backend
 	RedisPool() *redis.Pool
+}
+
+// Media is a resolved media object that can be used as a message attachment
+type Media interface {
+	Name() string
+	ContentType() string
+	URL() string
+	Size() int
+	Width() int
+	Height() int
+	Duration() int
+	Alternates() []Media
 }
 
 // NewBackend creates the type of backend passed in

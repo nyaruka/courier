@@ -69,23 +69,23 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// {
-//   "statuses": [{
-//     "id": "9712A34B4A8B6AD50F",
-//     "recipient_id": "16315555555",
-//     "status": "sent",
-//     "timestamp": "1518694700"
-//   }],
-//   "messages": [ {
-//     "from": "16315555555",
-//     "id": "3AF99CB6BE490DCAF641",
-//     "timestamp": "1518694235",
-//     "text": {
-//       "body": "Hello this is an answer"
-//     },
-//     "type": "text"
-//   }]
-// }
+//	{
+//	  "statuses": [{
+//	    "id": "9712A34B4A8B6AD50F",
+//	    "recipient_id": "16315555555",
+//	    "status": "sent",
+//	    "timestamp": "1518694700"
+//	  }],
+//	  "messages": [ {
+//	    "from": "16315555555",
+//	    "id": "3AF99CB6BE490DCAF641",
+//	    "timestamp": "1518694235",
+//	    "text": {
+//	      "body": "Hello this is an answer"
+//	    },
+//	    "type": "text"
+//	  }]
+//	}
 type eventPayload struct {
 	Contacts []struct {
 		Profile struct {
@@ -172,7 +172,7 @@ type eventPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &eventPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -495,9 +495,8 @@ type mtErrorPayload struct {
 // whatsapp only allows messages up to 4096 chars
 const maxMsgLength = 4096
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	start := time.Now()
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	conn := h.Backend().RedisPool().Get()
 	defer conn.Close()
 
@@ -517,25 +516,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
 
 	var wppID string
-	var logs []*courier.ChannelLog
 
-	payloads, logs, err := buildPayloads(msg, h)
+	payloads, err := buildPayloads(msg, h, clog)
 
 	fail := payloads == nil && err != nil
 	if fail {
 		return nil, err
 	}
-	for _, log := range logs {
-		status.AddLog(log)
-	}
 
 	for i, payload := range payloads {
 		externalID := ""
-		wppID, externalID, logs, err = sendWhatsAppMsg(conn, msg, sendPath, payload)
-		// add logs to our status
-		for _, log := range logs {
-			status.AddLog(log)
-		}
+		wppID, externalID, err = sendWhatsAppMsg(conn, msg, sendPath, payload, clog)
 		if err != nil {
 			break
 		}
@@ -554,9 +545,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			err = status.SetUpdatedURN(msg.URN(), newURN)
 
 			if err != nil {
-				elapsed := time.Since(start)
-				log := courier.NewChannelLogFromError("unable to update contact URN", msg.Channel(), msg.ID(), elapsed, err)
-				status.AddLog(log)
+				clog.Error(err)
 			}
 		}
 		status.SetStatus(courier.MsgWired)
@@ -565,10 +554,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	return status, nil
 }
 
-func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.ChannelLog, error) {
-	start := time.Now()
+func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLogger) ([]interface{}, error) {
 	var payloads []interface{}
-	var logs []*courier.ChannelLog
 	var err error
 
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
@@ -584,10 +571,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 		for attachmentCount, attachment := range msg.Attachments() {
 
 			mimeType, mediaURL := handlers.SplitAttachment(attachment)
-			mediaID, mediaLogs, err := h.fetchMediaID(msg, mimeType, mediaURL)
-			if len(mediaLogs) > 0 {
-				logs = append(logs, mediaLogs...)
-			}
+			mediaID, err := h.fetchMediaID(msg, mimeType, mediaURL, clog)
 			if err != nil {
 				logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("error while uploading media to whatsapp")
 			}
@@ -643,10 +627,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				payload.Video = mediaPayload
 				payloads = append(payloads, payload)
 			} else {
-				duration := time.Since(start)
-				err = fmt.Errorf("unknown attachment mime type: %s", mimeType)
-				attachmentLogs := []*courier.ChannelLog{courier.NewChannelLogFromError("Error sending message", msg.Channel(), msg.ID(), duration, err)}
-				logs = append(logs, attachmentLogs...)
+				clog.Error(fmt.Errorf("unknown attachment mime type: %s", mimeType))
 				break
 			}
 		}
@@ -730,7 +711,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 		var templating *MsgTemplating
 		templating, err := h.getTemplate(msg)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
+			return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
 		}
 		if templating != nil {
 			namespace := templating.Namespace
@@ -738,7 +719,7 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 				namespace = msg.Channel().StringConfigForKey(configNamespace, "")
 			}
 			if namespace == "" {
-				return nil, nil, errors.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
+				return nil, errors.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
 			}
 
 			if msg.Channel().BoolConfigForKey(configHSMSupport, false) {
@@ -849,13 +830,11 @@ func buildPayloads(msg courier.Msg, h *handler) ([]interface{}, []*courier.Chann
 			}
 		}
 	}
-	return payloads, logs, err
+	return payloads, err
 }
 
 // fetchMediaID tries to fetch the id for the uploaded media, setting the result in redis.
-func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (string, []*courier.ChannelLog, error) {
-	var logs []*courier.ChannelLog
-
+func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string, clog *courier.ChannelLogger) (string, error) {
 	// check in cache first
 	rc := h.Backend().RedisPool().Get()
 	defer rc.Close()
@@ -864,9 +843,9 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 	mediaCache := redisx.NewIntervalHash(cacheKey, time.Hour*24, 2)
 	mediaID, err := mediaCache.Get(rc, mediaURL)
 	if err != nil {
-		return "", logs, errors.Wrapf(err, "error reading media id from redis: %s : %s", cacheKey, mediaURL)
+		return "", errors.Wrapf(err, "error reading media id from redis: %s : %s", cacheKey, mediaURL)
 	} else if mediaID != "" {
-		return mediaID, logs, nil
+		return mediaID, nil
 	}
 
 	// check in failure cache
@@ -875,73 +854,72 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string) (stri
 
 	// any non nil value means we cached a failure, don't try again until our cache expires
 	if found != nil {
-		return "", logs, nil
+		return "", nil
 	}
 
 	// download media
 	req, err := http.NewRequest("GET", mediaURL, nil)
 	if err != nil {
-		return "", logs, errors.Wrapf(err, "error building media request")
+		return "", errors.Wrapf(err, "error building media request")
 	}
-	rr, err := utils.MakeHTTPRequest(req)
-	log := courier.NewChannelLogFromRR("Fetching media", msg.Channel(), msg.ID(), rr).WithError("error fetching media", err)
-	logs = append(logs, log)
-	if err != nil {
+
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
 		failedMediaCache.Set(failKey, true, cache.DefaultExpiration)
-		return "", logs, nil
+		return "", nil
 	}
 
 	// upload media to WhatsApp
 	baseURL := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return "", logs, errors.Wrapf(err, "invalid base url set for WA channel: %s", baseURL)
+		return "", errors.Wrapf(err, "invalid base url set for WA channel: %s", baseURL)
 	}
 	dockerMediaURL, _ := url.Parse("/v1/media")
 
-	req, err = http.NewRequest("POST", dockerMediaURL.String(), bytes.NewReader(rr.Body))
+	req, err = http.NewRequest("POST", dockerMediaURL.String(), bytes.NewReader(respBody))
 	if err != nil {
-		return "", logs, errors.Wrapf(err, "error building request to media endpoint")
+		return "", errors.Wrapf(err, "error building request to media endpoint")
 	}
 	setWhatsAppAuthHeader(&req.Header, msg.Channel())
-	req.Header.Add("Content-Type", httpx.DetectContentType(rr.Body))
-	rr, err = utils.MakeHTTPRequest(req)
-	log = courier.NewChannelLogFromRR("Uploading media to WhatsApp", msg.Channel(), msg.ID(), rr).WithError("Error uploading media to WhatsApp", err)
-	logs = append(logs, log)
-	if err != nil {
+	req.Header.Add("Content-Type", httpx.DetectContentType(respBody))
+
+	resp, respBody, err = handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
 		failedMediaCache.Set(failKey, true, cache.DefaultExpiration)
-		return "", logs, errors.Wrapf(err, "error uploading media to whatsapp")
+		return "", errors.Wrapf(err, "error uploading media to whatsapp")
 	}
 
 	// take uploaded media id
-	mediaID, err = jsonparser.GetString(rr.Body, "media", "[0]", "id")
+	mediaID, err = jsonparser.GetString(respBody, "media", "[0]", "id")
 	if err != nil {
-		return "", logs, errors.Wrapf(err, "error reading media id from response")
+		return "", errors.Wrapf(err, "error reading media id from response")
 	}
 
 	// put in cache
 	err = mediaCache.Set(rc, mediaURL, mediaID)
 	if err != nil {
-		return "", logs, errors.Wrapf(err, "error setting media id in cache")
+		return "", errors.Wrapf(err, "error setting media id in cache")
 	}
 
-	return mediaID, logs, nil
+	return mediaID, nil
 }
 
-func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload interface{}) (string, string, []*courier.ChannelLog, error) {
-	start := time.Now()
+func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload interface{}, clog *courier.ChannelLogger) (string, string, error) {
 	jsonBody, err := json.Marshal(payload)
 
 	if err != nil {
-		elapsed := time.Now().Sub(start)
-		log := courier.NewChannelLogFromError("unable to build JSON body", msg.Channel(), msg.ID(), elapsed, err)
-		return "", "", []*courier.ChannelLog{log}, err
+		return "", "", err
 	}
 	req, _ := http.NewRequest(http.MethodPost, sendPath.String(), bytes.NewReader(jsonBody))
 	req.Header = buildWhatsAppHeaders(msg.Channel())
-	rr, err := utils.MakeHTTPRequest(req)
 
-	if rr.StatusCode == 429 || rr.StatusCode == 503 {
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil {
+		return "", "", err
+	}
+
+	if resp != nil && (resp.StatusCode == 429 || resp.StatusCode == 503) {
 		rateLimitKey := fmt.Sprintf("rate_limit:%s", msg.Channel().UUID().String())
 		rc.Do("SET", rateLimitKey, "engaged")
 
@@ -950,13 +928,11 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload 
 		// TODO: In the future we should the header value when available
 		rc.Do("EXPIRE", rateLimitKey, 2)
 
-		log := courier.NewChannelLogFromRR("rate limit engaged", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		return "", "", []*courier.ChannelLog{log}, err
+		return "", "", errors.New("received rate-limit response from send endpoint")
 	}
 
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
 	errPayload := &mtErrorPayload{}
-	err = json.Unmarshal(rr.Body, errPayload)
+	err = json.Unmarshal(respBody, errPayload)
 
 	// handle send msg errors
 	if err == nil && len(errPayload.Errors) > 0 {
@@ -969,29 +945,24 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload 
 			rc.Do("EXPIRE", rateLimitBulkKey, (60*60*24)+(5*60))
 
 			err := errors.Errorf("received error from send endpoint: %s", errPayload.Errors[0].Title)
-			return "", "", []*courier.ChannelLog{log}, err
+			return "", "", err
 		}
 
 		if !hasWhatsAppContactError(*errPayload) {
 			err := errors.Errorf("received error from send endpoint: %s", errPayload.Errors[0].Title)
-			return "", "", []*courier.ChannelLog{log}, err
+			return "", "", err
 		}
 		// check contact
 		baseURL := fmt.Sprintf("%s://%s", sendPath.Scheme, sendPath.Host)
-		rrCheck, err := checkWhatsAppContact(msg.Channel(), baseURL, msg.URN())
-
-		if rrCheck == nil {
-			elapsed := time.Now().Sub(start)
-			checkLog := courier.NewChannelLogFromError("unable to build contact check request", msg.Channel(), msg.ID(), elapsed, err)
-			return "", "", []*courier.ChannelLog{log, checkLog}, err
+		checkResp, err := checkWhatsAppContact(msg.Channel(), baseURL, msg.URN(), clog)
+		if checkResp == nil {
+			return "", "", err
 		}
-		checkLog := courier.NewChannelLogFromRR("Contact check", msg.Channel(), msg.ID(), rrCheck).WithError("Status Error", err)
-
 		if err != nil {
-			return "", "", []*courier.ChannelLog{log, checkLog}, err
+			return "", "", err
 		}
 		// update contact URN and msg destiny with returned wpp id
-		wppID, err := jsonparser.GetString(rrCheck.Body, "contacts", "[0]", "wa_id")
+		wppID, err := jsonparser.GetString(checkResp, "contacts", "[0]", "wa_id")
 
 		if err == nil {
 			var updatedPayload interface{}
@@ -1026,16 +997,14 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload 
 				jsonBody, err = json.Marshal(payload)
 
 				if err != nil {
-					elapsed := time.Now().Sub(start)
-					log := courier.NewChannelLogFromError("unable to build JSON body", msg.Channel(), msg.ID(), elapsed, err)
-					return "", "", []*courier.ChannelLog{log, checkLog}, err
+					return "", "", err
 				}
 			}
 		}
 		// try send msg again
 		reqRetry, err := http.NewRequest(http.MethodPost, sendPath.String(), bytes.NewReader(jsonBody))
 		if err != nil {
-			return "", "", nil, err
+			return "", "", err
 		}
 		reqRetry.Header = buildWhatsAppHeaders(msg.Channel())
 
@@ -1043,24 +1012,22 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload 
 			reqRetry.URL.RawQuery = fmt.Sprintf("%s=1", retryParam)
 		}
 
-		rrRetry, err := utils.MakeHTTPRequest(reqRetry)
-		retryLog := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rrRetry).WithError("Message Send Error", err)
-
-		if err != nil {
-			return "", "", []*courier.ChannelLog{log, checkLog, retryLog}, err
+		retryResp, retryRespBody, err := handlers.RequestHTTP(reqRetry, clog)
+		if err != nil || retryResp.StatusCode/100 != 2 {
+			return "", "", errors.New("error making retry request")
 		}
-		externalID, err := getSendWhatsAppMsgId(rrRetry)
-		return wppID, externalID, []*courier.ChannelLog{log, checkLog, retryLog}, err
+		externalID, err := getSendWhatsAppMsgId(retryRespBody)
+		return wppID, externalID, err
 	}
-	externalID, err := getSendWhatsAppMsgId(rr)
+	externalID, err := getSendWhatsAppMsgId(respBody)
 	if err != nil {
-		return "", "", []*courier.ChannelLog{log}, err
+		return "", "", err
 	}
-	wppID, err := jsonparser.GetString(rr.Body, "contacts", "[0]", "wa_id")
+	wppID, err := jsonparser.GetString(respBody, "contacts", "[0]", "wa_id")
 	if wppID != "" && wppID != msg.URN().Path() {
-		return wppID, externalID, []*courier.ChannelLog{log}, err
+		return wppID, externalID, err
 	}
-	return "", externalID, []*courier.ChannelLog{log}, nil
+	return "", externalID, nil
 }
 
 func setWhatsAppAuthHeader(header *http.Header, channel courier.Channel) {
@@ -1101,8 +1068,8 @@ func hasWhatsAppContactError(payload mtErrorPayload) bool {
 	return false
 }
 
-func getSendWhatsAppMsgId(rr *utils.RequestResponse) (string, error) {
-	if externalID, err := jsonparser.GetString(rr.Body, "messages", "[0]", "id"); err == nil {
+func getSendWhatsAppMsgId(resp []byte) (string, error) {
+	if externalID, err := jsonparser.GetString(resp, "messages", "[0]", "id"); err == nil {
 		return externalID, nil
 	} else {
 		return "", errors.Errorf("unable to get message id from response body")
@@ -1115,7 +1082,7 @@ type mtContactCheckPayload struct {
 	ForceCheck bool     `json:"force_check"`
 }
 
-func checkWhatsAppContact(channel courier.Channel, baseURL string, urn urns.URN) (*utils.RequestResponse, error) {
+func checkWhatsAppContact(channel courier.Channel, baseURL string, urn urns.URN, clog *courier.ChannelLogger) ([]byte, error) {
 	payload := mtContactCheckPayload{
 		Blocking:   "wait",
 		Contacts:   []string{fmt.Sprintf("+%s", urn.Path())},
@@ -1129,20 +1096,20 @@ func checkWhatsAppContact(channel courier.Channel, baseURL string, urn urns.URN)
 	sendURL := fmt.Sprintf("%s/v1/contacts", baseURL)
 	req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(reqBody))
 	req.Header = buildWhatsAppHeaders(channel)
-	rr, err := utils.MakeHTTPRequest(req)
 
-	if err != nil {
-		return rr, err
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("error checking contact")
 	}
 	// check contact status
-	if status, err := jsonparser.GetString(rr.Body, "contacts", "[0]", "status"); err == nil {
+	if status, err := jsonparser.GetString(respBody, "contacts", "[0]", "status"); err == nil {
 		if status == "valid" {
-			return rr, nil
+			return respBody, nil
 		} else {
-			return rr, errors.Errorf(`contact status is "%s"`, status)
+			return respBody, errors.Errorf(`contact status is "%s"`, status)
 		}
 	} else {
-		return rr, err
+		return respBody, err
 	}
 }
 

@@ -320,8 +320,6 @@ type DBMsgStatus struct {
 	ExternalID_  string                 `json:"external_id,omitempty"    db:"external_id"`
 	Status_      courier.MsgStatusValue `json:"status"                   db:"status"`
 	ModifiedOn_  time.Time              `json:"modified_on"              db:"modified_on"`
-
-	logs []*courier.ChannelLog
 }
 
 func (s *DBMsgStatus) EventID() int64 { return int64(s.ID_) }
@@ -367,9 +365,6 @@ func (s *DBMsgStatus) HasUpdatedURN() bool {
 
 func (s *DBMsgStatus) ExternalID() string      { return s.ExternalID_ }
 func (s *DBMsgStatus) SetExternalID(id string) { s.ExternalID_ = id }
-
-func (s *DBMsgStatus) Logs() []*courier.ChannelLog    { return s.logs }
-func (s *DBMsgStatus) AddLog(log *courier.ChannelLog) { s.logs = append(s.logs, log) }
 
 func (s *DBMsgStatus) Status() courier.MsgStatusValue          { return s.Status_ }
 func (s *DBMsgStatus) SetStatus(status courier.MsgStatusValue) { s.Status_ = status }

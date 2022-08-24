@@ -7,6 +7,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 var (
@@ -35,12 +36,12 @@ Duis eu arcu pharetra, laoreet nunc at, pharetra sapien. Nulla eu libero diam.
 Donec euismod dapibus ligula, sit amet hendrerit neque vulputate ac.`
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCM", "1234", "",
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCM", "1234", "",
 		map[string]interface{}{
 			configKey:   "FCMKey",
 			configTitle: "FCMTitle",
 		}),
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCM", "1234", "",
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCM", "1234", "",
 		map[string]interface{}{
 			configKey:          "FCMKey",
 			configNotification: true,
@@ -49,13 +50,13 @@ var testChannels = []courier.Channel{
 }
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: validMsg, Status: 200, Response: "Accepted",
-		Text: Sp("hello world"), URN: Sp("fcm:12345"), Date: Tp(time.Date(2017, 1, 1, 8, 50, 0, 0, time.UTC)), URNAuth: Sp("token"), Name: Sp("fred")},
-	{Label: "Receive Invalid Date", URL: receiveURL, Data: invalidDate, Status: 400, Response: "unable to parse date"},
-	{Label: "Receive Missing From", URL: receiveURL, Data: missingFrom, Status: 400, Response: "field 'from' required"},
+	{Label: "Receive Valid Message", URL: receiveURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("fcm:12345"), ExpectedDate: time.Date(2017, 1, 1, 8, 50, 0, 0, time.UTC), ExpectedURNAuth: Sp("token"), ExpectedContactName: Sp("fred")},
+	{Label: "Receive Invalid Date", URL: receiveURL, Data: invalidDate, ExpectedStatus: 400, ExpectedResponse: "unable to parse date"},
+	{Label: "Receive Missing From", URL: receiveURL, Data: missingFrom, ExpectedStatus: 400, ExpectedResponse: "field 'from' required"},
 
-	{Label: "Receive Valid Register", URL: registerURL, Data: validRegister, Status: 200, Response: "contact_uuid"},
-	{Label: "Receive Missing URN", URL: registerURL, Data: missingURN, Status: 400, Response: "field 'urn' required"},
+	{Label: "Receive Valid Register", URL: registerURL, Data: validRegister, ExpectedStatus: 200, ExpectedResponse: "contact_uuid"},
+	{Label: "Receive Missing URN", URL: registerURL, Data: missingURN, ExpectedStatus: 400, ExpectedResponse: "field 'urn' required"},
 }
 
 func TestHandler(t *testing.T) {
@@ -72,53 +73,95 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var notificationSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "fcm:250788123123", URNAuth: "auth1",
-		Status: "W", ExternalID: "123456",
-		ResponseBody: `{"success":1, "multicast_id": 123456}`, ResponseStatus: 200,
-		Headers:     map[string]string{"Authorization": "key=FCMKey"},
-		RequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"notification":{"title":"FCMTitle","body":"Simple Message"},"content_available":true,"to":"auth1","priority":"high"}`,
-		SendPrep:    setSendURL},
+	{
+		Label:               "Plain Send",
+		MsgText:             "Simple Message",
+		MsgURN:              "fcm:250788123123",
+		MsgURNAuth:          "auth1",
+		MockResponseBody:    `{"success":1, "multicast_id": 123456}`,
+		MockResponseStatus:  200,
+		ExpectedHeaders:     map[string]string{"Authorization": "key=FCMKey"},
+		ExpectedRequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"notification":{"title":"FCMTitle","body":"Simple Message"},"content_available":true,"to":"auth1","priority":"high"}`,
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "123456",
+		SendPrep:            setSendURL,
+	},
 }
 
 var sendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "fcm:250788123123", URNAuth: "auth1",
-		Status: "W", ExternalID: "123456",
-		ResponseBody: `{"success":1, "multicast_id": 123456}`, ResponseStatus: 200,
-		Headers:     map[string]string{"Authorization": "key=FCMKey"},
-		RequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
-		SendPrep:    setSendURL},
-	{Label: "Long Message",
-		Text: longMsg,
-		URN:  "fcm:250788123123", URNAuth: "auth1",
-		Status: "W", ExternalID: "123456",
-		ResponseBody: `{"success":1, "multicast_id": 123456}`, ResponseStatus: 200,
-		Headers:     map[string]string{"Authorization": "key=FCMKey"},
-		RequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"ate ac.","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
-		SendPrep:    setSendURL},
-	{Label: "Quick Reply",
-		Text: "Simple Message", URN: "fcm:250788123123", URNAuth: "auth1", QuickReplies: []string{"yes", "no"}, Attachments: []string{"image/jpeg:https://foo.bar"},
-		Status: "W", ExternalID: "123456",
-		ResponseBody: `{"success":1, "multicast_id": 123456}`, ResponseStatus: 200,
-		Headers:     map[string]string{"Authorization": "key=FCMKey"},
-		RequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":10,"session_status":"","quick_replies":["yes","no"]},"content_available":false,"to":"auth1","priority":"high"}`,
-		SendPrep:    setSendURL},
-	{Label: "Error",
-		Text: "Error", URN: "fcm:250788123123", URNAuth: "auth1",
-		Status:       "E",
-		ResponseBody: `{ "success": 0 }`, ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "No Multicast ID",
-		Text: "Error", URN: "fcm:250788123123", URNAuth: "auth1",
-		Status:       "E",
-		ResponseBody: `{ "success": 1 }`, ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Request Error",
-		Text: "Error", URN: "fcm:250788123123", URNAuth: "auth1",
-		Status:       "E",
-		ResponseBody: `{ "success": 0 }`, ResponseStatus: 500,
-		SendPrep: setSendURL},
+	{
+		Label:               "Plain Send",
+		MsgText:             "Simple Message",
+		MsgURN:              "fcm:250788123123",
+		MsgURNAuth:          "auth1",
+		MockResponseBody:    `{"success":1, "multicast_id": 123456}`,
+		MockResponseStatus:  200,
+		ExpectedHeaders:     map[string]string{"Authorization": "key=FCMKey"},
+		ExpectedRequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "123456",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Long Message",
+		MsgText:             longMsg,
+		MsgURN:              "fcm:250788123123",
+		MsgURNAuth:          "auth1",
+		MockResponseBody:    `{"success":1, "multicast_id": 123456}`,
+		MockResponseStatus:  200,
+		ExpectedHeaders:     map[string]string{"Authorization": "key=FCMKey"},
+		ExpectedRequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"ate ac.","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "123456",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Quick Reply",
+		MsgText:             "Simple Message",
+		MsgURN:              "fcm:250788123123",
+		MsgURNAuth:          "auth1",
+		MsgQuickReplies:     []string{"yes", "no"},
+		MsgAttachments:      []string{"image/jpeg:https://foo.bar"},
+		MockResponseBody:    `{"success":1, "multicast_id": 123456}`,
+		MockResponseStatus:  200,
+		ExpectedHeaders:     map[string]string{"Authorization": "key=FCMKey"},
+		ExpectedRequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":10,"session_status":"","quick_replies":["yes","no"]},"content_available":false,"to":"auth1","priority":"high"}`,
+		ExpectedStatus:      "W",
+		ExpectedExternalID:  "123456",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Error",
+		MsgText:            "Error",
+		MsgURN:             "fcm:250788123123",
+		MsgURNAuth:         "auth1",
+		MockResponseBody:   `{ "success": 0 }`,
+		MockResponseStatus: 200,
+		ExpectedStatus:     "E",
+		ExpectedErrors:     []string{"received non-1 value for success in response"},
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "No Multicast ID",
+		MsgText:            "Error",
+		MsgURN:             "fcm:250788123123",
+		MsgURNAuth:         "auth1",
+		MockResponseBody:   `{ "success": 1 }`,
+		MockResponseStatus: 200,
+		ExpectedStatus:     "E",
+		ExpectedErrors:     []string{"unable to get multicast_id from response"},
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Request Error",
+		MsgText:            "Error",
+		MsgURN:             "fcm:250788123123",
+		MsgURNAuth:         "auth1",
+		MockResponseBody:   `{ "success": 0 }`,
+		MockResponseStatus: 500,
+		ExpectedStatus:     "E",
+		SendPrep:           setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {

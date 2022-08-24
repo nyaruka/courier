@@ -14,8 +14,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nyaruka/courier/utils"
-
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 )
@@ -58,7 +56,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateXML(payload, r)
 	if err != nil {
@@ -122,7 +120,7 @@ type mtResponse struct {
 	State   string   `xml:"state"`
 }
 
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for ST channel: %s", msg.Channel().UUID())
@@ -165,17 +163,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/xml; charset=utf8")
 		req.SetBasicAuth(username, password)
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
-		status.AddLog(log)
-		if err != nil {
-			log.WithError("Message Send Error", err)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		response := &mtResponse{}
-		err = xml.Unmarshal(rr.Body, response)
+		err = xml.Unmarshal(respBody, response)
 		if err == nil {
 			status.SetStatus(courier.MsgWired)
 			if i == 0 {

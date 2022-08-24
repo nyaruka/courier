@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -20,8 +21,12 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/dbutil"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/storage"
+	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
+	"github.com/nyaruka/redisx"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -34,6 +39,8 @@ const sentSetName = "msgs_sent_%s"
 
 // our timeout for backend operations
 const backendTimeout = time.Second * 20
+
+var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
@@ -372,12 +379,12 @@ func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEv
 	return writeChannelEvent(timeout, b, event)
 }
 
-// WriteChannelLogs persists the passed in logs to our database, for rapidpro we swallow all errors, logging isn't critical
-func (b *backend) WriteChannelLogs(ctx context.Context, logs []*courier.ChannelLog) error {
+// WriteChannelLog persists the passed in log to our database, for rapidpro we swallow all errors, logging isn't critical
+func (b *backend) WriteChannelLog(ctx context.Context, clog *courier.ChannelLogger) error {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	for _, l := range logs {
+	for _, l := range clog.LegacyLogs() {
 		err := writeChannelLog(timeout, b, l)
 		if err != nil {
 			logrus.WithError(err).Error("error writing channel log")
@@ -401,6 +408,52 @@ func (b *backend) CheckExternalIDSeen(msg courier.Msg) courier.Msg {
 // Mark a external ID as seen for a period
 func (b *backend) WriteExternalIDSeen(msg courier.Msg) {
 	writeExternalIDSeen(b, msg)
+}
+
+// ResolveMedia resolves the passed in attachment URL to a media object
+func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Media, error) {
+	u, err := url.Parse(mediaUrl)
+	if err != nil {
+		return nil, errors.Errorf("error parsing media URL: %s", mediaUrl)
+	}
+
+	mediaUUID := uuidRegex.FindString(u.Path)
+
+	// if hostname isn't our media domain, or path doesn't contain a UUID, don't try to resolve
+	if u.Hostname() != b.config.MediaDomain || mediaUUID == "" {
+		return nil, nil
+	}
+
+	unlock := b.mediaMutexes.Lock(mediaUUID)
+	defer unlock()
+
+	rc := b.redisPool.Get()
+	defer rc.Close()
+
+	var media *DBMedia
+	mediaJSON, err := b.mediaCache.Get(rc, mediaUUID)
+	if err != nil {
+		return nil, errors.Wrap(err, "error looking up cached media")
+	}
+	if mediaJSON != "" {
+		jsonx.MustUnmarshal([]byte(mediaJSON), &media)
+	} else {
+		// lookup media in our database
+		media, err = lookupMediaFromUUID(ctx, b.db, uuids.UUID(mediaUUID))
+		if err != nil {
+			return nil, errors.Wrap(err, "error looking up media")
+		}
+
+		// cache it for future requests
+		b.mediaCache.Set(rc, mediaUUID, string(jsonx.MustMarshal(media)))
+	}
+
+	// if we found a media record but it doesn't match the URL, don't use it
+	if media == nil || media.URL() != mediaUrl {
+		return nil, nil
+	}
+
+	return media, nil
 }
 
 // Health returns the health of this backend as a string, returning "" if all is well
@@ -657,8 +710,8 @@ func (b *backend) Start() error {
 	}
 
 	// create our storage (S3 or file system)
-	if b.config.AWSAccessKeyID != "" {
-		s3Client, err := storage.NewS3Client(&storage.S3Options{
+	if b.config.AWSAccessKeyID != "" || b.config.AWSUseCredChain {
+		s3config := &storage.S3Options{
 			AWSAccessKeyID:     b.config.AWSAccessKeyID,
 			AWSSecretAccessKey: b.config.AWSSecretAccessKey,
 			Endpoint:           b.config.S3Endpoint,
@@ -666,11 +719,16 @@ func (b *backend) Start() error {
 			DisableSSL:         b.config.S3DisableSSL,
 			ForcePathStyle:     b.config.S3ForcePathStyle,
 			MaxRetries:         3,
-		})
+		}
+		if b.config.AWSAccessKeyID != "" && !b.config.AWSUseCredChain {
+			s3config.AWSAccessKeyID = b.config.AWSAccessKeyID
+			s3config.AWSSecretAccessKey = b.config.AWSSecretAccessKey
+		}
+		s3Client, err := storage.NewS3Client(s3config)
 		if err != nil {
 			return err
 		}
-		b.storage = storage.NewS3(s3Client, b.config.S3MediaBucket, b.config.S3Region, 32)
+		b.storage = storage.NewS3(s3Client, b.config.S3AttachmentsBucket, b.config.S3Region, 32)
 	} else {
 		b.storage = storage.NewFS("_storage")
 	}
@@ -782,14 +840,17 @@ func (b *backend) RedisPool() *redis.Pool {
 }
 
 // NewBackend creates a new RapidPro backend
-func newBackend(config *courier.Config) courier.Backend {
+func newBackend(cfg *courier.Config) courier.Backend {
 	return &backend{
-		config: config,
+		config: cfg,
 
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},
 
 		committerWG: &sync.WaitGroup{},
+
+		mediaCache:   redisx.NewIntervalHash("media-lookups", time.Hour*24, 2),
+		mediaMutexes: *syncx.NewHashMutex(8),
 	}
 }
 
@@ -806,6 +867,9 @@ type backend struct {
 
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
+
+	mediaCache   *redisx.IntervalHash
+	mediaMutexes syncx.HashMutex
 
 	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments
 	dbWaitDuration    time.Duration

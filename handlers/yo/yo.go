@@ -14,7 +14,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/pkg/errors"
 )
 
@@ -54,7 +53,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -97,8 +96,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for YO channel")
@@ -126,21 +125,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			sendURL.RawQuery = form.Encode()
 
 			req, err := http.NewRequest(http.MethodGet, sendURL.String(), nil)
-
 			if err != nil {
 				return nil, err
 			}
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-			rr, err := utils.MakeHTTPRequest(req)
-			log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-			status.AddLog(log)
-
-			if err != nil {
-				continue
+			resp, respBody, err := handlers.RequestHTTP(req, clog)
+			if err != nil || resp.StatusCode/100 != 2 {
+				return status, nil
 			}
 
-			responseQS, _ := url.ParseQuery(string(rr.Body))
+			responseQS, _ := url.ParseQuery(string(respBody))
 
 			// check whether we were blacklisted
 			createMessage, _ := responseQS["ybs_autocreate_message"]
