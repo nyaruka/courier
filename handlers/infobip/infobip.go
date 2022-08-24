@@ -58,7 +58,7 @@ type ibStatus struct {
 }
 
 // statusMessage is our HTTP handler function for status updates
-func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &statusPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -91,27 +91,27 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 	return statuses, courier.WriteDataResponse(ctx, w, http.StatusOK, "statuses handled", data)
 }
 
-// {
-// 	"results": [
-// 	  {
-// 		"messageId": "817790313235066447",
-// 		"from": "385916242493",
-// 		"to": "385921004026",
-// 		"text": "QUIZ Correct answer is Paris",
-// 		"cleanText": "Correct answer is Paris",
-// 		"keyword": "QUIZ",
-// 		"receivedAt": "2016-10-06T09:28:39.220+0000",
-// 		"smsCount": 1,
-// 		"price": {
-// 		  "pricePerMessage": 0,
-// 		  "currency": "EUR"
-// 		},
-// 		"callbackData": "callbackData"
-// 	  }
-// 	],
-// 	"messageCount": 1,
-// 	"pendingMessageCount": 0
-// }
+//	{
+//		"results": [
+//		  {
+//			"messageId": "817790313235066447",
+//			"from": "385916242493",
+//			"to": "385921004026",
+//			"text": "QUIZ Correct answer is Paris",
+//			"cleanText": "Correct answer is Paris",
+//			"keyword": "QUIZ",
+//			"receivedAt": "2016-10-06T09:28:39.220+0000",
+//			"smsCount": 1,
+//			"price": {
+//			  "pricePerMessage": 0,
+//			  "currency": "EUR"
+//			},
+//			"callbackData": "callbackData"
+//		  }
+//		],
+//		"messageCount": 1,
+//		"pendingMessageCount": 0
+//	}
 type moPayload struct {
 	PendingMessageCount int         `json:"pendingMessageCount"`
 	MessageCount        int         `json:"messageCount"`
@@ -126,7 +126,7 @@ type moMessage struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {

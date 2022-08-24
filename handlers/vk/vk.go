@@ -193,7 +193,7 @@ type mediaUploadInfoPayload struct {
 }
 
 // receiveEvent handles request event type
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
 	// read request body
 	bodyBytes, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
 

@@ -42,7 +42,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receive is our handler for MO messages
-func (h *handler) receive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
 	err := r.ParseForm()
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
@@ -65,16 +65,16 @@ func (h *handler) receive(ctx context.Context, c courier.Channel, w http.Respons
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
 }
 
-// {
-//	 "​result​":{
-//	   "submit_result":"OK",
-//     "session_id":"5b8fc97d58795484819426",
-//     "status_code":"00",
-//     "status_message":"Submitted ok"
-//   },
-//   "​error_code​":"00",
-//   "error_desc​":"Completed OK"
-// }
+//	{
+//		 "​result​":{
+//		   "submit_result":"OK",
+//	    "session_id":"5b8fc97d58795484819426",
+//	    "status_code":"00",
+//	    "status_message":"Submitted ok"
+//	  },
+//	  "​error_code​":"00",
+//	  "error_desc​":"Completed OK"
+//	}
 type mtResponse struct {
 	Result struct {
 		SessionID string `json:"session_id"`

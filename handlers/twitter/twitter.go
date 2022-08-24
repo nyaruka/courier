@@ -65,7 +65,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receiveVerify handles Twitter's webhook verification callback
-func (h *handler) receiveVerify(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveVerify(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
 	crcToken := r.URL.Query().Get("crc_token")
 	if crcToken == "" {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf(`missing required 'crc_token' query parameter`))
@@ -90,26 +90,26 @@ type moUser struct {
 	ScreenName string `json:"screen_name" validate:"required"`
 }
 
-// {
-//    "direct_message_events": [
-//      {
-//	      "created_timestamp": "1494877823220",
-//        "message_create": {
-//          "message_data": {
-//            "text": "hello world!",
-//          },
-//          "sender_id": "twitterid1",
-//          "target": {"recipient_id": "twitterid2" }
-//        },
-//        "type": "message_create",
-//        "id": "twitterMsgId"
-//      }
-//    ],
-//    "users": {
-//       "twitterid1": { "id": "twitterid1", "name": "joe", "screen_name": "joe" },
-//       "twitterid2": { "id": "twitterid2", "name": "jane", "screen_name": "jane" },
-//    }
-// }
+//	{
+//	   "direct_message_events": [
+//	     {
+//		      "created_timestamp": "1494877823220",
+//	       "message_create": {
+//	         "message_data": {
+//	           "text": "hello world!",
+//	         },
+//	         "sender_id": "twitterid1",
+//	         "target": {"recipient_id": "twitterid2" }
+//	       },
+//	       "type": "message_create",
+//	       "id": "twitterMsgId"
+//	     }
+//	   ],
+//	   "users": {
+//	      "twitterid1": { "id": "twitterid1", "name": "joe", "screen_name": "joe" },
+//	      "twitterid2": { "id": "twitterid2", "name": "jane", "screen_name": "jane" },
+//	   }
+//	}
 type moPayload struct {
 	DirectMessageEvents []struct {
 		CreatedTimestamp string `json:"created_timestamp" validate:"required"`
@@ -134,7 +134,7 @@ type moPayload struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming events
-func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
 	// read our handle id
 	handleID := c.StringConfigForKey(configHandleID, "")
 	if handleID == "" {
@@ -204,25 +204,25 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
 }
 
-// {
-//   "event": {
-//     "type": "message_create",
-//     "message_create": {
-//       "target": {
-//         "recipient_id": "844385345234"
-//       },
-//       "message_data": {
-//         "text": "Hello World!",
-//         "quick_reply": {
-//	         "type": "options",
-//           "options": [
-//	           { "label": "Red"}, {"label": "Green"}
-//           ]
-//         }
-//       }
-//     }
-//	 }
-// }
+//	{
+//	  "event": {
+//	    "type": "message_create",
+//	    "message_create": {
+//	      "target": {
+//	        "recipient_id": "844385345234"
+//	      },
+//	      "message_data": {
+//	        "text": "Hello World!",
+//	        "quick_reply": {
+//		         "type": "options",
+//	          "options": [
+//		           { "label": "Red"}, {"label": "Green"}
+//	          ]
+//	        }
+//	      }
+//	    }
+//		 }
+//	}
 type mtPayload struct {
 	Event struct {
 		Type          string `json:"type"`

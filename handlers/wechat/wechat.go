@@ -61,7 +61,7 @@ type verifyForm struct {
 }
 
 // VerifyURL is our HTTP handler function for WeChat config URL verification callbacks
-func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -97,15 +97,13 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel) error {
-	start := time.Now()
-	logs := make([]*courier.ChannelLog, 0, 1)
+	logger := courier.NewChannelLogger(courier.ChannelLogTypeTokenFetch, channel)
 
 	form := url.Values{
 		"grant_type": []string{"client_credential"},
 		"appid":      []string{channel.StringConfigForKey(configAppID, "")},
 		"secret":     []string{channel.StringConfigForKey(configAppSecret, "")},
 	}
-
 	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "token"))
 	tokenURL.RawQuery = form.Encode()
 
@@ -113,20 +111,18 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
 
-	trace, err := handlers.MakeHTTPRequest(req)
-	if err != nil {
-		duration := time.Now().Sub(start)
-		logs = append(logs, courier.NewChannelLogFromError("failed to fetch access token", channel, courier.NilMsgID, duration, err))
-		return h.Backend().WriteChannelLogs(ctx, logs)
+	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return h.Backend().WriteChannelLogs(ctx, logger.Logs())
 	}
 
-	accessToken, err := jsonparser.GetString(trace.ResponseBody, "access_token")
+	accessToken, err := jsonparser.GetString(respBody, "access_token")
 	if err != nil {
-		duration := time.Now().Sub(start)
-		logs = append(logs, courier.NewChannelLogFromError("invalid json", channel, courier.NilMsgID, duration, err))
-		return h.Backend().WriteChannelLogs(ctx, logs)
+		logger.Error(errors.New("access_token not found in response"))
+		return h.Backend().WriteChannelLogs(ctx, logger.Logs())
 	}
-	expiration, err := jsonparser.GetInt(trace.ResponseBody, "expires_in")
+
+	expiration, err := jsonparser.GetInt(respBody, "expires_in")
 	if err != nil {
 		expiration = 7200
 	}
@@ -170,7 +166,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, logger *courier.ChannelLogger) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateXML(payload, r)
 	if err != nil {
