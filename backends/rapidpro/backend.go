@@ -384,12 +384,11 @@ func (b *backend) WriteChannelLog(ctx context.Context, clog *courier.ChannelLogg
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	for _, l := range clog.LegacyLogs() {
-		err := writeChannelLog(timeout, b, l)
-		if err != nil {
-			logrus.WithError(err).Error("error writing channel log")
-		}
+	err := writeChannelLog(timeout, b, clog)
+	if err != nil {
+		logrus.WithError(err).Error("error writing channel log")
 	}
+
 	return nil
 }
 

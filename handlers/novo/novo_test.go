@@ -84,7 +84,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`,
 		MockResponseStatus: 200,
 		ExpectedStatus:     "F",
-		ExpectedErrors:     []string{"received invalid response"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received invalid response", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -94,7 +94,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`,
 		MockResponseStatus: 200,
 		ExpectedStatus:     "F",
-		ExpectedErrors:     []string{"received invalid response"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received invalid response", "")},
 		SendPrep:           setSendURL,
 	},
 }

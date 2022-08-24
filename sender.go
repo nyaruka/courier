@@ -230,6 +230,8 @@ func (w *Sender) sendMessage(msg Msg) {
 		log.WithError(err).Info("error writing msg status")
 	}
 
+	clog.End()
+
 	// write our logs as well
 	err = backend.WriteChannelLog(writeCTX, clog)
 	if err != nil {

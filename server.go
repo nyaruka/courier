@@ -298,9 +298,9 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			}
 		}()
 
-		logger := NewChannelLog(ChannelLogTypeUnknown, channel)
+		clog := NewChannelLogForIncoming(recorder, channel)
 
-		events, hErr := handlerFunc(ctx, channel, recorder.ResponseWriter, r, logger)
+		events, hErr := handlerFunc(ctx, channel, recorder.ResponseWriter, r, clog)
 		duration := time.Since(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
@@ -316,8 +316,6 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			writeAndLogRequestError(ctx, w, r, channel, err)
 		}
 
-		logger.Recorder(recorder)
-
 		if channel != nil {
 			// if we have a channel but no events were created, we still log this to analytics
 			if len(events) == 0 {
@@ -331,23 +329,25 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			for _, event := range events {
 				switch e := event.(type) {
 				case Msg:
-					logger.SetMsgID(e.ID())
-					logger.SetType(ChannelLogTypeMsgReceive)
+					clog.SetMsgID(e.ID())
+					clog.SetType(ChannelLogTypeMsgReceive)
 					analytics.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
 					LogMsgReceived(r, e)
 				case MsgStatus:
-					logger.SetMsgID(e.ID())
-					logger.SetType(ChannelLogTypeMsgStatus)
+					clog.SetMsgID(e.ID())
+					clog.SetType(ChannelLogTypeMsgStatus)
 					analytics.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
 					LogMsgStatusReceived(r, e)
 				case ChannelEvent:
-					logger.SetType(ChannelLogTypeEventReceive)
+					clog.SetType(ChannelLogTypeEventReceive)
 					analytics.Gauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
 					LogChannelEventReceived(r, e)
 				}
 			}
 
-			if err := s.backend.WriteChannelLog(ctx, logger); err != nil {
+			clog.End()
+
+			if err := s.backend.WriteChannelLog(ctx, clog); err != nil {
 				logrus.WithError(err).Error("error writing channel log")
 			}
 		}

@@ -168,7 +168,7 @@ type fetchPayload struct {
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel) error {
-	logger := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
 
 	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "auth/token.action"))
 	payload := &fetchPayload{
@@ -184,15 +184,17 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
-		return h.Backend().WriteChannelLog(ctx, logger)
+		clog.End()
+		return h.Backend().WriteChannelLog(ctx, clog)
 	}
 
 	accessToken, err := jsonparser.GetString(respBody, "access_token")
 	if err != nil {
-		logger.Error(errors.New("access_token not found in response"))
-		return h.Backend().WriteChannelLog(ctx, logger)
+		clog.Error(errors.New("access_token not found in response"))
+		clog.End()
+		return h.Backend().WriteChannelLog(ctx, clog)
 	}
 
 	rc := h.Backend().RedisPool().Get()

@@ -295,7 +295,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		ExpectedStatus:      "E",
-		ExpectedErrors:      []string{"received error status: '2'"},
+		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("received error status: '2'", "")},
 		SendPrep:            setSendURL,
 	},
 }

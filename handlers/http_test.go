@@ -31,25 +31,21 @@ func TestDoHTTPRequest(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode)
 	assert.Equal(t, []byte(`{"status":"success"}`), respBody)
-	assert.Len(t, clog.LegacyLogs(), 1)
+	assert.Len(t, clog.HTTPLogs(), 1)
 
-	log1 := clog.LegacyLogs()[0]
-	assert.Equal(t, 200, log1.StatusCode)
-	assert.Equal(t, mc, log1.Channel)
-	assert.Equal(t, courier.NewMsgID(123), log1.MsgID)
-	assert.Equal(t, "https://api.messages.com/send.json", log1.URL)
+	hlog1 := clog.HTTPLogs()[0]
+	assert.Equal(t, 200, hlog1.StatusCode)
+	assert.Equal(t, "https://api.messages.com/send.json", hlog1.URL)
 
 	req, _ = http.NewRequest("POST", "https://api.messages.com/send.json", nil)
 	resp, _, err = handlers.RequestHTTP(req, clog)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode)
-	assert.Len(t, clog.LegacyLogs(), 2)
+	assert.Len(t, clog.HTTPLogs(), 2)
 
-	log2 := clog.LegacyLogs()[1]
-	assert.Equal(t, 400, log2.StatusCode)
-	assert.Equal(t, mc, log2.Channel)
-	assert.Equal(t, courier.NewMsgID(123), log2.MsgID)
-	assert.Equal(t, "https://api.messages.com/send.json", log2.URL)
+	hlog2 := clog.HTTPLogs()[1]
+	assert.Equal(t, 400, hlog2.StatusCode)
+	assert.Equal(t, "https://api.messages.com/send.json", hlog2.URL)
 }
 
 func TestMakeHTTPRequest(t *testing.T) {

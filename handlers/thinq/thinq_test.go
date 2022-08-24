@@ -93,7 +93,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"from_did":"2065551212","to_did":"2067791234","message":"No External ID"}`,
 		ExpectedStatus:      "E",
-		ExpectedErrors:      []string{"Unable to read external ID from guid field"},
+		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("Unable to read external ID from guid field", "")},
 		SendPrep:            setSendURL,
 	},
 	{

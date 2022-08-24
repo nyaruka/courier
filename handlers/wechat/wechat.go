@@ -97,7 +97,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel) error {
-	logger := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
 
 	form := url.Values{
 		"grant_type": []string{"client_credential"},
@@ -111,15 +111,17 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
-		return h.Backend().WriteChannelLog(ctx, logger)
+		clog.End()
+		return h.Backend().WriteChannelLog(ctx, clog)
 	}
 
 	accessToken, err := jsonparser.GetString(respBody, "access_token")
 	if err != nil {
-		logger.Error(errors.New("access_token not found in response"))
-		return h.Backend().WriteChannelLog(ctx, logger)
+		clog.Error(errors.New("access_token not found in response"))
+		clog.End()
+		return h.Backend().WriteChannelLog(ctx, clog)
 	}
 
 	expiration, err := jsonparser.GetInt(respBody, "expires_in")

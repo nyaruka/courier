@@ -87,18 +87,14 @@ CREATE TABLE msgs_msg (
 DROP TABLE IF EXISTS channels_channellog CASCADE;
 CREATE TABLE channels_channellog (
     id serial primary key,
-    description character varying(255) NOT NULL,
-    is_error boolean NOT NULL,
-    url text,
-    method character varying(16),
-    request text,
-    response text,
-    response_status integer,
-    created_on timestamp with time zone NOT NULL,
-    request_time integer,
     channel_id integer NOT NULL references channels_channel(id) on delete cascade,
-    msg_id integer references msgs_msg(id) on delete cascade,
-    session_id integer NULL
+    msg_id bigint references msgs_msg(id) on delete cascade,
+    log_type character varying(16),
+    http_logs jsonb,
+    errors jsonb,
+    is_error boolean NOT NULL,
+    created_on timestamp with time zone NOT NULL,
+    elapsed_ms integer
 );
 
 DROP TABLE IF EXISTS channels_channelevent CASCADE;

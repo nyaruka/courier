@@ -2,33 +2,29 @@ package rapidpro
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 
 	"time"
 
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/jsonx"
 )
 
 const insertLogSQL = `
-INSERT INTO 
-	channels_channellog("channel_id", "msg_id", "description", "is_error", "method", "url", "request", "response", "response_status", "created_on", "request_time")
-                 VALUES(:channel_id,  :msg_id,  :description,  :is_error,  :method,  :url,  :request,  :response,  :response_status,  :created_on,  :request_time)
-`
+INSERT INTO channels_channellog( log_type,  channel_id,  msg_id,  http_logs,  errors,  is_error,  created_on,  elapsed_ms)
+                         VALUES(:log_type, :channel_id, :msg_id, :http_logs, :errors, :is_error, :created_on, :elapsed_ms)
+  RETURNING id`
 
 // ChannelLog is our DB specific struct for logs
 type ChannelLog struct {
-	ChannelID      courier.ChannelID `db:"channel_id"`
-	MsgID          courier.MsgID     `db:"msg_id"`
-	Description    string            `db:"description"`
-	IsError        bool              `db:"is_error"`
-	Method         string            `db:"method"`
-	URL            string            `db:"url"`
-	Request        string            `db:"request"`
-	Response       string            `db:"response"`
-	ResponseStatus int               `db:"response_status"`
-	CreatedOn      time.Time         `db:"created_on"`
-	RequestTime    int               `db:"request_time"`
+	Type      courier.ChannelLogType `db:"log_type"`
+	ChannelID courier.ChannelID      `db:"channel_id"`
+	MsgID     courier.MsgID          `db:"msg_id"`
+	HTTPLogs  json.RawMessage        `db:"http_logs"`
+	Errors    json.RawMessage        `db:"http_logs"`
+	IsError   bool                   `db:"is_error"`
+	CreatedOn time.Time              `db:"created_on"`
+	ElapsedMS int                    `db:"elapsed_ms"`
 }
 
 // RowID satisfies our batch.Value interface, we are always inserting logs so we have no row id
@@ -36,36 +32,40 @@ func (l *ChannelLog) RowID() string {
 	return ""
 }
 
+type channelError struct {
+	Message string `json:"message"`
+	Code    string `json:"code"`
+}
+
 // WriteChannelLog writes the passed in channel log to the database, we do not queue on errors but instead just throw away the log
-func writeChannelLog(ctx context.Context, b *backend, log *courier.ChannelLog) error {
-	// cast our channel to our own channel type
-	dbChan, isChan := log.Channel.(*DBChannel)
-	if !isChan {
-		return fmt.Errorf("unable to write non-rapidpro channel logs")
+func writeChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLogger) error {
+	dbChan := clog.Channel().(*DBChannel)
+
+	isError := len(clog.Errors()) > 0
+	if !isError {
+		for _, l := range clog.HTTPLogs() {
+			if l.StatusCode < 200 || l.StatusCode >= 400 {
+				isError = true
+				break
+			}
+		}
 	}
 
-	// if we have an error, append to to our response
-	if log.Error != "" {
-		log.Response += "\n\nError: " + log.Error
+	errors := make([]channelError, 0, len(clog.Errors()))
+	for i, e := range clog.Errors() {
+		errors[i] = channelError{Message: e.Message(), Code: e.Code()}
 	}
-
-	// strip null chars from request and response, postgres doesn't like that
-	log.Request = utils.CleanString(log.Request)
-	log.Response = utils.CleanString(log.Response)
 
 	// create our value for committing
 	v := &ChannelLog{
-		ChannelID:      dbChan.ID(),
-		MsgID:          log.MsgID,
-		Description:    log.Description,
-		IsError:        log.Error != "",
-		Method:         log.Method,
-		URL:            log.URL,
-		Request:        log.Request,
-		Response:       log.Response,
-		ResponseStatus: log.StatusCode,
-		CreatedOn:      log.CreatedOn,
-		RequestTime:    int(log.Elapsed / time.Millisecond),
+		Type:      clog.Type(),
+		ChannelID: dbChan.ID(),
+		MsgID:     clog.MsgID(),
+		HTTPLogs:  jsonx.MustMarshal(clog.HTTPLogs()),
+		Errors:    jsonx.MustMarshal(errors),
+		IsError:   isError,
+		CreatedOn: clog.CreatedOn(),
+		ElapsedMS: int(clog.Elapsed() / time.Millisecond),
 	}
 
 	// queue it
