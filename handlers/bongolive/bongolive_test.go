@@ -13,29 +13,64 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BL", "2020", "KE", nil),
 }
 
-var (
+const (
 	receiveURL = "/c/bl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-
-	validReceive          = "msgtype=1&id=12345678&message=Msg&sourceaddr=254791541111"
-	validReceiveNoMsgType = "id=12345678&message=Msg&sourceaddr=254791541111"
-	missingNumber         = "msgtype=1&id=12345679&message=Msg"
-
-	validStatus   = "msgtype=5&dlrid=12345&status=1"
-	invalidStatus = "msgtype=5&dlrid=12345&status=12"
-
-	invalidMsgType = "msgtype=3&id=12345&status=1"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+254791541111")},
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceiveNoMsgType, ExpectedStatus: 200, ExpectedResponse: "",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+254791541111")},
-	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, ExpectedStatus: 400, ExpectedResponse: ""},
-	{Label: "Status No params", URL: receiveURL, Data: "", ExpectedStatus: 405, ExpectedResponse: ""},
-	{Label: "Status invalid params", URL: receiveURL, Data: invalidStatus, ExpectedStatus: 400, ExpectedResponse: ""},
-	{Label: "Status valid", URL: receiveURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: ""},
-	{Label: "Invalid Msg Type", URL: receiveURL, Data: invalidMsgType, ExpectedStatus: 400, ExpectedResponse: ""},
+	{
+		Label:            "Receive Valid",
+		URL:              receiveURL,
+		Data:             "msgtype=1&id=12345678&message=Msg&sourceaddr=254791541111",
+		ExpectedStatus:   200,
+		ExpectedResponse: "",
+		ExpectedMsgText:  Sp("Msg"),
+		ExpectedURN:      Sp("tel:+254791541111"),
+	},
+	{
+		Label:            "Receive Valid",
+		URL:              receiveURL,
+		Data:             "id=12345678&message=Msg&sourceaddr=254791541111",
+		ExpectedStatus:   200,
+		ExpectedResponse: "",
+		ExpectedMsgText:  Sp("Msg"),
+		ExpectedURN:      Sp("tel:+254791541111"),
+	},
+	{
+		Label:            "Receive Missing Number",
+		URL:              receiveURL,
+		Data:             "msgtype=1&id=12345679&message=Msg",
+		ExpectedStatus:   400,
+		ExpectedResponse: "",
+	},
+	{
+		Label:            "Status No params",
+		URL:              receiveURL,
+		Data:             "",
+		ExpectedStatus:   405,
+		ExpectedResponse: "",
+	},
+	{
+		Label:            "Status invalid params",
+		URL:              receiveURL,
+		Data:             "msgtype=5&dlrid=12345&status=12",
+		ExpectedStatus:   400,
+		ExpectedResponse: "",
+	},
+	{
+		Label:            "Status valid",
+		URL:              receiveURL,
+		Data:             "msgtype=5&dlrid=12345&status=1",
+		ExpectedStatus:   200,
+		ExpectedResponse: "",
+	},
+	{
+		Label:            "Invalid Msg Type",
+		URL:              receiveURL,
+		Data:             "msgtype=3&id=12345&status=1",
+		ExpectedStatus:   400,
+		ExpectedResponse: "",
+	},
 }
 
 func TestHandler(t *testing.T) {

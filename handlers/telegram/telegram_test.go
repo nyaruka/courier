@@ -456,7 +456,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedContactName: Sp("Nic Pottier"), ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedExternalID: Sp("41"), ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
 
 	{Label: "Receive Start Message", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: startMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedContactName: Sp("Nic Pottier"), ChannelEvent: Sp(string(courier.NewConversation)), ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
+		ExpectedContactName: Sp("Nic Pottier"), ExpectedChannelEvent: courier.NewConversation, ExpectedURN: Sp("telegram:3527065#nicpottier"), ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
 
 	{Label: "Receive No Params", URL: "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/", Data: emptyMsg, ExpectedStatus: 200, ExpectedResponse: "Ignoring"},
 
