@@ -13,26 +13,39 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BS", "2020", "US", nil),
 }
 
-var (
+const (
 	receiveURL = "/c/bs/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-
-	validReceive  = "response=Msg&mobile=254791541111"
-	missingNumber = "response=Msg"
-
-	statusURL = "/c/bs/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
-
-	validStatus   = "message_id=12345&status=pending"
-	invalidStatus = "message_id=12345&status=unknown"
+	statusURL  = "/c/bs/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL + "?" + validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+254791541111")},
-	{Label: "Receive Missing Number", URL: receiveURL + "?" + missingNumber, ExpectedStatus: 400, ExpectedResponse: "required field 'mobile'"},
-
-	{Label: "Status Valid", URL: statusURL + "?" + validStatus, ExpectedStatus: 200, ExpectedResponse: "Status Update Accepted",
-		ExpectedExternalID: Sp("12345"), ExpectedMsgStatus: Sp("S")},
-	{Label: "Receive Invalid Status", URL: statusURL + "?" + invalidStatus, ExpectedStatus: 400, ExpectedResponse: "unknown status value"},
+	{
+		Label:            "Receive Valid",
+		URL:              receiveURL + "?response=Msg&mobile=254791541111",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Message Accepted",
+		ExpectedMsgText:  Sp("Msg"),
+		ExpectedURN:      Sp("tel:+254791541111"),
+	},
+	{
+		Label:            "Receive Missing Number",
+		URL:              receiveURL + "?response=Msg",
+		ExpectedStatus:   400,
+		ExpectedResponse: "required field 'mobile'",
+	},
+	{
+		Label:              "Status Valid",
+		URL:                statusURL + "?message_id=12345&status=pending",
+		ExpectedStatus:     200,
+		ExpectedResponse:   "Status Update Accepted",
+		ExpectedExternalID: Sp("12345"),
+		ExpectedMsgStatus:  Sp("S")},
+	{
+		Label:            "Receive Invalid Status",
+		URL:              statusURL + "?message_id=12345&status=unknown",
+		ExpectedStatus:   400,
+		ExpectedResponse: "unknown status value",
+	},
 }
 
 func TestHandler(t *testing.T) {
