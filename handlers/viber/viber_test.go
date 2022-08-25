@@ -497,7 +497,7 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Delivered Status Report", URL: receiveURL, Data: deliveredStatusReport, ExpectedStatus: 200, ExpectedResponse: `Ignored`, PrepRequest: addValidSignature},
 	{Label: "Subcribe", URL: receiveURL, Data: validSubscribed, ExpectedStatus: 200, ExpectedResponse: "Accepted", PrepRequest: addValidSignature},
 	{Label: "Subcribe Invalid URN", URL: receiveURL, Data: invalidURNSubscribed, ExpectedStatus: 400, ExpectedResponse: "invalid viber id", PrepRequest: addValidSignature},
-	{Label: "Unsubcribe", URL: receiveURL, Data: validUnsubscribed, ExpectedStatus: 200, ExpectedResponse: "Accepted", ChannelEvent: Sp(string(courier.StopContact)), PrepRequest: addValidSignature},
+	{Label: "Unsubcribe", URL: receiveURL, Data: validUnsubscribed, ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedChannelEvent: courier.StopContact, PrepRequest: addValidSignature},
 	{Label: "Unsubcribe Invalid URN", URL: receiveURL, Data: invalidURNUnsubscribed, ExpectedStatus: 400, ExpectedResponse: "invalid viber id", PrepRequest: addValidSignature},
 	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, ExpectedStatus: 200, ExpectedResponse: "ignored conversation start", PrepRequest: addValidSignature},
 	{Label: "Unexpected event", URL: receiveURL, Data: unexpectedEvent, ExpectedStatus: 400,
