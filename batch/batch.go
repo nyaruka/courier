@@ -47,8 +47,9 @@ func NewCommitter(label string, db *sqlx.DB, sql string, timeout time.Duration, 
 
 // Start starts our committer
 func (c *committer) Start() {
+	c.wg.Add(1)
+
 	go func() {
-		c.wg.Add(1)
 		defer c.wg.Done()
 
 		for {
@@ -117,7 +118,7 @@ func (c *committer) flush(size int) bool {
 	for len(values) > 0 {
 		ids := make(map[string]bool, len(values))
 		dupes := make([]Value, 0)
-		batch := make([]interface{}, 0, len(values))
+		batch := make([]Value, 0, len(values))
 
 		// dedupe our values into a batch, we don't want to do a batch update that includes the same row more
 		// thank once. we dedupe our batch here and commit in another query
@@ -144,10 +145,10 @@ func (c *committer) flush(size int) bool {
 		// if we received an error, try again one at a time (in case it is one value hanging us up)
 		if err != nil {
 			for _, v := range batch {
-				err = batchSQL(ctx, c.label, c.db, c.sql, []interface{}{v})
+				err = batchSQL(ctx, c.label, c.db, c.sql, []Value{v})
 				if err != nil {
 					if c.callback != nil {
-						c.callback(errors.Wrapf(err, "%s: error committing value", c.label), v.(Value))
+						c.callback(errors.Wrapf(err, "%s: error committing value", c.label), v)
 					}
 				}
 			}
@@ -172,7 +173,7 @@ type committer struct {
 	buffer chan Value
 }
 
-func batchSQL(ctx context.Context, label string, db *sqlx.DB, sql string, vs []interface{}) error {
+func batchSQL[T any](ctx context.Context, label string, db *sqlx.DB, sql string, vs []T) error {
 	// no values, nothing to do
 	if len(vs) == 0 {
 		return nil
@@ -185,7 +186,7 @@ func batchSQL(ctx context.Context, label string, db *sqlx.DB, sql string, vs []i
 		return err
 	}
 
-	logrus.WithField("elapsed", time.Since(start)).WithField("rows", len(vs)).Infof("%s bulk sql complete", label)
+	logrus.WithField("elapsed", time.Since(start)).WithField("rows", len(vs)).Debugf("%s bulk sql complete", label)
 
 	return nil
 }

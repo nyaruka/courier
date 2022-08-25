@@ -36,8 +36,8 @@ type channelError struct {
 	Code    string `json:"code"`
 }
 
-// WriteChannelLog writes the passed in channel log to the database, we do not queue on errors but instead just throw away the log
-func writeChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) error {
+// queues the passed in channel log the committer, we do not queue on errors but instead just throw away the log
+func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) error {
 	dbChan := clog.Channel().(*DBChannel)
 
 	isError := len(clog.Errors()) > 0

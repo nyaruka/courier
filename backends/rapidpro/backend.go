@@ -384,9 +384,9 @@ func (b *backend) WriteChannelLog(ctx context.Context, clog *courier.ChannelLog)
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	err := writeChannelLog(timeout, b, clog)
+	err := queueChannelLog(timeout, b, clog)
 	if err != nil {
-		logrus.WithError(err).Error("error writing channel log")
+		logrus.WithError(err).Error("error queuing channel log")
 	}
 
 	return nil
