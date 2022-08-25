@@ -49,8 +49,8 @@ type ChannelHandleTestCase struct {
 	ExpectedExternalID  *string
 	ExpectedMsgID       int64
 
-	ChannelEvent      *string
-	ChannelEventExtra map[string]interface{}
+	ExpectedChannelEvent      courier.ChannelEventType
+	ExpectedChannelEventExtra map[string]interface{}
 
 	NoQueueErrorCheck     bool
 	NoInvalidChannelCheck bool
@@ -353,8 +353,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 		t.Run(tc.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			mb.ClearQueueMsgs()
-			mb.ClearSeenExternalIDs()
+			mb.Reset()
 
 			testHandlerRequest(t, s, tc.URL, tc.Headers, tc.Data, tc.MultipartFormFields, tc.ExpectedStatus, &tc.ExpectedResponse, tc.PrepRequest)
 
@@ -373,11 +372,11 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 					require.Equal(mb.LenQueuedMsgs(), 1)
 					require.Equal(*tc.ExpectedMsgText, msg.Text())
 				}
-				if tc.ChannelEvent != nil {
-					require.Equal(*tc.ChannelEvent, string(event.EventType()))
+				if tc.ExpectedChannelEvent != "" {
+					assert.Equal(t, tc.ExpectedChannelEvent, event.EventType())
 				}
-				if tc.ChannelEventExtra != nil {
-					require.Equal(tc.ChannelEventExtra, event.Extra())
+				if tc.ExpectedChannelEventExtra != nil {
+					require.Equal(tc.ExpectedChannelEventExtra, event.Extra())
 				}
 				if tc.ExpectedURN != nil {
 					if msg != nil {
@@ -426,6 +425,11 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 					}
 				}
 			}
+
+			// if we're expecting a message, status or event, check we have a log for it
+			if tc.ExpectedMsgText != nil || tc.ExpectedMsgStatus != nil || tc.ExpectedChannelEvent != "" {
+				assert.Greater(t, len(mb.ChannelLogs()), 0, "expected at least one channel log")
+			}
 		})
 	}
 
@@ -459,8 +463,7 @@ func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler cour
 	handler.Initialize(s)
 
 	for _, testCase := range testCases {
-		mb.ClearQueueMsgs()
-		mb.ClearSeenExternalIDs()
+		mb.Reset()
 
 		b.Run(testCase.Label, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {

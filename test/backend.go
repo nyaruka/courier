@@ -25,16 +25,18 @@ type MockBackend struct {
 	channelsByAddress map[courier.ChannelAddress]courier.Channel
 	contacts          map[urns.URN]courier.Contact
 	media             map[string]courier.Media // url -> Media
-	queueMsgs         []courier.Msg
 	errorOnQueue      bool
 
 	mutex     sync.RWMutex
 	redisPool *redis.Pool
+	lastMsgID courier.MsgID
 
-	outgoingMsgs    []courier.Msg
-	msgStatuses     []courier.MsgStatus
-	channelEvents   []courier.ChannelEvent
-	channelLogs     []*courier.ChannelLog
+	queueMsgs     []courier.Msg
+	outgoingMsgs  []courier.Msg
+	msgStatuses   []courier.MsgStatus
+	channelEvents []courier.ChannelEvent
+	channelLogs   []*courier.ChannelLog
+
 	lastContactName string
 	sentMsgs        map[courier.MsgID]bool
 	seenExternalIDs []string
@@ -92,14 +94,6 @@ func (mb *MockBackend) GetLastChannelEvent() (courier.ChannelEvent, error) {
 		return nil, errors.New("no channel events")
 	}
 	return mb.channelEvents[len(mb.channelEvents)-1], nil
-}
-
-// GetLastChannelLog returns the last channel log written to the server
-func (mb *MockBackend) GetLastChannelLog() (*courier.ChannelLog, error) {
-	if len(mb.channelLogs) == 0 {
-		return nil, errors.New("no channel logs")
-	}
-	return mb.channelLogs[len(mb.channelLogs)-1], nil
 }
 
 // GetLastMsgStatus returns the last status written to the server
@@ -203,6 +197,9 @@ func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.Msg) error {
 	if mock.alreadyWritten {
 		return nil
 	}
+
+	mb.lastMsgID++
+	mock.id = mb.lastMsgID
 
 	if mb.errorOnQueue {
 		return errors.New("unable to queue message")
@@ -326,14 +323,12 @@ func (mb *MockBackend) Stop() error { return nil }
 // Cleanup cleans up any connections that are open
 func (mb *MockBackend) Cleanup() error { return nil }
 
-// ClearQueueMsgs clears our mock msg queue
-func (mb *MockBackend) ClearQueueMsgs() {
+// Reset clears our queued messages, seen external IDs, and channel logs
+func (mb *MockBackend) Reset() {
+	mb.lastMsgID = courier.NilMsgID
 	mb.queueMsgs = nil
-}
-
-// ClearSeenExternalIDs clears our mock seen external ids
-func (mb *MockBackend) ClearSeenExternalIDs() {
 	mb.seenExternalIDs = nil
+	mb.channelLogs = nil
 }
 
 // LenQueuedMsgs Get the length of queued msgs

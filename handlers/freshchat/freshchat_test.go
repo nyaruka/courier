@@ -30,34 +30,47 @@ var (
 )
 
 var sigtestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid w Signature",
-		Headers: map[string]string{
-			"Content-Type":          "application/json",
-			"X-FreshChat-Signature": validSignature},
-		URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Test 2"), ExpectedURN: Sp("freshchat:c8fddfaf-622a-4a0e-b060-4f3ccbeab606/882f3926-b292-414b-a411-96380db373cd"), ExpectedDate: time.Date(2019, 6, 21, 17, 43, 20, 866000000, time.UTC)},
-
-	{Label: "Bad Signature",
-		Headers: map[string]string{
-			"Content-Type":          "application/json",
-			"X-FreshChat-Signature": invalidSignature},
-		URL: receiveURL, Data: validReceive, ExpectedStatus: 400, ExpectedResponse: `{"message":"Error","data":[{"type":"error","error":"unable to verify signature, crypto/rsa: verification error"}]}`,
-		ExpectedMsgText: Sp("Test 2"), ExpectedURN: Sp("freshchat:c8fddfaf-622a-4a0e-b060-4f3ccbeab606/882f3926-b292-414b-a411-96380db373cd"), ExpectedDate: time.Date(2019, 6, 21, 17, 43, 20, 866000000, time.UTC)},
+	{
+		Label:            "Receive Valid w Signature",
+		Headers:          map[string]string{"Content-Type": "application/json", "X-FreshChat-Signature": validSignature},
+		URL:              receiveURL,
+		Data:             validReceive,
+		ExpectedStatus:   200,
+		ExpectedResponse: "Message Accepted",
+		ExpectedMsgText:  Sp("Test 2"),
+		ExpectedURN:      Sp("freshchat:c8fddfaf-622a-4a0e-b060-4f3ccbeab606/882f3926-b292-414b-a411-96380db373cd"),
+		ExpectedDate:     time.Date(2019, 6, 21, 17, 43, 20, 866000000, time.UTC),
+	},
+	{
+		Label:            "Bad Signature",
+		Headers:          map[string]string{"Content-Type": "application/json", "X-FreshChat-Signature": invalidSignature},
+		URL:              receiveURL,
+		Data:             validReceive,
+		ExpectedStatus:   400,
+		ExpectedResponse: `{"message":"Error","data":[{"type":"error","error":"unable to verify signature, crypto/rsa: verification error"}]}`,
+	},
 }
-var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid w Sig",
-		Headers: map[string]string{
-			"Content-Type":          "application/json",
-			"X-FreshChat-Signature": validSignature},
-		URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Test 2"), ExpectedURN: Sp("freshchat:c8fddfaf-622a-4a0e-b060-4f3ccbeab606/882f3926-b292-414b-a411-96380db373cd"), ExpectedDate: time.Date(2019, 6, 21, 17, 43, 20, 866000000, time.UTC)},
 
-	{Label: "Bad JSON",
-		Headers: map[string]string{
-			"Content-Type":          "application/json",
-			"X-FreshChat-Signature": invalidSignature},
-		URL: receiveURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: `{"message":"Error","data":[{"type":"error","error":"unable to parse request JSON: invalid character 'e' looking for beginning of value"}]}`,
-		ExpectedMsgText: Sp("Test 2"), ExpectedURN: Sp("freshchat:c8fddfaf-622a-4a0e-b060-4f3ccbeab606/882f3926-b292-414b-a411-96380db373cd"), ExpectedDate: time.Date(2019, 6, 21, 17, 43, 20, 866000000, time.UTC)},
+var testCases = []ChannelHandleTestCase{
+	{
+		Label:            "Receive Valid w Sig",
+		Headers:          map[string]string{"Content-Type": "application/json", "X-FreshChat-Signature": validSignature},
+		URL:              receiveURL,
+		Data:             validReceive,
+		ExpectedStatus:   200,
+		ExpectedResponse: "Message Accepted",
+		ExpectedMsgText:  Sp("Test 2"),
+		ExpectedURN:      Sp("freshchat:c8fddfaf-622a-4a0e-b060-4f3ccbeab606/882f3926-b292-414b-a411-96380db373cd"),
+		ExpectedDate:     time.Date(2019, 6, 21, 17, 43, 20, 866000000, time.UTC),
+	},
+	{
+		Label:            "Bad JSON",
+		Headers:          map[string]string{"Content-Type": "application/json", "X-FreshChat-Signature": invalidSignature},
+		URL:              receiveURL,
+		Data:             notJSON,
+		ExpectedStatus:   400,
+		ExpectedResponse: `{"message":"Error","data":[{"type":"error","error":"unable to parse request JSON: invalid character 'e' looking for beginning of value"}]}`,
+	},
 }
 
 func TestHandler(t *testing.T) {

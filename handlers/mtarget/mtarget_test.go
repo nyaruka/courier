@@ -36,7 +36,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+923161909799")},
 	{Label: "Invalid URN", URL: receiveURL, Data: receiveInvalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Receive Stop", URL: receiveURL, Data: receiveStop, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedURN: Sp("tel:+923161909799"), ChannelEvent: Sp("stop_contact")},
+		ExpectedURN: Sp("tel:+923161909799"), ExpectedChannelEvent: courier.StopContact},
 	{Label: "Receive Missing From", URL: receiveURL, Data: receiveMissingFrom, ExpectedStatus: 400, ExpectedResponse: "missing required field 'Msisdn'"},
 
 	{Label: "Receive Part 2", URL: receiveURL, Data: receivePart2, ExpectedStatus: 200, ExpectedResponse: "received"},

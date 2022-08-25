@@ -160,7 +160,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedDate:        time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
 
 	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, ExpectedStatus: 200, ExpectedResponse: "Event Accepted",
-		ChannelEvent: Sp(courier.NewConversation), ExpectedURN: Sp("jiochat:1234")},
+		ExpectedChannelEvent: courier.NewConversation, ExpectedURN: Sp("jiochat:1234")},
 
 	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, ExpectedStatus: 200, ExpectedResponse: "unknown event"},
 
