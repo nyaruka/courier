@@ -12,8 +12,7 @@ import (
 
 const insertLogSQL = `
 INSERT INTO channels_channellog( log_type,  channel_id,  msg_id,  http_logs,  errors,  is_error,  created_on,  elapsed_ms)
-                         VALUES(:log_type, :channel_id, :msg_id, :http_logs, :errors, :is_error, :created_on, :elapsed_ms)
-  RETURNING id`
+                         VALUES(:log_type, :channel_id, :msg_id, :http_logs, :errors, :is_error, :created_on, :elapsed_ms)`
 
 // ChannelLog is our DB specific struct for logs
 type ChannelLog struct {
