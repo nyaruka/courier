@@ -13,17 +13,27 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US", nil),
 }
 
-var (
+const (
 	receiveURL = "/c/ac/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-
-	validReceive  = "B=Msg&M=254791541111"
-	missingNumber = "B=Msg"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+254791541111")},
-	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, ExpectedStatus: 400, ExpectedResponse: "required field 'M'"},
+	{
+		Label:            "Receive Valid",
+		URL:              receiveURL,
+		Data:             "B=Msg&M=254791541111",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Message Accepted",
+		ExpectedMsgText:  Sp("Msg"),
+		ExpectedURN:      Sp("tel:+254791541111"),
+	},
+	{
+		Label:            "Receive Missing Number",
+		URL:              receiveURL,
+		Data:             "B=Msg",
+		ExpectedStatus:   400,
+		ExpectedResponse: "required field 'M'",
+	},
 }
 
 func TestHandler(t *testing.T) {

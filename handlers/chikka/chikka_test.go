@@ -14,30 +14,71 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CK", "2020", "US", nil),
 }
 
-var (
-	receiveURL           = "/c/ck/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
-	validReceive         = "message_type=incoming&mobile_number=639178020779&request_id=4004&message=Hello+World&timestamp=1457670059.69"
-	invalidURN           = "message_type=incoming&mobile_number=MTN&request_id=4004&message=Hello+World&timestamp=1457670059.69"
-	missingParamsReceive = "message_type=incoming&message=Hello+World&timestamp=1457670059.69"
-
-	validSentStatus     = "message_type=outgoing&message_id=10&status=SENT"
-	validFailedStatus   = "message_type=outgoing&message_id=10&status=FAILED"
-	invalidStatus       = "message_type=outgoing&message_id=10&status=UNKNOWN"
-	missingStatusParams = "message_type=outgoing"
+const (
+	receiveURL = "/c/ck/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("tel:+639178020779"), ExpectedExternalID: Sp("4004"),
-		ExpectedDate: time.Date(2016, 03, 11, 04, 20, 59, 690000128, time.UTC),
+	{
+		Label:              "Receive Valid",
+		URL:                receiveURL,
+		Data:               "message_type=incoming&mobile_number=639178020779&request_id=4004&message=Hello+World&timestamp=1457670059.69",
+		ExpectedStatus:     200,
+		ExpectedResponse:   "Message Accepted",
+		ExpectedMsgText:    Sp("Hello World"),
+		ExpectedURN:        Sp("tel:+639178020779"),
+		ExpectedExternalID: Sp("4004"),
+		ExpectedDate:       time.Date(2016, 03, 11, 04, 20, 59, 690000128, time.UTC),
 	},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
-	{Label: "Receive Mising Params", URL: receiveURL, Data: missingParamsReceive, ExpectedStatus: 400, ExpectedResponse: "Field validation for 'RequestID' failed"},
-	{Label: "Ignore Invalid message_type", URL: receiveURL, Data: "message_type=invalid", ExpectedStatus: 200, ExpectedResponse: "unknown message_type request"},
-	{Label: "Status Sent Valid", URL: receiveURL, Data: validSentStatus, ExpectedStatus: 200, ExpectedResponse: `"status":"S"`},
-	{Label: "Status Failed Valid", URL: receiveURL, Data: validFailedStatus, ExpectedStatus: 200, ExpectedResponse: `"status":"F"`},
-	{Label: "Status Invalid", URL: receiveURL, Data: invalidStatus, ExpectedStatus: 400, ExpectedResponse: `must be either 'SENT' or 'FAILED'`},
-	{Label: "Status Missing Params", URL: receiveURL, Data: missingStatusParams, ExpectedStatus: 400, ExpectedResponse: `Field validation for 'Status' failed `},
+	{
+		Label:            "Invalid URN",
+		URL:              receiveURL,
+		Data:             "message_type=incoming&mobile_number=MTN&request_id=4004&message=Hello+World&timestamp=1457670059.69",
+		ExpectedStatus:   400,
+		ExpectedResponse: "phone number supplied is not a number",
+	},
+	{
+		Label:            "Receive Mising Params",
+		URL:              receiveURL,
+		Data:             "message_type=incoming&message=Hello+World&timestamp=1457670059.69",
+		ExpectedStatus:   400,
+		ExpectedResponse: "Field validation for 'RequestID' failed",
+	},
+	{
+		Label:            "Ignore Invalid message_type",
+		URL:              receiveURL,
+		Data:             "message_type=invalid",
+		ExpectedStatus:   200,
+		ExpectedResponse: "unknown message_type request",
+	},
+	{
+		Label:            "Status Sent Valid",
+		URL:              receiveURL,
+		Data:             "message_type=outgoing&message_id=10&status=SENT",
+		ExpectedStatus:   200,
+		ExpectedResponse: `"status":"S"`,
+	},
+	{
+		Label:            "Status Failed Valid",
+		URL:              receiveURL,
+		Data:             "message_type=outgoing&message_id=10&status=FAILED",
+		ExpectedStatus:   200,
+		ExpectedResponse: `"status":"F"`,
+	},
+	{
+		Label:            "Status Invalid",
+		URL:              receiveURL,
+		Data:             "message_type=outgoing&message_id=10&status=UNKNOWN",
+		ExpectedStatus:   400,
+		ExpectedResponse: `must be either 'SENT' or 'FAILED'`,
+	},
+	{
+		Label:            "Status Missing Params",
+		URL:              receiveURL,
+		Data:             "message_type=outgoing",
+		ExpectedStatus:   400,
+		ExpectedResponse: `Field validation for 'Status' failed `,
+	},
 }
 
 func TestHandler(t *testing.T) {

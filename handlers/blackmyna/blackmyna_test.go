@@ -13,30 +13,56 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BM", "2020", "US", nil),
 }
 
-var (
+const (
 	receiveURL = "/c/bm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	statusURL  = "/c/bm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
-
-	emptyReceive = receiveURL + ""
-	validReceive = receiveURL + "?to=3344&smsc=ncell&from=%2B9779814641111&text=Msg"
-	invalidURN   = receiveURL + "?to=3344&smsc=ncell&from=MTN&text=Msg"
-	missingText  = receiveURL + "?to=3344&smsc=ncell&from=%2B9779814641111"
-
-	missingStatus = statusURL + "?"
-	invalidStatus = statusURL + "?id=bmID&status=13"
-	validStatus   = statusURL + "?id=bmID&status=2"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+9779814641111")},
-	{Label: "Invalid URN", URL: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
-	{Label: "Receive Empty", URL: emptyReceive, ExpectedStatus: 400, ExpectedResponse: "field 'text' required"},
-	{Label: "Receive Missing Text", URL: missingText, ExpectedStatus: 400, ExpectedResponse: "field 'text' required"},
-
-	{Label: "Status Invalid", URL: invalidStatus, ExpectedStatus: 400, ExpectedResponse: "unknown status"},
-	{Label: "Status Missing", URL: missingStatus, ExpectedStatus: 400, ExpectedResponse: "field 'status' required"},
-	{Label: "Valid Status", URL: validStatus, ExpectedStatus: 200, ExpectedResponse: `"status":"F"`},
+	{
+		Label:            "Receive Valid",
+		URL:              receiveURL + "?to=3344&smsc=ncell&from=%2B9779814641111&text=Msg",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Message Accepted",
+		ExpectedMsgText:  Sp("Msg"),
+		ExpectedURN:      Sp("tel:+9779814641111"),
+	},
+	{
+		Label:            "Invalid URN",
+		URL:              receiveURL + "?to=3344&smsc=ncell&from=MTN&text=Msg",
+		ExpectedStatus:   400,
+		ExpectedResponse: "phone number supplied is not a number",
+	},
+	{
+		Label:            "Receive Empty",
+		URL:              receiveURL + "",
+		ExpectedStatus:   400,
+		ExpectedResponse: "field 'text' required",
+	},
+	{
+		Label:            "Receive Missing Text",
+		URL:              receiveURL + "?to=3344&smsc=ncell&from=%2B9779814641111",
+		ExpectedStatus:   400,
+		ExpectedResponse: "field 'text' required",
+	},
+	{
+		Label:            "Status Invalid",
+		URL:              statusURL + "?id=bmID&status=13",
+		ExpectedStatus:   400,
+		ExpectedResponse: "unknown status",
+	},
+	{
+		Label:            "Status Missing",
+		URL:              statusURL + "?",
+		ExpectedStatus:   400,
+		ExpectedResponse: "field 'status' required",
+	},
+	{
+		Label:            "Valid Status",
+		URL:              statusURL + "?id=bmID&status=2",
+		ExpectedStatus:   200,
+		ExpectedResponse: `"status":"F"`,
+	},
 }
 
 func TestHandler(t *testing.T) {
