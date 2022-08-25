@@ -17,20 +17,36 @@ var testChannels = []courier.Channel{
 	}),
 }
 
-var (
+const (
 	receiveURL = "/c/nv/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-
-	validReceive  = "text=Msg&from=18686846481"
-	missingNumber = "text=Msg"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+18686846481"), Headers: map[string]string{"Authorization": "sesame"}},
-	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, ExpectedStatus: 400, ExpectedResponse: "required field 'from'",
-		Headers: map[string]string{"Authorization": "sesame"}},
-	{Label: "Receive Missing Authorization", URL: receiveURL, Data: validReceive, ExpectedStatus: 401, ExpectedResponse: "invalid Authorization header",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+18686846481")},
+	{
+		Label:            "Receive Valid",
+		URL:              receiveURL,
+		Headers:          map[string]string{"Authorization": "sesame"},
+		Data:             "text=Msg&from=18686846481",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Message Accepted",
+		ExpectedMsgText:  Sp("Msg"),
+		ExpectedURN:      Sp("tel:+18686846481"),
+	},
+	{
+		Label:            "Receive Missing Number",
+		URL:              receiveURL,
+		Headers:          map[string]string{"Authorization": "sesame"},
+		Data:             "text=Msg",
+		ExpectedStatus:   400,
+		ExpectedResponse: "required field 'from'",
+	},
+	{
+		Label:            "Receive Missing Authorization",
+		URL:              receiveURL,
+		Data:             "text=Msg&from=18686846481",
+		ExpectedStatus:   401,
+		ExpectedResponse: "invalid Authorization header",
+	},
 }
 
 func TestHandler(t *testing.T) {
