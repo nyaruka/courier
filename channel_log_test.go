@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/uuids"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,6 +21,9 @@ func TestChannelLog(t *testing.T) {
 		},
 	}))
 	defer httpx.SetRequestor(httpx.DefaultRequestor)
+
+	uuids.SetGenerator(uuids.NewSeededGenerator(1234))
+	defer uuids.SetGenerator(uuids.DefaultGenerator)
 
 	channel := test.NewMockChannel("fef91e9b-a6ed-44fb-b6ce-feed8af585a8", "NX", "1234", "US", nil)
 	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
@@ -40,10 +44,13 @@ func TestChannelLog(t *testing.T) {
 	clog.Error(errors.New("this is an error"))
 	clog.End()
 
+	assert.Equal(t, uuids.UUID("c00e5d67-c275-4389-aded-7d8b151cbd5b"), clog.UUID())
 	assert.Equal(t, courier.ChannelLogTypeTokenFetch, clog.Type())
 	assert.Equal(t, channel, clog.Channel())
+	assert.Equal(t, courier.NilMsgID, clog.MsgID())
 	assert.Equal(t, 2, len(clog.HTTPLogs()))
 	assert.Equal(t, 1, len(clog.Errors()))
+	assert.False(t, clog.CreatedOn().IsZero())
 	assert.Greater(t, clog.Elapsed(), time.Duration(0))
 
 	hlog1 := clog.HTTPLogs()[0]
@@ -60,4 +67,10 @@ func TestChannelLog(t *testing.T) {
 	err1 := clog.Errors()[0]
 	assert.Equal(t, "this is an error", err1.Message())
 	assert.Equal(t, "", err1.Code())
+
+	clog.SetMsgID(courier.NewMsgID(123))
+	clog.SetType(courier.ChannelLogTypeEventReceive)
+
+	assert.Equal(t, courier.NewMsgID(123), clog.MsgID())
+	assert.Equal(t, courier.ChannelLogTypeEventReceive, clog.Type())
 }
