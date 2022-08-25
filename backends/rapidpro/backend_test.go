@@ -515,7 +515,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	status.SetExternalID("ext0")
 	err := ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
-	time.Sleep(time.Second)
+
+	time.Sleep(time.Second) // give committer time to write this
 
 	m := readMsgFromDB(ts.b, courier.NewMsgID(10001))
 	ts.Equal(courier.MsgWired, m.Status_)
@@ -530,7 +531,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	status = ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10001), courier.MsgSent)
 	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
-	time.Sleep(time.Second)
+
+	time.Sleep(time.Second) // give committer time to write this
 
 	m = readMsgFromDB(ts.b, courier.NewMsgID(10001))
 	ts.Equal(courier.MsgSent, m.Status_)
@@ -553,7 +555,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	status = ts.b.NewMsgStatusForID(channel, courier.NewMsgID(10002), courier.MsgSent)
 	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
-	time.Sleep(time.Second)
+
+	time.Sleep(time.Second) // give committer time to write this
 
 	m = readMsgFromDB(ts.b, courier.NewMsgID(10002))
 	ts.Equal(courier.MsgPending, m.Status_)
@@ -577,7 +580,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgWired)
 	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
-	time.Sleep(time.Second)
+
+	time.Sleep(time.Second) // give committer time to write this
 
 	m = readMsgFromDB(ts.b, courier.NewMsgID(10000))
 	ts.Equal(courier.MsgWired, m.Status_)
@@ -619,7 +623,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgErrored)
 	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
-	time.Sleep(time.Second)
+
+	time.Sleep(time.Second) // give committer time to write this
 
 	m = readMsgFromDB(ts.b, courier.NewMsgID(10000))
 	ts.Equal(m.Status_, courier.MsgErrored)
@@ -632,7 +637,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgErrored)
 	err = ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
-	time.Sleep(time.Second)
+
+	time.Sleep(time.Second) // give committer time to write this
 
 	m = readMsgFromDB(ts.b, courier.NewMsgID(10000))
 	ts.Equal(m.Status_, courier.MsgErrored)
@@ -642,7 +648,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// third go
 	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgErrored)
 	err = ts.b.WriteMsgStatus(ctx, status)
-	time.Sleep(time.Second)
+
+	time.Sleep(time.Second) // give committer time to write this
 
 	ts.NoError(err)
 	m = readMsgFromDB(ts.b, courier.NewMsgID(10000))
@@ -945,9 +952,13 @@ func (ts *BackendTestSuite) TestChannel() {
 
 }
 
-func (ts *BackendTestSuite) TestChanneLog() {
-	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+func (ts *BackendTestSuite) TestWriteChanneLog() {
 	ctx := context.Background()
+	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+
+	defer func() {
+		ts.b.db.MustExecContext(ctx, "DELETE FROM channels_channellog")
+	}()
 
 	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
 		"https://api.messages.com/send.json": {
@@ -964,8 +975,14 @@ func (ts *BackendTestSuite) TestChanneLog() {
 	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
 	clog.HTTP(trace)
 
-	err = writeChannelLog(ctx, ts.b, clog)
+	err = ts.b.WriteChannelLog(ctx, clog)
 	ts.NoError(err)
+
+	time.Sleep(time.Second) // give committer time to write this
+
+	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM channels_channellog`).Returns(1)
+	assertdb.Query(ts.T(), ts.b.db, `SELECT channel_id, http_logs->0->>'url' AS url FROM channels_channellog`).
+		Columns(map[string]interface{}{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json"})
 }
 
 func (ts *BackendTestSuite) TestWriteAttachment() {
