@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,10 +16,6 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/pkg/errors"
-
-	"mime"
-
 	"github.com/gomodule/redigo/redis"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
@@ -26,6 +23,7 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	filetype "gopkg.in/h2non/filetype.v1"
 )
@@ -51,7 +49,7 @@ const (
 )
 
 // WriteMsg creates a message given the passed in arguments
-func writeMsg(ctx context.Context, b *backend, msg courier.Msg) error {
+func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.ChannelLog) error {
 	m := msg.(*DBMsg)
 
 	// this msg has already been written (we received it twice), we are a no op
@@ -73,7 +71,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg) error {
 	}
 
 	// try to write it our db
-	err := writeMsgToDB(ctx, b, m)
+	err := writeMsgToDB(ctx, b, m, clog)
 
 	// fail? log
 	if err != nil {
@@ -129,9 +127,9 @@ INSERT INTO
 RETURNING id
 `
 
-func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg) error {
+func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg, clog *courier.ChannelLog) error {
 	// grab the contact for this msg
-	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuth_, m.ContactName_)
+	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuth_, m.ContactName_, clog)
 
 	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {
@@ -332,8 +330,11 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 	}
 	msg.channel = channel.(*DBChannel)
 
+	// create log tho it won't be written
+	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgReceive, channel)
+
 	// try to write it our db
-	err = writeMsgToDB(ctx, b, msg)
+	err = writeMsgToDB(ctx, b, msg, clog)
 
 	// fail? oh well, we'll try again later
 	return err

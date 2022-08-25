@@ -77,7 +77,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown message type: %s", form.Type))
 	}
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 // guid: thinQ guid returned when an outbound message is sent via our API

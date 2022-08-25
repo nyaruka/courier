@@ -30,7 +30,7 @@ type Backend interface {
 	GetChannelByAddress(context.Context, ChannelType, ChannelAddress) (Channel, error)
 
 	// GetContact returns (or creates) the contact for the passed in channel and URN
-	GetContact(context context.Context, channel Channel, urn urns.URN, auth string, name string) (Contact, error)
+	GetContact(context.Context, Channel, urns.URN, string, string, *ChannelLog) (Contact, error)
 
 	// AddURNtoContact adds a URN to the passed in contact
 	AddURNtoContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error)
@@ -45,7 +45,7 @@ type Backend interface {
 	NewIncomingMsg(channel Channel, urn urns.URN, text string) Msg
 
 	// WriteMsg writes the passed in message to our backend
-	WriteMsg(context.Context, Msg) error
+	WriteMsg(context.Context, Msg, *ChannelLog) error
 
 	// NewMsgStatusForID creates a new Status object for the given message id
 	NewMsgStatusForID(Channel, MsgID, MsgStatusValue) MsgStatus
@@ -60,7 +60,7 @@ type Backend interface {
 	NewChannelEvent(Channel, ChannelEventType, urns.URN) ChannelEvent
 
 	// WriteChannelEvent writes the passed in channel even returning any error
-	WriteChannelEvent(context.Context, ChannelEvent) error
+	WriteChannelEvent(context.Context, ChannelEvent, *ChannelLog) error
 
 	// WriteChannelLog writes the passed in channel log to our backend
 	WriteChannelLog(context.Context, *ChannelLog) error

@@ -62,7 +62,7 @@ func (h *dummyHandler) receiveMsg(ctx context.Context, channel courier.Channel, 
 	msg := h.backend.NewIncomingMsg(channel, urns.URN("tel:"+from), text)
 	w.WriteHeader(200)
 	w.Write([]byte("ok"))
-	h.backend.WriteMsg(ctx, msg)
+	h.backend.WriteMsg(ctx, msg, clog)
 	return []courier.Event{msg}, nil
 }
 

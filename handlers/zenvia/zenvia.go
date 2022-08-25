@@ -134,7 +134,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// and finally write our messages
-	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
 }
 
 var statusMapping = map[string]courier.MsgStatusValue{

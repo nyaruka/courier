@@ -316,7 +316,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			if tc.ExpectedContactURNs != nil {
 				var contactUUID courier.ContactUUID
 				for urn, shouldBePresent := range tc.ExpectedContactURNs {
-					contact, _ := mb.GetContact(ctx, channel, urns.URN(urn), "", "")
+					contact, _ := mb.GetContact(ctx, channel, urns.URN(urn), "", "", clog)
 					if contactUUID == courier.NilContactUUID && shouldBePresent {
 						contactUUID = contact.UUID()
 					}

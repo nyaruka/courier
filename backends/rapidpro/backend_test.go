@@ -246,19 +246,20 @@ func (ts *BackendTestSuite) TestDeleteMsgWithExternalID() {
 
 func (ts *BackendTestSuite) TestContact() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
 	urn, _ := urns.NewTelURNForCountry("12065551518", "US")
 
 	ctx := context.Background()
 	now := time.Now()
 
 	// create our new contact
-	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Ryan Lewis")
+	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Ryan Lewis", clog)
 	ts.NoError(err)
 
 	now2 := time.Now()
 
 	// load this contact again by URN, should be same contact, name unchanged
-	contact2, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Other Name")
+	contact2, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Other Name", clog)
 	ts.NoError(err)
 
 	ts.Equal(contact.UUID_, contact2.UUID_)
@@ -272,7 +273,7 @@ func (ts *BackendTestSuite) TestContact() {
 
 	// load a contact by URN instead (this one is in our testdata)
 	cURN, _ := urns.NewTelURNForCountry("+12067799192", "US")
-	contact, err = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, cURN, "", "")
+	contact, err = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, cURN, "", "", clog)
 	ts.NoError(err)
 	ts.NotNil(contact)
 
@@ -284,7 +285,7 @@ func (ts *BackendTestSuite) TestContact() {
 	// long name are truncated
 
 	longName := "LongRandomNameHPGBRDjZvkz7y58jI2UPkio56IKGaMvaeDTvF74Q5SUkIHozFn1MLELfjX7vRrFto8YG2KPVaWzekgmFbkuxujIotFAgfhHqoHKW5c177FUtKf5YK9KbY8hp0x7PxIFY3MS5lMyMA5ELlqIgikThpr"
-	contact3, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", longName)
+	contact3, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", longName, clog)
 	ts.NoError(err)
 
 	ts.Equal(null.String(longName[0:127]), contact3.Name_)
@@ -293,6 +294,7 @@ func (ts *BackendTestSuite) TestContact() {
 
 func (ts *BackendTestSuite) TestContactRace() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
 	urn, _ := urns.NewTelURNForCountry("12065551518", "US")
 
 	urnSleep = true
@@ -305,10 +307,10 @@ func (ts *BackendTestSuite) TestContactRace() {
 	var err1, err2 error
 
 	go func() {
-		contact1, err1 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Ryan Lewis")
+		contact1, err1 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Ryan Lewis", clog)
 	}()
 	go func() {
-		contact2, err2 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Ryan Lewis")
+		contact2, err2 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Ryan Lewis", clog)
 	}()
 
 	time.Sleep(time.Second)
@@ -320,12 +322,13 @@ func (ts *BackendTestSuite) TestContactRace() {
 
 func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
 	ctx := context.Background()
 
 	cURN, err := urns.NewTelURNForCountry("+12067799192", "US")
 	ts.NoError(err)
 
-	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, cURN, "", "")
+	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, cURN, "", "", clog)
 	ts.NoError(err)
 	ts.NotNil(contact)
 
@@ -362,17 +365,18 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 func (ts *BackendTestSuite) TestContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
 	urn, _ := urns.NewTelURNForCountry("12065551515", "US")
 
 	ctx := context.Background()
 
-	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, urn, "", "")
+	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, urn, "", "", clog)
 	ts.NoError(err)
 
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
 
-	contact, err = contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, urn, "chestnut", "")
+	contact, err = contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, urn, "chestnut", "", clog)
 	ts.NoError(err)
 
 	contactURNs, err := contactURNsForContact(tx, contact.ID_)
@@ -419,11 +423,11 @@ func (ts *BackendTestSuite) TestContactURN() {
 	tgChannel := ts.getChannel("TG", "dbc126ed-66bc-4e28-b67b-81dc3327c98a")
 	tgURN, _ := urns.NewTelegramURN(12345, "")
 
-	tgContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURN, "", "")
+	tgContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURN, "", "", clog)
 	ts.NoError(err)
 
 	tgURNDisplay, _ := urns.NewTelegramURN(12345, "Jane")
-	displayContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURNDisplay, "", "")
+	displayContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURNDisplay, "", "", clog)
 
 	ts.Equal(tgContact.URNID_, displayContact.URNID_)
 	ts.Equal(tgContact.ID_, displayContact.ID_)
@@ -444,13 +448,13 @@ func (ts *BackendTestSuite) TestContactURN() {
 	wait.Add(2)
 	go func() {
 		var err2 error
-		contact2, err2 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn2, "", "")
+		contact2, err2 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn2, "", "", clog)
 		ts.NoError(err2)
 		wait.Done()
 	}()
 	go func() {
 		var err3 error
-		contact3, err3 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn2, "", "")
+		contact3, err3 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn2, "", "", clog)
 		ts.NoError(err3)
 		wait.Done()
 	}()
@@ -466,10 +470,11 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
 	knURN, _ := urns.NewTelURNForCountry("12065551111", "US")
 	twURN, _ := urns.NewTelURNForCountry("12065552222", "US")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
 
 	ctx := context.Background()
 
-	knContact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, knURN, "", "")
+	knContact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, knURN, "", "", clog)
 	ts.NoError(err)
 
 	tx, err := ts.b.db.Beginx()
@@ -481,7 +486,7 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 
 	// ok, now looking up our contact should reset our URNs and their affinity..
 	// TwitterURN should be first all all URNs should now use Twitter channel
-	twContact, err := contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, twURN, "", "")
+	twContact, err := contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, twURN, "", "", clog)
 	ts.NoError(err)
 
 	ts.Equal(twContact.ID_, knContact.ID_)
@@ -504,6 +509,7 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 func (ts *BackendTestSuite) TestMsgStatus() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
 	now := time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)
 
@@ -681,7 +687,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	oldURN, _ = urns.NewWhatsAppURN("55999887766")
 	newURN, _ = urns.NewWhatsAppURN("5599887766")
 	tx, _ = ts.b.db.BeginTxx(ctx, nil)
-	contact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, "", "")
+	contact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, "", "", clog)
 	_ = insertContactURN(tx, newDBContactURN(channel.OrgID_, channel.ID_, NilContactID, newURN, ""))
 
 	ts.NoError(tx.Commit())
@@ -703,8 +709,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	oldURN, _ = urns.NewWhatsAppURN("55988776655")
 	newURN, _ = urns.NewWhatsAppURN("5588776655")
 	tx, _ = ts.b.db.BeginTxx(ctx, nil)
-	_, _ = contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, "", "")
-	otherContact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, newURN, "", "")
+	_, _ = contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, "", "", clog)
+	otherContact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, newURN, "", "", clog)
 
 	ts.NoError(tx.Commit())
 
@@ -738,10 +744,11 @@ func (ts *BackendTestSuite) TestDupes() {
 
 	ctx := context.Background()
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
 	urn, _ := urns.NewTelURNForCountry("12065551215", knChannel.Country())
 
 	msg := ts.b.NewIncomingMsg(knChannel, urn, "ping").(*DBMsg)
-	err := ts.b.WriteMsg(ctx, msg)
+	err := ts.b.WriteMsg(ctx, msg, clog)
 	ts.NoError(err)
 
 	// grab our UUID
@@ -749,14 +756,14 @@ func (ts *BackendTestSuite) TestDupes() {
 
 	// trying again should lead to same UUID
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "ping").(*DBMsg)
-	err = ts.b.WriteMsg(ctx, msg)
+	err = ts.b.WriteMsg(ctx, msg, clog)
 	ts.NoError(err)
 
 	ts.Equal(uuid1, msg.UUID().String())
 
 	// different message should change that
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "test").(*DBMsg)
-	err = ts.b.WriteMsg(ctx, msg)
+	err = ts.b.WriteMsg(ctx, msg, clog)
 	ts.NoError(err)
 
 	ts.NotEqual(uuid1, msg.UUID().String())
@@ -779,7 +786,7 @@ func (ts *BackendTestSuite) TestDupes() {
 	ts.NoError(err)
 
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "test").(*DBMsg)
-	err = ts.b.WriteMsg(ctx, msg)
+	err = ts.b.WriteMsg(ctx, msg, clog)
 	ts.NoError(err)
 
 	ts.NotEqual(uuid2, msg.UUID().String())
@@ -1011,12 +1018,13 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 	}))
 
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
 	urn, _ := urns.NewTelURNForCountry("12065551215", knChannel.Country())
 	msg := ts.b.NewIncomingMsg(knChannel, urn, "invalid attachment").(*DBMsg)
 	msg.WithAttachment(testServer.URL)
 
 	// should just end up being text/plain
-	err := ts.b.WriteMsg(ctx, msg)
+	err := ts.b.WriteMsg(ctx, msg, clog)
 	ts.NoError(err)
 	ts.True(strings.HasPrefix(msg.Attachments()[0], "text/plain"))
 
@@ -1024,7 +1032,7 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "jpg attachment").(*DBMsg)
 	msg.WithAttachment(testServer.URL + "/test.jpg")
 
-	err = ts.b.WriteMsg(ctx, msg)
+	err = ts.b.WriteMsg(ctx, msg, clog)
 	ts.NoError(err)
 	ts.True(strings.HasPrefix(msg.Attachments()[0], "image/jpeg:"))
 	ts.True(strings.HasSuffix(msg.Attachments()[0], ".jpg"))
@@ -1033,7 +1041,7 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "gif attachment").(*DBMsg)
 	msg.WithAttachment(testServer.URL + "/giffy")
 
-	err = ts.b.WriteMsg(ctx, msg)
+	err = ts.b.WriteMsg(ctx, msg, clog)
 	ts.NoError(err)
 	if ts.Equal(1, len(msg.Attachments())) {
 		ts.True(strings.HasPrefix(msg.Attachments()[0], "image/gif:"))
@@ -1044,7 +1052,7 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "png attachment").(*DBMsg)
 	msg.WithAttachment(testServer.URL + "/header")
 
-	err = ts.b.WriteMsg(ctx, msg)
+	err = ts.b.WriteMsg(ctx, msg, clog)
 	ts.NoError(err)
 	if ts.Equal(1, len(msg.Attachments())) {
 		ts.True(strings.HasPrefix(msg.Attachments()[0], "image/png:"))
@@ -1063,6 +1071,7 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 func (ts *BackendTestSuite) TestWriteMsg() {
 	ctx := context.Background()
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
 
 	// have to round to microseconds because postgres can't store nanos
 	now := time.Now().Round(time.Microsecond).In(time.UTC)
@@ -1072,7 +1081,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	msg := ts.b.NewIncomingMsg(knChannel, urn, "test123").WithExternalID("ext123").WithReceivedOn(now).WithContactName("test contact").(*DBMsg)
 
 	// try to write it to our db
-	err := ts.b.WriteMsg(ctx, msg)
+	err := ts.b.WriteMsg(ctx, msg, clog)
 	ts.NoError(err)
 
 	// creating the incoming msg again should give us the same UUID and have the msg set as not to write
@@ -1116,7 +1125,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.NotNil(m.ModifiedOn_)
 	ts.NotNil(m.QueuedOn_)
 
-	contact, err := contactForURN(ctx, ts.b, m.OrgID_, knChannel, urn, "", "")
+	contact, err := contactForURN(ctx, ts.b, m.OrgID_, knChannel, urn, "", "", clog)
 	ts.Equal(null.String("test contact"), contact.Name_)
 	ts.Equal(m.OrgID_, contact.OrgID_)
 	ts.Equal(m.ContactID_, contact.ID_)
@@ -1130,13 +1139,13 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 
 	// msg with null bytes in it, that's fine for a request body
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "test456\x00456").WithExternalID("ext456").(*DBMsg)
-	err = writeMsgToDB(ctx, ts.b, msg)
+	err = writeMsgToDB(ctx, ts.b, msg, clog)
 	ts.NoError(err)
 
 	// more null bytes
 	text, _ := url.PathUnescape("%1C%00%00%00%00%00%07%E0%00")
 	msg = ts.b.NewIncomingMsg(knChannel, urn, text).(*DBMsg)
-	err = writeMsgToDB(ctx, ts.b, msg)
+	err = writeMsgToDB(ctx, ts.b, msg, clog)
 	ts.NoError(err)
 
 	// check that our mailroom queue has an item
@@ -1145,7 +1154,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	rc.Do("DEL", "handler:1", "handler:active", fmt.Sprintf("c:1:%d", msg.ContactID_))
 
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "hello 1 2 3").(*DBMsg)
-	err = writeMsgToDB(ctx, ts.b, msg)
+	err = writeMsgToDB(ctx, ts.b, msg, clog)
 	ts.NoError(err)
 
 	count, err := redis.Int(rc.Do("ZCARD", "handler:1"))
@@ -1185,6 +1194,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 
 func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 	exChannel := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327100a")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, exChannel)
 	ctx := context.Background()
 
 	// have to round to microseconds because postgres can't store nanos
@@ -1194,7 +1204,7 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 	msg := ts.b.NewIncomingMsg(exChannel, urn, "test123").WithExternalID("ext123").WithReceivedOn(now).WithContactName("test contact").(*DBMsg)
 
 	// try to write it to our db
-	err := ts.b.WriteMsg(ctx, msg)
+	err := ts.b.WriteMsg(ctx, msg, clog)
 	ts.NoError(err)
 
 	time.Sleep(1 * time.Second)
@@ -1216,14 +1226,15 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 
 func (ts *BackendTestSuite) TestChannelEvent() {
 	ctx := context.Background()
-
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
 	urn, _ := urns.NewTelURNForCountry("12065551616", channel.Country())
+
 	event := ts.b.NewChannelEvent(channel, courier.Referral, urn).WithExtra(map[string]interface{}{"ref_id": "12345"}).WithContactName("kermit frog")
-	err := ts.b.WriteChannelEvent(ctx, event)
+	err := ts.b.WriteChannelEvent(ctx, event, clog)
 	ts.NoError(err)
 
-	contact, err := contactForURN(ctx, ts.b, channel.OrgID_, channel, urn, "", "")
+	contact, err := contactForURN(ctx, ts.b, channel.OrgID_, channel, urn, "", "", clog)
 	ts.NoError(err)
 	ts.Equal(null.String("kermit frog"), contact.Name_)
 
@@ -1258,14 +1269,16 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	rc.Do("FLUSHDB")
 
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
 	urn, _ := urns.NewTelURNForCountry("12065551616", channel.Country())
+
 	event := ts.b.NewChannelEvent(channel, courier.Referral, urn).WithExtra(map[string]interface{}{"ref_id": "12345"}).
 		WithContactName("kermit frog").
 		WithOccurredOn(time.Date(2020, 8, 5, 13, 30, 0, 123456789, time.UTC))
-	err := ts.b.WriteChannelEvent(ctx, event)
+	err := ts.b.WriteChannelEvent(ctx, event, clog)
 	ts.NoError(err)
 
-	contact, err := contactForURN(ctx, ts.b, channel.OrgID_, channel, urn, "", "")
+	contact, err := contactForURN(ctx, ts.b, channel.OrgID_, channel, urn, "", "", clog)
 	ts.NoError(err)
 	ts.Equal(null.String("kermit frog"), contact.Name_)
 

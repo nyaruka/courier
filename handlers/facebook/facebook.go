@@ -282,7 +282,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			}
 			event = event.WithExtra(extra)
 
-			err := h.Backend().WriteChannelEvent(ctx, event)
+			err := h.Backend().WriteChannelEvent(ctx, event, clog)
 			if err != nil {
 				return nil, err
 			}
@@ -317,7 +317,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 			event = event.WithExtra(extra)
 
-			err := h.Backend().WriteChannelEvent(ctx, event)
+			err := h.Backend().WriteChannelEvent(ctx, event, clog)
 			if err != nil {
 				return nil, err
 			}
@@ -346,7 +346,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			}
 			event = event.WithExtra(extra)
 
-			err := h.Backend().WriteChannelEvent(ctx, event)
+			err := h.Backend().WriteChannelEvent(ctx, event, clog)
 			if err != nil {
 				return nil, err
 			}
@@ -399,7 +399,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 				event.WithAttachment(attURL)
 			}
 
-			err := h.Backend().WriteMsg(ctx, event)
+			err := h.Backend().WriteMsg(ctx, event, clog)
 			if err != nil {
 				return nil, err
 			}
@@ -591,7 +591,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 					clog.Error(errors.Errorf("unable to make facebook urn from %s", recipientID))
 				}
 
-				contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), "", "")
+				contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), "", "", clog)
 				if err != nil {
 					clog.Error(errors.Errorf("unable to get contact for %s", msg.URN().String()))
 				}

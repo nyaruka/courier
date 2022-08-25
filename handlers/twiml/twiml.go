@@ -136,7 +136,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		mediaURL := r.PostForm.Get(fmt.Sprintf("MediaUrl%d", i))
 		msg.WithAttachment(mediaURL)
 	}
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -189,7 +189,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 
 		// create a stop channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
-		err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
 			return nil, err
 		}
@@ -280,7 +280,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 					// create a stop channel event
 					channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
-					err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+					err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 					if err != nil {
 						return nil, err
 					}

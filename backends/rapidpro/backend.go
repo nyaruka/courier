@@ -63,9 +63,9 @@ func (b *backend) GetChannelByAddress(ctx context.Context, ct courier.ChannelTyp
 }
 
 // GetContact returns the contact for the passed in channel and URN
-func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, auth string, name string) (courier.Contact, error) {
+func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, auth string, name string, clog *courier.ChannelLog) (courier.Contact, error) {
 	dbChannel := c.(*DBChannel)
-	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, auth, name)
+	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, auth, name, clog)
 }
 
 // AddURNtoContact adds a URN to the passed in contact
@@ -258,11 +258,11 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 }
 
 // WriteMsg writes the passed in message to our store
-func (b *backend) WriteMsg(ctx context.Context, m courier.Msg) error {
+func (b *backend) WriteMsg(ctx context.Context, m courier.Msg, clog *courier.ChannelLog) error {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	return writeMsg(timeout, b, m)
+	return writeMsg(timeout, b, m, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
@@ -372,11 +372,11 @@ func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.Cha
 }
 
 // WriteChannelEvent writes the passed in channel even returning any error
-func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent) error {
+func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent, clog *courier.ChannelLog) error {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	return writeChannelEvent(timeout, b, event)
+	return writeChannelEvent(timeout, b, event, clog)
 }
 
 // WriteChannelLog persists the passed in log to our database, for rapidpro we swallow all errors, logging isn't critical
