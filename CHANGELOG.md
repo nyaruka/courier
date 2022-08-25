@@ -1,3 +1,7 @@
+v7.5.17
+----------
+ * Fix writing channel logs
+
 v7.5.16
 ----------
  * Write channel logs in new format
