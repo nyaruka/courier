@@ -374,11 +374,11 @@ func TestDescribeURN(t *testing.T) {
 	defer server.Close()
 
 	handler := newHandler().(courier.URNDescriber)
-	logger := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0])
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0])
 	urn, _ := urns.NewURNFromParts(urns.VKScheme, "123456789", "", "")
 	data := map[string]string{"name": "John Doe"}
 
-	describe, err := handler.DescribeURN(context.Background(), testChannels[0], urn, logger)
+	describe, err := handler.DescribeURN(context.Background(), testChannels[0], urn, clog)
 	assert.Nil(t, err)
 	assert.Equal(t, data, describe)
 }

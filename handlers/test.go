@@ -102,7 +102,7 @@ type ChannelSendTestCase struct {
 
 	ExpectedStatus     string
 	ExpectedExternalID string
-	ExpectedErrors     []string
+	ExpectedErrors     []courier.ChannelError
 
 	ExpectedStopEvent   bool
 	ExpectedContactURNs map[string]bool

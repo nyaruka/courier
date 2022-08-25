@@ -113,7 +113,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"text": "Error status", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"failed to send message, received error status [10]"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("failed to send message, received error status [10]", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -144,7 +144,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"failed to send message, received error status [1]"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("failed to send message, received error status [1]", "")},
 		SendPrep:           setSendURL,
 	},
 }

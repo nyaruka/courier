@@ -191,7 +191,7 @@ func TestDescribeFBA(t *testing.T) {
 
 	channel := testChannelsFBA[0]
 	handler := newHandler("FBA", "Facebook", false).(courier.URNDescriber)
-	logger := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
 
 	tcs := []struct {
 		urn              urns.URN
@@ -203,7 +203,7 @@ func TestDescribeFBA(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, logger)
+		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 }
@@ -214,7 +214,7 @@ func TestDescribeIG(t *testing.T) {
 
 	channel := testChannelsIG[0]
 	handler := newHandler("IG", "Instagram", false).(courier.URNDescriber)
-	logger := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
 
 	tcs := []struct {
 		urn              urns.URN
@@ -225,7 +225,7 @@ func TestDescribeIG(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, logger)
+		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 }
@@ -233,7 +233,7 @@ func TestDescribeIG(t *testing.T) {
 func TestDescribeWAC(t *testing.T) {
 	channel := testChannelsWAC[0]
 	handler := newHandler("WAC", "Cloud API WhatsApp", false).(courier.URNDescriber)
-	logger := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
 
 	tcs := []struct {
 		urn              urns.URN
@@ -244,7 +244,7 @@ func TestDescribeWAC(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), testChannelsWAC[0], tc.urn, logger)
+		metadata, _ := handler.DescribeURN(context.Background(), testChannelsWAC[0], tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 }
@@ -491,7 +491,7 @@ var SendTestCasesFBA = []ChannelSendTestCase{
 		MockResponseBody:   `{ "is_error": true }`,
 		MockResponseStatus: 200,
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get message_id from body"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get message_id from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -604,7 +604,7 @@ var SendTestCasesIG = []ChannelSendTestCase{
 		MockResponseBody:   `{ "is_error": true }`,
 		MockResponseStatus: 200,
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get message_id from body"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get message_id from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -756,7 +756,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		MsgText:        "templated message",
 		MsgURN:         "whatsapp:250788123123",
 		MsgMetadata:    json.RawMessage(`{"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}}`),
-		ExpectedErrors: []string{`unable to decode template: {"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}} for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c56ab: unable to find mapping for language: bnt`},
+		ExpectedErrors: []courier.ChannelError{courier.NewChannelError(`unable to decode template: {"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}} for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c56ab: unable to find mapping for language: bnt`, "")},
 	},
 	{
 		Label:               "Interactive Button Message Send",

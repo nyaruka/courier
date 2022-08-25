@@ -471,7 +471,7 @@ var xmlSendWithResponseContentTestCases = []ChannelSendTestCase{
 		ExpectedRequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 		ExpectedStatus:      "E",
-		ExpectedErrors:      []string{"Received invalid response content: <return>1</return>"},
+		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("Received invalid response content: <return>1</return>", "")},
 		SendPrep:            setSendURL,
 	},
 	{

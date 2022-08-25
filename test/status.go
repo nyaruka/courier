@@ -15,8 +15,6 @@ type mockMsgStatus struct {
 	externalID string
 	status     courier.MsgStatusValue
 	createdOn  time.Time
-
-	logs []*courier.ChannelLog
 }
 
 func (m *mockMsgStatus) ChannelUUID() courier.ChannelUUID { return m.channel.UUID() }

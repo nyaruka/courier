@@ -206,7 +206,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"Hello"}`,
 		ExpectedStatus:      "E",
-		ExpectedErrors:      []string{"invalid_auth"},
+		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("invalid_auth", "")},
 		SendPrep:            setSendUrl,
 	},
 }
@@ -360,12 +360,12 @@ func TestDescribeURN(t *testing.T) {
 	defer server.Close()
 
 	handler := newHandler().(courier.URNDescriber)
-	logger := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0])
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0])
 	urn, _ := urns.NewURNFromParts(urns.SlackScheme, "U012345", "", "")
 
 	data := map[string]string{"name": "dummy user"}
 
-	describe, err := handler.DescribeURN(context.Background(), testChannels[0], urn, logger)
+	describe, err := handler.DescribeURN(context.Background(), testChannels[0], urn, clog)
 	assert.Nil(t, err)
 	assert.Equal(t, data, describe)
 }

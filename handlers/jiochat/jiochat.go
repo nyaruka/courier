@@ -64,7 +64,7 @@ type verifyForm struct {
 }
 
 // VerifyURL is our HTTP handler function for Jiochat config URL verification callbacks
-func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -109,7 +109,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLogger) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -168,7 +168,7 @@ type fetchPayload struct {
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel) error {
-	logger := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
 
 	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "auth/token.action"))
 	payload := &fetchPayload{
@@ -184,15 +184,17 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	resp, respBody, err := handlers.RequestHTTP(req, logger)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
-		return h.Backend().WriteChannelLog(ctx, logger)
+		clog.End()
+		return h.Backend().WriteChannelLog(ctx, clog)
 	}
 
 	accessToken, err := jsonparser.GetString(respBody, "access_token")
 	if err != nil {
-		logger.Error(errors.New("access_token not found in response"))
-		return h.Backend().WriteChannelLog(ctx, logger)
+		clog.Error(errors.New("access_token not found in response"))
+		clog.End()
+		return h.Backend().WriteChannelLog(ctx, clog)
 	}
 
 	rc := h.Backend().RedisPool().Get()
@@ -232,7 +234,7 @@ type mtPayload struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLogger) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	accessToken, err := h.getAccessToken(msg.Channel())
 	if err != nil {
 		return nil, err
@@ -267,7 +269,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 }
 
 // DescribeURN handles Jiochat contact details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLogger) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLog) (map[string]string, error) {
 	accessToken, err := h.getAccessToken(channel)
 	if err != nil {
 		return nil, err

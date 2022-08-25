@@ -946,7 +946,7 @@ func (ts *BackendTestSuite) TestChannel() {
 }
 
 func (ts *BackendTestSuite) TestChanneLog() {
-	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ctx := context.Background()
 
 	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
@@ -961,9 +961,10 @@ func (ts *BackendTestSuite) TestChanneLog() {
 	trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
 	ts.NoError(err)
 
-	log := courier.NewLegacyChannelLog("Message Send Error", knChannel, courier.NilMsgID, trace)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
+	clog.HTTP(trace)
 
-	err = writeChannelLog(ctx, ts.b, log)
+	err = writeChannelLog(ctx, ts.b, clog)
 	ts.NoError(err)
 }
 

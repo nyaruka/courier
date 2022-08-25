@@ -138,7 +138,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `{ "success": 0 }`,
 		MockResponseStatus: 200,
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"received non-1 value for success in response"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received non-1 value for success in response", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -149,7 +149,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `{ "success": 1 }`,
 		MockResponseStatus: 200,
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get multicast_id from response"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get multicast_id from response", "")},
 		SendPrep:           setSendURL,
 	},
 	{

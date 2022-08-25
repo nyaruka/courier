@@ -316,7 +316,7 @@ var defaultWhatsappSendTestCases = []ChannelSendTestCase{
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"No External ID"}]}`,
 		ExpectedStatus:      "E",
-		ExpectedErrors:      []string{"unable to get id from body"},
+		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("unable to get id from body", "")},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -392,7 +392,7 @@ var defaultSMSSendTestCases = []ChannelSendTestCase{
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"No External ID"}]}`,
 		ExpectedStatus:      "E",
-		ExpectedErrors:      []string{"unable to get id from body"},
+		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("unable to get id from body", "")},
 		SendPrep:            setSendURL,
 	},
 	{

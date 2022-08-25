@@ -325,7 +325,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 401,
 		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get sid from body"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -336,7 +336,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get sid from body"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -348,7 +348,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedStopEvent:  true,
 		ExpectedStatus:     "F",
-		ExpectedErrors:     []string{"received error code from twilio '21610'"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -359,7 +359,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get sid from body"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -410,7 +410,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 401,
 		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get sid from body"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -421,7 +421,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get sid from body"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -433,7 +433,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
 		ExpectedStopEvent:  true,
 		ExpectedStatus:     "F",
-		ExpectedErrors:     []string{"received error code from twilio '21610'"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -444,7 +444,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get sid from body"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -495,7 +495,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 401,
 		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get sid from body"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -506,7 +506,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get sid from body"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -518,7 +518,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedStatus:     "F",
 		ExpectedStopEvent:  true,
-		ExpectedErrors:     []string{"received error code from twilio '21610'"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -529,7 +529,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get sid from body"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -580,7 +580,7 @@ var swSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 401,
 		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get sid from body"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -591,7 +591,7 @@ var swSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get sid from body"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -603,7 +603,7 @@ var swSendTestCases = []ChannelSendTestCase{
 		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedStatus:     "F",
 		ExpectedStopEvent:  true,
-		ExpectedErrors:     []string{"received error code from twilio '21610'"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -614,7 +614,7 @@ var swSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedStatus:     "E",
-		ExpectedErrors:     []string{"unable to get sid from body"},
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
