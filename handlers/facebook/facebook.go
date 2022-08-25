@@ -102,24 +102,32 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 		// wait a bit for Facebook to handle this response
 		time.Sleep(subscribeTimeout)
 
-		// subscribe to messaging events for this page
-		form := url.Values{}
-		form.Set("access_token", authToken)
-		req, _ := http.NewRequest(http.MethodPost, subscribeURL, strings.NewReader(form.Encode()))
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-		trace, err := handlers.MakeHTTPRequest(req)
-
-		// log if we get any kind of error
-		success, _ := jsonparser.GetBoolean(trace.ResponseBody, "success")
-		if err != nil || !success {
-			logrus.WithField("channel_uuid", channel.UUID()).Error("error subscribing to Facebook page events")
-		}
+		h.subscribeToEvents(ctx, channel, authToken)
 	}()
 
 	// and respond with the challenge token
 	_, err := fmt.Fprint(w, r.URL.Query().Get("hub.challenge"))
 	return nil, err
+}
+
+func (h *handler) subscribeToEvents(ctx context.Context, channel courier.Channel, authToken string) {
+	clog := courier.NewChannelLog(courier.ChannelLogTypePageSubscribe, channel)
+
+	// subscribe to messaging events for this page
+	form := url.Values{}
+	form.Set("access_token", authToken)
+	req, _ := http.NewRequest(http.MethodPost, subscribeURL, strings.NewReader(form.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+
+	// log if we get any kind of error
+	success, _ := jsonparser.GetBoolean(respBody, "success")
+	if err != nil || resp.StatusCode/100 != 2 || !success {
+		logrus.WithField("channel_uuid", channel.UUID()).Error("error subscribing to Facebook page events")
+	}
+
+	h.Backend().WriteChannelLog(ctx, clog)
 }
 
 type fbUser struct {

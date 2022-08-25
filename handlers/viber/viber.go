@@ -358,7 +358,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			case "video":
 				msgType = "video"
 				attURL = mediaURL
-				attSize, err = getAttachmentSize(mediaURL)
+				attSize, err = getAttachmentSize(mediaURL, clog)
 				if err != nil {
 					return nil, err
 				}
@@ -367,7 +367,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			case "audio":
 				msgType = "file"
 				attURL = mediaURL
-				attSize, err = getAttachmentSize(mediaURL)
+				attSize, err = getAttachmentSize(mediaURL, clog)
 				if err != nil {
 					return nil, err
 				}
@@ -431,20 +431,20 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return status, nil
 }
 
-func getAttachmentSize(u string) (int, error) {
+func getAttachmentSize(u string, clog *courier.ChannelLog) (int, error) {
 	req, err := http.NewRequest(http.MethodHead, u, nil)
 	if err != nil {
 		return 0, err
 	}
 
-	trace, err := handlers.MakeHTTPRequest(req)
-	if err != nil {
-		return 0, err
+	resp, _, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return 0, errors.New("unable to get attachment size")
 	}
 
-	contentLenHdr := trace.Response.Header.Get("Content-Length")
+	contentLenHdr := resp.Header.Get("Content-Length")
 
-	if trace.Response.Header.Get("Content-Length") != "" {
+	if resp.Header.Get("Content-Length") != "" {
 		contentLength, err := strconv.Atoi(contentLenHdr)
 		if err == nil {
 			return contentLength, nil

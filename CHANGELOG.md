@@ -1,3 +1,15 @@
+v7.5.18
+----------
+ * Fix insert channel log SQL
+
+v7.5.17
+----------
+ * Fix writing channel logs
+
+v7.5.16
+----------
+ * Write channel logs in new format
+
 v7.5.15
 ----------
  * Use logger for handler func calls
