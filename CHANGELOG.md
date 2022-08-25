@@ -1,3 +1,7 @@
+v7.5.18
+----------
+ * Fix insert channel log SQL
+
 v7.5.17
 ----------
  * Fix writing channel logs
