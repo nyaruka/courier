@@ -12,12 +12,13 @@ import (
 type ChannelLogType string
 
 const (
-	ChannelLogTypeUnknown      ChannelLogType = "unknown"
-	ChannelLogTypeMsgSend      ChannelLogType = "msg_send"
-	ChannelLogTypeMsgStatus    ChannelLogType = "msg_status"
-	ChannelLogTypeMsgReceive   ChannelLogType = "msg_receive"
-	ChannelLogTypeEventReceive ChannelLogType = "event_receive"
-	ChannelLogTypeTokenFetch   ChannelLogType = "token_fetch"
+	ChannelLogTypeUnknown       ChannelLogType = "unknown"
+	ChannelLogTypeMsgSend       ChannelLogType = "msg_send"
+	ChannelLogTypeMsgStatus     ChannelLogType = "msg_status"
+	ChannelLogTypeMsgReceive    ChannelLogType = "msg_receive"
+	ChannelLogTypeEventReceive  ChannelLogType = "event_receive"
+	ChannelLogTypeTokenFetch    ChannelLogType = "token_fetch"
+	ChannelLogTypePageSubscribe ChannelLogType = "page_subscribe"
 )
 
 type ChannelError struct {
