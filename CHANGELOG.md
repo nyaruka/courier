@@ -1,3 +1,7 @@
+v7.5.16
+----------
+ * Write channel logs in new format
+
 v7.5.15
 ----------
  * Use logger for handler func calls
