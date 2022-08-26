@@ -1395,7 +1395,7 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 	}
 
 	// check we've cached 3 media lookups
-	assertredis.HLen(ts.T(), ts.b.redisPool, fmt.Sprintf("media-lookups:%s", time.Now().Format("2006-01-02")), 3)
+	assertredis.HLen(ts.T(), ts.b.redisPool, fmt.Sprintf("media-lookups:%s", time.Now().In(time.UTC).Format("2006-01-02")), 3)
 }
 
 func TestMsgSuite(t *testing.T) {
