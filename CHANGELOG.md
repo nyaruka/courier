@@ -1,3 +1,11 @@
+v7.5.19
+----------
+ * Update to last gocommon
+ * Fix local timezone dependent test
+ * Don't fail CI for codecov problems
+ * Add UUID to channel logs
+ * Replace remaining usages of MakeHTTPRequest
+
 v7.5.18
 ----------
  * Fix insert channel log SQL
