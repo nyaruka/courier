@@ -246,7 +246,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				tc.SendPrep(server, handler, channel, msg)
 			}
 
-			clog := courier.NewChannelLogForSend(msg)
+			clog := courier.NewChannelLogForSend(msg, nil)
 
 			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 			status, err := handler.Send(ctx, msg, clog)

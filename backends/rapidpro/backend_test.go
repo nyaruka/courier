@@ -246,7 +246,7 @@ func (ts *BackendTestSuite) TestDeleteMsgWithExternalID() {
 
 func (ts *BackendTestSuite) TestContact() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 	urn, _ := urns.NewTelURNForCountry("12065551518", "US")
 
 	ctx := context.Background()
@@ -294,7 +294,7 @@ func (ts *BackendTestSuite) TestContact() {
 
 func (ts *BackendTestSuite) TestContactRace() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 	urn, _ := urns.NewTelURNForCountry("12065551518", "US")
 
 	urnSleep = true
@@ -322,7 +322,7 @@ func (ts *BackendTestSuite) TestContactRace() {
 
 func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 	ctx := context.Background()
 
 	cURN, err := urns.NewTelURNForCountry("+12067799192", "US")
@@ -365,7 +365,7 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 func (ts *BackendTestSuite) TestContactURN() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 	urn, _ := urns.NewTelURNForCountry("12065551515", "US")
 
 	ctx := context.Background()
@@ -470,7 +470,7 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 	twChannel := ts.getChannel("TW", "dbc126ed-66bc-4e28-b67b-81dc3327c96a")
 	knURN, _ := urns.NewTelURNForCountry("12065551111", "US")
 	twURN, _ := urns.NewTelURNForCountry("12065552222", "US")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 
 	ctx := context.Background()
 
@@ -509,7 +509,7 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 func (ts *BackendTestSuite) TestMsgStatus() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
 	now := time.Now().In(time.UTC)
 	time.Sleep(2 * time.Millisecond)
 
@@ -744,7 +744,7 @@ func (ts *BackendTestSuite) TestDupes() {
 
 	ctx := context.Background()
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 	urn, _ := urns.NewTelURNForCountry("12065551215", knChannel.Country())
 
 	msg := ts.b.NewIncomingMsg(knChannel, urn, "ping").(*DBMsg)
@@ -979,7 +979,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
 	ts.NoError(err)
 
-	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel, nil)
 	clog.HTTP(trace)
 
 	err = ts.b.WriteChannelLog(ctx, clog)
@@ -1018,7 +1018,7 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 	}))
 
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 	urn, _ := urns.NewTelURNForCountry("12065551215", knChannel.Country())
 	msg := ts.b.NewIncomingMsg(knChannel, urn, "invalid attachment").(*DBMsg)
 	msg.WithAttachment(testServer.URL)
@@ -1071,7 +1071,7 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 func (ts *BackendTestSuite) TestWriteMsg() {
 	ctx := context.Background()
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 
 	// have to round to microseconds because postgres can't store nanos
 	now := time.Now().Round(time.Microsecond).In(time.UTC)
@@ -1194,7 +1194,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 
 func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 	exChannel := ts.getChannel("EX", "dbc126ed-66bc-4e28-b67b-81dc3327100a")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, exChannel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, exChannel, nil)
 	ctx := context.Background()
 
 	// have to round to microseconds because postgres can't store nanos
@@ -1227,7 +1227,7 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 func (ts *BackendTestSuite) TestChannelEvent() {
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
 	urn, _ := urns.NewTelURNForCountry("12065551616", channel.Country())
 
 	event := ts.b.NewChannelEvent(channel, courier.Referral, urn).WithExtra(map[string]interface{}{"ref_id": "12345"}).WithContactName("kermit frog")
@@ -1269,7 +1269,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	rc.Do("FLUSHDB")
 
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
 	urn, _ := urns.NewTelURNForCountry("12065551616", channel.Country())
 
 	event := ts.b.NewChannelEvent(channel, courier.Referral, urn).WithExtra(map[string]interface{}{"ref_id": "12345"}).

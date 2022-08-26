@@ -189,7 +189,7 @@ func (w *Sender) sendMessage(msg Msg) {
 	}
 
 	var status MsgStatus
-	clog := NewChannelLogForSend(msg)
+	clog := NewChannelLogForSend(msg, nil) // TODO get redact values from handler
 
 	if sent {
 		// if this message was already sent, create a wired status for it

@@ -58,7 +58,7 @@ func (h *BaseHandler) UseChannelRouteUUID() bool {
 	return h.useChannelRouteUUID
 }
 
-func (h *BaseHandler) RedactValues() []string { return nil }
+func (h *BaseHandler) RedactValues(courier.Channel) []string { return nil }
 
 // GetChannel returns the channel
 func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {

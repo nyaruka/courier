@@ -268,7 +268,7 @@ func TestDescribe(t *testing.T) {
 	s := newServer(mb)
 	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("WC"), "WeChat")}
 	handler.Initialize(s)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0])
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], nil)
 
 	tcs := []struct {
 		urn              urns.URN

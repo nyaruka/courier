@@ -149,7 +149,7 @@ func (b *backend) flushChannelEventFile(filename string, contents []byte) error 
 	event.channel = channel.(*DBChannel)
 
 	// create log tho it won't be written
-	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgReceive, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgReceive, channel, nil)
 
 	// try to flush to our database
 	return writeChannelEventToDB(ctx, b, event, clog)

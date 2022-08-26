@@ -298,7 +298,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			}
 		}()
 
-		clog := NewChannelLogForIncoming(recorder, channel)
+		clog := NewChannelLogForIncoming(channel, recorder, handler.RedactValues(channel))
 
 		events, hErr := handlerFunc(ctx, channel, recorder.ResponseWriter, r, clog)
 		duration := time.Since(start)

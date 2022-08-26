@@ -265,7 +265,7 @@ type moPayload struct {
 	} `json:"entry"`
 }
 
-func (h *handler) RedactValues() []string {
+func (h *handler) RedactValues(ch courier.Channel) []string {
 	return []string{
 		h.Server().Config().FacebookApplicationSecret,
 		h.Server().Config().FacebookWebhookSecret,

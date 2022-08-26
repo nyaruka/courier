@@ -5,6 +5,7 @@ import (
 
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/stringsx"
 	"github.com/nyaruka/gocommon/uuids"
 )
 
@@ -44,30 +45,32 @@ type ChannelLog struct {
 	type_     ChannelLogType
 	channel   Channel
 	msgID     MsgID
-	recorder  *httpx.Recorder
 	httpLogs  []*httpx.Log
 	errors    []ChannelError
 	createdOn time.Time
 	elapsed   time.Duration
+
+	recorder *httpx.Recorder
+	redactor stringsx.Redactor
 }
 
 // NewChannelLogForIncoming creates a new channel log for an incoming request, the type of which won't be known
 // until the handler completes.
-func NewChannelLogForIncoming(r *httpx.Recorder, ch Channel) *ChannelLog {
-	return newChannelLog(ChannelLogTypeUnknown, ch, r, NilMsgID)
+func NewChannelLogForIncoming(ch Channel, r *httpx.Recorder, redactVals []string) *ChannelLog {
+	return newChannelLog(ChannelLogTypeUnknown, ch, r, NilMsgID, redactVals)
 }
 
 // NewChannelLogForSend creates a new channel log for a message send
-func NewChannelLogForSend(msg Msg) *ChannelLog {
-	return newChannelLog(ChannelLogTypeMsgSend, msg.Channel(), nil, msg.ID())
+func NewChannelLogForSend(msg Msg, redactVals []string) *ChannelLog {
+	return newChannelLog(ChannelLogTypeMsgSend, msg.Channel(), nil, msg.ID(), redactVals)
 }
 
 // NewChannelLog creates a new channel log with the given type and channel
-func NewChannelLog(t ChannelLogType, ch Channel) *ChannelLog {
-	return newChannelLog(t, ch, nil, NilMsgID)
+func NewChannelLog(t ChannelLogType, ch Channel, redactVals []string) *ChannelLog {
+	return newChannelLog(t, ch, nil, NilMsgID, redactVals)
 }
 
-func newChannelLog(t ChannelLogType, ch Channel, r *httpx.Recorder, mid MsgID) *ChannelLog {
+func newChannelLog(t ChannelLogType, ch Channel, r *httpx.Recorder, mid MsgID, redactVals []string) *ChannelLog {
 	return &ChannelLog{
 		uuid:      uuids.New(),
 		type_:     t,
@@ -75,6 +78,8 @@ func newChannelLog(t ChannelLogType, ch Channel, r *httpx.Recorder, mid MsgID) *
 		recorder:  r,
 		msgID:     mid,
 		createdOn: dates.Now(),
+
+		redactor: stringsx.NewRedactor("**********", redactVals...),
 	}
 }
 
@@ -137,5 +142,5 @@ func (l *ChannelLog) Elapsed() time.Duration {
 }
 
 func (l *ChannelLog) traceToLog(t *httpx.Trace) *httpx.Log {
-	return httpx.NewLog(t, 2048, 50000, nil)
+	return httpx.NewLog(t, 2048, 50000, l.redactor)
 }
