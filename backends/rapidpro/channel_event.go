@@ -69,10 +69,10 @@ func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType
 }
 
 // writeChannelEvent writes the passed in event to the database, queueing it to our spool in case the database is down
-func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEvent) error {
+func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEvent, clog *courier.ChannelLog) error {
 	dbEvent := event.(*DBChannelEvent)
 
-	err := writeChannelEventToDB(ctx, b, dbEvent)
+	err := writeChannelEventToDB(ctx, b, dbEvent, clog)
 
 	// failed writing, write to our spool instead
 	if err != nil {
@@ -94,9 +94,9 @@ RETURNING id
 `
 
 // writeChannelEventToDB writes the passed in msg status to our db
-func writeChannelEventToDB(ctx context.Context, b *backend, e *DBChannelEvent) error {
+func writeChannelEventToDB(ctx context.Context, b *backend, e *DBChannelEvent, clog *courier.ChannelLog) error {
 	// grab the contact for this event
-	contact, err := contactForURN(ctx, b, e.OrgID_, e.channel, e.URN_, "", e.ContactName_)
+	contact, err := contactForURN(ctx, b, e.OrgID_, e.channel, e.URN_, "", e.ContactName_, clog)
 	if err != nil {
 		return err
 	}
@@ -148,8 +148,11 @@ func (b *backend) flushChannelEventFile(filename string, contents []byte) error 
 	}
 	event.channel = channel.(*DBChannel)
 
+	// create log tho it won't be written
+	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgReceive, channel)
+
 	// try to flush to our database
-	return writeChannelEventToDB(ctx, b, event)
+	return writeChannelEventToDB(ctx, b, event, clog)
 }
 
 const selectEventSQL = `

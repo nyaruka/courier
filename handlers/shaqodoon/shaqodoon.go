@@ -80,7 +80,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithReceivedOn(date)
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 // Send sends the given message, logging any HTTP calls or errors

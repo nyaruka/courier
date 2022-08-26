@@ -99,7 +99,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithExternalID(form.ID).WithReceivedOn(time.Now().UTC())
 
 	// and finally queue our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 
 }
 

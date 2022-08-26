@@ -79,7 +79,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// this is a start command, trigger a new conversation
 	if text == "/start" {
 		event := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn).WithContactName(name).WithOccurredOn(date)
-		err = h.Backend().WriteChannelEvent(ctx, event)
+		err = h.Backend().WriteChannelEvent(ctx, event, clog)
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +137,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		msg.WithAttachment(mediaURL)
 	}
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 type mtResponse struct {
@@ -231,7 +231,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		if botBlocked {
 			status.SetStatus(courier.MsgFailed)
 			channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
-			err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+			err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 			return status, err
 		}
 		status.SetExternalID(externalID)
@@ -257,7 +257,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
-				err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 				return status, err
 			}
 			status.SetExternalID(externalID)
@@ -273,7 +273,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
-				err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 				return status, err
 			}
 			status.SetExternalID(externalID)
@@ -289,7 +289,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
-				err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 				return status, err
 			}
 			status.SetExternalID(externalID)
@@ -305,7 +305,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
-				err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 				return status, err
 			}
 			status.SetExternalID(externalID)

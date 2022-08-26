@@ -224,7 +224,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		if err := handlers.DecodeAndValidateJSON(newMessage, r); err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
-		return h.receiveMessage(ctx, channel, w, r, newMessage)
+		return h.receiveMessage(ctx, channel, w, r, newMessage, clog)
 
 	default:
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message or server verification event")
@@ -241,7 +241,7 @@ func (h *handler) verifyServer(channel courier.Channel, w http.ResponseWriter) (
 }
 
 // receiveMessage handles new message event
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moNewMessagePayload) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moNewMessagePayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	userId := payload.Object.Message.UserId
 	urn, err := urns.NewURNFromParts(urns.VKScheme, strconv.FormatInt(userId, 10), "", "")
 
@@ -262,7 +262,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("no text or attachment"))
 	}
 	// save message to our backend
-	if err := h.Backend().WriteMsg(ctx, event); err != nil {
+	if err := h.Backend().WriteMsg(ctx, event, clog); err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	h.Backend().WriteExternalIDSeen(event)

@@ -190,7 +190,7 @@ func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 }
 
 // WriteMsg queues the passed in message internally
-func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.Msg) error {
+func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.Msg, clog *courier.ChannelLog) error {
 	mock := m.(*mockMsg)
 
 	// this msg has already been written (we received it twice), we are a no op
@@ -249,7 +249,7 @@ func (mb *MockBackend) NewChannelEvent(channel courier.Channel, eventType courie
 }
 
 // WriteChannelEvent writes the channel event passed in
-func (mb *MockBackend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent) error {
+func (mb *MockBackend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent, clog *courier.ChannelLog) error {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -277,7 +277,7 @@ func (mb *MockBackend) GetChannelByAddress(ctx context.Context, cType courier.Ch
 }
 
 // GetContact creates a new contact with the passed in channel and URN
-func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, urn urns.URN, auth string, name string) (courier.Contact, error) {
+func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, urn urns.URN, auth, name string, clog *courier.ChannelLog) (courier.Contact, error) {
 	contact, found := mb.contacts[urn]
 	if !found {
 		uuid, _ := courier.NewContactUUID(string(uuids.New()))

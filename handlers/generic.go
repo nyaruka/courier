@@ -29,7 +29,7 @@ func NewTelReceiveHandler(h *BaseHandler, fromField string, bodyField string) co
 		}
 		// build our msg
 		msg := h.Backend().NewIncomingMsg(c, urn, body).WithReceivedOn(time.Now().UTC())
-		return WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+		return WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 	}
 }
 

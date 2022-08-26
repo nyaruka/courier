@@ -250,7 +250,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			event.WithAttachment(mediaURL)
 		}
 
-		err = h.Backend().WriteMsg(ctx, event)
+		err = h.Backend().WriteMsg(ctx, event, clog)
 		if err != nil {
 			return nil, err
 		}

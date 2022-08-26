@@ -71,7 +71,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithReceivedOn(date)
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 type statusForm struct {

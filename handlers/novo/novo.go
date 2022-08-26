@@ -74,7 +74,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(c, urn, body).WithReceivedOn(time.Now().UTC())
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 // Send sends the given message, logging any HTTP calls or errors

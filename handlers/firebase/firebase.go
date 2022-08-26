@@ -79,7 +79,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Msg).WithReceivedOn(date).WithContactName(form.Name).WithURNAuth(form.FCMToken)
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r, clog)
 }
 
 type registerForm struct {
@@ -103,7 +103,7 @@ func (h *handler) registerContact(ctx context.Context, channel courier.Channel, 
 	}
 
 	// create our contact
-	contact, err := h.Backend().GetContact(ctx, channel, urn, form.FCMToken, form.Name)
+	contact, err := h.Backend().GetContact(ctx, channel, urn, form.FCMToken, form.Name, clog)
 	if err != nil {
 		return nil, err
 	}

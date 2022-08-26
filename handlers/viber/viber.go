@@ -123,7 +123,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.WelcomeMessage, urn).WithContactName(ContactName)
 
-		err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
@@ -143,7 +143,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn).WithContactName(ContactName)
 
-		err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
 			return nil, err
 		}
@@ -161,7 +161,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
 
-		err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
 			return nil, err
 		}
@@ -232,7 +232,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			msg.WithAttachment(mediaURL)
 		}
 		// and finally write our message
-		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 	}
 
 	return nil, courier.WriteError(ctx, w, r, fmt.Errorf("not handled, unknown event: %s", event))
