@@ -106,7 +106,7 @@ var missingFieldsReceive = `{
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+254791541111"), ExpectedDate: time.Date(2017, 5, 3, 06, 04, 45, 123000000, time.UTC)},
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+254791541111", ExpectedDate: time.Date(2017, 5, 3, 06, 04, 45, 123000000, time.UTC)},
 
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Not JSON body", URL: receiveURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
@@ -114,9 +114,9 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Missing field", URL: receiveURL, Data: missingFieldsReceive, ExpectedStatus: 400, ExpectedResponse: "validation for 'ID' failed on the 'required'"},
 	{Label: "Bad Date", URL: receiveURL, Data: invalidDateReceive, ExpectedStatus: 400, ExpectedResponse: "invalid date format"},
 
-	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: Sp("D")},
-	{Label: "Valid Status with more fields", URL: statusURL, Data: validWithMoreFieldsStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: Sp("D")},
-	{Label: "Unkown Status", URL: statusURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgStatus: Sp("E")},
+	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: "D"},
+	{Label: "Valid Status with more fields", URL: statusURL, Data: validWithMoreFieldsStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: "D"},
+	{Label: "Unkown Status", URL: statusURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgStatus: "E"},
 	{Label: "Not JSON body", URL: statusURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
 	{Label: "Wrong JSON schema", URL: statusURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
 	{Label: "Missing field", URL: statusURL, Data: missingFieldsStatus, ExpectedStatus: 400, ExpectedResponse: "validation for 'StatusCode' failed on the 'required'"},

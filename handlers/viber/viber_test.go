@@ -482,7 +482,7 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExpectedExternalID: Sp("4987381189870374000"),
+		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
 		PrepRequest: addValidSignature},
 	{Label: "Receive invalid signature", URL: receiveURL, Data: validMsg, ExpectedStatus: 400, ExpectedResponse: "invalid request signature",
 		PrepRequest: addInvalidSignature},
@@ -507,23 +507,23 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Video missing media", URL: receiveURL, Data: rejectedVideo, ExpectedStatus: 400, ExpectedResponse: "missing text or media in message in request body", PrepRequest: addValidSignature},
 
 	{Label: "Valid Contact receive", URL: receiveURL, Data: validReceiveContact, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Alex: +12067799191"), ExpectedURN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExpectedExternalID: Sp("4987381189870374000"),
+		ExpectedMsgText: Sp("Alex: +12067799191"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
 		PrepRequest: addValidSignature},
 	{Label: "Valid URL receive", URL: receiveURL, Data: validReceiveURL, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("http://foo.com/"), ExpectedURN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExpectedExternalID: Sp("4987381189870374000"),
+		ExpectedMsgText: Sp("http://foo.com/"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
 		PrepRequest: addValidSignature},
 
 	{Label: "Valid Location receive", URL: receiveURL, Data: validReceiveLocation, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExpectedExternalID: Sp("4987381189870374000"),
+		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
 		ExpectedAttachments: []string{"geo:1.200000,-1.300000"}, PrepRequest: addValidSignature},
 	{Label: "Valid Sticker", URL: receiveURL, Data: validSticker, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExpectedExternalID: Sp("4987381189870374000"),
+		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
 		ExpectedAttachments: []string{"https://viber.github.io/docs/img/stickers/40133.png"}, PrepRequest: addValidSignature},
 }
 
 var testWelcomeMessageCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: Sp("viber:xy5/5y6O81+/kbWHpLhBoA=="), ExpectedExternalID: Sp("4987381189870374000"),
+		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
 		PrepRequest: addValidSignature},
 	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, ExpectedStatus: 200, ExpectedResponse: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0"}`, PrepRequest: addValidSignature},
 }

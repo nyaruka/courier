@@ -13,31 +13,62 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TQ", "+12065551212", "US", nil),
 }
 
-var (
+const (
 	receiveURL = "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-
-	receiveValid = "message=hello+world&from=2065551234&type=sms&to=2065551212"
-	receiveMedia = "message=http://foo.bar/foo.png&hello+world&from=2065551234&type=mms&to=2065551212"
-
-	statusURL     = "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
-	statusValid   = "guid=1234&status=DELIVRD"
-	statusInvalid = "guid=1234&status=UN"
-	missingGUID   = "status=DELIVRD"
+	statusURL  = "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: receiveValid, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+12065551234")},
-	{Label: "Receive No Params", URL: receiveURL, Data: " ", ExpectedStatus: 400, ExpectedResponse: `'From' failed on the 'required'`},
-	{Label: "Receive Media", URL: receiveURL, Data: receiveMedia, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedURN: Sp("tel:+12065551234"), ExpectedAttachments: []string{"http://foo.bar/foo.png"}},
+	{
+		Label:            "Receive Valid",
+		URL:              receiveURL,
+		Data:             "message=hello+world&from=2065551234&type=sms&to=2065551212",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Accepted",
+		ExpectedMsgText:  Sp("hello world"),
+		ExpectedURN:      "tel:+12065551234",
+	},
+	{
+		Label:            "Receive No Params",
+		URL:              receiveURL,
+		Data:             " ",
+		ExpectedStatus:   400,
+		ExpectedResponse: `'From' failed on the 'required'`,
+	},
+	{
+		Label:               "Receive Media",
+		URL:                 receiveURL,
+		Data:                "message=http://foo.bar/foo.png&hello+world&from=2065551234&type=mms&to=2065551212",
+		ExpectedStatus:      200,
+		ExpectedResponse:    "Accepted",
+		ExpectedURN:         "tel:+12065551234",
+		ExpectedAttachments: []string{"http://foo.bar/foo.png"},
+	},
 
-	{Label: "Status Valid", URL: statusURL, Data: statusValid, ExpectedStatus: 200,
-		ExpectedExternalID: Sp("1234"), ExpectedResponse: `"status":"D"`},
-	{Label: "Status Invalid", URL: statusURL, Data: statusInvalid, ExpectedStatus: 400,
-		ExpectedExternalID: Sp("1234"), ExpectedResponse: `"unknown status: 'UN'"`},
-	{Label: "Status Missing GUID", URL: statusURL, Data: missingGUID, ExpectedStatus: 400,
-		ExpectedExternalID: Sp("1234"), ExpectedResponse: `'GUID' failed on the 'required' tag`},
+	{
+		Label:              "Status Valid",
+		URL:                statusURL,
+		Data:               "guid=1234&status=DELIVRD",
+		ExpectedStatus:     200,
+		ExpectedExternalID: "1234",
+		ExpectedResponse:   `"status":"D"`,
+	},
+	{
+		Label:              "Status Invalid",
+		URL:                statusURL,
+		Data:               "guid=1234&status=UN",
+		ExpectedStatus:     400,
+		ExpectedExternalID: "1234",
+		ExpectedResponse:   `"unknown status: 'UN'"`,
+	},
+	{
+		Label:              "Status Missing GUID",
+		URL:                statusURL,
+		Data:               "status=DELIVRD",
+		ExpectedStatus:     400,
+		ExpectedExternalID: "1234",
+		ExpectedResponse:   `'GUID' failed on the 'required' tag`,
+	},
 }
 
 func TestHandler(t *testing.T) {

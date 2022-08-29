@@ -41,12 +41,12 @@ type ChannelHandleTestCase struct {
 
 	ExpectedContactName *string
 	ExpectedMsgText     *string
-	ExpectedURN         *string
-	ExpectedURNAuth     *string
+	ExpectedURN         urns.URN
+	ExpectedURNAuth     string
 	ExpectedAttachments []string
 	ExpectedDate        time.Time
-	ExpectedMsgStatus   *string
-	ExpectedExternalID  *string
+	ExpectedMsgStatus   courier.MsgStatusValue
+	ExpectedExternalID  string
 	ExpectedMsgID       int64
 
 	ExpectedChannelEvent      courier.ChannelEventType
@@ -378,32 +378,34 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 				if tc.ExpectedChannelEventExtra != nil {
 					require.Equal(tc.ExpectedChannelEventExtra, event.Extra())
 				}
-				if tc.ExpectedURN != nil {
+				if tc.ExpectedURN != "" {
 					if msg != nil {
-						require.Equal(*tc.ExpectedURN, string(msg.URN()))
+						assert.Equal(t, tc.ExpectedURN, msg.URN())
 					} else if event != nil {
-						require.Equal(*tc.ExpectedURN, string(event.URN()))
+						assert.Equal(t, tc.ExpectedURN, event.URN())
 					} else {
-						require.Equal(*tc.ExpectedURN, "")
+						assert.Equal(t, tc.ExpectedURN, "")
 					}
 				}
-				if tc.ExpectedURNAuth != nil {
+				if tc.ExpectedURNAuth != "" {
 					if msg != nil {
-						require.Equal(*tc.ExpectedURNAuth, msg.URNAuth())
+						assert.Equal(t, tc.ExpectedURNAuth, msg.URNAuth())
+					} else {
+						assert.Equal(t, tc.ExpectedURNAuth, "")
 					}
 				}
-				if tc.ExpectedExternalID != nil {
+				if tc.ExpectedExternalID != "" {
 					if msg != nil {
-						require.Equal(*tc.ExpectedExternalID, msg.ExternalID())
+						assert.Equal(t, tc.ExpectedExternalID, msg.ExternalID())
 					} else if status != nil {
-						require.Equal(*tc.ExpectedExternalID, status.ExternalID())
+						assert.Equal(t, tc.ExpectedExternalID, status.ExternalID())
 					} else {
-						require.Equal(*tc.ExpectedExternalID, "")
+						assert.Equal(t, tc.ExpectedExternalID, "")
 					}
 				}
-				if tc.ExpectedMsgStatus != nil {
+				if tc.ExpectedMsgStatus != "" {
 					require.NotNil(status)
-					require.Equal(*tc.ExpectedMsgStatus, string(status.Status()))
+					require.Equal(tc.ExpectedMsgStatus, status.Status())
 				}
 				if tc.ExpectedMsgID != 0 {
 					if status != nil {
@@ -427,7 +429,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 			}
 
 			// if we're expecting a message, status or event, check we have a log for it
-			if tc.ExpectedMsgText != nil || tc.ExpectedMsgStatus != nil || tc.ExpectedChannelEvent != "" {
+			if tc.ExpectedMsgText != nil || tc.ExpectedMsgStatus != "" || tc.ExpectedChannelEvent != "" {
 				assert.Greater(t, len(mb.ChannelLogs()), 0, "expected at least one channel log")
 			}
 		})

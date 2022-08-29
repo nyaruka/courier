@@ -26,13 +26,16 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("tel:+33610346460"),
-		ExpectedDate: time.Date(2015, 04, 02, 14, 26, 06, 0, time.UTC)},
-	{Label: "Receive Valid Message with accents", URL: receiveURL, Data: validAccentReceive, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("je suis très satisfait "), ExpectedURN: Sp("tel:+33610346460"),
-		ExpectedDate: time.Date(2015, 04, 02, 14, 26, 06, 0, time.UTC)},
-
+	{
+		Label: "Receive Valid Message", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("Hello World"), ExpectedURN: "tel:+33610346460",
+		ExpectedDate: time.Date(2015, 04, 02, 14, 26, 06, 0, time.UTC),
+	},
+	{
+		Label: "Receive Valid Message with accents", URL: receiveURL, Data: validAccentReceive, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedMsgText: Sp("je suis très satisfait "), ExpectedURN: "tel:+33610346460",
+		ExpectedDate: time.Date(2015, 04, 02, 14, 26, 06, 0, time.UTC),
+	},
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Receive Missing Params", URL: receiveURL, Data: " ", ExpectedStatus: 400, ExpectedResponse: "validation for 'From' failed"},
 	{Label: "Receive Invalid Date", URL: receiveURL, Data: invalidDateReceive, ExpectedStatus: 400, ExpectedResponse: "cannot parse"},

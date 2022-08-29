@@ -9,13 +9,8 @@ import (
 	"github.com/nyaruka/courier/test"
 )
 
-var (
-	receiveURL          = "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
-	receiveValidMessage = "mobile=%2B2349067554729&message=Join"
-	invalidURN          = "mobile=MTN&message=Join"
-	receiveNoMessage    = "mobile=%2B2349067554729"
-	receiveNoParams     = "none"
-	receiveNoSender     = "message=Join"
+const (
+	receiveURL = "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 )
 
 var testChannels = []courier.Channel{
@@ -23,13 +18,45 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729")},
-	{Label: "Receive No Message", URL: receiveURL, Data: receiveNoMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp(""), ExpectedURN: Sp("tel:+2349067554729")},
-	{Label: "Receive invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
-	{Label: "Receive No Params", URL: receiveURL, Data: receiveNoParams, ExpectedStatus: 400, ExpectedResponse: "field 'mobile' required"},
-	{Label: "Receive No Sender", URL: receiveURL, Data: receiveNoSender, ExpectedStatus: 400, ExpectedResponse: "field 'mobile' required"},
+	{
+		Label:            "Receive Valid Message",
+		URL:              receiveURL,
+		Data:             "mobile=%2B2349067554729&message=Join",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Accepted",
+		ExpectedMsgText:  Sp("Join"),
+		ExpectedURN:      "tel:+2349067554729",
+	},
+	{
+		Label:            "Receive No Message",
+		URL:              receiveURL,
+		Data:             "mobile=%2B2349067554729",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Accepted",
+		ExpectedMsgText:  Sp(""),
+		ExpectedURN:      "tel:+2349067554729",
+	},
+	{
+		Label:            "Receive invalid URN",
+		URL:              receiveURL,
+		Data:             "mobile=MTN&message=Join",
+		ExpectedStatus:   400,
+		ExpectedResponse: "phone number supplied is not a number",
+	},
+	{
+		Label:            "Receive No Params",
+		URL:              receiveURL,
+		Data:             "none",
+		ExpectedStatus:   400,
+		ExpectedResponse: "field 'mobile' required",
+	},
+	{
+		Label:            "Receive No Sender",
+		URL:              receiveURL,
+		Data:             "message=Join",
+		ExpectedStatus:   400,
+		ExpectedResponse: "field 'mobile' required",
+	},
 }
 
 func TestHandler(t *testing.T) {

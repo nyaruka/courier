@@ -57,20 +57,6 @@ var (
 		]
 	}`
 
-	missingRecipient = `{
-		"messages": [
-			{
-				"message-id": "2018-10-26-09-27-34",
-				"sms": {
-					"originator": "1122",
-					"content": {
-						"text": "Message from Paul"
-					}
-				}
-			}
-		]
-	}`
-
 	missingMessageID = `{
 		"messages": [
 			{
@@ -87,40 +73,52 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid",
+	{
+		Label:            "Receive Valid",
 		URL:              receiveURL,
 		Data:             validReceive,
 		ExpectedResponse: "Accepted",
 		ExpectedStatus:   200,
 		ExpectedMsgText:  Sp("SMS Response Accepted"),
-		ExpectedURN:      Sp("tel:+998999999999")},
-	{Label: "Receive Missing MSISDN",
+		ExpectedURN:      "tel:+998999999999",
+	},
+	{
+		Label:            "Receive Missing MSISDN",
 		URL:              receiveURL,
 		Data:             invalidReceive,
 		ExpectedResponse: "missing required fields msidsn or id",
-		ExpectedStatus:   400},
-	{Label: "No Messages",
+		ExpectedStatus:   400,
+	},
+	{
+		Label:            "No Messages",
 		URL:              receiveURL,
 		Data:             noMessages,
 		ExpectedResponse: "no messages, ignored",
-		ExpectedStatus:   200},
-	{Label: "Invalid XML",
+		ExpectedStatus:   200,
+	},
+	{
+		Label:            "Invalid XML",
 		URL:              receiveURL,
 		Data:             invalidXML,
 		ExpectedResponse: "",
-		ExpectedStatus:   405},
-	{Label: "Receive With Prefix",
+		ExpectedStatus:   405,
+	},
+	{
+		Label:            "Receive With Prefix",
 		URL:              receiveURL,
 		Data:             receiveWithPrefix,
 		ExpectedResponse: "Accepted",
 		ExpectedStatus:   200,
 		ExpectedMsgText:  Sp("SMS Response Accepted"),
-		ExpectedURN:      Sp("tel:+998999999999")},
-	{Label: "Receive With Prefix Only",
+		ExpectedURN:      "tel:+998999999999",
+	},
+	{
+		Label:            "Receive With Prefix Only",
 		URL:              receiveURL,
 		Data:             receiveWithPrefixOnly,
 		ExpectedResponse: "no text",
-		ExpectedStatus:   400},
+		ExpectedStatus:   400,
+	},
 }
 
 func TestHandler(t *testing.T) {

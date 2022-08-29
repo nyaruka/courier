@@ -144,19 +144,19 @@ func addInvalidSignature(r *http.Request) {
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: "",
-		ExpectedMsgText: Sp("Simple Message"), ExpectedURN: Sp("wechat:1234"), ExpectedExternalID: Sp("123456"),
+		ExpectedMsgText: Sp("Simple Message"), ExpectedURN: "wechat:1234", ExpectedExternalID: "123456",
 		ExpectedDate: time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
 
 	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, ExpectedStatus: 400, ExpectedResponse: "Error:Field validation"},
 	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, ExpectedStatus: 400, ExpectedResponse: "missing parameters, must have either 'MsgId' or 'Event'"},
 
 	{Label: "Receive Image", URL: receiveURL, Data: imageMessage, ExpectedStatus: 200, ExpectedResponse: "",
-		ExpectedMsgText: Sp(""), ExpectedURN: Sp("wechat:1234"), ExpectedExternalID: Sp("123456"),
+		ExpectedMsgText: Sp(""), ExpectedURN: "wechat:1234", ExpectedExternalID: "123456",
 		ExpectedAttachments: []string{"https://api.weixin.qq.com/cgi-bin/media/get?media_id=12"},
 		ExpectedDate:        time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
 
 	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, ExpectedStatus: 200, ExpectedResponse: "Event Accepted",
-		ExpectedChannelEvent: courier.NewConversation, ExpectedURN: Sp("wechat:1234")},
+		ExpectedChannelEvent: courier.NewConversation, ExpectedURN: "wechat:1234"},
 
 	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, ExpectedStatus: 200, ExpectedResponse: "unknown event"},
 

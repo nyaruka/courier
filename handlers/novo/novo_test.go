@@ -30,7 +30,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "Message Accepted",
 		ExpectedMsgText:  Sp("Msg"),
-		ExpectedURN:      Sp("tel:+18686846481"),
+		ExpectedURN:      "tel:+18686846481",
 	},
 	{
 		Label:            "Receive Missing Number",

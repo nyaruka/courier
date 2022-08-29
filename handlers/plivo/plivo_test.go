@@ -30,7 +30,7 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Hello"), ExpectedURN: Sp("tel:+60124361111"), ExpectedExternalID: Sp("abc1234")},
+		ExpectedMsgText: Sp("Hello"), ExpectedURN: "tel:+60124361111", ExpectedExternalID: "abc1234"},
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Invalid Address Params", URL: receiveURL, Data: invalidAddress, ExpectedStatus: 400, ExpectedResponse: "invalid to number [1515], expecting [2020]"},
 	{Label: "Missing Params", URL: receiveURL, Data: missingParams, ExpectedStatus: 400, ExpectedResponse: "Field validation for 'To' failed"},

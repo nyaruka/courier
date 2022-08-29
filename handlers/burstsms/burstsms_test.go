@@ -25,7 +25,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "Message Accepted",
 		ExpectedMsgText:  Sp("Msg"),
-		ExpectedURN:      Sp("tel:+254791541111"),
+		ExpectedURN:      "tel:+254791541111",
 	},
 	{
 		Label:            "Receive Missing Number",
@@ -38,8 +38,9 @@ var testCases = []ChannelHandleTestCase{
 		URL:                statusURL + "?message_id=12345&status=pending",
 		ExpectedStatus:     200,
 		ExpectedResponse:   "Status Update Accepted",
-		ExpectedExternalID: Sp("12345"),
-		ExpectedMsgStatus:  Sp("S")},
+		ExpectedExternalID: "12345",
+		ExpectedMsgStatus:  "S",
+	},
 	{
 		Label:            "Receive Invalid Status",
 		URL:              statusURL + "?message_id=12345&status=unknown",
