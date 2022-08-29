@@ -93,44 +93,44 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: inboundURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+	{Label: "Receive Valid Message", URL: inboundURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedMsgText: Sp("hello world"), ExpectedURN: "tel:+250788383383",
 		ExpectedDate: time.Date(2017, 01, 01, 1, 2, 3, 50000000, time.UTC)},
 
 	{Label: "Invalid URN", URL: inboundURL, Data: invalidURN,
-		ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+		ExpectedRespStatus: 400, ExpectedRespBody: "phone number supplied is not a number"},
 	{Label: "Invalid Timestamp", URL: inboundURL, Data: invalidTimestamp,
-		ExpectedStatus: 400, ExpectedResponse: "unable to parse date"},
+		ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse date"},
 	{Label: "Missing Message ID", URL: inboundURL, Data: missingMessageID,
-		ExpectedStatus: 400, ExpectedResponse: "'MessageID' failed on the 'required'"},
+		ExpectedRespStatus: 400, ExpectedRespBody: "'MessageID' failed on the 'required'"},
 
-	{Label: "Receive Pending Event", URL: eventURL, Data: pendingEvent, ExpectedStatus: 200, ExpectedResponse: "Ignored"},
-	{Label: "Receive Sent Event", URL: eventURL, Data: sentEvent, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+	{Label: "Receive Pending Event", URL: eventURL, Data: pendingEvent, ExpectedRespStatus: 200, ExpectedRespBody: "Ignored"},
+	{Label: "Receive Sent Event", URL: eventURL, Data: sentEvent, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedExternalID: "xx12345", ExpectedMsgStatus: "S"},
-	{Label: "Receive Delivered Event", URL: eventURL, Data: deliveredEvent, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+	{Label: "Receive Delivered Event", URL: eventURL, Data: deliveredEvent, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedExternalID: "xx12345", ExpectedMsgStatus: "D"},
-	{Label: "Receive Failed Event", URL: eventURL, Data: failedEvent, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+	{Label: "Receive Failed Event", URL: eventURL, Data: failedEvent, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedExternalID: "xx12345", ExpectedMsgStatus: "F"},
-	{Label: "Receive Unknown Event", URL: eventURL, Data: unknownEvent, ExpectedStatus: 200, ExpectedResponse: "Ignored"},
+	{Label: "Receive Unknown Event", URL: eventURL, Data: unknownEvent, ExpectedRespStatus: 200, ExpectedRespBody: "Ignored"},
 
-	{Label: "Receive Invalid JSON", URL: eventURL, Data: "not json", ExpectedStatus: 400, ExpectedResponse: "Error"},
-	{Label: "Receive Missing Event Type", URL: eventURL, Data: missingEventType, ExpectedStatus: 400, ExpectedResponse: "Error"},
+	{Label: "Receive Invalid JSON", URL: eventURL, Data: "not json", ExpectedRespStatus: 400, ExpectedRespBody: "Error"},
+	{Label: "Receive Missing Event Type", URL: eventURL, Data: missingEventType, ExpectedRespStatus: 400, ExpectedRespBody: "Error"},
 }
 
 var authenticatedTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: inboundURL, Data: validMsg, Headers: map[string]string{"Authorization": "Token sesame"},
-		ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedMsgText: Sp("hello world"), ExpectedURN: "tel:+250788383383",
 		ExpectedDate: time.Date(2017, 01, 01, 1, 2, 3, 50000000, time.UTC)},
 
 	{Label: "Invalid Incoming Authorization", URL: inboundURL, Data: validMsg, Headers: map[string]string{"Authorization": "Token foo"},
-		ExpectedStatus: 401, ExpectedResponse: "Unauthorized"},
+		ExpectedRespStatus: 401, ExpectedRespBody: "Unauthorized"},
 
 	{Label: "Receive Sent Event", URL: eventURL, Data: sentEvent, Headers: map[string]string{"Authorization": "Token sesame"},
-		ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedExternalID: "xx12345", ExpectedMsgStatus: "S"},
 	{Label: "Invalid Incoming Authorization", URL: eventURL, Data: sentEvent, Headers: map[string]string{"Authorization": "Token foo"},
-		ExpectedStatus: 401, ExpectedResponse: "Unauthorized"},
+		ExpectedRespStatus: 401, ExpectedRespBody: "Unauthorized"},
 }
 
 func TestHandler(t *testing.T) {
@@ -155,7 +155,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Authorization": "Basic dXNlcjE6cGFzczE="},
 		ExpectedRequestBody: `{"event_url":"https://localhost/c/jn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/event","content":"Simple Message","from":"2020","to":"+250788383383"}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "externalID",
 		SendPrep:            setSendURL,
 	},
@@ -167,7 +167,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseBody:    `{"result":{"message_id":"externalID"}}`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"event_url":"https://localhost/c/jn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/event","content":"My pic!\nhttps://foo.bar/image.jpg","from":"2020","to":"+250788383383"}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "externalID",
 		SendPrep:            setSendURL,
 	},
@@ -177,7 +177,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseStatus: 200,
 		MockResponseBody:   "not json",
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get result.message_id from body", "")},
 		SendPrep:           setSendURL,
 	},
@@ -187,7 +187,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseStatus: 200,
 		MockResponseBody:   "{}",
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get result.message_id from body", "")},
 		SendPrep:           setSendURL,
 	},
@@ -196,7 +196,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MsgText:            "Error Sending",
 		MsgURN:             "tel:+250788383383",
 		MockResponseStatus: 403,
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		SendPrep:           setSendURL,
 	},
 }
@@ -210,7 +210,7 @@ var authenticatedSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Authorization": "Basic dXNlcjE6cGFzczE="},
 		ExpectedRequestBody: `{"event_url":"https://localhost/c/jn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/event","content":"Simple Message","from":"2020","to":"+250788383383","event_auth_token":"sesame"}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "externalID",
 		SendPrep:            setSendURL,
 	},
