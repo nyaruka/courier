@@ -196,45 +196,45 @@ var missingFieldsReceive = `{
 }`
 
 var testWhatappCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveWhatsappURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+	{Label: "Receive Valid", URL: receiveWhatsappURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedRespBody: "Message Accepted",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "whatsapp:254791541111", ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
-	{Label: "Receive file Valid", URL: receiveWhatsappURL, Data: fileReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+	{Label: "Receive file Valid", URL: receiveWhatsappURL, Data: fileReceive, ExpectedRespStatus: 200, ExpectedRespBody: "Message Accepted",
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: "whatsapp:254791541111", ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
-	{Label: "Receive location Valid", URL: receiveWhatsappURL, Data: locationReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+	{Label: "Receive location Valid", URL: receiveWhatsappURL, Data: locationReceive, ExpectedRespStatus: 200, ExpectedRespBody: "Message Accepted",
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:0.000000,1.000000"}, ExpectedURN: "whatsapp:254791541111", ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
-	{Label: "Not JSON body", URL: receiveWhatsappURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
-	{Label: "Wrong JSON schema", URL: receiveWhatsappURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
-	{Label: "Missing field", URL: receiveWhatsappURL, Data: missingFieldsReceive, ExpectedStatus: 400, ExpectedResponse: "validation for 'ID' failed on the 'required'"},
-	{Label: "Bad Date", URL: receiveWhatsappURL, Data: invalidDateReceive, ExpectedStatus: 400, ExpectedResponse: "invalid date format"},
+	{Label: "Not JSON body", URL: receiveWhatsappURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse request JSON"},
+	{Label: "Wrong JSON schema", URL: receiveWhatsappURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedRespBody: "request JSON doesn't match required schema"},
+	{Label: "Missing field", URL: receiveWhatsappURL, Data: missingFieldsReceive, ExpectedRespStatus: 400, ExpectedRespBody: "validation for 'ID' failed on the 'required'"},
+	{Label: "Bad Date", URL: receiveWhatsappURL, Data: invalidDateReceive, ExpectedRespStatus: 400, ExpectedRespBody: "invalid date format"},
 
-	{Label: "Valid Status", URL: statusWhatsppURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: "S"},
-	{Label: "Unkown Status", URL: statusWhatsppURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgStatus: "E"},
-	{Label: "Not JSON body", URL: statusWhatsppURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
-	{Label: "Wrong JSON schema", URL: statusWhatsppURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
+	{Label: "Valid Status", URL: statusWhatsppURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedRespBody: `Accepted`, ExpectedMsgStatus: "S"},
+	{Label: "Unkown Status", URL: statusWhatsppURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted", ExpectedMsgStatus: "E"},
+	{Label: "Not JSON body", URL: statusWhatsppURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse request JSON"},
+	{Label: "Wrong JSON schema", URL: statusWhatsppURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedRespBody: "request JSON doesn't match required schema"},
 }
 
 var testSMSCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveSMSURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+	{Label: "Receive Valid", URL: receiveSMSURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedRespBody: "Message Accepted",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "whatsapp:254791541111", ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
-	{Label: "Receive file Valid", URL: receiveSMSURL, Data: fileReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+	{Label: "Receive file Valid", URL: receiveSMSURL, Data: fileReceive, ExpectedRespStatus: 200, ExpectedRespBody: "Message Accepted",
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: "whatsapp:254791541111", ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
-	{Label: "Receive location Valid", URL: receiveSMSURL, Data: locationReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+	{Label: "Receive location Valid", URL: receiveSMSURL, Data: locationReceive, ExpectedRespStatus: 200, ExpectedRespBody: "Message Accepted",
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:0.000000,1.000000"}, ExpectedURN: "whatsapp:254791541111", ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
-	{Label: "Not JSON body", URL: receiveSMSURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
-	{Label: "Wrong JSON schema", URL: receiveSMSURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
-	{Label: "Missing field", URL: receiveSMSURL, Data: missingFieldsReceive, ExpectedStatus: 400, ExpectedResponse: "validation for 'ID' failed on the 'required'"},
-	{Label: "Bad Date", URL: receiveSMSURL, Data: invalidDateReceive, ExpectedStatus: 400, ExpectedResponse: "invalid date format"},
+	{Label: "Not JSON body", URL: receiveSMSURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse request JSON"},
+	{Label: "Wrong JSON schema", URL: receiveSMSURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedRespBody: "request JSON doesn't match required schema"},
+	{Label: "Missing field", URL: receiveSMSURL, Data: missingFieldsReceive, ExpectedRespStatus: 400, ExpectedRespBody: "validation for 'ID' failed on the 'required'"},
+	{Label: "Bad Date", URL: receiveSMSURL, Data: invalidDateReceive, ExpectedRespStatus: 400, ExpectedRespBody: "invalid date format"},
 
-	{Label: "Valid Status", URL: statusSMSURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: "S"},
-	{Label: "Unkown Status", URL: statusSMSURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgStatus: "E"},
-	{Label: "Not JSON body", URL: statusSMSURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
-	{Label: "Wrong JSON schema", URL: statusSMSURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
+	{Label: "Valid Status", URL: statusSMSURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedRespBody: `Accepted`, ExpectedMsgStatus: "S"},
+	{Label: "Unkown Status", URL: statusSMSURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted", ExpectedMsgStatus: "E"},
+	{Label: "Not JSON body", URL: statusSMSURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse request JSON"},
+	{Label: "Wrong JSON schema", URL: statusSMSURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedRespBody: "request JSON doesn't match required schema"},
 }
 
 func TestHandler(t *testing.T) {
@@ -266,7 +266,7 @@ var defaultWhatsappSendTestCases = []ChannelSendTestCase{
 			"X-API-TOKEN":  "zv-api-token",
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Simple Message ☺"}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "55555",
 		SendPrep:            setSendURL,
 	},
@@ -282,7 +282,7 @@ var defaultWhatsappSendTestCases = []ChannelSendTestCase{
 			"X-API-TOKEN":  "zv-api-token",
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"},{"type":"text","text":"I need to keep adding more things to make it work"}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "55555",
 		SendPrep:            setSendURL,
 	},
@@ -299,7 +299,7 @@ var defaultWhatsappSendTestCases = []ChannelSendTestCase{
 			"X-API-TOKEN":  "zv-api-token",
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"file","fileUrl":"https://foo.bar/image.jpg","fileMimeType":"image/jpeg"},{"type":"text","text":"My pic!"}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "55555",
 		SendPrep:            setSendURL,
 	},
@@ -315,7 +315,7 @@ var defaultWhatsappSendTestCases = []ChannelSendTestCase{
 			"X-API-TOKEN":  "zv-api-token",
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"No External ID"}]}`,
-		ExpectedStatus:      "E",
+		ExpectedMsgStatus:   "E",
 		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("unable to get id from body", "")},
 		SendPrep:            setSendURL,
 	},
@@ -326,7 +326,7 @@ var defaultWhatsappSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:    `{ "error": "failed" }`,
 		MockResponseStatus:  401,
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Error Message"}]}`,
-		ExpectedStatus:      "E",
+		ExpectedMsgStatus:   "E",
 		SendPrep:            setSendURL,
 	},
 }
@@ -344,7 +344,7 @@ var defaultSMSSendTestCases = []ChannelSendTestCase{
 			"X-API-TOKEN":  "zv-api-token",
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Simple Message ☺"}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "55555",
 		SendPrep:            setSendURL},
 	{
@@ -359,7 +359,7 @@ var defaultSMSSendTestCases = []ChannelSendTestCase{
 			"X-API-TOKEN":  "zv-api-token",
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"},{"type":"text","text":"I need to keep adding more things to make it work"}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "55555",
 		SendPrep:            setSendURL},
 	{
@@ -375,7 +375,7 @@ var defaultSMSSendTestCases = []ChannelSendTestCase{
 			"X-API-TOKEN":  "zv-api-token",
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"My pic!\nhttps://foo.bar/image.jpg"}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "55555",
 		SendPrep:            setSendURL,
 	},
@@ -391,7 +391,7 @@ var defaultSMSSendTestCases = []ChannelSendTestCase{
 			"X-API-TOKEN":  "zv-api-token",
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"No External ID"}]}`,
-		ExpectedStatus:      "E",
+		ExpectedMsgStatus:   "E",
 		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("unable to get id from body", "")},
 		SendPrep:            setSendURL,
 	},
@@ -402,7 +402,7 @@ var defaultSMSSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:    `{ "error": "failed" }`,
 		MockResponseStatus:  401,
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Error Message"}]}`,
-		ExpectedStatus:      "E",
+		ExpectedMsgStatus:   "E",
 		SendPrep:            setSendURL,
 	},
 }

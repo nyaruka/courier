@@ -19,19 +19,19 @@ const (
 
 var testCases = []ChannelHandleTestCase{
 	{
-		Label:            "Receive Valid",
-		URL:              receiveURL,
-		Data:             "mo=Msg&mobile=18765422035",
-		ExpectedStatus:   200,
-		ExpectedResponse: "Message Accepted",
-		ExpectedMsgText:  Sp("Msg"),
-		ExpectedURN:      "tel:+18765422035"},
+		Label:              "Receive Valid",
+		URL:                receiveURL,
+		Data:               "mo=Msg&mobile=18765422035",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Message Accepted",
+		ExpectedMsgText:    Sp("Msg"),
+		ExpectedURN:        "tel:+18765422035"},
 	{
-		Label:            "Receive Missing Number",
-		URL:              receiveURL,
-		Data:             "mo=Msg",
-		ExpectedStatus:   400,
-		ExpectedResponse: "required field 'mobile'"},
+		Label:              "Receive Missing Number",
+		URL:                receiveURL,
+		Data:               "mo=Msg",
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "required field 'mobile'"},
 }
 
 func TestHandler(t *testing.T) {
@@ -53,7 +53,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgURN:             "tel:+18765422035",
 		MockResponseBody:   `<response><input>sendMT</input><status>OK</status><description>Completed</description></response>`,
 		MockResponseStatus: 200,
-		ExpectedStatus:     "W",
+		ExpectedMsgStatus:  "W",
 		SendPrep:           setSendURL,
 	},
 	{
@@ -62,7 +62,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgURN:             "tel:+18765422035",
 		MockResponseBody:   `<response><input>sendMT</input><status>OK</status><description>Completed</description></response>`,
 		MockResponseStatus: 200,
-		ExpectedStatus:     "W",
+		ExpectedMsgStatus:  "W",
 		SendPrep:           setSendURL,
 	},
 	{
@@ -72,7 +72,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:   `<response><input>sendMT</input><status>OK</status><description>Completed</description></response>`,
 		MockResponseStatus: 200,
-		ExpectedStatus:     "W",
+		ExpectedMsgStatus:  "W",
 		SendPrep:           setSendURL,
 	},
 	{
@@ -81,7 +81,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgURN:             "tel:+18765422035",
 		MockResponseBody:   "",
 		MockResponseStatus: 404,
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		SendPrep:           setSendURL,
 	},
 	{
@@ -90,7 +90,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgURN:             "tel:+18765422035",
 		MockResponseBody:   `<response><input>sendMT</input><status>ERROR</status><description>Completed</description></response>`,
 		MockResponseStatus: 200,
-		ExpectedStatus:     "F",
+		ExpectedMsgStatus:  "F",
 		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("Received invalid response description: Completed", "")},
 		SendPrep:           setSendURL,
 	},

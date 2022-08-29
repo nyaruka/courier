@@ -258,37 +258,37 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedMsgText: Sp("Hello, world"), ExpectedURN: "line:uabcdefghij", ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessageLast, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessageLast, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedMsgText: Sp("Last event"), ExpectedURN: "line:uabcdefghij", ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Valid Image Message", URL: receiveURL, Data: receiveValidImageMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+	{Label: "Receive Valid Image Message", URL: receiveURL, Data: receiveValidImageMessage, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://api-data.line.me/v2/bot/message/100001/content"}, ExpectedURN: "line:uabcdefghij", ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Valid Video Message", URL: receiveURL, Data: receiveValidVideoMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+	{Label: "Receive Valid Video Message", URL: receiveURL, Data: receiveValidVideoMessage, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://api-data.line.me/v2/bot/message/100001/content"}, ExpectedURN: "line:uabcdefghij", ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Valid Video External Message", URL: receiveURL, Data: receiveValidVideoExternalMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+	{Label: "Receive Valid Video External Message", URL: receiveURL, Data: receiveValidVideoExternalMessage, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://example.com/original.mp4"}, ExpectedURN: "line:uabcdefghij", ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Valid Audio Message", URL: receiveURL, Data: receiveValidAudioMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+	{Label: "Receive Valid Audio Message", URL: receiveURL, Data: receiveValidAudioMessage, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://api-data.line.me/v2/bot/message/100001/content"}, ExpectedURN: "line:uabcdefghij", ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
-	{Label: "Receive Valid Location Message", URL: receiveURL, Data: receiveValidLocationMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+	{Label: "Receive Valid Location Message", URL: receiveURL, Data: receiveValidLocationMessage, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedMsgText: Sp("my location"), ExpectedAttachments: []string{"geo:35.687574,139.729220"}, ExpectedURN: "line:uabcdefghij", ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		PrepRequest: addValidSignature},
 
-	{Label: "Missing message", URL: receiveURL, Data: missingMessage, ExpectedStatus: 200, ExpectedResponse: "ignoring request, no message",
+	{Label: "Missing message", URL: receiveURL, Data: missingMessage, ExpectedRespStatus: 200, ExpectedRespBody: "ignoring request, no message",
 		PrepRequest: addValidSignature},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "invalid line id",
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedRespBody: "invalid line id",
 		PrepRequest: addValidSignature},
-	{Label: "No event request", URL: receiveURL, Data: noEvent, ExpectedStatus: 200, ExpectedResponse: "ignoring request, no message",
+	{Label: "No event request", URL: receiveURL, Data: noEvent, ExpectedRespStatus: 200, ExpectedRespBody: "ignoring request, no message",
 		PrepRequest: addValidSignature},
 
-	{Label: "Receive Valid Message Invalid signature", URL: receiveURL, Data: receiveValidMessage, ExpectedStatus: 400, ExpectedResponse: "invalid request signature",
+	{Label: "Receive Valid Message Invalid signature", URL: receiveURL, Data: receiveValidMessage, ExpectedRespStatus: 400, ExpectedRespBody: "invalid request signature",
 		PrepRequest: addInvalidSignature},
 }
 
@@ -335,7 +335,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
 		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message"}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		SendPrep:            setSendURL,
 	},
 	{
@@ -346,7 +346,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
 		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message ☺"}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		SendPrep:            setSendURL,
 	},
 	{
@@ -357,7 +357,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
 		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"},{"type":"text","text":"I need to keep adding more things to make it work"}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		SendPrep:            setSendURL,
 	},
 	{
@@ -369,7 +369,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
 		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"audio","originalContentUrl":"http://mock.com/2345/test.m4a","duration":200},{"type":"text","text":"My Audio!"}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		SendPrep:            setSendURL,
 	},
 	{
@@ -381,7 +381,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
 		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"video","originalContentUrl":"http://mock.com/5678/test.mp4","previewImageUrl":"http://mock.com/4567/test.jpg"},{"type":"text","text":"My Video!"}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		SendPrep:            setSendURL,
 	},
 
@@ -394,7 +394,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
 		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"image","originalContentUrl":"http://mock.com/1234/test.jpg","previewImageUrl":"http://mock.com/1234/test.jpg"},{"type":"text","text":"My pic!"}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		SendPrep:            setSendURL,
 	},
 	{
@@ -402,7 +402,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgText:             "My doc!",
 		MsgURN:              "line:uabcdefghij",
 		MsgAttachments:      []string{"application/pdf:http://mock.com/7890/test.pdf"},
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		MockResponseBody:    `{}`,
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
@@ -417,7 +417,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
 		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Sed hendrerit nisi vitae nisl ornare tristique.\nProin vulputate id justo non aliquet."}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		SendPrep:            setSendURL,
 	},
 	{
@@ -429,7 +429,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:      200,
 		ExpectedHeaders:         map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
 		ExpectedRequestBody:     `{"replyToken":"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA","messages":[{"type":"text","text":"Simple Message"}]}`,
-		ExpectedStatus:          "W",
+		ExpectedMsgStatus:       "W",
 		SendPrep:                setSendURL,
 	},
 	{
@@ -441,7 +441,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
 		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Are you happy?","quickReply":{"items":[{"type":"action","action":{"type":"message","label":"Yes","text":"Yes"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		SendPrep:            setSendURL,
 	},
 	{
@@ -454,7 +454,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
 		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"image","originalContentUrl":"http://mock.com/1234/test.jpg","previewImageUrl":"http://mock.com/1234/test.jpg"},{"type":"text","text":"Are you happy?","quickReply":{"items":[{"type":"action","action":{"type":"message","label":"Yes","text":"Yes"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		SendPrep:            setSendURL,
 	},
 	{
@@ -474,8 +474,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 				BodyContains: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message"}]}`,
 			}: httpx.NewMockResponse(200, nil, []byte(`{}`)),
 		},
-		ExpectedStatus: "W",
-		SendPrep:       setSendURL,
+		ExpectedMsgStatus: "W",
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:               "Error Sending",
@@ -484,7 +484,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:    `{"message": "Error"}`,
 		MockResponseStatus:  403,
 		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
-		ExpectedStatus:      "E",
+		ExpectedMsgStatus:   "E",
 		SendPrep:            setSendURL,
 	},
 }

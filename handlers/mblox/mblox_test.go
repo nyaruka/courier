@@ -62,16 +62,16 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedRespBody: "Message Accepted",
 		ExpectedMsgText: Sp("Hello World"), ExpectedURN: "tel:+12067799294", ExpectedDate: time.Date(2016, 3, 30, 19, 33, 06, 643000000, time.UTC),
 		ExpectedExternalID: "OzQ5UqIOdoY8"},
 
-	{Label: "Receive Missing Params", URL: receiveURL, Data: missingParamsRecieve, ExpectedStatus: 400, ExpectedResponse: "missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
+	{Label: "Receive Missing Params", URL: receiveURL, Data: missingParamsRecieve, ExpectedRespStatus: 400, ExpectedRespBody: "missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedRespBody: "phone number supplied is not a number"},
 
-	{Label: "Status Valid", URL: receiveURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `"status":"D"`},
-	{Label: "Status Unknown", URL: receiveURL, Data: unknownStatus, ExpectedStatus: 400, ExpectedResponse: `unknown status 'INVALID'`},
-	{Label: "Status Missing Batch ID", URL: receiveURL, Data: missingBatchID, ExpectedStatus: 400, ExpectedResponse: "missing one of 'batch_id' or 'status' in request body"},
+	{Label: "Status Valid", URL: receiveURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`},
+	{Label: "Status Unknown", URL: receiveURL, Data: unknownStatus, ExpectedRespStatus: 400, ExpectedRespBody: `unknown status 'INVALID'`},
+	{Label: "Status Missing Batch ID", URL: receiveURL, Data: missingBatchID, ExpectedRespStatus: 400, ExpectedRespBody: "missing one of 'batch_id' or 'status' in request body"},
 }
 
 func TestHandler(t *testing.T) {
@@ -91,7 +91,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "tel:+250788383383",
-		ExpectedStatus:     "W",
+		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "",
 		MockResponseBody:   `{ "id":"OzYDlvf3SQVc" }`,
 		MockResponseStatus: 200,
@@ -105,7 +105,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Long Send",
 		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
 		MsgURN:             "tel:+250788383383",
-		ExpectedStatus:     "W",
+		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "",
 		MockResponseBody:   `{ "id":"OzYDlvf3SQVc" }`,
 		MockResponseStatus: 200,
@@ -120,7 +120,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgText:            "My pic!",
 		MsgURN:             "tel:+250788383383",
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedStatus:     "W",
+		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "",
 		MockResponseBody:   `{ "id":"OzYDlvf3SQVc" }`,
 		MockResponseStatus: 200,
@@ -134,7 +134,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "No External Id",
 		MsgText:            "No External ID",
 		MsgURN:             "tel:+250788383383",
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		MockResponseBody:   `{ "missing":"OzYDlvf3SQVc" }`,
 		MockResponseStatus: 200,
 		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to parse response body from MBlox", "")},
@@ -148,7 +148,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Error Sending",
 		MsgText:             "Error Message",
 		MsgURN:              "tel:+250788383383",
-		ExpectedStatus:      "E",
+		ExpectedMsgStatus:   "E",
 		MockResponseBody:    `{ "error": "failed" }`,
 		MockResponseStatus:  401,
 		ExpectedRequestBody: `{"from":"2020","to":["250788383383"],"body":"Error Message","delivery_report":"per_recipient"}`,

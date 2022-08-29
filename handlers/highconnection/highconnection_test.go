@@ -27,20 +27,20 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{
-		Label: "Receive Valid Message", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		Label: "Receive Valid Message", URL: receiveURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedMsgText: Sp("Hello World"), ExpectedURN: "tel:+33610346460",
 		ExpectedDate: time.Date(2015, 04, 02, 14, 26, 06, 0, time.UTC),
 	},
 	{
-		Label: "Receive Valid Message with accents", URL: receiveURL, Data: validAccentReceive, ExpectedStatus: 200, ExpectedResponse: "Accepted",
+		Label: "Receive Valid Message with accents", URL: receiveURL, Data: validAccentReceive, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedMsgText: Sp("je suis très satisfait "), ExpectedURN: "tel:+33610346460",
 		ExpectedDate: time.Date(2015, 04, 02, 14, 26, 06, 0, time.UTC),
 	},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
-	{Label: "Receive Missing Params", URL: receiveURL, Data: " ", ExpectedStatus: 400, ExpectedResponse: "validation for 'From' failed"},
-	{Label: "Receive Invalid Date", URL: receiveURL, Data: invalidDateReceive, ExpectedStatus: 400, ExpectedResponse: "cannot parse"},
-	{Label: "Status Missing Params", URL: statusURL, ExpectedStatus: 400, ExpectedResponse: "validation for 'Status' failed"},
-	{Label: "Status Delivered", URL: validStatus, ExpectedStatus: 200, ExpectedResponse: `"status":"D"`},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedRespBody: "phone number supplied is not a number"},
+	{Label: "Receive Missing Params", URL: receiveURL, Data: " ", ExpectedRespStatus: 400, ExpectedRespBody: "validation for 'From' failed"},
+	{Label: "Receive Invalid Date", URL: receiveURL, Data: invalidDateReceive, ExpectedRespStatus: 400, ExpectedRespBody: "cannot parse"},
+	{Label: "Status Missing Params", URL: statusURL, ExpectedRespStatus: 400, ExpectedRespBody: "validation for 'Status' failed"},
+	{Label: "Status Delivered", URL: validStatus, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`},
 }
 
 func TestHandler(t *testing.T) {
@@ -58,10 +58,10 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
-		MsgText:        "Simple Message",
-		MsgURN:         "tel:+250788383383",
-		ExpectedStatus: "W",
-		MsgFlow:        &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
+		MsgText:           "Simple Message",
+		MsgURN:            "tel:+250788383383",
+		ExpectedMsgStatus: "W",
+		MsgFlow:           &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
 		ExpectedURLParams: map[string]string{
 			"accountid":  "Username",
 			"password":   "Password",
@@ -76,9 +76,9 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		SendPrep:           setSendURL},
 	{Label: "Plain Send without flow",
-		MsgText:        "Simple Message",
-		MsgURN:         "tel:+250788383383",
-		ExpectedStatus: "W",
+		MsgText:           "Simple Message",
+		MsgURN:            "tel:+250788383383",
+		ExpectedMsgStatus: "W",
 		ExpectedURLParams: map[string]string{
 			"accountid":  "Username",
 			"password":   "Password",
@@ -93,10 +93,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		SendPrep:           setSendURL},
 	{Label: "Unicode Send",
-		MsgText:        "☺",
-		MsgURN:         "tel:+250788383383",
-		ExpectedStatus: "W",
-		MsgFlow:        &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
+		MsgText:           "☺",
+		MsgURN:            "tel:+250788383383",
+		ExpectedMsgStatus: "W",
+		MsgFlow:           &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
 		ExpectedURLParams: map[string]string{
 			"accountid":  "Username",
 			"password":   "Password",
@@ -111,10 +111,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		SendPrep:           setSendURL},
 	{Label: "Long Send",
-		MsgText:        "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:         "tel:+250788383383",
-		ExpectedStatus: "W",
-		MsgFlow:        &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
+		MsgText:           "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:            "tel:+250788383383",
+		ExpectedMsgStatus: "W",
+		MsgFlow:           &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
 		ExpectedURLParams: map[string]string{
 			"accountid":  "Username",
 			"password":   "Password",
@@ -129,11 +129,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		SendPrep:           setSendURL},
 	{Label: "Send Attachement",
-		MsgText:        "My pic!",
-		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MsgURN:         "tel:+250788383383",
-		ExpectedStatus: "W",
-		MsgFlow:        &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
+		MsgText:           "My pic!",
+		MsgAttachments:    []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MsgURN:            "tel:+250788383383",
+		ExpectedMsgStatus: "W",
+		MsgFlow:           &courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"},
 		ExpectedURLParams: map[string]string{
 			"accountid":  "Username",
 			"password":   "Password",
@@ -150,7 +150,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 
 	{Label: "Error Sending",
 		MsgText: "Error Sending", MsgURN: "tel:+250788383383",
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		MockResponseStatus: 403,
 		SendPrep:           setSendURL},
 }
