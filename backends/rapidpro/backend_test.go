@@ -3,6 +3,7 @@ package rapidpro
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -981,6 +982,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
 	clog.HTTP(trace)
+	clog.Error(errors.New("this is an error"))
 
 	err = ts.b.WriteChannelLog(ctx, clog)
 	ts.NoError(err)
@@ -988,8 +990,8 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	time.Sleep(time.Second) // give committer time to write this
 
 	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM channels_channellog`).Returns(1)
-	assertdb.Query(ts.T(), ts.b.db, `SELECT channel_id, http_logs->0->>'url' AS url FROM channels_channellog`).
-		Columns(map[string]interface{}{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json"})
+	assertdb.Query(ts.T(), ts.b.db, `SELECT channel_id, http_logs->0->>'url' AS url, errors->0->>'message' AS err FROM channels_channellog`).
+		Columns(map[string]interface{}{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json", "err": "this is an error"})
 }
 
 func (ts *BackendTestSuite) TestWriteAttachment() {
