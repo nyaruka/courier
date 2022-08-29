@@ -50,7 +50,7 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 		}
 	}
 
-	errors := make([]channelError, 0, len(clog.Errors()))
+	errors := make([]channelError, len(clog.Errors()))
 	for i, e := range clog.Errors() {
 		errors[i] = channelError{Message: e.Message(), Code: e.Code()}
 	}
