@@ -548,7 +548,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedStatus:     200,
 		ExpectedResponse:   "Handled",
 		ExpectedDate:       time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
-		ExpectedMsgStatus:  Sp(courier.MsgDelivered),
+		ExpectedMsgStatus:  courier.MsgDelivered,
 		ExpectedExternalID: Sp("mid.1458668856218:ed81099e15d3f4f233"),
 	},
 	{

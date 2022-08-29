@@ -319,7 +319,7 @@ var waTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Invalid Timestamp", URL: waReceiveURL, Data: invalidTimestamp, ExpectedStatus: 400, ExpectedResponse: "invalid timestamp"},
 
 	{Label: "Receive Valid Status", URL: waReceiveURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `"type":"status"`,
-		ExpectedMsgStatus: Sp("S"), ExpectedExternalID: Sp("9712A34B4A8B6AD50F")},
+		ExpectedMsgStatus: "S", ExpectedExternalID: Sp("9712A34B4A8B6AD50F")},
 	{Label: "Receive Invalid JSON", URL: waReceiveURL, Data: "not json", ExpectedStatus: 400, ExpectedResponse: "unable to parse"},
 	{Label: "Receive Invalid Status", URL: waReceiveURL, Data: invalidStatus, ExpectedStatus: 400, ExpectedResponse: `"unknown status: in_orbit"`},
 	{Label: "Receive Ignore Status", URL: waReceiveURL, Data: ignoreStatus, ExpectedStatus: 200, ExpectedResponse: `"ignoring status: deleted"`},

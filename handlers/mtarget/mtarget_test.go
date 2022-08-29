@@ -44,9 +44,9 @@ var handleTestCases = []ChannelHandleTestCase{
 		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+923161909799")},
 
 	{Label: "Status Delivered", URL: statusURL, Data: statusDelivered, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), ExpectedMsgStatus: Sp("D")},
+		ExpectedExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), ExpectedMsgStatus: "D"},
 	{Label: "Status Failed", URL: statusURL, Data: statusFailed, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), ExpectedMsgStatus: Sp("F")},
+		ExpectedExternalID: Sp("12a7ee90-50ce-11e7-80ae-00000a0a643c"), ExpectedMsgStatus: "F"},
 	{Label: "Status Missing ID", URL: statusURL, Data: statusMissingID, ExpectedStatus: 400, ExpectedResponse: "missing required field 'MsgId'"},
 }
 

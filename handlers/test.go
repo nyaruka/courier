@@ -45,7 +45,7 @@ type ChannelHandleTestCase struct {
 	ExpectedURNAuth     *string
 	ExpectedAttachments []string
 	ExpectedDate        time.Time
-	ExpectedMsgStatus   *string
+	ExpectedMsgStatus   courier.MsgStatusValue
 	ExpectedExternalID  *string
 	ExpectedMsgID       int64
 
@@ -401,9 +401,9 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 						require.Equal(*tc.ExpectedExternalID, "")
 					}
 				}
-				if tc.ExpectedMsgStatus != nil {
+				if tc.ExpectedMsgStatus != "" {
 					require.NotNil(status)
-					require.Equal(*tc.ExpectedMsgStatus, string(status.Status()))
+					require.Equal(tc.ExpectedMsgStatus, status.Status())
 				}
 				if tc.ExpectedMsgID != 0 {
 					if status != nil {
@@ -427,7 +427,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 			}
 
 			// if we're expecting a message, status or event, check we have a log for it
-			if tc.ExpectedMsgText != nil || tc.ExpectedMsgStatus != nil || tc.ExpectedChannelEvent != "" {
+			if tc.ExpectedMsgText != nil || tc.ExpectedMsgStatus != "" || tc.ExpectedChannelEvent != "" {
 				assert.Greater(t, len(mb.ChannelLogs()), 0, "expected at least one channel log")
 			}
 		})

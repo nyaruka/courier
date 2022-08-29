@@ -210,8 +210,8 @@ var testWhatappCases = []ChannelHandleTestCase{
 	{Label: "Missing field", URL: receiveWhatsappURL, Data: missingFieldsReceive, ExpectedStatus: 400, ExpectedResponse: "validation for 'ID' failed on the 'required'"},
 	{Label: "Bad Date", URL: receiveWhatsappURL, Data: invalidDateReceive, ExpectedStatus: 400, ExpectedResponse: "invalid date format"},
 
-	{Label: "Valid Status", URL: statusWhatsppURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: Sp("S")},
-	{Label: "Unkown Status", URL: statusWhatsppURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgStatus: Sp("E")},
+	{Label: "Valid Status", URL: statusWhatsppURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: "S"},
+	{Label: "Unkown Status", URL: statusWhatsppURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgStatus: "E"},
 	{Label: "Not JSON body", URL: statusWhatsppURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
 	{Label: "Wrong JSON schema", URL: statusWhatsppURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
 }
@@ -231,8 +231,8 @@ var testSMSCases = []ChannelHandleTestCase{
 	{Label: "Missing field", URL: receiveSMSURL, Data: missingFieldsReceive, ExpectedStatus: 400, ExpectedResponse: "validation for 'ID' failed on the 'required'"},
 	{Label: "Bad Date", URL: receiveSMSURL, Data: invalidDateReceive, ExpectedStatus: 400, ExpectedResponse: "invalid date format"},
 
-	{Label: "Valid Status", URL: statusSMSURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: Sp("S")},
-	{Label: "Unkown Status", URL: statusSMSURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgStatus: Sp("E")},
+	{Label: "Valid Status", URL: statusSMSURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: "S"},
+	{Label: "Unkown Status", URL: statusSMSURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgStatus: "E"},
 	{Label: "Not JSON body", URL: statusSMSURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
 	{Label: "Wrong JSON schema", URL: statusSMSURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
 }

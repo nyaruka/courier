@@ -39,7 +39,8 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedStatus:     200,
 		ExpectedResponse:   "Status Update Accepted",
 		ExpectedExternalID: Sp("12345"),
-		ExpectedMsgStatus:  Sp("S")},
+		ExpectedMsgStatus:  "S",
+	},
 	{
 		Label:            "Receive Invalid Status",
 		URL:              statusURL + "?message_id=12345&status=unknown",

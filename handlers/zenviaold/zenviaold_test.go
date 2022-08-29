@@ -114,9 +114,9 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Missing field", URL: receiveURL, Data: missingFieldsReceive, ExpectedStatus: 400, ExpectedResponse: "validation for 'ID' failed on the 'required'"},
 	{Label: "Bad Date", URL: receiveURL, Data: invalidDateReceive, ExpectedStatus: 400, ExpectedResponse: "invalid date format"},
 
-	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: Sp("D")},
-	{Label: "Valid Status with more fields", URL: statusURL, Data: validWithMoreFieldsStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: Sp("D")},
-	{Label: "Unkown Status", URL: statusURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgStatus: Sp("E")},
+	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: "D"},
+	{Label: "Valid Status with more fields", URL: statusURL, Data: validWithMoreFieldsStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: "D"},
+	{Label: "Unkown Status", URL: statusURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgStatus: "E"},
 	{Label: "Not JSON body", URL: statusURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
 	{Label: "Wrong JSON schema", URL: statusURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
 	{Label: "Missing field", URL: statusURL, Data: missingFieldsStatus, ExpectedStatus: 400, ExpectedResponse: "validation for 'StatusCode' failed on the 'required'"},

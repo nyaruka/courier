@@ -84,13 +84,13 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Invalid JSON receive", URL: receiveURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
 	{Label: "Missing Keys receive", URL: receiveURL, Data: missingRequiredKeys, ExpectedStatus: 400, ExpectedResponse: "validation for 'ID' failed on the 'required'"},
 
-	{Label: "Sent Status Valid", URL: sentStatusURL, Data: validSentStatus, ExpectedStatus: 200, ExpectedResponse: "Status Update Accepted", ExpectedMsgStatus: Sp(courier.MsgSent)},
-	{Label: "Unknown Sent Status Valid", URL: sentStatusURL, Data: unknownSentStatus, ExpectedStatus: 400, ExpectedResponse: "unknown sent status code", ExpectedMsgStatus: Sp(courier.MsgWired)},
+	{Label: "Sent Status Valid", URL: sentStatusURL, Data: validSentStatus, ExpectedStatus: 200, ExpectedResponse: "Status Update Accepted", ExpectedMsgStatus: courier.MsgSent},
+	{Label: "Unknown Sent Status Valid", URL: sentStatusURL, Data: unknownSentStatus, ExpectedStatus: 400, ExpectedResponse: "unknown sent status code", ExpectedMsgStatus: courier.MsgWired},
 	{Label: "Invalid JSON sent Status", URL: sentStatusURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
 	{Label: "Missing Keys sent Status", URL: sentStatusURL, Data: missingRequiredKeys, ExpectedStatus: 400, ExpectedResponse: "validation for 'CollerationID' failed on the 'required'"},
 
-	{Label: "Delivered Status Valid", URL: deliveredStatusURL, Data: validDeliveredStatus, ExpectedStatus: 200, ExpectedResponse: "Status Update Accepted", ExpectedMsgStatus: Sp(courier.MsgDelivered)},
-	{Label: "Unknown Delivered Status Valid", URL: deliveredStatusURL, Data: unknownDeliveredStatus, ExpectedStatus: 400, ExpectedResponse: "unknown delivered status code", ExpectedMsgStatus: Sp(courier.MsgSent)},
+	{Label: "Delivered Status Valid", URL: deliveredStatusURL, Data: validDeliveredStatus, ExpectedStatus: 200, ExpectedResponse: "Status Update Accepted", ExpectedMsgStatus: courier.MsgDelivered},
+	{Label: "Unknown Delivered Status Valid", URL: deliveredStatusURL, Data: unknownDeliveredStatus, ExpectedStatus: 400, ExpectedResponse: "unknown delivered status code", ExpectedMsgStatus: courier.MsgSent},
 	{Label: "Invalid JSON delivered Statu", URL: deliveredStatusURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
 	{Label: "Missing Keys sent Status", URL: deliveredStatusURL, Data: missingRequiredKeys, ExpectedStatus: 400, ExpectedResponse: "validation for 'CollerationID' failed on the 'required'"},
 }
