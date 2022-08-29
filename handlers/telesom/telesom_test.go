@@ -24,13 +24,13 @@ var testChannels = []courier.Channel{
 
 var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729")},
+		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729"},
 	{Label: "Invalid URN", URL: invalidURN, Data: "", ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Receive No Params", URL: receiveNoParams, Data: "", ExpectedStatus: 400, ExpectedResponse: "field 'mobile' required"},
 	{Label: "Receive No Sender", URL: receiveNoSender, Data: "", ExpectedStatus: 400, ExpectedResponse: "field 'mobile' required"},
 
 	{Label: "Receive Valid Message", URL: receiveNoParams, Data: "mobile=%2B2349067554729&msg=Join", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729")},
+		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729"},
 	{Label: "Invalid URN", URL: receiveNoParams, Data: "mobile=MTN&msg=Join", ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "field 'mobile' required"},
 	{Label: "Receive No Sender", URL: receiveNoParams, Data: "msg=Join", ExpectedStatus: 400, ExpectedResponse: "field 'mobile' required"},

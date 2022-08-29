@@ -25,7 +25,7 @@ var daTestCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "000",
 		ExpectedMsgText:  Sp("Msg"),
-		ExpectedURN:      Sp("tel:+6289881134560"),
+		ExpectedURN:      "tel:+6289881134560",
 	},
 	{
 		Label:            "Receive Valid",
@@ -33,7 +33,7 @@ var daTestCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "000",
 		ExpectedMsgText:  Sp("Msg"),
-		ExpectedURN:      Sp("ext:cmp-oodddqddwdwdcd"),
+		ExpectedURN:      "ext:cmp-oodddqddwdwdcd",
 	},
 	{
 		Label:            "Receive Invalid",

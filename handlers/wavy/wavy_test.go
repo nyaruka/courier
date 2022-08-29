@@ -80,7 +80,7 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Message", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Eu quero pizza"), ExpectedURN: Sp("tel:+5516981562820"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)},
+		ExpectedMsgText: Sp("Eu quero pizza"), ExpectedURN: "tel:+5516981562820", ExpectedExternalID: "external_id", ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)},
 	{Label: "Invalid JSON receive", URL: receiveURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
 	{Label: "Missing Keys receive", URL: receiveURL, Data: missingRequiredKeys, ExpectedStatus: 400, ExpectedResponse: "validation for 'ID' failed on the 'required'"},
 

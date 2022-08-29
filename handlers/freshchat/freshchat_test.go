@@ -37,7 +37,7 @@ var sigtestCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "Message Accepted",
 		ExpectedMsgText:  Sp("Test 2"),
-		ExpectedURN:      Sp("freshchat:c8fddfaf-622a-4a0e-b060-4f3ccbeab606/882f3926-b292-414b-a411-96380db373cd"),
+		ExpectedURN:      "freshchat:c8fddfaf-622a-4a0e-b060-4f3ccbeab606/882f3926-b292-414b-a411-96380db373cd",
 		ExpectedDate:     time.Date(2019, 6, 21, 17, 43, 20, 866000000, time.UTC),
 	},
 	{
@@ -59,7 +59,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "Message Accepted",
 		ExpectedMsgText:  Sp("Test 2"),
-		ExpectedURN:      Sp("freshchat:c8fddfaf-622a-4a0e-b060-4f3ccbeab606/882f3926-b292-414b-a411-96380db373cd"),
+		ExpectedURN:      "freshchat:c8fddfaf-622a-4a0e-b060-4f3ccbeab606/882f3926-b292-414b-a411-96380db373cd",
 		ExpectedDate:     time.Date(2019, 6, 21, 17, 43, 20, 866000000, time.UTC),
 	},
 	{

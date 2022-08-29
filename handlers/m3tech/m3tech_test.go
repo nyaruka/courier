@@ -9,21 +9,34 @@ import (
 	"github.com/nyaruka/courier/test"
 )
 
-var (
-	receiveValidMessage = "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?from=+923161909799&text=hello+world"
-	receiveInvalidURN   = "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?from=MTN&text=hello+world"
-	receiveMissingFrom  = "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?text=hello"
-)
-
 var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "M3", "2020", "US", nil),
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: " ", ExpectedStatus: 200, ExpectedResponse: "SMS Accepted",
-		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+923161909799")},
-	{Label: "Invalid URN", URL: receiveInvalidURN, Data: " ", ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
-	{Label: "Receive No From", URL: receiveMissingFrom, Data: " ", ExpectedStatus: 400, ExpectedResponse: "missing required field 'from'"},
+	{
+		Label:            "Receive Valid Message",
+		URL:              "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?from=+923161909799&text=hello+world",
+		Data:             " ",
+		ExpectedStatus:   200,
+		ExpectedResponse: "SMS Accepted",
+		ExpectedMsgText:  Sp("hello world"),
+		ExpectedURN:      "tel:+923161909799",
+	},
+	{
+		Label:            "Invalid URN",
+		URL:              "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?from=MTN&text=hello+world",
+		Data:             " ",
+		ExpectedStatus:   400,
+		ExpectedResponse: "phone number supplied is not a number",
+	},
+	{
+		Label:            "Receive No From",
+		URL:              "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?text=hello",
+		Data:             " ",
+		ExpectedStatus:   400,
+		ExpectedResponse: "missing required field 'from'",
+	},
 }
 
 func TestHandler(t *testing.T) {

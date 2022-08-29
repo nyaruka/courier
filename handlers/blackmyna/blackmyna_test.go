@@ -25,7 +25,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "Message Accepted",
 		ExpectedMsgText:  Sp("Msg"),
-		ExpectedURN:      Sp("tel:+9779814641111"),
+		ExpectedURN:      "tel:+9779814641111",
 	},
 	{
 		Label:            "Invalid URN",

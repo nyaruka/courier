@@ -51,9 +51,9 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedStatus:      200,
 		ExpectedResponse:    "Accepted",
 		ExpectedMsgText:     Sp("hello world"),
-		ExpectedURN:         Sp("fcm:12345"),
+		ExpectedURN:         "fcm:12345",
 		ExpectedDate:        time.Date(2017, 1, 1, 8, 50, 0, 0, time.UTC),
-		ExpectedURNAuth:     Sp("token"),
+		ExpectedURNAuth:     "token",
 		ExpectedContactName: Sp("fred"),
 	},
 	{

@@ -28,15 +28,15 @@ var testChannels = []courier.Channel{
 
 var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, ExpectedStatus: 200, ExpectedResponse: "ACK/Jasmin",
-		ExpectedMsgText: Sp("événement"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedExternalID: Sp("1001")},
+		ExpectedMsgText: Sp("événement"), ExpectedURN: "tel:+2349067554729", ExpectedExternalID: "1001"},
 	{Label: "Receive Missing To", URL: receiveURL, Data: receiveMissingTo, ExpectedStatus: 400,
 		ExpectedResponse: "field 'to' required"},
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400,
 		ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Status Delivered", URL: statusURL, Data: statusDelivered, ExpectedStatus: 200, ExpectedResponse: "ACK/Jasmin",
-		ExpectedMsgStatus: "D", ExpectedExternalID: Sp("external1")},
+		ExpectedMsgStatus: "D", ExpectedExternalID: "external1"},
 	{Label: "Status Failed", URL: statusURL, Data: statusFailed, ExpectedStatus: 200, ExpectedResponse: "ACK/Jasmin",
-		ExpectedMsgStatus: "F", ExpectedExternalID: Sp("external1")},
+		ExpectedMsgStatus: "F", ExpectedExternalID: "external1"},
 	{Label: "Status Missing", URL: statusURL, ExpectedStatus: 400, Data: "nothing",
 		ExpectedResponse: "field 'id' required"},
 	{Label: "Status Unknown", URL: statusURL, ExpectedStatus: 400, Data: statusUnknown,

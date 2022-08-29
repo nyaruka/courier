@@ -117,7 +117,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "Accepted",
 		ExpectedMsgText:  Sp("hello world"),
-		ExpectedURN:      Sp("tel:+639171234567"),
+		ExpectedURN:      "tel:+639171234567",
 		ExpectedDate:     time.Date(2013, 11, 22, 12, 12, 13, 0, time.UTC),
 	},
 	{

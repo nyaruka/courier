@@ -75,13 +75,13 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "<state>Accepted</state>",
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("tel:+250788123123"), ExpectedDate: time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC)},
+		ExpectedMsgText: Sp("Hello World"), ExpectedURN: "tel:+250788123123", ExpectedDate: time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC)},
 	{Label: "Receive Valid Encoded", URL: receiveURL, Data: validReceiveEncoded, ExpectedStatus: 200, ExpectedResponse: "<state>Accepted</state>",
-		ExpectedMsgText: Sp("Кохання"), ExpectedURN: Sp("tel:+380501529999"), ExpectedDate: time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC)},
+		ExpectedMsgText: Sp("Кохання"), ExpectedURN: "tel:+380501529999", ExpectedDate: time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC)},
 	{Label: "Receive Valid with empty Text", URL: receiveURL, Data: validReceiveEmptyText, ExpectedStatus: 200, ExpectedResponse: "<state>Accepted</state>",
-		ExpectedMsgText: Sp(""), ExpectedURN: Sp("tel:+250788123123")},
+		ExpectedMsgText: Sp(""), ExpectedURN: "tel:+250788123123"},
 	{Label: "Receive Valid missing body", URL: receiveURL, Data: validMissingBody, ExpectedStatus: 200, ExpectedResponse: "<state>Accepted</state>",
-		ExpectedMsgText: Sp(""), ExpectedURN: Sp("tel:+250788123123")},
+		ExpectedMsgText: Sp(""), ExpectedURN: "tel:+250788123123"},
 	{Label: "Receive invalidURN", URL: receiveURL, Data: invalidURNReceive, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	{Label: "Receive missing Request ID", URL: receiveURL, Data: missingRequestID, ExpectedStatus: 400, ExpectedResponse: "Error"},
 	{Label: "Receive missing From", URL: receiveURL, Data: missingFrom, ExpectedStatus: 400, ExpectedResponse: "Error"},

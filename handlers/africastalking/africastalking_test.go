@@ -27,8 +27,8 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedStatus:     200,
 		ExpectedResponse:   "Message Accepted",
 		ExpectedMsgText:    Sp("Msg"),
-		ExpectedURN:        Sp("tel:+254791541111"),
-		ExpectedExternalID: Sp("ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3"),
+		ExpectedURN:        "tel:+254791541111",
+		ExpectedExternalID: "ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3",
 		ExpectedDate:       time.Date(2017, 5, 3, 06, 04, 45, 0, time.UTC),
 	},
 	{
@@ -38,8 +38,8 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedStatus:     200,
 		ExpectedResponse:   "Message Accepted",
 		ExpectedMsgText:    Sp("Msg"),
-		ExpectedURN:        Sp("tel:+254791541111"),
-		ExpectedExternalID: Sp("ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3"),
+		ExpectedURN:        "tel:+254791541111",
+		ExpectedExternalID: "ec9adc86-51d5-4bc8-8eb0-d8ab0bb53dc3",
 		ExpectedDate:       time.Date(2017, 5, 3, 06, 04, 45, 0, time.UTC),
 	},
 	{

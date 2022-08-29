@@ -138,8 +138,8 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedStatus:     200,
 		ExpectedResponse:   "Accepted",
 		ExpectedMsgText:    Sp("Hello World!"),
-		ExpectedURN:        Sp("tel:+250788383383"),
-		ExpectedExternalID: Sp("1234"),
+		ExpectedURN:        "tel:+250788383383",
+		ExpectedExternalID: "1234",
 		ExpectedDate:       time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC),
 	},
 	{
@@ -149,8 +149,8 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedStatus:     200,
 		ExpectedResponse:   "Accepted",
 		ExpectedMsgText:    Sp(`hello!`),
-		ExpectedURN:        Sp("tel:+250788383383"),
-		ExpectedExternalID: Sp("1234"),
+		ExpectedURN:        "tel:+250788383383",
+		ExpectedExternalID: "1234",
 		ExpectedDate:       time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC),
 	},
 	{
@@ -181,8 +181,8 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedStatus:     200,
 		ExpectedResponse:   "Accepted",
 		ExpectedMsgText:    Sp("mexico k mis papas no tenýa dinero para comprarnos lo q querýamos.."),
-		ExpectedURN:        Sp("tel:+250788383383"),
-		ExpectedExternalID: Sp("1234"),
+		ExpectedURN:        "tel:+250788383383",
+		ExpectedExternalID: "1234",
 		ExpectedDate:       time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC),
 	},
 	{

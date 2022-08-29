@@ -32,7 +32,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "Accepted",
 		ExpectedMsgText:  Sp("Join"),
-		ExpectedURN:      Sp("tel:+2349067554729"),
+		ExpectedURN:      "tel:+2349067554729",
 	},
 	{
 		Label:            "Receive Valid Post",
@@ -41,7 +41,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "Accepted",
 		ExpectedMsgText:  Sp("Join"),
-		ExpectedURN:      Sp("tel:+2349067554729"),
+		ExpectedURN:      "tel:+2349067554729",
 	},
 	{
 		Label:               "Receive Valid Post multipart form",
@@ -50,7 +50,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		ExpectedStatus:      200,
 		ExpectedResponse:    "Accepted",
 		ExpectedMsgText:     Sp("Join"),
-		ExpectedURN:         Sp("tel:+2349067554729"),
+		ExpectedURN:         "tel:+2349067554729",
 	},
 	{
 		Label:            "Receive Valid From",
@@ -59,7 +59,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "Accepted",
 		ExpectedMsgText:  Sp("Join"),
-		ExpectedURN:      Sp("tel:+2349067554729"),
+		ExpectedURN:      "tel:+2349067554729",
 	},
 	{
 		Label:            "Receive Country Parse",
@@ -68,7 +68,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "Accepted",
 		ExpectedMsgText:  Sp("Join"),
-		ExpectedURN:      Sp("tel:+2349067554729"),
+		ExpectedURN:      "tel:+2349067554729",
 	},
 	{
 		Label:            "Receive Valid Message With Date",
@@ -77,7 +77,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "Accepted",
 		ExpectedMsgText:  Sp("Join"),
-		ExpectedURN:      Sp("tel:+2349067554729"),
+		ExpectedURN:      "tel:+2349067554729",
 		ExpectedDate:     time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC),
 	},
 	{
@@ -87,7 +87,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "Accepted",
 		ExpectedMsgText:  Sp("Join"),
-		ExpectedURN:      Sp("tel:+2349067554729"),
+		ExpectedURN:      "tel:+2349067554729",
 		ExpectedDate:     time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC),
 	},
 	{
@@ -202,7 +202,7 @@ var handleSOAPReceiveTestCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "<?xml version=“1.0”?><return>0</return>",
 		ExpectedMsgText:  Sp("Join"),
-		ExpectedURN:      Sp("tel:+2349067554729"),
+		ExpectedURN:      "tel:+2349067554729",
 	},
 	{
 		Label:            "Receive Invalid SOAP",
@@ -221,7 +221,7 @@ var gmTestCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "Accepted",
 		ExpectedMsgText:  Sp("Join"),
-		ExpectedURN:      Sp("tel:+2207222333"),
+		ExpectedURN:      "tel:+2207222333",
 	},
 }
 
@@ -243,7 +243,7 @@ var customTestCases = []ChannelHandleTestCase{
 		ExpectedStatus:   200,
 		ExpectedResponse: "Accepted",
 		ExpectedMsgText:  Sp("Join"),
-		ExpectedURN:      Sp("tel:+12067799192"),
+		ExpectedURN:      "tel:+12067799192",
 		ExpectedDate:     time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC),
 	},
 	{

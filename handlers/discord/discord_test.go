@@ -29,7 +29,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:            `from=694634743521607802&text=hello`,
 		ExpectedStatus:  200,
 		ExpectedMsgText: Sp("hello"),
-		ExpectedURN:     Sp("discord:694634743521607802"),
+		ExpectedURN:     "discord:694634743521607802",
 	},
 	{
 		Label:               "Recieve Message with attachment",
@@ -37,7 +37,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                `from=694634743521607802&text=hello&attachments=https://test.test/foo.png`,
 		ExpectedStatus:      200,
 		ExpectedMsgText:     Sp("hello"),
-		ExpectedURN:         Sp("discord:694634743521607802"),
+		ExpectedURN:         "discord:694634743521607802",
 		ExpectedAttachments: []string{"https://test.test/foo.png"},
 	},
 	{

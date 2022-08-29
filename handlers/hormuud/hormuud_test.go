@@ -27,9 +27,9 @@ var testChannels = []courier.Channel{
 
 var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedDate: time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC)},
+		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729", ExpectedDate: time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC)},
 	{Label: "Receive Empty Message", URL: receiveEmptyMessage, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp(""), ExpectedURN: Sp("tel:+2349067554729"), ExpectedDate: time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC)},
+		ExpectedMsgText: Sp(""), ExpectedURN: "tel:+2349067554729", ExpectedDate: time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC)},
 	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "field 'sender' required"},
 	{Label: "Invalid URN", URL: receiveInvalidURN, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
 	//	{Label: "Status No Params", URL: statusNoParams, Status: 400, Response: "field 'status' required"},
