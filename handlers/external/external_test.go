@@ -1,11 +1,10 @@
 package external
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"net/http"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
@@ -13,25 +12,8 @@ import (
 	"github.com/nyaruka/courier/utils"
 )
 
-var (
-	receiveValidMessage         = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join"
-	receiveValidMessageFrom     = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=%2B2349067554729&text=Join"
-	receiveValidNoPlus          = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=2349067554729&text=Join"
-	receiveValidMessageWithDate = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join&date=2017-06-23T12:30:00.500Z"
-	receiveValidMessageWithTime = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join&time=2017-06-23T12:30:00Z"
-	receiveNoParams             = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-	invalidURN                  = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=MTN&text=Join"
-	receiveNoSender             = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?text=Join"
-	receiveInvalidDate          = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join&time=20170623T123000Z"
-	failedNoParams              = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/"
-	failedValid                 = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/?id=12345"
-	sentValid                   = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/?id=12345"
-	invalidStatus               = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/wired/"
-	deliveredValid              = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?id=12345"
-	deliveredValidPost          = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/"
-	stoppedEvent                = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=%2B2349067554729"
-	stoppedEventPost            = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/"
-	stoppedEventInvalidURN      = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=MTN"
+const (
+	receiveURL = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 )
 
 var testChannels = []courier.Channel{
@@ -43,35 +25,162 @@ var gmChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729")},
-	{Label: "Receive Valid Post", URL: receiveNoParams, Data: "sender=%2B2349067554729&text=Join", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729")},
-
-	{Label: "Receive Valid Post multipart form", URL: receiveNoParams, MultipartFormFields: map[string]string{"sender": "2349067554729", "text": "Join"}, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729")},
-	{Label: "Receive Valid From", URL: receiveValidMessageFrom, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729")},
-	{Label: "Receive Country Parse", URL: receiveValidNoPlus, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729")},
-	{Label: "Receive Valid Message With Date", URL: receiveValidMessageWithDate, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedDate: time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC)},
-	{Label: "Receive Valid Message With Time", URL: receiveValidMessageWithTime, Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729"), ExpectedDate: time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC)},
-	{Label: "Invalid URN", URL: invalidURN, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
-	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "must have one of 'sender' or 'from' set"},
-	{Label: "Receive No Sender", URL: receiveNoSender, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "must have one of 'sender' or 'from' set"},
-	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "invalid date format, must be RFC 3339"},
-	{Label: "Failed No Params", URL: failedNoParams, ExpectedStatus: 400, ExpectedResponse: "field 'id' required"},
-	{Label: "Failed Valid", URL: failedValid, ExpectedStatus: 200, ExpectedResponse: `"status":"F"`},
-	{Label: "Invalid Status", URL: invalidStatus, ExpectedStatus: 404, ExpectedResponse: `page not found`},
-	{Label: "Sent Valid", URL: sentValid, ExpectedStatus: 200, ExpectedResponse: `"status":"S"`},
-	{Label: "Delivered Valid", URL: deliveredValid, ExpectedStatus: 200, Data: "nothing", ExpectedResponse: `"status":"D"`},
-	{Label: "Delivered Valid Post", URL: deliveredValidPost, Data: "id=12345", ExpectedStatus: 200, ExpectedResponse: `"status":"D"`},
-	{Label: "Stopped Event", URL: stoppedEvent, ExpectedStatus: 200, Data: "nothing", ExpectedResponse: "Accepted"},
-	{Label: "Stopped Event Post", URL: stoppedEventPost, Data: "from=%2B2349067554729", ExpectedStatus: 200, ExpectedResponse: "Accepted"},
-	{Label: "Stopped Event Invalid URN", URL: stoppedEventInvalidURN, Data: "empty", ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
-	{Label: "Stopped event No Params", URL: stoppedEventPost, ExpectedStatus: 400, ExpectedResponse: "field 'from' required"},
+	{
+		Label:            "Receive Valid Message",
+		URL:              receiveURL + "?sender=%2B2349067554729&text=Join",
+		Data:             "empty",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Accepted",
+		ExpectedMsgText:  Sp("Join"),
+		ExpectedURN:      Sp("tel:+2349067554729"),
+	},
+	{
+		Label:            "Receive Valid Post",
+		URL:              receiveURL,
+		Data:             "sender=%2B2349067554729&text=Join",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Accepted",
+		ExpectedMsgText:  Sp("Join"),
+		ExpectedURN:      Sp("tel:+2349067554729"),
+	},
+	{
+		Label:               "Receive Valid Post multipart form",
+		URL:                 receiveURL,
+		MultipartFormFields: map[string]string{"sender": "2349067554729", "text": "Join"},
+		ExpectedStatus:      200,
+		ExpectedResponse:    "Accepted",
+		ExpectedMsgText:     Sp("Join"),
+		ExpectedURN:         Sp("tel:+2349067554729"),
+	},
+	{
+		Label:            "Receive Valid From",
+		URL:              receiveURL + "?from=%2B2349067554729&text=Join",
+		Data:             "empty",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Accepted",
+		ExpectedMsgText:  Sp("Join"),
+		ExpectedURN:      Sp("tel:+2349067554729"),
+	},
+	{
+		Label:            "Receive Country Parse",
+		URL:              receiveURL + "?from=2349067554729&text=Join",
+		Data:             "empty",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Accepted",
+		ExpectedMsgText:  Sp("Join"),
+		ExpectedURN:      Sp("tel:+2349067554729"),
+	},
+	{
+		Label:            "Receive Valid Message With Date",
+		URL:              receiveURL + "?sender=%2B2349067554729&text=Join&date=2017-06-23T12:30:00.500Z",
+		Data:             "empty",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Accepted",
+		ExpectedMsgText:  Sp("Join"),
+		ExpectedURN:      Sp("tel:+2349067554729"),
+		ExpectedDate:     time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC),
+	},
+	{
+		Label:            "Receive Valid Message With Time",
+		URL:              receiveURL + "?sender=%2B2349067554729&text=Join&time=2017-06-23T12:30:00Z",
+		Data:             "empty",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Accepted",
+		ExpectedMsgText:  Sp("Join"),
+		ExpectedURN:      Sp("tel:+2349067554729"),
+		ExpectedDate:     time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC),
+	},
+	{
+		Label:            "Invalid URN",
+		URL:              receiveURL + "?sender=MTN&text=Join",
+		Data:             "empty",
+		ExpectedStatus:   400,
+		ExpectedResponse: "phone number supplied is not a number",
+	},
+	{
+		Label:            "Receive No Params",
+		URL:              receiveURL,
+		Data:             "empty",
+		ExpectedStatus:   400,
+		ExpectedResponse: "must have one of 'sender' or 'from' set",
+	},
+	{
+		Label:          "Receive No Sender",
+		URL:            receiveURL + "?text=Join",
+		Data:           "empty",
+		ExpectedStatus: 400, ExpectedResponse: "must have one of 'sender' or 'from' set",
+	},
+	{
+		Label:            "Receive Invalid Date",
+		URL:              receiveURL + "?sender=%2B2349067554729&text=Join&time=20170623T123000Z",
+		Data:             "empty",
+		ExpectedStatus:   400,
+		ExpectedResponse: "invalid date format, must be RFC 3339",
+	},
+	{
+		Label:            "Failed No Params",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/",
+		ExpectedStatus:   400,
+		ExpectedResponse: "field 'id' required",
+	},
+	{
+		Label:            "Failed Valid",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/?id=12345",
+		ExpectedStatus:   200,
+		ExpectedResponse: `"status":"F"`,
+	},
+	{
+		Label:            "Invalid Status",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/wired/",
+		ExpectedStatus:   404,
+		ExpectedResponse: `page not found`,
+	},
+	{
+		Label:            "Sent Valid",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/?id=12345",
+		ExpectedStatus:   200,
+		ExpectedResponse: `"status":"S"`},
+	{
+		Label:            "Delivered Valid",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?id=12345",
+		ExpectedStatus:   200,
+		Data:             "nothing",
+		ExpectedResponse: `"status":"D"`,
+	},
+	{
+		Label:            "Delivered Valid Post",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+		Data:             "id=12345",
+		ExpectedStatus:   200,
+		ExpectedResponse: `"status":"D"`,
+	},
+	{
+		Label:            "Stopped Event",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=%2B2349067554729",
+		ExpectedStatus:   200,
+		Data:             "nothing",
+		ExpectedResponse: "Accepted",
+	},
+	{
+		Label:            "Stopped Event Post",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/",
+		Data:             "from=%2B2349067554729",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Accepted",
+	},
+	{
+		Label:            "Stopped Event Invalid URN",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=MTN",
+		Data:             "empty",
+		ExpectedStatus:   400,
+		ExpectedResponse: "phone number supplied is not a number",
+	},
+	{
+		Label:            "Stopped event No Params",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/",
+		ExpectedStatus:   400,
+		ExpectedResponse: "field 'from' required",
+	},
 }
 
 var testSOAPReceiveChannels = []courier.Channel{
@@ -81,19 +190,39 @@ var testSOAPReceiveChannels = []courier.Channel{
 			configFromXPath:             "//source",
 			configMOResponse:            "<?xml version=“1.0”?><return>0</return>",
 			configMOResponseContentType: "text/xml",
-		})}
+		},
+	),
+}
 
 var handleSOAPReceiveTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Post SOAP", URL: receiveNoParams, Data: `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body><com:moRequest><source>2349067554729</source><content>Join</content></com:moRequest></soapenv:Body></soapenv:Envelope>`,
-		ExpectedStatus: 200, ExpectedResponse: "<?xml version=“1.0”?><return>0</return>",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729")},
-	{Label: "Receive Invalid SOAP", URL: receiveNoParams, Data: `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body></soapenv:Body></soapenv:Envelope>`,
-		ExpectedStatus: 400, ExpectedResponse: "missing from"},
+	{
+		Label:            "Receive Valid Post SOAP",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+		Data:             `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body><com:moRequest><source>2349067554729</source><content>Join</content></com:moRequest></soapenv:Body></soapenv:Envelope>`,
+		ExpectedStatus:   200,
+		ExpectedResponse: "<?xml version=“1.0”?><return>0</return>",
+		ExpectedMsgText:  Sp("Join"),
+		ExpectedURN:      Sp("tel:+2349067554729"),
+	},
+	{
+		Label:            "Receive Invalid SOAP",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+		Data:             `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body></soapenv:Body></soapenv:Envelope>`,
+		ExpectedStatus:   400,
+		ExpectedResponse: "missing from",
+	},
 }
 
 var gmTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Non Plus Message", URL: "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=2207222333&text=Join", Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2207222333")},
+	{
+		Label:            "Receive Non Plus Message",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=2207222333&text=Join",
+		Data:             "empty",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Accepted",
+		ExpectedMsgText:  Sp("Join"),
+		ExpectedURN:      Sp("tel:+2207222333"),
+	},
 }
 
 var customChannels = []courier.Channel{
@@ -102,12 +231,28 @@ var customChannels = []courier.Channel{
 			configMOFromField: "from_number",
 			configMODateField: "timestamp",
 			configMOTextField: "messageText",
-		})}
+		},
+	),
+}
 
 var customTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Custom Message", URL: "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from_number=12067799192&messageText=Join&timestamp=2017-06-23T12:30:00Z", Data: "empty", ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+12067799192"), ExpectedDate: time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC)},
-	{Label: "Receive Custom Missing", URL: "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sent_from=12067799192&messageText=Join", Data: "empty", ExpectedStatus: 400, ExpectedResponse: "must have one of 'sender' or 'from' set"},
+	{
+		Label:            "Receive Custom Message",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from_number=12067799192&messageText=Join&timestamp=2017-06-23T12:30:00Z",
+		Data:             "empty",
+		ExpectedStatus:   200,
+		ExpectedResponse: "Accepted",
+		ExpectedMsgText:  Sp("Join"),
+		ExpectedURN:      Sp("tel:+12067799192"),
+		ExpectedDate:     time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC),
+	},
+	{
+		Label:            "Receive Custom Missing",
+		URL:              "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sent_from=12067799192&messageText=Join",
+		Data:             "empty",
+		ExpectedStatus:   400,
+		ExpectedResponse: "must have one of 'sender' or 'from' set",
+	},
 }
 
 func TestHandler(t *testing.T) {

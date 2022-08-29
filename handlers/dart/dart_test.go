@@ -13,33 +13,74 @@ var daTestChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DA", "2020", "ID", nil),
 }
 
-var (
+const (
 	receiveURL = "/c/da/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	statusURL  = "/c/da/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/"
-
-	validMessage   = receiveURL + "?userid=testusr&password=test&original=6289881134560&sendto=2020&message=Msg"
-	invalidMessage = receiveURL
-	externalURN    = receiveURL + "?userid=testusr&password=test&original=cmp-oodddqddwdwdcd&sendto=2020&message=Msg"
-
-	validStatus        = statusURL + "?status=10&messageid=12345"
-	validPartStatus    = statusURL + "?status=10&messageid=12345.2"
-	failedStatus       = statusURL + "?status=30&messageid=12345"
-	badStatus          = statusURL + "?status=foo&messageid=12345"
-	badStatusMessageID = statusURL + "?status=10&messageid=abc"
-	missingStatus      = statusURL + "?messageid=12345"
 )
 
 var daTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: validMessage, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+6289881134560")},
-	{Label: "Receive Valid", URL: externalURN, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("ext:cmp-oodddqddwdwdcd")},
-	{Label: "Receive Invalid", URL: invalidMessage, ExpectedStatus: 400, ExpectedResponse: "missing required parameters original and sendto"},
+	{
+		Label:            "Receive Valid",
+		URL:              receiveURL + "?userid=testusr&password=test&original=6289881134560&sendto=2020&message=Msg",
+		ExpectedStatus:   200,
+		ExpectedResponse: "000",
+		ExpectedMsgText:  Sp("Msg"),
+		ExpectedURN:      Sp("tel:+6289881134560"),
+	},
+	{
+		Label:            "Receive Valid",
+		URL:              receiveURL + "?userid=testusr&password=test&original=cmp-oodddqddwdwdcd&sendto=2020&message=Msg",
+		ExpectedStatus:   200,
+		ExpectedResponse: "000",
+		ExpectedMsgText:  Sp("Msg"),
+		ExpectedURN:      Sp("ext:cmp-oodddqddwdwdcd"),
+	},
+	{
+		Label:            "Receive Invalid",
+		URL:              receiveURL,
+		ExpectedStatus:   400,
+		ExpectedResponse: "missing required parameters original and sendto",
+	},
 
-	{Label: "Valid Status", URL: validStatus, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgStatus: Sp("D")},
-	{Label: "Valid Status", URL: validPartStatus, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgStatus: Sp("D")},
-	{Label: "Failed Status", URL: failedStatus, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgStatus: Sp("F")},
-	{Label: "Missing Status", URL: missingStatus, ExpectedStatus: 400, ExpectedResponse: "parameters messageid and status should not be empty"},
-	{Label: "Missing Status", URL: badStatus, ExpectedStatus: 400, ExpectedResponse: "parsing failed: status 'foo' is not an integer"},
-	{Label: "Missing Status", URL: badStatusMessageID, ExpectedStatus: 400, ExpectedResponse: "parsing failed: messageid 'abc' is not an integer"},
+	{
+		Label:             "Valid Status",
+		URL:               statusURL + "?status=10&messageid=12345",
+		ExpectedStatus:    200,
+		ExpectedResponse:  "000",
+		ExpectedMsgStatus: Sp("D"),
+	},
+	{
+		Label:             "Valid Status",
+		URL:               statusURL + "?status=10&messageid=12345.2",
+		ExpectedStatus:    200,
+		ExpectedResponse:  "000",
+		ExpectedMsgStatus: Sp("D"),
+	},
+	{
+		Label:             "Failed Status",
+		URL:               statusURL + "?status=30&messageid=12345",
+		ExpectedStatus:    200,
+		ExpectedResponse:  "000",
+		ExpectedMsgStatus: Sp("F"),
+	},
+	{
+		Label:            "Missing Status",
+		URL:              statusURL + "?messageid=12345",
+		ExpectedStatus:   400,
+		ExpectedResponse: "parameters messageid and status should not be empty",
+	},
+	{
+		Label:            "Missing Status",
+		URL:              statusURL + "?status=foo&messageid=12345",
+		ExpectedStatus:   400,
+		ExpectedResponse: "parsing failed: status 'foo' is not an integer",
+	},
+	{
+		Label:            "Missing Status",
+		URL:              statusURL + "?status=10&messageid=abc",
+		ExpectedStatus:   400,
+		ExpectedResponse: "parsing failed: messageid 'abc' is not an integer",
+	},
 }
 
 func TestHandler(t *testing.T) {

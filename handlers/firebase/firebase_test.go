@@ -10,15 +10,9 @@ import (
 	"github.com/nyaruka/courier/test"
 )
 
-var (
+const (
 	receiveURL  = "/c/fcm/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive"
-	validMsg    = "from=12345&date=2017-01-01T08:50:00.000&fcm_token=token&name=fred&msg=hello+world"
-	invalidDate = "from=12345&date=yo&fcm_token=token&name=fred&msg=hello+world"
-	missingFrom = "date=2017-01-01T08:50:00.000&fcm_token=token&name=fred&msg=hello+world"
-
-	registerURL   = "/c/fcm/8eb23e93-5ecb-45ba-b726-3b064e0c568c/register"
-	validRegister = "urn=12345&fcm_token=token&name=fred"
-	missingURN    = "fcm_token=token&name=fred"
+	registerURL = "/c/fcm/8eb23e93-5ecb-45ba-b726-3b064e0c568c/register"
 )
 
 var longMsg = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis augue vel placerat congue.
@@ -50,13 +44,46 @@ var testChannels = []courier.Channel{
 }
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("fcm:12345"), ExpectedDate: time.Date(2017, 1, 1, 8, 50, 0, 0, time.UTC), ExpectedURNAuth: Sp("token"), ExpectedContactName: Sp("fred")},
-	{Label: "Receive Invalid Date", URL: receiveURL, Data: invalidDate, ExpectedStatus: 400, ExpectedResponse: "unable to parse date"},
-	{Label: "Receive Missing From", URL: receiveURL, Data: missingFrom, ExpectedStatus: 400, ExpectedResponse: "field 'from' required"},
-
-	{Label: "Receive Valid Register", URL: registerURL, Data: validRegister, ExpectedStatus: 200, ExpectedResponse: "contact_uuid"},
-	{Label: "Receive Missing URN", URL: registerURL, Data: missingURN, ExpectedStatus: 400, ExpectedResponse: "field 'urn' required"},
+	{
+		Label:               "Receive Valid Message",
+		URL:                 receiveURL,
+		Data:                "from=12345&date=2017-01-01T08:50:00.000&fcm_token=token&name=fred&msg=hello+world",
+		ExpectedStatus:      200,
+		ExpectedResponse:    "Accepted",
+		ExpectedMsgText:     Sp("hello world"),
+		ExpectedURN:         Sp("fcm:12345"),
+		ExpectedDate:        time.Date(2017, 1, 1, 8, 50, 0, 0, time.UTC),
+		ExpectedURNAuth:     Sp("token"),
+		ExpectedContactName: Sp("fred"),
+	},
+	{
+		Label:            "Receive Invalid Date",
+		URL:              receiveURL,
+		Data:             "from=12345&date=yo&fcm_token=token&name=fred&msg=hello+world",
+		ExpectedStatus:   400,
+		ExpectedResponse: "unable to parse date",
+	},
+	{
+		Label:            "Receive Missing From",
+		URL:              receiveURL,
+		Data:             "date=2017-01-01T08:50:00.000&fcm_token=token&name=fred&msg=hello+world",
+		ExpectedStatus:   400,
+		ExpectedResponse: "field 'from' required",
+	},
+	{
+		Label:            "Receive Valid Register",
+		URL:              registerURL,
+		Data:             "urn=12345&fcm_token=token&name=fred",
+		ExpectedStatus:   200,
+		ExpectedResponse: "contact_uuid",
+	},
+	{
+		Label:            "Receive Missing URN",
+		URL:              registerURL,
+		Data:             "fcm_token=token&name=fred",
+		ExpectedStatus:   400,
+		ExpectedResponse: "field 'urn' required",
+	},
 }
 
 func TestHandler(t *testing.T) {
