@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -11,8 +12,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"fmt"
 
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
@@ -104,7 +103,7 @@ type ChannelSendTestCase struct {
 }
 
 // Sp is a utility method to get the pointer to the passed in string
-func Sp(str interface{}) *string { asStr := fmt.Sprintf("%s", str); return &asStr }
+func Sp(s string) *string { return &s }
 
 // utility method to make a request to a handler URL
 func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
