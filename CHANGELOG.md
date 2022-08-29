@@ -1,3 +1,7 @@
+v7.5.20
+----------
+ * Fix writing errors to channel logs
+
 v7.5.19
 ----------
  * Update to last gocommon
