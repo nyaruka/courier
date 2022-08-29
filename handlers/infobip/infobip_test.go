@@ -14,8 +14,10 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US", nil),
 }
 
-var receiveURL = "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-var statusURL = "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/"
+const (
+	receiveURL = "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
+	statusURL  = "/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/"
+)
 
 var helloMsg = `{
   	"results": [
@@ -191,19 +193,93 @@ var invalidStatus = `{
 }`
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: helloMsg, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
-		ExpectedMsgText: Sp("QUIZ Correct answer is Paris"), ExpectedURN: "tel:+385916242493", ExpectedExternalID: "817790313235066447", ExpectedDate: time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.FixedZone("", 0))},
-	{Label: "Receive missing results key", URL: receiveURL, Data: missingResults, ExpectedRespStatus: 400, ExpectedRespBody: "validation for 'Results' failed"},
-	{Label: "Receive missing text key", URL: receiveURL, Data: missingText, ExpectedRespStatus: 200, ExpectedRespBody: "ignoring request, no message"},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedRespBody: "phone number supplied is not a number"},
-	{Label: "Status report invalid JSON", URL: statusURL, Data: invalidJSONStatus, ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse request JSON"},
-	{Label: "Status report missing results key", URL: statusURL, Data: statusMissingResultsKey, ExpectedRespStatus: 400, ExpectedRespBody: "Field validation for 'Results' failed"},
-	{Label: "Status delivered", URL: statusURL, Data: validStatusDelivered, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`},
-	{Label: "Status rejected", URL: statusURL, Data: validStatusRejected, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"F"`},
-	{Label: "Status undeliverable", URL: statusURL, Data: validStatusUndeliverable, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"F"`},
-	{Label: "Status pending", URL: statusURL, Data: validStatusPending, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"S"`},
-	{Label: "Status expired", URL: statusURL, Data: validStatusExpired, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"S"`},
-	{Label: "Status group name unexpected", URL: statusURL, Data: invalidStatus, ExpectedRespStatus: 400, ExpectedRespBody: `unknown status 'UNEXPECTED'`},
+	{
+		Label:              "Receive Valid Message",
+		URL:                receiveURL,
+		Data:               helloMsg,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Accepted",
+		ExpectedMsgText:    Sp("QUIZ Correct answer is Paris"),
+		ExpectedURN:        "tel:+385916242493",
+		ExpectedExternalID: "817790313235066447",
+		ExpectedDate:       time.Date(2016, 10, 06, 9, 28, 39, 220000000, time.FixedZone("", 0)),
+	},
+	{
+		Label:              "Receive missing results key",
+		URL:                receiveURL,
+		Data:               missingResults,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "validation for 'Results' failed",
+	},
+	{
+		Label:              "Receive missing text key",
+		URL:                receiveURL,
+		Data:               missingText,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "ignoring request, no message",
+	},
+	{
+		Label:              "Invalid URN",
+		URL:                receiveURL,
+		Data:               invalidURN,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "phone number supplied is not a number",
+	},
+	{
+		Label:              "Status report invalid JSON",
+		URL:                statusURL,
+		Data:               invalidJSONStatus,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "unable to parse request JSON",
+	},
+	{
+		Label:              "Status report missing results key",
+		URL:                statusURL,
+		Data:               statusMissingResultsKey,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "Field validation for 'Results' failed",
+	},
+	{
+		Label:              "Status delivered",
+		URL:                statusURL,
+		Data:               validStatusDelivered,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   `"status":"D"`,
+	},
+	{
+		Label:              "Status rejected",
+		URL:                statusURL,
+		Data:               validStatusRejected,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   `"status":"F"`,
+	},
+	{
+		Label:              "Status undeliverable",
+		URL:                statusURL,
+		Data:               validStatusUndeliverable,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   `"status":"F"`,
+	},
+	{
+		Label:              "Status pending",
+		URL:                statusURL,
+		Data:               validStatusPending,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   `"status":"S"`},
+	{
+		Label:              "Status expired",
+		URL:                statusURL,
+		Data:               validStatusExpired,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   `"status":"S"`,
+	},
+	{
+		Label:              "Status group name unexpected",
+		URL:                statusURL,
+		Data:               invalidStatus,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   `unknown status 'UNEXPECTED'`,
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -224,8 +300,6 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message",
 		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "12345",
 		MockResponseBody:   `{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`,
 		MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
@@ -234,6 +308,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
 		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "12345",
 		SendPrep:            setSendURL,
 	},
 	{
