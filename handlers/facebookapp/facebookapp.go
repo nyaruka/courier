@@ -1012,11 +1012,11 @@ type wacTemplate struct {
 type wacInteractive struct {
 	Type   string `json:"type"`
 	Header *struct {
-		Type     string `json:"type"`
-		Text     string `json:"text,omitempty"`
-		Video    string `json:"video,omitempty"`
-		Image    string `json:"image,omitempty"`
-		Document string `json:"document,omitempty"`
+		Type     string      `json:"type"`
+		Text     string      `json:"text,omitempty"`
+		Video    *wacMTMedia `json:"video,omitempty"`
+		Image    *wacMTMedia `json:"image,omitempty"`
+		Document *wacMTMedia `json:"document,omitempty"`
 	} `json:"header,omitempty"`
 	Body struct {
 		Text string `json:"text"`
@@ -1064,6 +1064,8 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 	wacPhoneURL := base.ResolveReference(path)
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+
+	hasCaption := false
 
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
@@ -1176,6 +1178,11 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 			}
 			payload.Type = attType
 			media := wacMTMedia{Link: attURL}
+
+			if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(msg.QuickReplies()) == 0 {
+				media.Caption = msgParts[i]
+				hasCaption = true
+			}
 
 			if attType == "image" {
 				payload.Image = &media
@@ -1291,6 +1298,10 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 		}
 		// this was wired successfully
 		status.SetStatus(courier.MsgWired)
+
+		if hasCaption {
+			break
+		}
 
 	}
 	return status, nil
