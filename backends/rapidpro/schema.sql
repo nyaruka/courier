@@ -87,6 +87,7 @@ CREATE TABLE msgs_msg (
 DROP TABLE IF EXISTS channels_channellog CASCADE;
 CREATE TABLE channels_channellog (
     id serial primary key,
+    uuid uuid NOT NULL,
     channel_id integer NOT NULL references channels_channel(id) on delete cascade,
     msg_id bigint references msgs_msg(id) on delete cascade,
     log_type character varying(16),
