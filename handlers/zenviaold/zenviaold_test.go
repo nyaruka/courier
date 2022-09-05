@@ -105,21 +105,21 @@ var missingFieldsReceive = `{
 }`
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedStatus: 200, ExpectedResponse: "Message Accepted",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+254791541111"), ExpectedDate: time.Date(2017, 5, 3, 06, 04, 45, 123000000, time.UTC)},
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedRespBody: "Message Accepted",
+		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+254791541111", ExpectedDate: time.Date(2017, 5, 3, 06, 04, 45, 123000000, time.UTC)},
 
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
-	{Label: "Not JSON body", URL: receiveURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
-	{Label: "Wrong JSON schema", URL: receiveURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
-	{Label: "Missing field", URL: receiveURL, Data: missingFieldsReceive, ExpectedStatus: 400, ExpectedResponse: "validation for 'ID' failed on the 'required'"},
-	{Label: "Bad Date", URL: receiveURL, Data: invalidDateReceive, ExpectedStatus: 400, ExpectedResponse: "invalid date format"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedRespBody: "phone number supplied is not a number"},
+	{Label: "Not JSON body", URL: receiveURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse request JSON"},
+	{Label: "Wrong JSON schema", URL: receiveURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedRespBody: "request JSON doesn't match required schema"},
+	{Label: "Missing field", URL: receiveURL, Data: missingFieldsReceive, ExpectedRespStatus: 400, ExpectedRespBody: "validation for 'ID' failed on the 'required'"},
+	{Label: "Bad Date", URL: receiveURL, Data: invalidDateReceive, ExpectedRespStatus: 400, ExpectedRespBody: "invalid date format"},
 
-	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: Sp("D")},
-	{Label: "Valid Status with more fields", URL: statusURL, Data: validWithMoreFieldsStatus, ExpectedStatus: 200, ExpectedResponse: `Accepted`, ExpectedMsgStatus: Sp("D")},
-	{Label: "Unkown Status", URL: statusURL, Data: unknownStatus, ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgStatus: Sp("E")},
-	{Label: "Not JSON body", URL: statusURL, Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "unable to parse request JSON"},
-	{Label: "Wrong JSON schema", URL: statusURL, Data: wrongJSONSchema, ExpectedStatus: 400, ExpectedResponse: "request JSON doesn't match required schema"},
-	{Label: "Missing field", URL: statusURL, Data: missingFieldsStatus, ExpectedStatus: 400, ExpectedResponse: "validation for 'StatusCode' failed on the 'required'"},
+	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedRespBody: `Accepted`, ExpectedMsgStatus: "D"},
+	{Label: "Valid Status with more fields", URL: statusURL, Data: validWithMoreFieldsStatus, ExpectedRespStatus: 200, ExpectedRespBody: `Accepted`, ExpectedMsgStatus: "D"},
+	{Label: "Unkown Status", URL: statusURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted", ExpectedMsgStatus: "E"},
+	{Label: "Not JSON body", URL: statusURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse request JSON"},
+	{Label: "Wrong JSON schema", URL: statusURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedRespBody: "request JSON doesn't match required schema"},
+	{Label: "Missing field", URL: statusURL, Data: missingFieldsStatus, ExpectedRespStatus: 400, ExpectedRespBody: "validation for 'StatusCode' failed on the 'required'"},
 }
 
 func TestHandler(t *testing.T) {
@@ -148,7 +148,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Basic enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 		},
 		ExpectedRequestBody: `{"sendSmsRequest":{"to":"250788383383","schedule":"","msg":"Simple Message ☺","callbackOption":"FINAL","id":"10","aggregateId":""}}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "",
 		SendPrep:            setSendURL,
 	},
@@ -156,7 +156,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Label:              "Long Send",
 		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
 		MsgURN:             "tel:+250788383383",
-		ExpectedStatus:     "W",
+		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "",
 		MockResponseBody:   `{"sendSmsResponse":{"statusCode":"00","statusDescription":"Ok","detailCode":"000","detailDescription":"Message Sent"}}`,
 		MockResponseStatus: 200,
@@ -181,7 +181,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Basic enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 		},
 		ExpectedRequestBody: `{"sendSmsRequest":{"to":"250788383383","schedule":"","msg":"My pic!\nhttps://foo.bar/image.jpg","callbackOption":"FINAL","id":"10","aggregateId":""}}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "",
 		SendPrep:            setSendURL,
 	},
@@ -197,7 +197,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Basic enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 		},
 		ExpectedRequestBody: `{"sendSmsRequest":{"to":"250788383383","schedule":"","msg":"No External ID","callbackOption":"FINAL","id":"10","aggregateId":""}}`,
-		ExpectedStatus:      "E",
+		ExpectedMsgStatus:   "E",
 		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("received non-success response: '05'", "")},
 		SendPrep:            setSendURL},
 	{
@@ -207,7 +207,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:    `{ "error": "failed" }`,
 		MockResponseStatus:  401,
 		ExpectedRequestBody: `{"sendSmsRequest":{"to":"250788383383","schedule":"","msg":"Error Message","callbackOption":"FINAL","id":"10","aggregateId":""}}`,
-		ExpectedStatus:      "E",
+		ExpectedMsgStatus:   "E",
 		SendPrep:            setSendURL,
 	},
 }

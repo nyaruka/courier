@@ -13,31 +13,62 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TQ", "+12065551212", "US", nil),
 }
 
-var (
+const (
 	receiveURL = "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-
-	receiveValid = "message=hello+world&from=2065551234&type=sms&to=2065551212"
-	receiveMedia = "message=http://foo.bar/foo.png&hello+world&from=2065551234&type=mms&to=2065551212"
-
-	statusURL     = "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
-	statusValid   = "guid=1234&status=DELIVRD"
-	statusInvalid = "guid=1234&status=UN"
-	missingGUID   = "status=DELIVRD"
+	statusURL  = "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: receiveValid, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+12065551234")},
-	{Label: "Receive No Params", URL: receiveURL, Data: " ", ExpectedStatus: 400, ExpectedResponse: `'From' failed on the 'required'`},
-	{Label: "Receive Media", URL: receiveURL, Data: receiveMedia, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedURN: Sp("tel:+12065551234"), ExpectedAttachments: []string{"http://foo.bar/foo.png"}},
+	{
+		Label:              "Receive Valid",
+		URL:                receiveURL,
+		Data:               "message=hello+world&from=2065551234&type=sms&to=2065551212",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Accepted",
+		ExpectedMsgText:    Sp("hello world"),
+		ExpectedURN:        "tel:+12065551234",
+	},
+	{
+		Label:              "Receive No Params",
+		URL:                receiveURL,
+		Data:               " ",
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   `'From' failed on the 'required'`,
+	},
+	{
+		Label:               "Receive Media",
+		URL:                 receiveURL,
+		Data:                "message=http://foo.bar/foo.png&hello+world&from=2065551234&type=mms&to=2065551212",
+		ExpectedRespStatus:  200,
+		ExpectedRespBody:    "Accepted",
+		ExpectedURN:         "tel:+12065551234",
+		ExpectedAttachments: []string{"http://foo.bar/foo.png"},
+	},
 
-	{Label: "Status Valid", URL: statusURL, Data: statusValid, ExpectedStatus: 200,
-		ExpectedExternalID: Sp("1234"), ExpectedResponse: `"status":"D"`},
-	{Label: "Status Invalid", URL: statusURL, Data: statusInvalid, ExpectedStatus: 400,
-		ExpectedExternalID: Sp("1234"), ExpectedResponse: `"unknown status: 'UN'"`},
-	{Label: "Status Missing GUID", URL: statusURL, Data: missingGUID, ExpectedStatus: 400,
-		ExpectedExternalID: Sp("1234"), ExpectedResponse: `'GUID' failed on the 'required' tag`},
+	{
+		Label:              "Status Valid",
+		URL:                statusURL,
+		Data:               "guid=1234&status=DELIVRD",
+		ExpectedRespStatus: 200,
+		ExpectedExternalID: "1234",
+		ExpectedRespBody:   `"status":"D"`,
+	},
+	{
+		Label:              "Status Invalid",
+		URL:                statusURL,
+		Data:               "guid=1234&status=UN",
+		ExpectedRespStatus: 400,
+		ExpectedExternalID: "1234",
+		ExpectedRespBody:   `"unknown status: 'UN'"`,
+	},
+	{
+		Label:              "Status Missing GUID",
+		URL:                statusURL,
+		Data:               "status=DELIVRD",
+		ExpectedRespStatus: 400,
+		ExpectedExternalID: "1234",
+		ExpectedRespBody:   `'GUID' failed on the 'required' tag`,
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -58,7 +89,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Authorization": "Basic dXNlcjE6c2VzYW1l"},
 		ExpectedRequestBody: `{"from_did":"2065551212","to_did":"2067791234","message":"Simple Message ☺"}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "1002",
 		SendPrep:            setSendURL,
 	},
@@ -70,7 +101,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseBody:    `{ "guid": "1002" }`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"from_did":"2065551212","to_did":"2067791234","message":"My pic!"}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "1002",
 		SendPrep:            setSendURL,
 	},
@@ -81,7 +112,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:   `{ "guid": "1002" }`,
 		MockResponseStatus: 200,
-		ExpectedStatus:     "W",
+		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "1002",
 		SendPrep:           setSendURL,
 	},
@@ -92,7 +123,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseBody:    `{}`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"from_did":"2065551212","to_did":"2067791234","message":"No External ID"}`,
-		ExpectedStatus:      "E",
+		ExpectedMsgStatus:   "E",
 		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("Unable to read external ID from guid field", "")},
 		SendPrep:            setSendURL,
 	},
@@ -103,7 +134,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseBody:    `{ "error": "failed" }`,
 		MockResponseStatus:  401,
 		ExpectedRequestBody: `{"from_did":"2065551212","to_did":"2067791234","message":"Error Message"}`,
-		ExpectedStatus:      "E",
+		ExpectedMsgStatus:   "E",
 		SendPrep:            setSendURL,
 	},
 }

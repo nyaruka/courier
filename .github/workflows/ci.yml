@@ -39,7 +39,8 @@ jobs:
         if: success()
         uses: codecov/codecov-action@v2
         with:
-          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
 
   release:
     name: Release

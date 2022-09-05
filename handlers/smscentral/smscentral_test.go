@@ -9,13 +9,8 @@ import (
 	"github.com/nyaruka/courier/test"
 )
 
-var (
-	receiveURL          = "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
-	receiveValidMessage = "mobile=%2B2349067554729&message=Join"
-	invalidURN          = "mobile=MTN&message=Join"
-	receiveNoMessage    = "mobile=%2B2349067554729"
-	receiveNoParams     = "none"
-	receiveNoSender     = "message=Join"
+const (
+	receiveURL = "/c/sc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 )
 
 var testChannels = []courier.Channel{
@@ -23,13 +18,45 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: Sp("tel:+2349067554729")},
-	{Label: "Receive No Message", URL: receiveURL, Data: receiveNoMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp(""), ExpectedURN: Sp("tel:+2349067554729")},
-	{Label: "Receive invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "phone number supplied is not a number"},
-	{Label: "Receive No Params", URL: receiveURL, Data: receiveNoParams, ExpectedStatus: 400, ExpectedResponse: "field 'mobile' required"},
-	{Label: "Receive No Sender", URL: receiveURL, Data: receiveNoSender, ExpectedStatus: 400, ExpectedResponse: "field 'mobile' required"},
+	{
+		Label:              "Receive Valid Message",
+		URL:                receiveURL,
+		Data:               "mobile=%2B2349067554729&message=Join",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Accepted",
+		ExpectedMsgText:    Sp("Join"),
+		ExpectedURN:        "tel:+2349067554729",
+	},
+	{
+		Label:              "Receive No Message",
+		URL:                receiveURL,
+		Data:               "mobile=%2B2349067554729",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Accepted",
+		ExpectedMsgText:    Sp(""),
+		ExpectedURN:        "tel:+2349067554729",
+	},
+	{
+		Label:              "Receive invalid URN",
+		URL:                receiveURL,
+		Data:               "mobile=MTN&message=Join",
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "phone number supplied is not a number",
+	},
+	{
+		Label:              "Receive No Params",
+		URL:                receiveURL,
+		Data:               "none",
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "field 'mobile' required",
+	},
+	{
+		Label:              "Receive No Sender",
+		URL:                receiveURL,
+		Data:               "message=Join",
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "field 'mobile' required",
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -48,26 +75,26 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
-		ExpectedStatus:   "W",
-		MockResponseBody: `[{"id": "1002"}]`, MockResponseStatus: 200,
+		ExpectedMsgStatus: "W",
+		MockResponseBody:  `[{"id": "1002"}]`, MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"content": "Simple Message", "mobile": "250788383383", "pass": "Password", "user": "Username"},
 		SendPrep:           setSendURL},
 	{Label: "Unicode Send",
 		MsgText: "☺", MsgURN: "tel:+250788383383",
-		ExpectedStatus:   "W",
-		MockResponseBody: `[{"id": "1002"}]`, MockResponseStatus: 200,
+		ExpectedMsgStatus: "W",
+		MockResponseBody:  `[{"id": "1002"}]`, MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"content": "☺", "mobile": "250788383383", "pass": "Password", "user": "Username"},
 		SendPrep:           setSendURL},
 	{Label: "Send Attachment",
 		MsgText: "My pic!", MsgURN: "tel:+250788383383", MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedStatus:   "W",
-		MockResponseBody: `[{ "id": "1002" }]`, MockResponseStatus: 200,
+		ExpectedMsgStatus: "W",
+		MockResponseBody:  `[{ "id": "1002" }]`, MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"content": "My pic!\nhttps://foo.bar/image.jpg", "mobile": "250788383383", "pass": "Password", "user": "Username"},
 		SendPrep:           setSendURL},
 	{Label: "Error Sending",
 		MsgText: "Error Message", MsgURN: "tel:+250788383383",
-		ExpectedStatus:   "E",
-		MockResponseBody: `{ "error": "failed" }`, MockResponseStatus: 401,
+		ExpectedMsgStatus: "E",
+		MockResponseBody:  `{ "error": "failed" }`, MockResponseStatus: 401,
 		ExpectedPostParams: map[string]string{"content": `Error Message`, "mobile": "250788383383", "pass": "Password", "user": "Username"},
 		SendPrep:           setSendURL},
 }

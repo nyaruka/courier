@@ -9,18 +9,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/stretchr/testify/assert"
 )
 
 var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FB", "1234", "",
 		map[string]interface{}{courier.ConfigAuthToken: "a123", courier.ConfigSecret: "mysecret"}),
 }
+
+const (
+	receiveURL = "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive"
+)
 
 var helloMsg = `{
 	"object":"page",
@@ -414,54 +417,196 @@ var unkownMessagingEntry = `{
 	}]
 }`
 
-var notJSON = `blargh`
-
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Message", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)},
-	{Label: "No Duplicate Receive Message", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: duplicateMsg, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)},
-	{Label: "Receive Attachment", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: attachment, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://image-url/foo.png"}, ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)},
-
-	{Label: "Receive Location", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: locationAttachment, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:1.200000,-1.300000"}, ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)},
-
-	{Label: "Receive Thumbs Up", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: thumbsUp, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedMsgText: Sp("👍"), ExpectedURN: Sp("facebook:5678"), ExpectedExternalID: Sp("external_id"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)},
-
-	{Label: "Receive OptIn UserRef", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: optInUserRef, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:ref:optin_user_ref"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
-		ExpectedChannelEvent: courier.Referral, ExpectedChannelEventExtra: map[string]interface{}{"referrer_id": "optin_ref"}},
-	{Label: "Receive OptIn", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: optIn, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
-		ExpectedChannelEvent: courier.Referral, ExpectedChannelEventExtra: map[string]interface{}{"referrer_id": "optin_ref"}},
-
-	{Label: "Receive Get Started", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: postbackGetStarted, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ExpectedChannelEvent: courier.NewConversation,
-		ExpectedChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started"}},
-	{Label: "Receive Referral Postback", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: postback, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ExpectedChannelEvent: courier.Referral,
-		ExpectedChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"}},
-	{Label: "Receive Referral", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: postbackReferral, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ExpectedChannelEvent: courier.Referral,
-		ExpectedChannelEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"}},
-
-	{Label: "Receive Referral", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: referral, ExpectedStatus: 200, ExpectedResponse: `"referrer_id":"referral id"`,
-		ExpectedURN: Sp("facebook:5678"), ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ExpectedChannelEvent: courier.Referral,
-		ExpectedChannelEventExtra: map[string]interface{}{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"}},
-
-	{Label: "Receive DLR", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: dlr, ExpectedStatus: 200, ExpectedResponse: "Handled",
-		ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), ExpectedMsgStatus: Sp(courier.MsgDelivered), ExpectedExternalID: Sp("mid.1458668856218:ed81099e15d3f4f233")},
-
-	{Label: "Different Page", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: differentPage, ExpectedStatus: 200, ExpectedResponse: `"data":[]`},
-	{Label: "Echo", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: echo, ExpectedStatus: 200, ExpectedResponse: `ignoring echo`},
-	{Label: "Not Page", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: notPage, ExpectedStatus: 200, ExpectedResponse: "ignoring"},
-	{Label: "No Entries", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: noEntries, ExpectedStatus: 200, ExpectedResponse: "ignoring"},
-	{Label: "No Messaging Entries", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: noMessagingEntries, ExpectedStatus: 200, ExpectedResponse: "Handled"},
-	{Label: "Unknown Messaging Entry", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: unkownMessagingEntry, ExpectedStatus: 200, ExpectedResponse: "Handled"},
-	{Label: "Not JSON", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: notJSON, ExpectedStatus: 400, ExpectedResponse: "Error"},
-	{Label: "Invalid URN", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "invalid facebook id"},
+	{
+		Label:              "Receive Message",
+		URL:                receiveURL,
+		Data:               helloMsg,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Handled",
+		ExpectedMsgText:    Sp("Hello World"),
+		ExpectedURN:        "facebook:5678",
+		ExpectedExternalID: "external_id",
+		ExpectedDate:       time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
+	},
+	{
+		Label:              "No Duplicate Receive Message",
+		URL:                receiveURL,
+		Data:               duplicateMsg,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Handled",
+		ExpectedMsgText:    Sp("Hello World"),
+		ExpectedURN:        "facebook:5678",
+		ExpectedExternalID: "external_id",
+		ExpectedDate:       time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
+	},
+	{
+		Label:               "Receive Attachment",
+		URL:                 receiveURL,
+		Data:                attachment,
+		ExpectedRespStatus:  200,
+		ExpectedRespBody:    "Handled",
+		ExpectedMsgText:     Sp(""),
+		ExpectedAttachments: []string{"https://image-url/foo.png"},
+		ExpectedURN:         "facebook:5678",
+		ExpectedExternalID:  "external_id",
+		ExpectedDate:        time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
+	},
+	{
+		Label:               "Receive Location",
+		URL:                 receiveURL,
+		Data:                locationAttachment,
+		ExpectedRespStatus:  200,
+		ExpectedRespBody:    "Handled",
+		ExpectedMsgText:     Sp(""),
+		ExpectedAttachments: []string{"geo:1.200000,-1.300000"},
+		ExpectedURN:         "facebook:5678",
+		ExpectedExternalID:  "external_id",
+		ExpectedDate:        time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
+	},
+	{
+		Label:              "Receive Thumbs Up",
+		URL:                receiveURL,
+		Data:               thumbsUp,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Handled",
+		ExpectedMsgText:    Sp("👍"),
+		ExpectedURN:        "facebook:5678",
+		ExpectedExternalID: "external_id",
+		ExpectedDate:       time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
+	},
+	{
+		Label:              "Receive OptIn UserRef",
+		URL:                receiveURL,
+		Data:               optInUserRef,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Handled",
+		ExpectedURN:        "facebook:ref:optin_user_ref",
+		ExpectedDate:       time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
+		ExpectedEvent:      courier.Referral,
+		ExpectedEventExtra: map[string]interface{}{"referrer_id": "optin_ref"},
+	},
+	{
+		Label:              "Receive OptIn",
+		URL:                receiveURL,
+		Data:               optIn,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Handled",
+		ExpectedURN:        "facebook:5678",
+		ExpectedDate:       time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
+		ExpectedEvent:      courier.Referral,
+		ExpectedEventExtra: map[string]interface{}{"referrer_id": "optin_ref"},
+	},
+	{
+		Label:              "Receive Get Started",
+		URL:                receiveURL,
+		Data:               postbackGetStarted,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Handled",
+		ExpectedURN:        "facebook:5678",
+		ExpectedDate:       time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
+		ExpectedEvent:      courier.NewConversation,
+		ExpectedEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started"},
+	},
+	{
+		Label:              "Receive Referral Postback",
+		URL:                receiveURL,
+		Data:               postback,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Handled",
+		ExpectedURN:        "facebook:5678",
+		ExpectedDate:       time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
+		ExpectedEvent:      courier.Referral,
+		ExpectedEventExtra: map[string]interface{}{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"},
+	},
+	{
+		Label:              "Receive Referral",
+		URL:                receiveURL,
+		Data:               postbackReferral,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Handled",
+		ExpectedURN:        "facebook:5678",
+		ExpectedDate:       time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
+		ExpectedEvent:      courier.Referral,
+		ExpectedEventExtra: map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"},
+	},
+	{
+		Label:              "Receive Referral",
+		URL:                receiveURL,
+		Data:               referral,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   `"referrer_id":"referral id"`,
+		ExpectedURN:        "facebook:5678",
+		ExpectedDate:       time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
+		ExpectedEvent:      courier.Referral,
+		ExpectedEventExtra: map[string]interface{}{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"},
+	},
+	{
+		Label:              "Receive DLR",
+		URL:                receiveURL,
+		Data:               dlr,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Handled",
+		ExpectedDate:       time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
+		ExpectedMsgStatus:  courier.MsgDelivered,
+		ExpectedExternalID: "mid.1458668856218:ed81099e15d3f4f233",
+	},
+	{
+		Label:              "Different Page",
+		URL:                receiveURL,
+		Data:               differentPage,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   `"data":[]`,
+	},
+	{
+		Label:              "Echo",
+		URL:                receiveURL,
+		Data:               echo,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   `ignoring echo`,
+	},
+	{
+		Label:              "Not Page",
+		URL:                receiveURL,
+		Data:               notPage,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "ignoring",
+	},
+	{
+		Label:              "No Entries",
+		URL:                receiveURL,
+		Data:               noEntries,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "ignoring",
+	},
+	{
+		Label:              "No Messaging Entries",
+		URL:                receiveURL,
+		Data:               noMessagingEntries,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Handled",
+	},
+	{
+		Label:              "Unknown Messaging Entry",
+		URL:                receiveURL,
+		Data:               unkownMessagingEntry,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Handled",
+	},
+	{
+		Label:              "Not JSON",
+		URL:                receiveURL,
+		Data:               `blargh`,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "Error",
+	},
+	{
+		Label:              "Invalid URN",
+		URL:                receiveURL,
+		Data:               invalidURN,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "invalid facebook id",
+	},
 }
 
 // mocks the call to the Facebook graph API
@@ -546,11 +691,36 @@ func TestVerify(t *testing.T) {
 	subscribeTimeout = time.Millisecond
 
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
-		{Label: "Receive Message", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, ExpectedStatus: 200},
-		{Label: "Verify No Mode", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", ExpectedStatus: 400, ExpectedResponse: "unknown request"},
-		{Label: "Verify No Secret", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?hub.mode=subscribe", ExpectedStatus: 400, ExpectedResponse: "token does not match secret"},
-		{Label: "Invalid Secret", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?hub.mode=subscribe&hub.verify_token=blah", ExpectedStatus: 400, ExpectedResponse: "token does not match secret"},
-		{Label: "Valid Secret", URL: "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?hub.mode=subscribe&hub.verify_token=mysecret&hub.challenge=yarchallenge", ExpectedStatus: 200, ExpectedResponse: "yarchallenge"},
+		{
+			Label:              "Receive Message",
+			URL:                receiveURL,
+			Data:               helloMsg,
+			ExpectedRespStatus: 200,
+		},
+		{
+			Label:              "Verify No Mode",
+			URL:                receiveURL,
+			ExpectedRespStatus: 400,
+			ExpectedRespBody:   "unknown request",
+		},
+		{
+			Label:              "Verify No Secret",
+			URL:                "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?hub.mode=subscribe",
+			ExpectedRespStatus: 400,
+			ExpectedRespBody:   "token does not match secret",
+		},
+		{
+			Label:              "Invalid Secret",
+			URL:                "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?hub.mode=subscribe&hub.verify_token=blah",
+			ExpectedRespStatus: 400,
+			ExpectedRespBody:   "token does not match secret",
+		},
+		{
+			Label:              "Valid Secret",
+			URL:                "/c/fb/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?hub.mode=subscribe&hub.verify_token=mysecret&hub.challenge=yarchallenge",
+			ExpectedRespStatus: 200,
+			ExpectedRespBody:   "yarchallenge",
+		},
 	})
 
 	// wait for our subscribe to be called
@@ -574,7 +744,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:    `{"message_id": "mid.133"}`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "mid.133",
 		SendPrep:            setSendURL,
 	},
@@ -586,7 +756,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:        `{"message_id": "mid.133"}`,
 		MockResponseStatus:      200,
 		ExpectedRequestBody:     `{"messaging_type":"RESPONSE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
-		ExpectedStatus:          "W",
+		ExpectedMsgStatus:       "W",
 		ExpectedExternalID:      "mid.133",
 		SendPrep:                setSendURL,
 	},
@@ -598,7 +768,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"user_ref":"67890"},"message":{"text":"Simple Message"}}`,
 		ExpectedContactURNs: map[string]bool{"facebook:12345": true, "ext:67890": true, "facebook:ref:67890": false},
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "mid.133",
 		SendPrep:            setSendURL,
 	},
@@ -610,7 +780,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:    `{"message_id": "mid.133"}`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Are you happy?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "mid.133",
 		SendPrep:            setSendURL,
 	},
@@ -620,7 +790,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgURN:              "facebook:12345",
 		MsgQuickReplies:     []string{"Yes", "No"},
 		MsgTopic:            "account",
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "mid.133",
 		MockResponseBody:    `{"message_id": "mid.133"}`,
 		MockResponseStatus:  200,
@@ -631,7 +801,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Label:               "Send Photo",
 		MsgURN:              "facebook:12345",
 		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "mid.133",
 		MockResponseBody:    `{"message_id": "mid.133"}`,
 		MockResponseStatus:  200,
@@ -648,7 +818,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:    `{"message_id": "mid.133"}`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messaging_type":"MESSAGE_TAG","tag":"CONFIRMED_EVENT_UPDATE","recipient":{"id":"12345"},"message":{"text":"This is some text.","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "mid.133",
 		SendPrep:            setSendURL,
 	},
@@ -659,7 +829,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:    `{"message_id": "mid.133"}`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"file","payload":{"url":"https://foo.bar/document.pdf","is_reusable":true}}}}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "mid.133",
 		SendPrep:            setSendURL,
 	},
@@ -669,7 +839,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgURN:             "facebook:12345",
 		MockResponseBody:   `{ "is_error": true }`,
 		MockResponseStatus: 200,
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get message_id from body", "")},
 		SendPrep:           setSendURL,
 	},
@@ -679,7 +849,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgURN:             "facebook:12345",
 		MockResponseBody:   `{ "is_error": true }`,
 		MockResponseStatus: 403,
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		SendPrep:           setSendURL,
 	},
 }

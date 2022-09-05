@@ -13,33 +13,74 @@ var daTestChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DA", "2020", "ID", nil),
 }
 
-var (
+const (
 	receiveURL = "/c/da/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	statusURL  = "/c/da/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/"
-
-	validMessage   = receiveURL + "?userid=testusr&password=test&original=6289881134560&sendto=2020&message=Msg"
-	invalidMessage = receiveURL
-	externalURN    = receiveURL + "?userid=testusr&password=test&original=cmp-oodddqddwdwdcd&sendto=2020&message=Msg"
-
-	validStatus        = statusURL + "?status=10&messageid=12345"
-	validPartStatus    = statusURL + "?status=10&messageid=12345.2"
-	failedStatus       = statusURL + "?status=30&messageid=12345"
-	badStatus          = statusURL + "?status=foo&messageid=12345"
-	badStatusMessageID = statusURL + "?status=10&messageid=abc"
-	missingStatus      = statusURL + "?messageid=12345"
 )
 
 var daTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: validMessage, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("tel:+6289881134560")},
-	{Label: "Receive Valid", URL: externalURN, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgText: Sp("Msg"), ExpectedURN: Sp("ext:cmp-oodddqddwdwdcd")},
-	{Label: "Receive Invalid", URL: invalidMessage, ExpectedStatus: 400, ExpectedResponse: "missing required parameters original and sendto"},
+	{
+		Label:              "Receive Valid",
+		URL:                receiveURL + "?userid=testusr&password=test&original=6289881134560&sendto=2020&message=Msg",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "000",
+		ExpectedMsgText:    Sp("Msg"),
+		ExpectedURN:        "tel:+6289881134560",
+	},
+	{
+		Label:              "Receive Valid",
+		URL:                receiveURL + "?userid=testusr&password=test&original=cmp-oodddqddwdwdcd&sendto=2020&message=Msg",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "000",
+		ExpectedMsgText:    Sp("Msg"),
+		ExpectedURN:        "ext:cmp-oodddqddwdwdcd",
+	},
+	{
+		Label:              "Receive Invalid",
+		URL:                receiveURL,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "missing required parameters original and sendto",
+	},
 
-	{Label: "Valid Status", URL: validStatus, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgStatus: Sp("D")},
-	{Label: "Valid Status", URL: validPartStatus, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgStatus: Sp("D")},
-	{Label: "Failed Status", URL: failedStatus, ExpectedStatus: 200, ExpectedResponse: "000", ExpectedMsgStatus: Sp("F")},
-	{Label: "Missing Status", URL: missingStatus, ExpectedStatus: 400, ExpectedResponse: "parameters messageid and status should not be empty"},
-	{Label: "Missing Status", URL: badStatus, ExpectedStatus: 400, ExpectedResponse: "parsing failed: status 'foo' is not an integer"},
-	{Label: "Missing Status", URL: badStatusMessageID, ExpectedStatus: 400, ExpectedResponse: "parsing failed: messageid 'abc' is not an integer"},
+	{
+		Label:              "Valid Status",
+		URL:                statusURL + "?status=10&messageid=12345",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "000",
+		ExpectedMsgStatus:  "D",
+	},
+	{
+		Label:              "Valid Status",
+		URL:                statusURL + "?status=10&messageid=12345.2",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "000",
+		ExpectedMsgStatus:  "D",
+	},
+	{
+		Label:              "Failed Status",
+		URL:                statusURL + "?status=30&messageid=12345",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "000",
+		ExpectedMsgStatus:  "F",
+	},
+	{
+		Label:              "Missing Status",
+		URL:                statusURL + "?messageid=12345",
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "parameters messageid and status should not be empty",
+	},
+	{
+		Label:              "Missing Status",
+		URL:                statusURL + "?status=foo&messageid=12345",
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "parsing failed: status 'foo' is not an integer",
+	},
+	{
+		Label:              "Missing Status",
+		URL:                statusURL + "?status=10&messageid=abc",
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "parsing failed: messageid 'abc' is not an integer",
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -64,7 +105,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   "000",
 		MockResponseStatus: 200,
 		ExpectedURLParams:  map[string]string{"message": "Simple Message", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
-		ExpectedStatus:     "W",
+		ExpectedMsgStatus:  "W",
 		SendPrep:           setSendURL,
 	},
 	{
@@ -74,7 +115,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   "000",
 		MockResponseStatus: 200,
 		ExpectedURLParams:  map[string]string{"message": "I need to keep adding more things to make it work", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10.2"},
-		ExpectedStatus:     "W",
+		ExpectedMsgStatus:  "W",
 		SendPrep:           setSendURL,
 	},
 	{
@@ -85,7 +126,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   "000",
 		MockResponseStatus: 200,
 		ExpectedURLParams:  map[string]string{"message": "My pic!\nhttps://foo.bar/image.jpg", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
-		ExpectedStatus:     "W",
+		ExpectedMsgStatus:  "W",
 		SendPrep:           setSendURL,
 	},
 	{
@@ -95,7 +136,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `Error`,
 		MockResponseStatus: 400,
 		ExpectedURLParams:  map[string]string{"message": "Error Message", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		SendPrep:           setSendURL,
 	},
 	{
@@ -105,7 +146,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   "001",
 		MockResponseStatus: 200,
 		ExpectedURLParams:  map[string]string{"message": "Simple Message", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("Error 001: Authentication Error", "")},
 		SendPrep:           setSendURL,
 	},
@@ -116,7 +157,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   "101",
 		MockResponseStatus: 200,
 		ExpectedURLParams:  map[string]string{"message": "Simple Message", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("Error 101: Account expired or invalid parameters", "")},
 		SendPrep:           setSendURL,
 	},

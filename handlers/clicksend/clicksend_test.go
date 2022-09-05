@@ -9,7 +9,7 @@ import (
 	"github.com/nyaruka/courier/test"
 )
 
-var (
+const (
 	receiveURL = "/c/cs/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 )
 
@@ -18,10 +18,24 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: `from=639171234567&body=hello+world`, Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		ExpectedStatus: 200, ExpectedResponse: "Accepted", ExpectedMsgText: Sp("hello world"), ExpectedURN: Sp("tel:+639171234567")},
-	{Label: "Receive Missing From", URL: receiveURL, Data: `body=hello+world`, Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		ExpectedStatus: 400, ExpectedResponse: "Error"},
+	{
+		Label:              "Receive Valid Message",
+		URL:                receiveURL,
+		Data:               `from=639171234567&body=hello+world`,
+		Headers:            map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Accepted",
+		ExpectedMsgText:    Sp("hello world"),
+		ExpectedURN:        "tel:+639171234567",
+	},
+	{
+		Label:              "Receive Missing From",
+		URL:                receiveURL,
+		Data:               `body=hello+world`,
+		Headers:            map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "Error",
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -104,7 +118,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"Simple Message","source":"courier"}]}`,
 		ExpectedHeaders:     map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "BF7AD270-0DE2-418B-B606-71D527D9C1AE",
 		SendPrep:            setSendURL,
 	},
@@ -115,7 +129,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseBody:    successResponse,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"☺","source":"courier"}]}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "BF7AD270-0DE2-418B-B606-71D527D9C1AE",
 		SendPrep:            setSendURL,
 	},
@@ -128,7 +142,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"My pic!\nhttps://foo.bar/image.jpg","source":"courier"}]}`,
 		ExpectedExternalID:  "BF7AD270-0DE2-418B-B606-71D527D9C1AE",
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		SendPrep:            setSendURL,
 	},
 	{
@@ -137,7 +151,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `[{"Response": "101"}]`,
 		MockResponseStatus: 403,
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		SendPrep:           setSendURL,
 	},
 	{
@@ -146,7 +160,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   failureResponse,
 		MockResponseStatus: 200,
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received non SUCCESS status: FAILURE", "")},
 		SendPrep:           setSendURL,
 	},

@@ -57,20 +57,6 @@ var (
 		]
 	}`
 
-	missingRecipient = `{
-		"messages": [
-			{
-				"message-id": "2018-10-26-09-27-34",
-				"sms": {
-					"originator": "1122",
-					"content": {
-						"text": "Message from Paul"
-					}
-				}
-			}
-		]
-	}`
-
 	missingMessageID = `{
 		"messages": [
 			{
@@ -87,40 +73,52 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid",
-		URL:              receiveURL,
-		Data:             validReceive,
-		ExpectedResponse: "Accepted",
-		ExpectedStatus:   200,
-		ExpectedMsgText:  Sp("SMS Response Accepted"),
-		ExpectedURN:      Sp("tel:+998999999999")},
-	{Label: "Receive Missing MSISDN",
-		URL:              receiveURL,
-		Data:             invalidReceive,
-		ExpectedResponse: "missing required fields msidsn or id",
-		ExpectedStatus:   400},
-	{Label: "No Messages",
-		URL:              receiveURL,
-		Data:             noMessages,
-		ExpectedResponse: "no messages, ignored",
-		ExpectedStatus:   200},
-	{Label: "Invalid XML",
-		URL:              receiveURL,
-		Data:             invalidXML,
-		ExpectedResponse: "",
-		ExpectedStatus:   405},
-	{Label: "Receive With Prefix",
-		URL:              receiveURL,
-		Data:             receiveWithPrefix,
-		ExpectedResponse: "Accepted",
-		ExpectedStatus:   200,
-		ExpectedMsgText:  Sp("SMS Response Accepted"),
-		ExpectedURN:      Sp("tel:+998999999999")},
-	{Label: "Receive With Prefix Only",
-		URL:              receiveURL,
-		Data:             receiveWithPrefixOnly,
-		ExpectedResponse: "no text",
-		ExpectedStatus:   400},
+	{
+		Label:              "Receive Valid",
+		URL:                receiveURL,
+		Data:               validReceive,
+		ExpectedRespBody:   "Accepted",
+		ExpectedRespStatus: 200,
+		ExpectedMsgText:    Sp("SMS Response Accepted"),
+		ExpectedURN:        "tel:+998999999999",
+	},
+	{
+		Label:              "Receive Missing MSISDN",
+		URL:                receiveURL,
+		Data:               invalidReceive,
+		ExpectedRespBody:   "missing required fields msidsn or id",
+		ExpectedRespStatus: 400,
+	},
+	{
+		Label:              "No Messages",
+		URL:                receiveURL,
+		Data:               noMessages,
+		ExpectedRespBody:   "no messages, ignored",
+		ExpectedRespStatus: 200,
+	},
+	{
+		Label:              "Invalid XML",
+		URL:                receiveURL,
+		Data:               invalidXML,
+		ExpectedRespBody:   "",
+		ExpectedRespStatus: 405,
+	},
+	{
+		Label:              "Receive With Prefix",
+		URL:                receiveURL,
+		Data:               receiveWithPrefix,
+		ExpectedRespBody:   "Accepted",
+		ExpectedRespStatus: 200,
+		ExpectedMsgText:    Sp("SMS Response Accepted"),
+		ExpectedURN:        "tel:+998999999999",
+	},
+	{
+		Label:              "Receive With Prefix Only",
+		URL:                receiveURL,
+		Data:               receiveWithPrefixOnly,
+		ExpectedRespBody:   "no text",
+		ExpectedRespStatus: 400,
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -139,7 +137,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
 		MsgText:             "Simple Message",
 		MsgURN:              "tel:99999999999",
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "",
 		MockResponseBody:    "Request is received",
 		MockResponseStatus:  200,
@@ -148,7 +146,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Long Send",
 		MsgText:             "This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, now, I need to keep adding more things to make it work",
 		MsgURN:              "tel:99999999999",
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "",
 		MockResponseBody:    "Request is received",
 		MockResponseStatus:  200,
@@ -158,7 +156,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgText:            "My pic!",
 		MsgURN:             "tel:+18686846481",
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedStatus:     "W",
+		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "",
 		MockResponseBody:   validMessage,
 		MockResponseStatus: 200,
@@ -166,14 +164,14 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Invalid JSON Response",
 		MsgText:            "Error Sending",
 		MsgURN:             "tel:+250788383383",
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		MockResponseStatus: 400,
 		MockResponseBody:   "not json",
 		SendPrep:           setSendURL},
 	{Label: "Missing Message ID",
 		MsgText:            missingMessageID,
 		MsgURN:             "tel:+250788383383",
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		MockResponseStatus: 400,
 		MockResponseBody:   "{}",
 		SendPrep:           setSendURL},

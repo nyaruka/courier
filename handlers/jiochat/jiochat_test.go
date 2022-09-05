@@ -146,28 +146,28 @@ func addInvalidSignature(r *http.Request) {
 }
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp("Simple Message"), ExpectedURN: Sp("jiochat:1234"), ExpectedExternalID: Sp("123456"),
+	{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
+		ExpectedMsgText: Sp("Simple Message"), ExpectedURN: "jiochat:1234", ExpectedExternalID: "123456",
 		ExpectedDate: time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
 
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedStatus: 400, ExpectedResponse: "invalid jiochat id"},
-	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, ExpectedStatus: 400, ExpectedResponse: "Error:Field validation"},
-	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, ExpectedStatus: 400, ExpectedResponse: "missing parameters, must have either 'MsgId' or 'Event'"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedRespBody: "invalid jiochat id"},
+	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, ExpectedRespStatus: 400, ExpectedRespBody: "Error:Field validation"},
+	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, ExpectedRespStatus: 400, ExpectedRespBody: "missing parameters, must have either 'MsgId' or 'Event'"},
 
-	{Label: "Receive Image", URL: receiveURL, Data: imageMessage, ExpectedStatus: 200, ExpectedResponse: "Accepted",
-		ExpectedMsgText: Sp(""), ExpectedURN: Sp("jiochat:1234"), ExpectedExternalID: Sp("123456"),
+	{Label: "Receive Image", URL: receiveURL, Data: imageMessage, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
+		ExpectedMsgText: Sp(""), ExpectedURN: "jiochat:1234", ExpectedExternalID: "123456",
 		ExpectedAttachments: []string{"https://channels.jiochat.com/media/download.action?media_id=12"},
 		ExpectedDate:        time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
 
-	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, ExpectedStatus: 200, ExpectedResponse: "Event Accepted",
-		ExpectedChannelEvent: courier.NewConversation, ExpectedURN: Sp("jiochat:1234")},
+	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, ExpectedRespStatus: 200, ExpectedRespBody: "Event Accepted",
+		ExpectedEvent: courier.NewConversation, ExpectedURN: "jiochat:1234"},
 
-	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, ExpectedStatus: 200, ExpectedResponse: "unknown event"},
+	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, ExpectedRespStatus: 200, ExpectedRespBody: "unknown event"},
 
-	{Label: "Verify URL", URL: verifyURL, ExpectedStatus: 200, ExpectedResponse: "SUCCESS",
+	{Label: "Verify URL", URL: verifyURL, ExpectedRespStatus: 200, ExpectedRespBody: "SUCCESS",
 		PrepRequest: addValidSignature},
 
-	{Label: "Verify URL Invalid signature", URL: verifyURL, ExpectedStatus: 400, ExpectedResponse: "unknown request",
+	{Label: "Verify URL Invalid signature", URL: verifyURL, ExpectedRespStatus: 400, ExpectedRespBody: "unknown request",
 		PrepRequest: addInvalidSignature},
 }
 
@@ -195,12 +195,12 @@ func TestFetchAccessToken(t *testing.T) {
 	fetchTimeout = time.Millisecond
 
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
-		{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedStatus: 200, ExpectedResponse: "Accepted"},
+		{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted"},
 
-		{Label: "Verify URL", URL: verifyURL, ExpectedStatus: 200, ExpectedResponse: "SUCCESS",
+		{Label: "Verify URL", URL: verifyURL, ExpectedRespStatus: 200, ExpectedRespBody: "SUCCESS",
 			PrepRequest: addValidSignature},
 
-		{Label: "Verify URL Invalid signature", URL: verifyURL, ExpectedStatus: 400, ExpectedResponse: "unknown request",
+		{Label: "Verify URL Invalid signature", URL: verifyURL, ExpectedRespStatus: 400, ExpectedRespBody: "unknown request",
 			PrepRequest: addInvalidSignature},
 	})
 
@@ -337,7 +337,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Bearer ACCESS_TOKEN",
 		},
 		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"Simple Message ☺"}}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "",
 		SendPrep:            setSendURL,
 	},
@@ -352,7 +352,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Bearer ACCESS_TOKEN",
 		},
 		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"I need to keep adding more things to make it work"}}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "",
 		SendPrep:            setSendURL,
 	},
@@ -368,7 +368,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Authorization": "Bearer ACCESS_TOKEN",
 		},
 		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"My pic!\nhttps://foo.bar/image.jpg"}}`,
-		ExpectedStatus:      "W",
+		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "",
 		SendPrep:            setSendURL,
 	},
@@ -377,7 +377,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgText:            "Error Message",
 		MsgURN:             "jiochat:12345",
 		MockResponseStatus: 401,
-		ExpectedStatus:     "E",
+		ExpectedMsgStatus:  "E",
 		SendPrep:           setSendURL,
 	},
 }
