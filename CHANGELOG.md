@@ -1,3 +1,7 @@
+v7.5.22
+----------
+ * Save channel logs with UUID
+
 v7.5.21
 ----------
  * Add codecov token to ci.yml
