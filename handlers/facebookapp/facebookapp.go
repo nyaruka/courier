@@ -198,7 +198,6 @@ type moPayload struct {
 						Origin *struct {
 							Type string `json:"type"`
 						} `json:"origin"`
-						ExpirationTimestamp int64 `json:"expiration_timestamp"`
 					} `json:"conversation"`
 					Pricing *struct {
 						PricingModel string `json:"pricing_model"`
