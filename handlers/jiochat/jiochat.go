@@ -130,7 +130,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	if payload.MsgType == "event" && payload.Event == "subscribe" {
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn)
 
-		err := h.Backend().WriteChannelEvent(ctx, channelEvent)
+		err := h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
 			return nil, err
 		}
@@ -151,7 +151,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 func buildMediaURL(mediaID string) string {

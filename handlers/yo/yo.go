@@ -93,7 +93,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithReceivedOn(date)
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r, clog)
 }
 
 // Send sends the given message, logging any HTTP calls or errors
@@ -144,7 +144,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 				// create a stop channel event
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
-				err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 				if err != nil {
 					return nil, err
 				}

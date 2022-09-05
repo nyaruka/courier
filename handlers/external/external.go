@@ -114,7 +114,7 @@ func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channe
 
 	// create a stop channel event
 	channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
-	err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+	err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date)
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 // WriteMsgSuccessResponse writes our response in TWIML format

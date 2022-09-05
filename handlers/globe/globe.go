@@ -107,7 +107,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		msgs = append(msgs, msg)
 	}
 
-	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
 }
 
 //	{

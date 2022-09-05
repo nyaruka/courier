@@ -97,7 +97,7 @@ WHERE
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
-func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChannel, urn urns.URN, auth string, name string) (*DBContact, error) {
+func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChannel, urn urns.URN, auth string, name string, clog *courier.ChannelLog) (*DBContact, error) {
 	// try to look up our contact by URN
 	contact := &DBContact{}
 	err := b.db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
@@ -139,9 +139,6 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 			if handler != nil {
 				describer, isDescriber := handler.(courier.URNDescriber)
 				if isDescriber {
-					// TODO: this should be created by the server and passed down
-					clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel)
-
 					atts, err := describer.DescribeURN(ctx, channel, urn, clog)
 
 					// in the case of errors, we log the error but move onwards anyways
@@ -193,7 +190,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 
 		if dbutil.IsUniqueViolation(err) {
 			// if this was a duplicate URN, start over with a contact lookup
-			return contactForURN(ctx, b, org, channel, urn, auth, name)
+			return contactForURN(ctx, b, org, channel, urn, auth, name, clog)
 		}
 		return nil, errors.Wrap(err, "error getting URN for contact")
 	}
@@ -201,7 +198,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	// we stole the URN from another contact, roll back and start over
 	if contactURN.PrevContactID != NilContactID {
 		tx.Rollback()
-		return contactForURN(ctx, b, org, channel, urn, auth, name)
+		return contactForURN(ctx, b, org, channel, urn, auth, name, clog)
 	}
 
 	// all is well, we created the new contact, commit and move forward

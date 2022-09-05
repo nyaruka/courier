@@ -380,7 +380,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	var data []interface{}
 
 	if channel.ChannelType() == "FBA" || channel.ChannelType() == "IG" {
-		events, data, err = h.processFacebookInstagramPayload(ctx, channel, payload, w, r)
+		events, data, err = h.processFacebookInstagramPayload(ctx, channel, payload, w, r, clog)
 	} else {
 		events, data, err = h.processCloudWhatsAppPayload(ctx, channel, payload, w, r, clog)
 
@@ -475,7 +475,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					event.WithAttachment(mediaURL)
 				}
 
-				err = h.Backend().WriteMsg(ctx, event)
+				err = h.Backend().WriteMsg(ctx, event, clog)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -523,7 +523,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 	return events, data, nil
 }
 
-func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request) ([]courier.Event, []interface{}, error) {
+func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []interface{}, error) {
 	var err error
 
 	// the list of events we deal with
@@ -592,7 +592,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			}
 			event = event.WithExtra(extra)
 
-			err := h.Backend().WriteChannelEvent(ctx, event)
+			err := h.Backend().WriteChannelEvent(ctx, event, clog)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -627,7 +627,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 			event = event.WithExtra(extra)
 
-			err := h.Backend().WriteChannelEvent(ctx, event)
+			err := h.Backend().WriteChannelEvent(ctx, event, clog)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -656,7 +656,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			}
 			event = event.WithExtra(extra)
 
-			err := h.Backend().WriteChannelEvent(ctx, event)
+			err := h.Backend().WriteChannelEvent(ctx, event, clog)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -721,7 +721,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 				event.WithAttachment(attURL)
 			}
 
-			err := h.Backend().WriteMsg(ctx, event)
+			err := h.Backend().WriteMsg(ctx, event, clog)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -922,7 +922,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 					clog.Error(errors.Errorf("unable to make facebook urn from %s", recipientID))
 				}
 
-				contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), "", "")
+				contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), "", "", clog)
 				if err != nil {
 					clog.Error(errors.Errorf("unable to get contact for %s", msg.URN().String()))
 				}
