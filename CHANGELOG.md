@@ -1,3 +1,10 @@
+v7.5.21
+----------
+ * Add codecov token to ci.yml
+ * Add WAC support for sending captioned attachments
+ * Cleanup tests
+ * Include requests made by DescribeURN methods in the channel log for a receive
+
 v7.5.20
 ----------
  * Fix writing errors to channel logs
