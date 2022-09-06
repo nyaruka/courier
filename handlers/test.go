@@ -407,11 +407,9 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 						require.Equal(tc.ExpectedMsgID, -1)
 					}
 				}
-
 				if len(tc.ExpectedAttachments) > 0 {
 					require.Equal(tc.ExpectedAttachments, msg.Attachments())
 				}
-
 				if !tc.ExpectedDate.IsZero() {
 					if msg != nil {
 						require.Equal((tc.ExpectedDate).Local(), (*msg.ReceivedOn()).Local())

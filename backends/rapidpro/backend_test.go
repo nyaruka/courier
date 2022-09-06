@@ -2,6 +2,7 @@ package rapidpro
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/storage"
@@ -1071,7 +1073,7 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 
 	// try embedded attachment
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "embedded attachment").(*DBMsg)
-	msg.WithEmbeddedAttachment("image/jpeg", []byte("jpegdata"), "jpg")
+	msg.WithAttachment(fmt.Sprintf("data:%s", base64.StdEncoding.EncodeToString(test.ReadFile("../../test/testdata/test.jpg"))))
 
 	err = ts.b.WriteMsg(ctx, msg, clog)
 	ts.NoError(err)

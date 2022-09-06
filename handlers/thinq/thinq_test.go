@@ -21,10 +21,7 @@ const (
 	statusURL  = "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 )
 
-func base64Attachment(path string) string {
-	data := test.ReadFile(path)
-	return base64.StdEncoding.EncodeToString(data)
-}
+var testJpgBase64 = base64.StdEncoding.EncodeToString(test.ReadFile("../../test/testdata/test.jpg"))
 
 var testCases = []ChannelHandleTestCase{
 	{
@@ -55,11 +52,11 @@ var testCases = []ChannelHandleTestCase{
 	{
 		Label:               "Receive attachment as base64",
 		URL:                 receiveURL,
-		Data:                fmt.Sprintf("message=%s&from=2065551234&type=mms&to=2065551212", url.QueryEscape(base64Attachment("../../test/testdata/test.jpg"))),
+		Data:                fmt.Sprintf("message=%s&from=2065551234&type=mms&to=2065551212", url.QueryEscape(testJpgBase64)),
 		ExpectedRespStatus:  200,
 		ExpectedRespBody:    "Accepted",
 		ExpectedURN:         "tel:+12065551234",
-		ExpectedAttachments: []string{"image/jpeg:EMBEDDED[17301].jpg"},
+		ExpectedAttachments: []string{"data:" + testJpgBase64},
 	},
 	{
 		Label:              "Status Valid",

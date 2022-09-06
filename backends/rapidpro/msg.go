@@ -2,6 +2,7 @@ package rapidpro
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -60,23 +61,39 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 	channel := m.Channel()
 
 	// if we have attachment URLs, download them to our own storage
-	for i, attachment := range m.Attachments_ {
-		if strings.HasPrefix(attachment, "http") {
-			url, err := downloadAttachmentToStorage(ctx, b, channel, m.OrgID_, m.UUID_, attachment)
+	for i, attURL := range m.Attachments_ {
+		newURL := attURL
+		var err error
+
+		if strings.HasPrefix(attURL, "http://") || strings.HasPrefix(attURL, "https://") {
+			newURL, err = downloadAttachmentToStorage(ctx, b, channel, m.OrgID_, m.UUID_, attURL)
 			if err != nil {
 				return err
 			}
-			m.Attachments_[i] = url
-		}
-	}
+		} else if strings.HasPrefix(attURL, "data:") {
+			attData, err := base64.StdEncoding.DecodeString(attURL[5:])
+			if err != nil {
+				clog.Error(errors.New("unable to decode attachment data"))
+				return errors.Wrap(err, "unable to decode attachment data")
+			}
 
-	// if we have embedded attachments, save them to our own storage and add URLs to the message
-	for _, ea := range m.embeddedAttachments {
-		url, err := saveAttachmentToStorage(ctx, b, m.OrgID_, m.UUID_, ea.contentType, ea.data, ea.extension)
-		if err != nil {
-			return err
+			var contentType, extension string
+			fileType, _ := filetype.Match(attData[:300])
+			if fileType != filetype.Unknown {
+				contentType = fileType.MIME.Value
+				extension = fileType.Extension
+			} else {
+				contentType = "application/octet-stream"
+				extension = "bin"
+			}
+
+			newURL, err = saveAttachmentToStorage(ctx, b, m.OrgID_, m.UUID_, contentType, attData, extension)
+			if err != nil {
+				return err
+			}
 		}
-		m.Attachments_ = append(m.Attachments_, url)
+
+		m.Attachments_[i] = newURL
 	}
 
 	// try to write it our db
@@ -299,11 +316,11 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 	return saveAttachmentToStorage(ctx, b, orgID, msgUUID, mimeType, body, extension)
 }
 
-func saveAttachmentToStorage(ctx context.Context, b *backend, orgID OrgID, msgUUID courier.MsgUUID, contentType string, data []byte, ext string) (string, error) {
+func saveAttachmentToStorage(ctx context.Context, b *backend, orgID OrgID, msgUUID courier.MsgUUID, contentType string, data []byte, extension string) (string, error) {
 	// create our filename
 	filename := msgUUID.String()
-	if ext != "" {
-		filename = fmt.Sprintf("%s.%s", msgUUID, ext)
+	if extension != "" {
+		filename = fmt.Sprintf("%s.%s", msgUUID, extension)
 	}
 
 	path := filepath.Join(b.config.S3AttachmentsPrefix, strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
@@ -544,8 +561,6 @@ type DBMsg struct {
 	workerToken    queue.WorkerToken
 	alreadyWritten bool
 	quickReplies   []string
-
-	embeddedAttachments []*embeddedAttachment
 }
 
 func (m *DBMsg) ID() courier.MsgID            { return m.ID_ }
@@ -643,12 +658,6 @@ func (m *DBMsg) WithFlow(flow *courier.FlowReference) courier.Msg { m.Flow_ = fl
 // WithAttachment can be used to append to the media urls for a message
 func (m *DBMsg) WithAttachment(url string) courier.Msg {
 	m.Attachments_ = append(m.Attachments_, url)
-	return m
-}
-
-// WithEmbeddedAttachment can be used to add an embedded attachment to a message
-func (m *DBMsg) WithEmbeddedAttachment(contentType string, data []byte, extension string) courier.Msg {
-	m.embeddedAttachments = append(m.embeddedAttachments, &embeddedAttachment{contentType: contentType, data: data, extension: extension})
 	return m
 }
 

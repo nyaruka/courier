@@ -2,7 +2,6 @@ package test
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/nyaruka/courier"
@@ -88,16 +87,10 @@ func (m *mockMsg) WithReceivedOn(date time.Time) courier.Msg { m.receivedOn = &d
 func (m *mockMsg) WithExternalID(id string) courier.Msg      { m.externalID = id; return m }
 func (m *mockMsg) WithID(id courier.MsgID) courier.Msg       { m.id = id; return m }
 func (m *mockMsg) WithUUID(uuid courier.MsgUUID) courier.Msg { m.uuid = uuid; return m }
-
 func (m *mockMsg) WithAttachment(url string) courier.Msg {
 	m.attachments = append(m.attachments, url)
 	return m
 }
-func (m *mockMsg) WithEmbeddedAttachment(contentType string, data []byte, extension string) courier.Msg {
-	m.attachments = append(m.attachments, fmt.Sprintf("%s:EMBEDDED[%d].%s", contentType, len(data), extension))
-	return m
-}
-
 func (m *mockMsg) WithMetadata(metadata json.RawMessage) courier.Msg { m.metadata = metadata; return m }
 
 func (m *mockMsg) WithFlow(flow *courier.FlowReference) courier.Msg { m.flow = flow; return m }
