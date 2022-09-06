@@ -1,7 +1,10 @@
 package thinq
 
 import (
+	"encoding/base64"
+	"fmt"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -17,6 +20,11 @@ const (
 	receiveURL = "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	statusURL  = "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 )
+
+func base64Attachment(path string) string {
+	data := test.ReadFile(path)
+	return base64.StdEncoding.EncodeToString(data)
+}
 
 var testCases = []ChannelHandleTestCase{
 	{
@@ -36,15 +44,23 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedRespBody:   `'From' failed on the 'required'`,
 	},
 	{
-		Label:               "Receive Media",
+		Label:               "Receive attachment as URL",
 		URL:                 receiveURL,
-		Data:                "message=http://foo.bar/foo.png&hello+world&from=2065551234&type=mms&to=2065551212",
+		Data:                "message=http://foo.bar/foo.png&from=2065551234&type=mms&to=2065551212",
 		ExpectedRespStatus:  200,
 		ExpectedRespBody:    "Accepted",
 		ExpectedURN:         "tel:+12065551234",
 		ExpectedAttachments: []string{"http://foo.bar/foo.png"},
 	},
-
+	{
+		Label:               "Receive attachment as base64",
+		URL:                 receiveURL,
+		Data:                fmt.Sprintf("message=%s&from=2065551234&type=mms&to=2065551212", url.QueryEscape(base64Attachment("../../test/testdata/test.jpg"))),
+		ExpectedRespStatus:  200,
+		ExpectedRespBody:    "Accepted",
+		ExpectedURN:         "tel:+12065551234",
+		ExpectedAttachments: []string{"image/jpeg:EMBEDDED[17301].jpg"},
+	},
 	{
 		Label:              "Status Valid",
 		URL:                statusURL,

@@ -44,6 +44,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
+// see https://apidocs.thinq.com/#829c8863-8a47-4273-80fb-d962aa64c901
 // from: Source DID
 // to: Destination DID
 // type: sms|mms

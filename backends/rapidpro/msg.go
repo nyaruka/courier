@@ -72,7 +72,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 
 	// if we have embedded attachments, save them to our own storage and add URLs to the message
 	for _, ea := range m.embeddedAttachments {
-		url, err := saveAttachmentToStorage(ctx, b, m.OrgID_, m.UUID_, ea.contentType, ea.data, ea.ext)
+		url, err := saveAttachmentToStorage(ctx, b, m.OrgID_, m.UUID_, ea.contentType, ea.data, ea.extension)
 		if err != nil {
 			return err
 		}
@@ -494,7 +494,7 @@ func writeExternalIDSeen(b *backend, msg courier.Msg) {
 type embeddedAttachment struct {
 	contentType string
 	data        []byte
-	ext         string
+	extension   string
 }
 
 // DBMsg is our base struct to represent msgs both in our JSON and db representations
@@ -647,8 +647,8 @@ func (m *DBMsg) WithAttachment(url string) courier.Msg {
 }
 
 // WithEmbeddedAttachment can be used to add an embedded attachment to a message
-func (m *DBMsg) WithEmbeddedAttachment(contentType string, data []byte, ext string) courier.Msg {
-	m.embeddedAttachments = append(m.embeddedAttachments, &embeddedAttachment{contentType, data, ext})
+func (m *DBMsg) WithEmbeddedAttachment(contentType string, data []byte, extension string) courier.Msg {
+	m.embeddedAttachments = append(m.embeddedAttachments, &embeddedAttachment{contentType: contentType, data: data, extension: extension})
 	return m
 }
 

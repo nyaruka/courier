@@ -2,17 +2,12 @@ package test
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/urns"
 )
-
-type mockEmbeddedAttachment struct {
-	contentType string
-	data        []byte
-	ext         string
-}
 
 type mockMsg struct {
 	id                   courier.MsgID
@@ -22,7 +17,6 @@ type mockMsg struct {
 	urnAuth              string
 	text                 string
 	attachments          []string
-	embeddedAttachments  []*mockEmbeddedAttachment
 	externalID           string
 	contactName          string
 	highPriority         bool
@@ -99,8 +93,8 @@ func (m *mockMsg) WithAttachment(url string) courier.Msg {
 	m.attachments = append(m.attachments, url)
 	return m
 }
-func (m *mockMsg) WithEmbeddedAttachment(contentType string, data []byte, ext string) courier.Msg {
-	m.embeddedAttachments = append(m.embeddedAttachments, &mockEmbeddedAttachment{contentType, data, ext})
+func (m *mockMsg) WithEmbeddedAttachment(contentType string, data []byte, extension string) courier.Msg {
+	m.attachments = append(m.attachments, fmt.Sprintf("%s:EMBEDDED[%d].%s", contentType, len(data), extension))
 	return m
 }
 
