@@ -1068,6 +1068,18 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 		ts.True(strings.HasPrefix(m.Attachments()[0], "image/png:"))
 		ts.True(strings.HasSuffix(m.Attachments()[0], ".png"))
 	}
+
+	// try embedded attachment
+	msg = ts.b.NewIncomingMsg(knChannel, urn, "embedded attachment").(*DBMsg)
+	msg.WithEmbeddedAttachment("image/jpeg", []byte("jpegdata"), "jpg")
+
+	err = ts.b.WriteMsg(ctx, msg, clog)
+	ts.NoError(err)
+
+	ts.Equal(1, len(msg.Attachments()))
+	ts.True(strings.HasPrefix(msg.Attachments()[0], "image/jpeg:"))
+	ts.True(strings.HasSuffix(msg.Attachments()[0], ".jpg"))
+
 }
 
 func (ts *BackendTestSuite) TestWriteMsg() {

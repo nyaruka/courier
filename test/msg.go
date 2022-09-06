@@ -8,6 +8,12 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
+type mockEmbeddedAttachment struct {
+	contentType string
+	data        []byte
+	ext         string
+}
+
 type mockMsg struct {
 	id                   courier.MsgID
 	uuid                 courier.MsgUUID
@@ -16,6 +22,7 @@ type mockMsg struct {
 	urnAuth              string
 	text                 string
 	attachments          []string
+	embeddedAttachments  []*mockEmbeddedAttachment
 	externalID           string
 	contactName          string
 	highPriority         bool
@@ -87,10 +94,16 @@ func (m *mockMsg) WithReceivedOn(date time.Time) courier.Msg { m.receivedOn = &d
 func (m *mockMsg) WithExternalID(id string) courier.Msg      { m.externalID = id; return m }
 func (m *mockMsg) WithID(id courier.MsgID) courier.Msg       { m.id = id; return m }
 func (m *mockMsg) WithUUID(uuid courier.MsgUUID) courier.Msg { m.uuid = uuid; return m }
+
 func (m *mockMsg) WithAttachment(url string) courier.Msg {
 	m.attachments = append(m.attachments, url)
 	return m
 }
+func (m *mockMsg) WithEmbeddedAttachment(contentType string, data []byte, ext string) courier.Msg {
+	m.embeddedAttachments = append(m.embeddedAttachments, &mockEmbeddedAttachment{contentType, data, ext})
+	return m
+}
+
 func (m *mockMsg) WithMetadata(metadata json.RawMessage) courier.Msg { m.metadata = metadata; return m }
 
 func (m *mockMsg) WithFlow(flow *courier.FlowReference) courier.Msg { m.flow = flow; return m }

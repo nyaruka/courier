@@ -59,15 +59,24 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 
 	channel := m.Channel()
 
-	// if we have media, go download it to S3
+	// if we have attachment URLs, download them to our own storage
 	for i, attachment := range m.Attachments_ {
 		if strings.HasPrefix(attachment, "http") {
-			url, err := downloadMediaToS3(ctx, b, channel, m.OrgID_, m.UUID_, attachment)
+			url, err := downloadAttachmentToStorage(ctx, b, channel, m.OrgID_, m.UUID_, attachment)
 			if err != nil {
 				return err
 			}
 			m.Attachments_[i] = url
 		}
+	}
+
+	// if we have embedded attachments, save them to our own storage and add URLs to the message
+	for _, ea := range m.embeddedAttachments {
+		url, err := saveAttachmentToStorage(ctx, b, m.OrgID_, m.UUID_, ea.contentType, ea.data, ea.ext)
+		if err != nil {
+			return err
+		}
+		m.Attachments_ = append(m.Attachments_, url)
 	}
 
 	// try to write it our db
@@ -213,12 +222,11 @@ WHERE
 `
 
 //-----------------------------------------------------------------------------
-// Media download and classification
+// Attachment download and classification
 //-----------------------------------------------------------------------------
 
-func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel, orgID OrgID, msgUUID courier.MsgUUID, mediaURL string) (string, error) {
-
-	parsedURL, err := url.Parse(mediaURL)
+func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courier.Channel, orgID OrgID, msgUUID courier.MsgUUID, attURL string) (string, error) {
+	parsedURL, err := url.Parse(attURL)
 	if err != nil {
 		return "", err
 	}
@@ -232,14 +240,14 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 
 			// in the case of errors, we log the error but move onwards anyways
 			if err != nil {
-				logrus.WithField("channel_uuid", channel.UUID()).WithField("channel_type", channel.ChannelType()).WithField("media_url", mediaURL).WithError(err).Error("unable to build media download request")
+				logrus.WithField("channel_uuid", channel.UUID()).WithField("channel_type", channel.ChannelType()).WithField("media_url", attURL).WithError(err).Error("unable to build attachment download request")
 			}
 		}
 	}
 
 	if req == nil {
 		// first fetch our media
-		req, err = http.NewRequest(http.MethodGet, mediaURL, nil)
+		req, err = http.NewRequest(http.MethodGet, attURL, nil)
 		if err != nil {
 			return "", err
 		}
@@ -262,7 +270,7 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 	}
 
 	// first try getting our mime type from the first 300 bytes of our body
-	fileType, err := filetype.Match(body[:300])
+	fileType, _ := filetype.Match(body[:300])
 	if fileType != filetype.Unknown {
 		mimeType = fileType.MIME.Value
 		extension = fileType.Extension
@@ -288,23 +296,28 @@ func downloadMediaToS3(ctx context.Context, b *backend, channel courier.Channel,
 		}
 	}
 
+	return saveAttachmentToStorage(ctx, b, orgID, msgUUID, mimeType, body, extension)
+}
+
+func saveAttachmentToStorage(ctx context.Context, b *backend, orgID OrgID, msgUUID courier.MsgUUID, contentType string, data []byte, ext string) (string, error) {
 	// create our filename
 	filename := msgUUID.String()
-	if extension != "" {
-		filename = fmt.Sprintf("%s.%s", msgUUID, extension)
+	if ext != "" {
+		filename = fmt.Sprintf("%s.%s", msgUUID, ext)
 	}
+
 	path := filepath.Join(b.config.S3AttachmentsPrefix, strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 	if !strings.HasPrefix(path, "/") {
 		path = fmt.Sprintf("/%s", path)
 	}
 
-	s3URL, err := b.storage.Put(ctx, path, mimeType, body)
+	s3URL, err := b.storage.Put(ctx, path, contentType, data)
 	if err != nil {
 		return "", err
 	}
 
 	// return our new media URL, which is prefixed by our content type
-	return fmt.Sprintf("%s:%s", mimeType, s3URL), nil
+	return fmt.Sprintf("%s:%s", contentType, s3URL), nil
 }
 
 //-----------------------------------------------------------------------------
@@ -478,6 +491,12 @@ func writeExternalIDSeen(b *backend, msg courier.Msg) {
 // Our implementation of Msg interface
 //-----------------------------------------------------------------------------
 
+type embeddedAttachment struct {
+	contentType string
+	data        []byte
+	ext         string
+}
+
 // DBMsg is our base struct to represent msgs both in our JSON and db representations
 type DBMsg struct {
 	OrgID_                OrgID                  `json:"org_id"          db:"org_id"`
@@ -525,6 +544,8 @@ type DBMsg struct {
 	workerToken    queue.WorkerToken
 	alreadyWritten bool
 	quickReplies   []string
+
+	embeddedAttachments []*embeddedAttachment
 }
 
 func (m *DBMsg) ID() courier.MsgID            { return m.ID_ }
@@ -622,6 +643,12 @@ func (m *DBMsg) WithFlow(flow *courier.FlowReference) courier.Msg { m.Flow_ = fl
 // WithAttachment can be used to append to the media urls for a message
 func (m *DBMsg) WithAttachment(url string) courier.Msg {
 	m.Attachments_ = append(m.Attachments_, url)
+	return m
+}
+
+// WithEmbeddedAttachment can be used to add an embedded attachment to a message
+func (m *DBMsg) WithEmbeddedAttachment(contentType string, data []byte, ext string) courier.Msg {
+	m.embeddedAttachments = append(m.embeddedAttachments, &embeddedAttachment{contentType, data, ext})
 	return m
 }
 

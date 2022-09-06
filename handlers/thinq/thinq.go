@@ -3,6 +3,7 @@ package thinq
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -70,10 +71,20 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	var msg courier.Msg
+
 	if form.Type == "sms" {
 		msg = h.Backend().NewIncomingMsg(channel, urn, form.Message)
 	} else if form.Type == "mms" {
-		msg = h.Backend().NewIncomingMsg(channel, urn, "").WithAttachment(form.Message)
+		if strings.HasPrefix(form.Message, "http://") || strings.HasPrefix(form.Message, "https://") {
+			msg = h.Backend().NewIncomingMsg(channel, urn, "").WithAttachment(form.Message)
+		} else {
+			imgData, err := base64.StdEncoding.DecodeString(form.Message)
+			if err != nil {
+				clog.Error(errors.New("unable to decode MMS data"))
+				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("unable to decode MMS data"))
+			}
+			msg = h.Backend().NewIncomingMsg(channel, urn, "").WithEmbeddedAttachment("image/jpeg", imgData, "jpg")
+		}
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown message type: %s", form.Type))
 	}

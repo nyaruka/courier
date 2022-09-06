@@ -120,6 +120,7 @@ type Msg interface {
 	WithID(id MsgID) Msg
 	WithUUID(uuid MsgUUID) Msg
 	WithAttachment(url string) Msg
+	WithEmbeddedAttachment(contentType string, data []byte, ext string) Msg
 	WithURNAuth(auth string) Msg
 	WithMetadata(metadata json.RawMessage) Msg
 	WithFlow(flow *FlowReference) Msg
