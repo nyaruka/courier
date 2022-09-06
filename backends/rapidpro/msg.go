@@ -508,12 +508,6 @@ func writeExternalIDSeen(b *backend, msg courier.Msg) {
 // Our implementation of Msg interface
 //-----------------------------------------------------------------------------
 
-type embeddedAttachment struct {
-	contentType string
-	data        []byte
-	extension   string
-}
-
 // DBMsg is our base struct to represent msgs both in our JSON and db representations
 type DBMsg struct {
 	OrgID_                OrgID                  `json:"org_id"          db:"org_id"`
