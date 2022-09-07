@@ -114,7 +114,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	resp, _, err := handlers.RequestHTTPInsecure(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {

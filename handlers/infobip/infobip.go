@@ -74,7 +74,7 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForExternalID(channel, s.MessageID, msgStatus)
+		status := h.Backend().NewMsgStatusForExternalID(channel, s.MessageID, msgStatus, clog)
 		err = h.Backend().WriteMsgStatus(ctx, status)
 		if err == courier.ErrMsgNotFound {
 			data = append(data, courier.NewInfoData(fmt.Sprintf("ignoring status update message id: %s, not found", s.MessageID)))
@@ -225,7 +225,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(username, password)
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {

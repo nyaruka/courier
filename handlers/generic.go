@@ -53,7 +53,7 @@ func NewExternalIDStatusHandler(h *BaseHandler, statuses map[string]courier.MsgS
 		}
 
 		// create our status
-		status := h.Backend().NewMsgStatusForExternalID(c, externalID, sValue)
+		status := h.Backend().NewMsgStatusForExternalID(c, externalID, sValue, clog)
 		return WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 	}
 }

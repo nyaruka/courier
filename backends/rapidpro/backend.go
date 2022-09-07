@@ -38,7 +38,7 @@ const msgQueueName = "msgs"
 const sentSetName = "msgs_sent_%s"
 
 // our timeout for backend operations
-const backendTimeout = time.Second * 20
+const backendTimeout = time.Second * 2000
 
 var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 
@@ -266,13 +266,13 @@ func (b *backend) WriteMsg(ctx context.Context, m courier.Msg, clog *courier.Cha
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewMsgStatusForID(channel courier.Channel, id courier.MsgID, status courier.MsgStatusValue) courier.MsgStatus {
-	return newMsgStatus(channel, id, "", status)
+func (b *backend) NewMsgStatusForID(channel courier.Channel, id courier.MsgID, status courier.MsgStatusValue, clog *courier.ChannelLog) courier.MsgStatus {
+	return newMsgStatus(channel, id, "", status, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID string, status courier.MsgStatusValue) courier.MsgStatus {
-	return newMsgStatus(channel, courier.NilMsgID, externalID, status)
+func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID string, status courier.MsgStatusValue, clog *courier.ChannelLog) courier.MsgStatus {
+	return newMsgStatus(channel, courier.NilMsgID, externalID, status, clog)
 }
 
 // WriteMsgStatus writes the passed in MsgStatus to our store

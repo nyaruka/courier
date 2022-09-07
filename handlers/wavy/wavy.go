@@ -75,7 +75,7 @@ func (h *handler) sentStatusMessage(ctx context.Context, channel courier.Channel
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CollerationID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CollerationID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -98,7 +98,7 @@ func (h *handler) deliveredStatusMessage(ctx context.Context, channel courier.Ch
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CollerationID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CollerationID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -150,7 +150,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no token set for %s channel", msg.Channel().ChannelType())
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	payload := mtPayload{}
 	payload.Destination = strings.TrimPrefix(msg.URN().Path(), "+")

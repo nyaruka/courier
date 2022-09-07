@@ -115,7 +115,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	botUsername := msg.Channel().StringConfigForKey(configBotUsername, "")
 
 	// the status that will be written for this message
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	payload := &mtPayload{
 		UserURN:     msg.URN().Path(),

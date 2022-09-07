@@ -48,10 +48,10 @@ type Backend interface {
 	WriteMsg(context.Context, Msg, *ChannelLog) error
 
 	// NewMsgStatusForID creates a new Status object for the given message id
-	NewMsgStatusForID(Channel, MsgID, MsgStatusValue) MsgStatus
+	NewMsgStatusForID(Channel, MsgID, MsgStatusValue, *ChannelLog) MsgStatus
 
 	// NewMsgStatusForExternalID creates a new Status object for the given external id
-	NewMsgStatusForExternalID(Channel, string, MsgStatusValue) MsgStatus
+	NewMsgStatusForExternalID(Channel, string, MsgStatusValue, *ChannelLog) MsgStatus
 
 	// WriteMsgStatus writes the passed in status update to our backend
 	WriteMsgStatus(context.Context, MsgStatus) error

@@ -193,7 +193,7 @@ func (w *Sender) sendMessage(msg Msg) {
 
 	if sent {
 		// if this message was already sent, create a wired status for it
-		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired)
+		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired, clog)
 		log.Warning("duplicate send, marking as wired")
 	} else {
 		// send our message
@@ -207,7 +207,7 @@ func (w *Sender) sendMessage(msg Msg) {
 
 			// possible for handlers to only return an error in which case we construct an error status
 			if status == nil {
-				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
+				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored, clog)
 			}
 		}
 

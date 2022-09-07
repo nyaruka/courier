@@ -113,7 +113,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, form.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForID(channel, form.ID, msgStatus, clog)
 	err = h.Backend().WriteMsgStatus(ctx, status)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
@@ -207,7 +207,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		resp, _, err = handlers.RequestHTTPInsecure(req, clog)
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	if err == nil && resp.StatusCode/100 == 2 {
 		status.SetStatus(courier.MsgWired)
 	}

@@ -171,13 +171,13 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		if err != nil {
 			logrus.WithError(err).WithField("id", idString).Error("error converting twilio callback id to integer")
 		} else {
-			status = h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus)
+			status = h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus, clog)
 		}
 	}
 
 	// if we have no status, then build it from the external (twilio) id
 	if status == nil {
-		status = h.Backend().NewMsgStatusForExternalID(channel, form.MessageSID, msgStatus)
+		status = h.Backend().NewMsgStatusForExternalID(channel, form.MessageSID, msgStatus, clog)
 	}
 
 	errorCode, _ := strconv.ParseInt(form.ErrorCode, 10, 64)
@@ -217,7 +217,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	channel := msg.Channel()
 
-	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	for i, part := range parts {
 		// build our request

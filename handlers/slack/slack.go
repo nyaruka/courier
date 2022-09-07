@@ -154,7 +154,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("missing bot token for SL/slack channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	for _, attachment := range msg.Attachments() {
 		fileAttachment, err := parseAttachmentToFileParams(msg, attachment, clog)
