@@ -14,7 +14,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -195,10 +195,10 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if actual == "" {
 		return fmt.Errorf("missing request signature")
 	}
-	buf, _ := ioutil.ReadAll(r.Body)
-	rdr1 := ioutil.NopCloser(bytes.NewBuffer(buf))
-	rdr2 := ioutil.NopCloser(bytes.NewBuffer(buf))
-	token, err := ioutil.ReadAll(rdr1)
+	buf, _ := io.ReadAll(r.Body)
+	rdr1 := io.NopCloser(bytes.NewBuffer(buf))
+	rdr2 := io.NopCloser(bytes.NewBuffer(buf))
+	token, err := io.ReadAll(rdr1)
 	if err != nil {
 		return fmt.Errorf("unable to read Body, %s", err.Error())
 	}

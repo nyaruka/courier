@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/test"
@@ -26,8 +27,6 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null"
 	"github.com/nyaruka/redisx/assertredis"
-
-	"github.com/gomodule/redigo/redis"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 )
@@ -49,7 +48,7 @@ func testConfig() *courier.Config {
 
 func (ts *BackendTestSuite) SetupSuite() {
 	// turn off logging
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 
 	b, err := courier.NewBackend(testConfig())
 	if err != nil {
@@ -63,14 +62,14 @@ func (ts *BackendTestSuite) SetupSuite() {
 	}
 
 	// read our schema sql
-	sqlSchema, err := ioutil.ReadFile("schema.sql")
+	sqlSchema, err := os.ReadFile("schema.sql")
 	if err != nil {
 		panic(fmt.Errorf("Unable to read schema.sql: %s", err))
 	}
 	ts.b.db.MustExec(string(sqlSchema))
 
 	// read our testdata sql
-	sql, err := ioutil.ReadFile("testdata.sql")
+	sql, err := os.ReadFile("testdata.sql")
 	if err != nil {
 		panic(fmt.Errorf("Unable to read testdata.sql: %s", err))
 	}

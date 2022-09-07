@@ -69,7 +69,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	}
 
 	dictOrder := []string{channel.StringConfigForKey(courier.ConfigSecret, ""), form.Timestamp, form.Nonce}
-	sort.Sort(sort.StringSlice(dictOrder))
+	sort.Strings(dictOrder)
 
 	combinedParams := strings.Join(dictOrder, "")
 
