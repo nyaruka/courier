@@ -84,9 +84,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 		// write our status
 		status := h.Backend().NewMsgStatusForExternalID(channel, form.DLRID, msgStatus, clog)
-		err = h.Backend().WriteMsgStatus(ctx, status)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
-
 	}
 
 	// create our URN
