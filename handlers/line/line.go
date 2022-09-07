@@ -8,18 +8,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/pkg/errors"
-
-	"github.com/nyaruka/gocommon/urns"
-
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/urns"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -224,8 +222,8 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 // see https://developers.line.me/en/docs/messaging-api/reference/#signature-validation
 func calculateSignature(secret string, r *http.Request) ([]byte, error) {
 	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	body, err := io.ReadAll(r.Body)
+	r.Body = io.NopCloser(bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}

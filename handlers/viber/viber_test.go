@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -529,8 +529,8 @@ var testWelcomeMessageCases = []ChannelHandleTestCase{
 }
 
 func addValidSignature(r *http.Request) {
-	body, _ := ioutil.ReadAll(r.Body)
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	body, _ := io.ReadAll(r.Body)
+	r.Body = io.NopCloser(bytes.NewBuffer(body))
 	sig := calculateSignature("Token", body)
 	r.Header.Set(viberSignatureHeader, string(sig))
 }

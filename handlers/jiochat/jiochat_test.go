@@ -5,7 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -15,15 +15,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
-
 	"github.com/stretchr/testify/assert"
-
-	"github.com/nyaruka/courier"
-	. "github.com/nyaruka/courier/handlers"
 )
 
 var testChannels = []courier.Channel{
@@ -247,8 +245,8 @@ func buildMockJCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 func newServer(backend courier.Backend) courier.Server {
 	// for benchmarks, log to null
 	logger := logrus.New()
-	logger.Out = ioutil.Discard
-	logrus.SetOutput(ioutil.Discard)
+	logger.Out = io.Discard
+	logrus.SetOutput(io.Discard)
 	config := courier.NewConfig()
 	config.DB = "postgres://courier:courier@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"

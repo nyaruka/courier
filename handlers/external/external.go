@@ -7,7 +7,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -152,7 +151,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	if fromXPath != "" && textXPath != "" {
 		// we are reading from an XML body, pull out our fields
-		body, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
+		body, err := io.ReadAll(io.LimitReader(r.Body, 100000))
 		defer r.Body.Close()
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to read request body: %s", err))

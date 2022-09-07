@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -273,12 +273,12 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 	}
 
 	// read our body
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return err
 	}
 
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	r.Body = io.NopCloser(bytes.NewBuffer(body))
 	expected := calculateSignature(authToken, body)
 
 	// compare signatures in way that isn't sensitive to a timing attack

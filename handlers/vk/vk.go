@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -195,13 +194,13 @@ type mediaUploadInfoPayload struct {
 // receiveEvent handles request event type
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// read request body
-	bodyBytes, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
+	bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 100000))
 
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to read request body: %s", err))
 	}
 	// restore body to its original value
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	payload := &moPayload{}
 
 	if err := json.Unmarshal(bodyBytes, payload); err != nil {
