@@ -38,7 +38,7 @@ const msgQueueName = "msgs"
 const sentSetName = "msgs_sent_%s"
 
 // our timeout for backend operations
-const backendTimeout = time.Second * 2000
+const backendTimeout = time.Second * 20
 
 var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 
@@ -149,11 +149,6 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text str
 		msg.alreadyWritten = true
 	}
 	return msg
-}
-
-// NewOutgoingMsg creates a new outgoing message from the given params
-func (b *backend) NewOutgoingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
-	return newMsg(MsgOutgoing, channel, urn, text, nil)
 }
 
 // PopNextOutgoingMsg pops the next message that needs to be sent

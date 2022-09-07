@@ -323,7 +323,7 @@ type DBMsgStatus struct {
 	ExternalID_  string                 `json:"external_id,omitempty"    db:"external_id"`
 	Status_      courier.MsgStatusValue `json:"status"                   db:"status"`
 	ModifiedOn_  time.Time              `json:"modified_on"              db:"modified_on"`
-	LogUUID      courier.ChannelLogUUID `json:"log_uuid"              db:"log_uuid"`
+	LogUUID      courier.ChannelLogUUID `json:"log_uuid"                 db:"log_uuid"`
 }
 
 func (s *DBMsgStatus) EventID() int64 { return int64(s.ID_) }

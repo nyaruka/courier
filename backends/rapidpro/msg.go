@@ -118,11 +118,6 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 	now := time.Now()
 	dbChannel := channel.(*DBChannel)
 
-	var logUUIDs []string
-	if clog != nil {
-		logUUIDs = []string{string(clog.UUID())}
-	}
-
 	return &DBMsg{
 		OrgID_:        dbChannel.OrgID(),
 		UUID_:         courier.NewMsgUUID(),
@@ -142,7 +137,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 		CreatedOn_:   now,
 		ModifiedOn_:  now,
 		QueuedOn_:    now,
-		LogUUIDs:     logUUIDs,
+		LogUUIDs:     []string{string(clog.UUID())},
 
 		channel:        dbChannel,
 		workerToken:    "",

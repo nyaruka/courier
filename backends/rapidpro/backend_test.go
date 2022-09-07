@@ -810,9 +810,10 @@ func (ts *BackendTestSuite) TestExternalIDDupes() {
 	defer r.Close()
 
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel)
 	urn, _ := urns.NewTelURNForCountry("12065551215", knChannel.Country())
 
-	msg := newMsg(MsgIncoming, knChannel, urn, "ping", nil)
+	msg := newMsg(MsgIncoming, knChannel, urn, "ping", clog)
 
 	var checkedMsg = ts.b.CheckExternalIDSeen(msg)
 	m := checkedMsg.(*DBMsg)
