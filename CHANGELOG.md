@@ -1,3 +1,7 @@
+v7.5.23
+----------
+ * Support channels receiving embedded attachments and use with thinq handler
+
 v7.5.22
 ----------
  * Save channel logs with UUID
