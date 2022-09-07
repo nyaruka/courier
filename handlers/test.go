@@ -194,6 +194,8 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 	for _, tc := range testCases {
 		mockRRCount := 0
 
+		mb.Reset()
+
 		t.Run(tc.Label, func(t *testing.T) {
 			require := require.New(t)
 
@@ -301,9 +303,9 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if tc.ExpectedStopEvent {
-				evt := mb.LastWrittenChannelEvent()
-				require.NotNil(evt)
-				require.Equal(courier.StopContact, evt.EventType())
+				require.Len(mb.WrittenChannelEvents(), 1)
+				event := mb.WrittenChannelEvents()[0]
+				require.Equal(courier.StopContact, event.EventType())
 			}
 
 			if tc.ExpectedContactURNs != nil {
@@ -350,16 +352,11 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 
 			testHandlerRequest(t, s, tc.URL, tc.Headers, tc.Data, tc.MultipartForm, tc.ExpectedRespStatus, &tc.ExpectedRespBody, tc.PrepRequest)
 
-			msg := mb.LastWrittenMsg()
-			status := mb.LastWrittenMsgStatus()
-			event := mb.LastWrittenChannelEvent()
-			contactName := mb.GetLastContactName()
-
 			if tc.ExpectedMsgText != nil || tc.ExpectedAttachments != nil {
-				require.NotNil(msg, "expected a msg to be written")
+				require.Len(mb.WrittenMsgs(), 1, "expected a msg to be written")
+				msg := mb.WrittenMsgs()[0]
 
 				if tc.ExpectedMsgText != nil {
-					assert.Equal(t, mb.LenQueuedMsgs(), 1)
 					assert.Equal(t, *tc.ExpectedMsgText, msg.Text())
 				}
 				if len(tc.ExpectedAttachments) > 0 {
@@ -374,11 +371,13 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 				assert.Equal(t, tc.ExpectedURN, msg.URN())
 				assert.Equal(t, tc.ExpectedURNAuth, msg.URNAuth())
 			} else {
-				assert.Nil(t, msg, "unexpected msg written")
+				assert.Empty(t, mb.WrittenMsgs(), "unexpected msg written")
 			}
 
 			if tc.ExpectedMsgStatus != "" {
-				require.NotNil(status, "expected a msg status to be written")
+				// TODO fix duplicate statuses
+				require.Greater(len(mb.WrittenMsgStatuses()), 0, "expected a msg status to be written")
+				status := mb.WrittenMsgStatuses()[len(mb.WrittenMsgStatuses())-1]
 
 				assert.Equal(t, tc.ExpectedMsgStatus, status.Status())
 
@@ -389,11 +388,12 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 					assert.Equal(t, tc.ExpectedMsgID, int64(status.ID()))
 				}
 			} else {
-				assert.Nil(t, status, "unexpected msg status written")
+				assert.Empty(t, mb.WrittenMsgStatuses(), "unexpected msg status written")
 			}
 
 			if tc.ExpectedEvent != "" {
-				require.NotNil(event, "expected a channel event to be written")
+				require.Len(mb.WrittenChannelEvents(), 1, "expected a channel event to be written")
+				event := mb.WrittenChannelEvents()[0]
 
 				assert.Equal(t, tc.ExpectedEvent, event.EventType())
 				assert.Equal(t, tc.ExpectedEventExtra, event.Extra())
@@ -403,16 +403,16 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 					assert.Equal(t, tc.ExpectedDate, event.OccurredOn())
 				}
 			} else {
-				assert.Nil(t, event, "unexpected channel event written")
+				assert.Empty(t, mb.WrittenChannelEvents(), "unexpected channel event written")
 			}
 
 			if tc.ExpectedContactName != nil {
-				require.Equal(*tc.ExpectedContactName, contactName)
+				require.Equal(*tc.ExpectedContactName, mb.LastContactName())
 			}
 
 			// if we're expecting a message, status or event, check we have a log for it
 			if tc.ExpectedMsgText != nil || tc.ExpectedMsgStatus != "" || tc.ExpectedEvent != "" {
-				assert.Greater(t, len(mb.ChannelLogs()), 0, "expected at least one channel log")
+				assert.Greater(t, len(mb.WrittenChannelLogs()), 0, "expected at least one channel log")
 			}
 		})
 	}

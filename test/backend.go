@@ -23,6 +23,7 @@ type MockBackend struct {
 	channels          map[courier.ChannelUUID]courier.Channel
 	channelsByAddress map[courier.ChannelAddress]courier.Channel
 	contacts          map[urns.URN]courier.Contact
+	outgoingMsgs      []courier.Msg
 	media             map[string]courier.Media // url -> Media
 	errorOnQueue      bool
 
@@ -33,7 +34,6 @@ type MockBackend struct {
 	writtenMsgStatuses   []courier.MsgStatus
 	writtenChannelEvents []courier.ChannelEvent
 	writtenChannelLogs   []*courier.ChannelLog
-	poppedOutgoingMsgs   []courier.Msg
 
 	lastMsgID       courier.MsgID
 	lastContactName string
@@ -75,35 +75,13 @@ func NewMockBackend() *MockBackend {
 	}
 }
 
-func (mb *MockBackend) ChannelLogs() []*courier.ChannelLog { return mb.writtenChannelLogs }
-func (mb *MockBackend) MsgStatuses() []courier.MsgStatus   { return mb.writtenMsgStatuses }
+func (mb *MockBackend) WrittenMsgs() []courier.Msg                   { return mb.writtenMsgs }
+func (mb *MockBackend) WrittenMsgStatuses() []courier.MsgStatus      { return mb.writtenMsgStatuses }
+func (mb *MockBackend) WrittenChannelEvents() []courier.ChannelEvent { return mb.writtenChannelEvents }
+func (mb *MockBackend) WrittenChannelLogs() []*courier.ChannelLog    { return mb.writtenChannelLogs }
 
-// LastWrittenMsg returns the last message queued to the server
-func (mb *MockBackend) LastWrittenMsg() courier.Msg {
-	if len(mb.writtenMsgs) == 0 {
-		return nil
-	}
-	return mb.writtenMsgs[len(mb.writtenMsgs)-1]
-}
-
-// LastWrittenChannelEvent returns the last event written to the server
-func (mb *MockBackend) LastWrittenChannelEvent() courier.ChannelEvent {
-	if len(mb.writtenChannelEvents) == 0 {
-		return nil
-	}
-	return mb.writtenChannelEvents[len(mb.writtenChannelEvents)-1]
-}
-
-// LastWrittenMsgStatus returns the last status written to the server
-func (mb *MockBackend) LastWrittenMsgStatus() courier.MsgStatus {
-	if len(mb.writtenMsgStatuses) == 0 {
-		return nil
-	}
-	return mb.writtenMsgStatuses[len(mb.writtenMsgStatuses)-1]
-}
-
-// GetLastContactName returns the contact name set on the last msg or channel event written
-func (mb *MockBackend) GetLastContactName() string {
+// LastContactName returns the contact name set on the last msg or channel event written
+func (mb *MockBackend) LastContactName() string {
 	return mb.lastContactName
 }
 
@@ -132,7 +110,7 @@ func (mb *MockBackend) PushOutgoingMsg(msg courier.Msg) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	mb.poppedOutgoingMsgs = append(mb.poppedOutgoingMsgs, msg)
+	mb.outgoingMsgs = append(mb.outgoingMsgs, msg)
 }
 
 // PopNextOutgoingMsg returns the next message that should be sent, or nil if there are none to send
@@ -140,9 +118,9 @@ func (mb *MockBackend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, err
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	if len(mb.poppedOutgoingMsgs) > 0 {
-		msg, rest := mb.poppedOutgoingMsgs[0], mb.poppedOutgoingMsgs[1:]
-		mb.poppedOutgoingMsgs = rest
+	if len(mb.outgoingMsgs) > 0 {
+		msg, rest := mb.outgoingMsgs[0], mb.outgoingMsgs[1:]
+		mb.outgoingMsgs = rest
 		return msg, nil
 	}
 
@@ -330,11 +308,6 @@ func (mb *MockBackend) Reset() {
 	mb.writtenMsgStatuses = nil
 	mb.writtenChannelEvents = nil
 	mb.writtenChannelLogs = nil
-}
-
-// LenQueuedMsgs Get the length of queued msgs
-func (mb *MockBackend) LenQueuedMsgs() int {
-	return len(mb.writtenMsgs)
 }
 
 // CheckExternalIDSeen checks if external ID has been seen in a period
