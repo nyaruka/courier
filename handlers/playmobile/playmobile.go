@@ -136,7 +136,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		if pmMsg.Content.Text == "" {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("no text"))
 		}
-		msg := h.Backend().NewIncomingMsg(c, urn, pmMsg.Content.Text).WithExternalID(pmMsg.ID)
+		msg := h.Backend().NewIncomingMsg(c, urn, pmMsg.Content.Text, clog).WithExternalID(pmMsg.ID)
 		msgs = append(msgs, msg)
 	}
 

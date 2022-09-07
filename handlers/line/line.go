@@ -159,7 +159,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
-		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(lineEvent.ReplyToken).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(lineEvent.ReplyToken).WithReceivedOn(date)
 
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)

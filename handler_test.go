@@ -59,7 +59,7 @@ func (h *dummyHandler) receiveMsg(ctx context.Context, channel courier.Channel, 
 		return nil, errors.New("missing from or text")
 	}
 
-	msg := h.backend.NewIncomingMsg(channel, urns.URN("tel:"+from), text)
+	msg := h.backend.NewIncomingMsg(channel, urns.URN("tel:"+from), text, clog)
 	w.WriteHeader(200)
 	w.Write([]byte("ok"))
 	h.backend.WriteMsg(ctx, msg, clog)

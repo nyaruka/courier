@@ -73,12 +73,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	var msg courier.Msg
 
 	if form.Type == "sms" {
-		msg = h.Backend().NewIncomingMsg(channel, urn, form.Message)
+		msg = h.Backend().NewIncomingMsg(channel, urn, form.Message, clog)
 	} else if form.Type == "mms" {
 		if strings.HasPrefix(form.Message, "http://") || strings.HasPrefix(form.Message, "https://") {
-			msg = h.Backend().NewIncomingMsg(channel, urn, "").WithAttachment(form.Message)
+			msg = h.Backend().NewIncomingMsg(channel, urn, "", clog).WithAttachment(form.Message)
 		} else {
-			msg = h.Backend().NewIncomingMsg(channel, urn, "").WithAttachment("data:" + form.Message)
+			msg = h.Backend().NewIncomingMsg(channel, urn, "", clog).WithAttachment("data:" + form.Message)
 		}
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown message type: %s", form.Type))

@@ -66,7 +66,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
-	msg := h.Backend().NewIncomingMsg(c, urn, payload.MessageText).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(c, urn, payload.MessageText, clog).WithReceivedOn(date)
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 

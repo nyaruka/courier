@@ -77,7 +77,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Text).WithExternalID(payload.ReferenceID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Text, clog).WithExternalID(payload.ReferenceID)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)

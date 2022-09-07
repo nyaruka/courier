@@ -120,7 +120,7 @@ func (mb *MockBackend) DeleteMsgWithExternalID(ctx context.Context, channel cour
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
+func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, clog *courier.ChannelLog) courier.Msg {
 	return &mockMsg{channel: channel, urn: urn, text: text}
 }
 
@@ -240,7 +240,7 @@ func (mb *MockBackend) WriteMsgStatus(ctx context.Context, status courier.MsgSta
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
-func (mb *MockBackend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN) courier.ChannelEvent {
+func (mb *MockBackend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) courier.ChannelEvent {
 	return &mockChannelEvent{
 		channel:   channel,
 		eventType: eventType,

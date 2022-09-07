@@ -81,7 +81,8 @@ CREATE TABLE msgs_msg (
     org_id integer NOT NULL references orgs_org(id) on delete cascade,
     metadata text,
     topup_id integer,
-    delete_from_counts boolean
+    delete_from_counts boolean,
+    log_uuids uuid[]
 );
 
 DROP TABLE IF EXISTS channels_channellog CASCADE;
@@ -108,7 +109,8 @@ CREATE TABLE channels_channelevent (
     channel_id integer NOT NULL references channels_channel(id) on delete cascade,
     contact_id integer NOT NULL references contacts_contact(id) on delete cascade,
     contact_urn_id integer NOT NULL references contacts_contacturn(id) on delete cascade,
-    org_id integer NOT NULL references orgs_org(id) on delete cascade
+    org_id integer NOT NULL references orgs_org(id) on delete cascade,
+    log_uuids uuid[]
 );
 
 DROP TABLE IF EXISTS flows_flowsession CASCADE;

@@ -103,7 +103,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
-		msg := h.Backend().NewIncomingMsg(c, urn, glMsg.Message).WithExternalID(glMsg.MessageID).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(c, urn, glMsg.Message, clog).WithExternalID(glMsg.MessageID).WithReceivedOn(date)
 		msgs = append(msgs, msg)
 	}
 

@@ -131,12 +131,12 @@ func (b *backend) DeleteMsgWithExternalID(ctx context.Context, channel courier.C
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
+func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, clog *courier.ChannelLog) courier.Msg {
 	// remove any control characters
 	text = utils.CleanString(text)
 
 	// create our msg
-	msg := newMsg(MsgIncoming, channel, urn, text)
+	msg := newMsg(MsgIncoming, channel, urn, text, clog)
 
 	// set received on to now
 	msg.WithReceivedOn(time.Now().UTC())
@@ -153,7 +153,7 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text str
 
 // NewOutgoingMsg creates a new outgoing message from the given params
 func (b *backend) NewOutgoingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
-	return newMsg(MsgOutgoing, channel, urn, text)
+	return newMsg(MsgOutgoing, channel, urn, text, nil)
 }
 
 // PopNextOutgoingMsg pops the next message that needs to be sent
@@ -367,8 +367,8 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.MsgStatus
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
-func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN) courier.ChannelEvent {
-	return newChannelEvent(channel, eventType, urn)
+func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) courier.ChannelEvent {
+	return newChannelEvent(channel, eventType, urn, clog)
 }
 
 // WriteChannelEvent writes the passed in channel even returning any error

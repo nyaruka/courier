@@ -78,7 +78,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// this is a start command, trigger a new conversation
 	if text == "/start" {
-		event := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn).WithContactName(name).WithOccurredOn(date)
+		event := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn, clog).WithContactName(name).WithOccurredOn(date)
 		err = h.Backend().WriteChannelEvent(ctx, event, clog)
 		if err != nil {
 			return nil, err
@@ -131,7 +131,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(fmt.Sprintf("%d", payload.Message.MessageID)).WithContactName(name)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(fmt.Sprintf("%d", payload.Message.MessageID)).WithContactName(name)
 
 	if mediaURL != "" {
 		msg.WithAttachment(mediaURL)
@@ -230,7 +230,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendMessage", form, msgKeyBoard, clog)
 		if botBlocked {
 			status.SetStatus(courier.MsgFailed)
-			channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
+			channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN(), clog)
 			err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 			return status, err
 		}
@@ -256,7 +256,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, attachmentKeyBoard, clog)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
-				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
+				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN(), clog)
 				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 				return status, err
 			}
@@ -272,7 +272,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendVideo", form, attachmentKeyBoard, clog)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
-				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
+				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN(), clog)
 				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 				return status, err
 			}
@@ -288,7 +288,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendAudio", form, attachmentKeyBoard, clog)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
-				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
+				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN(), clog)
 				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 				return status, err
 			}
@@ -304,7 +304,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendDocument", form, attachmentKeyBoard, clog)
 			if botBlocked {
 				status.SetStatus(courier.MsgFailed)
-				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
+				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN(), clog)
 				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 				return status, err
 			}

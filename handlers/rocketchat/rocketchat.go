@@ -80,7 +80,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Text).WithContactName(payload.User.FullName)
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Text, clog).WithContactName(payload.User.FullName)
 	for _, attachment := range payload.Attachments {
 		msg.WithAttachment(attachment.URL)
 	}
