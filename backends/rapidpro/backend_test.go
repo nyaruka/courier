@@ -2,6 +2,7 @@ package rapidpro
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/storage"
@@ -1068,6 +1070,18 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 		ts.True(strings.HasPrefix(m.Attachments()[0], "image/png:"))
 		ts.True(strings.HasSuffix(m.Attachments()[0], ".png"))
 	}
+
+	// try embedded attachment
+	msg = ts.b.NewIncomingMsg(knChannel, urn, "embedded attachment").(*DBMsg)
+	msg.WithAttachment(fmt.Sprintf("data:%s", base64.StdEncoding.EncodeToString(test.ReadFile("../../test/testdata/test.jpg"))))
+
+	err = ts.b.WriteMsg(ctx, msg, clog)
+	ts.NoError(err)
+
+	ts.Equal(1, len(msg.Attachments()))
+	ts.True(strings.HasPrefix(msg.Attachments()[0], "image/jpeg:"))
+	ts.True(strings.HasSuffix(msg.Attachments()[0], ".jpg"))
+
 }
 
 func (ts *BackendTestSuite) TestWriteMsg() {

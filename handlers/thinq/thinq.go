@@ -43,6 +43,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
+// see https://apidocs.thinq.com/#829c8863-8a47-4273-80fb-d962aa64c901
 // from: Source DID
 // to: Destination DID
 // type: sms|mms
@@ -70,10 +71,15 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	var msg courier.Msg
+
 	if form.Type == "sms" {
 		msg = h.Backend().NewIncomingMsg(channel, urn, form.Message)
 	} else if form.Type == "mms" {
-		msg = h.Backend().NewIncomingMsg(channel, urn, "").WithAttachment(form.Message)
+		if strings.HasPrefix(form.Message, "http://") || strings.HasPrefix(form.Message, "https://") {
+			msg = h.Backend().NewIncomingMsg(channel, urn, "").WithAttachment(form.Message)
+		} else {
+			msg = h.Backend().NewIncomingMsg(channel, urn, "").WithAttachment("data:" + form.Message)
+		}
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown message type: %s", form.Type))
 	}
