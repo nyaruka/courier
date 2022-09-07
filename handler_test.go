@@ -103,7 +103,7 @@ func TestHandling(t *testing.T) {
 	assert.Equal(courier.MsgErrored, mb.MsgStatuses()[0].Status())
 	assert.Equal(1, len(mb.ChannelLogs()))
 
-	mb.ClearMsgStatuses()
+	mb.Reset()
 
 	// change our channel to our dummy channel
 	msg = test.NewMockMsg(courier.NewMsgID(102), courier.NilMsgUUID, dmChannel, "tel:+250788383383", "test message 2")
@@ -117,7 +117,7 @@ func TestHandling(t *testing.T) {
 	assert.Equal(msg.ID(), mb.MsgStatuses()[0].ID())
 	assert.Equal(courier.MsgSent, mb.MsgStatuses()[0].Status())
 
-	mb.ClearMsgStatuses()
+	mb.Reset()
 
 	// send the message again, should be skipped but again marked as wired
 	mb.PushOutgoingMsg(msg)

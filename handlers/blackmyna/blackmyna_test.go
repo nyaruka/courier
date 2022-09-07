@@ -62,6 +62,7 @@ var testCases = []ChannelHandleTestCase{
 		URL:                statusURL + "?id=bmID&status=2",
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"F"`,
+		ExpectedMsgStatus:  courier.MsgFailed,
 	},
 }
 

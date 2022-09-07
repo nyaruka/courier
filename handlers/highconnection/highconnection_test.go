@@ -72,6 +72,7 @@ var testCases = []ChannelHandleTestCase{
 		URL:                statusURL + "?ret_id=12345&status=6",
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"D"`,
+		ExpectedMsgStatus:  courier.MsgDelivered,
 	},
 }
 

@@ -301,8 +301,8 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if tc.ExpectedStopEvent {
-				evt, err := mb.GetLastChannelEvent()
-				require.NoError(err)
+				evt := mb.LastWrittenChannelEvent()
+				require.NotNil(evt)
 				require.Equal(courier.StopContact, evt.EventType())
 			}
 
@@ -350,75 +350,64 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 
 			testHandlerRequest(t, s, tc.URL, tc.Headers, tc.Data, tc.MultipartForm, tc.ExpectedRespStatus, &tc.ExpectedRespBody, tc.PrepRequest)
 
-			// pop our message off and test against it
+			msg := mb.LastWrittenMsg()
+			status := mb.LastWrittenMsgStatus()
+			event := mb.LastWrittenChannelEvent()
 			contactName := mb.GetLastContactName()
-			msg, _ := mb.GetLastQueueMsg()
-			event, _ := mb.GetLastChannelEvent()
-			status, _ := mb.GetLastMsgStatus()
 
-			if tc.ExpectedRespStatus == 200 {
-				if tc.ExpectedContactName != nil {
-					require.Equal(*tc.ExpectedContactName, contactName)
-				}
+			if tc.ExpectedMsgText != nil || tc.ExpectedAttachments != nil {
+				require.NotNil(msg, "expected a msg to be written")
+
 				if tc.ExpectedMsgText != nil {
-					require.NotNil(msg)
-					require.Equal(mb.LenQueuedMsgs(), 1)
-					require.Equal(*tc.ExpectedMsgText, msg.Text())
-				}
-				if tc.ExpectedEvent != "" {
-					assert.Equal(t, tc.ExpectedEvent, event.EventType())
-				}
-				if tc.ExpectedEventExtra != nil {
-					require.Equal(tc.ExpectedEventExtra, event.Extra())
-				}
-				if tc.ExpectedURN != "" {
-					if msg != nil {
-						assert.Equal(t, tc.ExpectedURN, msg.URN())
-					} else if event != nil {
-						assert.Equal(t, tc.ExpectedURN, event.URN())
-					} else {
-						assert.Equal(t, tc.ExpectedURN, "")
-					}
-				}
-				if tc.ExpectedURNAuth != "" {
-					if msg != nil {
-						assert.Equal(t, tc.ExpectedURNAuth, msg.URNAuth())
-					} else {
-						assert.Equal(t, tc.ExpectedURNAuth, "")
-					}
-				}
-				if tc.ExpectedExternalID != "" {
-					if msg != nil {
-						assert.Equal(t, tc.ExpectedExternalID, msg.ExternalID())
-					} else if status != nil {
-						assert.Equal(t, tc.ExpectedExternalID, status.ExternalID())
-					} else {
-						assert.Equal(t, tc.ExpectedExternalID, "")
-					}
-				}
-				if tc.ExpectedMsgStatus != "" {
-					require.NotNil(status)
-					require.Equal(tc.ExpectedMsgStatus, status.Status())
-				}
-				if tc.ExpectedMsgID != 0 {
-					if status != nil {
-						require.Equal(tc.ExpectedMsgID, int64(status.ID()))
-					} else {
-						require.Equal(tc.ExpectedMsgID, -1)
-					}
+					assert.Equal(t, mb.LenQueuedMsgs(), 1)
+					assert.Equal(t, *tc.ExpectedMsgText, msg.Text())
 				}
 				if len(tc.ExpectedAttachments) > 0 {
-					require.Equal(tc.ExpectedAttachments, msg.Attachments())
+					assert.Equal(t, tc.ExpectedAttachments, msg.Attachments())
 				}
 				if !tc.ExpectedDate.IsZero() {
-					if msg != nil {
-						require.Equal((tc.ExpectedDate).Local(), (*msg.ReceivedOn()).Local())
-					} else if event != nil {
-						require.Equal(tc.ExpectedDate, event.OccurredOn())
-					} else {
-						require.Equal(tc.ExpectedDate, nil)
-					}
+					assert.Equal(t, tc.ExpectedDate.Local(), msg.ReceivedOn().Local())
 				}
+				if tc.ExpectedExternalID != "" {
+					assert.Equal(t, tc.ExpectedExternalID, msg.ExternalID())
+				}
+				assert.Equal(t, tc.ExpectedURN, msg.URN())
+				assert.Equal(t, tc.ExpectedURNAuth, msg.URNAuth())
+			} else {
+				assert.Nil(t, msg, "unexpected msg written")
+			}
+
+			if tc.ExpectedMsgStatus != "" {
+				require.NotNil(status, "expected a msg status to be written")
+
+				assert.Equal(t, tc.ExpectedMsgStatus, status.Status())
+
+				if tc.ExpectedExternalID != "" {
+					assert.Equal(t, tc.ExpectedExternalID, status.ExternalID())
+				}
+				if tc.ExpectedMsgID != 0 {
+					assert.Equal(t, tc.ExpectedMsgID, int64(status.ID()))
+				}
+			} else {
+				assert.Nil(t, status, "unexpected msg status written")
+			}
+
+			if tc.ExpectedEvent != "" {
+				require.NotNil(event, "expected a channel event to be written")
+
+				assert.Equal(t, tc.ExpectedEvent, event.EventType())
+				assert.Equal(t, tc.ExpectedEventExtra, event.Extra())
+				assert.Equal(t, tc.ExpectedURN, event.URN())
+
+				if !tc.ExpectedDate.IsZero() {
+					assert.Equal(t, tc.ExpectedDate, event.OccurredOn())
+				}
+			} else {
+				assert.Nil(t, event, "unexpected channel event written")
+			}
+
+			if tc.ExpectedContactName != nil {
+				require.Equal(*tc.ExpectedContactName, contactName)
 			}
 
 			// if we're expecting a message, status or event, check we have a log for it

@@ -90,6 +90,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:               "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Success",
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"D"`,
+		ExpectedMsgStatus:  courier.MsgDelivered,
 	},
 	{
 		Label:              "Status Expired",
@@ -97,6 +98,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:               "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Expired",
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"F"`,
+		ExpectedMsgStatus:  courier.MsgFailed,
 	},
 }
 

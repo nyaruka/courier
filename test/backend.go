@@ -6,12 +6,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gomodule/redigo/redis"
+	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
-
-	"github.com/gomodule/redigo/redis"
-	_ "github.com/lib/pq" // postgres driver
 	"github.com/pkg/errors"
 )
 
@@ -29,14 +28,14 @@ type MockBackend struct {
 
 	mutex     sync.RWMutex
 	redisPool *redis.Pool
-	lastMsgID courier.MsgID
 
-	queueMsgs     []courier.Msg
-	outgoingMsgs  []courier.Msg
-	msgStatuses   []courier.MsgStatus
-	channelEvents []courier.ChannelEvent
-	channelLogs   []*courier.ChannelLog
+	writtenMsgs          []courier.Msg
+	writtenMsgStatuses   []courier.MsgStatus
+	writtenChannelEvents []courier.ChannelEvent
+	writtenChannelLogs   []*courier.ChannelLog
+	poppedOutgoingMsgs   []courier.Msg
 
+	lastMsgID       courier.MsgID
 	lastContactName string
 	sentMsgs        map[courier.MsgID]bool
 	seenExternalIDs []string
@@ -76,32 +75,31 @@ func NewMockBackend() *MockBackend {
 	}
 }
 
-func (mb *MockBackend) ChannelLogs() []*courier.ChannelLog { return mb.channelLogs }
-func (mb *MockBackend) MsgStatuses() []courier.MsgStatus   { return mb.msgStatuses }
-func (mb *MockBackend) ClearMsgStatuses()                  { mb.msgStatuses = nil }
+func (mb *MockBackend) ChannelLogs() []*courier.ChannelLog { return mb.writtenChannelLogs }
+func (mb *MockBackend) MsgStatuses() []courier.MsgStatus   { return mb.writtenMsgStatuses }
 
-// GetLastQueueMsg returns the last message queued to the server
-func (mb *MockBackend) GetLastQueueMsg() (courier.Msg, error) {
-	if len(mb.queueMsgs) == 0 {
-		return nil, courier.ErrMsgNotFound
+// LastWrittenMsg returns the last message queued to the server
+func (mb *MockBackend) LastWrittenMsg() courier.Msg {
+	if len(mb.writtenMsgs) == 0 {
+		return nil
 	}
-	return mb.queueMsgs[len(mb.queueMsgs)-1], nil
+	return mb.writtenMsgs[len(mb.writtenMsgs)-1]
 }
 
-// GetLastChannelEvent returns the last event written to the server
-func (mb *MockBackend) GetLastChannelEvent() (courier.ChannelEvent, error) {
-	if len(mb.channelEvents) == 0 {
-		return nil, errors.New("no channel events")
+// LastWrittenChannelEvent returns the last event written to the server
+func (mb *MockBackend) LastWrittenChannelEvent() courier.ChannelEvent {
+	if len(mb.writtenChannelEvents) == 0 {
+		return nil
 	}
-	return mb.channelEvents[len(mb.channelEvents)-1], nil
+	return mb.writtenChannelEvents[len(mb.writtenChannelEvents)-1]
 }
 
-// GetLastMsgStatus returns the last status written to the server
-func (mb *MockBackend) GetLastMsgStatus() (courier.MsgStatus, error) {
-	if len(mb.msgStatuses) == 0 {
-		return nil, errors.New("no msg statuses")
+// LastWrittenMsgStatus returns the last status written to the server
+func (mb *MockBackend) LastWrittenMsgStatus() courier.MsgStatus {
+	if len(mb.writtenMsgStatuses) == 0 {
+		return nil
 	}
-	return mb.msgStatuses[len(mb.msgStatuses)-1], nil
+	return mb.writtenMsgStatuses[len(mb.writtenMsgStatuses)-1]
 }
 
 // GetLastContactName returns the contact name set on the last msg or channel event written
@@ -134,7 +132,7 @@ func (mb *MockBackend) PushOutgoingMsg(msg courier.Msg) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	mb.outgoingMsgs = append(mb.outgoingMsgs, msg)
+	mb.poppedOutgoingMsgs = append(mb.poppedOutgoingMsgs, msg)
 }
 
 // PopNextOutgoingMsg returns the next message that should be sent, or nil if there are none to send
@@ -142,9 +140,9 @@ func (mb *MockBackend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, err
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	if len(mb.outgoingMsgs) > 0 {
-		msg, rest := mb.outgoingMsgs[0], mb.outgoingMsgs[1:]
-		mb.outgoingMsgs = rest
+	if len(mb.poppedOutgoingMsgs) > 0 {
+		msg, rest := mb.poppedOutgoingMsgs[0], mb.poppedOutgoingMsgs[1:]
+		mb.poppedOutgoingMsgs = rest
 		return msg, nil
 	}
 
@@ -180,7 +178,7 @@ func (mb *MockBackend) WriteChannelLog(ctx context.Context, clog *courier.Channe
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	mb.channelLogs = append(mb.channelLogs, clog)
+	mb.writtenChannelLogs = append(mb.writtenChannelLogs, clog)
 	return nil
 }
 
@@ -205,7 +203,7 @@ func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.Msg, clog *courie
 		return errors.New("unable to queue message")
 	}
 
-	mb.queueMsgs = append(mb.queueMsgs, m)
+	mb.writtenMsgs = append(mb.writtenMsgs, m)
 	mb.lastContactName = m.(*mockMsg).contactName
 	return nil
 }
@@ -235,7 +233,7 @@ func (mb *MockBackend) WriteMsgStatus(ctx context.Context, status courier.MsgSta
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	mb.msgStatuses = append(mb.msgStatuses, status)
+	mb.writtenMsgStatuses = append(mb.writtenMsgStatuses, status)
 	return nil
 }
 
@@ -253,7 +251,7 @@ func (mb *MockBackend) WriteChannelEvent(ctx context.Context, event courier.Chan
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	mb.channelEvents = append(mb.channelEvents, event)
+	mb.writtenChannelEvents = append(mb.writtenChannelEvents, event)
 	mb.lastContactName = event.(*mockChannelEvent).contactName
 	return nil
 }
@@ -295,7 +293,7 @@ func (mb *MockBackend) AddURNtoContact(context context.Context, channel courier.
 
 // RemoveURNFromcontact removes a URN from the passed in contact
 func (mb *MockBackend) RemoveURNfromContact(context context.Context, channel courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
-	contact, found := mb.contacts[urn]
+	_, found := mb.contacts[urn]
 	if found {
 		delete(mb.contacts, urn)
 	}
@@ -326,14 +324,17 @@ func (mb *MockBackend) Cleanup() error { return nil }
 // Reset clears our queued messages, seen external IDs, and channel logs
 func (mb *MockBackend) Reset() {
 	mb.lastMsgID = courier.NilMsgID
-	mb.queueMsgs = nil
 	mb.seenExternalIDs = nil
-	mb.channelLogs = nil
+
+	mb.writtenMsgs = nil
+	mb.writtenMsgStatuses = nil
+	mb.writtenChannelEvents = nil
+	mb.writtenChannelLogs = nil
 }
 
 // LenQueuedMsgs Get the length of queued msgs
 func (mb *MockBackend) LenQueuedMsgs() int {
-	return len(mb.queueMsgs)
+	return len(mb.writtenMsgs)
 }
 
 // CheckExternalIDSeen checks if external ID has been seen in a period

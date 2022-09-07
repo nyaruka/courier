@@ -493,11 +493,11 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive invalid Message Type", URL: receiveURL, Data: receiveInvalidMessageType, ExpectedRespStatus: 400, ExpectedRespBody: "unknown message type",
 		PrepRequest: addValidSignature},
 	{Label: "Webhook validation", URL: receiveURL, Data: webhookCheck, ExpectedRespStatus: 200, ExpectedRespBody: "webhook valid", PrepRequest: addValidSignature},
-	{Label: "Failed Status Report", URL: receiveURL, Data: failedStatusReport, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"F"`, PrepRequest: addValidSignature},
+	{Label: "Failed Status Report", URL: receiveURL, Data: failedStatusReport, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"F"`, ExpectedMsgStatus: courier.MsgFailed, PrepRequest: addValidSignature},
 	{Label: "Delivered Status Report", URL: receiveURL, Data: deliveredStatusReport, ExpectedRespStatus: 200, ExpectedRespBody: `Ignored`, PrepRequest: addValidSignature},
-	{Label: "Subcribe", URL: receiveURL, Data: validSubscribed, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted", PrepRequest: addValidSignature},
+	{Label: "Subcribe", URL: receiveURL, Data: validSubscribed, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted", ExpectedEvent: "new_conversation", ExpectedURN: "viber:01234567890A=", PrepRequest: addValidSignature},
 	{Label: "Subcribe Invalid URN", URL: receiveURL, Data: invalidURNSubscribed, ExpectedRespStatus: 400, ExpectedRespBody: "invalid viber id", PrepRequest: addValidSignature},
-	{Label: "Unsubcribe", URL: receiveURL, Data: validUnsubscribed, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted", ExpectedEvent: courier.StopContact, PrepRequest: addValidSignature},
+	{Label: "Unsubcribe", URL: receiveURL, Data: validUnsubscribed, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted", ExpectedEvent: courier.StopContact, ExpectedURN: "viber:01234567890A=", PrepRequest: addValidSignature},
 	{Label: "Unsubcribe Invalid URN", URL: receiveURL, Data: invalidURNUnsubscribed, ExpectedRespStatus: 400, ExpectedRespBody: "invalid viber id", PrepRequest: addValidSignature},
 	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, ExpectedRespStatus: 200, ExpectedRespBody: "ignored conversation start", PrepRequest: addValidSignature},
 	{Label: "Unexpected event", URL: receiveURL, Data: unexpectedEvent, ExpectedRespStatus: 400,
@@ -522,10 +522,26 @@ var testCases = []ChannelHandleTestCase{
 }
 
 var testWelcomeMessageCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
-		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
-		PrepRequest: addValidSignature},
-	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, ExpectedRespStatus: 200, ExpectedRespBody: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0"}`, PrepRequest: addValidSignature},
+	{
+		Label:              "Receive Valid",
+		URL:                receiveURL,
+		Data:               validMsg,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Accepted",
+		ExpectedMsgText:    Sp("incoming msg"),
+		ExpectedURN:        "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		ExpectedExternalID: "4987381189870374000",
+		PrepRequest:        addValidSignature},
+	{
+		Label:              "Conversation Started",
+		URL:                receiveURL,
+		Data:               validConversationStarted,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0"}`,
+		ExpectedEvent:      "welcome_message",
+		ExpectedURN:        "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		PrepRequest:        addValidSignature,
+	},
 }
 
 func addValidSignature(r *http.Request) {

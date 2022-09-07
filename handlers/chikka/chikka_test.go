@@ -57,6 +57,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:               "message_type=outgoing&message_id=10&status=SENT",
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"S"`,
+		ExpectedMsgStatus:  courier.MsgSent,
 	},
 	{
 		Label:              "Status Failed Valid",
@@ -64,6 +65,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:               "message_type=outgoing&message_id=10&status=FAILED",
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"F"`,
+		ExpectedMsgStatus:  courier.MsgFailed,
 	},
 	{
 		Label:              "Status Invalid",

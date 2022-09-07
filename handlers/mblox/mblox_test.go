@@ -69,7 +69,7 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive Missing Params", URL: receiveURL, Data: missingParamsRecieve, ExpectedRespStatus: 400, ExpectedRespBody: "missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"},
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedRespBody: "phone number supplied is not a number"},
 
-	{Label: "Status Valid", URL: receiveURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`},
+	{Label: "Status Valid", URL: receiveURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered},
 	{Label: "Status Unknown", URL: receiveURL, Data: unknownStatus, ExpectedRespStatus: 400, ExpectedRespBody: `unknown status 'INVALID'`},
 	{Label: "Status Missing Batch ID", URL: receiveURL, Data: missingBatchID, ExpectedRespStatus: 400, ExpectedRespBody: "missing one of 'batch_id' or 'status' in request body"},
 }
