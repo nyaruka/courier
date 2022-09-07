@@ -193,13 +193,28 @@ func TestFetchAccessToken(t *testing.T) {
 	fetchTimeout = time.Millisecond
 
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
-		{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted"},
-
-		{Label: "Verify URL", URL: verifyURL, ExpectedRespStatus: 200, ExpectedRespBody: "SUCCESS",
-			PrepRequest: addValidSignature},
-
-		{Label: "Verify URL Invalid signature", URL: verifyURL, ExpectedRespStatus: 400, ExpectedRespBody: "unknown request",
-			PrepRequest: addInvalidSignature},
+		{
+			Label:              "Receive Message",
+			URL:                receiveURL,
+			Data:               validMsg,
+			ExpectedRespStatus: 200,
+			ExpectedRespBody:   "Accepted",
+			ExpectedMsgText:    Sp("Simple Message"),
+			ExpectedURN:        "jiochat:1234",
+		},
+		{
+			Label:              "Verify URL",
+			URL:                verifyURL,
+			ExpectedRespStatus: 200,
+			ExpectedRespBody:   "SUCCESS",
+			PrepRequest:        addValidSignature,
+		},
+		{
+			Label:              "Verify URL Invalid signature",
+			URL:                verifyURL,
+			ExpectedRespStatus: 400,
+			ExpectedRespBody:   "unknown request",
+			PrepRequest:        addInvalidSignature},
 	})
 
 	// wait for our fetch to be called

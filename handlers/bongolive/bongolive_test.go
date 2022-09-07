@@ -63,6 +63,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:               "msgtype=5&dlrid=12345&status=1",
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   "",
+		ExpectedMsgStatus:  courier.MsgDelivered,
 	},
 	{
 		Label:              "Invalid Msg Type",

@@ -98,12 +98,12 @@ func TestHandling(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// message should have errored because we don't have a registered handler
-	assert.Equal(1, len(mb.MsgStatuses()))
-	assert.Equal(msg.ID(), mb.MsgStatuses()[0].ID())
-	assert.Equal(courier.MsgErrored, mb.MsgStatuses()[0].Status())
-	assert.Equal(1, len(mb.ChannelLogs()))
+	assert.Equal(1, len(mb.WrittenMsgStatuses()))
+	assert.Equal(msg.ID(), mb.WrittenMsgStatuses()[0].ID())
+	assert.Equal(courier.MsgErrored, mb.WrittenMsgStatuses()[0].Status())
+	assert.Equal(1, len(mb.WrittenChannelLogs()))
 
-	mb.ClearMsgStatuses()
+	mb.Reset()
 
 	// change our channel to our dummy channel
 	msg = test.NewMockMsg(courier.NewMsgID(102), courier.NilMsgUUID, dmChannel, "tel:+250788383383", "test message 2")
@@ -113,20 +113,20 @@ func TestHandling(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// message should be marked as wired
-	assert.Equal(1, len(mb.MsgStatuses()))
-	assert.Equal(msg.ID(), mb.MsgStatuses()[0].ID())
-	assert.Equal(courier.MsgSent, mb.MsgStatuses()[0].Status())
+	assert.Equal(1, len(mb.WrittenMsgStatuses()))
+	assert.Equal(msg.ID(), mb.WrittenMsgStatuses()[0].ID())
+	assert.Equal(courier.MsgSent, mb.WrittenMsgStatuses()[0].Status())
 
-	mb.ClearMsgStatuses()
+	mb.Reset()
 
 	// send the message again, should be skipped but again marked as wired
 	mb.PushOutgoingMsg(msg)
 	time.Sleep(time.Second)
 
 	// message should be marked as wired
-	assert.Equal(1, len(mb.MsgStatuses()))
-	assert.Equal(msg.ID(), mb.MsgStatuses()[0].ID())
-	assert.Equal(courier.MsgWired, mb.MsgStatuses()[0].Status())
+	assert.Equal(1, len(mb.WrittenMsgStatuses()))
+	assert.Equal(msg.ID(), mb.WrittenMsgStatuses()[0].ID())
+	assert.Equal(courier.MsgWired, mb.WrittenMsgStatuses()[0].Status())
 
 	// try to receive a message instead
 	resp, err := http.Get("http://localhost:8080/c/dm/e4bb1578-29da-4fa5-a214-9da19dd24230/receive")

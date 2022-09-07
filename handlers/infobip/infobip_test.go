@@ -245,6 +245,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:               validStatusDelivered,
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"D"`,
+		ExpectedMsgStatus:  courier.MsgDelivered,
 	},
 	{
 		Label:              "Status rejected",
@@ -252,6 +253,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:               validStatusRejected,
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"F"`,
+		ExpectedMsgStatus:  courier.MsgFailed,
 	},
 	{
 		Label:              "Status undeliverable",
@@ -259,19 +261,23 @@ var testCases = []ChannelHandleTestCase{
 		Data:               validStatusUndeliverable,
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"F"`,
+		ExpectedMsgStatus:  courier.MsgFailed,
 	},
 	{
 		Label:              "Status pending",
 		URL:                statusURL,
 		Data:               validStatusPending,
 		ExpectedRespStatus: 200,
-		ExpectedRespBody:   `"status":"S"`},
+		ExpectedRespBody:   `"status":"S"`,
+		ExpectedMsgStatus:  courier.MsgSent,
+	},
 	{
 		Label:              "Status expired",
 		URL:                statusURL,
 		Data:               validStatusExpired,
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"S"`,
+		ExpectedMsgStatus:  courier.MsgSent,
 	},
 	{
 		Label:              "Status group name unexpected",

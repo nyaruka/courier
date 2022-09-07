@@ -91,15 +91,12 @@ var testCases = []ChannelHandleTestCase{
 	{
 		Label:              "Receive Invalid Status",
 		URL:                receiveStatusURL + "?id=58f86fab-85c5-4f7c-9b68-9c323248afc4%3A0&status=deleted",
-		ExpectedExternalID: "58f86fab-85c5-4f7c-9b68-9c323248afc4:0",
-		ExpectedMsgStatus:  "D",
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   "unknown status",
 	},
 	{
 		Label:              "Receive Blank status",
 		URL:                receiveStatusURL,
-		ExpectedExternalID: "58f86fab-85c5-4f7c-9b68-9c323248afc4:0",
 		ExpectedRespStatus: 400,
 		ExpectedRespBody:   "field 'status' required",
 	},
