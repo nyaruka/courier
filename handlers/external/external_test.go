@@ -128,6 +128,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/?id=12345",
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"F"`,
+		ExpectedMsgStatus:  courier.MsgFailed,
 	},
 	{
 		Label:              "Invalid Status",
@@ -139,13 +140,16 @@ var handleTestCases = []ChannelHandleTestCase{
 		Label:              "Sent Valid",
 		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/?id=12345",
 		ExpectedRespStatus: 200,
-		ExpectedRespBody:   `"status":"S"`},
+		ExpectedRespBody:   `"status":"S"`,
+		ExpectedMsgStatus:  courier.MsgSent,
+	},
 	{
 		Label:              "Delivered Valid",
 		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?id=12345",
-		ExpectedRespStatus: 200,
 		Data:               "nothing",
+		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"D"`,
+		ExpectedMsgStatus:  courier.MsgDelivered,
 	},
 	{
 		Label:              "Delivered Valid Post",
@@ -153,13 +157,16 @@ var handleTestCases = []ChannelHandleTestCase{
 		Data:               "id=12345",
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"D"`,
+		ExpectedMsgStatus:  courier.MsgDelivered,
 	},
 	{
 		Label:              "Stopped Event",
 		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=%2B2349067554729",
-		ExpectedRespStatus: 200,
 		Data:               "nothing",
+		ExpectedRespStatus: 200,
 		ExpectedRespBody:   "Accepted",
+		ExpectedEvent:      "stop_contact",
+		ExpectedURN:        "tel:+2349067554729",
 	},
 	{
 		Label:              "Stopped Event Post",
@@ -167,6 +174,8 @@ var handleTestCases = []ChannelHandleTestCase{
 		Data:               "from=%2B2349067554729",
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   "Accepted",
+		ExpectedEvent:      "stop_contact",
+		ExpectedURN:        "tel:+2349067554729",
 	},
 	{
 		Label:              "Stopped Event Invalid URN",

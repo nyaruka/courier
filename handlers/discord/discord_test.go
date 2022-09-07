@@ -67,6 +67,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:               `id=12345`,
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"S"`,
+		ExpectedMsgStatus:  courier.MsgSent,
 	},
 	{
 		Label:              "Message Sent Handler Garbage",

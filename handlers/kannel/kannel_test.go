@@ -42,13 +42,13 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Invalid URN", URL: receiveInvalidURN, Data: "empty", ExpectedRespStatus: 400, ExpectedRespBody: "phone number supplied is not a number"},
 	{Label: "Status No Params", URL: statusNoParams, ExpectedRespStatus: 400, ExpectedRespBody: "field 'status' required"},
 	{Label: "Status Invalid Status", URL: statusInvalidStatus, ExpectedRespStatus: 400, ExpectedRespBody: "unknown status '66', must be one of 1,2,4,8,16"},
-	{Label: "Status Valid", URL: statusWired, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"S"`},
+	{Label: "Status Valid", URL: statusWired, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"S"`, ExpectedMsgStatus: courier.MsgSent},
 }
 
 var ignoreTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
 		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729", ExpectedExternalID: "asdf-asdf", ExpectedDate: time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC)},
-	{Label: "Write Status Delivered", URL: statusDelivered, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`},
+	{Label: "Write Status Delivered", URL: statusDelivered, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered},
 	{Label: "Ignore Status Wired", URL: statusWired, ExpectedRespStatus: 200, ExpectedRespBody: `ignoring sent report`},
 	{Label: "Ignore Status Sent", URL: statusSent, ExpectedRespStatus: 200, ExpectedRespBody: `ignoring sent report`},
 }

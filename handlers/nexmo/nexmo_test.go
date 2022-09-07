@@ -13,37 +13,93 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NX", "2020", "US", nil),
 }
 
-var (
+const (
 	statusURL  = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"
 	receiveURL = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
-
-	receiveValidMessage     = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=2349067554729&text=Join&messageId=external1"
-	receiveInvalidURN       = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=MTN&text=Join&messageId=external1"
-	receiveValidMessageBody = "to=2020&msisdn=2349067554729&text=Join&messageId=external1"
-
-	statusDelivered  = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=delivered"
-	statusExpired    = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=expired"
-	statusFailed     = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=failed"
-	statusAccepted   = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=accepted"
-	statusBuffered   = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=buffered"
-	statusUnexpected = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=unexpected"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Valid Receive", URL: receiveValidMessage, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
-		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729"},
-	{Label: "Invalid URN", URL: receiveInvalidURN, ExpectedRespStatus: 400, ExpectedRespBody: "phone number supplied is not a number"},
-	{Label: "Valid Receive Post", URL: receiveURL, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted", Data: receiveValidMessageBody,
-		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729"},
-	{Label: "Receive URL check", URL: receiveURL, ExpectedRespStatus: 200, ExpectedRespBody: "no to parameter, ignored"},
-	{Label: "Status URL check", URL: statusURL, ExpectedRespStatus: 200, ExpectedRespBody: "no messageId parameter, ignored"},
-
-	{Label: "Status delivered", URL: statusDelivered, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedExternalID: "external1"},
-	{Label: "Status expired", URL: statusExpired, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"F"`, ExpectedExternalID: "external1"},
-	{Label: "Status failed", URL: statusFailed, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"F"`, ExpectedExternalID: "external1"},
-	{Label: "Status accepted", URL: statusAccepted, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"S"`, ExpectedExternalID: "external1"},
-	{Label: "Status buffered", URL: statusBuffered, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"S"`, ExpectedExternalID: "external1"},
-	{Label: "Status unexpected", URL: statusUnexpected, ExpectedRespStatus: 200, ExpectedRespBody: "ignoring unknown status report", ExpectedExternalID: "external1"},
+	{
+		Label:              "Valid Receive",
+		URL:                "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=2349067554729&text=Join&messageId=external1",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Accepted",
+		ExpectedMsgText:    Sp("Join"),
+		ExpectedURN:        "tel:+2349067554729",
+	},
+	{
+		Label:              "Invalid URN",
+		URL:                "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=MTN&text=Join&messageId=external1",
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "phone number supplied is not a number",
+	},
+	{
+		Label:              "Valid Receive Post",
+		URL:                receiveURL,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Accepted",
+		Data:               "to=2020&msisdn=2349067554729&text=Join&messageId=external1",
+		ExpectedMsgText:    Sp("Join"),
+		ExpectedURN:        "tel:+2349067554729",
+	},
+	{
+		Label:              "Receive URL check",
+		URL:                receiveURL,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "no to parameter, ignored",
+	},
+	{
+		Label:              "Status URL check",
+		URL:                statusURL,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "no messageId parameter, ignored",
+	},
+	{
+		Label:              "Status delivered",
+		URL:                "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=delivered",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   `"status":"D"`,
+		ExpectedMsgStatus:  courier.MsgDelivered,
+		ExpectedExternalID: "external1",
+	},
+	{
+		Label:              "Status expired",
+		URL:                "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=expired",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   `"status":"F"`,
+		ExpectedMsgStatus:  courier.MsgFailed,
+		ExpectedExternalID: "external1",
+	},
+	{
+		Label:              "Status failed",
+		URL:                "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=failed",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   `"status":"F"`,
+		ExpectedMsgStatus:  courier.MsgFailed,
+		ExpectedExternalID: "external1",
+	},
+	{
+		Label:              "Status accepted",
+		URL:                "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=accepted",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   `"status":"S"`,
+		ExpectedMsgStatus:  courier.MsgSent,
+		ExpectedExternalID: "external1",
+	},
+	{
+		Label:              "Status buffered",
+		URL:                "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=buffered",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   `"status":"S"`,
+		ExpectedMsgStatus:  courier.MsgSent,
+		ExpectedExternalID: "external1",
+	},
+	{
+		Label:              "Status unexpected",
+		URL:                "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=unexpected",
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "ignoring unknown status report",
+	},
 }
 
 func TestHandler(t *testing.T) {

@@ -61,23 +61,24 @@ var testCases = []ChannelHandleTestCase{
 	{
 		Label:              "Status Invalid",
 		URL:                statusURL,
-		ExpectedRespStatus: 400,
 		Data:               "id=12345&status=Borked",
+		ExpectedRespStatus: 400,
 		ExpectedRespBody:   "unknown status",
 	},
 	{
 		Label:              "Status Missing",
 		URL:                statusURL,
-		ExpectedRespStatus: 400,
 		Data:               "id=12345",
+		ExpectedRespStatus: 400,
 		ExpectedRespBody:   "field 'status' required",
 	},
 	{
 		Label:              "Status Valid",
 		URL:                statusURL,
-		ExpectedRespStatus: 200,
 		Data:               "id=12345&status=1",
+		ExpectedRespStatus: 200,
 		ExpectedRespBody:   `"status":"D"`,
+		ExpectedMsgStatus:  courier.MsgDelivered,
 	},
 }
 

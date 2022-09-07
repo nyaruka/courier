@@ -38,10 +38,6 @@ var (
 		}
 	}`
 
-	missingRequiredKeys = `{}`
-
-	notJSON = `blargh`
-
 	validSentStatus = `{
 		"id": "58b36497-fb0f-474c-9c35-20b184ac4227",
 		"correlationId": "12345",
@@ -79,20 +75,89 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Message", URL: receiveURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedRespBody: "Message Accepted",
-		ExpectedMsgText: Sp("Eu quero pizza"), ExpectedURN: "tel:+5516981562820", ExpectedExternalID: "external_id", ExpectedDate: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC)},
-	{Label: "Invalid JSON receive", URL: receiveURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse request JSON"},
-	{Label: "Missing Keys receive", URL: receiveURL, Data: missingRequiredKeys, ExpectedRespStatus: 400, ExpectedRespBody: "validation for 'ID' failed on the 'required'"},
-
-	{Label: "Sent Status Valid", URL: sentStatusURL, Data: validSentStatus, ExpectedRespStatus: 200, ExpectedRespBody: "Status Update Accepted", ExpectedMsgStatus: courier.MsgSent},
-	{Label: "Unknown Sent Status Valid", URL: sentStatusURL, Data: unknownSentStatus, ExpectedRespStatus: 400, ExpectedRespBody: "unknown sent status code", ExpectedMsgStatus: courier.MsgWired},
-	{Label: "Invalid JSON sent Status", URL: sentStatusURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse request JSON"},
-	{Label: "Missing Keys sent Status", URL: sentStatusURL, Data: missingRequiredKeys, ExpectedRespStatus: 400, ExpectedRespBody: "validation for 'CollerationID' failed on the 'required'"},
-
-	{Label: "Delivered Status Valid", URL: deliveredStatusURL, Data: validDeliveredStatus, ExpectedRespStatus: 200, ExpectedRespBody: "Status Update Accepted", ExpectedMsgStatus: courier.MsgDelivered},
-	{Label: "Unknown Delivered Status Valid", URL: deliveredStatusURL, Data: unknownDeliveredStatus, ExpectedRespStatus: 400, ExpectedRespBody: "unknown delivered status code", ExpectedMsgStatus: courier.MsgSent},
-	{Label: "Invalid JSON delivered Statu", URL: deliveredStatusURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse request JSON"},
-	{Label: "Missing Keys sent Status", URL: deliveredStatusURL, Data: missingRequiredKeys, ExpectedRespStatus: 400, ExpectedRespBody: "validation for 'CollerationID' failed on the 'required'"},
+	{
+		Label:              "Receive Message",
+		URL:                receiveURL,
+		Data:               validReceive,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Message Accepted",
+		ExpectedMsgText:    Sp("Eu quero pizza"),
+		ExpectedURN:        "tel:+5516981562820",
+		ExpectedExternalID: "external_id",
+		ExpectedDate:       time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
+	},
+	{
+		Label:              "Invalid JSON receive",
+		URL:                receiveURL,
+		Data:               `blargh`,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "unable to parse request JSON",
+	},
+	{
+		Label:              "Missing Keys receive",
+		URL:                receiveURL,
+		Data:               `{}`,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "validation for 'ID' failed on the 'required'",
+	},
+	{
+		Label:              "Sent Status Valid",
+		URL:                sentStatusURL,
+		Data:               validSentStatus,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Status Update Accepted",
+		ExpectedMsgStatus:  courier.MsgSent,
+	},
+	{
+		Label:              "Unknown Sent Status Valid",
+		URL:                sentStatusURL,
+		Data:               unknownSentStatus,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "unknown sent status code",
+	},
+	{
+		Label:              "Invalid JSON sent Status",
+		URL:                sentStatusURL,
+		Data:               `blargh`,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "unable to parse request JSON",
+	},
+	{
+		Label:              "Missing Keys sent Status",
+		URL:                sentStatusURL,
+		Data:               `{}`,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "validation for 'CollerationID' failed on the 'required'",
+	},
+	{
+		Label:              "Delivered Status Valid",
+		URL:                deliveredStatusURL,
+		Data:               validDeliveredStatus,
+		ExpectedRespStatus: 200,
+		ExpectedRespBody:   "Status Update Accepted",
+		ExpectedMsgStatus:  courier.MsgDelivered,
+	},
+	{
+		Label:              "Unknown Delivered Status Valid",
+		URL:                deliveredStatusURL,
+		Data:               unknownDeliveredStatus,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "unknown delivered status code",
+	},
+	{
+		Label:              "Invalid JSON delivered Statu",
+		URL:                deliveredStatusURL,
+		Data:               `blargh`,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "unable to parse request JSON",
+	},
+	{
+		Label:              "Missing Keys sent Status",
+		URL:                deliveredStatusURL,
+		Data:               `{}`,
+		ExpectedRespStatus: 400,
+		ExpectedRespBody:   "validation for 'CollerationID' failed on the 'required'",
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -108,25 +173,37 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		MsgText: "Simple Message ☺", MsgURN: "tel:+250788383383", MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "external1",
+	{
+		Label:               "Plain Send",
+		MsgText:             "Simple Message ☺",
+		MsgURN:              "tel:+250788383383",
+		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:    `{"id": "external1"}`,
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"username": "user1", "authenticationtoken": "token", "Accept": "application/json", "Content-Type": "application/json"},
 		ExpectedRequestBody: `{"destination":"250788383383","messageText":"Simple Message ☺\nhttps://foo.bar/image.jpg"}`,
-		SendPrep:            setSendURL},
-	{Label: "Error status 403",
-		MsgText: "Error Response", MsgURN: "tel:+250788383383",
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "external1",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Error status 403",
+		MsgText:             "Error Response",
+		MsgURN:              "tel:+250788383383",
+		MockResponseStatus:  403,
 		ExpectedMsgStatus:   "E",
-		ExpectedRequestBody: `{"destination":"250788383383","messageText":"Error Response"}`, MockResponseStatus: 403,
-		SendPrep: setSendURL},
-	{Label: "Error Sending",
-		MsgText: "Error Message", MsgURN: "tel:+250788383383",
-		ExpectedMsgStatus: "E",
-		MockResponseBody:  `Bad Gateway`, MockResponseStatus: 501,
-		SendPrep: setSendURL},
+		ExpectedRequestBody: `{"destination":"250788383383","messageText":"Error Response"}`,
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Error Sending",
+		MsgText:            "Error Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `Bad Gateway`,
+		MockResponseStatus: 501,
+		ExpectedMsgStatus:  "E",
+		SendPrep:           setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
