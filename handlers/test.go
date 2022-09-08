@@ -375,7 +375,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 			}
 
 			if tc.ExpectedMsgStatus != "" {
-				// TODO fix duplicate statuses
+				// TODO find better way to test statuses because some channels (e.g. infobip) can create multiple statuses in one call
 				require.Greater(len(mb.WrittenMsgStatuses()), 0, "expected a msg status to be written")
 				status := mb.WrittenMsgStatuses()[len(mb.WrittenMsgStatuses())-1]
 
