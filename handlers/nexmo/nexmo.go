@@ -83,7 +83,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring unknown status report")
 	}
 
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.MessageID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, form.MessageID, msgStatus, clog)
 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
@@ -111,7 +111,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text, clog)
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
@@ -138,7 +138,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		textType = "unicode"
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), text, maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{

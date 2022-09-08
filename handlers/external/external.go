@@ -7,7 +7,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -113,7 +112,7 @@ func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channe
 	urn = urn.Normalize("")
 
 	// create a stop channel event
-	channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
+	channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
 	err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 	if err != nil {
 		return nil, err
@@ -152,7 +151,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	if fromXPath != "" && textXPath != "" {
 		// we are reading from an XML body, pull out our fields
-		body, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
+		body, err := io.ReadAll(io.LimitReader(r.Body, 100000))
 		defer r.Body.Close()
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to read request body: %s", err))
@@ -215,7 +214,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	urn = urn.Normalize(channel.Country())
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
@@ -268,7 +267,7 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.ID), msgStatus)
+	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.ID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -290,7 +289,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		contentTypeHeader = contentType
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), 160)
 	for i, part := range parts {
 		// build our request

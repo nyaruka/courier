@@ -191,7 +191,7 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 		text := strings.Replace(entry.MessageCreate.MessageData.Text, "&amp;", "&", -1)
 
 		// create our message
-		msg := h.Backend().NewIncomingMsg(c, urn, text).WithExternalID(entry.ID).WithReceivedOn(date).WithContactName(user.Name)
+		msg := h.Backend().NewIncomingMsg(c, urn, text, clog).WithExternalID(entry.ID).WithReceivedOn(date).WithContactName(user.Name)
 
 		// if we have an attachment, add that as well
 		if entry.MessageCreate.MessageData.Attachment != nil {
@@ -269,7 +269,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	token := oauth1.NewToken(accessToken, accessSecret)
 	client := config.Client(ctx, token)
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	// we build these as needed since our unit tests manipulate apiURL
 	sendURL := sendDomain + "/1.1/direct_messages/events/new.json"

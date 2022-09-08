@@ -95,7 +95,7 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 
 	// build msg
 	date := time.Unix(ts, 0).UTC()
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Body).WithReceivedOn(date).WithContactName(form.Name)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Body, clog).WithReceivedOn(date).WithContactName(form.Name)
 
 	if form.MediaURL != "" {
 		msg.WithAttachment(form.MediaURL)
@@ -127,7 +127,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// msg not found? ignore this
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus, clog)
 	if status == nil {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("ignoring request, message %s not found", form.ID))
 	}
@@ -145,7 +145,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, errors.New("no account_sid or api_key config")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	sendURL := fmt.Sprintf("%s/v1/%s/messages", baseURL, accountSID)
 	var kwaResp *http.Response

@@ -547,7 +547,6 @@ var testCases = []ChannelHandleTestCase{
 		Data:               dlr,
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   "Handled",
-		ExpectedDate:       time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedMsgStatus:  courier.MsgDelivered,
 		ExpectedExternalID: "mid.1458668856218:ed81099e15d3f4f233",
 	},
@@ -696,6 +695,8 @@ func TestVerify(t *testing.T) {
 			URL:                receiveURL,
 			Data:               helloMsg,
 			ExpectedRespStatus: 200,
+			ExpectedMsgText:    Sp("Hello World"),
+			ExpectedURN:        "facebook:5678",
 		},
 		{
 			Label:              "Verify No Mode",

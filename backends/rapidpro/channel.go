@@ -169,7 +169,7 @@ func getChannelByAddress(ctx context.Context, db *sqlx.DB, channelType courier.C
 	}
 
 	// we found it in the db, cache it locally
-	cacheChannel(channel)
+	cacheChannelByAddress(channel)
 	return channel, nil
 }
 

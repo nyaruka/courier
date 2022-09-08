@@ -57,7 +57,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Message)
+	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Message, clog)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r, clog)
@@ -83,7 +83,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	tsSendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, sendURL)
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		from := strings.TrimPrefix(msg.Channel().Address(), "+")

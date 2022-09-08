@@ -181,7 +181,6 @@ var testCasesFBA = []ChannelHandleTestCase{
 		Data:               string(test.ReadFile("./testdata/fba/dlr.json")),
 		ExpectedRespStatus: 200,
 		ExpectedRespBody:   "Handled",
-		ExpectedDate:       time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedMsgStatus:  courier.MsgDelivered,
 		ExpectedExternalID: "mid.1458668856218:ed81099e15d3f4f233",
 		PrepRequest:        addValidSignature,

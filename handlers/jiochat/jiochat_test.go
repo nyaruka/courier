@@ -5,7 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -15,15 +15,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
-
 	"github.com/stretchr/testify/assert"
-
-	"github.com/nyaruka/courier"
-	. "github.com/nyaruka/courier/handlers"
 )
 
 var testChannels = []courier.Channel{
@@ -195,13 +193,28 @@ func TestFetchAccessToken(t *testing.T) {
 	fetchTimeout = time.Millisecond
 
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
-		{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted"},
-
-		{Label: "Verify URL", URL: verifyURL, ExpectedRespStatus: 200, ExpectedRespBody: "SUCCESS",
-			PrepRequest: addValidSignature},
-
-		{Label: "Verify URL Invalid signature", URL: verifyURL, ExpectedRespStatus: 400, ExpectedRespBody: "unknown request",
-			PrepRequest: addInvalidSignature},
+		{
+			Label:              "Receive Message",
+			URL:                receiveURL,
+			Data:               validMsg,
+			ExpectedRespStatus: 200,
+			ExpectedRespBody:   "Accepted",
+			ExpectedMsgText:    Sp("Simple Message"),
+			ExpectedURN:        "jiochat:1234",
+		},
+		{
+			Label:              "Verify URL",
+			URL:                verifyURL,
+			ExpectedRespStatus: 200,
+			ExpectedRespBody:   "SUCCESS",
+			PrepRequest:        addValidSignature,
+		},
+		{
+			Label:              "Verify URL Invalid signature",
+			URL:                verifyURL,
+			ExpectedRespStatus: 400,
+			ExpectedRespBody:   "unknown request",
+			PrepRequest:        addInvalidSignature},
 	})
 
 	// wait for our fetch to be called
@@ -247,8 +260,8 @@ func buildMockJCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 func newServer(backend courier.Backend) courier.Server {
 	// for benchmarks, log to null
 	logger := logrus.New()
-	logger.Out = ioutil.Discard
-	logrus.SetOutput(ioutil.Discard)
+	logger.Out = io.Discard
+	logrus.SetOutput(io.Discard)
 	config := courier.NewConfig()
 	config.DB = "postgres://courier:courier@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"

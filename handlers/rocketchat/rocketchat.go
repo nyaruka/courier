@@ -80,7 +80,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Text).WithContactName(payload.User.FullName)
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Text, clog).WithContactName(payload.User.FullName)
 	for _, attachment := range payload.Attachments {
 		msg.WithAttachment(attachment.URL)
 	}
@@ -115,7 +115,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	botUsername := msg.Channel().StringConfigForKey(configBotUsername, "")
 
 	// the status that will be written for this message
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	payload := &mtPayload{
 		UserURN:     msg.URN().Path(),

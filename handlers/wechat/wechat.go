@@ -69,7 +69,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	}
 
 	dictOrder := []string{channel.StringConfigForKey(courier.ConfigSecret, ""), form.Timestamp, form.Nonce}
-	sort.Sort(sort.StringSlice(dictOrder))
+	sort.Strings(dictOrder)
 
 	combinedParams := strings.Join(dictOrder, "")
 
@@ -187,7 +187,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// subscribe event, trigger a new conversation
 	if payload.MsgType == "event" && payload.Event == "subscribe" {
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn)
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn, clog)
 
 		err := h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
@@ -203,7 +203,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our message
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Content).WithExternalID(payload.MsgID).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Content, clog).WithExternalID(payload.MsgID).WithReceivedOn(date)
 	if payload.MsgType == "image" || payload.MsgType == "video" || payload.MsgType == "voice" {
 		mediaURL := buildMediaURL(payload.MediaID)
 		msg.WithAttachment(mediaURL)
@@ -248,7 +248,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	partSendURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "message/custom/send"))
 	partSendURL.RawQuery = form.Encode()
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		wcMsg := &mtPayload{}

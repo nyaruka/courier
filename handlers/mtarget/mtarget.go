@@ -133,7 +133,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 
 	// if this a stop command, shortcut stopping that contact
 	if keyword == "Stop" {
-		stop := h.Backend().NewChannelEvent(c, courier.StopContact, urn)
+		stop := h.Backend().NewChannelEvent(c, courier.StopContact, urn, clog)
 		err := h.Backend().WriteChannelEvent(ctx, stop, clog)
 		if err != nil {
 			return nil, err
@@ -142,7 +142,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 	}
 
 	// otherwise, create our incoming message and write that
-	msg := h.Backend().NewIncomingMsg(c, urn, text).WithReceivedOn(time.Now().UTC())
+	msg := h.Backend().NewIncomingMsg(c, urn, text, clog).WithReceivedOn(time.Now().UTC())
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
@@ -160,7 +160,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	// send our message
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		// build our request
 		params := url.Values{

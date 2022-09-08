@@ -274,7 +274,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 				}
 			}
 
-			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn).WithOccurredOn(date)
+			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]interface{}{
@@ -296,7 +296,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			if msg.Postback.Referral.Ref != "" {
 				eventType = courier.Referral
 			}
-			event := h.Backend().NewChannelEvent(channel, eventType, urn).WithOccurredOn(date)
+			event := h.Backend().NewChannelEvent(channel, eventType, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]interface{}{
@@ -327,7 +327,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 		} else if msg.Referral != nil {
 			// this is an incoming referral
-			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn).WithOccurredOn(date)
+			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]interface{}{
@@ -391,7 +391,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			}
 
 			// create our message
-			ev := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(msg.Message.MID).WithReceivedOn(date)
+			ev := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(msg.Message.MID).WithReceivedOn(date)
 			event := h.Backend().CheckExternalIDSeen(ev)
 
 			// add any attachment URL found
@@ -412,7 +412,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		} else if msg.Delivery != nil {
 			// this is a delivery report
 			for _, mid := range msg.Delivery.MIDs {
-				event := h.Backend().NewMsgStatusForExternalID(channel, mid, courier.MsgDelivered)
+				event := h.Backend().NewMsgStatusForExternalID(channel, mid, courier.MsgDelivered, clog)
 				err := h.Backend().WriteMsgStatus(ctx, event)
 
 				// we don't know about this message, just tell them we ignored it
@@ -513,7 +513,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	query.Set("access_token", accessToken)
 	msgURL.RawQuery = query.Encode()
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {

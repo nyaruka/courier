@@ -126,7 +126,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// build our msg
-		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(payload.Message.ID).WithReceivedOn(date.UTC()).WithContactName(contactName)
+		msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(payload.Message.ID).WithReceivedOn(date.UTC()).WithContactName(contactName)
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)
 		}
@@ -174,7 +174,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, payload.MessageID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, payload.MessageID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -207,7 +207,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		To:   strings.TrimLeft(msg.URN().Path(), "+"),
 	}
 
-	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored, clog)
 
 	text := ""
 	if channel.ChannelType() == "ZVW" {

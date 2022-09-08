@@ -1,3 +1,21 @@
+v7.5.24
+----------
+ * Adjust to use the cache by address correctly
+ * Rework handler tests to assert more state by default
+ * Remove duplicate status writes
+ * Append channel log UUIDs on status writes
+ * Set log UUID on incoming messages and channel events
+ * Use go 1.19
+ * Fix some linter warnings
+
+v7.5.23
+----------
+ * Support channels receiving embedded attachments and use with thinq handler
+
+v7.5.22
+----------
+ * Save channel logs with UUID
+
 v7.5.21
 ----------
  * Add codecov token to ci.yml

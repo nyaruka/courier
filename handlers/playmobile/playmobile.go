@@ -136,7 +136,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		if pmMsg.Content.Text == "" {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("no text"))
 		}
-		msg := h.Backend().NewIncomingMsg(c, urn, pmMsg.Content.Text).WithExternalID(pmMsg.ID)
+		msg := h.Backend().NewIncomingMsg(c, urn, pmMsg.Content.Text, clog).WithExternalID(pmMsg.ID)
 		msgs = append(msgs, msg)
 	}
 
@@ -166,7 +166,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no base url set for PM channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	for i, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		payload := mtPayload{}
