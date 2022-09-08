@@ -160,5 +160,5 @@ func TestSending(t *testing.T) {
 			configAPITokenUser: "user1",
 			configAPIToken:     "sesame",
 		})
-	RunChannelSendTestCases(t, channel, newHandler(), sendTestCases, nil)
+	RunChannelSendTestCases(t, channel, newHandler(), sendTestCases, []string{BasicAuth("user1", "sesame")}, nil)
 }

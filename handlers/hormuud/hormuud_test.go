@@ -149,9 +149,9 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, []string{"sesame"}, nil)
 
 	tokenURL = server.URL + "?invalid=true"
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), tokenTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), tokenTestCases, []string{"sesame"}, nil)
 }

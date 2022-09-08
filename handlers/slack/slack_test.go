@@ -252,7 +252,7 @@ func TestHandler(t *testing.T) {
 }
 
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), defaultSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
 }
 
 func TestSendFiles(t *testing.T) {
@@ -260,7 +260,7 @@ func TestSendFiles(t *testing.T) {
 	defer fileServer.Close()
 	fileSendTestCases := mockAttachmentURLs(fileServer, fileSendTestCases)
 
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), fileSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), fileSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
 }
 
 func TestVerification(t *testing.T) {

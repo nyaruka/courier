@@ -186,5 +186,5 @@ func TestSending(t *testing.T) {
 			"base_url":  "http://91.204.239.42",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{BasicAuth("Username", "Password")}, nil)
 }

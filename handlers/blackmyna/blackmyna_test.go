@@ -146,5 +146,5 @@ func TestSending(t *testing.T) {
 			courier.ConfigAPIKey:   "KEY",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{BasicAuth("Username", "Password")}, nil)
 }

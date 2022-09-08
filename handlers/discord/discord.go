@@ -8,9 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"time"
-
 	"strings"
+	"time"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"

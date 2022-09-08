@@ -182,7 +182,7 @@ func newServer(backend courier.Backend) courier.Server {
 }
 
 // RunChannelSendTestCases runs all the passed in test cases against the channel
-func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler courier.ChannelHandler, testCases []ChannelSendTestCase, setupBackend func(*test.MockBackend)) {
+func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler courier.ChannelHandler, testCases []ChannelSendTestCase, checkRedacted []string, setupBackend func(*test.MockBackend)) {
 	mb := test.NewMockBackend()
 	if setupBackend != nil {
 		setupBackend(mb)
@@ -241,7 +241,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				tc.SendPrep(server, handler, channel, msg)
 			}
 
-			clog := courier.NewChannelLogForSend(msg, nil)
+			clog := courier.NewChannelLogForSend(msg, handler.RedactValues(channel))
 
 			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 			status, err := handler.Send(ctx, msg, clog)
@@ -329,6 +329,8 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				require.Equal(urns.URN(tc.MsgURN), old)
 				require.Equal(urns.URN(tc.ExpectedNewURN), new)
 			}
+
+			assertChannelLogRedaction(t, clog, checkRedacted)
 		})
 	}
 
@@ -454,5 +456,23 @@ func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler cour
 				testHandlerRequest(b, s, testCase.URL, testCase.Headers, testCase.Data, testCase.MultipartForm, testCase.ExpectedRespStatus, nil, testCase.PrepRequest)
 			}
 		})
+	}
+}
+
+// asserts that the given channel log doesn't contain any of the given values
+func assertChannelLogRedaction(t *testing.T, clog *courier.ChannelLog, vals []string) {
+	assertRedacted := func(s string) {
+		for _, v := range vals {
+			assert.NotContains(t, s, v, "expected '%s' to not contain redacted value '%s'", s, v)
+		}
+	}
+
+	for _, h := range clog.HTTPLogs() {
+		assertRedacted(h.URL)
+		assertRedacted(h.Request)
+		assertRedacted(h.Response)
+	}
+	for _, e := range clog.Errors() {
+		assertRedacted(e.Message())
 	}
 }

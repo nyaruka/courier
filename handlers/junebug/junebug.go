@@ -218,3 +218,10 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	status.SetStatus(courier.MsgWired)
 	return status, nil
 }
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		handlers.BasicAuth(ch.StringConfigForKey(courier.ConfigUsername, ""), ch.StringConfigForKey(courier.ConfigPassword, "")),
+		ch.StringConfigForKey(courier.ConfigSecret, ""),
+	}
+}

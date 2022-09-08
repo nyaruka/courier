@@ -174,5 +174,5 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, []string{BasicAuth("Aladdin", "open sesame")}, nil)
 }

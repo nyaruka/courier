@@ -139,5 +139,5 @@ func TestSending(t *testing.T) {
 			courier.ConfigAuthToken: "Authy",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Authy"}, nil)
 }

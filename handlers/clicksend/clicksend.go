@@ -118,3 +118,9 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	return status, nil
 }
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		handlers.BasicAuth(ch.StringConfigForKey(courier.ConfigUsername, ""), ch.StringConfigForKey(courier.ConfigPassword, "")),
+	}
+}

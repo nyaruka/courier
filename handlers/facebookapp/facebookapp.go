@@ -69,7 +69,7 @@ var waIgnoreStatuses = map[string]bool{
 }
 
 func newHandler(channelType courier.ChannelType, name string, useUUIDRoutes bool) courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, useUUIDRoutes)}
+	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, useUUIDRoutes, []string{courier.ConfigAuthToken})}
 }
 
 func init() {
@@ -266,11 +266,9 @@ type moPayload struct {
 }
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
-	return []string{
-		h.Server().Config().FacebookApplicationSecret,
-		h.Server().Config().FacebookWebhookSecret,
-		h.Server().Config().WhatsappAdminSystemUserToken,
-	}
+	vals := h.BaseHandler.RedactValues(ch)
+	vals = append(vals, h.Server().Config().FacebookApplicationSecret, h.Server().Config().FacebookWebhookSecret, h.Server().Config().WhatsappAdminSystemUserToken)
+	return vals
 }
 
 // GetChannel returns the channel

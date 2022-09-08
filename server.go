@@ -29,8 +29,7 @@ type Server interface {
 	Config() *Config
 
 	AddHandlerRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelHandleFunc)
-
-	SendMsg(context.Context, Msg, *ChannelLog) (MsgStatus, error)
+	GetHandler(Channel) ChannelHandler
 
 	Backend() Backend
 
@@ -203,16 +202,7 @@ func (s *server) Stop() error {
 	return nil
 }
 
-func (s *server) SendMsg(ctx context.Context, msg Msg, clog *ChannelLog) (MsgStatus, error) {
-	// find the handler for this message type
-	handler, found := activeHandlers[msg.Channel().ChannelType()]
-	if !found {
-		return nil, fmt.Errorf("unable to find handler for channel type: %s", msg.Channel().ChannelType())
-	}
-
-	// have the handler send it
-	return handler.Send(ctx, msg, clog)
-}
+func (s *server) GetHandler(ch Channel) ChannelHandler { return activeHandlers[ch.ChannelType()] }
 
 func (s *server) WaitGroup() *sync.WaitGroup { return s.waitGroup }
 func (s *server) StopChan() chan bool        { return s.stopChan }

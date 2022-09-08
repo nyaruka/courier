@@ -171,5 +171,5 @@ func TestSending(t *testing.T) {
 			courier.ConfigPassword: "Password",
 		})
 
-	RunChannelSendTestCases(t, defaultDAChannel, NewHandler("DA", "Dartmedia", sendURL, maxMsgLength), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultDAChannel, NewHandler("DA", "Dartmedia", sendURL, maxMsgLength), defaultSendTestCases, []string{"Password"}, nil)
 }

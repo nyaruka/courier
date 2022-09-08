@@ -31,7 +31,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("I2"), "I2SMS")}
+	return &handler{handlers.NewBaseHandlerWithParams(courier.ChannelType("I2"), "I2SMS", true, []string{courier.ConfigPassword, configChannelHash})}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -141,6 +141,13 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	return status, nil
+}
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		handlers.BasicAuth(ch.StringConfigForKey(courier.ConfigUsername, ""), ch.StringConfigForKey(courier.ConfigPassword, "")),
+		ch.StringConfigForKey(configChannelHash, ""),
+	}
 }
 
 // WriteMsgSuccessResponse writes a success response for the messages, i2SMS expects an empty body in our response

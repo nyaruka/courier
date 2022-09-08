@@ -502,5 +502,5 @@ func TestSend(t *testing.T) {
 		res.Write([]byte("media body"))
 	}))
 	mockedSendTestCases := mockAttachmentURLs(mediaServer, sendTestCases)
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, []string{"token123xyz", "abc123xyz"}, nil)
 }

@@ -146,5 +146,5 @@ var sendTestCases = []handlers.ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	handlers.RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, nil)
+	handlers.RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"123456789"}, nil)
 }

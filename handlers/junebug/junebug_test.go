@@ -217,6 +217,6 @@ var authenticatedSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannel, newHandler(), sendTestCases, nil)
-	RunChannelSendTestCases(t, authenticatedTestChannel, newHandler(), authenticatedSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannel, newHandler(), sendTestCases, []string{BasicAuth("user1", "pass1"), "sesame"}, nil)
+	RunChannelSendTestCases(t, authenticatedTestChannel, newHandler(), authenticatedSendTestCases, []string{BasicAuth("user1", "pass1"), "sesame"}, nil)
 }

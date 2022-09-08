@@ -104,5 +104,5 @@ func TestSending(t *testing.T) {
 			courier.ConfigPassword: "pass1",
 			configChannelHash:      "hash123",
 		})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{BasicAuth("user1", "pass1"), "hash123"}, nil)
 }

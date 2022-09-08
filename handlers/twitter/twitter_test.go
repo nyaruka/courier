@@ -394,5 +394,5 @@ func TestSending(t *testing.T) {
 	}))
 
 	attachmentMockedSendTestCase := mockAttachmentURLs(mediaServer, defaultSendTestCases)
-	RunChannelSendTestCases(t, testChannels[0], newHandler("TWT", "Twitter Activity"), attachmentMockedSendTestCase, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler("TWT", "Twitter Activity"), attachmentMockedSendTestCase, []string{"apiSecret", "accessTokenSecret"}, nil)
 }

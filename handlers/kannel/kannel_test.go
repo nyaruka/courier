@@ -142,6 +142,6 @@ func TestSending(t *testing.T) {
 			"dlr_mask":     "3",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
-	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
+	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalSendTestCases, []string{"Password"}, nil)
 }

@@ -157,6 +157,13 @@ func (w *Sender) sendMessage(msg Msg) {
 	server := w.foreman.server
 	backend := server.Backend()
 
+	// find the handler for this channel type
+	handler := server.GetHandler(msg.Channel())
+	if handler == nil {
+		log.Errorf("unable to find handler for channel type: %s", msg.Channel().ChannelType())
+		return
+	}
+
 	// we don't want any individual send taking more than 35s
 	sendCTX, cancel := context.WithTimeout(context.Background(), time.Second*35)
 	defer cancel()
@@ -177,7 +184,6 @@ func (w *Sender) sendMessage(msg Msg) {
 		if err != nil {
 			log.WithError(err).Error("error clearing sent status for msg")
 		}
-
 	}
 
 	// was this msg already sent? (from a double queue?)
@@ -189,7 +195,7 @@ func (w *Sender) sendMessage(msg Msg) {
 	}
 
 	var status MsgStatus
-	clog := NewChannelLogForSend(msg, nil) // TODO get redact values from handler
+	clog := NewChannelLogForSend(msg, handler.RedactValues(msg.Channel()))
 
 	if sent {
 		// if this message was already sent, create a wired status for it
@@ -197,7 +203,7 @@ func (w *Sender) sendMessage(msg Msg) {
 		log.Warning("duplicate send, marking as wired")
 	} else {
 		// send our message
-		status, err = server.SendMsg(sendCTX, msg, clog)
+		status, err = handler.Send(sendCTX, msg, clog)
 		duration := time.Since(start)
 		secondDuration := float64(duration) / float64(time.Second)
 

@@ -213,9 +213,9 @@ func TestSending(t *testing.T) {
 			courier.ConfigAuthToken: "Token",
 			"button_layout":         map[string]interface{}{"bg_color": "#f7bb3f", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
 		})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
-	RunChannelSendTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases, nil)
-	RunChannelSendTestCases(t, buttonLayoutChannel, newHandler(), buttonLayoutSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Token"}, nil)
+	RunChannelSendTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases, []string{"Token"}, nil)
+	RunChannelSendTestCases(t, buttonLayoutChannel, newHandler(), buttonLayoutSendTestCases, []string{"Token"}, nil)
 }
 
 var testChannels = []courier.Channel{

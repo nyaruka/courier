@@ -123,5 +123,5 @@ func TestSending(t *testing.T) {
 			"merchant_secret": "my-merchant-secret",
 			"secret":          "sesame",
 		})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"my-merchant-secret", "sesame"}, nil)
 }

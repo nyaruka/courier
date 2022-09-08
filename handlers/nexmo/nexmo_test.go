@@ -215,5 +215,5 @@ func TestSending(t *testing.T) {
 			configNexmoAppPrivateKey: "nexmo-app-private-key",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"nexmo-api-secret", "nexmo-app-private-key"}, nil)
 }
