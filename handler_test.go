@@ -98,10 +98,10 @@ func TestHandling(t *testing.T) {
 	// sleep a second, sender should take care of it in that time
 	time.Sleep(time.Second)
 
-	// message should have errored because we don't have a registered handler
+	// message should have failed because we don't have a registered handler
 	assert.Equal(1, len(mb.WrittenMsgStatuses()))
 	assert.Equal(msg.ID(), mb.WrittenMsgStatuses()[0].ID())
-	assert.Equal(courier.MsgErrored, mb.WrittenMsgStatuses()[0].Status())
+	assert.Equal(courier.MsgFailed, mb.WrittenMsgStatuses()[0].Status())
 	assert.Equal(1, len(mb.WrittenChannelLogs()))
 
 	mb.Reset()
