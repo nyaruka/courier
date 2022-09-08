@@ -463,7 +463,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 				}
 
 				// create our message
-				ev := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(msg.ID).WithContactName(contactNames[msg.From])
+				ev := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(msg.ID).WithContactName(contactNames[msg.From])
 				event := h.Backend().CheckExternalIDSeen(ev)
 
 				// we had an error downloading media
@@ -499,7 +499,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					continue
 				}
 
-				event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus)
+				event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus, clog)
 				err := h.Backend().WriteMsgStatus(ctx, event)
 
 				// we don't know about this message, just tell them we ignored it
@@ -584,7 +584,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 				}
 			}
 
-			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn).WithOccurredOn(date)
+			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]interface{}{
@@ -606,7 +606,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			if msg.Postback.Referral.Ref != "" {
 				eventType = courier.Referral
 			}
-			event := h.Backend().NewChannelEvent(channel, eventType, urn).WithOccurredOn(date)
+			event := h.Backend().NewChannelEvent(channel, eventType, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]interface{}{
@@ -637,7 +637,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 		} else if msg.Referral != nil {
 			// this is an incoming referral
-			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn).WithOccurredOn(date)
+			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]interface{}{
@@ -713,7 +713,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			}
 
 			// create our message
-			ev := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(msg.Message.MID).WithReceivedOn(date)
+			ev := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(msg.Message.MID).WithReceivedOn(date)
 			event := h.Backend().CheckExternalIDSeen(ev)
 
 			// add any attachment URL found
@@ -734,7 +734,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 		} else if msg.Delivery != nil {
 			// this is a delivery report
 			for _, mid := range msg.Delivery.MIDs {
-				event := h.Backend().NewMsgStatusForExternalID(channel, mid, courier.MsgDelivered)
+				event := h.Backend().NewMsgStatusForExternalID(channel, mid, courier.MsgDelivered, clog)
 				err := h.Backend().WriteMsgStatus(ctx, event)
 
 				// we don't know about this message, just tell them we ignored it
@@ -845,7 +845,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 	query.Set("access_token", accessToken)
 	msgURL.RawQuery = query.Encode()
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
@@ -1063,7 +1063,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 	path, _ := url.Parse(fmt.Sprintf("/%s/messages", msg.Channel().Address()))
 	wacPhoneURL := base.ResolveReference(path)
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	hasCaption := false
 

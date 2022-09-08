@@ -159,7 +159,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
-		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(lineEvent.ReplyToken).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(lineEvent.ReplyToken).WithReceivedOn(date)
 
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)
@@ -288,7 +288,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	if authToken == "" {
 		return nil, fmt.Errorf("no auth token set for LN channel: %s", msg.Channel().UUID())
 	}
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	// all msg parts in JSON
 	var jsonMsgs []string

@@ -121,7 +121,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 		// build the channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.WelcomeMessage, urn).WithContactName(ContactName)
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.WelcomeMessage, urn, clog).WithContactName(ContactName)
 
 		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
@@ -141,7 +141,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// build the channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn).WithContactName(ContactName)
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn, clog).WithContactName(ContactName)
 
 		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
@@ -159,7 +159,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 		// build the channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
 
 		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
@@ -169,7 +169,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
 
 	case "failed":
-		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), courier.MsgFailed)
+		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), courier.MsgFailed, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "delivered":
@@ -227,7 +227,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// build our msg
-		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(fmt.Sprintf("%d", payload.MessageToken)).WithContactName(contactName)
+		msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(fmt.Sprintf("%d", payload.MessageToken)).WithContactName(contactName)
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)
 		}
@@ -315,7 +315,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("missing auth token in config")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	// figure out whether we have a keyboard to send as well
 	qrs := msg.QuickReplies()

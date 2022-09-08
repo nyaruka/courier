@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nyaruka/null"
-
+	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/null"
 	"github.com/sirupsen/logrus"
 )
 
@@ -51,7 +51,7 @@ func (i ChannelEventID) String() string {
 }
 
 // newChannelEvent creates a new channel event
-func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN) *DBChannelEvent {
+func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) *DBChannelEvent {
 	dbChannel := channel.(*DBChannel)
 	now := time.Now().In(time.UTC)
 
@@ -63,6 +63,7 @@ func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType
 		EventType_:   eventType,
 		OccurredOn_:  now,
 		CreatedOn_:   now,
+		LogUUIDs:     []string{string(clog.UUID())},
 
 		channel: dbChannel,
 	}
@@ -86,12 +87,11 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 	return err
 }
 
-const insertChannelEventSQL = `
+const sqlInsertChannelEvent = `
 INSERT INTO 
-	channels_channelevent("org_id", "channel_id", "contact_id", "contact_urn_id", "event_type", "extra", "occurred_on", "created_on")
-				   VALUES(:org_id, :channel_id, :contact_id, :contact_urn_id, :event_type, :extra, :occurred_on, :created_on)
-RETURNING id
-`
+	channels_channelevent( org_id,  channel_id,  contact_id,  contact_urn_id,  event_type,  extra,  occurred_on,  created_on,  log_uuids)
+				   VALUES(:org_id, :channel_id, :contact_id, :contact_urn_id, :event_type, :extra, :occurred_on, :created_on, :log_uuids)
+RETURNING id`
 
 // writeChannelEventToDB writes the passed in msg status to our db
 func writeChannelEventToDB(ctx context.Context, b *backend, e *DBChannelEvent, clog *courier.ChannelLog) error {
@@ -101,10 +101,11 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *DBChannelEvent, c
 		return err
 	}
 
+	// set our contact and urn id
 	e.ContactID_ = contact.ID_
 	e.ContactURNID_ = contact.URNID_
 
-	rows, err := b.db.NamedQueryContext(ctx, insertChannelEventSQL, e)
+	rows, err := b.db.NamedQueryContext(ctx, sqlInsertChannelEvent, e)
 	if err != nil {
 		return err
 	}
@@ -155,27 +156,16 @@ func (b *backend) flushChannelEventFile(filename string, contents []byte) error 
 	return writeChannelEventToDB(ctx, b, event, clog)
 }
 
-const selectEventSQL = `
-SELECT 
-	org_id, 
-	channel_id, 
-	contact_id, 
-	contact_urn_id, 
-	event_type, 
-	extra, 
-	occurred_on, 
-	created_on
-FROM 
-	channels_channelevent
-WHERE 
-	id = $1
-`
+const sqlSelectEvent = `
+SELECT org_id, channel_id, contact_id, contact_urn_id, event_type, extra, occurred_on, created_on, log_uuids
+  FROM channels_channelevent
+ WHERE id = $1`
 
 func readChannelEventFromDB(b *backend, id ChannelEventID) (*DBChannelEvent, error) {
 	e := &DBChannelEvent{
 		ID_: id,
 	}
-	err := b.db.Get(e, selectEventSQL, id)
+	err := b.db.Get(e, sqlSelectEvent, id)
 	return e, err
 }
 
@@ -194,6 +184,7 @@ type DBChannelEvent struct {
 	Extra_       null.Map                 `json:"extra"                   db:"extra"`
 	OccurredOn_  time.Time                `json:"occurred_on"             db:"occurred_on"`
 	CreatedOn_   time.Time                `json:"created_on"              db:"created_on"`
+	LogUUIDs     pq.StringArray           `json:"log_uuids"               db:"log_uuids"`
 
 	ContactName_  string       `json:"contact_name"`
 	ContactID_    ContactID    `json:"-"               db:"contact_id"`

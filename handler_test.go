@@ -47,7 +47,7 @@ func (h *dummyHandler) Initialize(s courier.Server) error {
 
 // Send sends the given message, logging any HTTP calls or errors
 func (h *dummyHandler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
-	return h.backend.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgSent), nil
+	return h.backend.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgSent, clog), nil
 }
 
 // ReceiveMsg sends the passed in message, returning any error
@@ -59,7 +59,7 @@ func (h *dummyHandler) receiveMsg(ctx context.Context, channel courier.Channel, 
 		return nil, errors.New("missing from or text")
 	}
 
-	msg := h.backend.NewIncomingMsg(channel, urns.URN("tel:"+from), text)
+	msg := h.backend.NewIncomingMsg(channel, urns.URN("tel:"+from), text, clog)
 	w.WriteHeader(200)
 	w.Write([]byte("ok"))
 	h.backend.WriteMsg(ctx, msg, clog)

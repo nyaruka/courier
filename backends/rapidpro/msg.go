@@ -114,7 +114,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 }
 
 // newMsg creates a new DBMsg object with the passed in parameters
-func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text string) *DBMsg {
+func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text string, clog *courier.ChannelLog) *DBMsg {
 	now := time.Now()
 	dbChannel := channel.(*DBChannel)
 
@@ -137,6 +137,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 		CreatedOn_:   now,
 		ModifiedOn_:  now,
 		QueuedOn_:    now,
+		LogUUIDs:     []string{string(clog.UUID())},
 
 		channel:        dbChannel,
 		workerToken:    "",
@@ -144,14 +145,13 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 	}
 }
 
-const insertMsgSQL = `
+const sqlInsertMsg = `
 INSERT INTO
 	msgs_msg(org_id, uuid, direction, text, attachments, msg_count, error_count, high_priority, status,
-             visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on)
+             visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on, log_uuids)
     VALUES(:org_id, :uuid, :direction, :text, :attachments, :msg_count, :error_count, :high_priority, :status,
-           :visibility, :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :next_attempt, :queued_on, :sent_on)
-RETURNING id
-`
+           :visibility, :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :next_attempt, :queued_on, :sent_on, :log_uuids)
+RETURNING id`
 
 func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg, clog *courier.ChannelLog) error {
 	// grab the contact for this msg
@@ -162,11 +162,11 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg, clog *courier.Chann
 		return errors.Wrap(err, "error getting contact for message")
 	}
 
-	// set our contact and urn ids from our contact
+	// set our contact and urn id
 	m.ContactID_ = contact.ID_
 	m.ContactURNID_ = contact.URNID_
 
-	rows, err := b.db.NamedQueryContext(ctx, insertMsgSQL, m)
+	rows, err := b.db.NamedQueryContext(ctx, sqlInsertMsg, m)
 	if err != nil {
 		return errors.Wrap(err, "error inserting message")
 	}
@@ -192,7 +192,7 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg, clog *courier.Chann
 	return nil
 }
 
-const selectMsgSQL = `
+const sqlSelectMsg = `
 SELECT
 	org_id,
 	direction,
@@ -212,12 +212,12 @@ SELECT
 	modified_on,
 	next_attempt,
 	queued_on,
-	sent_on
+	sent_on,
+	log_uuids
 FROM
 	msgs_msg
 WHERE
-	id = $1
-`
+	id = $1`
 
 const selectChannelSQL = `
 SELECT
@@ -537,11 +537,12 @@ type DBMsg struct {
 	ChannelUUID_ courier.ChannelUUID `json:"channel_uuid"`
 	ContactName_ string              `json:"contact_name"`
 
-	NextAttempt_ time.Time  `json:"next_attempt"  db:"next_attempt"`
-	CreatedOn_   time.Time  `json:"created_on"    db:"created_on"`
-	ModifiedOn_  time.Time  `json:"modified_on"   db:"modified_on"`
-	QueuedOn_    time.Time  `json:"queued_on"     db:"queued_on"`
-	SentOn_      *time.Time `json:"sent_on"       db:"sent_on"`
+	NextAttempt_ time.Time      `json:"next_attempt"  db:"next_attempt"`
+	CreatedOn_   time.Time      `json:"created_on"    db:"created_on"`
+	ModifiedOn_  time.Time      `json:"modified_on"   db:"modified_on"`
+	QueuedOn_    time.Time      `json:"queued_on"     db:"queued_on"`
+	SentOn_      *time.Time     `json:"sent_on"       db:"sent_on"`
+	LogUUIDs     pq.StringArray `json:"log_uuids"     db:"log_uuids"`
 
 	// fields used to allow courier to update a session's timeout when a message is sent for efficient timeout behavior
 	SessionID_            SessionID  `json:"session_id,omitempty"`

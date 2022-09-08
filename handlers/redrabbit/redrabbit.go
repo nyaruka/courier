@@ -44,7 +44,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	text := handlers.GetTextAndAttachments(msg)
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	form := url.Values{
 		"LoginName":         []string{username},
 		"Password":          []string{password},

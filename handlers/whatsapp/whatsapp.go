@@ -238,7 +238,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// create our message
-		ev := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(msg.ID).WithContactName(contactNames[msg.From])
+		ev := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(msg.ID).WithContactName(contactNames[msg.From])
 		event := h.Backend().CheckExternalIDSeen(ev)
 
 		// we had an error downloading media
@@ -273,7 +273,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			continue
 		}
 
-		event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus)
+		event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus, clog)
 		err := h.Backend().WriteMsgStatus(ctx, event)
 
 		// we don't know about this message, just tell them we ignored it
@@ -513,7 +513,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 	sendPath, _ := url.Parse("/v1/messages")
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	var wppID string
 

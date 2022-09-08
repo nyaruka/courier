@@ -73,12 +73,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	var msg courier.Msg
 
 	if form.Type == "sms" {
-		msg = h.Backend().NewIncomingMsg(channel, urn, form.Message)
+		msg = h.Backend().NewIncomingMsg(channel, urn, form.Message, clog)
 	} else if form.Type == "mms" {
 		if strings.HasPrefix(form.Message, "http://") || strings.HasPrefix(form.Message, "https://") {
-			msg = h.Backend().NewIncomingMsg(channel, urn, "").WithAttachment(form.Message)
+			msg = h.Backend().NewIncomingMsg(channel, urn, "", clog).WithAttachment(form.Message)
 		} else {
-			msg = h.Backend().NewIncomingMsg(channel, urn, "").WithAttachment("data:" + form.Message)
+			msg = h.Backend().NewIncomingMsg(channel, urn, "", clog).WithAttachment("data:" + form.Message)
 		}
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown message type: %s", form.Type))
@@ -124,7 +124,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.GUID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, form.GUID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -151,7 +151,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no token set for TQ channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	// we send attachments first so that text appears below
 	for _, a := range msg.Attachments() {

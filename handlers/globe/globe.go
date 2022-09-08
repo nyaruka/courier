@@ -103,7 +103,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
-		msg := h.Backend().NewIncomingMsg(c, urn, glMsg.Message).WithExternalID(glMsg.MessageID).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(c, urn, glMsg.Message, clog).WithExternalID(glMsg.MessageID).WithReceivedOn(date)
 		msgs = append(msgs, msg)
 	}
 
@@ -142,7 +142,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("Missing 'passphrase' config for GL channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		payload := &mtPayload{}

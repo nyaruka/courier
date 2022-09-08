@@ -83,7 +83,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
-	msg := h.Backend().NewIncomingMsg(c, urn, payload.Content).WithExternalID(payload.MessageID).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(c, urn, payload.Content, clog).WithExternalID(payload.MessageID).WithReceivedOn(date.UTC())
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
@@ -135,7 +135,7 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "ignoring existing pending status")
 	}
 
-	status := h.Backend().NewMsgStatusForExternalID(c, payload.MessageID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(c, payload.MessageID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 }
 
@@ -171,7 +171,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	eventURL := fmt.Sprintf("https://%s/c/jn/%s/event", callbackDomain, msg.Channel().UUID())
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	for i, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		payload := mtPayload{
 			EventURL: eventURL,

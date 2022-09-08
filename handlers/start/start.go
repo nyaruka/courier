@@ -81,7 +81,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	date := time.Unix(ts, 0).UTC()
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body.Text).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body.Text, clog).WithReceivedOn(date)
 
 	// and write it
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
@@ -131,7 +131,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no password set for ST channel: %s", msg.Channel().UUID())
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for i, part := range parts {
 

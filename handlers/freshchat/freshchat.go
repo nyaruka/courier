@@ -91,7 +91,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date)
 
 	//add image
 	if mediaURL != "" {
@@ -114,7 +114,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	user := strings.Split(msg.URN().Path(), "/")
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	url := apiURL + "/conversations"
 
 	// create base payload

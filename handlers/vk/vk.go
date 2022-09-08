@@ -250,7 +250,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	date := time.Unix(payload.Object.Message.Date, 0).UTC()
 	text := payload.Object.Message.Text
 	externalId := strconv.FormatInt(payload.Object.Message.Id, 10)
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(externalId)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(externalId)
 	event := h.Backend().CheckExternalIDSeen(msg)
 
 	if attachment := takeFirstAttachmentUrl(*payload); attachment != "" {
@@ -386,7 +386,7 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	params := buildApiBaseParams(msg.Channel())
 	params.Set(paramUserId, msg.URN().Path())

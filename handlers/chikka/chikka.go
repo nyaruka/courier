@@ -76,7 +76,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.MessageID), msgStatus)
+		status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.MessageID), msgStatus, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 	} else if messageType == "incoming" {
@@ -94,7 +94,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 		// build our msg
-		msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithExternalID(form.RequestID).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(channel, urn, form.Message, clog).WithExternalID(form.RequestID).WithReceivedOn(date)
 
 		// and finally write our message
 		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
@@ -115,7 +115,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no password set for CK channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		// build our request

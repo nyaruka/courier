@@ -78,7 +78,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForExternalID(channel, payload.BatchID, msgStatus)
+		status := h.Backend().NewMsgStatusForExternalID(channel, payload.BatchID, msgStatus, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 	} else if payload.Type == "mo_text" {
@@ -98,7 +98,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// build our Message
-		msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body).WithReceivedOn(date.UTC()).WithExternalID(payload.ID)
+		msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body, clog).WithReceivedOn(date.UTC()).WithExternalID(payload.ID)
 
 		// and finally write our message
 		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
@@ -122,7 +122,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("Missing username or password for MB channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		payload := &mtPayload{}

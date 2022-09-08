@@ -137,7 +137,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.CallbackMORequest.Text).WithExternalID(payload.CallbackMORequest.ID).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.CallbackMORequest.Text, clog).WithExternalID(payload.CallbackMORequest.ID).WithReceivedOn(date.UTC())
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
@@ -157,7 +157,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CallbackMTRequest.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CallbackMTRequest.ID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 }
@@ -174,7 +174,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no password set for ZV channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		zvMsg := mtPayload{}

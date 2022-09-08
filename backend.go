@@ -42,22 +42,22 @@ type Backend interface {
 	DeleteMsgWithExternalID(ctx context.Context, channel Channel, externalID string) error
 
 	// NewIncomingMsg creates a new message from the given params
-	NewIncomingMsg(channel Channel, urn urns.URN, text string) Msg
+	NewIncomingMsg(Channel, urns.URN, string, *ChannelLog) Msg
 
 	// WriteMsg writes the passed in message to our backend
 	WriteMsg(context.Context, Msg, *ChannelLog) error
 
 	// NewMsgStatusForID creates a new Status object for the given message id
-	NewMsgStatusForID(Channel, MsgID, MsgStatusValue) MsgStatus
+	NewMsgStatusForID(Channel, MsgID, MsgStatusValue, *ChannelLog) MsgStatus
 
 	// NewMsgStatusForExternalID creates a new Status object for the given external id
-	NewMsgStatusForExternalID(Channel, string, MsgStatusValue) MsgStatus
+	NewMsgStatusForExternalID(Channel, string, MsgStatusValue, *ChannelLog) MsgStatus
 
 	// WriteMsgStatus writes the passed in status update to our backend
 	WriteMsgStatus(context.Context, MsgStatus) error
 
 	// NewChannelEvent creates a new channel event for the given channel and event type
-	NewChannelEvent(Channel, ChannelEventType, urns.URN) ChannelEvent
+	NewChannelEvent(Channel, ChannelEventType, urns.URN, *ChannelLog) ChannelEvent
 
 	// WriteChannelEvent writes the passed in channel even returning any error
 	WriteChannelEvent(context.Context, ChannelEvent, *ChannelLog) error
