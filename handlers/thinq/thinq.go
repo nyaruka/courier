@@ -13,6 +13,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 const configAccountID = "account_id"
@@ -227,6 +228,6 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	return []string{
-		handlers.BasicAuth(ch.StringConfigForKey(configAPITokenUser, ""), ch.StringConfigForKey(configAPIToken, "")),
+		httpx.BasicAuth(ch.StringConfigForKey(configAPITokenUser, ""), ch.StringConfigForKey(configAPIToken, "")),
 	}
 }

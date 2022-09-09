@@ -20,6 +20,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var (
@@ -192,6 +193,6 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	return []string{
-		handlers.BasicAuth(ch.StringConfigForKey(configPlivoAuthID, ""), ch.StringConfigForKey(configPlivoAuthToken, "")),
+		httpx.BasicAuth(ch.StringConfigForKey(configPlivoAuthID, ""), ch.StringConfigForKey(configPlivoAuthToken, "")),
 	}
 }

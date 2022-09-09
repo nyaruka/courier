@@ -143,7 +143,3 @@ func StrictTelForCountry(number string, country string) (urns.URN, error) {
 
 	return urn, nil
 }
-
-func BasicAuth(user, pass string) string {
-	return base64.StdEncoding.EncodeToString([]byte(user + ":" + pass))
-}
