@@ -633,13 +633,13 @@ func buildMockFBGraph(testCases []ChannelHandleTestCase) *httptest.Server {
 	return server
 }
 
-func TestDescribe(t *testing.T) {
+func TestDescribeURN(t *testing.T) {
 	fbGraph := buildMockFBGraph(testCases)
 	defer fbGraph.Close()
 
 	channel := testChannels[0]
-	handler := newHandler().(courier.URNDescriber)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
+	handler := newHandler()
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, handler.RedactValues(channel))
 
 	tcs := []struct {
 		urn              urns.URN
@@ -651,9 +651,11 @@ func TestDescribe(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, clog)
+		metadata, _ := handler.(courier.URNDescriber).DescribeURN(context.Background(), channel, tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
+
+	AssertChannelLogRedaction(t, clog, []string{"a123", "mysecret"})
 }
 
 func TestHandler(t *testing.T) {

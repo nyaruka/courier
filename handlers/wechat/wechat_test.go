@@ -264,7 +264,7 @@ func newServer(backend courier.Backend) courier.Server {
 	return courier.NewServerWithLogger(config, backend, logger)
 }
 
-func TestDescribe(t *testing.T) {
+func TestDescribeURN(t *testing.T) {
 	WCAPI := buildMockWCAPI(testCases)
 	defer WCAPI.Close()
 
@@ -281,7 +281,7 @@ func TestDescribe(t *testing.T) {
 	s := newServer(mb)
 	handler := &handler{NewBaseHandler(courier.ChannelType("WC"), "WeChat")}
 	handler.Initialize(s)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], nil)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 
 	tcs := []struct {
 		urn              urns.URN
@@ -295,6 +295,8 @@ func TestDescribe(t *testing.T) {
 		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
+
+	AssertChannelLogRedaction(t, clog, []string{"secret"})
 }
 
 func TestBuildMediaRequest(t *testing.T) {

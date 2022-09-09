@@ -464,13 +464,14 @@ func buildMockFBGraphIG(testCases []ChannelHandleTestCase) *httptest.Server {
 	return server
 }
 
-func TestDescribeFBA(t *testing.T) {
+func TestDescribeURNForFBA(t *testing.T) {
 	fbGraph := buildMockFBGraphFBA(testCasesFBA)
 	defer fbGraph.Close()
 
 	channel := testChannelsFBA[0]
-	handler := newHandler("FBA", "Facebook", false).(courier.URNDescriber)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
+	handler := newHandler("FBA", "Facebook", false)
+	handler.Initialize(newServer(nil))
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, handler.RedactValues(channel))
 
 	tcs := []struct {
 		urn              urns.URN
@@ -482,18 +483,21 @@ func TestDescribeFBA(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, clog)
+		metadata, _ := handler.(courier.URNDescriber).DescribeURN(context.Background(), channel, tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
+
+	AssertChannelLogRedaction(t, clog, []string{"a123", "wac_admin_system_user_token"})
 }
 
-func TestDescribeIG(t *testing.T) {
+func TestDescribeURNForIG(t *testing.T) {
 	fbGraph := buildMockFBGraphIG(testCasesIG)
 	defer fbGraph.Close()
 
 	channel := testChannelsIG[0]
-	handler := newHandler("IG", "Instagram", false).(courier.URNDescriber)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
+	handler := newHandler("IG", "Instagram", false)
+	handler.Initialize(newServer(nil))
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, handler.RedactValues(channel))
 
 	tcs := []struct {
 		urn              urns.URN
@@ -504,15 +508,18 @@ func TestDescribeIG(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), channel, tc.urn, clog)
+		metadata, _ := handler.(courier.URNDescriber).DescribeURN(context.Background(), channel, tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
+
+	AssertChannelLogRedaction(t, clog, []string{"a123", "wac_admin_system_user_token"})
 }
 
-func TestDescribeWAC(t *testing.T) {
+func TestDescribeURNForWAC(t *testing.T) {
 	channel := testChannelsWAC[0]
-	handler := newHandler("WAC", "Cloud API WhatsApp", false).(courier.URNDescriber)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
+	handler := newHandler("WAC", "Cloud API WhatsApp", false)
+	handler.Initialize(newServer(nil))
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, handler.RedactValues(channel))
 
 	tcs := []struct {
 		urn              urns.URN
@@ -523,9 +530,11 @@ func TestDescribeWAC(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), testChannelsWAC[0], tc.urn, clog)
+		metadata, _ := handler.(courier.URNDescriber).DescribeURN(context.Background(), testChannelsWAC[0], tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
+
+	AssertChannelLogRedaction(t, clog, []string{"a123", "wac_admin_system_user_token"})
 }
 
 var wacReceiveURL = "/c/wac/receive"
