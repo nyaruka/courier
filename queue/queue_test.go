@@ -239,7 +239,7 @@ func TestLua(t *testing.T) {
 
 }
 
-func nTestThrottle(t *testing.T) {
+func TestThrottle(t *testing.T) {
 	assert := assert.New(t)
 	pool := getPool()
 	conn := pool.Get()
@@ -289,7 +289,7 @@ func nTestThrottle(t *testing.T) {
 
 	// if this took less than 1 second or more than 3 seconds, fail, should have throttled
 	expected := time.Duration((insertCount / rate) - 2)
-	elapsed := time.Now().Sub(start)
+	elapsed := time.Since(start)
 	if elapsed < expected*time.Second || elapsed > (expected+2)*time.Second {
 		t.Errorf("Did not throttle properly, took: %f", elapsed.Seconds())
 	}

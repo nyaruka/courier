@@ -18,7 +18,7 @@ type ResponseWriter interface {
 
 // WriteMsgsAndResponse writes the passed in message to our backend
 func WriteMsgsAndResponse(ctx context.Context, h ResponseWriter, msgs []courier.Msg, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
-	events := make([]courier.Event, len(msgs), len(msgs))
+	events := make([]courier.Event, len(msgs))
 	for i, m := range msgs {
 		err := h.Backend().WriteMsg(ctx, m, clog)
 		if err != nil {

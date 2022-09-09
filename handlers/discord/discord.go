@@ -52,10 +52,6 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-type stopContactForm struct {
-	From string `validate:"required" name:"from"`
-}
-
 // utility function to grab the form value for either the passed in name (if non-empty) or the first set
 // value from defaultNames
 func getFormField(form url.Values, name string) string {
@@ -95,8 +91,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	date := time.Now()
 
 	// create our URN
-	urn := urns.NilURN
-	urn, err = urns.NewURNFromParts(urns.DiscordScheme, from, "", "")
+	urn, err := urns.NewURNFromParts(urns.DiscordScheme, from, "", "")
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}

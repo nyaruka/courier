@@ -616,7 +616,7 @@ func buildMockFBGraph(testCases []ChannelHandleTestCase) *httptest.Server {
 
 		// invalid auth token
 		if accessToken != "a123" {
-			http.Error(w, "invalid auth token", 403)
+			http.Error(w, "invalid auth token", http.StatusForbidden)
 		}
 
 		// user has a name
@@ -676,7 +676,7 @@ func TestVerify(t *testing.T) {
 		// invalid auth token
 		if accessToken != "a123" {
 			fmt.Printf("Access token: %s\n", accessToken)
-			http.Error(w, "invalid auth token", 403)
+			http.Error(w, "invalid auth token", http.StatusForbidden)
 			return
 		}
 

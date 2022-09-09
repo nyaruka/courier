@@ -376,12 +376,14 @@ func (ts *BackendTestSuite) TestContactURN() {
 
 	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, urn, "", "", clog)
 	ts.NoError(err)
+	ts.NotNil(contact)
 
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
 
 	contact, err = contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, urn, "chestnut", "", clog)
 	ts.NoError(err)
+	ts.NotNil(contact)
 
 	contactURNs, err := contactURNsForContact(tx, contact.ID_)
 	ts.NoError(err)
@@ -433,6 +435,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	tgURNDisplay, _ := urns.NewTelegramURN(12345, "Jane")
 	displayContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURNDisplay, "", "", clog)
 
+	ts.NoError(err)
 	ts.Equal(tgContact.URNID_, displayContact.URNID_)
 	ts.Equal(tgContact.ID_, displayContact.ID_)
 
@@ -1155,6 +1158,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.NotNil(m.QueuedOn_)
 
 	contact, err := contactForURN(ctx, ts.b, m.OrgID_, knChannel, urn, "", "", clog)
+	ts.NoError(err)
 	ts.Equal(null.String("test contact"), contact.Name_)
 	ts.Equal(m.OrgID_, contact.OrgID_)
 	ts.Equal(m.ContactID_, contact.ID_)

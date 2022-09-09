@@ -409,13 +409,3 @@ func (c *DBChannel) IntConfigForKey(key string, defaultValue int) int {
 func (c *DBChannel) CallbackDomain(fallbackDomain string) string {
 	return c.StringConfigForKey(courier.ConfigCallbackDomain, fallbackDomain)
 }
-
-// supportsScheme returns whether the passed in channel supports the passed in scheme
-func (c *DBChannel) supportsScheme(scheme string) bool {
-	for _, s := range c.Schemes_ {
-		if s == scheme {
-			return true
-		}
-	}
-	return false
-}
