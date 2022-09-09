@@ -15,8 +15,7 @@ import (
 )
 
 var (
-	sendURL      = "https://api-messaging.movile.com/v1/send-sms"
-	maxMsgLength = 160
+	sendURL = "https://api-messaging.movile.com/v1/send-sms"
 )
 
 type handler struct {

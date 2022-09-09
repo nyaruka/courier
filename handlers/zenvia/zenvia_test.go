@@ -53,17 +53,6 @@ var unknownStatus = `{
 	}
 }`
 
-var invalidTypeStatus = `{
-	"id": "string",
-	"type": "MESSAGE_REPORT",
-	"channel": "string",
-	"messageId": "hs765939216",
-	"messageStatus": {
-	  "timestamp": "2021-03-12T12:15:31Z",
-	  "code": "SENT"
-	}
-}`
-
 var validReceive = `{
 	"id": "string",
 	"timestamp": "2017-05-03T03:04:45Z",
@@ -127,28 +116,6 @@ var locationReceive = `{
 		"name": "Bob"
 	  }
 	}
-}`
-
-var invalidURN = `{
-  "id": "string",
-  "timestamp": "2017-05-03T03:04:45Z",
-  "type": "MESSAGE",
-  "message": {
-    "id": "string",
-    "from": "MTN",
-    "to": "2020",
-    "direction": "IN",
-    "contents": [
-       {
-         "type": "text",
-         "text": "Msg",
-         "payload": "string"
-       }
-    ],
-    "visitor": {
-  	"name": "Bob"
-    }
-  }
 }`
 
 var invalidDateReceive = `{

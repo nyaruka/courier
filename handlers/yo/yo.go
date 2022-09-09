@@ -138,7 +138,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			responseQS, _ := url.ParseQuery(string(respBody))
 
 			// check whether we were blacklisted
-			createMessage, _ := responseQS["ybs_autocreate_message"]
+			createMessage := responseQS["ybs_autocreate_message"]
 			if len(createMessage) > 0 && strings.Contains(createMessage[0], "BLACKLISTED") {
 				status.SetStatus(courier.MsgFailed)
 
@@ -153,7 +153,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			}
 
 			// finally check that we were sent
-			createStatus, _ := responseQS["ybs_autocreate_status"]
+			createStatus := responseQS["ybs_autocreate_status"]
 			if len(createStatus) > 0 && createStatus[0] == "OK" {
 				status.SetStatus(courier.MsgWired)
 				return status, nil

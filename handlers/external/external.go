@@ -12,12 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/antchfx/xmlquery"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
-
-	"github.com/antchfx/xmlquery"
 	"github.com/pkg/errors"
 )
 
@@ -437,5 +436,3 @@ func replaceVariables(text string, variables map[string]string) string {
 	}
 	return text
 }
-
-const defaultSendBody = `id={{id}}&text={{text}}&to={{to}}&to_no_plus={{to_no_plus}}&from={{from}}&from_no_plus={{from_no_plus}}&channel={{channel}}`

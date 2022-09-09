@@ -259,13 +259,13 @@ var luaDethrottle = redis.NewScript(1, `-- KEYS: [QueueType]
 // StartDethrottler starts a goroutine responsible for dethrottling any queues that were
 // throttled every second. The passed in quitter chan can be used to shut down the goroutine
 func StartDethrottler(redis *redis.Pool, quitter chan bool, wg *sync.WaitGroup, qType string) {
-	go func() {
-		wg.Add(1)
+	wg.Add(1)
 
+	go func() {
 		// figure out our next delay, we want to land just on the other side of a second boundary
 		delay := time.Second - time.Duration(time.Now().UnixNano()%int64(time.Second))
 
-		for true {
+		for {
 			select {
 			case <-quitter:
 				wg.Done()
