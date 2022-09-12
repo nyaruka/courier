@@ -1172,7 +1172,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 				}
 			}
 
-		} else if i < len(msg.Attachments()) && len(qrs) == 0 || len(qrs) > 3 && i < len(msg.Attachments()) {
+		} else if i < len(msg.Attachments()) && (len(qrs) == 0 || len(qrs) > 3) {
 			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
 			attType = strings.Split(attType, "/")[0]
 			if attType == "application" {
