@@ -92,7 +92,7 @@ func (l *ChannelLog) HTTP(t *httpx.Trace) {
 }
 
 func (l *ChannelLog) Error(err error) {
-	l.errors = append(l.errors, NewChannelError(err.Error(), ""))
+	l.errors = append(l.errors, NewChannelError(l.redactor(err.Error()), ""))
 }
 
 func (l *ChannelLog) End() {
