@@ -279,12 +279,17 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			return
 		}
 
+		var channelUUID ChannelUUID
+		if channel != nil {
+			channelUUID = channel.UUID()
+		}
+
 		defer func() {
 			// catch any panics and recover
 			panicLog := recover()
 			if panicLog != nil {
 				debug.PrintStack()
-				logrus.WithError(err).WithField("channel_uuid", channel.UUID()).WithField("request", string(recorder.Trace.RequestTrace)).WithField("trace", panicLog).Error("panic handling request")
+				logrus.WithError(err).WithField("channel_uuid", channelUUID).WithField("request", string(recorder.Trace.RequestTrace)).WithField("trace", panicLog).Error("panic handling request")
 				writeAndLogRequestError(ctx, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
 			}
 		}()
@@ -297,13 +302,13 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 
 		// if we received an error, write it out and report it
 		if hErr != nil {
-			logrus.WithError(hErr).WithField("channel_uuid", channel.UUID()).WithField("request", string(recorder.Trace.RequestTrace)).Error("error handling request")
+			logrus.WithError(hErr).WithField("channel_uuid", channelUUID).WithField("request", string(recorder.Trace.RequestTrace)).Error("error handling request")
 			writeAndLogRequestError(ctx, recorder.ResponseWriter, r, channel, hErr)
 		}
 
 		// end recording of the request so that we have a response trace
 		if err := recorder.End(); err != nil {
-			logrus.WithError(err).WithField("channel_uuid", channel.UUID()).WithField("request", string(recorder.Trace.RequestTrace)).Error("error receording request")
+			logrus.WithError(err).WithField("channel_uuid", channelUUID).WithField("request", string(recorder.Trace.RequestTrace)).Error("error recording request")
 			writeAndLogRequestError(ctx, w, r, channel, err)
 		}
 
