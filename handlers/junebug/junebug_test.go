@@ -8,6 +8,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JN", "2020", "US", map[string]interface{}{
@@ -217,6 +218,6 @@ var authenticatedSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannel, newHandler(), sendTestCases, nil)
-	RunChannelSendTestCases(t, authenticatedTestChannel, newHandler(), authenticatedSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannel, newHandler(), sendTestCases, []string{httpx.BasicAuth("user1", "pass1"), "sesame"}, nil)
+	RunChannelSendTestCases(t, authenticatedTestChannel, newHandler(), authenticatedSendTestCases, []string{httpx.BasicAuth("user1", "pass1"), "sesame"}, nil)
 }

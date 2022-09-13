@@ -29,8 +29,6 @@ var (
 
 	signatureHeader = "X-Hub-Signature"
 
-	configWACPhoneNumberID = "wac_phone_number_id"
-
 	// max for the body
 	maxMsgLength = 1000
 
@@ -71,7 +69,7 @@ var waIgnoreStatuses = map[string]bool{
 }
 
 func newHandler(channelType courier.ChannelType, name string, useUUIDRoutes bool) courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, useUUIDRoutes)}
+	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, useUUIDRoutes, []string{courier.ConfigAuthToken})}
 }
 
 func init() {
@@ -264,6 +262,12 @@ type moPayload struct {
 			} `json:"delivery"`
 		} `json:"messaging"`
 	} `json:"entry"`
+}
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	vals := h.BaseHandler.RedactValues(ch)
+	vals = append(vals, h.Server().Config().FacebookApplicationSecret, h.Server().Config().FacebookWebhookSecret, h.Server().Config().WhatsappAdminSystemUserToken)
+	return vals
 }
 
 // GetChannel returns the channel

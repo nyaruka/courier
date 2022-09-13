@@ -24,6 +24,7 @@ type ChannelHandler interface {
 	ChannelType() ChannelType
 	ChannelName() string
 	UseChannelRouteUUID() bool
+	RedactValues(Channel) []string
 	GetChannel(context.Context, *http.Request) (Channel, error)
 	Send(context.Context, Msg, *ChannelLog) (MsgStatus, error)
 }

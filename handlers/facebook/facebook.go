@@ -111,7 +111,7 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 }
 
 func (h *handler) subscribeToEvents(ctx context.Context, channel courier.Channel, authToken string) {
-	clog := courier.NewChannelLog(courier.ChannelLogTypePageSubscribe, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypePageSubscribe, channel, h.RedactValues(channel))
 
 	// subscribe to messaging events for this page
 	form := url.Values{}

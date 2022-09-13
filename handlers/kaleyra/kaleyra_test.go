@@ -239,7 +239,7 @@ func TestSending(t *testing.T) {
 	}))
 	mockedSendTestCases := mockAttachmentURLs(mediaServer, sendTestCases)
 
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, []string{"123456"}, nil)
 }
 
 var urlTestCases = []struct {

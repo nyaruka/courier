@@ -28,9 +28,10 @@ func NewHandler() courier.ChannelHandler {
 	return &dummyHandler{}
 }
 
-func (h *dummyHandler) ChannelName() string              { return "Dummy Handler" }
-func (h *dummyHandler) ChannelType() courier.ChannelType { return courier.ChannelType("DM") }
-func (h *dummyHandler) UseChannelRouteUUID() bool        { return true }
+func (h *dummyHandler) ChannelName() string                   { return "Dummy Handler" }
+func (h *dummyHandler) ChannelType() courier.ChannelType      { return courier.ChannelType("DM") }
+func (h *dummyHandler) UseChannelRouteUUID() bool             { return true }
+func (h *dummyHandler) RedactValues(courier.Channel) []string { return []string{"sesame"} }
 
 func (h *dummyHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
 	dmChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "DM", "2020", "US", map[string]interface{}{})
@@ -97,10 +98,10 @@ func TestHandling(t *testing.T) {
 	// sleep a second, sender should take care of it in that time
 	time.Sleep(time.Second)
 
-	// message should have errored because we don't have a registered handler
+	// message should have failed because we don't have a registered handler
 	assert.Equal(1, len(mb.WrittenMsgStatuses()))
 	assert.Equal(msg.ID(), mb.WrittenMsgStatuses()[0].ID())
-	assert.Equal(courier.MsgErrored, mb.WrittenMsgStatuses()[0].Status())
+	assert.Equal(courier.MsgFailed, mb.WrittenMsgStatuses()[0].Status())
 	assert.Equal(1, len(mb.WrittenChannelLogs()))
 
 	mb.Reset()

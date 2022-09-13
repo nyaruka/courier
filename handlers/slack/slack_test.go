@@ -252,7 +252,7 @@ func TestHandler(t *testing.T) {
 }
 
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), defaultSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
 }
 
 func TestSendFiles(t *testing.T) {
@@ -260,7 +260,7 @@ func TestSendFiles(t *testing.T) {
 	defer fileServer.Close()
 	fileSendTestCases := mockAttachmentURLs(fileServer, fileSendTestCases)
 
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), fileSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), fileSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
 }
 
 func TestVerification(t *testing.T) {
@@ -359,13 +359,15 @@ func TestDescribeURN(t *testing.T) {
 	server := buildMockSlackService([]ChannelHandleTestCase{})
 	defer server.Close()
 
-	handler := newHandler().(courier.URNDescriber)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0])
+	handler := newHandler()
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 	urn, _ := urns.NewURNFromParts(urns.SlackScheme, "U012345", "", "")
 
 	data := map[string]string{"name": "dummy user"}
 
-	describe, err := handler.DescribeURN(context.Background(), testChannels[0], urn, clog)
+	describe, err := handler.(courier.URNDescriber).DescribeURN(context.Background(), testChannels[0], urn, clog)
 	assert.Nil(t, err)
 	assert.Equal(t, data, describe)
+
+	AssertChannelLogRedaction(t, clog, []string{"xoxb-abc123", "one-long-verification-token"})
 }

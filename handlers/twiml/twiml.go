@@ -18,13 +18,13 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/sirupsen/logrus"
-
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -306,6 +306,12 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	return status, nil
+}
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		httpx.BasicAuth(ch.StringConfigForKey(configAccountSID, ""), ch.StringConfigForKey(courier.ConfigAuthToken, "")),
+	}
 }
 
 func (h *handler) parseURN(channel courier.Channel, text, country string) (urns.URN, error) {

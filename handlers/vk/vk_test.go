@@ -375,14 +375,16 @@ func TestDescribeURN(t *testing.T) {
 	server := buildMockVKService([]ChannelHandleTestCase{})
 	defer server.Close()
 
-	handler := newHandler().(courier.URNDescriber)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0])
+	handler := newHandler()
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 	urn, _ := urns.NewURNFromParts(urns.VKScheme, "123456789", "", "")
 	data := map[string]string{"name": "John Doe"}
 
-	describe, err := handler.DescribeURN(context.Background(), testChannels[0], urn, clog)
+	describe, err := handler.(courier.URNDescriber).DescribeURN(context.Background(), testChannels[0], urn, clog)
 	assert.Nil(t, err)
 	assert.Equal(t, data, describe)
+
+	AssertChannelLogRedaction(t, clog, []string{"token123xyz", "abc123xyz"})
 }
 
 // setSendURL takes care of setting the send_url to our test server host
@@ -502,5 +504,5 @@ func TestSend(t *testing.T) {
 		res.Write([]byte("media body"))
 	}))
 	mockedSendTestCases := mockAttachmentURLs(mediaServer, sendTestCases)
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, []string{"token123xyz", "abc123xyz"}, nil)
 }

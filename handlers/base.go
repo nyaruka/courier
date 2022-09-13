@@ -8,6 +8,8 @@ import (
 	"github.com/nyaruka/courier"
 )
 
+var defaultRedactConfigKeys = []string{courier.ConfigAuthToken, courier.ConfigAPIKey, courier.ConfigSecret, courier.ConfigPassword, courier.ConfigSendAuthorization}
+
 // BaseHandler is the base class for most handlers, it just stored the server, name and channel type for the handler
 type BaseHandler struct {
 	channelType         courier.ChannelType
@@ -15,16 +17,22 @@ type BaseHandler struct {
 	server              courier.Server
 	backend             courier.Backend
 	useChannelRouteUUID bool
+	redactConfigKeys    []string
 }
 
 // NewBaseHandler returns a newly constructed BaseHandler with the passed in parameters
 func NewBaseHandler(channelType courier.ChannelType, name string) BaseHandler {
-	return NewBaseHandlerWithParams(channelType, name, true)
+	return NewBaseHandlerWithParams(channelType, name, true, defaultRedactConfigKeys)
 }
 
 // NewBaseHandlerWithParams returns a newly constructed BaseHandler with the passed in parameters
-func NewBaseHandlerWithParams(channelType courier.ChannelType, name string, useChannelRouteUUID bool) BaseHandler {
-	return BaseHandler{channelType: channelType, name: name, useChannelRouteUUID: useChannelRouteUUID}
+func NewBaseHandlerWithParams(channelType courier.ChannelType, name string, useChannelRouteUUID bool, redactConfigKeys []string) BaseHandler {
+	return BaseHandler{
+		channelType:         channelType,
+		name:                name,
+		useChannelRouteUUID: useChannelRouteUUID,
+		redactConfigKeys:    redactConfigKeys,
+	}
 }
 
 // SetServer can be used to change the server on a BaseHandler
@@ -56,6 +64,21 @@ func (h *BaseHandler) ChannelName() string {
 // UseChannelRouteUUID returns whether the router should use the channel UUID in the URL path
 func (h *BaseHandler) UseChannelRouteUUID() bool {
 	return h.useChannelRouteUUID
+}
+
+func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
+	if ch == nil {
+		return nil
+	}
+
+	vals := make([]string, 0, len(h.redactConfigKeys))
+	for _, k := range h.redactConfigKeys {
+		v := ch.StringConfigForKey(k, "")
+		if v != "" {
+			vals = append(vals, v)
+		}
+	}
+	return vals
 }
 
 // GetChannel returns the channel

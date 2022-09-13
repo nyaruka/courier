@@ -131,5 +131,5 @@ func TestSending(t *testing.T) {
 		"secret":     cert,
 		"auth_token": "enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 	})
-	RunChannelSendTestCases(t, defaultChannel, newHandler("FC", "FreshChat", false), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler("FC", "FreshChat", false), defaultSendTestCases, []string{cert, "enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="}, nil)
 }

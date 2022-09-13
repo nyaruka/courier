@@ -19,7 +19,7 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("bac782c2-7aeb-4389-92f5-97887744f573", "DS", "discord", "US", map[string]interface{}{}),
+	test.NewMockChannel("bac782c2-7aeb-4389-92f5-97887744f573", "DS", "discord", "US", map[string]interface{}{courier.ConfigSendAuthorization: "sesame"}),
 }
 
 var testCases = []ChannelHandleTestCase{
@@ -119,5 +119,5 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"sesame"}, nil)
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -160,5 +161,5 @@ func TestSending(t *testing.T) {
 			configAPITokenUser: "user1",
 			configAPIToken:     "sesame",
 		})
-	RunChannelSendTestCases(t, channel, newHandler(), sendTestCases, nil)
+	RunChannelSendTestCases(t, channel, newHandler(), sendTestCases, []string{httpx.BasicAuth("user1", "sesame")}, nil)
 }

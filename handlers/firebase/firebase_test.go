@@ -192,6 +192,6 @@ var sendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, nil)
-	RunChannelSendTestCases(t, testChannels[1], newHandler(), notificationSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"FCMKey"}, nil)
+	RunChannelSendTestCases(t, testChannels[1], newHandler(), notificationSendTestCases, []string{"FCMKey"}, nil)
 }

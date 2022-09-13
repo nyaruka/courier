@@ -112,5 +112,5 @@ func TestSending(t *testing.T) {
 			configServiceID:        "service1",
 			configChargingLevel:    "0",
 		})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"pass1"}, nil)
 }

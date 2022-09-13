@@ -190,6 +190,6 @@ func TestSending(t *testing.T) {
 			configIsShared:         true,
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
-	RunChannelSendTestCases(t, sharedChannel, newHandler(), sharedSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"KEY"}, nil)
+	RunChannelSendTestCases(t, sharedChannel, newHandler(), sharedSendTestCases, []string{"KEY"}, nil)
 }

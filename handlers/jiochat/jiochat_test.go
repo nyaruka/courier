@@ -285,7 +285,7 @@ func TestDescribeURN(t *testing.T) {
 	s := newServer(mb)
 	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
 	handler.Initialize(s)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0])
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 
 	tcs := []struct {
 		urn              urns.URN
@@ -299,6 +299,8 @@ func TestDescribeURN(t *testing.T) {
 		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
+
+	AssertChannelLogRedaction(t, clog, []string{"secret"})
 }
 
 func TestBuildMediaRequest(t *testing.T) {
@@ -409,5 +411,6 @@ func setupBackend(mb *test.MockBackend) {
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configAppSecret: "secret", configAppID: "app-id"})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, setupBackend)
+
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret"}, setupBackend)
 }

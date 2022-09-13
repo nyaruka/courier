@@ -361,7 +361,7 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 	msg.channel = channel.(*DBChannel)
 
 	// create log tho it won't be written
-	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgReceive, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgReceive, channel, nil)
 
 	// try to write it our db
 	err = writeMsgToDB(ctx, b, msg, clog)

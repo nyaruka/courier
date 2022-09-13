@@ -26,7 +26,7 @@ func TestChannelLog(t *testing.T) {
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
 
 	channel := test.NewMockChannel("fef91e9b-a6ed-44fb-b6ce-feed8af585a8", "NX", "1234", "US", nil)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel, nil)
 
 	// make a request that will have a response
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)

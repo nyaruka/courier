@@ -726,16 +726,16 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendMethod:  http.MethodPut,
 		})
 
-	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil)
-	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil)
-	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendSmartEncodingTestCases, nil)
-	RunChannelSendTestCases(t, postChannel, newHandler(), postSendTestCases, nil)
-	RunChannelSendTestCases(t, postChannelCustomContentType, newHandler(), postSendCustomContentTypeTestCases, nil)
-	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendTestCases, nil)
-	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendSmartEncodingTestCases, nil)
-	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil)
-	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil)
-	RunChannelSendTestCases(t, xmlChannelWithResponseContent, newHandler(), xmlSendWithResponseContentTestCases, nil)
+	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendSmartEncodingTestCases, nil, nil)
+	RunChannelSendTestCases(t, postChannel, newHandler(), postSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, postChannelCustomContentType, newHandler(), postSendCustomContentTypeTestCases, nil, nil)
+	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendSmartEncodingTestCases, nil, nil)
+	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, xmlChannelWithResponseContent, newHandler(), xmlSendWithResponseContentTestCases, nil, nil)
 
 	var getChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
@@ -769,10 +769,10 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendHeaders: map[string]interface{}{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
-	RunChannelSendTestCases(t, getChannel30IntLength, newHandler(), longSendTestCases, nil)
-	RunChannelSendTestCases(t, getChannel30StrLength, newHandler(), longSendTestCases, nil)
-	RunChannelSendTestCases(t, jsonChannel30IntLength, newHandler(), jsonLongSendTestCases, nil)
-	RunChannelSendTestCases(t, xmlChannel30IntLength, newHandler(), xmlLongSendTestCases, nil)
+	RunChannelSendTestCases(t, getChannel30IntLength, newHandler(), longSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, getChannel30StrLength, newHandler(), longSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, jsonChannel30IntLength, newHandler(), jsonLongSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, xmlChannel30IntLength, newHandler(), xmlLongSendTestCases, nil, nil)
 
 	var nationalChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
@@ -780,7 +780,7 @@ func TestSending(t *testing.T) {
 			"use_national":           true,
 			courier.ConfigSendMethod: http.MethodGet})
 
-	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalGetSendTestCases, nil)
+	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalGetSendTestCases, nil, nil)
 
 	var jsonChannelWithSendAuthorization = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
@@ -790,6 +790,6 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendMethod:        http.MethodPost,
 			courier.ConfigSendAuthorization: "Token ABCDEF",
 		})
-	RunChannelSendTestCases(t, jsonChannelWithSendAuthorization, newHandler(), jsonSendTestCases, nil)
+	RunChannelSendTestCases(t, jsonChannelWithSendAuthorization, newHandler(), jsonSendTestCases, []string{"Token ABCDEF"}, nil)
 
 }

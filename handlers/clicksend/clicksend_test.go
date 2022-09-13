@@ -7,6 +7,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 const (
@@ -174,5 +175,5 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, []string{httpx.BasicAuth("Aladdin", "open sesame")}, nil)
 }

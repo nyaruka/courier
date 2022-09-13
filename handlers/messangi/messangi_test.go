@@ -105,5 +105,5 @@ func TestSending(t *testing.T) {
 			"instance_id": 7,
 			"carrier_id":  2,
 		})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"my-private-key"}, nil)
 }
