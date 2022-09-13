@@ -275,16 +275,17 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		defer cancel()
 		r = r.WithContext(ctx)
 
-		// get the channel for this request - can be nil, e.g. FBA verification requests
-		channel, err := handler.GetChannel(ctx, r)
+		recorder, err := httpx.NewRecorder(r, w, true)
 		if err != nil {
-			WriteError(ctx, w, r, err)
+			writeAndLogRequestError(ctx, w, r, nil, err)
 			return
 		}
 
-		recorder, err := httpx.NewRecorder(r, w, true)
+		// get the channel for this request - can be nil, e.g. FBA verification requests
+		channel, err := handler.GetChannel(ctx, r)
 		if err != nil {
-			writeAndLogRequestError(ctx, w, r, channel, err)
+			logrus.WithError(err).WithField("request", string(recorder.Trace.RequestTrace))
+			writeAndLogRequestError(ctx, recorder.ResponseWriter, r, channel, err)
 			return
 		}
 
