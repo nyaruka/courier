@@ -1,3 +1,8 @@
+v7.5.26
+----------
+ * Fix junebug redaction values
+ * Fix redaction on sends and add redaction of error messages
+
 v7.5.25
 ----------
  * Adjust logging for WAC missing channel
