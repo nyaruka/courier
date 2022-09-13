@@ -1,3 +1,7 @@
+v7.5.27
+----------
+ * Fix server logging when channel is nil
+
 v7.5.26
 ----------
  * Fix junebug redaction values
