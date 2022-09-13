@@ -10,6 +10,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
@@ -48,6 +49,14 @@ func (h *dummyHandler) Initialize(s courier.Server) error {
 
 // Send sends the given message, logging any HTTP calls or errors
 func (h *dummyHandler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+	// log a request that contains a header value that should be redacted
+	req, _ := httpx.NewRequest("GET", "http://dummy.com/send", nil, map[string]string{"Authorization": "Token sesame"})
+	trace, _ := httpx.DoTrace(http.DefaultClient, req, nil, nil, 1024)
+	clog.HTTP(trace)
+
+	// log an error than contains a value that should be redacted
+	clog.Error(errors.New("contains sesame seeds"))
+
 	return h.backend.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgSent, clog), nil
 }
 
@@ -75,6 +84,13 @@ func testConfig() *courier.Config {
 }
 
 func TestHandling(t *testing.T) {
+	defer httpx.SetRequestor(httpx.DefaultRequestor)
+	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
+		"http://dummy.com/send": {
+			httpx.NewMockResponse(200, nil, []byte(`SENT`)),
+		},
+	}))
+
 	assert := assert.New(t)
 
 	// create our backend and server
@@ -114,9 +130,20 @@ func TestHandling(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// message should be marked as wired
-	assert.Equal(1, len(mb.WrittenMsgStatuses()))
-	assert.Equal(msg.ID(), mb.WrittenMsgStatuses()[0].ID())
-	assert.Equal(courier.MsgSent, mb.WrittenMsgStatuses()[0].Status())
+	assert.Len(mb.WrittenMsgStatuses(), 1)
+	status := mb.WrittenMsgStatuses()[0]
+	assert.Equal(msg.ID(), status.ID())
+	assert.Equal(courier.MsgSent, status.Status())
+
+	assert.Len(mb.WrittenChannelLogs(), 1)
+	clog := mb.WrittenChannelLogs()[0]
+	assert.Equal([]courier.ChannelError{courier.NewChannelError("contains ********** seeds", "")}, clog.Errors())
+
+	assert.Len(clog.HTTPLogs(), 1)
+
+	hlog := clog.HTTPLogs()[0]
+	assert.Equal("http://dummy.com/send", hlog.URL)
+	assert.Equal("GET /send HTTP/1.1\r\nHost: dummy.com\r\nUser-Agent: Go-http-client/1.1\r\nAuthorization: Token **********\r\nAccept-Encoding: gzip\r\n\r\n", hlog.Request)
 
 	mb.Reset()
 

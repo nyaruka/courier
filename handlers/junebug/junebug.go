@@ -221,8 +221,12 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 }
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
-	return []string{
+	vals := []string{
 		httpx.BasicAuth(ch.StringConfigForKey(courier.ConfigUsername, ""), ch.StringConfigForKey(courier.ConfigPassword, "")),
-		ch.StringConfigForKey(courier.ConfigSecret, ""),
 	}
+	secret := ch.StringConfigForKey(courier.ConfigSecret, "")
+	if secret != "" {
+		vals = append(vals, secret)
+	}
+	return vals
 }

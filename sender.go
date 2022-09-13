@@ -191,7 +191,7 @@ func (w *Sender) sendMessage(msg Msg) {
 	var redactValues []string
 	handler := server.GetHandler(msg.Channel())
 	if handler != nil {
-		handler.RedactValues(msg.Channel())
+		redactValues = handler.RedactValues(msg.Channel())
 	}
 
 	clog := NewChannelLogForSend(msg, redactValues)
