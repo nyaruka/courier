@@ -1,3 +1,9 @@
+v7.5.25
+----------
+ * Adjust logging for WAC missing channel
+ * Update to latest gocommon
+ * Implement redaction of channel logs
+
 v7.5.24
 ----------
  * Adjust to use the cache by address correctly
