@@ -695,6 +695,16 @@ var testCasesWAC = []ChannelHandleTestCase{
 		PrepRequest:        addValidSignature,
 	},
 	{
+		Label:                 "Receive Message WAC invalid signature",
+		URL:                   wacReceiveURL,
+		Data:                  string(test.ReadFile("./testdata/wac/helloWAC.json")),
+		ExpectedRespStatus:    400,
+		ExpectedRespBody:      "invalid request signature",
+		NoQueueErrorCheck:     true,
+		NoInvalidChannelCheck: true,
+		PrepRequest:           addInvalidSignature,
+	},
+	{
 		Label:              "Receive Valid Status",
 		URL:                wacReceiveURL,
 		Data:               string(test.ReadFile("./testdata/wac/validStatusWAC.json")),
