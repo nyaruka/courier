@@ -360,13 +360,15 @@ func resolveMediaURL(mediaID string, token string, clog *courier.ChannelLog) (st
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		courier.LogRequestError(r, channel, err)
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, invalid request signature")
 	}
 
 	payload := &moPayload{}
 	err = handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		courier.LogRequestError(r, channel, err)
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, invalid JSON")
 	}
 
 	// is not a 'page' and 'instagram' object? ignore it
@@ -423,13 +425,15 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 				// create our date from the timestamp
 				ts, err := strconv.ParseInt(msg.Timestamp, 10, 64)
 				if err != nil {
-					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid timestamp: %s", msg.Timestamp))
+					courier.LogRequestError(r, channel, err)
+					return nil, nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("ignoring request, invalid timestamp: %s", msg.Timestamp))
 				}
 				date := time.Unix(ts, 0).UTC()
 
 				urn, err := urns.NewWhatsAppURN(msg.From)
 				if err != nil {
-					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+					courier.LogRequestError(r, channel, err)
+					return nil, nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, invalid whatsapp id")
 				}
 
 				text := ""
@@ -497,7 +501,8 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					if waIgnoreStatuses[status.Status] {
 						data = append(data, courier.NewInfoData(fmt.Sprintf("ignoring status: %s", status.Status)))
 					} else {
-						handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status: %s", status.Status))
+						courier.LogRequestError(r, channel, fmt.Errorf("unknown status: %s", status.Status))
+						handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("unknown status: %s", status.Status))
 					}
 					continue
 				}
@@ -564,12 +569,14 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 		if payload.Object == "instagram" {
 			urn, err = urns.NewInstagramURN(sender)
 			if err != nil {
-				return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+				courier.LogRequestError(r, channel, err)
+				return nil, nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, invalid instagram id")
 			}
 		} else {
 			urn, err = urns.NewFacebookURN(sender)
 			if err != nil {
-				return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+				courier.LogRequestError(r, channel, err)
+				return nil, nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, invalid facebook id")
 			}
 		}
 
@@ -583,7 +590,8 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			if msg.OptIn.UserRef != "" {
 				urn, err = urns.NewFacebookURN(urns.FacebookRefPrefix + msg.OptIn.UserRef)
 				if err != nil {
-					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+					courier.LogRequestError(r, channel, err)
+					return nil, nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request")
 				}
 			}
 

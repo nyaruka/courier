@@ -274,7 +274,14 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		// get the channel for this request - can be nil, e.g. FBA verification requests
 		channel, err := handler.GetChannel(ctx, r)
 		if err != nil {
-			logrus.WithError(err).WithField("request", string(recorder.Trace.RequestTrace))
+
+			// webhooks for FBA, IG and WAC should always return 200
+			if !handler.UseChannelRouteUUID() {
+				logrus.WithError(err).WithField("request", string(recorder.Trace.RequestTrace))
+				WriteIgnored(ctx, recorder.ResponseWriter, r, err.Error())
+				return
+			}
+
 			writeAndLogRequestError(ctx, recorder.ResponseWriter, r, channel, err)
 			return
 		}
