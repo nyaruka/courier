@@ -66,6 +66,11 @@ func (h *BaseHandler) UseChannelRouteUUID() bool {
 	return h.useChannelRouteUUID
 }
 
+// ErrorResponseStatus() return the response status code for errors
+func (h *BaseHandler) ErrorResponseStatus() int {
+	return 400
+}
+
 func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
 	if ch == nil {
 		return nil

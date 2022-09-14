@@ -719,7 +719,7 @@ var testCasesWAC = []ChannelHandleTestCase{
 		URL:                wacReceiveURL,
 		Data:               string(test.ReadFile("./testdata/wac/invalidStatusWAC.json")),
 		ExpectedRespStatus: 200,
-		ExpectedRespBody:   `"unknown status: in_orbit"`,
+		ExpectedRespBody:   `"ignoring request, unknown status: in_orbit"`,
 		PrepRequest:        addValidSignature,
 	},
 	{
@@ -833,19 +833,19 @@ func TestVerify(t *testing.T) {
 		{
 			Label:              "Verify No Mode",
 			URL:                "/c/fba/receive",
-			ExpectedRespStatus: 400,
+			ExpectedRespStatus: 200,
 			ExpectedRespBody:   "unknown request",
 		},
 		{
 			Label:              "Verify No Secret",
 			URL:                "/c/fba/receive?hub.mode=subscribe",
-			ExpectedRespStatus: 400,
+			ExpectedRespStatus: 200,
 			ExpectedRespBody:   "token does not match secret",
 		},
 		{
 			Label:              "Invalid Secret",
 			URL:                "/c/fba/receive?hub.mode=subscribe&hub.verify_token=blah",
-			ExpectedRespStatus: 400,
+			ExpectedRespStatus: 200,
 			ExpectedRespBody:   "token does not match secret",
 		},
 		{
@@ -868,19 +868,19 @@ func TestVerify(t *testing.T) {
 		{
 			Label:              "Verify No Mode",
 			URL:                "/c/ig/receive",
-			ExpectedRespStatus: 400,
+			ExpectedRespStatus: 200,
 			ExpectedRespBody:   "unknown request",
 		},
 		{
 			Label:              "Verify No Secret",
 			URL:                "/c/ig/receive?hub.mode=subscribe",
-			ExpectedRespStatus: 400,
+			ExpectedRespStatus: 200,
 			ExpectedRespBody:   "token does not match secret",
 		},
 		{
 			Label:              "Invalid Secret",
 			URL:                "/c/ig/receive?hub.mode=subscribe&hub.verify_token=blah",
-			ExpectedRespStatus: 400,
+			ExpectedRespStatus: 200,
 			ExpectedRespBody:   "token does not match secret",
 		},
 		{

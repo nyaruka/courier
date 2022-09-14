@@ -276,9 +276,9 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		if err != nil {
 
 			// webhooks for FBA, IG and WAC should always return 200
-			if !handler.UseChannelRouteUUID() {
+			if handler.ErrorResponseStatus() == 200 {
 				logrus.WithError(err).WithField("request", string(recorder.Trace.RequestTrace))
-				WriteIgnored(ctx, recorder.ResponseWriter, r, err.Error())
+				WriteIgnored(ctx, recorder.ResponseWriter, r, fmt.Sprintf("ignoring request, %s", err.Error()))
 				return
 			}
 
