@@ -12,7 +12,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/gsm7"
 
 	"github.com/buger/jsonparser"
@@ -41,7 +40,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("NX"), "Nexmo")}
+	return &handler{handlers.NewBaseHandlerWithParams(courier.ChannelType("NX"), "Nexmo", true, []string{configNexmoAPISecret, configNexmoAppPrivateKey})}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -71,7 +70,7 @@ var statusMappings = map[string]courier.MsgStatusValue{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &statusForm{}
 	handlers.DecodeAndValidateForm(form, r)
 
@@ -84,7 +83,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring unknown status report")
 	}
 
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.MessageID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, form.MessageID, msgStatus, clog)
 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
@@ -97,7 +96,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &moForm{}
 	handlers.DecodeAndValidateForm(form, r)
 
@@ -112,13 +111,13 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text, clog)
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	nexmoAPIKey := msg.Channel().StringConfigForKey(configNexmoAPIKey, "")
 	if nexmoAPIKey == "" {
 		return nil, fmt.Errorf("no nexmo API key set for NX channel")
@@ -139,7 +138,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		textType = "unicode"
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), text, maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
@@ -153,8 +152,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			"type":              []string{textType},
 		}
 
-		var rr *utils.RequestResponse
+		var resp *http.Response
+		var respBody []byte
 		var requestErr error
+
 		for i := 0; i < 3; i++ {
 			req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 			if err != nil {
@@ -162,8 +163,8 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			}
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-			rr, requestErr = utils.MakeHTTPRequest(req)
-			matched := throttledRE.FindAllStringSubmatch(string([]byte(rr.Body)), -1)
+			resp, respBody, requestErr = handlers.RequestHTTP(req, clog)
+			matched := throttledRE.FindAllStringSubmatch(string(respBody), -1)
 			if len(matched) > 0 && len(matched[0]) > 0 {
 				sleepTime, _ := strconv.Atoi(matched[0][1])
 				time.Sleep(time.Duration(sleepTime) * time.Millisecond)
@@ -172,21 +173,17 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			}
 		}
 
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
-		status.AddLog(log)
-		if requestErr != nil {
-			log.WithError("Message Send Error", requestErr)
+		if requestErr != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		nexmoStatus, err := jsonparser.GetString([]byte(rr.Body), "messages", "[0]", "status")
+		nexmoStatus, err := jsonparser.GetString(respBody, "messages", "[0]", "status")
 		if err != nil || nexmoStatus != "0" {
-			log.WithError("Message Send Error", errors.Errorf("failed to send message, received error status [%s]", nexmoStatus))
+			clog.Error(errors.Errorf("failed to send message, received error status [%s]", nexmoStatus))
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString([]byte(rr.Body), "messages", "[0]", "message-id")
+		externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "message-id")
 		if err == nil {
 			status.SetExternalID(externalID)
 		}

@@ -11,7 +11,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/gsm7"
 )
 
@@ -44,7 +43,7 @@ type statusForm struct {
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -61,7 +60,7 @@ func (h *handler) receiveStatus(ctx context.Context, c courier.Channel, w http.R
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("must have either dlvrd or err set to 1"))
 	}
 
-	status := h.Backend().NewMsgStatusForExternalID(c, form.ID, reqStatus)
+	status := h.Backend().NewMsgStatusForExternalID(c, form.ID, reqStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 }
 
@@ -74,7 +73,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// get our params
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -95,21 +94,21 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(c, urn, text).WithExternalID(form.ID).WithReceivedOn(time.Now().UTC())
+	msg := h.Backend().NewIncomingMsg(c, urn, text, clog).WithExternalID(form.ID).WithReceivedOn(time.Now().UTC())
 
 	// and finally queue our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	return writeJasminACK(w)
 }
 
-func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []courier.MsgStatus) error {
+func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.MsgStatus) error {
 	return writeJasminACK(w)
 }
 
-func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, details string) error {
+func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
 	return writeJasminACK(w)
 }
 
@@ -119,8 +118,8 @@ func writeJasminACK(w http.ResponseWriter) error {
 	return err
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for JS channel")
@@ -160,19 +159,20 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	if err != nil {
 		return nil, err
 	}
-	rr, err := utils.MakeHTTPRequest(req)
 
-	// record our status and log
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
-	if err == nil {
-		status.SetStatus(courier.MsgWired)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return status, nil
 	}
 
+	status.SetStatus(courier.MsgWired)
+
 	// try to read our external id out
-	matches := idRegex.FindStringSubmatch(string(rr.Body))
+	matches := idRegex.FindSubmatch(respBody)
 	if len(matches) == 2 {
-		status.SetExternalID(matches[1])
+		status.SetExternalID(string(matches[1]))
 	}
 
 	return status, nil

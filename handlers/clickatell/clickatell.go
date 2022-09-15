@@ -65,7 +65,7 @@ var statusMapping = map[int]courier.MsgStatusValue{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &statusPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 
@@ -85,7 +85,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, payload.MessageID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, payload.MessageID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -99,7 +99,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 
@@ -143,10 +143,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text)).WithReceivedOn(date.UTC()).WithExternalID(payload.MessageID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text), clog).WithReceivedOn(date.UTC()).WithExternalID(payload.MessageID)
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 // utility method to decode crazy clickatell 16 bit format
@@ -168,14 +168,14 @@ func decodeUTF16BE(b []byte) (string, error) {
 	return ret.String(), nil
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	apiKey := msg.Channel().StringConfigForKey(courier.ConfigAPIKey, "")
 	if apiKey == "" {
 		return nil, fmt.Errorf("no api_key set for CT channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
@@ -195,19 +195,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		// try to read out our message id, if we can't then this was a failure
-		externalID, err := jsonparser.GetString(rr.Body, "messages", "[0]", "apiMessageId")
+		externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "apiMessageId")
 		if err != nil {
-			log.WithError("Send Error", err)
+			clog.Error(err)
 		} else {
 			status.SetStatus(courier.MsgWired)
 			status.SetExternalID(externalID)

@@ -7,13 +7,12 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/dates"
 )
 
-var (
+const (
 	receiveURL = "/c/cm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-
-	notXML = "empty"
 
 	validReceive = `<request>
 	<shortCode>2020</shortCode>
@@ -62,25 +61,77 @@ var (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CM", "2020", "MW", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CM", "2020", "MW", nil),
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: validReceive, Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+265990099333"), ExternalID: Sp("1232434354")},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURNReceive, Status: 400, Response: "phone number supplied is not a number"},
-
-	{Label: "Receive valid with empty text", URL: receiveURL, Data: validReceiveEmptyText, Status: 200, Response: "Accepted",
-		Text: Sp(""), URN: Sp("tel:+265990099333"), ExternalID: Sp("1232434354")},
-	{Label: "Receive valid missing text", URL: receiveURL, Data: validMissingText, Status: 200, Response: "Accepted",
-		Text: Sp(""), URN: Sp("tel:+265990099333"), ExternalID: Sp("1232434354")},
-
-	{Label: "Receive valid missing referenceID", URL: receiveURL, Data: validMissingReferenceID, Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+265990099333"), ExternalID: Sp("")},
-
-	{Label: "Missing Shortcode", URL: receiveURL, Data: missingShortcode, Status: 400, Response: "missing parameters, must have 'mobile' and 'shortcode'"},
-	{Label: "Missing Mobile", URL: receiveURL, Data: missingMobile, Status: 400, Response: "missing parameters, must have 'mobile' and 'shortcode'"},
-	{Label: "Receive invalid XML", URL: receiveURL, Data: notXML, Status: 400, Response: "unable to parse request XML"},
+	{
+		Label:                "Receive Valid Message",
+		URL:                  receiveURL,
+		Data:                 validReceive,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+265990099333",
+		ExpectedExternalID:   "1232434354",
+	},
+	{
+		Label:                "Invalid URN",
+		URL:                  receiveURL,
+		Data:                 invalidURNReceive,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
+	},
+	{
+		Label:                "Receive valid with empty text",
+		URL:                  receiveURL,
+		Data:                 validReceiveEmptyText,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp(""),
+		ExpectedURN:          "tel:+265990099333",
+		ExpectedExternalID:   "1232434354",
+	},
+	{
+		Label:                "Receive valid missing text",
+		URL:                  receiveURL,
+		Data:                 validMissingText,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp(""),
+		ExpectedURN:          "tel:+265990099333",
+		ExpectedExternalID:   "1232434354",
+	},
+	{
+		Label:                "Receive valid missing referenceID",
+		URL:                  receiveURL,
+		Data:                 validMissingReferenceID,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+265990099333",
+	},
+	{
+		Label:                "Missing Shortcode",
+		URL:                  receiveURL,
+		Data:                 missingShortcode,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "missing parameters, must have 'mobile' and 'shortcode'",
+	},
+	{
+		Label:                "Missing Mobile",
+		URL:                  receiveURL,
+		Data:                 missingMobile,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "missing parameters, must have 'mobile' and 'shortcode'",
+	},
+	{
+		Label:                "Receive invalid XML",
+		URL:                  receiveURL,
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "unable to parse request XML",
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -93,44 +144,61 @@ func BenchmarkHandler(b *testing.B) {
 
 // setSendURL takes care of setting the sendURL to call
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	c.(*courier.MockChannel).SetConfig(courier.ConfigSendURL, s.URL)
+	c.(*test.MockChannel).SetConfig(courier.ConfigSendURL, s.URL)
 	sendURL = s.URL
 
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`, ResponseStatus: 200,
-		RequestBody: `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Simple Message"}`,
-		Headers:     map[string]string{"Content-Type": "application/json"},
-		SendPrep:    setSendURL},
-	{Label: "Unicode Send",
-		Text: "☺", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`, ResponseStatus: 200,
-		RequestBody: `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"☺"}`,
-		Headers:     map[string]string{"Content-Type": "application/json"},
-		SendPrep:    setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: `{"code":"001","desc":"Database SQL Error"}`, ResponseStatus: 401,
-		RequestBody: `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Error Message"}`,
-		Headers:     map[string]string{"Content-Type": "application/json"},
-		SendPrep:    setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "W",
-		ResponseBody: `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`, ResponseStatus: 200,
-		RequestBody: `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"My pic!\nhttps://foo.bar/image.jpg"}`,
-		Headers:     map[string]string{"Content-Type": "application/json"},
-		SendPrep:    setSendURL},
+	{
+		Label:               "Plain Send",
+		MsgText:             "Simple Message",
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Simple Message"}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Unicode Send",
+		MsgText:             "☺",
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"☺"}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Error Sending",
+		MsgText:             "Error Message",
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    `{"code":"001","desc":"Database SQL Error"}`,
+		MockResponseStatus:  401,
+		ExpectedRequestBody: `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Error Message"}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json"},
+		ExpectedMsgStatus:   "E",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Send Attachment",
+		MsgText:             "My pic!",
+		MsgURN:              "tel:+250788383383",
+		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:    `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"My pic!\nhttps://foo.bar/image.jpg"}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CM", "2020", "MW",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CM", "2020", "MW",
 		map[string]interface{}{
 			"password": "Password",
 			"username": "Username",
@@ -143,5 +211,5 @@ func TestSending(t *testing.T) {
 	// mock time so we can have predictable MD5 hashes
 	dates.SetNowSource(dates.NewFixedNowSource(time.Date(2018, 4, 11, 18, 24, 30, 123456000, time.UTC)))
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
 }

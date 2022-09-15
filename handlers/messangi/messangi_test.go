@@ -6,24 +6,32 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
-
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MG", "2020", "JM", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MG", "2020", "JM", nil),
 }
 
-var (
+const (
 	receiveURL = "/c/mg/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-
-	validReceive  = "mo=Msg&mobile=18765422035"
-	missingNumber = "mo=Msg"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Msg"), URN: Sp("tel:+18765422035")},
-	{Label: "Receive Missing Number", URL: receiveURL, Data: missingNumber, Status: 400, Response: "required field 'mobile'"},
+	{
+		Label:                "Receive Valid",
+		URL:                  receiveURL,
+		Data:                 "mo=Msg&mobile=18765422035",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Message Accepted",
+		ExpectedMsgText:      Sp("Msg"),
+		ExpectedURN:          "tel:+18765422035"},
+	{
+		Label:                "Receive Missing Number",
+		URL:                  receiveURL,
+		Data:                 "mo=Msg",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "required field 'mobile'"},
 }
 
 func TestHandler(t *testing.T) {
@@ -38,48 +46,64 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL
 }
 
-var defaultSendTestCases = []ChannelSendTestCase {
-	{Label: "Plain Send",
-		Text: "Simple Message ☺", URN: "tel:+18765422035",
-		Status: "W", ExternalID: "",
-		ResponseBody: `<response><input>sendMT</input><status>OK</status><description>Completed</description></response>`,
-		ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Long Send",
-		Text: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		URN: "tel:+18765422035",
-		Status: "W",
-		ExternalID: "",
-		ResponseBody: `<response><input>sendMT</input><status>OK</status><description>Completed</description></response>`,
-		ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+18765422035", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status: "W", ExternalID: "",
-		ResponseBody: `<response><input>sendMT</input><status>OK</status><description>Completed</description></response>`,
-		ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Invalid Parameters",
-		Text: "Invalid Parameters", URN: "tel:+18765422035",
-		Status: "E",
-		ResponseBody: "", ResponseStatus: 404,
-		SendPrep: setSendURL},
-	{Label: "Error Response",
-		Text: "Error Response", URN: "tel:+18765422035",
-		Status: "F",
-		ResponseBody: `<response><input>sendMT</input><status>ERROR</status><description>Completed</description></response>`,
-		ResponseStatus: 200,
-		SendPrep: setSendURL},
+var defaultSendTestCases = []ChannelSendTestCase{
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message ☺",
+		MsgURN:             "tel:+18765422035",
+		MockResponseBody:   `<response><input>sendMT</input><status>OK</status><description>Completed</description></response>`,
+		MockResponseStatus: 200,
+		ExpectedMsgStatus:  "W",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Long Send",
+		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:             "tel:+18765422035",
+		MockResponseBody:   `<response><input>sendMT</input><status>OK</status><description>Completed</description></response>`,
+		MockResponseStatus: 200,
+		ExpectedMsgStatus:  "W",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
+		MsgText:            "My pic!",
+		MsgURN:             "tel:+18765422035",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:   `<response><input>sendMT</input><status>OK</status><description>Completed</description></response>`,
+		MockResponseStatus: 200,
+		ExpectedMsgStatus:  "W",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Invalid Parameters",
+		MsgText:            "Invalid Parameters",
+		MsgURN:             "tel:+18765422035",
+		MockResponseBody:   "",
+		MockResponseStatus: 404,
+		ExpectedMsgStatus:  "E",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Error Response",
+		MsgText:            "Error Response",
+		MsgURN:             "tel:+18765422035",
+		MockResponseBody:   `<response><input>sendMT</input><status>ERROR</status><description>Completed</description></response>`,
+		MockResponseStatus: 200,
+		ExpectedMsgStatus:  "F",
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("Received invalid response description: Completed", "")},
+		SendPrep:           setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MG", "2020", "JM",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MG", "2020", "JM",
 		map[string]interface{}{
-			"public_key": "my-public-key",
+			"public_key":  "my-public-key",
 			"private_key": "my-private-key",
 			"instance_id": 7,
-			"carrier_id": 2,
+			"carrier_id":  2,
 		})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"my-private-key"}, nil)
 }

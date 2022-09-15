@@ -6,21 +6,37 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
-var (
+const (
 	receiveURL = "/c/cs/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CS", "2020", "US", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CS", "2020", "US", nil),
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: `from=639171234567&body=hello+world`, Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		Status: 200, Response: "Accepted", Text: Sp("hello world"), URN: Sp("tel:+639171234567")},
-	{Label: "Receive Missing From", URL: receiveURL, Data: `body=hello+world`, Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		Status: 400, Response: "Error"},
+	{
+		Label:                "Receive Valid Message",
+		URL:                  receiveURL,
+		Data:                 `from=639171234567&body=hello+world`,
+		Headers:              map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("hello world"),
+		ExpectedURN:          "tel:+639171234567",
+	},
+	{
+		Label:                "Receive Missing From",
+		URL:                  receiveURL,
+		Data:                 `body=hello+world`,
+		Headers:              map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error",
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -95,44 +111,69 @@ const failureResponse = `{
 }`
 
 var sendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "W",
-		Headers:      map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
-		ResponseBody: successResponse, ResponseStatus: 200, ExternalID: "BF7AD270-0DE2-418B-B606-71D527D9C1AE",
-		RequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"Simple Message","source":"courier"}]}`,
-		SendPrep:    setSendURL},
-	{Label: "Unicode Send",
-		Text: "☺", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: successResponse, ResponseStatus: 200, ExternalID: "BF7AD270-0DE2-418B-B606-71D527D9C1AE",
-		RequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"☺","source":"courier"}]}`,
-		SendPrep:    setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "W",
-		ResponseBody: successResponse, ResponseStatus: 200, ExternalID: "BF7AD270-0DE2-418B-B606-71D527D9C1AE",
-		RequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"My pic!\nhttps://foo.bar/image.jpg","source":"courier"}]}`,
-		SendPrep:    setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Sending", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: `[{"Response": "101"}]`, ResponseStatus: 403,
-		SendPrep: setSendURL},
-	{Label: "Failure Response",
-		Text: "Error Sending", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: failureResponse, ResponseStatus: 200,
-		SendPrep: setSendURL},
+	{
+		Label:               "Plain Send",
+		MsgText:             "Simple Message",
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    successResponse,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"Simple Message","source":"courier"}]}`,
+		ExpectedHeaders:     map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "BF7AD270-0DE2-418B-B606-71D527D9C1AE",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Unicode Send",
+		MsgText:             "☺",
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    successResponse,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"☺","source":"courier"}]}`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "BF7AD270-0DE2-418B-B606-71D527D9C1AE",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Send Attachment",
+		MsgText:             "My pic!",
+		MsgURN:              "tel:+250788383383",
+		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:    successResponse,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"My pic!\nhttps://foo.bar/image.jpg","source":"courier"}]}`,
+		ExpectedExternalID:  "BF7AD270-0DE2-418B-B606-71D527D9C1AE",
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Error Sending",
+		MsgText:            "Error Sending",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `[{"Response": "101"}]`,
+		MockResponseStatus: 403,
+		ExpectedMsgStatus:  "E",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Failure Response",
+		MsgText:            "Error Sending",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   failureResponse,
+		MockResponseStatus: 200,
+		ExpectedMsgStatus:  "E",
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received non SUCCESS status: FAILURE", "")},
+		SendPrep:           setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "GL", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "GL", "2020", "US",
 		map[string]interface{}{
 			"username": "Aladdin",
 			"password": "open sesame",
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, []string{httpx.BasicAuth("Aladdin", "open sesame")}, nil)
 }

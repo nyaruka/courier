@@ -12,7 +12,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 var (
@@ -57,7 +56,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := r.ParseForm()
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -77,7 +76,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.MessageID), msgStatus)
+		status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.MessageID), msgStatus, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 	} else if messageType == "incoming" {
@@ -95,17 +94,17 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 		// build our msg
-		msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithExternalID(form.RequestID).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(channel, urn, form.Message, clog).WithExternalID(form.RequestID).WithReceivedOn(date)
 
 		// and finally write our message
-		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 	} else {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "unknown message_type request")
 	}
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for CK channel")
@@ -116,7 +115,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no password set for CK channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		// build our request
@@ -141,11 +140,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		rr, err := utils.MakeHTTPRequest(req)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
 
-		if rr.StatusCode == 400 {
-			message, _ := jsonparser.GetString([]byte(rr.Body), "message")
-			description, _ := jsonparser.GetString([]byte(rr.Body), "description")
+		if resp != nil && resp.StatusCode == 400 {
+			message, _ := jsonparser.GetString(respBody, "message")
+			description, _ := jsonparser.GetString(respBody, "description")
 
 			if message == "BAD REQUEST" && description == `Invalid\/Used Request ID` {
 				delete(form, "request_id")
@@ -153,20 +152,16 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 				req, _ = http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				rr, err = utils.MakeHTTPRequest(req)
 
+				resp, _, err = handlers.RequestHTTP(req, clog)
 			}
-
 		}
 
-		// record our status and log
-		status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
-		if err != nil {
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		status.SetStatus(courier.MsgWired)
-
 	}
 
 	return status, nil

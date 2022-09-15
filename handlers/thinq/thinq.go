@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 const configAccountID = "account_id"
@@ -43,6 +44,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
+// see https://apidocs.thinq.com/#829c8863-8a47-4273-80fb-d962aa64c901
 // from: Source DID
 // to: Destination DID
 // type: sms|mms
@@ -55,7 +57,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// get our params
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -70,14 +72,19 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	var msg courier.Msg
+
 	if form.Type == "sms" {
-		msg = h.Backend().NewIncomingMsg(channel, urn, form.Message)
+		msg = h.Backend().NewIncomingMsg(channel, urn, form.Message, clog)
 	} else if form.Type == "mms" {
-		msg = h.Backend().NewIncomingMsg(channel, urn, "").WithAttachment(form.Message)
+		if strings.HasPrefix(form.Message, "http://") || strings.HasPrefix(form.Message, "https://") {
+			msg = h.Backend().NewIncomingMsg(channel, urn, "", clog).WithAttachment(form.Message)
+		} else {
+			msg = h.Backend().NewIncomingMsg(channel, urn, "", clog).WithAttachment("data:" + form.Message)
+		}
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown message type: %s", form.Type))
 	}
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 // guid: thinQ guid returned when an outbound message is sent via our API
@@ -103,7 +110,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// get our params
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -118,7 +125,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.GUID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, form.GUID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -128,8 +135,8 @@ type mtMessage struct {
 	Message string `json:"message"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	accountID := msg.Channel().StringConfigForKey(configAccountID, "")
 	if accountID == "" {
 		return nil, fmt.Errorf("no account id set for TQ channel")
@@ -145,7 +152,7 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		return nil, fmt.Errorf("no token set for TQ channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	// we send attachments first so that text appears below
 	for _, a := range msg.Attachments() {
@@ -166,19 +173,15 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(tokenUser, token)
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		// try to get our external id
-		externalID, err := jsonparser.GetString([]byte(rr.Body), "guid")
+		externalID, err := jsonparser.GetString(respBody, "guid")
 		if err != nil {
-			log.WithError("Unable to read external ID", err)
+			clog.Error(errors.New("Unable to read external ID"))
 			return status, nil
 		}
 		status.SetStatus(courier.MsgWired)
@@ -202,19 +205,16 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Accept", "application/json")
 			req.SetBasicAuth(tokenUser, token)
-			rr, err := utils.MakeHTTPRequest(req)
 
-			// record our status and log
-			log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-			status.AddLog(log)
-			if err != nil {
+			resp, respBody, err := handlers.RequestHTTP(req, clog)
+			if err != nil || resp.StatusCode/100 != 2 {
 				return status, nil
 			}
 
 			// get our external id
-			externalID, err := jsonparser.GetString([]byte(rr.Body), "guid")
+			externalID, err := jsonparser.GetString(respBody, "guid")
 			if err != nil {
-				log.WithError("Unable to read external ID from guid field", err)
+				clog.Error(errors.New("Unable to read external ID from guid field"))
 				return status, nil
 			}
 
@@ -224,4 +224,10 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 	}
 
 	return status, nil
+}
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		httpx.BasicAuth(ch.StringConfigForKey(configAPITokenUser, ""), ch.StringConfigForKey(configAPIToken, "")),
+	}
 }

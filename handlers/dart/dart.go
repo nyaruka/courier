@@ -14,7 +14,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -57,7 +56,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -78,10 +77,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message, clog)
 
 	// and finally queue our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 type statusForm struct {
@@ -90,7 +89,7 @@ type statusForm struct {
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -121,26 +120,26 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus)
+	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // DartMedia expects "000" from a message receive request
-func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []courier.MsgStatus) error {
+func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.MsgStatus) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "000")
 	return err
 }
 
 // DartMedia expects "000" from a status request
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "000")
 	return err
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for %s channel", msg.Channel().ChannelType())
@@ -151,7 +150,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no password set for %s channel", msg.Channel().ChannelType())
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), h.maxLength)
 	for i, part := range parts {
 		form := url.Values{
@@ -180,16 +179,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		responseText := fmt.Sprintf("%s", rr.Body)
+		responseText := string(respBody)
 		if responseText != "000" {
 			errorMessage := "Unknown error"
 			if responseText == "001" {
@@ -198,7 +193,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			if responseText == "101" {
 				errorMessage = "Error 101: Account expired or invalid parameters"
 			}
-			log.WithError("Send Error", fmt.Errorf(errorMessage))
+			clog.Error(fmt.Errorf(errorMessage))
 			return status, nil
 		}
 

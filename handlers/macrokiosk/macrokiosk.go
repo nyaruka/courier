@@ -11,7 +11,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/gsm7"
 
 	"github.com/buger/jsonparser"
@@ -62,7 +61,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -74,7 +73,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("ignoring unknown status '%s'", form.Status))
 	}
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.MsgID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, form.MsgID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 }
@@ -90,7 +89,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -129,14 +128,14 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithExternalID(form.MsgID).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text, clog).WithExternalID(form.MsgID).WithReceivedOn(date.UTC())
 
 	// and write it
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 // WriteMsgSuccessResponse
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "-1") // MacroKiosk expects "-1" back for successful requests
 	return err
@@ -152,8 +151,8 @@ type mtPayload struct {
 	Type   string `json:"type"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	servID := msg.Channel().StringConfigForKey(configMacrokioskServiceID, "")
@@ -169,7 +168,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		encoding = "5"
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), text, maxMsgLength)
 	for i, part := range parts {
 		payload := &mtPayload{
@@ -192,14 +191,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString([]byte(rr.Body), "MsgID")
+		externalID, err := jsonparser.GetString(respBody, "MsgID")
 		if err != nil {
 			return status, fmt.Errorf("unable to parse response body from Macrokiosk")
 		}

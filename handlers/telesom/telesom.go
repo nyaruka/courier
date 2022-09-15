@@ -11,7 +11,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/dates"
 )
 
@@ -45,7 +44,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -58,15 +57,15 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Message)
+	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Message, clog)
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r, clog)
 
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for TS channel")
@@ -84,7 +83,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	tsSendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, sendURL)
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		from := strings.TrimPrefix(msg.Channel().Address(), "+")
@@ -115,18 +114,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		rr, err := utils.MakeInsecureHTTPRequest(req)
-
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		if strings.Contains(string(rr.Body), "Success") {
+		if strings.Contains(string(respBody), "Success") {
 			status.SetStatus(courier.MsgWired)
 		} else {
-			log.WithError("Message Send Error", fmt.Errorf("Received invalid response content: %s", string(rr.Body)))
+			clog.Error(fmt.Errorf("Received invalid response content: %s", string(respBody)))
 		}
 	}
 	return status, nil

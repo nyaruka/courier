@@ -12,12 +12,10 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 var (
-	sendURL      = "https://api-messaging.movile.com/v1/send-sms"
-	maxMsgLength = 160
+	sendURL = "https://api-messaging.movile.com/v1/send-sms"
 )
 
 type handler struct {
@@ -63,7 +61,7 @@ type sentStatusPayload struct {
 }
 
 // sentStatusMessage is our HTTP handler function for status updates
-func (h *handler) sentStatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) sentStatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &sentStatusPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -76,7 +74,7 @@ func (h *handler) sentStatusMessage(ctx context.Context, channel courier.Channel
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CollerationID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CollerationID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -86,7 +84,7 @@ type deliveredStatusPayload struct {
 }
 
 // sentStatusMessage is our HTTP handler function for status updates
-func (h *handler) deliveredStatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) deliveredStatusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &deliveredStatusPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -99,7 +97,7 @@ func (h *handler) deliveredStatusMessage(ctx context.Context, channel courier.Ch
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CollerationID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CollerationID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -112,7 +110,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -127,10 +125,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Message).WithExternalID(payload.ID).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Message, clog).WithExternalID(payload.ID).WithReceivedOn(date.UTC())
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 
 }
 
@@ -139,8 +137,8 @@ type mtPayload struct {
 	Message     string `json:"messageText"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for %s channel", msg.Channel().ChannelType())
@@ -151,7 +149,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no token set for %s channel", msg.Channel().ChannelType())
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	payload := mtPayload{}
 	payload.Destination = strings.TrimPrefix(msg.URN().Path(), "+")
@@ -171,15 +169,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	req.Header.Set("username", username)
 	req.Header.Set("authenticationtoken", token)
 
-	rr, err := utils.MakeHTTPRequest(req)
-
-	// record our status and log
-	status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
-	if err != nil {
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}
 
-	externalID, _ := jsonparser.GetString(rr.Body, "id")
+	externalID, _ := jsonparser.GetString(respBody, "id")
 	if externalID != "" {
 		status.SetExternalID(externalID)
 	}

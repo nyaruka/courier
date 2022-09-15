@@ -65,7 +65,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receiveVerify handles Twitter's webhook verification callback
-func (h *handler) receiveVerify(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveVerify(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	crcToken := r.URL.Query().Get("crc_token")
 	if crcToken == "" {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf(`missing required 'crc_token' query parameter`))
@@ -90,26 +90,26 @@ type moUser struct {
 	ScreenName string `json:"screen_name" validate:"required"`
 }
 
-// {
-//    "direct_message_events": [
-//      {
-//	      "created_timestamp": "1494877823220",
-//        "message_create": {
-//          "message_data": {
-//            "text": "hello world!",
-//          },
-//          "sender_id": "twitterid1",
-//          "target": {"recipient_id": "twitterid2" }
-//        },
-//        "type": "message_create",
-//        "id": "twitterMsgId"
-//      }
-//    ],
-//    "users": {
-//       "twitterid1": { "id": "twitterid1", "name": "joe", "screen_name": "joe" },
-//       "twitterid2": { "id": "twitterid2", "name": "jane", "screen_name": "jane" },
-//    }
-// }
+//	{
+//	   "direct_message_events": [
+//	     {
+//		      "created_timestamp": "1494877823220",
+//	       "message_create": {
+//	         "message_data": {
+//	           "text": "hello world!",
+//	         },
+//	         "sender_id": "twitterid1",
+//	         "target": {"recipient_id": "twitterid2" }
+//	       },
+//	       "type": "message_create",
+//	       "id": "twitterMsgId"
+//	     }
+//	   ],
+//	   "users": {
+//	      "twitterid1": { "id": "twitterid1", "name": "joe", "screen_name": "joe" },
+//	      "twitterid2": { "id": "twitterid2", "name": "jane", "screen_name": "jane" },
+//	   }
+//	}
 type moPayload struct {
 	DirectMessageEvents []struct {
 		CreatedTimestamp string `json:"created_timestamp" validate:"required"`
@@ -134,7 +134,7 @@ type moPayload struct {
 }
 
 // receiveEvent is our HTTP handler function for incoming events
-func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// read our handle id
 	handleID := c.StringConfigForKey(configHandleID, "")
 	if handleID == "" {
@@ -191,7 +191,7 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 		text := strings.Replace(entry.MessageCreate.MessageData.Text, "&amp;", "&", -1)
 
 		// create our message
-		msg := h.Backend().NewIncomingMsg(c, urn, text).WithExternalID(entry.ID).WithReceivedOn(date).WithContactName(user.Name)
+		msg := h.Backend().NewIncomingMsg(c, urn, text, clog).WithExternalID(entry.ID).WithReceivedOn(date).WithContactName(user.Name)
 
 		// if we have an attachment, add that as well
 		if entry.MessageCreate.MessageData.Attachment != nil {
@@ -201,28 +201,28 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 		msgs = append(msgs, msg)
 	}
 
-	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
 }
 
-// {
-//   "event": {
-//     "type": "message_create",
-//     "message_create": {
-//       "target": {
-//         "recipient_id": "844385345234"
-//       },
-//       "message_data": {
-//         "text": "Hello World!",
-//         "quick_reply": {
-//	         "type": "options",
-//           "options": [
-//	           { "label": "Red"}, {"label": "Green"}
-//           ]
-//         }
-//       }
-//     }
-//	 }
-// }
+//	{
+//	  "event": {
+//	    "type": "message_create",
+//	    "message_create": {
+//	      "target": {
+//	        "recipient_id": "844385345234"
+//	      },
+//	      "message_data": {
+//	        "text": "Hello World!",
+//	        "quick_reply": {
+//		         "type": "options",
+//	          "options": [
+//		           { "label": "Red"}, {"label": "Green"}
+//	          ]
+//	        }
+//	      }
+//	    }
+//		 }
+//	}
 type mtPayload struct {
 	Event struct {
 		Type          string `json:"type"`
@@ -255,7 +255,7 @@ type mtAttachment struct {
 	} `json:"media"`
 }
 
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	apiKey := msg.Channel().StringConfigForKey(configAPIKey, "")
 	apiSecret := msg.Channel().StringConfigForKey(configAPISecret, "")
 	accessToken := msg.Channel().StringConfigForKey(configAccessToken, "")
@@ -269,8 +269,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	token := oauth1.NewToken(accessToken, accessSecret)
 	client := config.Client(ctx, token)
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	var logs []*courier.ChannelLog
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	// we build these as needed since our unit tests manipulate apiURL
 	sendURL := sendDomain + "/1.1/direct_messages/events/new.json"
@@ -292,23 +291,16 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			// this is still a msg part
 			payload.Event.MessageCreate.MessageData.Text = msgParts[i]
 		} else {
-			start := time.Now()
 			attachment := msg.Attachments()[i-len(msgParts)]
 			mimeType, s3url := handlers.SplitAttachment(attachment)
 			mediaID := ""
 			if strings.HasPrefix(mimeType, "image") || strings.HasPrefix(mimeType, "video") {
-				mediaID, logs, err = uploadMediaToTwitter(msg, mediaURL, mimeType, s3url, client)
+				mediaID, err = uploadMediaToTwitter(msg, mediaURL, mimeType, s3url, client, clog)
 				if err != nil {
-					duration := time.Now().Sub(start)
-					logs = append(logs, courier.NewChannelLogFromError("Unable to upload media to Twitter server", msg.Channel(), msg.ID(), duration, err))
+					clog.Error(errors.Wrap(err, "unable to upload media to Twitter server"))
 				}
-				for _, log := range logs {
-					status.AddLog(log)
-				}
-
 			} else {
-				duration := time.Now().Sub(start)
-				status.AddLog(courier.NewChannelLogFromError("Unable to upload media, Unsupported Twitter attachment", msg.Channel(), msg.ID(), duration, fmt.Errorf("unknown attachment type")))
+				clog.Error(errors.New("unable to upload media, unsupported Twitter attachment"))
 			}
 
 			if mediaID != "" {
@@ -345,18 +337,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
-		rr, err := utils.MakeHTTPRequestWithClient(req, client)
 
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTPWithClient(client, req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString(rr.Body, "event", "id")
+		externalID, err := jsonparser.GetString(respBody, "event", "id")
 		if err != nil {
-			log.WithError("Message Send Error", errors.Errorf("unable to get message_id from body"))
+			clog.Error(errors.Errorf("unable to get message_id from body"))
 			return status, nil
 		}
 
@@ -381,20 +370,14 @@ func generateSignature(secret string, content string) string {
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
-func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType string, attachmentURL string, client *http.Client) (string, []*courier.ChannelLog, error) {
-	start := time.Now()
-	logs := make([]*courier.ChannelLog, 0, 1)
-
+func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType string, attachmentURL string, client *http.Client, clog *courier.ChannelLog) (string, error) {
 	// retrieve the media to be sent from S3
 	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
-	s3rr, err := utils.MakeHTTPRequest(req)
-	log := courier.NewChannelLogFromRR("Media Fetch", msg.Channel(), msg.ID(), s3rr)
-	if err != nil {
-		log.WithError("Media Fetch Error", err)
-		logs = append(logs, log)
-		return "", logs, err
+
+	s3Resp, s3RespBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || s3Resp.StatusCode/100 != 2 {
+		return "", err
 	}
-	logs = append(logs, log)
 
 	mediaCategory := ""
 	if strings.HasPrefix(attachmentMimeType, "image") {
@@ -403,7 +386,7 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 		mediaCategory = "dm_video"
 	}
 
-	fileSize := int64(len(s3rr.Body))
+	fileSize := int64(len(s3RespBody))
 
 	// upload it to WhatsApp in exchange for a media id
 	form := url.Values{
@@ -420,21 +403,17 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 	twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	twReq.Header.Set("Accept", "application/json")
 	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
-	twrr, err := utils.MakeHTTPRequestWithClient(twReq, client)
-	log = courier.NewChannelLogFromRR("Media Upload INIT", msg.Channel(), msg.ID(), twrr)
-	if err != nil {
-		log.WithError("Media Upload INIT Error", err)
-		logs = append(logs, log)
-		return "", logs, err
-	}
-	logs = append(logs, log)
 
-	mediaID, err := jsonparser.GetString(twrr.Body, "media_id_string")
-	if err != nil {
-		duration := time.Now().Sub(start)
-		logs = append(logs, courier.NewChannelLogFromError("Media Upload media_id Error", msg.Channel(), msg.ID(), duration, err))
-		return "", logs, err
+	twResp, twRespBody, err := handlers.RequestHTTPWithClient(client, twReq, clog)
+	if err != nil || twResp.StatusCode/100 != 2 {
+		return "", err
 	}
+
+	mediaID, err := jsonparser.GetString(twRespBody, "media_id_string")
+	if err != nil {
+		return "", err
+	}
+
 	tokens := strings.Split(attachmentURL, "/")
 	fileName := tokens[len(tokens)-1]
 
@@ -446,25 +425,18 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 	for k, v := range params {
 		fieldWriter, err := bodyMultipartWriter.CreateFormField(k)
 		if err != nil {
-			duration := time.Now().Sub(start)
-			logs = append(logs, courier.NewChannelLogFromError(fmt.Sprintf("Media Upload APPEND field %s Error", k), msg.Channel(), msg.ID(), duration, err))
-			return "", logs, err
+			return "", err
 		}
 		_, err = fieldWriter.Write([]byte(v))
 		if err != nil {
-			duration := time.Now().Sub(start)
-			logs = append(logs, courier.NewChannelLogFromError(fmt.Sprintf("Media Upload APPEND field %s Error", k), msg.Channel(), msg.ID(), duration, err))
-			return "", logs, err
+			return "", err
 		}
-
 	}
 
 	mediaWriter, err := bodyMultipartWriter.CreateFormFile("media", fileName)
-	_, err = io.Copy(mediaWriter, bytes.NewReader(s3rr.Body))
+	_, err = io.Copy(mediaWriter, bytes.NewReader(s3RespBody))
 	if err != nil {
-		duration := time.Now().Sub(start)
-		logs = append(logs, courier.NewChannelLogFromError("Media Upload APPEND field media Error", msg.Channel(), msg.ID(), duration, err))
-		return "", logs, err
+		return "", err
 	}
 
 	contentType := fmt.Sprintf("multipart/form-data;boundary=%v", bodyMultipartWriter.Boundary())
@@ -474,14 +446,12 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 	twReq.Header.Set("Content-Type", contentType)
 	twReq.Header.Set("Accept", "application/json")
 	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
-	twrr, err = utils.MakeHTTPRequestWithClient(twReq, client)
-	log = courier.NewChannelLogFromRR("Media Upload APPEND request", msg.Channel(), msg.ID(), twrr)
-	if err != nil {
-		log = log.WithError("Media Upload APPEND request Error", err)
-		logs = append(logs, log)
-		return "", logs, err
+
+	twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, clog)
+	if err != nil || twResp.StatusCode/100 != 2 {
+		return "", err
 	}
-	logs = append(logs, log)
+
 	form = url.Values{
 		"command":  []string{"FINALIZE"},
 		"media_id": []string{mediaID},
@@ -489,32 +459,27 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 
 	twReq, err = http.NewRequest(http.MethodPost, mediaUrl, strings.NewReader(form.Encode()))
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
+
 	twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	twReq.Header.Set("Accept", "application/json")
 	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
-	twrr, err = utils.MakeHTTPRequestWithClient(twReq, client)
 
-	log = courier.NewChannelLogFromRR("Media Upload FINALIZE", msg.Channel(), msg.ID(), twrr)
-
-	if err != nil {
-		log.WithError("Media Upload FINALIZE Error", err)
-		logs = append(logs, log)
-		return "", logs, err
+	twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, clog)
+	if err != nil || twResp.StatusCode/100 != 2 {
+		return "", err
 	}
-	logs = append(logs, log)
 
-	progressState, err := jsonparser.GetString(twrr.Body, "processing_info", "state")
+	progressState, err := jsonparser.GetString(twRespBody, "processing_info", "state")
 	if err != nil {
-		return mediaID, logs, nil
+		return mediaID, nil
 	}
 
 	for {
-
-		checkAfter, err := jsonparser.GetInt(twrr.Body, "processing_info", "check_after_secs")
+		checkAfter, err := jsonparser.GetInt(twRespBody, "processing_info", "check_after_secs")
 		if err != nil {
-			return "", logs, err
+			return "", err
 
 		}
 		time.Sleep(time.Duration(checkAfter * int64(time.Second)))
@@ -531,30 +496,23 @@ func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType s
 		twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		twReq.Header.Set("Accept", "application/json")
 		twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
-		twrr, err = utils.MakeHTTPRequestWithClient(twReq, client)
-		log = courier.NewChannelLogFromRR("Media Upload STATUS", msg.Channel(), msg.ID(), twrr)
-		if err != nil {
-			log.WithError("Media Upload STATUS Error", err)
-			logs = append(logs, log)
-			return "", logs, err
+
+		twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, clog)
+		if err != nil || twResp.StatusCode/100 != 2 {
+			return "", err
 		}
-		progressState, err = jsonparser.GetString(twrr.Body, "processing_info", "state")
+
+		progressState, err = jsonparser.GetString(twRespBody, "processing_info", "state")
 		if err != nil {
-			log.WithError("Media Upload STATUS failed parse JSON", err)
-			logs = append(logs, log)
 			break
 		}
 		if progressState == "succeeded" {
-			logs = append(logs, log)
 			break
 		}
 		if progressState == "failed" {
-			logs = append(logs, log)
-			return "", logs, err
+			return "", err
 		}
-		logs = append(logs, log)
-
 	}
 
-	return mediaID, logs, nil
+	return mediaID, nil
 }

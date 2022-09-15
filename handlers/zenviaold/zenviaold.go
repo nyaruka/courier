@@ -12,7 +12,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/pkg/errors"
 )
 
@@ -41,17 +41,17 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// {
-//     "callbackMoRequest": {
-// 	    	"id": "20690090",
-//         	"mobile": "555191951711",
-//         	"shortCode": "40001",
-//         	"account": "zenvia.envio",
-//         	"body": "Content of reply SMS",
-//         	"received": "2014-08-26T12:27:08.488-03:00",
-//         	"correlatedMessageSmsId": "hs765939061"
-//  	}
-// }
+//	{
+//	    "callbackMoRequest": {
+//		    	"id": "20690090",
+//	        	"mobile": "555191951711",
+//	        	"shortCode": "40001",
+//	        	"account": "zenvia.envio",
+//	        	"body": "Content of reply SMS",
+//	        	"received": "2014-08-26T12:27:08.488-03:00",
+//	        	"correlatedMessageSmsId": "hs765939061"
+//	 	}
+//	}
 type moPayload struct {
 	CallbackMORequest struct {
 		ID         string `json:"id"                      validate:"required" `
@@ -62,17 +62,17 @@ type moPayload struct {
 	} `json:"callbackMoRequest"`
 }
 
-// {
-// 		"callbackMtRequest": {
-//      	"status": "03",
-//         	"statusMessage": "Delivered",
-//         	"statusDetail": "120",
-//         	"statusDetailMessage": "Message received by mobile",
-//         	"id": "hs765939216",
-//         	"received": "2014-08-26T12:55:48.593-03:00",
-//         	"mobileOperatorName": "Claro"
-// 		}
-// }
+//	{
+//			"callbackMtRequest": {
+//	     	"status": "03",
+//	        	"statusMessage": "Delivered",
+//	        	"statusDetail": "120",
+//	        	"statusDetailMessage": "Message received by mobile",
+//	        	"id": "hs765939216",
+//	        	"received": "2014-08-26T12:55:48.593-03:00",
+//	        	"mobileOperatorName": "Claro"
+//			}
+//	}
 type statusPayload struct {
 	CallbackMTRequest struct {
 		StatusCode string `json:"status" validate:"required"`
@@ -80,16 +80,16 @@ type statusPayload struct {
 	}
 }
 
-// {
-//     "sendSmsRequest": {
-//         "to": "555199999999",
-//         "schedule": "2014-08-22T14:55:00",
-//         "msg": "Test message.",
-//         "callbackOption": "NONE",
-//         "id": "002",
-//         "aggregateId": "1111"
-//     }
-// }
+//	{
+//	    "sendSmsRequest": {
+//	        "to": "555199999999",
+//	        "schedule": "2014-08-22T14:55:00",
+//	        "msg": "Test message.",
+//	        "callbackOption": "NONE",
+//	        "id": "002",
+//	        "aggregateId": "1111"
+//	    }
+//	}
 type mtPayload struct {
 	SendSMSRequest struct {
 		To             string `json:"to"`
@@ -116,7 +116,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// get our params
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
@@ -138,13 +138,13 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.CallbackMORequest.Text).WithExternalID(payload.CallbackMORequest.ID).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.CallbackMORequest.Text, clog).WithExternalID(payload.CallbackMORequest.ID).WithReceivedOn(date.UTC())
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// get our params
 	payload := &statusPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
@@ -158,13 +158,13 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CallbackMTRequest.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CallbackMTRequest.ID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for ZV channel")
@@ -175,7 +175,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no password set for ZV channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		zvMsg := mtPayload{}
@@ -196,25 +196,26 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(username, password)
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		// was this request successful?
-		responseMsgStatus, _ := jsonparser.GetString(rr.Body, "sendSmsResponse", "statusCode")
+		responseMsgStatus, _ := jsonparser.GetString(respBody, "sendSmsResponse", "statusCode")
 		msgStatus, found := statusMapping[responseMsgStatus]
 		if msgStatus == courier.MsgErrored || !found {
-			log.WithError("Message Send Error", errors.Errorf("received non-success response from Zenvia '%s'", responseMsgStatus))
+			clog.Error(errors.Errorf("received non-success response: '%s'", responseMsgStatus))
 			return status, nil
 		}
 
 		status.SetStatus(courier.MsgWired)
 	}
 	return status, nil
+}
 
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		httpx.BasicAuth(ch.StringConfigForKey(courier.ConfigUsername, ""), ch.StringConfigForKey(courier.ConfigPassword, "")),
+	}
 }

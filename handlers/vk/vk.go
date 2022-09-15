@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -193,15 +192,15 @@ type mediaUploadInfoPayload struct {
 }
 
 // receiveEvent handles request event type
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// read request body
-	bodyBytes, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
+	bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 100000))
 
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to read request body: %s", err))
 	}
 	// restore body to its original value
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	payload := &moPayload{}
 
 	if err := json.Unmarshal(bodyBytes, payload); err != nil {
@@ -224,7 +223,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		if err := handlers.DecodeAndValidateJSON(newMessage, r); err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
-		return h.receiveMessage(ctx, channel, w, r, newMessage)
+		return h.receiveMessage(ctx, channel, w, r, newMessage, clog)
 
 	default:
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message or server verification event")
@@ -241,7 +240,7 @@ func (h *handler) verifyServer(channel courier.Channel, w http.ResponseWriter) (
 }
 
 // receiveMessage handles new message event
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moNewMessagePayload) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moNewMessagePayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	userId := payload.Object.Message.UserId
 	urn, err := urns.NewURNFromParts(urns.VKScheme, strconv.FormatInt(userId, 10), "", "")
 
@@ -251,7 +250,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	date := time.Unix(payload.Object.Message.Date, 0).UTC()
 	text := payload.Object.Message.Text
 	externalId := strconv.FormatInt(payload.Object.Message.Id, 10)
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(externalId)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(externalId)
 	event := h.Backend().CheckExternalIDSeen(msg)
 
 	if attachment := takeFirstAttachmentUrl(*payload); attachment != "" {
@@ -262,7 +261,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("no text or attachment"))
 	}
 	// save message to our backend
-	if err := h.Backend().WriteMsg(ctx, event); err != nil {
+	if err := h.Backend().WriteMsg(ctx, event, clog); err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	h.Backend().WriteExternalIDSeen(event)
@@ -273,28 +272,29 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // DescribeURN handles VK contact details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLog) (map[string]string, error) {
 	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionGetUser, nil)
-
 	if err != nil {
 		return nil, err
 	}
+
 	params := buildApiBaseParams(channel)
 	_, urnPath, _, _ := urn.ToParts()
 	params.Set(paramUserIds, urnPath)
 
 	req.URL.RawQuery = params.Encode()
-	res, err := utils.MakeHTTPRequest(req)
 
-	if err != nil {
-		return nil, err
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("unable to look up user info")
 	}
+
 	// parsing response
 	type responsePayload struct {
 		Users []userPayload `json:"response" validate:"required"`
 	}
 	payload := &responsePayload{}
-	err = json.Unmarshal(res.Body, payload)
+	err = json.Unmarshal(respBody, payload)
 
 	if err != nil {
 		return nil, err
@@ -385,14 +385,14 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 	return ""
 }
 
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	params := buildApiBaseParams(msg.Channel())
 	params.Set(paramUserId, msg.URN().Path())
 	params.Set(paramRandomId, msg.ID().String())
 
-	text, attachments := buildTextAndAttachmentParams(msg, status)
+	text, attachments := buildTextAndAttachmentParams(msg, clog)
 	params.Set(paramMessage, text)
 	params.Set(paramAttachments, attachments)
 
@@ -404,21 +404,18 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionSendMessage, nil)
-
 	if err != nil {
 		return status, errors.New("Cannot create send message request")
 	}
 
 	req.URL.RawQuery = params.Encode()
-	res, err := utils.MakeHTTPRequest(req)
 
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), res).WithError("Message Send Error", err)
-	status.AddLog(log)
-
-	if err != nil {
-		return status, err
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return status, nil
 	}
-	externalMsgId, err := jsonparser.GetInt(res.Body, responseOutgoingMessageKey)
+
+	externalMsgId, err := jsonparser.GetInt(respBody, responseOutgoingMessageKey)
 
 	if err != nil {
 		return status, errors.Errorf("no '%s' value in response", responseOutgoingMessageKey)
@@ -430,14 +427,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 }
 
 // buildTextAndAttachmentParams builds msg text with attachment links (if needed) and attachments list param, also returns the errors that occurred
-func buildTextAndAttachmentParams(msg courier.Msg, status courier.MsgStatus) (string, string) {
+func buildTextAndAttachmentParams(msg courier.Msg, clog *courier.ChannelLog) (string, string) {
 	var msgAttachments []string
 
 	textBuf := bytes.Buffer{}
 	textBuf.WriteString(msg.Text())
 
 	for _, attachment := range msg.Attachments() {
-		start := time.Now()
 		// handle attachment type
 		mediaPrefix, mediaURL := handlers.SplitAttachment(attachment)
 		mediaPrefixParts := strings.Split(mediaPrefix, "/")
@@ -449,12 +445,10 @@ func buildTextAndAttachmentParams(msg courier.Msg, status courier.MsgStatus) (st
 
 		switch mediaType {
 		case mediaTypeImage:
-			if attachment, err := handleMediaUploadAndGetAttachment(msg.Channel(), mediaTypeImage, mediaExt, mediaURL); err == nil {
+			if attachment, err := handleMediaUploadAndGetAttachment(msg.Channel(), mediaTypeImage, mediaExt, mediaURL, clog); err == nil {
 				msgAttachments = append(msgAttachments, attachment)
 			} else {
-				duration := time.Now().Sub(start)
-				log := courier.NewChannelLogFromError("Unable to upload photo attachment", msg.Channel(), msg.ID(), duration, err)
-				status.AddLog(log)
+				clog.Error(err)
 			}
 
 		default:
@@ -466,14 +460,14 @@ func buildTextAndAttachmentParams(msg courier.Msg, status courier.MsgStatus) (st
 }
 
 // handleMediaUploadAndGetAttachment handles media downloading, uploading, saving information and returns the attachment string
-func handleMediaUploadAndGetAttachment(channel courier.Channel, mediaType, mediaExt, mediaURL string) (string, error) {
+func handleMediaUploadAndGetAttachment(channel courier.Channel, mediaType, mediaExt, mediaURL string, clog *courier.ChannelLog) (string, error) {
 	switch mediaType {
 	case mediaTypeImage:
 		uploadKey := "photo"
 
 		// initialize server URL to upload photos
 		if URLPhotoUploadServer == "" {
-			if serverURL, err := getUploadServerURL(channel, apiBaseURL+actionGetPhotoUploadServer); err == nil {
+			if serverURL, err := getUploadServerURL(channel, apiBaseURL+actionGetPhotoUploadServer, clog); err == nil {
 				URLPhotoUploadServer = serverURL
 			}
 		}
@@ -482,7 +476,7 @@ func handleMediaUploadAndGetAttachment(channel courier.Channel, mediaType, media
 		if err != nil {
 			return "", err
 		}
-		uploadResponse, err := uploadMedia(URLPhotoUploadServer, uploadKey, mediaExt, download)
+		uploadResponse, err := uploadMedia(URLPhotoUploadServer, uploadKey, mediaExt, download, clog)
 
 		if err != nil {
 			return "", err
@@ -493,7 +487,7 @@ func handleMediaUploadAndGetAttachment(channel courier.Channel, mediaType, media
 			return "", err
 		}
 		serverId := strconv.FormatInt(payload.ServerId, 10)
-		info, err := saveUploadedMediaInfo(channel, apiBaseURL+actionSaveUploadedPhotoInfo, serverId, payload.Hash, uploadKey, payload.Photo)
+		info, err := saveUploadedMediaInfo(channel, apiBaseURL+actionSaveUploadedPhotoInfo, serverId, payload.Hash, uploadKey, payload.Photo, clog)
 
 		if err != nil {
 			return "", err
@@ -508,7 +502,7 @@ func handleMediaUploadAndGetAttachment(channel courier.Channel, mediaType, media
 }
 
 // getUploadServerURL gets VK's media upload server
-func getUploadServerURL(channel courier.Channel, sendURL string) (string, error) {
+func getUploadServerURL(channel courier.Channel, sendURL string, clog *courier.ChannelLog) (string, error) {
 	req, err := http.NewRequest(http.MethodPost, sendURL, nil)
 
 	if err != nil {
@@ -516,14 +510,15 @@ func getUploadServerURL(channel courier.Channel, sendURL string) (string, error)
 	}
 	params := buildApiBaseParams(channel)
 	req.URL.RawQuery = params.Encode()
-	res, err := utils.MakeHTTPRequest(req)
 
-	if err != nil {
-		return "", err
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return "", errors.New("unable to get upload server URL")
 	}
+
 	uploadServer := &uploadServerPayload{}
 
-	if err = json.Unmarshal(res.Body, uploadServer); err != nil {
+	if err = json.Unmarshal(respBody, uploadServer); err != nil {
 		return "", nil
 	}
 	return uploadServer.Server.UploadURL, nil
@@ -544,57 +539,59 @@ func downloadMedia(mediaURL string) (io.Reader, error) {
 }
 
 // uploadMedia multiform request that passes file key as uploadKey and file value as media to upload server
-func uploadMedia(serverURL, uploadKey, mediaExt string, media io.Reader) ([]byte, error) {
+func uploadMedia(serverURL, uploadKey, mediaExt string, media io.Reader, clog *courier.ChannelLog) ([]byte, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-
 	fileName := fmt.Sprintf("%s.%s", uploadKey, mediaExt)
+
 	part, err := writer.CreateFormFile(uploadKey, fileName)
-
 	if err != nil {
 		return nil, err
 	}
+
 	_, err = io.Copy(part, media)
-
 	if err != nil {
 		return nil, err
 	}
+
 	err = writer.Close()
-
 	if err != nil {
 		return nil, err
 	}
+
 	req, err := http.NewRequest(http.MethodPost, serverURL, body)
-
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	if res, err := utils.MakeHTTPRequest(req); err != nil {
-		return nil, err
-	} else {
-		return res.Body, nil
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("unable to upload media")
 	}
+	return respBody, nil
 }
 
 // saveUploadedMediaInfo saves uploaded media info and returns an object containing media/owner id
-func saveUploadedMediaInfo(channel courier.Channel, sendURL, serverId, hash, mediaKey, mediaValue string) (*mediaUploadInfoPayload, error) {
+func saveUploadedMediaInfo(channel courier.Channel, sendURL, serverId, hash, mediaKey, mediaValue string, clog *courier.ChannelLog) (*mediaUploadInfoPayload, error) {
 	params := buildApiBaseParams(channel)
 	params.Set(paramServerId, serverId)
 	params.Set(paramHash, hash)
 	params.Set(mediaKey, mediaValue)
+
 	req, err := http.NewRequest(http.MethodPost, sendURL, nil)
-
 	if err != nil {
 		return nil, err
 	}
+
 	req.URL.RawQuery = params.Encode()
-	res, err := utils.MakeHTTPRequest(req)
 
-	if err != nil {
-		return nil, err
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("unable to save uploaded media info")
 	}
+
 	// parsing response
 	type responsePayload struct {
 		Response []mediaUploadInfoPayload `json:"response"`
@@ -602,7 +599,7 @@ func saveUploadedMediaInfo(channel courier.Channel, sendURL, serverId, hash, med
 	medias := &responsePayload{}
 
 	// try get first object
-	if err = json.Unmarshal(res.Body, medias); err != nil || len(medias.Response) == 0 {
+	if err = json.Unmarshal(respBody, medias); err != nil || len(medias.Response) == 0 {
 		return nil, errors.New("no response")
 	} else {
 		return &medias.Response[0], nil

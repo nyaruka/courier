@@ -7,9 +7,10 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
-var (
+const (
 	receiveURL = "/c/gl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 
 	validMessage = `
@@ -102,22 +103,58 @@ var (
 		 }
 	}
 	`
-
-	invalidJSON = `notjson`
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "GL", "2020", "US", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "GL", "2020", "US", nil),
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveURL, Data: validMessage, Status: 200, Response: "Accepted",
-		Text: Sp("hello world"), URN: Sp("tel:+639171234567"), Date: Tp(time.Date(2013, 11, 22, 12, 12, 13, 0, time.UTC))},
-	{Label: "No Messages", URL: receiveURL, Data: noMessages, Status: 200, Response: "Ignored"},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Invalid Sender", URL: receiveURL, Data: invalidSender, Status: 400, Response: "invalid 'senderAddress' parameter"},
-	{Label: "Invalid Date", URL: receiveURL, Data: invalidDate, Status: 400, Response: "parsing time"},
-	{Label: "Invalid JSON", URL: receiveURL, Data: invalidJSON, Status: 400, Response: "unable to parse request JSON"},
+	{
+		Label:                "Receive Valid Message",
+		URL:                  receiveURL,
+		Data:                 validMessage,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("hello world"),
+		ExpectedURN:          "tel:+639171234567",
+		ExpectedDate:         time.Date(2013, 11, 22, 12, 12, 13, 0, time.UTC),
+	},
+	{
+		Label:                "No Messages",
+		URL:                  receiveURL,
+		Data:                 noMessages,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Ignored",
+	},
+	{
+		Label:                "Invalid URN",
+		URL:                  receiveURL,
+		Data:                 invalidURN,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
+	},
+	{
+		Label:                "Invalid Sender",
+		URL:                  receiveURL,
+		Data:                 invalidSender,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "invalid 'senderAddress' parameter",
+	},
+	{
+		Label:                "Invalid Date",
+		URL:                  receiveURL,
+		Data:                 invalidDate,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "parsing time",
+	},
+	{
+		Label:                "Invalid JSON",
+		URL:                  receiveURL,
+		Data:                 `notjson`,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "unable to parse request JSON",
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -134,33 +171,50 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var sendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: `[{"Response": "0"}]`, ResponseStatus: 200,
-		RequestBody: `{"address":"250788383383","message":"Simple Message","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
-		SendPrep:    setSendURL},
-	{Label: "Unicode Send",
-		Text: "☺", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: `[{"Response": "0"}]`, ResponseStatus: 200,
-		RequestBody: `{"address":"250788383383","message":"☺","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
-		SendPrep:    setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "W",
-		ResponseBody: `[{"Response": "0"}]`, ResponseStatus: 200,
-		RequestBody: `{"address":"250788383383","message":"My pic!\nhttps://foo.bar/image.jpg","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
-		SendPrep:    setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Sending", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: `[{"Response": "101"}]`, ResponseStatus: 403,
-		SendPrep: setSendURL},
+	{
+		Label:               "Plain Send",
+		MsgText:             "Simple Message",
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    `[{"Response": "0"}]`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"address":"250788383383","message":"Simple Message","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Unicode Send",
+		MsgText:             "☺",
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    `[{"Response": "0"}]`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"address":"250788383383","message":"☺","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Send Attachment",
+		MsgText:             "My pic!",
+		MsgURN:              "tel:+250788383383",
+		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:    `[{"Response": "0"}]`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"address":"250788383383","message":"My pic!\nhttps://foo.bar/image.jpg","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Error Sending",
+		MsgText:            "Error Sending",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `[{"Response": "101"}]`,
+		MockResponseStatus: 403,
+		ExpectedMsgStatus:  "E",
+		SendPrep:           setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "GL", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "GL", "2020", "US",
 		map[string]interface{}{
 			"app_id":     "12345",
 			"app_secret": "mysecret",
@@ -168,5 +222,5 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, []string{"mysecret", "opensesame"}, nil)
 }

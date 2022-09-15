@@ -7,16 +7,16 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ST", "2020", "UA", map[string]interface{}{"username": "st-username", "password": "st-password"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ST", "2020", "UA", map[string]interface{}{"username": "st-username", "password": "st-password"}),
 }
 
-var (
+const (
 	receiveURL = "/c/st/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-
-	notXML = "empty"
 
 	validReceive = `<message>
 	<service type="sms" timestamp="1450450974" auth="asdfasdf" request_id="msg1"/>
@@ -73,19 +73,79 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "<state>Accepted</state>",
-		Text: Sp("Hello World"), URN: Sp("tel:+250788123123"), Date: Tp(time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC))},
-	{Label: "Receive Valid Encoded", URL: receiveURL, Data: validReceiveEncoded, Status: 200, Response: "<state>Accepted</state>",
-		Text: Sp("Кохання"), URN: Sp("tel:+380501529999"), Date: Tp(time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC))},
-	{Label: "Receive Valid with empty Text", URL: receiveURL, Data: validReceiveEmptyText, Status: 200, Response: "<state>Accepted</state>",
-		Text: Sp(""), URN: Sp("tel:+250788123123")},
-	{Label: "Receive Valid missing body", URL: receiveURL, Data: validMissingBody, Status: 200, Response: "<state>Accepted</state>",
-		Text: Sp(""), URN: Sp("tel:+250788123123")},
-	{Label: "Receive invalidURN", URL: receiveURL, Data: invalidURNReceive, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive missing Request ID", URL: receiveURL, Data: missingRequestID, Status: 400, Response: "Error"},
-	{Label: "Receive missing From", URL: receiveURL, Data: missingFrom, Status: 400, Response: "Error"},
-	{Label: "Receive missing To", URL: receiveURL, Data: missingTo, Status: 400, Response: "Error"},
-	{Label: "Invalid XML", URL: receiveURL, Data: notXML, Status: 400, Response: "Error"},
+	{
+		Label:                "Receive Valid",
+		URL:                  receiveURL,
+		Data:                 validReceive,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "<state>Accepted</state>",
+		ExpectedMsgText:      Sp("Hello World"),
+		ExpectedURN:          "tel:+250788123123",
+		ExpectedDate:         time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC),
+	},
+	{
+		Label:                "Receive Valid Encoded",
+		URL:                  receiveURL,
+		Data:                 validReceiveEncoded,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "<state>Accepted</state>",
+		ExpectedMsgText:      Sp("Кохання"),
+		ExpectedURN:          "tel:+380501529999",
+		ExpectedDate:         time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC),
+	},
+	{
+		Label:                "Receive Valid with empty Text",
+		URL:                  receiveURL,
+		Data:                 validReceiveEmptyText,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "<state>Accepted</state>",
+		ExpectedMsgText:      Sp(""),
+		ExpectedURN:          "tel:+250788123123",
+	},
+	{
+		Label:                "Receive Valid missing body",
+		URL:                  receiveURL,
+		Data:                 validMissingBody,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "<state>Accepted</state>",
+		ExpectedMsgText:      Sp(""),
+		ExpectedURN:          "tel:+250788123123",
+	},
+	{
+		Label:                "Receive invalidURN",
+		URL:                  receiveURL,
+		Data:                 invalidURNReceive,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
+	},
+	{
+		Label:                "Receive missing Request ID",
+		URL:                  receiveURL,
+		Data:                 missingRequestID,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error",
+	},
+	{
+		Label:                "Receive missing From",
+		URL:                  receiveURL,
+		Data:                 missingFrom,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error",
+	},
+	{
+		Label:                "Receive missing To",
+		URL:                  receiveURL,
+		Data:                 missingTo,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error",
+	},
+	{
+		Label:                "Invalid XML",
+		URL:                  receiveURL,
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error",
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -102,73 +162,84 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text:           "Simple Message ☺",
-		URN:            "tel:+250788383383",
-		Status:         "W",
-		ExternalID:     "380502535130309161501",
-		ResponseBody:   `<status date='Wed, 25 May 2016 17:29:56 +0300'><id>380502535130309161501</id><state>Accepted</state></status>`,
-		ResponseStatus: 200,
-		Headers: map[string]string{
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message ☺",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `<status date='Wed, 25 May 2016 17:29:56 +0300'><id>380502535130309161501</id><state>Accepted</state></status>`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/xml; charset=utf8",
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
-		RequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">Simple Message ☺</body></message>`,
-		SendPrep:    setSendURL},
-	{Label: "Long Send",
-		Text:           "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		URN:            "tel:+250788383383",
-		Status:         "W",
-		ExternalID:     "380502535130309161501",
-		ResponseBody:   `<status date='Wed, 25 May 2016 17:29:56 +0300'><id>380502535130309161501</id><state>Accepted</state></status>`,
-		ResponseStatus: 200,
-		Headers: map[string]string{
+		ExpectedRequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">Simple Message ☺</body></message>`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "380502535130309161501",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Long Send",
+		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `<status date='Wed, 25 May 2016 17:29:56 +0300'><id>380502535130309161501</id><state>Accepted</state></status>`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/xml; charset=utf8",
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
-		RequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">I need to keep adding more things to make it work</body></message>`,
-		SendPrep:    setSendURL},
-	{Label: "Send Attachment",
-		Text:           "My pic!",
-		Attachments:    []string{"image/jpeg:https://foo.bar/image.jpg"},
-		URN:            "tel:+250788383383",
-		Status:         "W",
-		ExternalID:     "380502535130309161501",
-		ResponseBody:   `<status date='Wed, 25 May 2016 17:29:56 +0300'><id>380502535130309161501</id><state>Accepted</state></status>`,
-		ResponseStatus: 200,
-		Headers: map[string]string{
+		ExpectedRequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">I need to keep adding more things to make it work</body></message>`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "380502535130309161501",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
+		MsgText:            "My pic!",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `<status date='Wed, 25 May 2016 17:29:56 +0300'><id>380502535130309161501</id><state>Accepted</state></status>`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/xml; charset=utf8",
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
-		RequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">My pic!&#xA;https://foo.bar/image.jpg</body></message>`,
-		SendPrep:    setSendURL},
-	{Label: "Error Response",
-		Text:           "Simple Message ☺",
-		URN:            "tel:+250788383383",
-		Status:         "E",
-		ExternalID:     "",
-		ResponseBody:   `<error>This is an error</error>`,
-		ResponseStatus: 200,
-		Headers: map[string]string{
+		ExpectedRequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">My pic!&#xA;https://foo.bar/image.jpg</body></message>`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "380502535130309161501",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Error Response",
+		MsgText:            "Simple Message ☺",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `<error>This is an error</error>`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/xml; charset=utf8",
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
-		RequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">Simple Message ☺</body></message>`,
-		SendPrep:    setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: `Error`, ResponseStatus: 401,
-		Headers: map[string]string{
+		ExpectedRequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">Simple Message ☺</body></message>`,
+		ExpectedMsgStatus:   "E",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Error Sending",
+		MsgText:            "Error Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `Error`,
+		MockResponseStatus: 401,
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/xml; charset=utf8",
 			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
 		},
-		RequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">Error Message</body></message>`,
-		SendPrep:    setSendURL},
+		ExpectedRequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">Error Message</body></message>`,
+		ExpectedMsgStatus:   "E",
+		SendPrep:            setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ST", "2020", "UA", map[string]interface{}{"username": "Username", "password": "Password"})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ST", "2020", "UA", map[string]interface{}{"username": "Username", "password": "Password"})
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)
 }

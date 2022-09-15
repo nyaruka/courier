@@ -52,10 +52,10 @@ var base64Regex, _ = regexp.Compile("^([a-zA-Z0-9+/=]{4})+$")
 var base64Encoding = base64.StdEncoding.Strict()
 
 // DecodePossibleBase64 detects and decodes a possibly base64 encoded messages by doing:
-//  * check it's at least 60 characters
-//  * check its length is divisible by 4
-//  * check that there's no whitespace
-//  * check the decoded string contains at least 50% ascii
+//   - check it's at least 60 characters
+//   - check its length is divisible by 4
+//   - check that there's no whitespace
+//   - check the decoded string contains at least 50% ascii
 func DecodePossibleBase64(original string) string {
 	stripped := strings.TrimSpace(strings.Replace(strings.Replace(original, "\r", "", -1), "\n", "", -1))
 	length := len([]rune(stripped))

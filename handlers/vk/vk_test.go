@@ -9,11 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 const (
@@ -22,7 +24,7 @@ const (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel(
+	test.NewMockChannel(
 		channelUUID,
 		"VK",
 		"123456789",
@@ -229,115 +231,123 @@ const keyboardJson = `{"one_time":true,"buttons":[[{"action":{"type":"text","lab
 
 var testCases = []ChannelHandleTestCase{
 	{
-		Label:      "Receive Message",
-		URL:        receiveURL,
-		Data:       msgHelloWorld,
-		Status:     200,
-		Response:   "ok",
-		URN:        Sp("vk:123456"),
-		ExternalID: Sp("1"),
-		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)),
+		Label:                "Receive Message",
+		URL:                  receiveURL,
+		Data:                 msgHelloWorld,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ok",
+		ExpectedMsgText:      Sp("Hello World"),
+		ExpectedURN:          "vk:123456",
+		ExpectedExternalID:   "1",
+		ExpectedDate:         time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
 	},
 	{
-		Label:      "Receive Empty Message",
-		URL:        receiveURL,
-		Data:       msgEmpty,
-		Status:     400,
-		Response:   "no text or attachment",
-		URN:        Sp("vk:123456"),
-		ExternalID: Sp("1"),
-		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)),
+		Label:                "Receive Empty Message",
+		URL:                  receiveURL,
+		Data:                 msgEmpty,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "no text or attachment",
+		ExpectedURN:          "vk:123456",
+		ExpectedExternalID:   "1",
+		ExpectedDate:         time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
 	},
 	{
-		Label:      "Receive First Photo Attachment",
-		URL:        receiveURL,
-		Data:       msgFirstPhotoAttachment,
-		Status:     200,
-		Response:   "ok",
-		URN:        Sp("vk:123456"),
-		ExternalID: Sp("1"),
-		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/x-photo.jpg"},
+		Label:                "Receive First Photo Attachment",
+		URL:                  receiveURL,
+		Data:                 msgFirstPhotoAttachment,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ok",
+		ExpectedURN:          "vk:123456",
+		ExpectedExternalID:   "1",
+		ExpectedDate:         time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
+		ExpectedAttachments:  []string{"https://foo.bar/x-photo.jpg"},
 	},
 	{
-		Label:      "Receive First Graffiti Attachment",
-		URL:        receiveURL,
-		Data:       msgFirstGraffitiAttachment,
-		Status:     200,
-		Response:   "ok",
-		URN:        Sp("vk:123456"),
-		ExternalID: Sp("1"),
-		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/graffiti.png"},
+		Label:                "Receive First Graffiti Attachment",
+		URL:                  receiveURL,
+		Data:                 msgFirstGraffitiAttachment,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ok",
+		ExpectedURN:          "vk:123456",
+		ExpectedExternalID:   "1",
+		ExpectedDate:         time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
+		ExpectedAttachments:  []string{"https://foo.bar/graffiti.png"},
 	},
 	{
-		Label:      "Receive First Sticker Attachment",
-		URL:        receiveURL,
-		Data:       msgFirstStickerAttachment,
-		Status:     200,
-		Response:   "ok",
-		URN:        Sp("vk:123456"),
-		ExternalID: Sp("1"),
-		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/128x128_sticker.png"},
+		Label:                "Receive First Sticker Attachment",
+		URL:                  receiveURL,
+		Data:                 msgFirstStickerAttachment,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ok",
+		ExpectedURN:          "vk:123456",
+		ExpectedExternalID:   "1",
+		ExpectedDate:         time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
+		ExpectedAttachments:  []string{"https://foo.bar/128x128_sticker.png"},
 	},
 	{
-		Label:      "Receive First Audio Attachment",
-		URL:        receiveURL,
-		Data:       msgFirstAudioAttachment,
-		Status:     200,
-		Response:   "ok",
-		URN:        Sp("vk:123456"),
-		ExternalID: Sp("1"),
-		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/audio.mp3"},
+		Label:                "Receive First Audio Attachment",
+		URL:                  receiveURL,
+		Data:                 msgFirstAudioAttachment,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ok",
+		ExpectedURN:          "vk:123456",
+		ExpectedExternalID:   "1",
+		ExpectedDate:         time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
+		ExpectedAttachments:  []string{"https://foo.bar/audio.mp3"},
 	},
 	{
-		Label:      "Receive First Audio Attachment",
-		URL:        receiveURL,
-		Data:       msgFirstDocAttachment,
-		Status:     200,
-		Response:   "ok",
-		URN:        Sp("vk:123456"),
-		ExternalID: Sp("1"),
-		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"https://foo.bar/doc.pdf"},
+		Label:                "Receive First Audio Attachment",
+		URL:                  receiveURL,
+		Data:                 msgFirstDocAttachment,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ok",
+		ExpectedURN:          "vk:123456",
+		ExpectedExternalID:   "1",
+		ExpectedDate:         time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
+		ExpectedAttachments:  []string{"https://foo.bar/doc.pdf"},
 	},
 	{
-		Label:      "Receive Message Keyboard",
-		URL:        receiveURL,
-		Data:       msgKeyboard,
-		Status:     200,
-		Response:   "ok",
-		URN:        Sp("vk:123456"),
-		ExternalID: Sp("1"),
-		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)),
+		Label:                "Receive Message Keyboard",
+		URL:                  receiveURL,
+		Data:                 msgKeyboard,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ok",
+		ExpectedMsgText:      Sp("Yes"),
+		ExpectedURN:          "vk:123456",
+		ExpectedExternalID:   "1",
+		ExpectedDate:         time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
 	},
 	{
-		Label:      "Receive Geolocation Attachment",
-		URL:        receiveURL,
-		Data:       msgGeolocationOnly,
-		Status:     200,
-		Response:   "ok",
-		URN:        Sp("vk:123456"),
-		ExternalID: Sp("1"),
-		Date:       Tp(time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC)), Attachments: []string{"geo:-9.652278,-35.701095"},
+		Label:                "Receive Geolocation Attachment",
+		URL:                  receiveURL,
+		Data:                 msgGeolocationOnly,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ok",
+		ExpectedURN:          "vk:123456",
+		ExpectedExternalID:   "1",
+		ExpectedDate:         time.Date(2020, 1, 27, 11, 50, 0, 0, time.UTC),
+		ExpectedAttachments:  []string{"geo:-9.652278,-35.701095"},
 	},
 	{
-		Label:    "Validate secret",
-		URL:      receiveURL,
-		Data:     eventWithSecret,
-		Status:   200,
-		Response: "no message or server verification event",
+		Label:                "Validate secret",
+		URL:                  receiveURL,
+		Data:                 eventWithSecret,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "no message or server verification event",
 	},
 	{
-		Label:    "Invalidate secret",
-		URL:      receiveURL,
-		Data:     eventWithoutSecret,
-		Status:   400,
-		Response: "wrong secret key",
+		Label:                "Invalidate secret",
+		URL:                  receiveURL,
+		Data:                 eventWithoutSecret,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "wrong secret key",
 	},
 	{
-		Label:    "Verify server",
-		URL:      receiveURL,
-		Data:     eventServerVerification,
-		Status:   200,
-		Response: "a1b2c3",
+		Label:                "Verify server",
+		URL:                  receiveURL,
+		Data:                 eventServerVerification,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "a1b2c3",
 	},
 }
 
@@ -361,20 +371,20 @@ func buildMockVKService(testCases []ChannelHandleTestCase) *httptest.Server {
 	return server
 }
 
-func TestDescribe(t *testing.T) {
+func TestDescribeURN(t *testing.T) {
 	server := buildMockVKService([]ChannelHandleTestCase{})
 	defer server.Close()
 
-	handler := newHandler().(courier.URNDescriber)
-	urn, _ :=
-		urns.NewURNFromParts(urns.VKScheme, "123456789", "", "")
+	handler := newHandler()
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
+	urn, _ := urns.NewURNFromParts(urns.VKScheme, "123456789", "", "")
 	data := map[string]string{"name": "John Doe"}
 
-	describe, err := handler.DescribeURN(context.Background(), testChannels[0],
-		urn)
+	describe, err := handler.(courier.URNDescriber).DescribeURN(context.Background(), testChannels[0], urn, clog)
 	assert.Nil(t, err)
-	assert.Equal(t,
-		data, describe)
+	assert.Equal(t, data, describe)
+
+	AssertChannelLogRedaction(t, clog, []string{"token123xyz", "abc123xyz"})
 }
 
 // setSendURL takes care of setting the send_url to our test server host
@@ -385,110 +395,86 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 
 var sendTestCases = []ChannelSendTestCase{
 	{
-		Label:      "Send simple message",
-		Text:       "Simple message",
-		URN:        "vk:123456789",
-		Status:     "S",
-		SendPrep:   setSendURL,
-		ExternalID: "1",
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		Label:              "Send simple message",
+		MsgText:            "Simple message",
+		MsgURN:             "vk:123456789",
+		ExpectedMsgStatus:  "S",
+		SendPrep:           setSendURL,
+		ExpectedExternalID: "1",
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=&message=Simple+message&random_id=10&user_id=123456789&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": 1}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
 		},
 	},
 	{
-		Label:       "Send photo attachment",
-		Text:        "",
-		URN:         "vk:123456789",
-		Attachments: []string{"image/png:https://foo.bar/image.png"},
-		Status:      "S",
-		SendPrep:    setSendURL,
-		ExternalID:  "1",
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		Label:              "Send photo attachment",
+		MsgText:            "",
+		MsgURN:             "vk:123456789",
+		MsgAttachments:     []string{"image/png:https://foo.bar/image.png"},
+		ExpectedMsgStatus:  "S",
+		SendPrep:           setSendURL,
+		ExpectedExternalID: "1",
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:       "POST",
 				Path:         "/upload/photo",
 				BodyContains: `media body`,
-			}: {
-				Status: 200,
-				Body:   `{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(200, nil, []byte(`{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`)),
+			{
 				Method:   "POST",
 				Path:     actionSaveUploadedPhotoInfo,
 				RawQuery: "access_token=token123xyz&hash=zxc987qwe&photo=...&server=109876&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": [{"id": 1, "owner_id": 1901234}]}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": [{"id": 1, "owner_id": 1901234}]}`)),
+			{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=&random_id=10&user_id=123456789&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": 1}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
 		},
 	},
 	{
-		Label:       "Send photo and another attachment type",
-		Text:        "Attachments",
-		URN:         "vk:123456789",
-		Attachments: []string{"image/png:https://foo.bar/image.png", "audio/mp3:https://foo.bar/audio.mp3"},
-		Status:      "S",
-		SendPrep:    setSendURL,
-		ExternalID:  "1",
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		Label:              "Send photo and another attachment type",
+		MsgText:            "Attachments",
+		MsgURN:             "vk:123456789",
+		MsgAttachments:     []string{"image/png:https://foo.bar/image.png", "audio/mp3:https://foo.bar/audio.mp3"},
+		ExpectedMsgStatus:  "S",
+		SendPrep:           setSendURL,
+		ExpectedExternalID: "1",
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:       "POST",
 				Path:         "/upload/photo",
 				BodyContains: `media body`,
-			}: {
-				Status: 200,
-				Body:   `{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(200, nil, []byte(`{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`)),
+			{
 				Method:   "POST",
 				Path:     actionSaveUploadedPhotoInfo,
 				RawQuery: "access_token=token123xyz&hash=zxc987qwe&photo=...&server=109876&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": [{"id": 1, "owner_id": 1901234}]}`,
-			},
-			MockedRequest{
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": [{"id": 1, "owner_id": 1901234}]}`)),
+			{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=Attachments" + url.QueryEscape("\n\nhttps://foo.bar/audio.mp3") + "&random_id=10&user_id=123456789&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": 1}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
 		},
 	},
 	{
-		Label:        "Send keyboard",
-		Text:         "Send keyboard",
-		URN:          "vk:123456789",
-		QuickReplies: []string{"A", "B", "C", "D", "E"},
-		Status:       "S",
-		SendPrep:     setSendURL,
-		ExternalID:   "1",
-		Responses: map[MockedRequest]MockedResponse{
-			MockedRequest{
+		Label:              "Send keyboard",
+		MsgText:            "Send keyboard",
+		MsgURN:             "vk:123456789",
+		MsgQuickReplies:    []string{"A", "B", "C", "D", "E"},
+		ExpectedMsgStatus:  "S",
+		SendPrep:           setSendURL,
+		ExpectedExternalID: "1",
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
+			{
 				Method:   "POST",
 				Path:     actionSendMessage,
 				RawQuery: "access_token=token123xyz&attachment=&keyboard=" + url.QueryEscape(keyboardJson) + "&message=Send+keyboard&random_id=10&user_id=123456789&v=5.103",
-			}: {
-				Status: 200,
-				Body:   `{"response": 1}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
 		},
 	},
 }
@@ -499,24 +485,24 @@ func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTes
 	for i, testCase := range testCases {
 		mockedCase := testCase
 
-		for j, attachment := range testCase.Attachments {
+		for j, attachment := range testCase.MsgAttachments {
 			prefix, _ := SplitAttachment(attachment)
 			if mediaType := strings.Split(prefix, "/")[0]; mediaType != "image" {
 				continue
 			}
-			mockedCase.Attachments[j] = strings.Replace(attachment, "https://foo.bar", mediaServer.URL, 1)
+			mockedCase.MsgAttachments[j] = strings.Replace(attachment, "https://foo.bar", mediaServer.URL, 1)
 		}
 		casesWithMockedUrls[i] = mockedCase
 	}
 	return casesWithMockedUrls
 }
 
-func TestSendMsg(t *testing.T) {
+func TestSend(t *testing.T) {
 	mediaServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
 		res.WriteHeader(200)
 		res.Write([]byte("media body"))
 	}))
 	mockedSendTestCases := mockAttachmentURLs(mediaServer, sendTestCases)
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, []string{"token123xyz", "abc123xyz"}, nil)
 }

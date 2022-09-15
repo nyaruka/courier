@@ -11,7 +11,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 const configIsShared = "is_shared"
@@ -49,7 +48,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// get our params
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -74,10 +73,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithExternalID(form.ID).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text, clog).WithExternalID(form.ID).WithReceivedOn(date)
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 type statusForm struct {
@@ -95,7 +94,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// get our params
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
@@ -110,12 +109,12 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	isSharedStr := msg.Channel().ConfigForKey(configIsShared, false)
 	isShared, _ := isSharedStr.(bool)
 
@@ -128,6 +127,8 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 	if apiKey == "" {
 		return nil, fmt.Errorf("no API key set for AT channel")
 	}
+
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	// build our request
 	form := url.Values{
@@ -149,24 +150,20 @@ func (h *handler) SendMsg(_ context.Context, msg courier.Msg) (courier.MsgStatus
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("apikey", apiKey)
 
-	rr, err := utils.MakeHTTPRequest(req)
-
-	// record our status and log
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
-	if err != nil {
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}
 
 	// was this request successful?
-	msgStatus, _ := jsonparser.GetString([]byte(rr.Body), "SMSMessageData", "Recipients", "[0]", "status")
+	msgStatus, _ := jsonparser.GetString(respBody, "SMSMessageData", "Recipients", "[0]", "status")
 	if msgStatus != "Success" {
 		status.SetStatus(courier.MsgErrored)
 		return status, nil
 	}
 
 	// grab the external id if we can
-	externalID, _ := jsonparser.GetString([]byte(rr.Body), "SMSMessageData", "Recipients", "[0]", "messageId")
+	externalID, _ := jsonparser.GetString(respBody, "SMSMessageData", "Recipients", "[0]", "messageId")
 	status.SetStatus(courier.MsgWired)
 	status.SetExternalID(externalID)
 

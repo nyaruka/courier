@@ -8,19 +8,18 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/httputil"
 	"os"
 	"runtime/debug"
 	"sort"
 	"strings"
-	"time"
-
 	"sync"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/analytics"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,8 +29,7 @@ type Server interface {
 	Config() *Config
 
 	AddHandlerRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelHandleFunc)
-
-	SendMsg(context.Context, Msg) (MsgStatus, error)
+	GetHandler(Channel) ChannelHandler
 
 	Backend() Backend
 
@@ -121,9 +119,10 @@ func (s *server) Start() error {
 		WriteTimeout: 30 * time.Second,
 	}
 
+	s.waitGroup.Add(1)
+
 	// and start serving HTTP
 	go func() {
-		s.waitGroup.Add(1)
 		defer s.waitGroup.Done()
 		err := s.httpServer.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
@@ -135,9 +134,10 @@ func (s *server) Start() error {
 		}
 	}()
 
+	s.waitGroup.Add(1)
+
 	// start our heartbeat
 	go func() {
-		s.waitGroup.Add(1)
 		defer s.waitGroup.Done()
 
 		for !s.stopped {
@@ -202,16 +202,7 @@ func (s *server) Stop() error {
 	return nil
 }
 
-func (s *server) SendMsg(ctx context.Context, msg Msg) (MsgStatus, error) {
-	// find the handler for this message type
-	handler, found := activeHandlers[msg.Channel().ChannelType()]
-	if !found {
-		return nil, fmt.Errorf("unable to find handler for channel type: %s", msg.Channel().ChannelType())
-	}
-
-	// have the handler send it
-	return handler.SendMsg(ctx, msg)
-}
+func (s *server) GetHandler(ch Channel) ChannelHandler { return activeHandlers[ch.ChannelType()] }
 
 func (s *server) WaitGroup() *sync.WaitGroup { return s.waitGroup }
 func (s *server) StopChan() chan bool        { return s.stopChan }
@@ -269,90 +260,91 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		baseCtx := context.WithValue(r.Context(), contextRequestURL, r.URL.String())
 		baseCtx = context.WithValue(baseCtx, contextRequestStart, time.Now())
 
-		// add a 30 second timeout
+		// add a 30 second timeout to the request
 		ctx, cancel := context.WithTimeout(baseCtx, time.Second*30)
 		defer cancel()
-
-		channel, err := handler.GetChannel(ctx, r)
-		if err != nil {
-			WriteError(ctx, w, r, err)
-			return
-		}
-
 		r = r.WithContext(ctx)
 
-		// read the bytes from our body so we can create a channel log for this request
-		response := &bytes.Buffer{}
-
-		// Trim out cookie header, should never be part of authentication and can leak auth to channel logs
-		r.Header.Del("Cookie")
-		request, err := httputil.DumpRequest(r, true)
+		recorder, err := httpx.NewRecorder(r, w, true)
 		if err != nil {
-			writeAndLogRequestError(ctx, w, r, channel, err)
+			writeAndLogRequestError(ctx, handler, w, r, nil, err)
 			return
 		}
-		url := fmt.Sprintf("https://%s%s", r.Host, r.URL.RequestURI())
-		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
-		ww.Tee(response)
+		// get the channel for this request - can be nil, e.g. FBA verification requests
+		channel, err := handler.GetChannel(ctx, r)
+		if err != nil {
+			writeAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, err)
+			return
+		}
 
-		logs := make([]*ChannelLog, 0, 1)
+		var channelUUID ChannelUUID
+		if channel != nil {
+			channelUUID = channel.UUID()
+		}
 
 		defer func() {
 			// catch any panics and recover
 			panicLog := recover()
 			if panicLog != nil {
 				debug.PrintStack()
-				logrus.WithError(err).WithField("channel_uuid", channel.UUID()).WithField("url", url).WithField("request", string(request)).WithField("trace", panicLog).Error("panic handling request")
-				writeAndLogRequestError(ctx, ww, r, channel, errors.New("panic handling msg"))
+				logrus.WithError(err).WithField("channel_uuid", channelUUID).WithField("request", string(recorder.Trace.RequestTrace)).WithField("trace", panicLog).Error("panic handling request")
+				writeAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
 			}
 		}()
 
-		events, err := handlerFunc(ctx, channel, ww, r)
-		duration := time.Now().Sub(start)
+		clog := NewChannelLogForIncoming(channel, recorder, handler.RedactValues(channel))
+
+		events, hErr := handlerFunc(ctx, channel, recorder.ResponseWriter, r, clog)
+		duration := time.Since(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
 		// if we received an error, write it out and report it
-		if err != nil {
-			logrus.WithError(err).WithField("channel_uuid", channel.UUID()).WithField("url", url).WithField("request", string(request)).Error("error handling request")
-			writeAndLogRequestError(ctx, ww, r, channel, err)
+		if hErr != nil {
+			logrus.WithError(hErr).WithField("channel_uuid", channelUUID).WithField("request", string(recorder.Trace.RequestTrace)).Error("error handling request")
+			writeAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, hErr)
 		}
 
-		// if we have a channel matched but no events were created we still want to log this to the channel, do so
-		if channel != nil && len(events) == 0 {
-			if err != nil {
-				logs = append(logs, NewChannelLog("Channel Error", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-				analytics.Gauge(fmt.Sprintf("courier.channel_error_%s", channel.ChannelType()), secondDuration)
-			} else {
-				logs = append(logs, NewChannelLog("Request Ignored", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-				analytics.Gauge(fmt.Sprintf("courier.channel_ignored_%s", channel.ChannelType()), secondDuration)
+		// end recording of the request so that we have a response trace
+		if err := recorder.End(); err != nil {
+			logrus.WithError(err).WithField("channel_uuid", channelUUID).WithField("request", string(recorder.Trace.RequestTrace)).Error("error recording request")
+			writeAndLogRequestError(ctx, handler, w, r, channel, err)
+		}
+
+		if channel != nil {
+			// if we have a channel but no events were created, we still log this to analytics
+			if len(events) == 0 {
+				if hErr != nil {
+					analytics.Gauge(fmt.Sprintf("courier.channel_error_%s", channel.ChannelType()), secondDuration)
+				} else {
+					analytics.Gauge(fmt.Sprintf("courier.channel_ignored_%s", channel.ChannelType()), secondDuration)
+				}
 			}
-		}
 
-		// otherwise, log the request for each message
-		for _, event := range events {
-			switch e := event.(type) {
-			case Msg:
-				logs = append(logs, NewChannelLog("Message Received", channel, e.ID(), r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-				analytics.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
-				LogMsgReceived(r, e)
-			case ChannelEvent:
-				logs = append(logs, NewChannelLog("Event Received", channel, NilMsgID, r.Method, url, ww.Status(), string(request), prependHeaders(response.String(), ww.Status(), w), duration, err))
-				analytics.Gauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
-				LogChannelEventReceived(r, e)
-			case MsgStatus:
-				logs = append(logs, NewChannelLog("Status Updated", channel, e.ID(), r.Method, url, ww.Status(), string(request), response.String(), duration, err))
-				analytics.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
-				LogMsgStatusReceived(r, e)
+			for _, event := range events {
+				switch e := event.(type) {
+				case Msg:
+					clog.SetMsgID(e.ID())
+					clog.SetType(ChannelLogTypeMsgReceive)
+					analytics.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
+					LogMsgReceived(r, e)
+				case MsgStatus:
+					clog.SetMsgID(e.ID())
+					clog.SetType(ChannelLogTypeMsgStatus)
+					analytics.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
+					LogMsgStatusReceived(r, e)
+				case ChannelEvent:
+					clog.SetType(ChannelLogTypeEventReceive)
+					analytics.Gauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
+					LogChannelEventReceived(r, e)
+				}
 			}
-		}
 
-		// and write these out
-		err = s.backend.WriteChannelLogs(ctx, logs)
+			clog.End()
 
-		// log any error writing our channel log but don't break the request
-		if err != nil {
-			logrus.WithError(err).Error("error writing channel log")
+			if err := s.backend.WriteChannelLog(ctx, clog); err != nil {
+				logrus.WithError(err).Error("error writing channel log")
+			}
 		}
 	}
 }
@@ -371,15 +363,6 @@ func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action s
 	}
 	s.chanRouter.Method(method, path, s.channelHandleWrapper(handler, handlerFunc))
 	s.routes = append(s.routes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
-}
-
-func prependHeaders(body string, statusCode int, resp http.ResponseWriter) string {
-	output := &bytes.Buffer{}
-	output.WriteString(fmt.Sprintf("HTTP/1.1 %d %s\r\n", statusCode, http.StatusText(statusCode)))
-	resp.Header().Write(output)
-	output.WriteString("\n")
-	output.WriteString(body)
-	return output.String()
 }
 
 func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {

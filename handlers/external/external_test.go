@@ -1,112 +1,267 @@
 package external
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"net/http"
-
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/courier/utils"
 )
 
-var (
-	receiveValidMessage         = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join"
-	receiveValidMessageFrom     = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=%2B2349067554729&text=Join"
-	receiveValidNoPlus          = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from=2349067554729&text=Join"
-	receiveValidMessageWithDate = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join&date=2017-06-23T12:30:00.500Z"
-	receiveValidMessageWithTime = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join&time=2017-06-23T12:30:00Z"
-	receiveNoParams             = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-	invalidURN                  = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=MTN&text=Join"
-	receiveNoSender             = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?text=Join"
-	receiveInvalidDate          = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=%2B2349067554729&text=Join&time=20170623T123000Z"
-	failedNoParams              = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/"
-	failedValid                 = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/?id=12345"
-	sentValid                   = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/?id=12345"
-	invalidStatus               = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/wired/"
-	deliveredValid              = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?id=12345"
-	deliveredValidPost          = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/"
-	stoppedEvent                = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=%2B2349067554729"
-	stoppedEventPost            = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/"
-	stoppedEventInvalidURN      = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=MTN"
+const (
+	receiveURL = "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US", nil),
 }
 
 var gmChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "GM", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "GM", nil),
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive Valid Post", URL: receiveNoParams, Data: "sender=%2B2349067554729&text=Join", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-
-	{Label: "Receive Valid Post multipart form", URL: receiveNoParams, MultipartFormFields: map[string]string{"sender": "2349067554729", "text": "Join"}, Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive Valid From", URL: receiveValidMessageFrom, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive Country Parse", URL: receiveValidNoPlus, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive Valid Message With Date", URL: receiveValidMessageWithDate, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC))},
-	{Label: "Receive Valid Message With Time", URL: receiveValidMessageWithTime, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC))},
-	{Label: "Invalid URN", URL: invalidURN, Data: "empty", Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", Status: 400, Response: "must have one of 'sender' or 'from' set"},
-	{Label: "Receive No Sender", URL: receiveNoSender, Data: "empty", Status: 400, Response: "must have one of 'sender' or 'from' set"},
-	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "empty", Status: 400, Response: "invalid date format, must be RFC 3339"},
-	{Label: "Failed No Params", URL: failedNoParams, Status: 400, Response: "field 'id' required"},
-	{Label: "Failed Valid", URL: failedValid, Status: 200, Response: `"status":"F"`},
-	{Label: "Invalid Status", URL: invalidStatus, Status: 404, Response: `page not found`},
-	{Label: "Sent Valid", URL: sentValid, Status: 200, Response: `"status":"S"`},
-	{Label: "Delivered Valid", URL: deliveredValid, Status: 200, Data: "nothing", Response: `"status":"D"`},
-	{Label: "Delivered Valid Post", URL: deliveredValidPost, Data: "id=12345", Status: 200, Response: `"status":"D"`},
-	{Label: "Stopped Event", URL: stoppedEvent, Status: 200, Data: "nothing", Response: "Accepted"},
-	{Label: "Stopped Event Post", URL: stoppedEventPost, Data: "from=%2B2349067554729", Status: 200, Response: "Accepted"},
-	{Label: "Stopped Event Invalid URN", URL: stoppedEventInvalidURN, Data: "empty", Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Stopped event No Params", URL: stoppedEventPost, Status: 400, Response: "field 'from' required"},
+	{
+		Label:                "Receive Valid Message",
+		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
+	},
+	{
+		Label:                "Receive Valid Post",
+		URL:                  receiveURL,
+		Data:                 "sender=%2B2349067554729&text=Join",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
+	},
+	{
+		Label:                "Receive Valid Post multipart form",
+		URL:                  receiveURL,
+		MultipartForm:        map[string]string{"sender": "2349067554729", "text": "Join"},
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
+	},
+	{
+		Label:                "Receive Valid From",
+		URL:                  receiveURL + "?from=%2B2349067554729&text=Join",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
+	},
+	{
+		Label:                "Receive Country Parse",
+		URL:                  receiveURL + "?from=2349067554729&text=Join",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
+	},
+	{
+		Label:                "Receive Valid Message With Date",
+		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join&date=2017-06-23T12:30:00.500Z",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
+		ExpectedDate:         time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC),
+	},
+	{
+		Label:                "Receive Valid Message With Time",
+		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join&time=2017-06-23T12:30:00Z",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
+		ExpectedDate:         time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC),
+	},
+	{
+		Label:                "Invalid URN",
+		URL:                  receiveURL + "?sender=MTN&text=Join",
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
+	},
+	{
+		Label:                "Receive No Params",
+		URL:                  receiveURL,
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "must have one of 'sender' or 'from' set",
+	},
+	{
+		Label:              "Receive No Sender",
+		URL:                receiveURL + "?text=Join",
+		Data:               "empty",
+		ExpectedRespStatus: 400, ExpectedBodyContains: "must have one of 'sender' or 'from' set",
+	},
+	{
+		Label:                "Receive Invalid Date",
+		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join&time=20170623T123000Z",
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "invalid date format, must be RFC 3339",
+	},
+	{
+		Label:                "Failed No Params",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "field 'id' required",
+	},
+	{
+		Label:                "Failed Valid",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/?id=12345",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"F"`,
+		ExpectedMsgStatus:    courier.MsgFailed,
+	},
+	{
+		Label:                "Invalid Status",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/wired/",
+		ExpectedRespStatus:   404,
+		ExpectedBodyContains: `page not found`,
+	},
+	{
+		Label:                "Sent Valid",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/?id=12345",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"S"`,
+		ExpectedMsgStatus:    courier.MsgSent,
+	},
+	{
+		Label:                "Delivered Valid",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?id=12345",
+		Data:                 "nothing",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedMsgStatus:    courier.MsgDelivered,
+	},
+	{
+		Label:                "Delivered Valid Post",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+		Data:                 "id=12345",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedMsgStatus:    courier.MsgDelivered,
+	},
+	{
+		Label:                "Stopped Event",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=%2B2349067554729",
+		Data:                 "nothing",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedEvent:        "stop_contact",
+		ExpectedURN:          "tel:+2349067554729",
+	},
+	{
+		Label:                "Stopped Event Post",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/",
+		Data:                 "from=%2B2349067554729",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedEvent:        "stop_contact",
+		ExpectedURN:          "tel:+2349067554729",
+	},
+	{
+		Label:                "Stopped Event Invalid URN",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=MTN",
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
+	},
+	{
+		Label:                "Stopped event No Params",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "field 'from' required",
+	},
 }
 
 var testSOAPReceiveChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			configTextXPath:             "//content",
 			configFromXPath:             "//source",
 			configMOResponse:            "<?xml version=“1.0”?><return>0</return>",
 			configMOResponseContentType: "text/xml",
-		})}
+		},
+	),
+}
 
 var handleSOAPReceiveTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Post SOAP", URL: receiveNoParams, Data: `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body><com:moRequest><source>2349067554729</source><content>Join</content></com:moRequest></soapenv:Body></soapenv:Envelope>`,
-		Status: 200, Response: "<?xml version=“1.0”?><return>0</return>",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive Invalid SOAP", URL: receiveNoParams, Data: `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body></soapenv:Body></soapenv:Envelope>`,
-		Status: 400, Response: "missing from"},
+	{
+		Label:                "Receive Valid Post SOAP",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+		Data:                 `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body><com:moRequest><source>2349067554729</source><content>Join</content></com:moRequest></soapenv:Body></soapenv:Envelope>`,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "<?xml version=“1.0”?><return>0</return>",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
+	},
+	{
+		Label:                "Receive Invalid SOAP",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+		Data:                 `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body></soapenv:Body></soapenv:Envelope>`,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "missing from",
+	},
 }
 
 var gmTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Non Plus Message", URL: "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=2207222333&text=Join", Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2207222333")},
+	{
+		Label:                "Receive Non Plus Message",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=2207222333&text=Join",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2207222333",
+	},
 }
 
 var customChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			configMOFromField: "from_number",
 			configMODateField: "timestamp",
 			configMOTextField: "messageText",
-		})}
+		},
+	),
+}
 
 var customTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Custom Message", URL: "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from_number=12067799192&messageText=Join&timestamp=2017-06-23T12:30:00Z", Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+12067799192"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC))},
-	{Label: "Receive Custom Missing", URL: "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sent_from=12067799192&messageText=Join", Data: "empty", Status: 400, Response: "must have one of 'sender' or 'from' set"},
+	{
+		Label:                "Receive Custom Message",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from_number=12067799192&messageText=Join&timestamp=2017-06-23T12:30:00Z",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+12067799192",
+		ExpectedDate:         time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC),
+	},
+	{
+		Label:                "Receive Custom Missing",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sent_from=12067799192&messageText=Join",
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "must have one of 'sender' or 'from' set",
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -126,302 +281,426 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	// this is actually a path, which we'll combine with the test server URL
 	sendURL := c.StringConfigForKey("send_path", "")
 	sendURL, _ = utils.AddURLPath(s.URL, sendURL)
-	c.(*courier.MockChannel).SetConfig(courier.ConfigSendURL, sendURL)
+	c.(*test.MockChannel).SetConfig(courier.ConfigSendURL, sendURL)
 }
 
 var longSendTestCases = []ChannelSendTestCase{
-	{Label: "Long Send",
-		Text: "This is a long message that will be longer than 30....... characters", URN: "tel:+250788383383",
-		QuickReplies: []string{"One"},
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		URLParams: map[string]string{"text": "characters", "to": "+250788383383", "from": "2020", "quick_reply": "One"},
-		SendPrep:  setSendURL},
+	{
+		Label:   "Long Send",
+		MsgText: "This is a long message that will be longer than 30....... characters", MsgURN: "tel:+250788383383",
+		MsgQuickReplies:    []string{"One"},
+		MockResponseBody:   "0: Accepted for delivery",
+		MockResponseStatus: 200,
+		ExpectedURLParams:  map[string]string{"text": "characters", "to": "+250788383383", "from": "2020", "quick_reply": "One"},
+		ExpectedMsgStatus:  "W",
+		SendPrep:           setSendURL,
+	},
 }
 
 var getSendSmartEncodingTestCases = []ChannelSendTestCase{
-	{Label: "Smart Encoding",
-		Text: "Fancy “Smart” Quotes", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		URLParams: map[string]string{"text": `Fancy "Smart" Quotes`, "to": "+250788383383", "from": "2020"},
-		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		SendPrep:  setSendURL},
+	{
+		Label:              "Smart Encoding",
+		MsgText:            "Fancy “Smart” Quotes",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   "0: Accepted for delivery",
+		MockResponseStatus: 200,
+		ExpectedURLParams:  map[string]string{"text": `Fancy "Smart" Quotes`, "to": "+250788383383", "from": "2020"},
+		ExpectedHeaders:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedMsgStatus:  "W",
+		SendPrep:           setSendURL,
+	},
 }
 
 var postSendSmartEncodingTestCases = []ChannelSendTestCase{
-	{Label: "Smart Encoding",
-		Text: "Fancy “Smart” Quotes", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		PostParams: map[string]string{"text": `Fancy "Smart" Quotes`, "to": "+250788383383", "from": "2020"},
-		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		SendPrep:   setSendURL},
+	{
+		Label:              "Smart Encoding",
+		MsgText:            "Fancy “Smart” Quotes",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   "0: Accepted for delivery",
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"text": `Fancy "Smart" Quotes`, "to": "+250788383383", "from": "2020"},
+		ExpectedHeaders:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedMsgStatus:  "W",
+		SendPrep:           setSendURL,
+	},
 }
 
 var getSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		URLParams: map[string]string{"text": "Simple Message", "to": "+250788383383", "from": "2020"},
-		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		SendPrep:  setSendURL},
-	{Label: "Unicode Send",
-		Text: "☺", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		URLParams: map[string]string{"text": "☺", "to": "+250788383383", "from": "2020"},
-		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		SendPrep:  setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
-		URLParams: map[string]string{"text": `Error Message`, "to": "+250788383383"},
-		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		SendPrep:  setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "W",
-		ResponseBody: `0: Accepted for delivery`, ResponseStatus: 200,
-		URLParams: map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "+250788383383", "from": "2020"},
-		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		SendPrep:  setSendURL},
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   "0: Accepted for delivery",
+		MockResponseStatus: 200,
+		ExpectedURLParams:  map[string]string{"text": "Simple Message", "to": "+250788383383", "from": "2020"},
+		ExpectedHeaders:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedMsgStatus:  "W",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:   "Unicode Send",
+		MsgText: "☺", MsgURN: "tel:+250788383383",
+		MockResponseBody:   "0: Accepted for delivery",
+		MockResponseStatus: 200,
+		ExpectedURLParams:  map[string]string{"text": "☺", "to": "+250788383383", "from": "2020"},
+		ExpectedHeaders:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedMsgStatus:  "W",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Error Sending",
+		MsgText:            "Error Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   "1: Unknown channel",
+		MockResponseStatus: 401,
+		ExpectedURLParams:  map[string]string{"text": `Error Message`, "to": "+250788383383"},
+		ExpectedHeaders:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedMsgStatus:  "E",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
+		MsgText:            "My pic!",
+		MsgURN:             "tel:+250788383383",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:   `0: Accepted for delivery`,
+		MockResponseStatus: 200,
+		ExpectedURLParams:  map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "+250788383383", "from": "2020"},
+		ExpectedHeaders:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedMsgStatus:  "W",
+		SendPrep:           setSendURL,
+	},
 }
 
 var postSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		PostParams: map[string]string{"text": "Simple Message", "to": "+250788383383", "from": "2020"},
-		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		SendPrep:   setSendURL},
-	{Label: "Unicode Send",
-		Text: "☺", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		PostParams: map[string]string{"text": "☺", "to": "+250788383383", "from": "2020"},
-		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		SendPrep:   setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
-		PostParams: map[string]string{"text": `Error Message`, "to": "+250788383383"},
-		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		SendPrep:   setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "W",
-		ResponseBody: `0: Accepted for delivery`, ResponseStatus: 200,
-		PostParams: map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "+250788383383", "from": "2020"},
-		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		SendPrep:   setSendURL},
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   "0: Accepted for delivery",
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"text": "Simple Message", "to": "+250788383383", "from": "2020"},
+		ExpectedHeaders:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedMsgStatus:  "W",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Unicode Send",
+		MsgText:            "☺",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   "0: Accepted for delivery",
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"text": "☺", "to": "+250788383383", "from": "2020"},
+		ExpectedHeaders:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedMsgStatus:  "W",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Error Sending",
+		MsgText:            "Error Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   "1: Unknown channel",
+		MockResponseStatus: 401,
+		ExpectedPostParams: map[string]string{"text": `Error Message`, "to": "+250788383383"},
+		ExpectedHeaders:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedMsgStatus:  "E",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:            "Send Attachment",
+		MsgText:          "My pic!",
+		MsgURN:           "tel:+250788383383",
+		MsgAttachments:   []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody: `0: Accepted for delivery`, MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "+250788383383", "from": "2020"},
+		ExpectedHeaders:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedMsgStatus:  "W",
+		SendPrep:           setSendURL,
+	},
 }
 
 var postSendCustomContentTypeTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		PostParams: map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020"},
-		Headers:    map[string]string{"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
-		SendPrep:   setSendURL},
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   "0: Accepted for delivery",
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020"},
+		ExpectedHeaders:    map[string]string{"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
+		ExpectedMsgStatus:  "W",
+		SendPrep:           setSendURL,
+	},
 }
 
 var jsonSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		RequestBody: `{ "to":"+250788383383", "text":"Simple Message", "from":"2020", "quick_replies":[] }`,
-		Headers:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-		SendPrep:    setSendURL},
-	{Label: "Unicode Send",
-		Text: `☺ "hi!"`, URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		RequestBody: `{ "to":"+250788383383", "text":"☺ \"hi!\"", "from":"2020", "quick_replies":[] }`,
-		Headers:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-		SendPrep:    setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
-		RequestBody: `{ "to":"+250788383383", "text":"Error Message", "from":"2020", "quick_replies":[] }`,
-		Headers:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-		SendPrep:    setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "W",
-		ResponseBody: `0: Accepted for delivery`, ResponseStatus: 200,
-		RequestBody: `{ "to":"+250788383383", "text":"My pic!\nhttps://foo.bar/image.jpg", "from":"2020", "quick_replies":[] }`,
-		Headers:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-		SendPrep:    setSendURL},
-	{Label: "Send Quick Replies",
-		Text: "Some message", URN: "tel:+250788383383", QuickReplies: []string{"One", "Two", "Three"},
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		RequestBody: `{ "to":"+250788383383", "text":"Some message", "from":"2020", "quick_replies":["One","Two","Three"] }`,
-		Headers:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-		SendPrep:    setSendURL},
+	{
+		Label:               "Plain Send",
+		MsgText:             "Simple Message",
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    "0: Accepted for delivery",
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{ "to":"+250788383383", "text":"Simple Message", "from":"2020", "quick_replies":[] }`,
+		ExpectedHeaders:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Unicode Send",
+		MsgText:             `☺ "hi!"`,
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    "0: Accepted for delivery",
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{ "to":"+250788383383", "text":"☺ \"hi!\"", "from":"2020", "quick_replies":[] }`,
+		ExpectedHeaders:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Error Sending",
+		MsgText:             "Error Message",
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    "1: Unknown channel",
+		MockResponseStatus:  401,
+		ExpectedRequestBody: `{ "to":"+250788383383", "text":"Error Message", "from":"2020", "quick_replies":[] }`,
+		ExpectedHeaders:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
+		ExpectedMsgStatus:   "E",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Send Attachment",
+		MsgText:             "My pic!",
+		MsgURN:              "tel:+250788383383",
+		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:    `0: Accepted for delivery`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{ "to":"+250788383383", "text":"My pic!\nhttps://foo.bar/image.jpg", "from":"2020", "quick_replies":[] }`,
+		ExpectedHeaders:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL},
+	{
+		Label:               "Send Quick Replies",
+		MsgText:             "Some message",
+		MsgURN:              "tel:+250788383383",
+		MsgQuickReplies:     []string{"One", "Two", "Three"},
+		MockResponseBody:    "0: Accepted for delivery",
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{ "to":"+250788383383", "text":"Some message", "from":"2020", "quick_replies":["One","Two","Three"] }`,
+		ExpectedHeaders:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
 }
 
 var jsonLongSendTestCases = []ChannelSendTestCase{
-	{Label: "Send Quick Replies",
-		Text: "This is a long message that will be longer than 30....... characters", URN: "tel:+250788383383",
-		QuickReplies: []string{"One", "Two", "Three"},
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		RequestBody: `{ "to":"+250788383383", "text":"characters", "from":"2020", "quick_replies":["One","Two","Three"] }`,
-		Headers:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
-		SendPrep:    setSendURL},
+	{
+		Label:               "Send Quick Replies",
+		MsgText:             "This is a long message that will be longer than 30....... characters",
+		MsgURN:              "tel:+250788383383",
+		MsgQuickReplies:     []string{"One", "Two", "Three"},
+		MockResponseBody:    "0: Accepted for delivery",
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{ "to":"+250788383383", "text":"characters", "from":"2020", "quick_replies":["One","Two","Three"] }`,
+		ExpectedHeaders:     map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
 }
 
 var xmlSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		RequestBody: `<msg><to>+250788383383</to><text>Simple Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep:    setSendURL},
-	{Label: "Unicode Send",
-		Text: `☺`, URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		RequestBody: `<msg><to>+250788383383</to><text>☺</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep:    setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
-		RequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep:    setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "W",
-		ResponseBody: `0: Accepted for delivery`, ResponseStatus: 200,
-		RequestBody: `<msg><to>+250788383383</to><text>My pic!&#xA;https://foo.bar/image.jpg</text><from>2020</from>` +
-			`<quick_replies></quick_replies></msg>`,
-		Headers:  map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep: setSendURL},
-	{Label: "Send Quick Replies",
-		Text: "Some message", URN: "tel:+250788383383", QuickReplies: []string{"One", "Two", "Three"},
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		RequestBody: "<msg><to>+250788383383</to><text>Some message</text><from>2020</from>" +
-			"<quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>",
-		Headers:  map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep: setSendURL},
+	{
+		Label:               "Plain Send",
+		MsgText:             "Simple Message",
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    "0: Accepted for delivery",
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `<msg><to>+250788383383</to><text>Simple Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Unicode Send",
+		MsgText:             `☺`,
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    "0: Accepted for delivery",
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `<msg><to>+250788383383</to><text>☺</text><from>2020</from><quick_replies></quick_replies></msg>`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Error Sending",
+		MsgText:             "Error Message",
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    "1: Unknown channel",
+		MockResponseStatus:  401,
+		ExpectedRequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		ExpectedMsgStatus:   "E",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Send Attachment",
+		MsgText:             "My pic!",
+		MsgURN:              "tel:+250788383383",
+		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:    `0: Accepted for delivery`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `<msg><to>+250788383383</to><text>My pic!&#xA;https://foo.bar/image.jpg</text><from>2020</from><quick_replies></quick_replies></msg>`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Send Quick Replies",
+		MsgText:             "Some message",
+		MsgURN:              "tel:+250788383383",
+		MsgQuickReplies:     []string{"One", "Two", "Three"},
+		MockResponseBody:    "0: Accepted for delivery",
+		MockResponseStatus:  200,
+		ExpectedRequestBody: "<msg><to>+250788383383</to><text>Some message</text><from>2020</from><quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>",
+		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
 }
 
 var xmlLongSendTestCases = []ChannelSendTestCase{
-	{Label: "Send Quick Replies",
-		Text: "This is a long message that will be longer than 30....... characters", URN: "tel:+250788383383",
-		QuickReplies: []string{"One", "Two", "Three"},
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		RequestBody: "<msg><to>+250788383383</to><text>characters</text><from>2020</from>" +
-			"<quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>",
-		Headers:  map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep: setSendURL},
+	{
+		Label:               "Send Quick Replies",
+		MsgText:             "This is a long message that will be longer than 30....... characters",
+		MsgURN:              "tel:+250788383383",
+		MsgQuickReplies:     []string{"One", "Two", "Three"},
+		MockResponseBody:    "0: Accepted for delivery",
+		MockResponseStatus:  200,
+		ExpectedRequestBody: "<msg><to>+250788383383</to><text>characters</text><from>2020</from><quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>",
+		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
 }
 
 var xmlSendWithResponseContentTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "<return>0</return>", ResponseStatus: 200,
-		RequestBody: `<msg><to>+250788383383</to><text>Simple Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep:    setSendURL},
-	{Label: "Unicode Send",
-		Text: `☺`, URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "<return>0</return>", ResponseStatus: 200,
-		RequestBody: `<msg><to>+250788383383</to><text>☺</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep:    setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: "<return>0</return>", ResponseStatus: 401,
-		RequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep:    setSendURL},
-	{Label: "Error Sending with 200 status code",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: "<return>1</return>", ResponseStatus: 200,
-		RequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
-		Headers:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep:    setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "W",
-		ResponseBody: `<return>0</return>`, ResponseStatus: 200,
-		RequestBody: `<msg><to>+250788383383</to><text>My pic!&#xA;https://foo.bar/image.jpg</text><from>2020</from>` +
-			`<quick_replies></quick_replies></msg>`,
-		Headers:  map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep: setSendURL},
-	{Label: "Send Quick Replies",
-		Text: "Some message", URN: "tel:+250788383383", QuickReplies: []string{"One", "Two", "Three"},
-		Status:       "W",
-		ResponseBody: "<return>0</return>", ResponseStatus: 200,
-		RequestBody: `<msg><to>+250788383383</to><text>Some message</text><from>2020</from>` +
-			`<quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>`,
-		Headers:  map[string]string{"Content-Type": "text/xml; charset=utf-8"},
-		SendPrep: setSendURL},
+	{
+		Label:               "Plain Send",
+		MsgText:             "Simple Message",
+		MsgURN:              "tel:+250788383383",
+		ExpectedMsgStatus:   "W",
+		MockResponseBody:    "<return>0</return>",
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `<msg><to>+250788383383</to><text>Simple Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Unicode Send",
+		MsgText:             `☺`,
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    "<return>0</return>",
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `<msg><to>+250788383383</to><text>☺</text><from>2020</from><quick_replies></quick_replies></msg>`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Error Sending",
+		MsgText:             "Error Message",
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    "<return>0</return>",
+		MockResponseStatus:  401,
+		ExpectedRequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		ExpectedMsgStatus:   "E",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Error Sending with 200 status code",
+		MsgText:             "Error Message",
+		MsgURN:              "tel:+250788383383",
+		MockResponseBody:    "<return>1</return>",
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		ExpectedMsgStatus:   "E",
+		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("Received invalid response content: <return>1</return>", "")},
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Send Attachment",
+		MsgText:             "My pic!",
+		MsgURN:              "tel:+250788383383",
+		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:    `<return>0</return>`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `<msg><to>+250788383383</to><text>My pic!&#xA;https://foo.bar/image.jpg</text><from>2020</from><quick_replies></quick_replies></msg>`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Send Quick Replies",
+		MsgText:             "Some message",
+		MsgURN:              "tel:+250788383383",
+		MsgQuickReplies:     []string{"One", "Two", "Three"},
+		MockResponseBody:    "<return>0</return>",
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `<msg><to>+250788383383</to><text>Some message</text><from>2020</from><quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
 }
 
 var nationalGetSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		URLParams: map[string]string{"text": "Simple Message", "to": "788383383", "from": "2020"},
-		Headers:   map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		SendPrep:  setSendURL},
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   "0: Accepted for delivery",
+		MockResponseStatus: 200,
+		ExpectedURLParams:  map[string]string{"text": "Simple Message", "to": "788383383", "from": "2020"},
+		ExpectedHeaders:    map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedMsgStatus:  "W",
+		SendPrep:           setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
-	var getChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var getChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			courier.ConfigSendMethod: http.MethodGet})
 
-	var getSmartChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var getSmartChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			configEncoding:           encodingSmart,
 			courier.ConfigSendMethod: http.MethodGet})
 
-	var postChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var postChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":              "",
 			courier.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			courier.ConfigSendMethod: http.MethodPost})
 
-	var postChannelCustomContentType = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var postChannelCustomContentType = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":               "",
 			courier.ConfigSendBody:    "to={{to_no_plus}}&text={{text}}&from={{from_no_plus}}{{quick_replies}}",
 			courier.ConfigContentType: "application/x-www-form-urlencoded; charset=utf-8",
 			courier.ConfigSendMethod:  http.MethodPost})
 
-	var postSmartChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var postSmartChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":              "",
 			courier.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			configEncoding:           encodingSmart,
 			courier.ConfigSendMethod: http.MethodPost})
 
-	var jsonChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var jsonChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":               "",
 			courier.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
@@ -430,7 +709,7 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendHeaders: map[string]interface{}{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
-	var xmlChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var xmlChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":               "",
 			courier.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
@@ -438,7 +717,7 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendMethod:  http.MethodPut,
 		})
 
-	var xmlChannelWithResponseContent = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var xmlChannelWithResponseContent = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":               "",
 			courier.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
@@ -447,30 +726,30 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendMethod:  http.MethodPut,
 		})
 
-	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil)
-	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil)
-	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendSmartEncodingTestCases, nil)
-	RunChannelSendTestCases(t, postChannel, newHandler(), postSendTestCases, nil)
-	RunChannelSendTestCases(t, postChannelCustomContentType, newHandler(), postSendCustomContentTypeTestCases, nil)
-	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendTestCases, nil)
-	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendSmartEncodingTestCases, nil)
-	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil)
-	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil)
-	RunChannelSendTestCases(t, xmlChannelWithResponseContent, newHandler(), xmlSendWithResponseContentTestCases, nil)
+	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendSmartEncodingTestCases, nil, nil)
+	RunChannelSendTestCases(t, postChannel, newHandler(), postSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, postChannelCustomContentType, newHandler(), postSendCustomContentTypeTestCases, nil, nil)
+	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendSmartEncodingTestCases, nil, nil)
+	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, xmlChannelWithResponseContent, newHandler(), xmlSendWithResponseContentTestCases, nil, nil)
 
-	var getChannel30IntLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var getChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"max_length":             30,
 			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			courier.ConfigSendMethod: http.MethodGet})
 
-	var getChannel30StrLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var getChannel30StrLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"max_length":             "30",
 			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			courier.ConfigSendMethod: http.MethodGet})
 
-	var jsonChannel30IntLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var jsonChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":               "",
 			"max_length":              30,
@@ -480,7 +759,7 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendHeaders: map[string]interface{}{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
-	var xmlChannel30IntLength = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var xmlChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":               "",
 			"max_length":              30,
@@ -490,20 +769,20 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendHeaders: map[string]interface{}{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
-	RunChannelSendTestCases(t, getChannel30IntLength, newHandler(), longSendTestCases, nil)
-	RunChannelSendTestCases(t, getChannel30StrLength, newHandler(), longSendTestCases, nil)
-	RunChannelSendTestCases(t, jsonChannel30IntLength, newHandler(), jsonLongSendTestCases, nil)
-	RunChannelSendTestCases(t, xmlChannel30IntLength, newHandler(), xmlLongSendTestCases, nil)
+	RunChannelSendTestCases(t, getChannel30IntLength, newHandler(), longSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, getChannel30StrLength, newHandler(), longSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, jsonChannel30IntLength, newHandler(), jsonLongSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, xmlChannel30IntLength, newHandler(), xmlLongSendTestCases, nil, nil)
 
-	var nationalChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var nationalChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			"use_national":           true,
 			courier.ConfigSendMethod: http.MethodGet})
 
-	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalGetSendTestCases, nil)
+	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalGetSendTestCases, nil, nil)
 
-	var jsonChannelWithSendAuthorization = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+	var jsonChannelWithSendAuthorization = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
 			"send_path":                     "",
 			courier.ConfigSendBody:          `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
@@ -511,6 +790,6 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendMethod:        http.MethodPost,
 			courier.ConfigSendAuthorization: "Token ABCDEF",
 		})
-	RunChannelSendTestCases(t, jsonChannelWithSendAuthorization, newHandler(), jsonSendTestCases, nil)
+	RunChannelSendTestCases(t, jsonChannelWithSendAuthorization, newHandler(), jsonSendTestCases, []string{"Token ABCDEF"}, nil)
 
 }

@@ -14,14 +14,13 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -49,7 +48,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
 	return nil
 }
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -92,17 +91,17 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date)
 
 	//add image
 	if mediaURL != "" {
 		msg.WithAttachment(mediaURL)
 	}
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 
 	agentID := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if agentID == "" {
@@ -115,7 +114,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	user := strings.Split(msg.URN().Path(), "/")
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	url := apiURL + "/conversations"
 
 	// create base payload
@@ -149,8 +148,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			msgimage.Image = &Image{URL: mediaURL}
 			payload.Messages[0].MessageParts = append(payload.Messages[0].MessageParts, *msgimage)
 		default:
-			status.AddLog(courier.NewChannelLog("Unknown media type: "+mediaType, msg.Channel(), msg.ID(), "", "", courier.NilStatusCode,
-				"", "", time.Duration(0), fmt.Errorf("unknown media type: %s", mediaType)))
+			clog.Error(fmt.Errorf("unknown media type: %s", mediaType))
 		}
 	}
 
@@ -169,14 +167,11 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	var bearer = "Bearer " + authToken
 	req.Header.Set("Authorization", bearer)
 
-	rr, err := utils.MakeHTTPRequest(req)
-
-	// record our status and log
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-	status.AddLog(log)
-	if err != nil {
-		return status, err
+	resp, _, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return status, nil
 	}
+
 	status.SetStatus(courier.MsgWired)
 
 	return status, nil
@@ -200,10 +195,10 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if actual == "" {
 		return fmt.Errorf("missing request signature")
 	}
-	buf, _ := ioutil.ReadAll(r.Body)
-	rdr1 := ioutil.NopCloser(bytes.NewBuffer(buf))
-	rdr2 := ioutil.NopCloser(bytes.NewBuffer(buf))
-	token, err := ioutil.ReadAll(rdr1)
+	buf, _ := io.ReadAll(r.Body)
+	rdr1 := io.NopCloser(bytes.NewBuffer(buf))
+	rdr2 := io.NopCloser(bytes.NewBuffer(buf))
+	token, err := io.ReadAll(rdr1)
 	if err != nil {
 		return fmt.Errorf("unable to read Body, %s", err.Error())
 	}

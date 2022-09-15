@@ -6,32 +6,48 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BS", "2020", "US", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BS", "2020", "US", nil),
 }
 
-var (
+const (
 	receiveURL = "/c/bs/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-
-	validReceive  = "response=Msg&mobile=254791541111"
-	missingNumber = "response=Msg"
-
-	statusURL = "/c/bs/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
-
-	validStatus   = "message_id=12345&status=pending"
-	invalidStatus = "message_id=12345&status=unknown"
+	statusURL  = "/c/bs/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL + "?" + validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Msg"), URN: Sp("tel:+254791541111")},
-	{Label: "Receive Missing Number", URL: receiveURL + "?" + missingNumber, Status: 400, Response: "required field 'mobile'"},
-
-	{Label: "Status Valid", URL: statusURL + "?" + validStatus, Status: 200, Response: "Status Update Accepted",
-		ExternalID: Sp("12345"), MsgStatus: Sp("S")},
-	{Label: "Receive Invalid Status", URL: statusURL + "?" + invalidStatus, Status: 400, Response: "unknown status value"},
+	{
+		Label:                "Receive Valid",
+		URL:                  receiveURL + "?response=Msg&mobile=254791541111",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Message Accepted",
+		ExpectedMsgText:      Sp("Msg"),
+		ExpectedURN:          "tel:+254791541111",
+	},
+	{
+		Label:                "Receive Missing Number",
+		URL:                  receiveURL + "?response=Msg",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "required field 'mobile'",
+	},
+	{
+		Label:                "Status Valid",
+		URL:                  statusURL + "?message_id=12345&status=pending",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Status Update Accepted",
+		ExpectedExternalID:   "12345",
+		ExpectedMsgStatus:    "S",
+	},
+	{
+		Label:                "Receive Invalid Status",
+		URL:                  statusURL + "?message_id=12345&status=unknown",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "unknown status value",
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -47,38 +63,58 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message ☺", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status: "W", ExternalID: "19835",
-		ResponseBody: `{ "message_id": 19835, "recipients": 3, "cost": 1.000 }`, ResponseStatus: 200,
-		PostParams: map[string]string{
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message ☺",
+		MsgURN:             "tel:+250788383383",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:   `{ "message_id": 19835, "recipients": 3, "cost": 1.000 }`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{
 			"to":      "250788383383",
 			"message": "Simple Message ☺\nhttps://foo.bar/image.jpg",
 			"from":    "2020",
 		},
-		SendPrep: setSendURL},
-	{Label: "Invalid JSON",
-		Text: "Invalid JSON", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: `not json`, ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Error Response",
-		Text: "Error Response", URN: "tel:+250788383383",
-		Status:       "F",
-		ResponseBody: `{ "message_id": 0 }`, ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: `Bad Gateway`, ResponseStatus: 501,
-		SendPrep: setSendURL},
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "19835",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Invalid JSON",
+		MsgText:            "Invalid JSON",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `not json`,
+		MockResponseStatus: 200,
+		ExpectedMsgStatus:  "E",
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("invalid character 'o' in literal null (expecting 'u')", "")},
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Error Response",
+		MsgText:            "Error Response",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{ "message_id": 0 }`,
+		MockResponseStatus: 200,
+		ExpectedMsgStatus:  "F",
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("Received invalid message id: 0", "")},
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Error Sending",
+		MsgText:            "Error Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `Bad Gateway`,
+		MockResponseStatus: 501,
+		ExpectedMsgStatus:  "E",
+		SendPrep:           setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BS", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BS", "2020", "US",
 		map[string]interface{}{
 			courier.ConfigUsername: "user1",
 			courier.ConfigPassword: "pass1",
 		})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("user1", "pass1")}, nil)
 }

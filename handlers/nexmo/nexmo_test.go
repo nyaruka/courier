@@ -6,43 +6,100 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NX", "2020", "US", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NX", "2020", "US", nil),
 }
 
-var (
+const (
 	statusURL  = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"
 	receiveURL = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
-
-	receiveValidMessage     = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=2349067554729&text=Join&messageId=external1"
-	receiveInvalidURN       = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=MTN&text=Join&messageId=external1"
-	receiveValidMessageBody = "to=2020&msisdn=2349067554729&text=Join&messageId=external1"
-
-	statusDelivered  = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=delivered"
-	statusExpired    = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=expired"
-	statusFailed     = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=failed"
-	statusAccepted   = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=accepted"
-	statusBuffered   = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=buffered"
-	statusUnexpected = "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=unexpected"
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Valid Receive", URL: receiveValidMessage, Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Invalid URN", URL: receiveInvalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Valid Receive Post", URL: receiveURL, Status: 200, Response: "Accepted", Data: receiveValidMessageBody,
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive URL check", URL: receiveURL, Status: 200, Response: "no to parameter, ignored"},
-	{Label: "Status URL check", URL: statusURL, Status: 200, Response: "no messageId parameter, ignored"},
-
-	{Label: "Status delivered", URL: statusDelivered, Status: 200, Response: `"status":"D"`, ExternalID: Sp("external1")},
-	{Label: "Status expired", URL: statusExpired, Status: 200, Response: `"status":"F"`, ExternalID: Sp("external1")},
-	{Label: "Status failed", URL: statusFailed, Status: 200, Response: `"status":"F"`, ExternalID: Sp("external1")},
-	{Label: "Status accepted", URL: statusAccepted, Status: 200, Response: `"status":"S"`, ExternalID: Sp("external1")},
-	{Label: "Status buffered", URL: statusBuffered, Status: 200, Response: `"status":"S"`, ExternalID: Sp("external1")},
-	{Label: "Status unexpected", URL: statusUnexpected, Status: 200, Response: "ignoring unknown status report", ExternalID: Sp("external1")},
+	{
+		Label:                "Valid Receive",
+		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=2349067554729&text=Join&messageId=external1",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
+	},
+	{
+		Label:                "Invalid URN",
+		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=MTN&text=Join&messageId=external1",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
+	},
+	{
+		Label:                "Valid Receive Post",
+		URL:                  receiveURL,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		Data:                 "to=2020&msisdn=2349067554729&text=Join&messageId=external1",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
+	},
+	{
+		Label:                "Receive URL check",
+		URL:                  receiveURL,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "no to parameter, ignored",
+	},
+	{
+		Label:                "Status URL check",
+		URL:                  statusURL,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "no messageId parameter, ignored",
+	},
+	{
+		Label:                "Status delivered",
+		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=delivered",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedMsgStatus:    courier.MsgDelivered,
+		ExpectedExternalID:   "external1",
+	},
+	{
+		Label:                "Status expired",
+		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=expired",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"F"`,
+		ExpectedMsgStatus:    courier.MsgFailed,
+		ExpectedExternalID:   "external1",
+	},
+	{
+		Label:                "Status failed",
+		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=failed",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"F"`,
+		ExpectedMsgStatus:    courier.MsgFailed,
+		ExpectedExternalID:   "external1",
+	},
+	{
+		Label:                "Status accepted",
+		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=accepted",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"S"`,
+		ExpectedMsgStatus:    courier.MsgSent,
+		ExpectedExternalID:   "external1",
+	},
+	{
+		Label:                "Status buffered",
+		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=buffered",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"S"`,
+		ExpectedMsgStatus:    courier.MsgSent,
+		ExpectedExternalID:   "external1",
+	},
+	{
+		Label:                "Status unexpected",
+		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=unexpected",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "ignoring unknown status report",
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -59,60 +116,98 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status: "W", ExternalID: "1002",
-		PostParams:   map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
-		ResponseBody: `{"messages":[{"status":"0","message-id":"1002"}]}`, ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Unicode Send",
-		Text: "Unicode ☺", URN: "tel:+250788383383",
-		Status: "W", ExternalID: "1002",
-		PostParams:   map[string]string{"text": "Unicode ☺", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "unicode"},
-		ResponseBody: `{"messages":[{"status":"0","message-id":"1002"}]}`, ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Long Send",
-		Text:   "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		URN:    "tel:+250788383383",
-		Status: "W", ExternalID: "1002",
-		PostParams:   map[string]string{"text": "I need to keep adding more things to make it work", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
-		ResponseBody: `{"messages":[{"status":"0","message-id":"1002"}]}`, ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status: "W", ExternalID: "1002",
-		PostParams:   map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
-		ResponseBody: `{"messages":[{"status":"0","message-id":"1002"}]}`, ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Error Status",
-		Text: "Error status", URN: "tel:+250788383383",
-		Status:       "E",
-		PostParams:   map[string]string{"text": "Error status", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
-		ResponseBody: `{"messages":[{"status":"10"}]}`, ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		PostParams:   map[string]string{"text": "Error Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
-		ResponseBody: `Error`, ResponseStatus: 400,
-		SendPrep: setSendURL},
-	{Label: "Invalid Token",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "E",
-		PostParams:   map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
-		ResponseBody: "Invalid API token", ResponseStatus: 401,
-		SendPrep: setSendURL},
-	{Label: "Throttled by Nexmo",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "E",
-		PostParams:   map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
-		ResponseBody: `{"messages":[{"status":"1","error-text":"Throughput Rate Exceeded - please wait [ 250 ] and retry"}]}`, ResponseStatus: 200,
-		SendPrep: setSendURL},
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"messages":[{"status":"0","message-id":"1002"}]}`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "1002",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Unicode Send",
+		MsgText:            "Unicode ☺",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"messages":[{"status":"0","message-id":"1002"}]}`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"text": "Unicode ☺", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "unicode"},
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "1002",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Long Send",
+		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"messages":[{"status":"0","message-id":"1002"}]}`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"text": "I need to keep adding more things to make it work", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "1002",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
+		MsgText:            "My pic!",
+		MsgURN:             "tel:+250788383383",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:   `{"messages":[{"status":"0","message-id":"1002"}]}`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "1002",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Error Status",
+		MsgText:            "Error status",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"messages":[{"status":"10"}]}`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"text": "Error status", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		ExpectedMsgStatus:  "E",
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("failed to send message, received error status [10]", "")},
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Error Sending",
+		MsgText:            "Error Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `Error`,
+		MockResponseStatus: 400,
+		ExpectedPostParams: map[string]string{"text": "Error Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		ExpectedMsgStatus:  "E",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Invalid Token",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   "Invalid API token",
+		MockResponseStatus: 401,
+		ExpectedPostParams: map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		ExpectedMsgStatus:  "E",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Throttled by Nexmo",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"messages":[{"status":"1","error-text":"Throughput Rate Exceeded - please wait [ 250 ] and retry"}]}`,
+		MockResponseStatus: 200,
+		ExpectedPostParams: map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
+		ExpectedMsgStatus:  "E",
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("failed to send message, received error status [1]", "")},
+		SendPrep:           setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NX", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NX", "2020", "US",
 		map[string]interface{}{
 			configNexmoAPIKey:        "nexmo-api-key",
 			configNexmoAPISecret:     "nexmo-api-secret",
@@ -120,5 +215,5 @@ func TestSending(t *testing.T) {
 			configNexmoAppPrivateKey: "nexmo-app-private-key",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"nexmo-api-secret", "nexmo-app-private-key"}, nil)
 }

@@ -5,7 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -15,18 +15,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/gocommon/urns"
-	"github.com/sirupsen/logrus"
-
-	"github.com/stretchr/testify/assert"
-
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/urns"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US",
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US",
 		map[string]interface{}{courier.ConfigSecret: "secret", configAppSecret: "app-secret", configAppID: "app-id"}),
 }
 
@@ -100,7 +98,7 @@ func addValidSignature(r *http.Request) {
 	nonce := "nonce"
 
 	stringSlice := []string{"secret", timestamp, nonce}
-	sort.Sort(sort.StringSlice(stringSlice))
+	sort.Strings(stringSlice)
 
 	value := strings.Join(stringSlice, "")
 
@@ -124,7 +122,7 @@ func addInvalidSignature(r *http.Request) {
 	nonce := "nonce"
 
 	stringSlice := []string{"secret", timestamp, nonce}
-	sort.Sort(sort.StringSlice(stringSlice))
+	sort.Strings(stringSlice)
 
 	value := strings.Join(stringSlice, "")
 
@@ -142,27 +140,27 @@ func addInvalidSignature(r *http.Request) {
 }
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Message", URL: receiveURL, Data: validMsg, Status: 200, Response: "",
-		Text: Sp("Simple Message"), URN: Sp("wechat:1234"), ExternalID: Sp("123456"),
-		Date: Tp(time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC))},
+	{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "",
+		ExpectedMsgText: Sp("Simple Message"), ExpectedURN: "wechat:1234", ExpectedExternalID: "123456",
+		ExpectedDate: time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
 
-	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, Status: 400, Response: "Error:Field validation"},
-	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, Status: 400, Response: "missing parameters, must have either 'MsgId' or 'Event'"},
+	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, ExpectedRespStatus: 400, ExpectedBodyContains: "Error:Field validation"},
+	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, ExpectedRespStatus: 400, ExpectedBodyContains: "missing parameters, must have either 'MsgId' or 'Event'"},
 
-	{Label: "Receive Image", URL: receiveURL, Data: imageMessage, Status: 200, Response: "",
-		Text: Sp(""), URN: Sp("wechat:1234"), ExternalID: Sp("123456"),
-		Attachment: Sp("https://api.weixin.qq.com/cgi-bin/media/get?media_id=12"),
-		Date:       Tp(time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC))},
+	{Label: "Receive Image", URL: receiveURL, Data: imageMessage, ExpectedRespStatus: 200, ExpectedBodyContains: "",
+		ExpectedMsgText: Sp(""), ExpectedURN: "wechat:1234", ExpectedExternalID: "123456",
+		ExpectedAttachments: []string{"https://api.weixin.qq.com/cgi-bin/media/get?media_id=12"},
+		ExpectedDate:        time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
 
-	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, Status: 200, Response: "Event Accepted",
-		ChannelEvent: Sp(courier.NewConversation), URN: Sp("wechat:1234")},
+	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, ExpectedRespStatus: 200, ExpectedBodyContains: "Event Accepted",
+		ExpectedEvent: courier.NewConversation, ExpectedURN: "wechat:1234"},
 
-	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, Status: 200, Response: "unknown event"},
+	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, ExpectedRespStatus: 200, ExpectedBodyContains: "unknown event"},
 
-	{Label: "Verify URL", URL: receiveURL, Status: 200, Response: "SUCCESS",
+	{Label: "Verify URL", URL: receiveURL, ExpectedRespStatus: 200, ExpectedBodyContains: "SUCCESS",
 		PrepRequest: addValidSignature},
 
-	{Label: "Verify URL Invalid signature", URL: receiveURL, Status: 400, Response: "unknown request",
+	{Label: "Verify URL Invalid signature", URL: receiveURL, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown request",
 		PrepRequest: addInvalidSignature},
 }
 
@@ -190,13 +188,29 @@ func TestFetchAccessToken(t *testing.T) {
 	fetchTimeout = time.Millisecond
 
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
-		{Label: "Receive Message", URL: receiveURL, Data: validMsg, Status: 200, Response: ""},
-
-		{Label: "Verify URL", URL: receiveURL, Status: 200, Response: "SUCCESS",
-			PrepRequest: addValidSignature},
-
-		{Label: "Verify URL Invalid signature", URL: receiveURL, Status: 400, Response: "unknown request",
-			PrepRequest: addInvalidSignature},
+		{
+			Label:                "Receive Message",
+			URL:                  receiveURL,
+			Data:                 validMsg,
+			ExpectedRespStatus:   200,
+			ExpectedBodyContains: "",
+			ExpectedMsgText:      Sp("Simple Message"),
+			ExpectedURN:          "wechat:1234",
+		},
+		{
+			Label:                "Verify URL",
+			URL:                  receiveURL,
+			ExpectedRespStatus:   200,
+			ExpectedBodyContains: "SUCCESS",
+			PrepRequest:          addValidSignature,
+		},
+		{
+			Label:                "Verify URL Invalid signature",
+			URL:                  receiveURL,
+			ExpectedRespStatus:   400,
+			ExpectedBodyContains: "unknown request",
+			PrepRequest:          addInvalidSignature,
+		},
 	})
 
 	// wait for our fetch to be called
@@ -215,7 +229,7 @@ func buildMockWCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 		defer r.Body.Close()
 
 		if accessToken != "ACCESS_TOKEN" {
-			http.Error(w, "invalid file", 403)
+			http.Error(w, "invalid file", http.StatusForbidden)
 			return
 		}
 
@@ -242,19 +256,19 @@ func buildMockWCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 func newServer(backend courier.Backend) courier.Server {
 	// for benchmarks, log to null
 	logger := logrus.New()
-	logger.Out = ioutil.Discard
-	logrus.SetOutput(ioutil.Discard)
+	logger.Out = io.Discard
+	logrus.SetOutput(io.Discard)
 	config := courier.NewConfig()
 	config.DB = "postgres://courier:courier@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
 	return courier.NewServerWithLogger(config, backend, logger)
 }
 
-func TestDescribe(t *testing.T) {
+func TestDescribeURN(t *testing.T) {
 	WCAPI := buildMockWCAPI(testCases)
 	defer WCAPI.Close()
 
-	mb := courier.NewMockBackend()
+	mb := test.NewMockBackend()
 	conn := mb.RedisPool().Get()
 
 	_, err := conn.Do("SET", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
@@ -265,25 +279,28 @@ func TestDescribe(t *testing.T) {
 	conn.Close()
 
 	s := newServer(mb)
-	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("WC"), "WeChat")}
+	handler := &handler{NewBaseHandler(courier.ChannelType("WC"), "WeChat")}
 	handler.Initialize(s)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 
 	tcs := []struct {
-		urn      urns.URN
-		metadata map[string]string
+		urn              urns.URN
+		expectedMetadata map[string]string
 	}{
 		{"wechat:abcdeKNOWN_OPEN_ID", map[string]string{"name": "John Doe"}},
 		{"wechat:foo__NOT__KNOWN", map[string]string{"name": ""}},
 	}
 
 	for _, tc := range tcs {
-		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn)
-		assert.Equal(t, metadata, tc.metadata)
+		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn, clog)
+		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
+
+	AssertChannelLogRedaction(t, clog, []string{"secret"})
 }
 
 func TestBuildMediaRequest(t *testing.T) {
-	mb := courier.NewMockBackend()
+	mb := test.NewMockBackend()
 	conn := mb.RedisPool().Get()
 
 	_, err := conn.Do("SET", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
@@ -293,7 +310,7 @@ func TestBuildMediaRequest(t *testing.T) {
 
 	conn.Close()
 	s := newServer(mb)
-	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("WC"), "WeChat")}
+	handler := &handler{NewBaseHandler(courier.ChannelType("WC"), "WeChat")}
 	handler.Initialize(s)
 
 	tcs := []struct {
@@ -317,53 +334,60 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text:           "Simple Message ☺",
-		URN:            "wechat:12345",
-		Status:         "W",
-		ExternalID:     "",
-		ResponseStatus: 200,
-		Headers: map[string]string{
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message ☺",
+		MsgURN:             "wechat:12345",
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"Simple Message ☺"}}`,
-		SendPrep:    setSendURL},
-	{Label: "Long Send",
-		Text:           "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		URN:            "wechat:12345",
-		Status:         "W",
-		ExternalID:     "",
-		ResponseStatus: 200,
-		Headers: map[string]string{
+		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"Simple Message ☺"}}`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Long Send",
+		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:             "wechat:12345",
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"I need to keep adding more things to make it work"}}`,
-		SendPrep:    setSendURL},
-	{Label: "Send Attachment",
-		Text:           "My pic!",
-		URN:            "wechat:12345",
-		Attachments:    []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:         "W",
-		ExternalID:     "",
-		ResponseStatus: 200,
-		Headers: map[string]string{
+		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"I need to keep adding more things to make it work"}}`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
+		MsgText:            "My pic!",
+		MsgURN:             "wechat:12345",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
 		},
-		RequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"My pic!\nhttps://foo.bar/image.jpg"}}`,
-		SendPrep:    setSendURL},
-	{Label: "Error Sending",
-		Text:           "Error Message",
-		URN:            "wechat:12345",
-		Status:         "E",
-		ResponseStatus: 401,
-		Error:          "received non 200 status: 401",
-		SendPrep:       setSendURL},
+		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"My pic!\nhttps://foo.bar/image.jpg"}}`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Error Sending",
+		MsgText:            "Error Message",
+		MsgURN:             "wechat:12345",
+		MockResponseStatus: 401,
+		ExpectedMsgStatus:  "E",
+		SendPrep:           setSendURL,
+	},
 }
 
-func setupBackend(mb *courier.MockBackend) {
+func setupBackend(mb *test.MockBackend) {
 	conn := mb.RedisPool().Get()
 
 	_, err := conn.Do("SET", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
@@ -376,6 +400,6 @@ func setupBackend(mb *courier.MockBackend) {
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US", map[string]interface{}{configAppSecret: "secret", configAppID: "app-id"})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, setupBackend)
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US", map[string]interface{}{configAppSecret: "secret", configAppID: "app-id"})
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret"}, setupBackend)
 }

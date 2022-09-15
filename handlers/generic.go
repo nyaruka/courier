@@ -10,8 +10,8 @@ import (
 )
 
 // NewTelReceiveHandler creates a new receive handler given the passed in text and from fields
-func NewTelReceiveHandler(h *BaseHandler, fromField string, bodyField string) courier.ChannelHandleFunc {
-	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func NewTelReceiveHandler(h courier.ChannelHandler, fromField string, bodyField string) courier.ChannelHandleFunc {
+	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 		err := r.ParseForm()
 		if err != nil {
 			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
@@ -28,14 +28,14 @@ func NewTelReceiveHandler(h *BaseHandler, fromField string, bodyField string) co
 			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 		// build our msg
-		msg := h.Backend().NewIncomingMsg(c, urn, body).WithReceivedOn(time.Now().UTC())
-		return WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+		msg := h.Server().Backend().NewIncomingMsg(c, urn, body, clog).WithReceivedOn(time.Now().UTC())
+		return WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 	}
 }
 
 // NewExternalIDStatusHandler creates a new status handler given the passed in status map and fields
-func NewExternalIDStatusHandler(h *BaseHandler, statuses map[string]courier.MsgStatusValue, externalIDField string, statusField string) courier.ChannelHandleFunc {
-	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func NewExternalIDStatusHandler(h courier.ChannelHandler, statuses map[string]courier.MsgStatusValue, externalIDField string, statusField string) courier.ChannelHandleFunc {
+	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 		err := r.ParseForm()
 		if err != nil {
 			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
@@ -53,7 +53,7 @@ func NewExternalIDStatusHandler(h *BaseHandler, statuses map[string]courier.MsgS
 		}
 
 		// create our status
-		status := h.Backend().NewMsgStatusForExternalID(c, externalID, sValue)
+		status := h.Server().Backend().NewMsgStatusForExternalID(c, externalID, sValue, clog)
 		return WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 	}
 }

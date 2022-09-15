@@ -10,7 +10,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/gsm7"
 
 	"github.com/buger/jsonparser"
@@ -65,7 +64,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	var err error
 	form := &moForm{}
 	err = handlers.DecodeAndValidateForm(form, r)
@@ -84,10 +83,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForExternalID(channel, form.DLRID, msgStatus)
-		err = h.Backend().WriteMsgStatus(ctx, status)
+		status := h.Backend().NewMsgStatusForExternalID(channel, form.DLRID, msgStatus, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
-
 	}
 
 	// create our URN
@@ -97,22 +94,22 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithExternalID(form.ID).WithReceivedOn(time.Now().UTC())
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message, clog).WithExternalID(form.ID).WithReceivedOn(time.Now().UTC())
 
 	// and finally queue our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 
 }
 
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	return writeBongoLiveResponse(w)
 }
 
-func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []courier.MsgStatus) error {
+func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.MsgStatus) error {
 	return writeBongoLiveResponse(w)
 }
 
-func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, details string) error {
+func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
 	return writeBongoLiveResponse(w)
 }
 
@@ -124,8 +121,8 @@ func writeBongoLiveResponse(w http.ResponseWriter) error {
 
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for %s channel", msg.Channel().ChannelType())
@@ -136,7 +133,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no password set for %s channel", msg.Channel().ChannelType())
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
@@ -164,23 +161,19 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		rr, err := utils.MakeInsecureHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTPInsecure(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		// was this request successful?
-		msgStatus, _ := jsonparser.GetString([]byte(rr.Body), "results", "[0]", "status")
+		msgStatus, _ := jsonparser.GetString(respBody, "results", "[0]", "status")
 		if msgStatus != "0" {
 			status.SetStatus(courier.MsgErrored)
 			return status, nil
 		}
 		// grab the external id if we can
-		externalID, _ := jsonparser.GetString([]byte(rr.Body), "results", "[0]", "msgid")
+		externalID, _ := jsonparser.GetString(respBody, "results", "[0]", "msgid")
 		status.SetStatus(courier.MsgWired)
 		status.SetExternalID(externalID)
 

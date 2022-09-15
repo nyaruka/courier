@@ -30,7 +30,7 @@ type Backend interface {
 	GetChannelByAddress(context.Context, ChannelType, ChannelAddress) (Channel, error)
 
 	// GetContact returns (or creates) the contact for the passed in channel and URN
-	GetContact(context context.Context, channel Channel, urn urns.URN, auth string, name string) (Contact, error)
+	GetContact(context.Context, Channel, urns.URN, string, string, *ChannelLog) (Contact, error)
 
 	// AddURNtoContact adds a URN to the passed in contact
 	AddURNtoContact(context context.Context, channel Channel, contact Contact, urn urns.URN) (urns.URN, error)
@@ -42,28 +42,28 @@ type Backend interface {
 	DeleteMsgWithExternalID(ctx context.Context, channel Channel, externalID string) error
 
 	// NewIncomingMsg creates a new message from the given params
-	NewIncomingMsg(channel Channel, urn urns.URN, text string) Msg
+	NewIncomingMsg(Channel, urns.URN, string, *ChannelLog) Msg
 
 	// WriteMsg writes the passed in message to our backend
-	WriteMsg(context.Context, Msg) error
+	WriteMsg(context.Context, Msg, *ChannelLog) error
 
 	// NewMsgStatusForID creates a new Status object for the given message id
-	NewMsgStatusForID(Channel, MsgID, MsgStatusValue) MsgStatus
+	NewMsgStatusForID(Channel, MsgID, MsgStatusValue, *ChannelLog) MsgStatus
 
 	// NewMsgStatusForExternalID creates a new Status object for the given external id
-	NewMsgStatusForExternalID(Channel, string, MsgStatusValue) MsgStatus
+	NewMsgStatusForExternalID(Channel, string, MsgStatusValue, *ChannelLog) MsgStatus
 
 	// WriteMsgStatus writes the passed in status update to our backend
 	WriteMsgStatus(context.Context, MsgStatus) error
 
 	// NewChannelEvent creates a new channel event for the given channel and event type
-	NewChannelEvent(Channel, ChannelEventType, urns.URN) ChannelEvent
+	NewChannelEvent(Channel, ChannelEventType, urns.URN, *ChannelLog) ChannelEvent
 
 	// WriteChannelEvent writes the passed in channel even returning any error
-	WriteChannelEvent(context.Context, ChannelEvent) error
+	WriteChannelEvent(context.Context, ChannelEvent, *ChannelLog) error
 
-	// WriteChannelLogs writes the passed in channel logs to our backend
-	WriteChannelLogs(context.Context, []*ChannelLog) error
+	// WriteChannelLog writes the passed in channel log to our backend
+	WriteChannelLog(context.Context, *ChannelLog) error
 
 	// PopNextOutgoingMsg returns the next message that needs to be sent, callers should call MarkOutgoingMsgComplete with the
 	// returned message when they have dealt with the message (regardless of whether it was sent or not)
@@ -88,6 +88,8 @@ type Backend interface {
 	// Mark a external ID as seen for a period
 	WriteExternalIDSeen(Msg)
 
+	ResolveMedia(context.Context, string) (Media, error)
+
 	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string
 
@@ -99,6 +101,18 @@ type Backend interface {
 
 	// RedisPool returns the redisPool for this backend
 	RedisPool() *redis.Pool
+}
+
+// Media is a resolved media object that can be used as a message attachment
+type Media interface {
+	Name() string
+	ContentType() string
+	URL() string
+	Size() int
+	Width() int
+	Height() int
+	Duration() int
+	Alternates() []Media
 }
 
 // NewBackend creates the type of backend passed in

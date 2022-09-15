@@ -45,7 +45,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// check authentication
 	secret := c.StringConfigForKey(courier.ConfigSecret, "")
 	if secret != "" {
@@ -73,12 +73,12 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(c, urn, body).WithReceivedOn(time.Now().UTC())
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	msg := h.Backend().NewIncomingMsg(c, urn, body, clog).WithReceivedOn(time.Now().UTC())
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	merchantID := msg.Channel().StringConfigForKey(configMerchantId, "")
 	if merchantID == "" {
 		return nil, fmt.Errorf("no merchant_id set for NV channel")
@@ -89,7 +89,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no merchant_secret set for NV channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		from := strings.TrimPrefix(msg.Channel().Address(), "+")
@@ -109,23 +109,20 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if err != nil {
 			return nil, err
 		}
-		rr, err := utils.MakeHTTPRequest(req)
 
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		responseMsgStatus, _ := jsonparser.GetString(rr.Body, "status")
+		responseMsgStatus, _ := jsonparser.GetString(respBody, "status")
 
 		// we always get 204 on success
 		if responseMsgStatus == "FINISHED" {
 			status.SetStatus(courier.MsgWired)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			log.WithError("Message Send Error", fmt.Errorf("received invalid response"))
+			clog.Error(fmt.Errorf("received invalid response"))
 			break
 		}
 	}

@@ -91,5 +91,5 @@ func getElapsedMS(r *http.Request) float64 {
 	if !isTime {
 		return -1
 	}
-	return float64(time.Now().Sub(startTime)) / float64(time.Millisecond)
+	return float64(time.Since(startTime)) / float64(time.Millisecond)
 }

@@ -10,7 +10,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/gsm7"
 )
 
@@ -39,7 +38,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // receiveMessage takes care of handling incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := r.ParseForm()
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
@@ -58,19 +57,19 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(c, urn, body).WithReceivedOn(time.Now().UTC())
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	msg := h.Backend().NewIncomingMsg(c, urn, body, clog).WithReceivedOn(time.Now().UTC())
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 // WriteMsgSuccessResponse writes a success response for the messages
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	w.Header().Set("Content-Type", "application/json")
 	_, err := fmt.Fprintf(w, "SMS Accepted: %d", msgs[0].ID())
 	return err
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for M3 channel")
@@ -89,7 +88,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	// send our message
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), text, maxMsgLength) {
 		// build our request
 		params := url.Values{
@@ -113,9 +112,9 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		if err != nil {
 			return nil, err
 		}
-		rr, err := utils.MakeHTTPRequest(req)
-		status.AddLog(courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err))
-		if err != nil {
+
+		resp, _, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			break
 		}
 

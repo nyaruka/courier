@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -31,7 +30,7 @@ func WriteToSpool(spoolDir string, subdir string, contents interface{}) error {
 	}
 
 	filename := path.Join(spoolDir, subdir, fmt.Sprintf("%d.json", time.Now().UnixNano()))
-	return ioutil.WriteFile(filename, contentBytes, 0640)
+	return os.WriteFile(filename, contentBytes, 0640)
 }
 
 // starts our spool flusher, which every 30 seconds tries to write our pending msgs and statuses
@@ -42,8 +41,9 @@ func startSpoolFlushers(s Server) {
 		flushers[i] = newSpoolFlusher(s, reg.directory, reg.flusher)
 	}
 
+	s.WaitGroup().Add(1)
+
 	go func() {
-		s.WaitGroup().Add(1)
 		defer s.WaitGroup().Done()
 
 		log := logrus.WithField("comp", "spool")
@@ -102,7 +102,7 @@ func newSpoolFlusher(s Server, dir string, flusherFunc FlusherFunc) *flusher {
 		log := logrus.WithField("comp", "spool").WithField("filename", filename)
 
 		// otherwise, read our msg json
-		contents, err := ioutil.ReadFile(filename)
+		contents, err := os.ReadFile(filename)
 		if err != nil {
 			log.WithError(err).Error("reading spool file")
 			return nil

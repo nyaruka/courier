@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -17,7 +18,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 )
@@ -63,7 +64,7 @@ type verifyForm struct {
 }
 
 // VerifyURL is our HTTP handler function for Jiochat config URL verification callbacks
-func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &verifyForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -71,7 +72,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	}
 
 	dictOrder := []string{channel.StringConfigForKey(configAppSecret, ""), form.Timestamp, form.Nonce}
-	sort.Sort(sort.StringSlice(dictOrder))
+	sort.Strings(dictOrder)
 
 	combinedParams := strings.Join(dictOrder, "")
 
@@ -108,7 +109,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -127,14 +128,14 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// subscribe event, trigger a new conversation
 	if payload.MsgType == "event" && payload.Event == "subscribe" {
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn)
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn, clog)
 
-		err := h.Backend().WriteChannelEvent(ctx, channelEvent)
+		err := h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
 			return nil, err
 		}
 
-		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
+		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, channelEvent)
 	}
 
 	// unknown event type (we only deal with subscribe)
@@ -143,14 +144,14 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our message
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Content).WithExternalID(payload.MsgID).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Content, clog).WithExternalID(payload.MsgID).WithReceivedOn(date)
 	if payload.MsgType == "image" || payload.MsgType == "video" || payload.MsgType == "voice" {
 		mediaURL := buildMediaURL(payload.MediaID)
 		msg.WithAttachment(mediaURL)
 	}
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 func buildMediaURL(mediaID string) string {
@@ -167,41 +168,33 @@ type fetchPayload struct {
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel) error {
-	start := time.Now()
-	logs := make([]*courier.ChannelLog, 0, 1)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel, h.RedactValues(channel))
 
 	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "auth/token.action"))
-
 	payload := &fetchPayload{
 		GrantType:    "client_credentials",
 		ClientID:     channel.StringConfigForKey(configAppID, ""),
 		ClientSecret: channel.StringConfigForKey(configAppSecret, ""),
 	}
 
-	jsonBody, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, tokenURL.String(), bytes.NewReader(jsonBody))
+	req, err := http.NewRequest(http.MethodPost, tokenURL.String(), bytes.NewReader(jsonx.MustMarshal(payload)))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	rr, err := utils.MakeHTTPRequest(req)
-	if err != nil {
-		duration := time.Now().Sub(start)
-		logs = append(logs, courier.NewChannelLogFromError("failed to fetch access token", channel, courier.NilMsgID, duration, err))
-		return h.Backend().WriteChannelLogs(ctx, logs)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		clog.End()
+		return h.Backend().WriteChannelLog(ctx, clog)
 	}
 
-	accessToken, err := jsonparser.GetString([]byte(rr.Body), "access_token")
+	accessToken, err := jsonparser.GetString(respBody, "access_token")
 	if err != nil {
-		duration := time.Now().Sub(start)
-		logs = append(logs, courier.NewChannelLogFromError("invalid json", channel, courier.NilMsgID, duration, err))
-		return h.Backend().WriteChannelLogs(ctx, logs)
+		clog.Error(errors.New("access_token not found in response"))
+		clog.End()
+		return h.Backend().WriteChannelLog(ctx, clog)
 	}
 
 	rc := h.Backend().RedisPool().Get()
@@ -240,14 +233,14 @@ type mtPayload struct {
 	} `json:"text"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	accessToken, err := h.getAccessToken(msg.Channel())
 	if err != nil {
 		return nil, err
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		jcMsg := &mtPayload{}
@@ -263,15 +256,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-		rr, err := utils.MakeHTTPRequest(req)
 
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-
-		if err != nil {
-			return status, err
+		resp, _, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
+			return status, nil
 		}
+
 		status.SetStatus(courier.MsgWired)
 	}
 
@@ -279,7 +269,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 }
 
 // DescribeURN handles Jiochat contact details
-func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN) (map[string]string, error) {
+func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLog) (map[string]string, error) {
 	accessToken, err := h.getAccessToken(channel)
 	if err != nil {
 		return nil, err
@@ -297,11 +287,12 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	req, _ := http.NewRequest(http.MethodGet, reqURL.String(), nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 
-	rr, err := utils.MakeHTTPRequest(req)
-	if err != nil {
-		return nil, fmt.Errorf("unable to look up contact data:%s\n%s", err, rr.Response)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return nil, errors.New("unable to look up contact data")
 	}
-	nickname, _ := jsonparser.GetString(rr.Body, "nickname")
+
+	nickname, _ := jsonparser.GetString(respBody, "nickname")
 	return map[string]string{"name": nickname}, nil
 }
 

@@ -12,16 +12,14 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
-const statusMsgNotFoundDetail = "message not found, ignored"
-
 // writeAndLogRequestError writes a JSON response for the passed in message and logs an info messages
-func writeAndLogRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
+func writeAndLogRequestError(ctx context.Context, h ChannelHandler, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
 	LogRequestError(r, c, err)
-	return WriteError(ctx, w, r, err)
+	return h.WriteRequestError(ctx, w, err)
 }
 
 // WriteError writes a JSON response for the passed in error
-func WriteError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error {
+func WriteError(ctx context.Context, w http.ResponseWriter, statusCode int, err error) error {
 	errors := []interface{}{NewErrorData(err.Error())}
 
 	vErrs, isValidation := err.(validator.ValidationErrors)
@@ -30,11 +28,11 @@ func WriteError(ctx context.Context, w http.ResponseWriter, r *http.Request, err
 			errors = append(errors, NewErrorData(fmt.Sprintf("field '%s' %s", strings.ToLower(vErrs[i].Field()), vErrs[i].Tag())))
 		}
 	}
-	return WriteDataResponse(ctx, w, http.StatusBadRequest, "Error", errors)
+	return WriteDataResponse(ctx, w, statusCode, "Error", errors)
 }
 
 // WriteIgnored writes a JSON response indicating that we ignored the request
-func WriteIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, details string) error {
+func WriteIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
 	return WriteDataResponse(ctx, w, http.StatusOK, "Ignored", []interface{}{NewInfoData(details)})
 }
 
@@ -45,12 +43,12 @@ func WriteAndLogUnauthorized(ctx context.Context, w http.ResponseWriter, r *http
 }
 
 // WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it
-func WriteChannelEventSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, event ChannelEvent) error {
+func WriteChannelEventSuccess(ctx context.Context, w http.ResponseWriter, event ChannelEvent) error {
 	return WriteDataResponse(ctx, w, http.StatusOK, "Event Accepted", []interface{}{NewEventReceiveData(event)})
 }
 
 // WriteMsgSuccess writes a JSON response for the passed in msg indicating we handled it
-func WriteMsgSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []Msg) error {
+func WriteMsgSuccess(ctx context.Context, w http.ResponseWriter, msgs []Msg) error {
 	data := []interface{}{}
 	for _, msg := range msgs {
 		data = append(data, NewMsgReceiveData(msg))
@@ -60,7 +58,7 @@ func WriteMsgSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request
 }
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
-func WriteStatusSuccess(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []MsgStatus) error {
+func WriteStatusSuccess(ctx context.Context, w http.ResponseWriter, statuses []MsgStatus) error {
 	data := []interface{}{}
 	for _, status := range statuses {
 		data = append(data, NewStatusData(status))

@@ -13,6 +13,8 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,7 +25,7 @@ const (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel(channelUUID, "SL", "2022", "US", map[string]interface{}{"bot_token": "xoxb-abc123", "verification_token": "one-long-verification-token"}),
+	test.NewMockChannel(channelUUID, "SL", "2022", "US", map[string]interface{}{"bot_token": "xoxb-abc123", "verification_token": "one-long-verification-token"}),
 }
 
 const helloMsg = `{
@@ -128,118 +130,117 @@ func setSendUrl(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 
 var handleTestCases = []ChannelHandleTestCase{
 	{
-		Label:      "Receive Hello Msg",
-		URL:        receiveURL,
-		Headers:    map[string]string{},
-		Data:       helloMsg,
-		URN:        Sp("slack:U0123ABCDEF"),
-		Text:       Sp("Hello World!"),
-		Status:     200,
-		Response:   "Accepted",
-		ExternalID: Sp("Ev0PV52K21"),
+		Label:                "Receive Hello Msg",
+		URL:                  receiveURL,
+		Headers:              map[string]string{},
+		Data:                 helloMsg,
+		ExpectedURN:          "slack:U0123ABCDEF",
+		ExpectedMsgText:      Sp("Hello World!"),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedExternalID:   "Ev0PV52K21",
 	},
 	{
-		Label:      "Receive image file",
-		URL:        receiveURL,
-		Headers:    map[string]string{},
-		Data:       imageFileMsg,
-		Attachment: Sp("https://files.slack.com/files-pri/T03CN5KTA6S-F03GTH43SSF/download/batata.jpg?pub_secret=39fcf577f2"),
-		URN:        Sp("slack:U0123ABCDEF"),
-		Text:       Sp(""),
-		Status:     200,
-		Response:   "Accepted",
-		ExternalID: Sp("Ev0PV52K21"),
+		Label:                "Receive image file",
+		URL:                  receiveURL,
+		Headers:              map[string]string{},
+		Data:                 imageFileMsg,
+		ExpectedAttachments:  []string{"https://files.slack.com/files-pri/T03CN5KTA6S-F03GTH43SSF/download/batata.jpg?pub_secret=39fcf577f2"},
+		ExpectedURN:          "slack:U0123ABCDEF",
+		ExpectedMsgText:      Sp(""),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedExternalID:   "Ev0PV52K21",
 	},
 	{
-		Label:      "Receive audio file",
-		URL:        receiveURL,
-		Headers:    map[string]string{},
-		Data:       audioFileMsg,
-		Attachment: Sp("https://files.slack.com/files-pri/T03CN5KTA6S-F03GWURCZL4/download/here_we_go_again.mp3?pub_secret=471020b300"),
-		URN:        Sp("slack:U0123ABCDEF"),
-		Text:       Sp(""),
-		Status:     200,
-		Response:   "Accepted",
-		ExternalID: Sp("Ev0PV52K21"),
+		Label:                "Receive audio file",
+		URL:                  receiveURL,
+		Headers:              map[string]string{},
+		Data:                 audioFileMsg,
+		ExpectedAttachments:  []string{"https://files.slack.com/files-pri/T03CN5KTA6S-F03GWURCZL4/download/here_we_go_again.mp3?pub_secret=471020b300"},
+		ExpectedURN:          "slack:U0123ABCDEF",
+		ExpectedMsgText:      Sp(""),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedExternalID:   "Ev0PV52K21",
 	},
 	{
-		Label:      "Receive video file (not allowed)",
-		URL:        receiveURL,
-		Headers:    map[string]string{},
-		Data:       videoFileMsg,
-		Attachment: nil,
-		URN:        Sp("slack:U0123ABCDEF"),
-		Text:       Sp(""),
-		Status:     200,
-		Response:   "Accepted",
-		ExternalID: Sp("Ev0PV52K21"),
+		Label:                "Receive video file (not allowed)",
+		URL:                  receiveURL,
+		Headers:              map[string]string{},
+		Data:                 videoFileMsg,
+		ExpectedURN:          "slack:U0123ABCDEF",
+		ExpectedMsgText:      Sp(""),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedExternalID:   "Ev0PV52K21",
 	},
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
 	{
-		Label: "Plain Send",
-		Text:  "Simple Message", URN: "slack:U0123ABCDEF",
-		Status:         "W",
-		ResponseBody:   `{"ok":true,"channel":"U0123ABCDEF"}`,
-		ResponseStatus: 200,
-		RequestBody:    `{"channel":"U0123ABCDEF","text":"Simple Message"}`,
-		SendPrep:       setSendUrl,
+		Label:               "Plain Send",
+		MsgText:             "Simple Message",
+		MsgURN:              "slack:U0123ABCDEF",
+		MockResponseBody:    `{"ok":true,"channel":"U0123ABCDEF"}`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"Simple Message"}`,
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendUrl,
 	},
 	{
-		Label: "Unicode Send",
-		Text:  "☺", URN: "slack:U0123ABCDEF",
-		Status:         "W",
-		ResponseBody:   `{"ok":true,"channel":"U0123ABCDEF"}`,
-		ResponseStatus: 200,
-		RequestBody:    `{"channel":"U0123ABCDEF","text":"☺"}`,
-		SendPrep:       setSendUrl,
+		Label:               "Unicode Send",
+		MsgText:             "☺",
+		MsgURN:              "slack:U0123ABCDEF",
+		MockResponseBody:    `{"ok":true,"channel":"U0123ABCDEF"}`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"☺"}`,
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendUrl,
 	},
 	{
-		Label: "Send Text Auth Error",
-		Text:  "Hello", URN: "slack:U0123ABCDEF",
-		Status:         "E",
-		ResponseBody:   `{"ok":false,"error":"invalid_auth"}`,
-		ResponseStatus: 200,
-		RequestBody:    `{"channel":"U0123ABCDEF","text":"Hello"}`,
-		SendPrep:       setSendUrl,
+		Label:               "Send Text Auth Error",
+		MsgText:             "Hello",
+		MsgURN:              "slack:U0123ABCDEF",
+		MockResponseBody:    `{"ok":false,"error":"invalid_auth"}`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"Hello"}`,
+		ExpectedMsgStatus:   "E",
+		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("invalid_auth", "")},
+		SendPrep:            setSendUrl,
 	},
 }
 
 var fileSendTestCases = []ChannelSendTestCase{
 	{
-		Label: "Send Image",
-		Text:  "", URN: "slack:U0123ABCDEF",
-		Status:      "W",
-		Attachments: []string{"image/jpeg:https://foo.bar/image.png"},
-		Responses: map[MockedRequest]MockedResponse{
+		Label:          "Send Image",
+		MsgText:        "",
+		MsgURN:         "slack:U0123ABCDEF",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.png"},
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method:       "POST",
 				Path:         "/files.upload",
 				BodyContains: "image.png",
-			}: {
-				Status: 200,
-				Body:   `{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`)),
 		},
-		SendPrep: setSendUrl,
+		ExpectedMsgStatus: "W",
+		SendPrep:          setSendUrl,
 	},
 	{
-		Label: "Send Image",
-		Text:  "", URN: "slack:U0123ABCDEF",
-		Status:      "W",
-		Attachments: []string{"image/jpeg:https://foo.bar/image.png"},
-		Responses: map[MockedRequest]MockedResponse{
+		Label:          "Send Image",
+		MsgText:        "",
+		MsgURN:         "slack:U0123ABCDEF",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.png"},
+		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method:       "POST",
 				Path:         "/files.upload",
 				BodyContains: "image.png",
-			}: {
-				Status: 200,
-				Body:   `{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`,
-			},
+			}: httpx.NewMockResponse(200, nil, []byte(`{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`)),
 		},
-		SendPrep: setSendUrl,
+		ExpectedMsgStatus: "W",
+		SendPrep:          setSendUrl,
 	},
 }
 
@@ -251,7 +252,7 @@ func TestHandler(t *testing.T) {
 }
 
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), defaultSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
 }
 
 func TestSendFiles(t *testing.T) {
@@ -259,17 +260,17 @@ func TestSendFiles(t *testing.T) {
 	defer fileServer.Close()
 	fileSendTestCases := mockAttachmentURLs(fileServer, fileSendTestCases)
 
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), fileSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), fileSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
 }
 
 func TestVerification(t *testing.T) {
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
-		{Label: "Valid token", URL: receiveURL, Status: 200,
-			Data:     `{"token":"one-long-verification-token","challenge":"challenge123","type":"url_verification"}`,
-			Headers:  map[string]string{"content-type": "text/plain"},
-			Response: "challenge123", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+		{Label: "Valid token", URL: receiveURL, ExpectedRespStatus: 200,
+			Data:                 `{"token":"one-long-verification-token","challenge":"challenge123","type":"url_verification"}`,
+			Headers:              map[string]string{"content-type": "text/plain"},
+			ExpectedBodyContains: "challenge123", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		},
-		{Label: "Invalid token", URL: receiveURL, Status: 403,
+		{Label: "Invalid token", URL: receiveURL, ExpectedRespStatus: 403,
 			Data:    `{"token":"abc321","challenge":"challenge123","type":"url_verification"}`,
 			Headers: map[string]string{"content-type": "text/plain"},
 		},
@@ -346,24 +347,27 @@ func mockAttachmentURLs(fileServer *httptest.Server, testCases []ChannelSendTest
 
 	for i, testCase := range testCases {
 		mockedCase := testCase
-		for j, attachment := range testCase.Attachments {
-			mockedCase.Attachments[j] = strings.Replace(attachment, "https://foo.bar", fileServer.URL, 1)
+		for j, attachment := range testCase.MsgAttachments {
+			mockedCase.MsgAttachments[j] = strings.Replace(attachment, "https://foo.bar", fileServer.URL, 1)
 		}
 		casesWithMockedUrls[i] = mockedCase
 	}
 	return casesWithMockedUrls
 }
 
-func TestDescribe(t *testing.T) {
+func TestDescribeURN(t *testing.T) {
 	server := buildMockSlackService([]ChannelHandleTestCase{})
 	defer server.Close()
 
-	handler := newHandler().(courier.URNDescriber)
+	handler := newHandler()
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 	urn, _ := urns.NewURNFromParts(urns.SlackScheme, "U012345", "", "")
 
 	data := map[string]string{"name": "dummy user"}
 
-	describe, err := handler.DescribeURN(context.Background(), testChannels[0], urn)
+	describe, err := handler.(courier.URNDescriber).DescribeURN(context.Background(), testChannels[0], urn, clog)
 	assert.Nil(t, err)
 	assert.Equal(t, data, describe)
+
+	AssertChannelLogRedaction(t, clog, []string{"xoxb-abc123", "one-long-verification-token"})
 }

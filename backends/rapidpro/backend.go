@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -20,8 +21,12 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/dbutil"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/storage"
+	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
+	"github.com/nyaruka/redisx"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -34,6 +39,8 @@ const sentSetName = "msgs_sent_%s"
 
 // our timeout for backend operations
 const backendTimeout = time.Second * 20
+
+var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 
 func init() {
 	courier.RegisterBackend("rapidpro", newBackend)
@@ -56,9 +63,9 @@ func (b *backend) GetChannelByAddress(ctx context.Context, ct courier.ChannelTyp
 }
 
 // GetContact returns the contact for the passed in channel and URN
-func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, auth string, name string) (courier.Contact, error) {
+func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, auth string, name string, clog *courier.ChannelLog) (courier.Contact, error) {
 	dbChannel := c.(*DBChannel)
-	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, auth, name)
+	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, auth, name, clog)
 }
 
 // AddURNtoContact adds a URN to the passed in contact
@@ -124,12 +131,12 @@ func (b *backend) DeleteMsgWithExternalID(ctx context.Context, channel courier.C
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
+func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, clog *courier.ChannelLog) courier.Msg {
 	// remove any control characters
 	text = utils.CleanString(text)
 
 	// create our msg
-	msg := newMsg(MsgIncoming, channel, urn, text)
+	msg := newMsg(MsgIncoming, channel, urn, text, clog)
 
 	// set received on to now
 	msg.WithReceivedOn(time.Now().UTC())
@@ -142,11 +149,6 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text str
 		msg.alreadyWritten = true
 	}
 	return msg
-}
-
-// NewOutgoingMsg creates a new outgoing message from the given params
-func (b *backend) NewOutgoingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
-	return newMsg(MsgOutgoing, channel, urn, text)
 }
 
 // PopNextOutgoingMsg pops the next message that needs to be sent
@@ -251,21 +253,21 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 }
 
 // WriteMsg writes the passed in message to our store
-func (b *backend) WriteMsg(ctx context.Context, m courier.Msg) error {
+func (b *backend) WriteMsg(ctx context.Context, m courier.Msg, clog *courier.ChannelLog) error {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	return writeMsg(timeout, b, m)
+	return writeMsg(timeout, b, m, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewMsgStatusForID(channel courier.Channel, id courier.MsgID, status courier.MsgStatusValue) courier.MsgStatus {
-	return newMsgStatus(channel, id, "", status)
+func (b *backend) NewMsgStatusForID(channel courier.Channel, id courier.MsgID, status courier.MsgStatusValue, clog *courier.ChannelLog) courier.MsgStatus {
+	return newMsgStatus(channel, id, "", status, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID string, status courier.MsgStatusValue) courier.MsgStatus {
-	return newMsgStatus(channel, courier.NilMsgID, externalID, status)
+func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID string, status courier.MsgStatusValue, clog *courier.ChannelLog) courier.MsgStatus {
+	return newMsgStatus(channel, courier.NilMsgID, externalID, status, clog)
 }
 
 // WriteMsgStatus writes the passed in MsgStatus to our store
@@ -360,29 +362,28 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.MsgStatus
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
-func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN) courier.ChannelEvent {
-	return newChannelEvent(channel, eventType, urn)
+func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) courier.ChannelEvent {
+	return newChannelEvent(channel, eventType, urn, clog)
 }
 
 // WriteChannelEvent writes the passed in channel even returning any error
-func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent) error {
+func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEvent, clog *courier.ChannelLog) error {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	return writeChannelEvent(timeout, b, event)
+	return writeChannelEvent(timeout, b, event, clog)
 }
 
-// WriteChannelLogs persists the passed in logs to our database, for rapidpro we swallow all errors, logging isn't critical
-func (b *backend) WriteChannelLogs(ctx context.Context, logs []*courier.ChannelLog) error {
+// WriteChannelLog persists the passed in log to our database, for rapidpro we swallow all errors, logging isn't critical
+func (b *backend) WriteChannelLog(ctx context.Context, clog *courier.ChannelLog) error {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	for _, l := range logs {
-		err := writeChannelLog(timeout, b, l)
-		if err != nil {
-			logrus.WithError(err).Error("error writing channel log")
-		}
+	err := queueChannelLog(timeout, b, clog)
+	if err != nil {
+		logrus.WithError(err).Error("error queuing channel log")
 	}
+
 	return nil
 }
 
@@ -401,6 +402,52 @@ func (b *backend) CheckExternalIDSeen(msg courier.Msg) courier.Msg {
 // Mark a external ID as seen for a period
 func (b *backend) WriteExternalIDSeen(msg courier.Msg) {
 	writeExternalIDSeen(b, msg)
+}
+
+// ResolveMedia resolves the passed in attachment URL to a media object
+func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Media, error) {
+	u, err := url.Parse(mediaUrl)
+	if err != nil {
+		return nil, errors.Errorf("error parsing media URL: %s", mediaUrl)
+	}
+
+	mediaUUID := uuidRegex.FindString(u.Path)
+
+	// if hostname isn't our media domain, or path doesn't contain a UUID, don't try to resolve
+	if u.Hostname() != b.config.MediaDomain || mediaUUID == "" {
+		return nil, nil
+	}
+
+	unlock := b.mediaMutexes.Lock(mediaUUID)
+	defer unlock()
+
+	rc := b.redisPool.Get()
+	defer rc.Close()
+
+	var media *DBMedia
+	mediaJSON, err := b.mediaCache.Get(rc, mediaUUID)
+	if err != nil {
+		return nil, errors.Wrap(err, "error looking up cached media")
+	}
+	if mediaJSON != "" {
+		jsonx.MustUnmarshal([]byte(mediaJSON), &media)
+	} else {
+		// lookup media in our database
+		media, err = lookupMediaFromUUID(ctx, b.db, uuids.UUID(mediaUUID))
+		if err != nil {
+			return nil, errors.Wrap(err, "error looking up media")
+		}
+
+		// cache it for future requests
+		b.mediaCache.Set(rc, mediaUUID, string(jsonx.MustMarshal(media)))
+	}
+
+	// if we found a media record but it doesn't match the URL, don't use it
+	if media == nil || media.URL() != mediaUrl {
+		return nil, nil
+	}
+
+	return media, nil
 }
 
 // Health returns the health of this backend as a string, returning "" if all is well
@@ -675,7 +722,7 @@ func (b *backend) Start() error {
 		if err != nil {
 			return err
 		}
-		b.storage = storage.NewS3(s3Client, b.config.S3MediaBucket, b.config.S3Region, 32)
+		b.storage = storage.NewS3(s3Client, b.config.S3AttachmentsBucket, b.config.S3Region, 32)
 	} else {
 		b.storage = storage.NewFS("_storage")
 	}
@@ -787,14 +834,17 @@ func (b *backend) RedisPool() *redis.Pool {
 }
 
 // NewBackend creates a new RapidPro backend
-func newBackend(config *courier.Config) courier.Backend {
+func newBackend(cfg *courier.Config) courier.Backend {
 	return &backend{
-		config: config,
+		config: cfg,
 
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},
 
 		committerWG: &sync.WaitGroup{},
+
+		mediaCache:   redisx.NewIntervalHash("media-lookups", time.Hour*24, 2),
+		mediaMutexes: *syncx.NewHashMutex(8),
 	}
 }
 
@@ -811,6 +861,9 @@ type backend struct {
 
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
+
+	mediaCache   *redisx.IntervalHash
+	mediaMutexes syncx.HashMutex
 
 	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments
 	dbWaitDuration    time.Duration

@@ -12,7 +12,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/pkg/errors"
 )
 
@@ -59,7 +59,7 @@ type ibStatus struct {
 }
 
 // statusMessage is our HTTP handler function for status updates
-func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &statusPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -75,7 +75,7 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForExternalID(channel, s.MessageID, msgStatus)
+		status := h.Backend().NewMsgStatusForExternalID(channel, s.MessageID, msgStatus, clog)
 		err = h.Backend().WriteMsgStatus(ctx, status)
 		if err == courier.ErrMsgNotFound {
 			data = append(data, courier.NewInfoData(fmt.Sprintf("ignoring status update message id: %s, not found", s.MessageID)))
@@ -92,27 +92,27 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 	return statuses, courier.WriteDataResponse(ctx, w, http.StatusOK, "statuses handled", data)
 }
 
-// {
-// 	"results": [
-// 	  {
-// 		"messageId": "817790313235066447",
-// 		"from": "385916242493",
-// 		"to": "385921004026",
-// 		"text": "QUIZ Correct answer is Paris",
-// 		"cleanText": "Correct answer is Paris",
-// 		"keyword": "QUIZ",
-// 		"receivedAt": "2016-10-06T09:28:39.220+0000",
-// 		"smsCount": 1,
-// 		"price": {
-// 		  "pricePerMessage": 0,
-// 		  "currency": "EUR"
-// 		},
-// 		"callbackData": "callbackData"
-// 	  }
-// 	],
-// 	"messageCount": 1,
-// 	"pendingMessageCount": 0
-// }
+//	{
+//		"results": [
+//		  {
+//			"messageId": "817790313235066447",
+//			"from": "385916242493",
+//			"to": "385921004026",
+//			"text": "QUIZ Correct answer is Paris",
+//			"cleanText": "Correct answer is Paris",
+//			"keyword": "QUIZ",
+//			"receivedAt": "2016-10-06T09:28:39.220+0000",
+//			"smsCount": 1,
+//			"price": {
+//			  "pricePerMessage": 0,
+//			  "currency": "EUR"
+//			},
+//			"callbackData": "callbackData"
+//		  }
+//		],
+//		"messageCount": 1,
+//		"pendingMessageCount": 0
+//	}
 type moPayload struct {
 	PendingMessageCount int         `json:"pendingMessageCount"`
 	MessageCount        int         `json:"messageCount"`
@@ -127,7 +127,7 @@ type moMessage struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -163,7 +163,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// build our infobipMessage
-		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(messageID)
+		msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(messageID)
 		msgs = append(msgs, msg)
 
 	}
@@ -172,11 +172,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
 
-	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for IB channel")
@@ -226,30 +226,32 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(username, password)
 
-	rr, err := utils.MakeHTTPRequest(req)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
-	// record our status and log
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
-	log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
-	status.AddLog(log)
-	if err != nil {
-		log.WithError("Message Send Error", err)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}
 
-	groupID, err := jsonparser.GetInt(rr.Body, "messages", "[0]", "status", "groupId")
+	groupID, err := jsonparser.GetInt(respBody, "messages", "[0]", "status", "groupId")
 	if err != nil || (groupID != 1 && groupID != 3) {
-		log.WithError("Message Send Error", errors.Errorf("received error status: '%d'", groupID))
+		clog.Error(errors.Errorf("received error status: '%d'", groupID))
 		return status, nil
 	}
 
-	externalID, err := jsonparser.GetString(rr.Body, "messages", "[0]", "messageId")
+	externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "messageId")
 	if externalID != "" {
 		status.SetExternalID(externalID)
 	}
 
 	status.SetStatus(courier.MsgWired)
 	return status, nil
+}
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		httpx.BasicAuth(ch.StringConfigForKey(courier.ConfigUsername, ""), ch.StringConfigForKey(courier.ConfigPassword, "")),
+	}
 }
 
 // {

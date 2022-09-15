@@ -7,6 +7,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 // setSendURL takes care of setting the sendURL to call
@@ -18,56 +19,81 @@ var successSendResponse = `{"messages":[{"apiMessageId":"id1002","accepted":true
 var failSendResponse = `{"messages":[],"error":"Two-Way integration error - From number is not related to integration"}`
 
 var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status: "W", ExternalID: "id1002",
-		URLParams:    map[string]string{"content": "Simple Message", "to": "250788383383", "from": "2020", "apiKey": "API-KEY"},
-		ResponseBody: successSendResponse, ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Unicode Send",
-		Text: "Unicode ☺", URN: "tel:+250788383383",
-		Status: "W", ExternalID: "id1002",
-		URLParams:    map[string]string{"content": "Unicode ☺", "to": "250788383383", "from": "2020", "apiKey": "API-KEY"},
-		ResponseBody: successSendResponse, ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status: "W", ExternalID: "id1002",
-		URLParams:    map[string]string{"content": "My pic!\nhttps://foo.bar/image.jpg", "to": "250788383383", "from": "2020", "apiKey": "API-KEY"},
-		ResponseBody: successSendResponse, ResponseStatus: 200,
-		SendPrep: setSendURL},
-	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		URLParams:    map[string]string{"content": "Error Message", "to": "250788383383", "from": "2020", "apiKey": "API-KEY"},
-		ResponseBody: `Error`, ResponseStatus: 400,
-		SendPrep: setSendURL},
-	{Label: "Error Response",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		URLParams:    map[string]string{"content": "Error Message", "to": "250788383383", "from": "2020", "apiKey": "API-KEY"},
-		ResponseBody: failSendResponse, ResponseStatus: 200,
-		SendPrep: setSendURL},
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   successSendResponse,
+		MockResponseStatus: 200,
+		ExpectedURLParams:  map[string]string{"content": "Simple Message", "to": "250788383383", "from": "2020", "apiKey": "API-KEY"},
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "id1002",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Unicode Send",
+		MsgText:            "Unicode ☺",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   successSendResponse,
+		MockResponseStatus: 200,
+		ExpectedURLParams:  map[string]string{"content": "Unicode ☺", "to": "250788383383", "from": "2020", "apiKey": "API-KEY"},
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "id1002",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
+		MsgText:            "My pic!",
+		MsgURN:             "tel:+250788383383",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:   successSendResponse,
+		MockResponseStatus: 200,
+		ExpectedURLParams:  map[string]string{"content": "My pic!\nhttps://foo.bar/image.jpg", "to": "250788383383", "from": "2020", "apiKey": "API-KEY"},
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "id1002",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Error Sending",
+		MsgText:            "Error Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `Error`,
+		MockResponseStatus: 400,
+		ExpectedURLParams:  map[string]string{"content": "Error Message", "to": "250788383383", "from": "2020", "apiKey": "API-KEY"},
+		ExpectedMsgStatus:  "E",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Error Response",
+		MsgText:            "Error Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   failSendResponse,
+		MockResponseStatus: 200,
+		ExpectedURLParams:  map[string]string{"content": "Error Message", "to": "250788383383", "from": "2020", "apiKey": "API-KEY"},
+		ExpectedMsgStatus:  "E",
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("Key path not found", "")},
+		SendPrep:           setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US",
 		map[string]interface{}{
 			courier.ConfigAPIKey: "API-KEY",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"API-KEY"}, nil)
 }
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US",
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US",
 		map[string]interface{}{
 			courier.ConfigAPIKey: "12345",
 		}),
 }
 
-var (
+const (
 	statusURL  = "/c/ct/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"
 	receiveURL = "/c/ct/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 
@@ -102,40 +128,100 @@ var (
 		"text": "%00m%00e%00x%00i%00c%00o%00+%00k%00+%00m%00i%00s%00+%00p%00a%00p%00a%00s%00+%00n%00o%00+%00t%00e%00n%00%ED%00a%00+%00d%00i%00n%00e%00r%00o%00+%00p%00a%00r%00a%00+%00c%00o%00m%00p%00r%00a%00r%00n%00o%00s%00+%00l%00o%00+%00q%00+%00q%00u%00e%00r%00%ED%00a%00m%00o%00s%00.%00.",
 		"charset": "UTF-16BE"
 	}`
-
-	statusFailed = `{
-		"messageId": "msg1",
-		"statusCode": 5
-	}`
-	statusSent = `{
-		"messageId": "msg1",
-		"statusCode": 4
-	}`
-
-	statusUnexpected = `{
-		"messageId": "msg1",
-		"statusCode": -1
-	}`
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Valid Receive", URL: receiveURL, Data: receiveValidMessage, Status: 200, Response: "Accepted",
-		Text: Sp("Hello World!"), URN: Sp("tel:+250788383383"), ExternalID: Sp("1234"), Date: Tp(time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC))},
-	{Label: "Valid Receive ISO-8859-1", URL: receiveURL, Data: receiveValidMessageISO8859_1, Status: 200, Response: "Accepted",
-		Text: Sp(`hello!`), URN: Sp("tel:+250788383383"), ExternalID: Sp("1234"), Date: Tp(time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC))},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Error invalid JSON", URL: receiveURL, Data: "foo", Status: 400, Response: `unable to parse request JSON`},
-	{Label: "Error missing JSON", URL: receiveURL, Data: "{}", Status: 400, Response: `missing one of 'messageId`},
-	{Label: "Valid Receive UTF-16BE", URL: receiveURL, Data: receiveValidMessageUTF16BE, Status: 200, Response: "Accepted",
-		Text: Sp("mexico k mis papas no tenýa dinero para comprarnos lo q querýamos.."), URN: Sp("tel:+250788383383"),
-		ExternalID: Sp("1234"), Date: Tp(time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC))},
-
-	{Label: "Valid Failed status report", URL: statusURL, Data: statusFailed, Status: 200, Response: `"status":"F"`},
-	{Label: "Valid Delivered status report", URL: statusURL, Data: statusSent, Status: 200, Response: `"status":"S"`},
-	{Label: "Unexpected status report", URL: statusURL, Data: statusUnexpected, Status: 400, Response: `unknown status '-1', must be one`},
-
-	{Label: "Invalid status report", URL: statusURL, Data: "{}", Status: 400, Response: `missing one of 'messageId'`},
-	{Label: "Invalid JSON", URL: statusURL, Data: "foo", Status: 400, Response: `unable to parse request JSON`},
+	{
+		Label:                "Valid Receive",
+		URL:                  receiveURL,
+		Data:                 receiveValidMessage,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Hello World!"),
+		ExpectedURN:          "tel:+250788383383",
+		ExpectedExternalID:   "1234",
+		ExpectedDate:         time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC),
+	},
+	{
+		Label:                "Valid Receive ISO-8859-1",
+		URL:                  receiveURL,
+		Data:                 receiveValidMessageISO8859_1,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp(`hello!`),
+		ExpectedURN:          "tel:+250788383383",
+		ExpectedExternalID:   "1234",
+		ExpectedDate:         time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC),
+	},
+	{
+		Label:                "Invalid URN",
+		URL:                  receiveURL,
+		Data:                 invalidURN,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
+	},
+	{
+		Label:                "Error invalid JSON",
+		URL:                  receiveURL,
+		Data:                 "foo",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: `unable to parse request JSON`,
+	},
+	{
+		Label:                "Error missing JSON",
+		URL:                  receiveURL,
+		Data:                 "{}",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: `missing one of 'messageId`,
+	},
+	{
+		Label:                "Valid Receive UTF-16BE",
+		URL:                  receiveURL,
+		Data:                 receiveValidMessageUTF16BE,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("mexico k mis papas no tenýa dinero para comprarnos lo q querýamos.."),
+		ExpectedURN:          "tel:+250788383383",
+		ExpectedExternalID:   "1234",
+		ExpectedDate:         time.Date(2018, 1, 17, 19, 35, 11, 0, time.UTC),
+	},
+	{
+		Label:                "Valid Failed status report",
+		URL:                  statusURL,
+		Data:                 `{"messageId": "msg1", "statusCode": 5}`,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"F"`,
+		ExpectedMsgStatus:    courier.MsgFailed,
+	},
+	{
+		Label:                "Valid Delivered status report",
+		URL:                  statusURL,
+		Data:                 `{"messageId": "msg1", "statusCode": 4}`,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"S"`,
+		ExpectedMsgStatus:    courier.MsgSent,
+	},
+	{
+		Label:                "Unexpected status report",
+		URL:                  statusURL,
+		Data:                 `{"messageId": "msg1", "statusCode": -1}`,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: `unknown status '-1', must be one`,
+	},
+	{
+		Label:                "Invalid status report",
+		URL:                  statusURL,
+		Data:                 "{}",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: `missing one of 'messageId'`,
+	},
+	{
+		Label:                "Invalid JSON",
+		URL:                  statusURL,
+		Data:                 "foo",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: `unable to parse request JSON`,
+	},
 }
 
 func TestHandler(t *testing.T) {

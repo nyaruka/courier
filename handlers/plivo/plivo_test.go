@@ -6,10 +6,12 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PL", "2020", "MY", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PL", "2020", "MY", nil),
 }
 
 var (
@@ -28,16 +30,16 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, Status: 200, Response: "Message Accepted",
-		Text: Sp("Hello"), URN: Sp("tel:+60124361111"), ExternalID: Sp("abc1234")},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Invalid Address Params", URL: receiveURL, Data: invalidAddress, Status: 400, Response: "invalid to number [1515], expecting [2020]"},
-	{Label: "Missing Params", URL: receiveURL, Data: missingParams, Status: 400, Response: "Field validation for 'To' failed"},
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "Message Accepted",
+		ExpectedMsgText: Sp("Hello"), ExpectedURN: "tel:+60124361111", ExpectedExternalID: "abc1234"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedBodyContains: "phone number supplied is not a number"},
+	{Label: "Invalid Address Params", URL: receiveURL, Data: invalidAddress, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid to number [1515], expecting [2020]"},
+	{Label: "Missing Params", URL: receiveURL, Data: missingParams, ExpectedRespStatus: 400, ExpectedBodyContains: "Field validation for 'To' failed"},
 
-	{Label: "Valid Status", URL: statusURL, Data: validStatus, Status: 200, Response: `"status":"D"`},
-	{Label: "Sent Status", URL: statusURL, Data: validSentStatus, Status: 200, Response: `"status":"S"`},
-	{Label: "Invalid Status Address", URL: statusURL, Data: invalidStatusAddress, Status: 400, Response: "invalid to number [1515], expecting [2020]"},
-	{Label: "Unkown Status", URL: statusURL, Data: unknownStatus, Status: 200, Response: `ignoring unknown status 'UNKNOWN'`},
+	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered},
+	{Label: "Sent Status", URL: statusURL, Data: validSentStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"S"`, ExpectedMsgStatus: courier.MsgSent},
+	{Label: "Invalid Status Address", URL: statusURL, Data: invalidStatusAddress, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid to number [1515], expecting [2020]"},
+	{Label: "Unkown Status", URL: statusURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `ignoring unknown status 'UNKNOWN'`},
 }
 
 func TestHandler(t *testing.T) {
@@ -55,75 +57,75 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
-		Text:           "Simple Message ☺",
-		URN:            "tel:+250788383383",
-		Status:         "W",
-		ExternalID:     "abc123",
-		ResponseBody:   `{ "message_uuid":["abc123"] }`,
-		ResponseStatus: 200,
-		Headers: map[string]string{
+		MsgText:            "Simple Message ☺",
+		MsgURN:             "tel:+250788383383",
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "abc123",
+		MockResponseBody:   `{ "message_uuid":["abc123"] }`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",
 			"Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
 		},
-		RequestBody: `{"src":"2020","dst":"250788383383","text":"Simple Message ☺","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
-		SendPrep:    setSendURL},
+		ExpectedRequestBody: `{"src":"2020","dst":"250788383383","text":"Simple Message ☺","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
+		SendPrep:            setSendURL},
 	{Label: "Long Send",
-		Text:           "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		URN:            "tel:+250788383383",
-		Status:         "W",
-		ExternalID:     "abc123",
-		ResponseBody:   `{ "message_uuid":["abc123"] }`,
-		ResponseStatus: 200,
-		Headers: map[string]string{
+		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:             "tel:+250788383383",
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "abc123",
+		MockResponseBody:   `{ "message_uuid":["abc123"] }`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",
 			"Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
 		},
-		RequestBody: `{"src":"2020","dst":"250788383383","text":"I need to keep adding more things to make it work","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
-		SendPrep:    setSendURL},
+		ExpectedRequestBody: `{"src":"2020","dst":"250788383383","text":"I need to keep adding more things to make it work","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
+		SendPrep:            setSendURL},
 	{Label: "Send Attachment",
-		Text:           "My pic!",
-		URN:            "tel:+250788383383",
-		Attachments:    []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:         "W",
-		ExternalID:     "abc123",
-		ResponseBody:   `{ "message_uuid":["abc123"] }`,
-		ResponseStatus: 200,
-		Headers: map[string]string{
+		MsgText:            "My pic!",
+		MsgURN:             "tel:+250788383383",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "abc123",
+		MockResponseBody:   `{ "message_uuid":["abc123"] }`,
+		MockResponseStatus: 200,
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",
 			"Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
 		},
-		RequestBody: `{"src":"2020","dst":"250788383383","text":"My pic!\nhttps://foo.bar/image.jpg","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
-		SendPrep:    setSendURL},
+		ExpectedRequestBody: `{"src":"2020","dst":"250788383383","text":"My pic!\nhttps://foo.bar/image.jpg","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
+		SendPrep:            setSendURL},
 	{Label: "No External Id",
-		Text:           "No External ID",
-		URN:            "tel:+250788383383",
-		Status:         "E",
-		ResponseBody:   `{ "missing":"OzYDlvf3SQVc" }`,
-		ResponseStatus: 200,
-		Error:          "unable to parse response body from Plivo",
-		Headers: map[string]string{
+		MsgText:            "No External ID",
+		MsgURN:             "tel:+250788383383",
+		ExpectedMsgStatus:  "E",
+		MockResponseBody:   `{ "missing":"OzYDlvf3SQVc" }`,
+		MockResponseStatus: 200,
+		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to parse response body from Plivo", "")},
+		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",
 			"Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
 		},
-		RequestBody: `{"src":"2020","dst":"250788383383","text":"No External ID","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
-		SendPrep:    setSendURL},
+		ExpectedRequestBody: `{"src":"2020","dst":"250788383383","text":"No External ID","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
+		SendPrep:            setSendURL},
 	{Label: "Error Sending",
-		Text:           "Error Message",
-		URN:            "tel:+250788383383",
-		Status:         "E",
-		ResponseBody:   `{ "error": "failed" }`,
-		ResponseStatus: 401,
-		RequestBody:    `{"src":"2020","dst":"250788383383","text":"Error Message","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
-		SendPrep:       setSendURL},
+		MsgText:             "Error Message",
+		MsgURN:              "tel:+250788383383",
+		ExpectedMsgStatus:   "E",
+		MockResponseBody:    `{ "error": "failed" }`,
+		MockResponseStatus:  401,
+		ExpectedRequestBody: `{"src":"2020","dst":"250788383383","text":"Error Message","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
+		SendPrep:            setSendURL},
 }
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PL", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PL", "2020", "US",
 		map[string]interface{}{
 			configPlivoAuthID:    "AuthID",
 			configPlivoAuthToken: "AuthToken",
@@ -131,5 +133,5 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("AuthID", "AuthToken")}, nil)
 }

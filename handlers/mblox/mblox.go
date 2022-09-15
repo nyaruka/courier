@@ -13,7 +13,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 var (
@@ -61,7 +60,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &eventPayload{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
@@ -79,7 +78,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForExternalID(channel, payload.BatchID, msgStatus)
+		status := h.Backend().NewMsgStatusForExternalID(channel, payload.BatchID, msgStatus, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 	} else if payload.Type == "mo_text" {
@@ -99,10 +98,10 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// build our Message
-		msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body).WithReceivedOn(date.UTC()).WithExternalID(payload.ID)
+		msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body, clog).WithReceivedOn(date.UTC()).WithExternalID(payload.ID)
 
 		// and finally write our message
-		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 	}
 
 	return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("not handled, unknown type: %s", payload.Type))
@@ -115,15 +114,15 @@ type mtPayload struct {
 	DeliveryReport string   `json:"delivery_report"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	if username == "" || password == "" {
 		return nil, fmt.Errorf("Missing username or password for MB channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		payload := &mtPayload{}
@@ -144,14 +143,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", password))
 
-		rr, err := utils.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString([]byte(rr.Body), "id")
+		externalID, err := jsonparser.GetString(respBody, "id")
 		if err != nil {
 			return status, fmt.Errorf("unable to parse response body from MBlox")
 		}

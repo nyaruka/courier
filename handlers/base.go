@@ -8,6 +8,8 @@ import (
 	"github.com/nyaruka/courier"
 )
 
+var defaultRedactConfigKeys = []string{courier.ConfigAuthToken, courier.ConfigAPIKey, courier.ConfigSecret, courier.ConfigPassword, courier.ConfigSendAuthorization}
+
 // BaseHandler is the base class for most handlers, it just stored the server, name and channel type for the handler
 type BaseHandler struct {
 	channelType         courier.ChannelType
@@ -15,16 +17,22 @@ type BaseHandler struct {
 	server              courier.Server
 	backend             courier.Backend
 	useChannelRouteUUID bool
+	redactConfigKeys    []string
 }
 
 // NewBaseHandler returns a newly constructed BaseHandler with the passed in parameters
 func NewBaseHandler(channelType courier.ChannelType, name string) BaseHandler {
-	return NewBaseHandlerWithParams(channelType, name, true)
+	return NewBaseHandlerWithParams(channelType, name, true, defaultRedactConfigKeys)
 }
 
 // NewBaseHandlerWithParams returns a newly constructed BaseHandler with the passed in parameters
-func NewBaseHandlerWithParams(channelType courier.ChannelType, name string, useChannelRouteUUID bool) BaseHandler {
-	return BaseHandler{channelType: channelType, name: name, useChannelRouteUUID: useChannelRouteUUID}
+func NewBaseHandlerWithParams(channelType courier.ChannelType, name string, useChannelRouteUUID bool, redactConfigKeys []string) BaseHandler {
+	return BaseHandler{
+		channelType:         channelType,
+		name:                name,
+		useChannelRouteUUID: useChannelRouteUUID,
+		redactConfigKeys:    redactConfigKeys,
+	}
 }
 
 // SetServer can be used to change the server on a BaseHandler
@@ -58,6 +66,21 @@ func (h *BaseHandler) UseChannelRouteUUID() bool {
 	return h.useChannelRouteUUID
 }
 
+func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
+	if ch == nil {
+		return nil
+	}
+
+	vals := make([]string, 0, len(h.redactConfigKeys))
+	for _, k := range h.redactConfigKeys {
+		v := ch.StringConfigForKey(k, "")
+		if v != "" {
+			vals = append(vals, v)
+		}
+	}
+	return vals
+}
+
 // GetChannel returns the channel
 func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
 	uuid, err := courier.NewChannelUUID(chi.URLParam(r, "uuid"))
@@ -69,21 +92,21 @@ func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.
 }
 
 // WriteStatusSuccessResponse writes a success response for the statuses
-func (h *BaseHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []courier.MsgStatus) error {
-	return courier.WriteStatusSuccess(ctx, w, r, statuses)
+func (h *BaseHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.MsgStatus) error {
+	return courier.WriteStatusSuccess(ctx, w, statuses)
 }
 
 // WriteMsgSuccessResponse writes a success response for the messages
-func (h *BaseHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
-	return courier.WriteMsgSuccess(ctx, w, r, msgs)
+func (h *BaseHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
+	return courier.WriteMsgSuccess(ctx, w, msgs)
 }
 
 // WriteRequestError writes the passed in error to our response writer
-func (h *BaseHandler) WriteRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error {
-	return courier.WriteError(ctx, w, r, err)
+func (h *BaseHandler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
+	return courier.WriteError(ctx, w, http.StatusBadRequest, err)
 }
 
 // WriteRequestIgnored writes an ignored payload to our response writer
-func (h *BaseHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, details string) error {
-	return courier.WriteIgnored(ctx, w, r, details)
+func (h *BaseHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
+	return courier.WriteIgnored(ctx, w, details)
 }

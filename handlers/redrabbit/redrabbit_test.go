@@ -6,6 +6,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 // setSendURL takes care of setting the send_url to our test server host
@@ -15,10 +16,10 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 
 var defaultSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "SENT", ResponseStatus: 200,
-		URLParams: map[string]string{
+		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
+		ExpectedMsgStatus: "W",
+		MockResponseBody:  "SENT", MockResponseStatus: 200,
+		ExpectedURLParams: map[string]string{
 			"LoginName":         "Username",
 			"Password":          "Password",
 			"Tracking":          "1",
@@ -29,10 +30,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL},
 	{Label: "Unicode Send",
-		Text: "☺", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "SENT", ResponseStatus: 200,
-		URLParams: map[string]string{
+		MsgText: "☺", MsgURN: "tel:+250788383383",
+		ExpectedMsgStatus: "W",
+		MockResponseBody:  "SENT", MockResponseStatus: 200,
+		ExpectedURLParams: map[string]string{
 			"LoginName":         "Username",
 			"Password":          "Password",
 			"Tracking":          "1",
@@ -44,11 +45,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL},
 	{Label: "Longer Unicode Send",
-		Text:         "This is a message more than seventy characters with some unicode ☺ in them",
-		URN:          "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "SENT", ResponseStatus: 200,
-		URLParams: map[string]string{
+		MsgText:           "This is a message more than seventy characters with some unicode ☺ in them",
+		MsgURN:            "tel:+250788383383",
+		ExpectedMsgStatus: "W",
+		MockResponseBody:  "SENT", MockResponseStatus: 200,
+		ExpectedURLParams: map[string]string{
 			"LoginName":         "Username",
 			"Password":          "Password",
 			"Tracking":          "1",
@@ -60,11 +61,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL},
 	{Label: "Long Send",
-		Text:         "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		URN:          "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "SENT", ResponseStatus: 200,
-		URLParams: map[string]string{
+		MsgText:           "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:            "tel:+250788383383",
+		ExpectedMsgStatus: "W",
+		MockResponseBody:  "SENT", MockResponseStatus: 200,
+		ExpectedURLParams: map[string]string{
 			"LoginName":         "Username",
 			"Password":          "Password",
 			"Tracking":          "1",
@@ -76,10 +77,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL},
 	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "W",
-		ResponseBody: "SENT", ResponseStatus: 200,
-		URLParams: map[string]string{
+		MsgText: "My pic!", MsgURN: "tel:+250788383383", MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		ExpectedMsgStatus: "W",
+		MockResponseBody:  "SENT", MockResponseStatus: 200,
+		ExpectedURLParams: map[string]string{
 			"LoginName":         "Username",
 			"Password":          "Password",
 			"Tracking":          "1",
@@ -90,19 +91,19 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		SendPrep: setSendURL},
 	{Label: "Error Sending",
-		Text: "Error Sending", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: "Error", ResponseStatus: 403,
+		MsgText: "Error Sending", MsgURN: "tel:+250788383383",
+		ExpectedMsgStatus: "E",
+		MockResponseBody:  "Error", MockResponseStatus: 403,
 		SendPrep: setSendURL},
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "RR", "2020", "US",
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "RR", "2020", "US",
 		map[string]interface{}{
 			"password": "Password",
 			"username": "Username",
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
 }

@@ -17,7 +17,7 @@ import (
 var ErrMsgNotFound = errors.New("message not found")
 
 // ErrWrongIncomingMsgStatus use do ignore the status update if the DB raise this
-var ErrWrongIncomingMsgStatus = errors.New("Incoming messages can only be PENDING or HANDLED")
+var ErrWrongIncomingMsgStatus = errors.New("incoming messages can only be PENDING or HANDLED")
 
 // MsgID is our typing of the db int type
 type MsgID null.Int

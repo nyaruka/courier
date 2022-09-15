@@ -65,7 +65,7 @@ func (f *Foreman) Assign() {
 	backend := f.server.Backend()
 	lastSleep := false
 
-	for true {
+	for {
 		select {
 		// return if we have been told to stop
 		case <-f.quit:
@@ -106,7 +106,6 @@ type Sender struct {
 	id      int
 	foreman *Foreman
 	job     chan Msg
-	log     *logrus.Entry
 }
 
 // NewSender creates a new sender responsible for sending messages
@@ -121,14 +120,15 @@ func NewSender(foreman *Foreman, id int) *Sender {
 
 // Start starts our Sender's goroutine and has it start waiting for tasks from the foreman
 func (w *Sender) Start() {
+	w.foreman.server.WaitGroup().Add(1)
+
 	go func() {
-		w.foreman.server.WaitGroup().Add(1)
 		defer w.foreman.server.WaitGroup().Done()
 
 		log := logrus.WithField("comp", "sender").WithField("sender_id", w.id)
 		log.Debug("started")
 
-		for true {
+		for {
 			// list ourselves as available for work
 			w.foreman.availableSenders <- w
 
@@ -154,7 +154,6 @@ func (w *Sender) Stop() {
 func (w *Sender) sendMessage(msg Msg) {
 	log := logrus.WithField("comp", "sender").WithField("sender_id", w.id).WithField("channel_uuid", msg.Channel().UUID())
 
-	var status MsgStatus
 	server := w.foreman.server
 	backend := server.Backend()
 
@@ -178,7 +177,6 @@ func (w *Sender) sendMessage(msg Msg) {
 		if err != nil {
 			log.WithError(err).Error("error clearing sent status for msg")
 		}
-
 	}
 
 	// was this msg already sent? (from a double queue?)
@@ -189,21 +187,38 @@ func (w *Sender) sendMessage(msg Msg) {
 		log.WithError(err).Error("error looking up msg was sent")
 	}
 
-	if sent {
-		// if this message was already sent, create a wired status for it
-		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired)
+	var status MsgStatus
+	var redactValues []string
+	handler := server.GetHandler(msg.Channel())
+	if handler != nil {
+		redactValues = handler.RedactValues(msg.Channel())
+	}
+
+	clog := NewChannelLogForSend(msg, redactValues)
+
+	if handler == nil {
+		// if there's no handler, create a FAILED status for it
+		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgFailed, clog)
+		log.Errorf("unable to find handler for channel type: %s", msg.Channel().ChannelType())
+
+	} else if sent {
+		// if this message was already sent, create a WIRED status for it
+		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired, clog)
 		log.Warning("duplicate send, marking as wired")
+
 	} else {
 		// send our message
-		status, err = server.SendMsg(sendCTX, msg)
-		duration := time.Now().Sub(start)
+		status, err = handler.Send(sendCTX, msg, clog)
+		duration := time.Since(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
 		if err != nil {
 			log.WithError(err).WithField("elapsed", duration).Error("error sending message")
+			clog.Error(err)
+
+			// possible for handlers to only return an error in which case we construct an error status
 			if status == nil {
-				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
-				status.AddLog(NewChannelLogFromError("Sending Error", msg.Channel(), msg.ID(), duration, err))
+				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored, clog)
 			}
 		}
 
@@ -226,8 +241,10 @@ func (w *Sender) sendMessage(msg Msg) {
 		log.WithError(err).Info("error writing msg status")
 	}
 
+	clog.End()
+
 	// write our logs as well
-	err = backend.WriteChannelLogs(writeCTX, status.Logs())
+	err = backend.WriteChannelLog(writeCTX, clog)
 	if err != nil {
 		log.WithError(err).Info("error writing msg logs")
 	}

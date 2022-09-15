@@ -7,6 +7,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 var (
@@ -22,24 +23,24 @@ var (
 )
 
 var testChannels = []courier.Channel{
-	courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SQ", "2020", "US", nil),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SQ", "2020", "US", nil),
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive Badly Escaped", URL: receiveBadlyEscaped, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+252999999999")},
-	{Label: "Receive Empty Message", URL: receiveEmptyMessage, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp(""), URN: Sp("tel:+2349067554729")},
-	{Label: "Receive Valid Message With Date", URL: receiveValidMessageWithDate, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC))},
-	{Label: "Receive Valid Message With Time", URL: receiveValidMessageWithTime, Data: "empty", Status: 200, Response: "Accepted",
-		Text: Sp("Join"), URN: Sp("tel:+2349067554729"), Date: Tp(time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC))},
-	{Label: "Receive invalid URN", URL: receiveInvalidURN, Data: "empty", Status: 400, Response: "phone number supplied is not a number"},
-	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", Status: 400, Response: "field 'from' required"},
-	{Label: "Receive No Sender", URL: receiveNoSender, Data: "empty", Status: 400, Response: "field 'from' required"},
-	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "empty", Status: 400, Response: "invalid date format, must be RFC 3339"},
+	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
+		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729"},
+	{Label: "Receive Badly Escaped", URL: receiveBadlyEscaped, Data: "empty", ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
+		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+252999999999"},
+	{Label: "Receive Empty Message", URL: receiveEmptyMessage, Data: "empty", ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
+		ExpectedMsgText: Sp(""), ExpectedURN: "tel:+2349067554729"},
+	{Label: "Receive Valid Message With Date", URL: receiveValidMessageWithDate, Data: "empty", ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
+		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729", ExpectedDate: time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC)},
+	{Label: "Receive Valid Message With Time", URL: receiveValidMessageWithTime, Data: "empty", ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
+		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729", ExpectedDate: time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC)},
+	{Label: "Receive invalid URN", URL: receiveInvalidURN, Data: "empty", ExpectedRespStatus: 400, ExpectedBodyContains: "phone number supplied is not a number"},
+	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", ExpectedRespStatus: 400, ExpectedBodyContains: "field 'from' required"},
+	{Label: "Receive No Sender", URL: receiveNoSender, Data: "empty", ExpectedRespStatus: 400, ExpectedBodyContains: "field 'from' required"},
+	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "empty", ExpectedRespStatus: 400, ExpectedBodyContains: "invalid date format, must be RFC 3339"},
 }
 
 func TestHandler(t *testing.T) {
@@ -51,42 +52,42 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
-	c.(*courier.MockChannel).SetConfig(courier.ConfigSendURL, s.URL)
+	c.(*test.MockChannel).SetConfig(courier.ConfigSendURL, s.URL)
 }
 
 var getSendTestCases = []ChannelSendTestCase{
 	{Label: "Plain Send",
-		Text: "Simple Message", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		URLParams: map[string]string{"msg": "Simple Message", "to": "250788383383", "from": "2020"},
-		SendPrep:  setSendURL},
+		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
+		ExpectedMsgStatus: "W",
+		MockResponseBody:  "0: Accepted for delivery", MockResponseStatus: 200,
+		ExpectedURLParams: map[string]string{"msg": "Simple Message", "to": "250788383383", "from": "2020"},
+		SendPrep:          setSendURL},
 	{Label: "Unicode Send",
-		Text: "☺", URN: "tel:+250788383383",
-		Status:       "W",
-		ResponseBody: "0: Accepted for delivery", ResponseStatus: 200,
-		URLParams: map[string]string{"msg": "☺", "to": "250788383383", "from": "2020"},
-		SendPrep:  setSendURL},
+		MsgText: "☺", MsgURN: "tel:+250788383383",
+		ExpectedMsgStatus: "W",
+		MockResponseBody:  "0: Accepted for delivery", MockResponseStatus: 200,
+		ExpectedURLParams: map[string]string{"msg": "☺", "to": "250788383383", "from": "2020"},
+		SendPrep:          setSendURL},
 	{Label: "Error Sending",
-		Text: "Error Message", URN: "tel:+250788383383",
-		Status:       "E",
-		ResponseBody: "1: Unknown channel", ResponseStatus: 401,
-		URLParams: map[string]string{"msg": `Error Message`, "to": "250788383383"},
-		SendPrep:  setSendURL},
+		MsgText: "Error Message", MsgURN: "tel:+250788383383",
+		ExpectedMsgStatus: "E",
+		MockResponseBody:  "1: Unknown channel", MockResponseStatus: 401,
+		ExpectedURLParams: map[string]string{"msg": `Error Message`, "to": "250788383383"},
+		SendPrep:          setSendURL},
 	{Label: "Send Attachment",
-		Text: "My pic!", URN: "tel:+250788383383", Attachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		Status:       "W",
-		ResponseBody: `0: Accepted for delivery`, ResponseStatus: 200,
-		URLParams: map[string]string{"msg": "My pic!\nhttps://foo.bar/image.jpg", "to": "250788383383", "from": "2020"},
-		SendPrep:  setSendURL},
+		MsgText: "My pic!", MsgURN: "tel:+250788383383", MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		ExpectedMsgStatus: "W",
+		MockResponseBody:  `0: Accepted for delivery`, MockResponseStatus: 200,
+		ExpectedURLParams: map[string]string{"msg": "My pic!\nhttps://foo.bar/image.jpg", "to": "250788383383", "from": "2020"},
+		SendPrep:          setSendURL},
 }
 
 func TestSending(t *testing.T) {
-	var getChannel = courier.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SQ", "2020", "US",
+	var getChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SQ", "2020", "US",
 		map[string]interface{}{
 			courier.ConfigSendURL:  "SendURL",
 			courier.ConfigPassword: "Password",
 			courier.ConfigUsername: "Username"})
 
-	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil)
+	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, []string{"Password"}, nil)
 }

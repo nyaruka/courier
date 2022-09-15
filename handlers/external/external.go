@@ -7,19 +7,16 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/antchfx/xmlquery"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
-
-	"github.com/antchfx/xmlquery"
 	"github.com/pkg/errors"
 )
 
@@ -94,7 +91,7 @@ type stopContactForm struct {
 	From string `validate:"required" name:"from"`
 }
 
-func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &stopContactForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -114,12 +111,12 @@ func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channe
 	urn = urn.Normalize("")
 
 	// create a stop channel event
-	channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
-	err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+	channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
+	err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 	if err != nil {
 		return nil, err
 	}
-	return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
+	return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, channelEvent)
 }
 
 // utility function to grab the form value for either the passed in name (if non-empty) or the first set
@@ -143,7 +140,7 @@ func getFormField(form url.Values, defaultNames []string, name string) string {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	var err error
 
 	var from, dateString, text string
@@ -153,7 +150,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	if fromXPath != "" && textXPath != "" {
 		// we are reading from an XML body, pull out our fields
-		body, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
+		body, err := io.ReadAll(io.LimitReader(r.Body, 100000))
 		defer r.Body.Close()
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to read request body: %s", err))
@@ -216,17 +213,17 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	urn = urn.Normalize(channel.Country())
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date)
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 // WriteMsgSuccessResponse writes our response in TWIML format
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	moResponse := msgs[0].Channel().StringConfigForKey(configMOResponse, "")
 	if moResponse == "" {
-		return courier.WriteMsgSuccess(ctx, w, r, msgs)
+		return courier.WriteMsgSuccess(ctx, w, msgs)
 	}
 	moResponseContentType := msgs[0].Channel().StringConfigForKey(configMOResponseContentType, "")
 	if moResponseContentType != "" {
@@ -239,8 +236,8 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 
 // buildStatusHandler deals with building a handler that takes what status is received in the URL
 func (h *handler) buildStatusHandler(status string) courier.ChannelHandleFunc {
-	return func(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-		return h.receiveStatus(ctx, status, channel, w, r)
+	return func(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+		return h.receiveStatus(ctx, status, channel, w, r, clog)
 	}
 }
 
@@ -255,7 +252,7 @@ var statusMappings = map[string]courier.MsgStatusValue{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, statusString string, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, statusString string, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -269,12 +266,12 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.ID), msgStatus)
+	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.ID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
 		return nil, fmt.Errorf("no send url set for EX channel")
@@ -291,7 +288,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		contentTypeHeader = contentType
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), 160)
 	for i, part := range parts {
 		// build our request
@@ -364,19 +361,15 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			req.Header.Set(hKey, fmt.Sprint(hValue))
 		}
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		if responseContent == "" || strings.Contains(string(rr.Body), responseContent) {
+		if responseContent == "" || strings.Contains(string(respBody), responseContent) {
 			status.SetStatus(courier.MsgWired)
 		} else {
-			log.WithError("Message Send Error", fmt.Errorf("Received invalid response content: %s", string(rr.Body)))
+			clog.Error(fmt.Errorf("Received invalid response content: %s", string(respBody)))
 		}
 	}
 
@@ -443,5 +436,3 @@ func replaceVariables(text string, variables map[string]string) string {
 	}
 	return text
 }
-
-const defaultSendBody = `id={{id}}&text={{text}}&to={{to}}&to_no_plus={{to_no_plus}}&from={{from}}&from_no_plus={{from_no_plus}}&channel={{channel}}`

@@ -46,7 +46,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -74,10 +74,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	text, _ = new(mime.WordDecoder).DecodeHeader(text)
 
 	// build our Message
-	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text)).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text), clog).WithReceivedOn(date.UTC())
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 type statusForm struct {
@@ -98,7 +98,7 @@ var statusMapping = map[int]courier.MsgStatusValue{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -111,12 +111,12 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.RetID), msgStatus)
+	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.RetID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for HX channel")
@@ -131,7 +131,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	statusURL := fmt.Sprintf("https://%s/c/hx/%s/status", callbackDomain, msg.Channel().UUID())
 	receiveURL := fmt.Sprintf("https://%s/c/hx/%s/receive", callbackDomain, msg.Channel().UUID())
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 
@@ -151,16 +151,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		msgURL.RawQuery = form.Encode()
 
 		req, err := http.NewRequest(http.MethodPost, msgURL.String(), nil)
-
 		if err != nil {
 			return nil, err
 		}
-		rr, err := utils.MakeHTTPRequest(req)
 
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, _, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 

@@ -18,13 +18,13 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/sirupsen/logrus"
-
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -100,7 +100,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -129,18 +129,18 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(form.MessageSID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(form.MessageSID)
 
 	// process any attached media
 	for i := 0; i < form.NumMedia; i++ {
 		mediaURL := r.PostForm.Get(fmt.Sprintf("MediaUrl%d", i))
 		msg.WithAttachment(mediaURL)
 	}
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -171,13 +171,13 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		if err != nil {
 			logrus.WithError(err).WithField("id", idString).Error("error converting twilio callback id to integer")
 		} else {
-			status = h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus)
+			status = h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus, clog)
 		}
 	}
 
 	// if we have no status, then build it from the external (twilio) id
 	if status == nil {
-		status = h.Backend().NewMsgStatusForExternalID(channel, form.MessageSID, msgStatus)
+		status = h.Backend().NewMsgStatusForExternalID(channel, form.MessageSID, msgStatus, clog)
 	}
 
 	errorCode, _ := strconv.ParseInt(form.ErrorCode, 10, 64)
@@ -188,8 +188,8 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		}
 
 		// create a stop channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
-		err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
+		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
 			return nil, err
 		}
@@ -199,8 +199,8 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	// build our callback URL
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?id=%d&action=callback", callbackDomain, strings.ToLower(h.ChannelType().String()), msg.Channel().UUID(), msg.ID())
@@ -217,7 +217,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	channel := msg.Channel()
 
-	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	for i, part := range parts {
 		// build our request
@@ -266,40 +266,34 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		// record our status and log
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil {
+			return status, nil
+		}
 
 		// see if we can parse the error if we have one
-		if err != nil && rr.Body != nil {
-			errorCode, _ := jsonparser.GetInt([]byte(rr.Body), "code")
+		if resp.StatusCode/100 != 2 && len(respBody) > 0 {
+			errorCode, _ := jsonparser.GetInt(respBody, "code")
 			if errorCode != 0 {
 				if errorCode == errorStopped {
 					status.SetStatus(courier.MsgFailed)
 
 					// create a stop channel event
-					channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
-					err = h.Backend().WriteChannelEvent(ctx, channelEvent)
+					channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN(), clog)
+					err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 					if err != nil {
 						return nil, err
 					}
 				}
-				log.WithError("Message Send Error", errors.Errorf("received error code from twilio '%d'", errorCode))
+				clog.Error(errors.Errorf("received error code from twilio '%d'", errorCode))
 				return status, nil
 			}
 		}
 
-		// fail if we received an error
-		if err != nil {
-			return status, nil
-		}
-
 		// grab the external id
-		externalID, err := jsonparser.GetString([]byte(rr.Body), "sid")
+		externalID, err := jsonparser.GetString(respBody, "sid")
 		if err != nil {
-			log.WithError("Message Send Error", errors.Errorf("unable to get sid from body"))
+			clog.Error(errors.Errorf("unable to get sid from body"))
 			return status, nil
 		}
 
@@ -312,6 +306,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	return status, nil
+}
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		httpx.BasicAuth(ch.StringConfigForKey(configAccountSID, ""), ch.StringConfigForKey(courier.ConfigAuthToken, "")),
+	}
 }
 
 func (h *handler) parseURN(channel courier.Channel, text, country string) (urns.URN, error) {
@@ -413,7 +413,7 @@ func twCalculateSignature(url string, form url.Values, authToken string) ([]byte
 }
 
 // WriteMsgSuccessResponse writes our response in TWIML format
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, `<?xml version="1.0" encoding="UTF-8"?><Response/>`)
@@ -421,7 +421,7 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 }
 
 // WriteRequestIgnored writes our response in TWIML format
-func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, details string) error {
+func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
 	_, err := fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?><!-- %s --><Response/>`, details)

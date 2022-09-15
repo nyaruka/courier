@@ -14,10 +14,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nyaruka/courier/utils"
-
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var (
@@ -58,7 +57,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	payload := &moPayload{}
 	err := handlers.DecodeAndValidateXML(payload, r)
 	if err != nil {
@@ -83,14 +82,14 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	date := time.Unix(ts, 0).UTC()
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body.Text).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Body.Text, clog).WithReceivedOn(date)
 
 	// and write it
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 // Start Mobile expects a XML response from a message receive request
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, `<answer type="async"><state>Accepted</state></answer>`)
@@ -122,7 +121,7 @@ type mtResponse struct {
 	State   string   `xml:"state"`
 }
 
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for ST channel: %s", msg.Channel().UUID())
@@ -133,7 +132,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		return nil, fmt.Errorf("no password set for ST channel: %s", msg.Channel().UUID())
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for i, part := range parts {
 
@@ -165,17 +164,13 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Content-Type", "application/xml; charset=utf8")
 		req.SetBasicAuth(username, password)
 
-		rr, err := utils.MakeHTTPRequest(req)
-
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr)
-		status.AddLog(log)
-		if err != nil {
-			log.WithError("Message Send Error", err)
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
 		response := &mtResponse{}
-		err = xml.Unmarshal(rr.Body, response)
+		err = xml.Unmarshal(respBody, response)
 		if err == nil {
 			status.SetStatus(courier.MsgWired)
 			if i == 0 {
@@ -185,4 +180,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	}
 
 	return status, nil
+}
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		httpx.BasicAuth(ch.StringConfigForKey(courier.ConfigUsername, ""), ch.StringConfigForKey(courier.ConfigPassword, "")),
+	}
 }

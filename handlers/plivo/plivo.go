@@ -17,10 +17,10 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/nyaruka/courier/utils"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var (
@@ -71,7 +71,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &statusForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -93,7 +93,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, externalID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, externalID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -105,7 +105,7 @@ type moForm struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	form := &moForm{}
 	err := handlers.DecodeAndValidateForm(form, r)
 	if err != nil {
@@ -123,9 +123,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithExternalID(form.MessageUUID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text, clog).WithExternalID(form.MessageUUID)
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 type mtPayload struct {
@@ -136,8 +136,8 @@ type mtPayload struct {
 	Method string `json:"method"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	authID := msg.Channel().StringConfigForKey(configPlivoAuthID, "")
 	authToken := msg.Channel().StringConfigForKey(configPlivoAuthToken, "")
 	plivoAppID := msg.Channel().StringConfigForKey(configPlivoAPPID, "")
@@ -148,7 +148,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	statusURL := fmt.Sprintf("https://%s/c/pl/%s/status", callbackDomain, msg.Channel().UUID())
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for i, part := range parts {
 		payload := &mtPayload{
@@ -171,14 +171,12 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(authID, authToken)
 
-		rr, err := utils.MakeHTTPRequest(req)
-		log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-		status.AddLog(log)
-		if err != nil {
+		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString(rr.Body, "message_uuid", "[0]")
+		externalID, err := jsonparser.GetString(respBody, "message_uuid", "[0]")
 		if err != nil {
 			return status, fmt.Errorf("unable to parse response body from Plivo")
 		}
@@ -191,4 +189,10 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 
 	status.SetStatus(courier.MsgWired)
 	return status, nil
+}
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		httpx.BasicAuth(ch.StringConfigForKey(configPlivoAuthID, ""), ch.StringConfigForKey(configPlivoAuthToken, "")),
+	}
 }

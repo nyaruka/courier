@@ -8,20 +8,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
-
-	"github.com/nyaruka/courier/utils"
-
-	"github.com/nyaruka/gocommon/urns"
-
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/urns"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -33,6 +29,14 @@ var (
 
 	signatureHeader = "X-Line-Signature"
 )
+
+// see https://developers.line.biz/en/reference/messaging-api/#message-objects
+var mediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{
+	handlers.MediaTypeImage:       {Types: []string{"image/jpeg", "image/png"}, MaxBytes: 10 * 1024 * 1024},
+	handlers.MediaTypeAudio:       {Types: []string{"audio/mp4"}, MaxBytes: 200 * 1024 * 1024},
+	handlers.MediaTypeVideo:       {Types: []string{"video/mp4"}, MaxBytes: 200 * 1024 * 1024},
+	handlers.MediaTypeApplication: {},
+}
 
 func init() {
 	courier.RegisterHandler(newHandler())
@@ -53,33 +57,33 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// {
-// 	"events": [
-// 	  {
-// 		"replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
-// 		"type": "message",
-// 		"timestamp": 1462629479859,
-// 		"source": {
-// 		  "type": "user",
-// 		  "userId": "U4af4980629..."
-// 		},
-// 		"message": {
-// 		  "id": "325708",
-// 		  "type": "text",
-// 		  "text": "Hello, world"
-// 		}
-// 	  },
-// 	  {
-// 		"replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
-// 		"type": "follow",
-// 		"timestamp": 1462629479859,
-// 		"source": {
-// 		  "type": "user",
-// 		  "userId": "U4af4980629..."
-// 		}
-// 	  }
-// 	]
-// }
+//	{
+//		"events": [
+//		  {
+//			"replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
+//			"type": "message",
+//			"timestamp": 1462629479859,
+//			"source": {
+//			  "type": "user",
+//			  "userId": "U4af4980629..."
+//			},
+//			"message": {
+//			  "id": "325708",
+//			  "type": "text",
+//			  "text": "Hello, world"
+//			}
+//		  },
+//		  {
+//			"replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
+//			"type": "follow",
+//			"timestamp": 1462629479859,
+//			"source": {
+//			  "type": "user",
+//			  "userId": "U4af4980629..."
+//			}
+//		  }
+//		]
+//	}
 type moPayload struct {
 	Events []struct {
 		ReplyToken string `json:"replyToken"`
@@ -106,7 +110,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
@@ -155,7 +159,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
-		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(lineEvent.ReplyToken).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(lineEvent.ReplyToken).WithReceivedOn(date)
 
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)
@@ -168,7 +172,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
 
-	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r)
+	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
 
 }
 
@@ -218,8 +222,8 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 // see https://developers.line.me/en/docs/messaging-api/reference/#signature-validation
 func calculateSignature(secret string, r *http.Request) ([]byte, error) {
 	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	body, err := io.ReadAll(r.Body)
+	r.Body = io.NopCloser(bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
@@ -260,24 +264,63 @@ type mtImageMsg struct {
 	PreviewURL string `json:"previewImageUrl"`
 }
 
+type mtVideoMsg struct {
+	Type       string `json:"type"`
+	URL        string `json:"originalContentUrl"`
+	PreviewURL string `json:"previewImageUrl"`
+}
+
+type mtAudioMsg struct {
+	Type     string `json:"type"`
+	URL      string `json:"originalContentUrl"`
+	Duration int    `json:"duration"`
+}
+
 type mtPayload struct {
 	To         string          `json:"to,omitempty"`
 	ReplyToken string          `json:"replyToken,omitempty"`
 	Messages   json.RawMessage `json:"messages"`
 }
 
-// SendMsg sends the passed in message, returning any error
-func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStatus, error) {
+// Send sends the given message, logging any HTTP calls or errors
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if authToken == "" {
 		return nil, fmt.Errorf("no auth token set for LN channel: %s", msg.Channel().UUID())
 	}
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	// all msg parts in JSON
 	var jsonMsgs []string
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	qrs := msg.QuickReplies()
+
+	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, false)
+	if err != nil {
+		return nil, errors.Wrap(err, "error resolving attachments")
+	}
+
+	// fill all msg parts with attachment parts
+	for _, attachment := range attachments {
+
+		var jsonMsg []byte
+		var err error
+
+		switch attachment.Type {
+		case handlers.MediaTypeImage:
+			jsonMsg, err = json.Marshal(mtImageMsg{Type: "image", URL: attachment.Media.URL(), PreviewURL: attachment.Media.URL()})
+		case handlers.MediaTypeVideo:
+			jsonMsg, err = json.Marshal(mtVideoMsg{Type: "video", URL: attachment.Media.URL(), PreviewURL: attachment.Thumbnail.URL()})
+		case handlers.MediaTypeAudio:
+			jsonMsg, err = json.Marshal(mtAudioMsg{Type: "audio", URL: attachment.Media.URL(), Duration: attachment.Media.Duration()})
+		default:
+			jsonMsg, err = json.Marshal(mtTextMsg{Type: "text", Text: attachment.URL})
+		}
+
+		if err == nil {
+			jsonMsgs = append(jsonMsgs, string(jsonMsg))
+		}
+	}
 
 	// fill all msg parts with text parts
 	for i, part := range parts {
@@ -302,23 +345,7 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			}
 		}
 	}
-	// fill all msg parts with attachment parts
-	for _, attachment := range msg.Attachments() {
-		var jsonMsg []byte
-		var err error
 
-		prefix, url := handlers.SplitAttachment(attachment)
-
-		switch mediaType := strings.Split(prefix, "/")[0]; mediaType {
-		case "image":
-			jsonMsg, err = json.Marshal(mtImageMsg{Type: "image", URL: url, PreviewURL: url})
-		default:
-			jsonMsg, err = json.Marshal(mtTextMsg{Type: "text", Text: url})
-		}
-		if err == nil {
-			jsonMsgs = append(jsonMsgs, string(jsonMsg))
-		}
-	}
 	// send msg parts in batches
 	var batch []string
 	batchCount := 0
@@ -332,27 +359,25 @@ func (h *handler) SendMsg(ctx context.Context, msg courier.Msg) (courier.MsgStat
 			if err != nil {
 				return status, err
 			}
-			rr, err := utils.MakeHTTPRequest(req)
-			log := courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-			status.AddLog(log)
 
-			if err == nil {
+			resp, respBody, err := handlers.RequestHTTP(req, clog)
+			if err == nil && resp.StatusCode/100 == 2 {
 				batch = []string{}
 				batchCount = 0
 				continue
 			}
+
 			// retry without the reply token if it's invalid
-			errMsg, err := jsonparser.GetString(rr.Body, "message")
+			errMsg, err := jsonparser.GetString(respBody, "message")
 			if err == nil && errMsg == "Invalid reply token" {
 				req, err = buildSendMsgRequest(authToken, msg.URN().Path(), "", batch)
 				if err != nil {
 					return status, err
 				}
-				rr, err = utils.MakeHTTPRequest(req)
-				log = courier.NewChannelLogFromRR("Message Sent", msg.Channel(), msg.ID(), rr).WithError("Message Send Error", err)
-				status.AddLog(log)
-				if err != nil {
-					return status, err
+
+				resp, _, err := handlers.RequestHTTP(req, clog)
+				if err != nil || resp.StatusCode/100 != 2 {
+					return status, nil
 				}
 			} else {
 				return status, err

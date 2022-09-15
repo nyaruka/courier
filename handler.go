@@ -16,21 +16,28 @@ type Event interface {
 // The Server will take care of looking up the channel by UUID before passing it to this function.
 // Errors in format of the request or by the caller should be handled and logged internally. Errors in
 // execution or in courier itself should be passed back.
-type ChannelHandleFunc func(context.Context, Channel, http.ResponseWriter, *http.Request) ([]Event, error)
+type ChannelHandleFunc func(context.Context, Channel, http.ResponseWriter, *http.Request, *ChannelLog) ([]Event, error)
 
 // ChannelHandler is the interface all handlers must satisfy
 type ChannelHandler interface {
 	Initialize(Server) error
+	Server() Server
 	ChannelType() ChannelType
 	ChannelName() string
 	UseChannelRouteUUID() bool
+	RedactValues(Channel) []string
 	GetChannel(context.Context, *http.Request) (Channel, error)
-	SendMsg(context.Context, Msg) (MsgStatus, error)
+	Send(context.Context, Msg, *ChannelLog) (MsgStatus, error)
+
+	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []MsgStatus) error
+	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []Msg) error
+	WriteRequestError(context.Context, http.ResponseWriter, error) error
+	WriteRequestIgnored(context.Context, http.ResponseWriter, string) error
 }
 
 // URNDescriber is the interface handlers which can look up URN metadata for new contacts should satisfy.
 type URNDescriber interface {
-	DescribeURN(context.Context, Channel, urns.URN) (map[string]string, error)
+	DescribeURN(context.Context, Channel, urns.URN, *ChannelLog) (map[string]string, error)
 }
 
 // MediaDownloadRequestBuilder is the interface handlers which can allow a custom way to download attachment media for messages should satisfy
