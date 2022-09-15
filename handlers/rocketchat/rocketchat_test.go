@@ -56,11 +56,11 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Headers: map[string]string{
 			"Authorization": "Token 123456789",
 		},
-		Data:               helloMsg,
-		ExpectedURN:        "rocketchat:direct:john.doe#john.doe",
-		ExpectedMsgText:    handlers.Sp("Hello World"),
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
+		Data:                 helloMsg,
+		ExpectedURN:          "rocketchat:direct:john.doe#john.doe",
+		ExpectedMsgText:      handlers.Sp("Hello World"),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
 	},
 	{
 		Label: "Receive Attachment Msg",
@@ -68,11 +68,11 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Headers: map[string]string{
 			"Authorization": "Token 123456789",
 		},
-		Data:                attachmentMsg,
-		ExpectedURN:         "rocketchat:livechat:onrMgdKbpX9Qqtvoi",
-		ExpectedAttachments: []string{"https://link.to/image.jpg"},
-		ExpectedRespStatus:  200,
-		ExpectedRespBody:    "Accepted",
+		Data:                 attachmentMsg,
+		ExpectedURN:          "rocketchat:livechat:onrMgdKbpX9Qqtvoi",
+		ExpectedAttachments:  []string{"https://link.to/image.jpg"},
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
 	},
 	{
 		Label: "Don't Receive Empty Msg",
@@ -80,9 +80,9 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Headers: map[string]string{
 			"Authorization": "Token 123456789",
 		},
-		Data:               emptyMsg,
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "no text or attachment",
+		Data:                 emptyMsg,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "no text or attachment",
 	},
 	{
 		Label: "Invalid Authorization",
@@ -90,9 +90,9 @@ var testCases = []handlers.ChannelHandleTestCase{
 		Headers: map[string]string{
 			"Authorization": "123456789",
 		},
-		Data:               emptyMsg,
-		ExpectedRespStatus: 401,
-		ExpectedRespBody:   "invalid Authorization header",
+		Data:                 emptyMsg,
+		ExpectedRespStatus:   401,
+		ExpectedBodyContains: "invalid Authorization header",
 	},
 }
 

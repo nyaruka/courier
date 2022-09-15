@@ -19,19 +19,19 @@ const (
 
 var testCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid",
-		URL:                receiveURL,
-		Data:               "mo=Msg&mobile=18765422035",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Message Accepted",
-		ExpectedMsgText:    Sp("Msg"),
-		ExpectedURN:        "tel:+18765422035"},
+		Label:                "Receive Valid",
+		URL:                  receiveURL,
+		Data:                 "mo=Msg&mobile=18765422035",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Message Accepted",
+		ExpectedMsgText:      Sp("Msg"),
+		ExpectedURN:          "tel:+18765422035"},
 	{
-		Label:              "Receive Missing Number",
-		URL:                receiveURL,
-		Data:               "mo=Msg",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "required field 'mobile'"},
+		Label:                "Receive Missing Number",
+		URL:                  receiveURL,
+		Data:                 "mo=Msg",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "required field 'mobile'"},
 }
 
 func TestHandler(t *testing.T) {

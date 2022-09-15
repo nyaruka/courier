@@ -106,21 +106,21 @@ var missingFieldsReceive = `{
 }`
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedRespBody: "Message Accepted",
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "Message Accepted",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+254791541111", ExpectedDate: time.Date(2017, 5, 3, 06, 04, 45, 123000000, time.UTC)},
 
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedRespBody: "phone number supplied is not a number"},
-	{Label: "Not JSON body", URL: receiveURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse request JSON"},
-	{Label: "Wrong JSON schema", URL: receiveURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedRespBody: "request JSON doesn't match required schema"},
-	{Label: "Missing field", URL: receiveURL, Data: missingFieldsReceive, ExpectedRespStatus: 400, ExpectedRespBody: "validation for 'ID' failed on the 'required'"},
-	{Label: "Bad Date", URL: receiveURL, Data: invalidDateReceive, ExpectedRespStatus: 400, ExpectedRespBody: "invalid date format"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedBodyContains: "phone number supplied is not a number"},
+	{Label: "Not JSON body", URL: receiveURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedBodyContains: "unable to parse request JSON"},
+	{Label: "Wrong JSON schema", URL: receiveURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedBodyContains: "request JSON doesn't match required schema"},
+	{Label: "Missing field", URL: receiveURL, Data: missingFieldsReceive, ExpectedRespStatus: 400, ExpectedBodyContains: "validation for 'ID' failed on the 'required'"},
+	{Label: "Bad Date", URL: receiveURL, Data: invalidDateReceive, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid date format"},
 
-	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedRespBody: `Accepted`, ExpectedMsgStatus: "D"},
-	{Label: "Valid Status with more fields", URL: statusURL, Data: validWithMoreFieldsStatus, ExpectedRespStatus: 200, ExpectedRespBody: `Accepted`, ExpectedMsgStatus: "D"},
-	{Label: "Unkown Status", URL: statusURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted", ExpectedMsgStatus: "E"},
-	{Label: "Not JSON body", URL: statusURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse request JSON"},
-	{Label: "Wrong JSON schema", URL: statusURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedRespBody: "request JSON doesn't match required schema"},
-	{Label: "Missing field", URL: statusURL, Data: missingFieldsStatus, ExpectedRespStatus: 400, ExpectedRespBody: "validation for 'StatusCode' failed on the 'required'"},
+	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `Accepted`, ExpectedMsgStatus: "D"},
+	{Label: "Valid Status with more fields", URL: statusURL, Data: validWithMoreFieldsStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `Accepted`, ExpectedMsgStatus: "D"},
+	{Label: "Unkown Status", URL: statusURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted", ExpectedMsgStatus: "E"},
+	{Label: "Not JSON body", URL: statusURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedBodyContains: "unable to parse request JSON"},
+	{Label: "Wrong JSON schema", URL: statusURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedBodyContains: "request JSON doesn't match required schema"},
+	{Label: "Missing field", URL: statusURL, Data: missingFieldsStatus, ExpectedRespStatus: 400, ExpectedBodyContains: "validation for 'StatusCode' failed on the 'required'"},
 }
 
 func TestHandler(t *testing.T) {

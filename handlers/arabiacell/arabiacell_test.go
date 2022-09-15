@@ -19,20 +19,20 @@ const (
 
 var testCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid",
-		URL:                receiveURL,
-		Data:               "B=Msg&M=254791541111",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Message Accepted",
-		ExpectedMsgText:    Sp("Msg"),
-		ExpectedURN:        "tel:+254791541111",
+		Label:                "Receive Valid",
+		URL:                  receiveURL,
+		Data:                 "B=Msg&M=254791541111",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Message Accepted",
+		ExpectedMsgText:      Sp("Msg"),
+		ExpectedURN:          "tel:+254791541111",
 	},
 	{
-		Label:              "Receive Missing Number",
-		URL:                receiveURL,
-		Data:               "B=Msg",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "required field 'M'",
+		Label:                "Receive Missing Number",
+		URL:                  receiveURL,
+		Data:                 "B=Msg",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "required field 'M'",
 	},
 }
 

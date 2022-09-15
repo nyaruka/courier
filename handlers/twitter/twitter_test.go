@@ -167,17 +167,17 @@ var attachment = `{
 var notJSON = `blargh`
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Message", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
+	{Label: "Receive Message", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedContactName: Sp("Nicolas Pottier"), ExpectedURN: "twitterid:272953809#nicpottier",
 		ExpectedMsgText: Sp("Hello World & good wishes."), ExpectedExternalID: "958501034212564996", ExpectedDate: time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC)},
-	{Label: "Receive Attachment", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: attachment, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
+	{Label: "Receive Attachment", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: attachment, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("Hello"), ExpectedAttachments: []string{"https://image.foo.com/image.jpg"}, ExpectedURN: "twitterid:272953809#nicpottier", ExpectedExternalID: "958501034212564996", ExpectedDate: time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC)},
-	{Label: "Not JSON", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: notJSON, ExpectedRespStatus: 400, ExpectedRespBody: "Error"},
-	{Label: "Invalid Twitter handle", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTwitterHandle, ExpectedRespStatus: 400, ExpectedRespBody: "invalid twitter handle"},
-	{Label: "Invalid Twitter ID", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTwitterID, ExpectedRespStatus: 400, ExpectedRespBody: "invalid twitter id"},
+	{Label: "Not JSON", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: notJSON, ExpectedRespStatus: 400, ExpectedBodyContains: "Error"},
+	{Label: "Invalid Twitter handle", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTwitterHandle, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid twitter handle"},
+	{Label: "Invalid Twitter ID", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTwitterID, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid twitter id"},
 
-	{Label: "Webhook Verification", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?crc_token=test+token", ExpectedRespStatus: 200, ExpectedRespBody: "sha256=O5hJl2njQRIa4vsumZ+3oom9ECR5m3aQLRZkPoYelp0="},
-	{Label: "Webhook Verification Error", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", ExpectedRespStatus: 400, ExpectedRespBody: "missing required 'crc_token'"},
+	{Label: "Webhook Verification", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?crc_token=test+token", ExpectedRespStatus: 200, ExpectedBodyContains: "sha256=O5hJl2njQRIa4vsumZ+3oom9ECR5m3aQLRZkPoYelp0="},
+	{Label: "Webhook Verification Error", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", ExpectedRespStatus: 400, ExpectedBodyContains: "missing required 'crc_token'"},
 }
 
 func TestHandler(t *testing.T) {

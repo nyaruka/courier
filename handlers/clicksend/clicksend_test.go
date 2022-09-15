@@ -20,22 +20,22 @@ var testChannels = []courier.Channel{
 
 var handleTestCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid Message",
-		URL:                receiveURL,
-		Data:               `from=639171234567&body=hello+world`,
-		Headers:            map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedMsgText:    Sp("hello world"),
-		ExpectedURN:        "tel:+639171234567",
+		Label:                "Receive Valid Message",
+		URL:                  receiveURL,
+		Data:                 `from=639171234567&body=hello+world`,
+		Headers:              map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("hello world"),
+		ExpectedURN:          "tel:+639171234567",
 	},
 	{
-		Label:              "Receive Missing From",
-		URL:                receiveURL,
-		Data:               `body=hello+world`,
-		Headers:            map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "Error",
+		Label:                "Receive Missing From",
+		URL:                  receiveURL,
+		Data:                 `body=hello+world`,
+		Headers:              map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error",
 	},
 }
 

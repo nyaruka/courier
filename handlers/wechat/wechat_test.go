@@ -140,27 +140,27 @@ func addInvalidSignature(r *http.Request) {
 }
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedRespBody: "",
+	{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "",
 		ExpectedMsgText: Sp("Simple Message"), ExpectedURN: "wechat:1234", ExpectedExternalID: "123456",
 		ExpectedDate: time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
 
-	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, ExpectedRespStatus: 400, ExpectedRespBody: "Error:Field validation"},
-	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, ExpectedRespStatus: 400, ExpectedRespBody: "missing parameters, must have either 'MsgId' or 'Event'"},
+	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, ExpectedRespStatus: 400, ExpectedBodyContains: "Error:Field validation"},
+	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, ExpectedRespStatus: 400, ExpectedBodyContains: "missing parameters, must have either 'MsgId' or 'Event'"},
 
-	{Label: "Receive Image", URL: receiveURL, Data: imageMessage, ExpectedRespStatus: 200, ExpectedRespBody: "",
+	{Label: "Receive Image", URL: receiveURL, Data: imageMessage, ExpectedRespStatus: 200, ExpectedBodyContains: "",
 		ExpectedMsgText: Sp(""), ExpectedURN: "wechat:1234", ExpectedExternalID: "123456",
 		ExpectedAttachments: []string{"https://api.weixin.qq.com/cgi-bin/media/get?media_id=12"},
 		ExpectedDate:        time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
 
-	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, ExpectedRespStatus: 200, ExpectedRespBody: "Event Accepted",
+	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, ExpectedRespStatus: 200, ExpectedBodyContains: "Event Accepted",
 		ExpectedEvent: courier.NewConversation, ExpectedURN: "wechat:1234"},
 
-	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, ExpectedRespStatus: 200, ExpectedRespBody: "unknown event"},
+	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, ExpectedRespStatus: 200, ExpectedBodyContains: "unknown event"},
 
-	{Label: "Verify URL", URL: receiveURL, ExpectedRespStatus: 200, ExpectedRespBody: "SUCCESS",
+	{Label: "Verify URL", URL: receiveURL, ExpectedRespStatus: 200, ExpectedBodyContains: "SUCCESS",
 		PrepRequest: addValidSignature},
 
-	{Label: "Verify URL Invalid signature", URL: receiveURL, ExpectedRespStatus: 400, ExpectedRespBody: "unknown request",
+	{Label: "Verify URL Invalid signature", URL: receiveURL, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown request",
 		PrepRequest: addInvalidSignature},
 }
 
@@ -189,27 +189,27 @@ func TestFetchAccessToken(t *testing.T) {
 
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
 		{
-			Label:              "Receive Message",
-			URL:                receiveURL,
-			Data:               validMsg,
-			ExpectedRespStatus: 200,
-			ExpectedRespBody:   "",
-			ExpectedMsgText:    Sp("Simple Message"),
-			ExpectedURN:        "wechat:1234",
+			Label:                "Receive Message",
+			URL:                  receiveURL,
+			Data:                 validMsg,
+			ExpectedRespStatus:   200,
+			ExpectedBodyContains: "",
+			ExpectedMsgText:      Sp("Simple Message"),
+			ExpectedURN:          "wechat:1234",
 		},
 		{
-			Label:              "Verify URL",
-			URL:                receiveURL,
-			ExpectedRespStatus: 200,
-			ExpectedRespBody:   "SUCCESS",
-			PrepRequest:        addValidSignature,
+			Label:                "Verify URL",
+			URL:                  receiveURL,
+			ExpectedRespStatus:   200,
+			ExpectedBodyContains: "SUCCESS",
+			PrepRequest:          addValidSignature,
 		},
 		{
-			Label:              "Verify URL Invalid signature",
-			URL:                receiveURL,
-			ExpectedRespStatus: 400,
-			ExpectedRespBody:   "unknown request",
-			PrepRequest:        addInvalidSignature,
+			Label:                "Verify URL Invalid signature",
+			URL:                  receiveURL,
+			ExpectedRespStatus:   400,
+			ExpectedBodyContains: "unknown request",
+			PrepRequest:          addInvalidSignature,
 		},
 	})
 

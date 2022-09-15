@@ -38,19 +38,19 @@ type ChannelHandleTestCase struct {
 	Headers       map[string]string
 	MultipartForm map[string]string
 
-	ExpectedRespStatus  int
-	ExpectedRespBody    string
-	ExpectedContactName *string
-	ExpectedMsgText     *string
-	ExpectedURN         urns.URN
-	ExpectedURNAuth     string
-	ExpectedAttachments []string
-	ExpectedDate        time.Time
-	ExpectedMsgStatus   courier.MsgStatusValue
-	ExpectedExternalID  string
-	ExpectedMsgID       int64
-	ExpectedEvent       courier.ChannelEventType
-	ExpectedEventExtra  map[string]interface{}
+	ExpectedRespStatus   int
+	ExpectedBodyContains string
+	ExpectedContactName  *string
+	ExpectedMsgText      *string
+	ExpectedURN          urns.URN
+	ExpectedURNAuth      string
+	ExpectedAttachments  []string
+	ExpectedDate         time.Time
+	ExpectedMsgStatus    courier.MsgStatusValue
+	ExpectedExternalID   string
+	ExpectedMsgID        int64
+	ExpectedEvent        courier.ChannelEventType
+	ExpectedEventExtra   map[string]interface{}
 }
 
 // MockedRequest is a fake HTTP request
@@ -67,7 +67,7 @@ func (m MockedRequest) Matches(r *http.Request, body []byte) bool {
 }
 
 // utility method to make a request to a handler URL
-func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, expectedStatus int, expectedBody string, requestPrepFunc RequestPrepFunc) string {
+func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, expectedStatus int, expectedBodyContains string, requestPrepFunc RequestPrepFunc) string {
 	var req *http.Request
 	var err error
 	url := fmt.Sprintf("https://%s%s", s.Config().Domain, path)
@@ -118,10 +118,10 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers ma
 
 	body := rr.Body.String()
 
-	require.Equal(tb, expectedStatus, rr.Code, fmt.Sprintf("incorrect status code with response: %s", body))
+	assert.Equal(tb, expectedStatus, rr.Code, "status code mismatch")
 
-	if expectedBody != "" {
-		assert.Contains(tb, body, expectedBody)
+	if expectedBodyContains != "" {
+		assert.Contains(tb, body, expectedBodyContains)
 	}
 
 	return body
@@ -158,7 +158,7 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 
 			mb.Reset()
 
-			testHandlerRequest(t, s, tc.URL, tc.Headers, tc.Data, tc.MultipartForm, tc.ExpectedRespStatus, tc.ExpectedRespBody, tc.PrepRequest)
+			testHandlerRequest(t, s, tc.URL, tc.Headers, tc.Data, tc.MultipartForm, tc.ExpectedRespStatus, tc.ExpectedBodyContains, tc.PrepRequest)
 
 			if tc.ExpectedMsgText != nil || tc.ExpectedAttachments != nil {
 				require.Len(mb.WrittenMsgs(), 1, "expected a msg to be written")

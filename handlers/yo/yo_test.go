@@ -26,18 +26,18 @@ var testChannels = []courier.Channel{
 }
 
 var handleTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "", ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
+	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "", ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729"},
-	{Label: "Receive Valid From", URL: receiveValidMessageFrom, Data: "", ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
+	{Label: "Receive Valid From", URL: receiveValidMessageFrom, Data: "", ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729"},
-	{Label: "Receive Valid Message With Date", URL: receiveValidMessageWithDate, Data: "", ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
+	{Label: "Receive Valid Message With Date", URL: receiveValidMessageWithDate, Data: "", ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729", ExpectedDate: time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC)},
-	{Label: "Receive Valid Message With Time", URL: receiveValidMessageWithTime, Data: "", ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
+	{Label: "Receive Valid Message With Time", URL: receiveValidMessageWithTime, Data: "", ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729", ExpectedDate: time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC)},
-	{Label: "Invalid URN", URL: receiveInvalidURN, Data: "", ExpectedRespStatus: 400, ExpectedRespBody: "phone number supplied is not a number"},
-	{Label: "Receive No Params", URL: receiveNoParams, Data: "", ExpectedRespStatus: 400, ExpectedRespBody: "must have one of 'sender' or 'from'"},
-	{Label: "Receive No Sender", URL: receiveNoSender, Data: "", ExpectedRespStatus: 400, ExpectedRespBody: "must have one of 'sender' or 'from'"},
-	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "", ExpectedRespStatus: 400, ExpectedRespBody: "invalid date format, must be RFC 3339"},
+	{Label: "Invalid URN", URL: receiveInvalidURN, Data: "", ExpectedRespStatus: 400, ExpectedBodyContains: "phone number supplied is not a number"},
+	{Label: "Receive No Params", URL: receiveNoParams, Data: "", ExpectedRespStatus: 400, ExpectedBodyContains: "must have one of 'sender' or 'from'"},
+	{Label: "Receive No Sender", URL: receiveNoSender, Data: "", ExpectedRespStatus: 400, ExpectedBodyContains: "must have one of 'sender' or 'from'"},
+	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "", ExpectedRespStatus: 400, ExpectedBodyContains: "invalid date format, must be RFC 3339"},
 }
 
 func TestHandler(t *testing.T) {
