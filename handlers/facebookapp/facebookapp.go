@@ -274,12 +274,7 @@ func (h *handler) RedactValues(ch courier.Channel) []string {
 
 // WriteRequestError writes the passed in error to our response writer
 func (h *handler) WriteRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error {
-	return courier.WriteIgnored(ctx, w, r, fmt.Sprintf("ignoring request, %s", err.Error()))
-}
-
-// ErrorResponseStatus() return the response status code for errors
-func (h *handler) ErrorResponseStatus() int {
-	return 200
+	return courier.WriteError(ctx, w, r, http.StatusOK, err)
 }
 
 // GetChannel returns the channel

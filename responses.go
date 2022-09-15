@@ -13,13 +13,13 @@ import (
 )
 
 // writeAndLogRequestError writes a JSON response for the passed in message and logs an info messages
-func writeAndLogRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
+func writeAndLogRequestError(ctx context.Context, h ChannelHandler, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
 	LogRequestError(r, c, err)
-	return WriteError(ctx, w, r, err)
+	return h.WriteRequestError(ctx, w, r, err)
 }
 
 // WriteError writes a JSON response for the passed in error
-func WriteError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error {
+func WriteError(ctx context.Context, w http.ResponseWriter, r *http.Request, statusCode int, err error) error {
 	errors := []interface{}{NewErrorData(err.Error())}
 
 	vErrs, isValidation := err.(validator.ValidationErrors)
@@ -28,7 +28,7 @@ func WriteError(ctx context.Context, w http.ResponseWriter, r *http.Request, err
 			errors = append(errors, NewErrorData(fmt.Sprintf("field '%s' %s", strings.ToLower(vErrs[i].Field()), vErrs[i].Tag())))
 		}
 	}
-	return WriteDataResponse(ctx, w, http.StatusBadRequest, "Error", errors)
+	return WriteDataResponse(ctx, w, statusCode, "Error", errors)
 }
 
 // WriteIgnored writes a JSON response indicating that we ignored the request

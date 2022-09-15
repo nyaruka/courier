@@ -29,11 +29,11 @@ func NewHandler() courier.ChannelHandler {
 	return &dummyHandler{}
 }
 
+func (h *dummyHandler) Server() courier.Server                { return h.server }
 func (h *dummyHandler) ChannelName() string                   { return "Dummy Handler" }
 func (h *dummyHandler) ChannelType() courier.ChannelType      { return courier.ChannelType("DM") }
 func (h *dummyHandler) UseChannelRouteUUID() bool             { return true }
 func (h *dummyHandler) RedactValues(courier.Channel) []string { return []string{"sesame"} }
-func (h *dummyHandler) ErrorResponseStatus() int              { return 400 }
 
 func (h *dummyHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
 	dmChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "DM", "2020", "US", map[string]interface{}{})
@@ -59,6 +59,22 @@ func (h *dummyHandler) Send(ctx context.Context, msg courier.Msg, clog *courier.
 	clog.Error(errors.New("contains sesame seeds"))
 
 	return h.backend.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgSent, clog), nil
+}
+
+func (h *dummyHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []courier.MsgStatus) error {
+	return courier.WriteStatusSuccess(ctx, w, r, statuses)
+}
+
+func (h *dummyHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+	return courier.WriteMsgSuccess(ctx, w, r, msgs)
+}
+
+func (h *dummyHandler) WriteRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error {
+	return courier.WriteError(ctx, w, r, http.StatusBadRequest, err)
+}
+
+func (h *dummyHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, details string) error {
+	return courier.WriteIgnored(ctx, w, r, details)
 }
 
 // ReceiveMsg sends the passed in message, returning any error

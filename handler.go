@@ -21,13 +21,18 @@ type ChannelHandleFunc func(context.Context, Channel, http.ResponseWriter, *http
 // ChannelHandler is the interface all handlers must satisfy
 type ChannelHandler interface {
 	Initialize(Server) error
+	Server() Server
 	ChannelType() ChannelType
 	ChannelName() string
 	UseChannelRouteUUID() bool
-	ErrorResponseStatus() int
 	RedactValues(Channel) []string
 	GetChannel(context.Context, *http.Request) (Channel, error)
 	Send(context.Context, Msg, *ChannelLog) (MsgStatus, error)
+
+	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, *http.Request, []MsgStatus) error
+	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, *http.Request, []Msg) error
+	WriteRequestError(context.Context, http.ResponseWriter, *http.Request, error) error
+	WriteRequestIgnored(context.Context, http.ResponseWriter, *http.Request, string) error
 }
 
 // URNDescriber is the interface handlers which can look up URN metadata for new contacts should satisfy.

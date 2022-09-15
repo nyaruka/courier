@@ -46,7 +46,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMsg)
 
-	statusHandler := handlers.NewExternalIDStatusHandler(&h.BaseHandler, statusMapping, "MsgId", "Status")
+	statusHandler := handlers.NewExternalIDStatusHandler(h, statusMapping, "MsgId", "Status")
 	s.AddHandlerRoute(h, http.MethodPost, "status", statusHandler)
 	return nil
 }
