@@ -106,11 +106,6 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
-// WriteMsgSuccessResponse writes our response in TWIML format
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
-	return courier.WriteMsgSuccess(ctx, w, r, msgs)
-}
-
 // buildStatusHandler deals with building a handler that takes what status is received in the URL
 func (h *handler) buildStatusHandler(status string) courier.ChannelHandleFunc {
 	return func(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {

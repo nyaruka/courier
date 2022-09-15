@@ -29,10 +29,10 @@ type ChannelHandler interface {
 	GetChannel(context.Context, *http.Request) (Channel, error)
 	Send(context.Context, Msg, *ChannelLog) (MsgStatus, error)
 
-	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, *http.Request, []MsgStatus) error
-	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, *http.Request, []Msg) error
-	WriteRequestError(context.Context, http.ResponseWriter, *http.Request, error) error
-	WriteRequestIgnored(context.Context, http.ResponseWriter, *http.Request, string) error
+	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []MsgStatus) error
+	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []Msg) error
+	WriteRequestError(context.Context, http.ResponseWriter, error) error
+	WriteRequestIgnored(context.Context, http.ResponseWriter, string) error
 }
 
 // URNDescriber is the interface handlers which can look up URN metadata for new contacts should satisfy.

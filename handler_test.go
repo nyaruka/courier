@@ -61,20 +61,20 @@ func (h *dummyHandler) Send(ctx context.Context, msg courier.Msg, clog *courier.
 	return h.backend.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgSent, clog), nil
 }
 
-func (h *dummyHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []courier.MsgStatus) error {
-	return courier.WriteStatusSuccess(ctx, w, r, statuses)
+func (h *dummyHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.MsgStatus) error {
+	return courier.WriteStatusSuccess(ctx, w, statuses)
 }
 
-func (h *dummyHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
-	return courier.WriteMsgSuccess(ctx, w, r, msgs)
+func (h *dummyHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
+	return courier.WriteMsgSuccess(ctx, w, msgs)
 }
 
-func (h *dummyHandler) WriteRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error {
-	return courier.WriteError(ctx, w, r, http.StatusBadRequest, err)
+func (h *dummyHandler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
+	return courier.WriteError(ctx, w, http.StatusBadRequest, err)
 }
 
-func (h *dummyHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, details string) error {
-	return courier.WriteIgnored(ctx, w, r, details)
+func (h *dummyHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
+	return courier.WriteIgnored(ctx, w, details)
 }
 
 // ReceiveMsg sends the passed in message, returning any error

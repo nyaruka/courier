@@ -194,7 +194,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			return nil, err
 		}
 
-		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, r, channelEvent)
+		return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, channelEvent)
 	}
 
 	// unknown event type (we only deal with subscribe)
@@ -214,7 +214,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // WriteMsgSuccessResponse writes our response
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "") // WeChat expected empty string to not retry looking for passive reply
 	return err

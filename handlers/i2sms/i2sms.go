@@ -152,7 +152,7 @@ func (h *handler) RedactValues(ch courier.Channel) []string {
 }
 
 // WriteMsgSuccessResponse writes a success response for the messages, i2SMS expects an empty body in our response
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	w.Header().Add("Content-type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte{})

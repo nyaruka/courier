@@ -138,7 +138,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 		if err != nil {
 			return nil, err
 		}
-		return []courier.Event{stop}, courier.WriteChannelEventSuccess(ctx, w, r, stop)
+		return []courier.Event{stop}, courier.WriteChannelEventSuccess(ctx, w, stop)
 	}
 
 	// otherwise, create our incoming message and write that

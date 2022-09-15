@@ -89,7 +89,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // Start Mobile expects a XML response from a message receive request
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, `<answer type="async"><state>Accepted</state></answer>`)
