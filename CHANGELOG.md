@@ -1,3 +1,8 @@
+v7.5.29
+----------
+ * Simplify constructing responses and add tests
+ * Make it easier to override responses per handler
+
 v7.5.28
 ----------
  * Update to use SHA256 signature for FBA payload, increase max body bytes limit to 1MiB
