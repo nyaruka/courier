@@ -33,7 +33,6 @@ func (h *dummyHandler) ChannelName() string                   { return "Dummy Ha
 func (h *dummyHandler) ChannelType() courier.ChannelType      { return courier.ChannelType("DM") }
 func (h *dummyHandler) UseChannelRouteUUID() bool             { return true }
 func (h *dummyHandler) RedactValues(courier.Channel) []string { return []string{"sesame"} }
-func (h *dummyHandler) ErrorResponseStatus() int              { return 400 }
 
 func (h *dummyHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
 	dmChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "DM", "2020", "US", map[string]interface{}{})
@@ -59,6 +58,10 @@ func (h *dummyHandler) Send(ctx context.Context, msg courier.Msg, clog *courier.
 	clog.Error(errors.New("contains sesame seeds"))
 
 	return h.backend.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgSent, clog), nil
+}
+
+func (h *dummyHandler) WriteRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error {
+	return courier.WriteError(ctx, w, r, http.StatusBadRequest, err)
 }
 
 // ReceiveMsg sends the passed in message, returning any error

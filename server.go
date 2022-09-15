@@ -267,22 +267,14 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 
 		recorder, err := httpx.NewRecorder(r, w, true)
 		if err != nil {
-			writeAndLogRequestError(ctx, w, r, nil, err)
+			writeAndLogRequestError(ctx, handler, w, r, nil, err)
 			return
 		}
 
 		// get the channel for this request - can be nil, e.g. FBA verification requests
 		channel, err := handler.GetChannel(ctx, r)
 		if err != nil {
-
-			// webhooks for FBA, IG and WAC should always return 200
-			if handler.ErrorResponseStatus() == 200 {
-				logrus.WithError(err).WithField("request", string(recorder.Trace.RequestTrace))
-				WriteIgnored(ctx, recorder.ResponseWriter, r, fmt.Sprintf("ignoring request, %s", err.Error()))
-				return
-			}
-
-			writeAndLogRequestError(ctx, recorder.ResponseWriter, r, channel, err)
+			writeAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, err)
 			return
 		}
 
@@ -297,7 +289,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			if panicLog != nil {
 				debug.PrintStack()
 				logrus.WithError(err).WithField("channel_uuid", channelUUID).WithField("request", string(recorder.Trace.RequestTrace)).WithField("trace", panicLog).Error("panic handling request")
-				writeAndLogRequestError(ctx, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
+				writeAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
 			}
 		}()
 
@@ -310,13 +302,13 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		// if we received an error, write it out and report it
 		if hErr != nil {
 			logrus.WithError(hErr).WithField("channel_uuid", channelUUID).WithField("request", string(recorder.Trace.RequestTrace)).Error("error handling request")
-			writeAndLogRequestError(ctx, recorder.ResponseWriter, r, channel, hErr)
+			writeAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, hErr)
 		}
 
 		// end recording of the request so that we have a response trace
 		if err := recorder.End(); err != nil {
 			logrus.WithError(err).WithField("channel_uuid", channelUUID).WithField("request", string(recorder.Trace.RequestTrace)).Error("error recording request")
-			writeAndLogRequestError(ctx, w, r, channel, err)
+			writeAndLogRequestError(ctx, handler, w, r, channel, err)
 		}
 
 		if channel != nil {

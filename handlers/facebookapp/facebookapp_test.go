@@ -50,7 +50,7 @@ var testCasesFBA = []ChannelHandleTestCase{
 		URL:                  "/c/fba/receive",
 		Data:                 string(test.ReadFile("./testdata/fba/helloMsgFBA.json")),
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "ignoring request, invalid request signature",
+		ExpectedBodyContains: "invalid request signature",
 		PrepRequest:          addInvalidSignature,
 	},
 	{
@@ -246,7 +246,7 @@ var testCasesFBA = []ChannelHandleTestCase{
 		URL:                  "/c/fba/receive",
 		Data:                 string(test.ReadFile("./testdata/fba/invalidURNFBA.json")),
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "ignoring request, invalid facebook id",
+		ExpectedBodyContains: "invalid facebook id",
 		PrepRequest:          addValidSignature,
 	},
 }
@@ -271,7 +271,7 @@ var testCasesIG = []ChannelHandleTestCase{
 		URL:                  "/c/ig/receive",
 		Data:                 string(test.ReadFile("./testdata/ig/helloMsgIG.json")),
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "ignoring request, invalid request signature",
+		ExpectedBodyContains: "invalid request signature",
 		PrepRequest:          addInvalidSignature,
 	},
 	{
@@ -384,7 +384,7 @@ var testCasesIG = []ChannelHandleTestCase{
 		URL:                  "/c/ig/receive",
 		Data:                 string(test.ReadFile("./testdata/ig/invalidURNIG.json")),
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "ignoring request, invalid instagram id",
+		ExpectedBodyContains: "invalid instagram id",
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -683,7 +683,7 @@ var testCasesWAC = []ChannelHandleTestCase{
 		URL:                  wacReceiveURL,
 		Data:                 string(test.ReadFile("./testdata/wac/invalidFrom.json")),
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "ignoring request, invalid whatsapp id",
+		ExpectedBodyContains: "invalid whatsapp id",
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -691,7 +691,7 @@ var testCasesWAC = []ChannelHandleTestCase{
 		URL:                  wacReceiveURL,
 		Data:                 string(test.ReadFile("./testdata/wac/invalidTimestamp.json")),
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "ignoring request, invalid timestamp",
+		ExpectedBodyContains: "invalid timestamp",
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -699,7 +699,7 @@ var testCasesWAC = []ChannelHandleTestCase{
 		URL:                   wacReceiveURL,
 		Data:                  string(test.ReadFile("./testdata/wac/helloWAC.json")),
 		ExpectedRespStatus:    200,
-		ExpectedBodyContains:  "ignoring request, invalid request signature",
+		ExpectedBodyContains:  "invalid request signature",
 		NoQueueErrorCheck:     true,
 		NoInvalidChannelCheck: true,
 		PrepRequest:           addInvalidSignature,
@@ -719,7 +719,7 @@ var testCasesWAC = []ChannelHandleTestCase{
 		URL:                  wacReceiveURL,
 		Data:                 string(test.ReadFile("./testdata/wac/invalidStatusWAC.json")),
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"ignoring request, unknown status: in_orbit"`,
+		ExpectedBodyContains: `"unknown status: in_orbit"`,
 		PrepRequest:          addValidSignature,
 	},
 	{
