@@ -29,7 +29,7 @@ var (
 
 	signatureHeader = "X-Hub-Signature-256"
 
-	maxRequestBodyBytes int64 = 500000
+	maxRequestBodyBytes int64 = 1024 * 1024
 
 	// max for the body
 	maxMsgLength = 1000
