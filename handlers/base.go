@@ -92,21 +92,21 @@ func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.
 }
 
 // WriteStatusSuccessResponse writes a success response for the statuses
-func (h *BaseHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []courier.MsgStatus) error {
-	return courier.WriteStatusSuccess(ctx, w, r, statuses)
+func (h *BaseHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.MsgStatus) error {
+	return courier.WriteStatusSuccess(ctx, w, statuses)
 }
 
 // WriteMsgSuccessResponse writes a success response for the messages
-func (h *BaseHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
-	return courier.WriteMsgSuccess(ctx, w, r, msgs)
+func (h *BaseHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
+	return courier.WriteMsgSuccess(ctx, w, msgs)
 }
 
 // WriteRequestError writes the passed in error to our response writer
-func (h *BaseHandler) WriteRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error {
-	return courier.WriteError(ctx, w, r, http.StatusBadRequest, err)
+func (h *BaseHandler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
+	return courier.WriteError(ctx, w, http.StatusBadRequest, err)
 }
 
 // WriteRequestIgnored writes an ignored payload to our response writer
-func (h *BaseHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, details string) error {
-	return courier.WriteIgnored(ctx, w, r, details)
+func (h *BaseHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
+	return courier.WriteIgnored(ctx, w, details)
 }

@@ -273,8 +273,8 @@ func (h *handler) RedactValues(ch courier.Channel) []string {
 }
 
 // WriteRequestError writes the passed in error to our response writer
-func (h *handler) WriteRequestError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) error {
-	return courier.WriteError(ctx, w, r, http.StatusOK, err)
+func (h *handler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
+	return courier.WriteError(ctx, w, http.StatusOK, err)
 }
 
 // GetChannel returns the channel

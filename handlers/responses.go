@@ -18,7 +18,7 @@ func WriteMsgsAndResponse(ctx context.Context, h courier.ChannelHandler, msgs []
 		events[i] = m
 	}
 
-	return events, h.WriteMsgSuccessResponse(ctx, w, r, msgs)
+	return events, h.WriteMsgSuccessResponse(ctx, w, msgs)
 }
 
 // WriteMsgStatusAndResponse write the passed in status to our backend
@@ -32,17 +32,17 @@ func WriteMsgStatusAndResponse(ctx context.Context, h courier.ChannelHandler, ch
 		return nil, err
 	}
 
-	return []courier.Event{status}, h.WriteStatusSuccessResponse(ctx, w, r, []courier.MsgStatus{status})
+	return []courier.Event{status}, h.WriteStatusSuccessResponse(ctx, w, []courier.MsgStatus{status})
 }
 
 // WriteAndLogRequestError logs the passed in error and writes the response to the response writer
 func WriteAndLogRequestError(ctx context.Context, h courier.ChannelHandler, channel courier.Channel, w http.ResponseWriter, r *http.Request, err error) error {
 	courier.LogRequestError(r, channel, err)
-	return h.WriteRequestError(ctx, w, r, err)
+	return h.WriteRequestError(ctx, w, err)
 }
 
 // WriteAndLogRequestIgnored logs that the passed in request was ignored and writes the response to the response writer
 func WriteAndLogRequestIgnored(ctx context.Context, h courier.ChannelHandler, channel courier.Channel, w http.ResponseWriter, r *http.Request, details string) error {
 	courier.LogRequestIgnored(r, channel, details)
-	return h.WriteRequestIgnored(ctx, w, r, details)
+	return h.WriteRequestIgnored(ctx, w, details)
 }
