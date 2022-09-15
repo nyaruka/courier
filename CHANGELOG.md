@@ -1,3 +1,8 @@
+v7.5.28
+----------
+ * Update to use SHA256 signature for FBA payload, increase max body bytes limit to 1MiB
+ * Meta channels webhooks requests, should always return 200 status
+
 v7.5.27
 ----------
  * Fix server logging when channel is nil
