@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -27,7 +27,9 @@ var (
 	sendURL  = "https://graph.facebook.com/v12.0/me/messages"
 	graphURL = "https://graph.facebook.com/v12.0/"
 
-	signatureHeader = "X-Hub-Signature"
+	signatureHeader = "X-Hub-Signature-256"
+
+	maxRequestBodyBytes int64 = 1024 * 1024
 
 	// max for the body
 	maxMsgLength = 1000
@@ -1377,7 +1379,7 @@ func (h *handler) validateSignature(r *http.Request) error {
 	}
 	appSecret := h.Server().Config().FacebookApplicationSecret
 
-	body, err := handlers.ReadBody(r, 100000)
+	body, err := handlers.ReadBody(r, maxRequestBodyBytes)
 	if err != nil {
 		return fmt.Errorf("unable to read request body: %s", err)
 	}
@@ -1388,8 +1390,8 @@ func (h *handler) validateSignature(r *http.Request) error {
 	}
 
 	signature := ""
-	if len(headerSignature) == 45 && strings.HasPrefix(headerSignature, "sha1=") {
-		signature = strings.TrimPrefix(headerSignature, "sha1=")
+	if len(headerSignature) == 71 && strings.HasPrefix(headerSignature, "sha256=") {
+		signature = strings.TrimPrefix(headerSignature, "sha256=")
 	}
 
 	// compare signatures in way that isn't sensitive to a timing attack
@@ -1405,7 +1407,7 @@ func fbCalculateSignature(appSecret string, body []byte) (string, error) {
 	buffer.Write(body)
 
 	// hash with SHA1
-	mac := hmac.New(sha1.New, []byte(appSecret))
+	mac := hmac.New(sha256.New, []byte(appSecret))
 	mac.Write(buffer.Bytes())
 
 	return hex.EncodeToString(mac.Sum(nil)), nil
