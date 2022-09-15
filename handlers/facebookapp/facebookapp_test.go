@@ -406,9 +406,9 @@ var testCasesIG = []ChannelHandleTestCase{
 }
 
 func addValidSignature(r *http.Request) {
-	body, _ := ReadBody(r, 100000)
+	body, _ := ReadBody(r, maxRequestBodyBytes)
 	sig, _ := fbCalculateSignature("fb_app_secret", body)
-	r.Header.Set(signatureHeader, fmt.Sprintf("sha1=%s", string(sig)))
+	r.Header.Set(signatureHeader, fmt.Sprintf("sha256=%s", string(sig)))
 }
 
 func addInvalidSignature(r *http.Request) {
@@ -1339,11 +1339,11 @@ func TestSigning(t *testing.T) {
 	}{
 		{
 			"hello world",
-			"308de7627fe19e92294c4572a7f831bc1002809d",
+			"f39034b29165ec6a5104d9aef27266484ab26c8caa7bca8bcb2dd02e8be61b17",
 		},
 		{
 			"hello world2",
-			"ab6f902b58b9944032d4a960f470d7a8ebfd12b7",
+			"60905fdf409d0b4f721e99f6f25b31567a68a6b45e933d814e17a246be4c5a53",
 		},
 	}
 
