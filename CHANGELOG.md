@@ -1,3 +1,7 @@
+v7.5.30
+----------
+ * Update msg status updating to allow skipping WIRED state
+
 v7.5.29
 ----------
  * Simplify constructing responses and add tests
