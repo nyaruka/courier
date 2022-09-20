@@ -116,12 +116,12 @@ UPDATE msgs_msg SET
 			failed_reason
 	    END,
 	sent_on = CASE 
-		WHEN 
-			:status = 'W' 
-		THEN 
-			NOW() 
-		ELSE 
-			sent_on 
+		WHEN
+			:status IN ('W', 'S', 'D')
+		THEN
+			COALESCE(sent_on, NOW())
+		ELSE
+			NULL
 		END,
 	external_id = CASE
 		WHEN 
@@ -182,12 +182,12 @@ UPDATE msgs_msg SET
 			failed_reason
 	    END,
 	sent_on = CASE 
-		WHEN 
+		WHEN
 			:status IN ('W', 'S', 'D')
-		THEN 
+		THEN
 			COALESCE(sent_on, NOW())
-		ELSE 
-			NULL 
+		ELSE
+			NULL
 		END,
 	modified_on = :modified_on,
 	log_uuids = array_append(log_uuids, :log_uuid)
@@ -282,11 +282,11 @@ UPDATE msgs_msg SET
 			next_attempt 
 		END,
 	sent_on = CASE 
-		WHEN 
+		WHEN
 			s.status IN ('W', 'S', 'D')
-		THEN 
+		THEN
 			COALESCE(sent_on, NOW())
-		ELSE 
+		ELSE
 			NULL
 		END,
 	external_id = CASE
