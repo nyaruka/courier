@@ -43,6 +43,14 @@ var (
 	twilioBaseURL = "https://api.twilio.com"
 )
 
+// see https://www.twilio.com/docs/sms/accepted-mime-types#accepted-mime-types
+var mediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{
+	handlers.MediaTypeImage:       {MaxBytes: 5 * 1024 * 1024},
+	handlers.MediaTypeAudio:       {MaxBytes: 5 * 1024 * 1024},
+	handlers.MediaTypeVideo:       {MaxBytes: 5 * 1024 * 1024},
+	handlers.MediaTypeApplication: {MaxBytes: 5 * 1024 * 1024},
+}
+
 // error code twilio returns when a contact has sent "stop"
 const errorStopped = 21610
 
@@ -217,6 +225,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	channel := msg.Channel()
 
+	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, true)
+	if err != nil {
+		return nil, errors.Wrap(err, "error resolving attachments")
+	}
+
 	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	for i, part := range parts {
@@ -227,10 +240,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			"StatusCallback": []string{callbackURL},
 		}
 
-		// add any media URL to the first part
-		if len(msg.Attachments()) > 0 && i == 0 {
-			_, mediaURL := handlers.SplitAttachment(msg.Attachments()[0])
-			form["MediaUrl"] = []string{mediaURL}
+		// add any attachments to the first part
+		if i == 0 {
+			for _, a := range attachments {
+				form.Add("MediaUrl", a.URL)
+			}
 		}
 
 		// set our from, either as a messaging service or from our address
