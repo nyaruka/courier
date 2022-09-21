@@ -1,3 +1,7 @@
+v7.5.31
+----------
+ * Allow twiml channels to send multiple media urls per message
+
 v7.5.30
 ----------
  * Update msg status updating to allow skipping WIRED state
