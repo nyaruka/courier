@@ -3,6 +3,7 @@ package twiml
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"fmt"
@@ -364,15 +365,37 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:           setSendURL,
 	},
 	{
-		Label:              "Send Attachment",
+		Label:              "Single attachment and text",
 		MsgText:            "My pic!",
 		MsgURN:             "tel:+250788383383",
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:   `{ "sid": "1002" }`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "My pic!", "To": "+250788383383", "MediaUrl": "https://foo.bar/image.jpg", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "W",
-		SendPrep:           setSendURL,
+		ExpectedPostForm: url.Values{
+			"Body":           []string{"My pic!"},
+			"To":             []string{"+250788383383"},
+			"MediaUrl":       []string{"https://foo.bar/image.jpg"},
+			"From":           []string{"2020"},
+			"StatusCallback": []string{"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+		},
+		ExpectedMsgStatus: "W",
+		SendPrep:          setSendURL,
+	},
+	{
+		Label:              "Multiple attachments, no text",
+		MsgURN:             "tel:+250788383383",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg", "audio/mp4:https://foo.bar/audio.m4a"},
+		MockResponseBody:   `{ "sid": "1002" }`,
+		MockResponseStatus: 200,
+		ExpectedPostForm: url.Values{
+			"Body":           []string{""},
+			"To":             []string{"+250788383383"},
+			"MediaUrl":       []string{"https://foo.bar/image.jpg", "https://foo.bar/audio.m4a"},
+			"From":           []string{"2020"},
+			"StatusCallback": []string{"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+		},
+		ExpectedMsgStatus: "W",
+		SendPrep:          setSendURL,
 	},
 }
 
