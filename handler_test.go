@@ -154,7 +154,7 @@ func TestHandling(t *testing.T) {
 
 	assert.Len(mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
-	assert.Equal([]courier.ChannelError{courier.NewChannelError("contains ********** seeds", "")}, clog.Errors())
+	assert.Equal([]*courier.ChannelError{courier.NewChannelError("contains ********** seeds", "")}, clog.Errors())
 
 	assert.Len(clog.HTTPLogs(), 1)
 

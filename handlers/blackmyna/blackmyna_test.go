@@ -122,7 +122,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `{ "error": "failed" }`,
 		MockResponseStatus: 200,
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("no external id returned in body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("no external id returned in body", "")},
 		ExpectedPostParams: map[string]string{"message": `No External ID`, "address": "+250788383383", "senderaddress": "2020"},
 		ExpectedMsgStatus:  "E",
 		SendPrep:           setSendURL,

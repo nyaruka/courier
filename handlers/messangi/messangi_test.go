@@ -91,7 +91,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `<response><input>sendMT</input><status>ERROR</status><description>Completed</description></response>`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("Received invalid response description: Completed", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("Received invalid response description: Completed", "")},
 		SendPrep:           setSendURL,
 	},
 }

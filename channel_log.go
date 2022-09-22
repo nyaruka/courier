@@ -30,8 +30,8 @@ type ChannelError struct {
 	code    string
 }
 
-func NewChannelError(message, code string) ChannelError {
-	return ChannelError{message: message, code: code}
+func NewChannelError(message, code string) *ChannelError {
+	return &ChannelError{message: message, code: code}
 }
 
 func (e *ChannelError) Message() string {
@@ -49,7 +49,7 @@ type ChannelLog struct {
 	channel   Channel
 	msgID     MsgID
 	httpLogs  []*httpx.Log
-	errors    []ChannelError
+	errors    []*ChannelError
 	createdOn time.Time
 	elapsed   time.Duration
 
@@ -132,7 +132,7 @@ func (l *ChannelLog) HTTPLogs() []*httpx.Log {
 	return l.httpLogs
 }
 
-func (l *ChannelLog) Errors() []ChannelError {
+func (l *ChannelLog) Errors() []*ChannelError {
 	return l.errors
 }
 

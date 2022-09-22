@@ -846,7 +846,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgURN:            "telegram:12345",
 		MsgAttachments:    []string{"unknown/foo:https://foo.bar/unknown.foo"},
 		ExpectedMsgStatus: "E",
-		ExpectedErrors:    []courier.ChannelError{courier.NewChannelError("unknown attachment content type: unknown/foo", "")},
+		ExpectedErrors:    []*courier.ChannelError{courier.NewChannelError("unknown attachment content type: unknown/foo", "")},
 		SendPrep:          setSendURL,
 	},
 }

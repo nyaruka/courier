@@ -179,7 +179,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		MockResponseBody:   "not json",
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get result.message_id from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to get result.message_id from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -189,7 +189,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		MockResponseBody:   "{}",
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get result.message_id from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to get result.message_id from body", "")},
 		SendPrep:           setSendURL,
 	},
 	{

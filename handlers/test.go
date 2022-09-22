@@ -276,7 +276,7 @@ type ChannelSendTestCase struct {
 	ExpectedHeaders     map[string]string
 	ExpectedMsgStatus   courier.MsgStatusValue
 	ExpectedExternalID  string
-	ExpectedErrors      []courier.ChannelError
+	ExpectedErrors      []*courier.ChannelError
 	ExpectedStopEvent   bool
 	ExpectedContactURNs map[string]bool
 	ExpectedNewURN      string
