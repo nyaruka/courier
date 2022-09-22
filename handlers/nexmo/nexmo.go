@@ -179,7 +179,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		nexmoStatus, err := jsonparser.GetString(respBody, "messages", "[0]", "status")
 		if err != nil || nexmoStatus != "0" {
-			clog.Error(errors.Errorf("failed to send message, received error status [%s]", nexmoStatus))
+			clog.RawError(errors.Errorf("failed to send message, received error status [%s]", nexmoStatus))
 			return status, nil
 		}
 

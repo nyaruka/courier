@@ -181,7 +181,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// try to get our external id
 		externalID, err := jsonparser.GetString(respBody, "guid")
 		if err != nil {
-			clog.Error(errors.New("Unable to read external ID"))
+			clog.RawError(errors.New("Unable to read external ID"))
 			return status, nil
 		}
 		status.SetStatus(courier.MsgWired)
@@ -214,7 +214,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			// get our external id
 			externalID, err := jsonparser.GetString(respBody, "guid")
 			if err != nil {
-				clog.Error(errors.New("Unable to read external ID from guid field"))
+				clog.RawError(errors.New("Unable to read external ID from guid field"))
 				return status, nil
 			}
 

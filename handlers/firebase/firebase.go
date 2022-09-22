@@ -202,7 +202,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// was this successful
 		success, _ := jsonparser.GetInt(respBody, "success")
 		if success != 1 {
-			clog.Error(errors.Errorf("received non-1 value for success in response"))
+			clog.RawError(errors.Errorf("received non-1 value for success in response"))
 			return status, nil
 		}
 
@@ -210,7 +210,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		if i == 0 {
 			externalID, err := jsonparser.GetInt(respBody, "multicast_id")
 			if err != nil {
-				clog.Error(errors.Errorf("unable to get multicast_id from response"))
+				clog.RawError(errors.Errorf("unable to get multicast_id from response"))
 				return status, nil
 			}
 			status.SetExternalID(fmt.Sprintf("%d", externalID))

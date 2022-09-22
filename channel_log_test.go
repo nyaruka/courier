@@ -41,7 +41,8 @@ func TestChannelLog(t *testing.T) {
 	assert.EqualError(t, err, "unable to connect to server")
 
 	clog.HTTP(trace)
-	clog.Error(errors.New("this is an error"))
+	clog.Error(courier.NewChannelError("Something not right", "twilio:23456"))
+	clog.RawError(errors.New("this is an error"))
 	clog.End()
 
 	assert.Equal(t, courier.ChannelLogUUID("c00e5d67-c275-4389-aded-7d8b151cbd5b"), clog.UUID())
@@ -49,7 +50,7 @@ func TestChannelLog(t *testing.T) {
 	assert.Equal(t, channel, clog.Channel())
 	assert.Equal(t, courier.NilMsgID, clog.MsgID())
 	assert.Equal(t, 2, len(clog.HTTPLogs()))
-	assert.Equal(t, 1, len(clog.Errors()))
+	assert.Equal(t, 2, len(clog.Errors()))
 	assert.False(t, clog.CreatedOn().IsZero())
 	assert.Greater(t, clog.Elapsed(), time.Duration(0))
 
@@ -65,12 +66,24 @@ func TestChannelLog(t *testing.T) {
 	assert.Equal(t, "", hlog2.Response)
 
 	err1 := clog.Errors()[0]
-	assert.Equal(t, "this is an error", err1.Message())
-	assert.Equal(t, "", err1.Code())
+	assert.Equal(t, "Something not right", err1.Message())
+	assert.Equal(t, "twilio:23456", err1.Code())
+
+	err2 := clog.Errors()[1]
+	assert.Equal(t, "this is an error", err2.Message())
+	assert.Equal(t, "", err2.Code())
 
 	clog.SetMsgID(courier.NewMsgID(123))
 	clog.SetType(courier.ChannelLogTypeEventReceive)
 
 	assert.Equal(t, courier.NewMsgID(123), clog.MsgID())
 	assert.Equal(t, courier.ChannelLogTypeEventReceive, clog.Type())
+}
+
+func TestChannelErrors(t *testing.T) {
+	assert.Equal(t, courier.NewChannelError("Unexpected response status code.", "core:response_status_code"), courier.ErrorResponseStatusCode())
+	assert.Equal(t, courier.NewChannelError("Unable to parse response as FOO.", "core:response_unparseable"), courier.ErrorResponseUnparseable("FOO"))
+	assert.Equal(t, courier.NewChannelError("Unsupported attachment media type: image/tiff.", "core:media_unsupported_type"), courier.ErrorUnsupportedMedia("image/tiff"))
+	assert.Equal(t, courier.NewChannelError("Invalid FriendlyName.", "twilio:20002"), courier.ErrorServiceSpecific("twilio", "20002", "Invalid FriendlyName."))
+	assert.Equal(t, courier.NewChannelError("Service specific error: 20003.", "twilio:20003"), courier.ErrorServiceSpecific("twilio", "20003", ""))
 }

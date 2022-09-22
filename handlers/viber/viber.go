@@ -375,7 +375,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				msgText = ""
 
 			default:
-				clog.Error(fmt.Errorf("unknown media type: %s", mediaType))
+				clog.Error(courier.ErrorUnsupportedMedia(mediaType))
 			}
 
 		} else {
@@ -417,11 +417,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		}
 		responseStatus, err := jsonparser.GetInt(respBody, "status")
 		if err != nil {
-			clog.Error(errors.Errorf("received invalid JSON response"))
+			clog.RawError(errors.Errorf("received invalid JSON response"))
 			return status, nil
 		}
 		if responseStatus != 0 {
-			clog.Error(errors.Errorf("received non-0 status: '%d'", responseStatus))
+			clog.RawError(errors.Errorf("received non-0 status: '%d'", responseStatus))
 			return status, nil
 		}
 

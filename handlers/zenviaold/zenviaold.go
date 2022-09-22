@@ -205,7 +205,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		responseMsgStatus, _ := jsonparser.GetString(respBody, "sendSmsResponse", "statusCode")
 		msgStatus, found := statusMapping[responseMsgStatus]
 		if msgStatus == courier.MsgErrored || !found {
-			clog.Error(errors.Errorf("received non-success response: '%s'", responseMsgStatus))
+			clog.RawError(errors.Errorf("received non-success response: '%s'", responseMsgStatus))
 			return status, nil
 		}
 

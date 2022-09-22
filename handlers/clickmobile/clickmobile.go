@@ -165,7 +165,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		if responseCode == "000" {
 			status.SetStatus(courier.MsgWired)
 		} else {
-			clog.Error(fmt.Errorf("Received invalid response content: %s", string(respBody)))
+			clog.RawError(fmt.Errorf("Received invalid response content: %s", string(respBody)))
 		}
 	}
 	return status, nil

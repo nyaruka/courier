@@ -1,6 +1,7 @@
 package courier
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/nyaruka/gocommon/dates"
@@ -30,8 +31,31 @@ type ChannelError struct {
 	code    string
 }
 
-func NewChannelError(message, code string) ChannelError {
-	return ChannelError{message: message, code: code}
+func NewChannelError(message, code string) *ChannelError {
+	return &ChannelError{message: message, code: code}
+}
+
+func ErrorResponseStatusCode() *ChannelError {
+	return NewChannelError("Unexpected response status code.", "core:response_status_code")
+}
+
+func ErrorResponseUnparseable(format string) *ChannelError {
+	return NewChannelError(fmt.Sprintf("Unable to parse response as %s.", format), "core:response_unparseable")
+}
+
+func ErrorUnsupportedMedia(contentType string) *ChannelError {
+	return NewChannelError(fmt.Sprintf("Unsupported attachment media type: %s.", contentType), "core:media_unsupported_type")
+}
+
+func ErrorServiceSpecific(ns, code, message string) *ChannelError {
+	if message == "" {
+		message = fmt.Sprintf("Service specific error: %s.", code)
+	}
+	return NewChannelError(message, fmt.Sprintf("%s:%s", ns, code))
+}
+
+func (e *ChannelError) Redact(r stringsx.Redactor) *ChannelError {
+	return &ChannelError{message: r(e.message), code: r(e.code)}
 }
 
 func (e *ChannelError) Message() string {
@@ -49,7 +73,7 @@ type ChannelLog struct {
 	channel   Channel
 	msgID     MsgID
 	httpLogs  []*httpx.Log
-	errors    []ChannelError
+	errors    []*ChannelError
 	createdOn time.Time
 	elapsed   time.Duration
 
@@ -91,8 +115,12 @@ func (l *ChannelLog) HTTP(t *httpx.Trace) {
 	l.httpLogs = append(l.httpLogs, l.traceToLog(t))
 }
 
-func (l *ChannelLog) Error(err error) {
-	l.errors = append(l.errors, NewChannelError(l.redactor(err.Error()), ""))
+func (l *ChannelLog) Error(e *ChannelError) {
+	l.errors = append(l.errors, e)
+}
+
+func (l *ChannelLog) RawError(err error) {
+	l.Error(NewChannelError(err.Error(), ""))
 }
 
 func (l *ChannelLog) End() {
@@ -132,7 +160,7 @@ func (l *ChannelLog) HTTPLogs() []*httpx.Log {
 	return l.httpLogs
 }
 
-func (l *ChannelLog) Errors() []ChannelError {
+func (l *ChannelLog) Errors() []*ChannelError {
 	return l.errors
 }
 

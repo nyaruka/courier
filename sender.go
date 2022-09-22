@@ -214,7 +214,7 @@ func (w *Sender) sendMessage(msg Msg) {
 
 		if err != nil {
 			log.WithError(err).WithField("elapsed", duration).Error("error sending message")
-			clog.Error(err)
+			clog.RawError(err)
 
 			// possible for handlers to only return an error in which case we construct an error status
 			if status == nil {

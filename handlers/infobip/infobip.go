@@ -235,7 +235,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	groupID, err := jsonparser.GetInt(respBody, "messages", "[0]", "status", "groupId")
 	if err != nil || (groupID != 1 && groupID != 3) {
-		clog.Error(errors.Errorf("received error status: '%d'", groupID))
+		clog.RawError(errors.Errorf("received error status: '%d'", groupID))
 		return status, nil
 	}
 

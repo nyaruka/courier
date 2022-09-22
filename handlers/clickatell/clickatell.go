@@ -203,7 +203,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// try to read out our message id, if we can't then this was a failure
 		externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "apiMessageId")
 		if err != nil {
-			clog.Error(err)
+			clog.RawError(err)
 		} else {
 			status.SetStatus(courier.MsgWired)
 			status.SetExternalID(externalID)

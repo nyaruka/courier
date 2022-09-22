@@ -56,7 +56,7 @@ func (h *dummyHandler) Send(ctx context.Context, msg courier.Msg, clog *courier.
 	clog.HTTP(trace)
 
 	// log an error than contains a value that should be redacted
-	clog.Error(errors.New("contains sesame seeds"))
+	clog.RawError(errors.New("contains sesame seeds"))
 
 	return h.backend.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgSent, clog), nil
 }
@@ -154,7 +154,7 @@ func TestHandling(t *testing.T) {
 
 	assert.Len(mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
-	assert.Equal([]courier.ChannelError{courier.NewChannelError("contains ********** seeds", "")}, clog.Errors())
+	assert.Equal([]*courier.ChannelError{courier.NewChannelError("contains ********** seeds", "")}, clog.Errors())
 
 	assert.Len(clog.HTTPLogs(), 1)
 

@@ -122,7 +122,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		if strings.Contains(string(respBody), "Success") {
 			status.SetStatus(courier.MsgWired)
 		} else {
-			clog.Error(fmt.Errorf("Received invalid response content: %s", string(respBody)))
+			clog.RawError(fmt.Errorf("Received invalid response content: %s", string(respBody)))
 		}
 	}
 	return status, nil

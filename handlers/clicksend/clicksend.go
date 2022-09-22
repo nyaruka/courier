@@ -102,14 +102,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// first read our status
 		s, err := jsonparser.GetString(respBody, "data", "messages", "[0]", "status")
 		if s != "SUCCESS" {
-			clog.Error(errors.Errorf("received non SUCCESS status: %s", s))
+			clog.RawError(errors.Errorf("received non SUCCESS status: %s", s))
 			return status, nil
 		}
 
 		// then get our external id
 		id, err := jsonparser.GetString(respBody, "data", "messages", "[0]", "message_id")
 		if err != nil {
-			clog.Error(errors.Errorf("unable to get message_id for message"))
+			clog.RawError(errors.Errorf("unable to get message_id for message"))
 			return status, nil
 		}
 

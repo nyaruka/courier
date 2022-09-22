@@ -276,7 +276,7 @@ type ChannelSendTestCase struct {
 	ExpectedHeaders     map[string]string
 	ExpectedMsgStatus   courier.MsgStatusValue
 	ExpectedExternalID  string
-	ExpectedErrors      []courier.ChannelError
+	ExpectedErrors      []*courier.ChannelError
 	ExpectedStopEvent   bool
 	ExpectedContactURNs map[string]bool
 	ExpectedNewURN      string
@@ -350,7 +350,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 			// we don't currently distinguish between a returned error and logged errors
 			if err != nil {
-				clog.Error(err)
+				clog.RawError(err)
 			}
 
 			assert.Equal(t, tc.ExpectedErrors, clog.Errors(), "unexpected errors logged")

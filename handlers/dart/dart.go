@@ -14,6 +14,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/stringsx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -184,16 +185,16 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, nil
 		}
 
-		responseText := string(respBody)
-		if responseText != "000" {
-			errorMessage := "Unknown error"
-			if responseText == "001" {
-				errorMessage = "Error 001: Authentication Error"
+		responseCode := stringsx.Truncate(string(respBody), 3)
+		if responseCode != "000" {
+			errorMessage := "Unknown error."
+			if responseCode == "001" {
+				errorMessage = "Authentication error."
+			} else if responseCode == "101" {
+				errorMessage = "Account expired or invalid parameters."
 			}
-			if responseText == "101" {
-				errorMessage = "Error 101: Account expired or invalid parameters"
-			}
-			clog.Error(fmt.Errorf(errorMessage))
+
+			clog.Error(courier.ErrorServiceSpecific("dart", responseCode, errorMessage))
 			return status, nil
 		}
 

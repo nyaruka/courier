@@ -299,7 +299,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						return nil, err
 					}
 				}
-				clog.Error(errors.Errorf("received error code from twilio '%d'", errorCode))
+				clog.RawError(errors.Errorf("received error code from twilio '%d'", errorCode))
 				return status, nil
 			}
 		}
@@ -307,7 +307,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// grab the external id
 		externalID, err := jsonparser.GetString(respBody, "sid")
 		if err != nil {
-			clog.Error(errors.Errorf("unable to get sid from body"))
+			clog.RawError(errors.Errorf("unable to get sid from body"))
 			return status, nil
 		}
 

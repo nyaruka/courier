@@ -143,7 +143,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// grab the external id
 		externalID, err := jsonparser.GetString(respBody, "sms_id")
 		if err != nil {
-			clog.Error(errors.Errorf("unable to get sms_id from body"))
+			clog.RawError(errors.Errorf("unable to get sms_id from body"))
 			return status, nil
 		}
 

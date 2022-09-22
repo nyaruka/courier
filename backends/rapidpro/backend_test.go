@@ -1003,7 +1003,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel, nil)
 	clog.HTTP(trace)
-	clog.Error(errors.New("this is an error"))
+	clog.RawError(errors.New("this is an error"))
 
 	err = ts.b.WriteChannelLog(ctx, clog)
 	ts.NoError(err)

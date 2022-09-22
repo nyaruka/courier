@@ -119,7 +119,7 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel)
 
 	accessToken, err := jsonparser.GetString(respBody, "access_token")
 	if err != nil {
-		clog.Error(errors.New("access_token not found in response"))
+		clog.RawError(errors.New("access_token not found in response"))
 		clog.End()
 		return h.Backend().WriteChannelLog(ctx, clog)
 	}
