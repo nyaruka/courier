@@ -18,7 +18,7 @@ jobs:
           PERSONAL_ACCESS_TOKEN : ${{ secrets.CLA_TOKEN }}
         with:
           path-to-signatures: 'signatures/version1/cla.json'
-          path-to-document: 'https://github.com/nyaruka/legal/blob/main/TextIt%20CLA.md'
+          path-to-document: 'https://github.com/nyaruka/license/blob/main/TextIt_CLA.md'
           branch: 'main'
           allowlist: bot*
           remote-organization-name: 'nyaruka'
