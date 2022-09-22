@@ -86,7 +86,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `not json`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("invalid character 'o' in literal null (expecting 'u')", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseUnparseable("XML")},
 		SendPrep:           setSendURL,
 	},
 	{

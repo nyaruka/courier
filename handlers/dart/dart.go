@@ -21,6 +21,11 @@ import (
 var (
 	sendURL      = "http://202.43.169.11/APIhttpU/receive2waysms.php"
 	maxMsgLength = 160
+
+	errorCodes = map[string]string{
+		"001": "Authentication error.",
+		"101": "Account expired or invalid parameters.",
+	}
 )
 
 type handler struct {
@@ -187,14 +192,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		responseCode := stringsx.Truncate(string(respBody), 3)
 		if responseCode != "000" {
-			errorMessage := "Unknown error."
-			if responseCode == "001" {
-				errorMessage = "Authentication error."
-			} else if responseCode == "101" {
-				errorMessage = "Account expired or invalid parameters."
-			}
-
-			clog.Error(courier.ErrorServiceSpecific("dart", responseCode, errorMessage))
+			clog.Error(courier.ErrorServiceSpecific("dart", responseCode, errorCodes[responseCode]))
 			return status, nil
 		}
 

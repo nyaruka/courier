@@ -116,7 +116,7 @@ func (l *ChannelLog) HTTP(t *httpx.Trace) {
 }
 
 func (l *ChannelLog) Error(e *ChannelError) {
-	l.errors = append(l.errors, e)
+	l.errors = append(l.errors, e.Redact(l.redactor))
 }
 
 func (l *ChannelLog) RawError(err error) {
