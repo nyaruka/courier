@@ -17,9 +17,9 @@ import (
 
 // getChannel will look up the channel with the passed in UUID and channel type.
 // It will return an error if the channel does not exist or is not active.
-func getChannel(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, channelUUID courier.ChannelUUID) (*DBChannel, error) {
+func getChannel(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, channelUUID courier.ChannelUUID, isActive bool) (*DBChannel, error) {
 	// look for the channel locally
-	cachedChannel, localErr := getCachedChannel(channelType, channelUUID)
+	cachedChannel, localErr := getCachedChannel(channelType, channelUUID, isActive)
 
 	// found it? return it
 	if localErr == nil {
@@ -27,7 +27,7 @@ func getChannel(ctx context.Context, db *sqlx.DB, channelType courier.ChannelTyp
 	}
 
 	// look in our database instead
-	channel, dbErr := loadChannelFromDB(ctx, db, channelType, channelUUID)
+	channel, dbErr := loadChannelFromDB(ctx, db, channelType, channelUUID, isActive)
 
 	// if it wasn't found in the DB, clear our cache and return that it wasn't found
 	if dbErr == courier.ErrChannelNotFound {
@@ -46,7 +46,7 @@ func getChannel(ctx context.Context, db *sqlx.DB, channelType courier.ChannelTyp
 	}
 
 	// we found it in the db, cache it locally
-	cacheChannel(channel)
+	cacheChannel(channel, isActive)
 	return channel, nil
 }
 
@@ -66,14 +66,14 @@ SELECT
 	o.is_anon AS org_is_anon
   FROM channels_channel c
   JOIN orgs_org o ON c.org_id = o.id
- WHERE c.uuid = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL`
+ WHERE c.uuid = $1 AND c.is_active = $2 AND c.org_id IS NOT NULL`
 
 // ChannelForUUID attempts to look up the channel with the passed in UUID, returning it
-func loadChannelFromDB(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, uuid courier.ChannelUUID) (*DBChannel, error) {
+func loadChannelFromDB(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, uuid courier.ChannelUUID, isActive bool) (*DBChannel, error) {
 	channel := &DBChannel{UUID_: uuid}
 
 	// select just the fields we need
-	err := db.GetContext(ctx, channel, sqlLookupChannelFromUUID, uuid)
+	err := db.GetContext(ctx, channel, sqlLookupChannelFromUUID, uuid, isActive)
 
 	// we didn't find a match
 	if err == sql.ErrNoRows {
@@ -95,11 +95,21 @@ func loadChannelFromDB(ctx context.Context, db *sqlx.DB, channelType courier.Cha
 }
 
 // getCachedChannel returns a Channel object for the passed in type and UUID.
-func getCachedChannel(channelType courier.ChannelType, uuid courier.ChannelUUID) (*DBChannel, error) {
+func getCachedChannel(channelType courier.ChannelType, uuid courier.ChannelUUID, isActive bool) (*DBChannel, error) {
 	// first see if the channel exists in our local cache
-	cacheMutex.RLock()
-	channel, found := channelCache[uuid]
-	cacheMutex.RUnlock()
+	var found bool
+	var channel *DBChannel
+
+	if isActive {
+		cacheMutex.RLock()
+		channel, found = channelCache[uuid]
+		cacheMutex.RUnlock()
+
+	} else {
+		cacheChannelDeletedMutex.RLock()
+		channel, found = channelDeletedCache[uuid]
+		cacheChannelDeletedMutex.RUnlock()
+	}
 
 	if found {
 		// if it was found but the type is wrong, that's an error
@@ -118,18 +128,40 @@ func getCachedChannel(channelType courier.ChannelType, uuid courier.ChannelUUID)
 	return nil, courier.ErrChannelNotFound
 }
 
-func cacheChannel(channel *DBChannel) {
+func cacheDeletedChannel(channel *DBChannel) {
 	channel.expiration = time.Now().Add(localTTL)
 
-	cacheMutex.Lock()
-	channelCache[channel.UUID()] = channel
-	cacheMutex.Unlock()
+	cacheChannelDeletedMutex.Lock()
+	channelDeletedCache[channel.UUID()] = channel
+	cacheChannelDeletedMutex.Unlock()
+}
+
+var cacheChannelDeletedMutex sync.RWMutex
+var channelDeletedCache = make(map[courier.ChannelUUID]*DBChannel)
+
+func cacheChannel(channel *DBChannel, isActive bool) {
+	channel.expiration = time.Now().Add(localTTL)
+	if isActive {
+		cacheMutex.Lock()
+		channelCache[channel.UUID()] = channel
+		cacheMutex.Unlock()
+
+	} else {
+		cacheChannelDeletedMutex.Lock()
+		channelDeletedCache[channel.UUID()] = channel
+		cacheChannelDeletedMutex.Unlock()
+
+	}
 }
 
 func clearLocalChannel(uuid courier.ChannelUUID) {
 	cacheMutex.Lock()
 	delete(channelCache, uuid)
 	cacheMutex.Unlock()
+
+	cacheChannelDeletedMutex.Lock()
+	delete(channelDeletedCache, uuid)
+	cacheChannelDeletedMutex.Unlock()
 }
 
 // channels stay cached in memory for a minute at a time

@@ -88,7 +88,7 @@ func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.
 		return nil, err
 	}
 
-	return h.backend.GetChannel(ctx, h.ChannelType(), uuid)
+	return h.backend.GetChannel(ctx, h.ChannelType(), uuid, true)
 }
 
 // WriteStatusSuccessResponse writes a success response for the statuses

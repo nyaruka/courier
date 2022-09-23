@@ -354,7 +354,7 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 	}
 
 	// look up our channel
-	channel, err := b.GetChannel(ctx, courier.AnyChannelType, msg.ChannelUUID_)
+	channel, err := b.GetChannel(ctx, courier.AnyChannelType, msg.ChannelUUID_, true)
 	if err != nil {
 		return err
 	}

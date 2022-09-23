@@ -47,11 +47,11 @@ func init() {
 }
 
 // GetChannel returns the channel for the passed in type and UUID
-func (b *backend) GetChannel(ctx context.Context, ct courier.ChannelType, uuid courier.ChannelUUID) (courier.Channel, error) {
+func (b *backend) GetChannel(ctx context.Context, ct courier.ChannelType, uuid courier.ChannelUUID, isActive bool) (courier.Channel, error) {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	return getChannel(timeout, b.db, ct, uuid)
+	return getChannel(timeout, b.db, ct, uuid, isActive)
 }
 
 // GetChannelByAddress returns the channel with the passed in type and address
@@ -151,6 +151,16 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text str
 	return msg
 }
 
+func (b *backend) failMsgDeletedChannel(ctx context.Context, channel courier.Channel, msg courier.Msg) error {
+	clog := courier.NewChannelLogForSend(msg, nil)
+	status := b.NewMsgStatusForID(channel, msg.ID(), courier.MsgFailed, clog)
+	msg.(*DBMsg).channel = channel.(*DBChannel)
+
+	err := b.WriteMsgStatus(ctx, status)
+	clog.End()
+	return err
+}
+
 // PopNextOutgoingMsg pops the next message that needs to be sent
 func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
 	// pop the next message off our queue
@@ -170,9 +180,17 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
 			return nil, fmt.Errorf("unable to unmarshal message '%s': %s", msgJSON, err)
 		}
 		// populate the channel on our db msg
-		channel, err := b.GetChannel(ctx, courier.AnyChannelType, dbMsg.ChannelUUID_)
+		channel, err := b.GetChannel(ctx, courier.AnyChannelType, dbMsg.ChannelUUID_, true)
 		if err != nil {
 			queue.MarkComplete(rc, msgQueueName, token)
+
+			deletedChannel, err := b.GetChannel(ctx, courier.AnyChannelType, dbMsg.ChannelUUID_, false)
+			dbDeletedChannel := deletedChannel.(*DBChannel)
+			if err == nil && dbDeletedChannel != nil {
+				err = b.failMsgDeletedChannel(ctx, deletedChannel, dbMsg)
+
+				return nil, err
+			}
 			return nil, err
 		}
 		dbMsg.channel = channel.(*DBChannel)
@@ -308,7 +326,7 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.MsgStatus
 	old, new := status.UpdatedURN()
 
 	// retrieve channel
-	channel, err := b.GetChannel(ctx, courier.AnyChannelType, status.ChannelUUID())
+	channel, err := b.GetChannel(ctx, courier.AnyChannelType, status.ChannelUUID(), true)
 	if err != nil {
 		return errors.Wrap(err, "error retrieving channel")
 	}
@@ -588,7 +606,7 @@ func (b *backend) Status() string {
 
 		// try to look up our channel
 		channelUUID, _ := courier.NewChannelUUID(uuid)
-		channel, err := getChannel(context.Background(), b.db, courier.AnyChannelType, channelUUID)
+		channel, err := getChannel(context.Background(), b.db, courier.AnyChannelType, channelUUID, true)
 		channelType := "!!"
 		if err == nil {
 			channelType = channel.ChannelType().String()

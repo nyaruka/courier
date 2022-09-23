@@ -24,7 +24,7 @@ type Backend interface {
 	Cleanup() error
 
 	// GetChannel returns the channel with the passed in type and UUID
-	GetChannel(context.Context, ChannelType, ChannelUUID) (Channel, error)
+	GetChannel(context.Context, ChannelType, ChannelUUID, bool) (Channel, error)
 
 	// GetChannelByAddress returns the channel with the passed in type and address
 	GetChannelByAddress(context.Context, ChannelType, ChannelAddress) (Channel, error)

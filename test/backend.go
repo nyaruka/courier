@@ -235,7 +235,7 @@ func (mb *MockBackend) WriteChannelEvent(ctx context.Context, event courier.Chan
 }
 
 // GetChannel returns the channel with the passed in type and channel uuid
-func (mb *MockBackend) GetChannel(ctx context.Context, cType courier.ChannelType, uuid courier.ChannelUUID) (courier.Channel, error) {
+func (mb *MockBackend) GetChannel(ctx context.Context, cType courier.ChannelType, uuid courier.ChannelUUID, isActive bool) (courier.Channel, error) {
 	channel, found := mb.channels[uuid]
 	if !found {
 		return nil, courier.ErrChannelNotFound

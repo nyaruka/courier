@@ -143,7 +143,7 @@ func (b *backend) flushChannelEventFile(filename string, contents []byte) error 
 	}
 
 	// look up our channel
-	channel, err := b.GetChannel(ctx, courier.AnyChannelType, event.ChannelUUID_)
+	channel, err := b.GetChannel(ctx, courier.AnyChannelType, event.ChannelUUID_, true)
 	if err != nil {
 		return err
 	}

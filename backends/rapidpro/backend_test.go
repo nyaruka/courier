@@ -98,7 +98,7 @@ func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *DBChannel {
 	channelUUID, err := courier.NewChannelUUID(cUUID)
 	ts.Require().NoError(err, "error building channel uuid")
 
-	channel, err := ts.b.GetChannel(context.Background(), courier.ChannelType(cType), channelUUID)
+	channel, err := ts.b.GetChannel(context.Background(), courier.ChannelType(cType), channelUUID, true)
 	ts.Require().NoError(err, "error getting channel")
 	ts.Require().NotNil(channel)
 
@@ -912,6 +912,35 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	sent, err = ts.b.WasMsgSent(ctx, msg.ID())
 	ts.NoError(err)
 	ts.False(sent)
+}
+
+func (ts *BackendTestSuite) TestDeletedChannelQueuedMessages() {
+	// add one of our outgoing messages to the queue
+	ctx := context.Background()
+	r := ts.b.redisPool.Get()
+	defer r.Close()
+
+	dbMsg := readMsgFromDB(ts.b, courier.NewMsgID(10003))
+	dbMsg.ChannelUUID_, _ = courier.NewChannelUUID("904e6553-6dab-41be-9a99-fd4fdf7cc52b")
+	ts.NotNil(dbMsg)
+
+	// serialize our message
+	msgJSON, err := json.Marshal([]interface{}{dbMsg})
+	ts.NoError(err)
+
+	err = queue.PushOntoQueue(r, msgQueueName, "904e6553-6dab-41be-9a99-fd4fdf7cc52b", 10, string(msgJSON), queue.HighPriority)
+	ts.NoError(err)
+
+	// pop a message off our queue
+	msg, err := ts.b.PopNextOutgoingMsg(ctx)
+	ts.Nil(err)
+	ts.Nil(msg)
+
+	time.Sleep(time.Second)
+
+	msg2 := readMsgFromDB(ts.b, courier.NewMsgID(10003))
+	ts.Equal(msg2.Status_, courier.MsgFailed)
+
 }
 
 func (ts *BackendTestSuite) TestChannel() {
