@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/handlers"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/urns"
@@ -102,7 +101,7 @@ func addValidSignature(r *http.Request) {
 	nonce := "nonce"
 
 	stringSlice := []string{"secret", timestamp, nonce}
-	sort.Sort(sort.StringSlice(stringSlice))
+	sort.Strings(stringSlice)
 
 	value := strings.Join(stringSlice, "")
 
@@ -126,7 +125,7 @@ func addInvalidSignature(r *http.Request) {
 	nonce := "nonce"
 
 	stringSlice := []string{"secret", timestamp, nonce}
-	sort.Sort(sort.StringSlice(stringSlice))
+	sort.Strings(stringSlice)
 
 	value := strings.Join(stringSlice, "")
 
@@ -144,29 +143,80 @@ func addInvalidSignature(r *http.Request) {
 }
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
-		ExpectedMsgText: Sp("Simple Message"), ExpectedURN: "jiochat:1234", ExpectedExternalID: "123456",
-		ExpectedDate: time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
-
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid jiochat id"},
-	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, ExpectedRespStatus: 400, ExpectedBodyContains: "Error:Field validation"},
-	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, ExpectedRespStatus: 400, ExpectedBodyContains: "missing parameters, must have either 'MsgId' or 'Event'"},
-
-	{Label: "Receive Image", URL: receiveURL, Data: imageMessage, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
-		ExpectedMsgText: Sp(""), ExpectedURN: "jiochat:1234", ExpectedExternalID: "123456",
-		ExpectedAttachments: []string{"https://channels.jiochat.com/media/download.action?media_id=12"},
-		ExpectedDate:        time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
-
-	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, ExpectedRespStatus: 200, ExpectedBodyContains: "Event Accepted",
-		ExpectedEvent: courier.NewConversation, ExpectedURN: "jiochat:1234"},
-
-	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, ExpectedRespStatus: 200, ExpectedBodyContains: "unknown event"},
-
-	{Label: "Verify URL", URL: verifyURL, ExpectedRespStatus: 200, ExpectedBodyContains: "SUCCESS",
-		PrepRequest: addValidSignature},
-
-	{Label: "Verify URL Invalid signature", URL: verifyURL, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown request",
-		PrepRequest: addInvalidSignature},
+	{
+		Label:                "Receive Message",
+		URL:                  receiveURL,
+		Data:                 validMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Simple Message"),
+		ExpectedURN:          "jiochat:1234",
+		ExpectedExternalID:   "123456",
+		ExpectedDate:         time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC),
+	},
+	{
+		Label:                "Invalid URN",
+		URL:                  receiveURL,
+		Data:                 invalidURN,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "invalid jiochat id",
+	},
+	{
+		Label:                "Missing params",
+		URL:                  receiveURL,
+		Data:                 missingParamsRequired,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error:Field validation",
+	},
+	{
+		Label:                "Missing params Event or MsgId",
+		URL:                  receiveURL,
+		Data:                 missingParams,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "missing parameters, must have either 'MsgId' or 'Event'",
+	},
+	{
+		Label:                "Receive Image",
+		URL:                  receiveURL,
+		Data:                 imageMessage,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp(""),
+		ExpectedURN:          "jiochat:1234",
+		ExpectedExternalID:   "123456",
+		ExpectedAttachments:  []string{"https://channels.jiochat.com/media/download.action?media_id=12"},
+		ExpectedDate:         time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC),
+	},
+	{
+		Label:                "Subscribe Event",
+		URL:                  receiveURL,
+		Data:                 subscribeEvent,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Event Accepted",
+		ExpectedEvent:        courier.NewConversation,
+		ExpectedURN:          "jiochat:1234",
+	},
+	{
+		Label:                "Unsubscribe Event",
+		URL:                  receiveURL,
+		Data:                 unsubscribeEvent,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "unknown event",
+	},
+	{
+		Label:                "Verify URL",
+		URL:                  verifyURL,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "SUCCESS",
+		PrepRequest:          addValidSignature,
+	},
+	{
+		Label:                "Verify URL Invalid signature",
+		URL:                  verifyURL,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "unknown request",
+		PrepRequest:          addInvalidSignature,
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -233,7 +283,7 @@ func buildMockJCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 		defer r.Body.Close()
 
 		if authorizationHeader != "Bearer ACCESS_TOKEN" {
-			http.Error(w, "invalid file", 403)
+			http.Error(w, "invalid file", http.StatusForbidden)
 			return
 		}
 
@@ -283,7 +333,7 @@ func TestDescribeURN(t *testing.T) {
 	conn.Close()
 
 	s := newServer(mb)
-	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
+	handler := &handler{NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
 	handler.Initialize(s)
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 
@@ -314,7 +364,7 @@ func TestBuildMediaRequest(t *testing.T) {
 
 	conn.Close()
 	s := newServer(mb)
-	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
+	handler := &handler{NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
 	handler.Initialize(s)
 
 	tcs := []struct {

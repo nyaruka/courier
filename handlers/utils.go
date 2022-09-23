@@ -13,6 +13,10 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
+var (
+	urlRegex = regexp.MustCompile(`https?:\/\/(www\.)?[^\W][-a-zA-Z0-9@:%.\+~#=]{1,256}[^\W]\.[a-zA-Z()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+)
+
 // GetTextAndAttachments returns both the text of our message as well as any attachments, newline delimited
 func GetTextAndAttachments(m courier.Msg) string {
 	buf := bytes.NewBuffer([]byte(m.Text()))
@@ -142,4 +146,8 @@ func StrictTelForCountry(number string, country string) (urns.URN, error) {
 	}
 
 	return urn, nil
+}
+
+func IsURL(s string) bool {
+	return urlRegex.MatchString(s)
 }

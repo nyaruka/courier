@@ -121,10 +121,13 @@ var sendTestCases = []ChannelSendTestCase{
 }
 
 var tokenTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
+	{
+		Label:             "Plain Send",
+		MsgText:           "Simple Message",
+		MsgURN:            "tel:+250788383383",
 		ExpectedMsgStatus: "E",
-		SendPrep:          setSendURL},
+		SendPrep:          setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
