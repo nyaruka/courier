@@ -417,7 +417,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		}
 		responseStatus, err := jsonparser.GetInt(respBody, "status")
 		if err != nil {
-			clog.RawError(errors.Errorf("received invalid JSON response"))
+			clog.Error(courier.ErrorResponseUnparseable("JSON"))
 			return status, nil
 		}
 		if responseStatus != 0 {

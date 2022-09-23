@@ -81,9 +81,55 @@ func TestChannelLog(t *testing.T) {
 }
 
 func TestChannelErrors(t *testing.T) {
-	assert.Equal(t, courier.NewChannelError("Unexpected response status code.", "core:response_status_code"), courier.ErrorResponseStatusCode())
-	assert.Equal(t, courier.NewChannelError("Unable to parse response as FOO.", "core:response_unparseable"), courier.ErrorResponseUnparseable("FOO"))
-	assert.Equal(t, courier.NewChannelError("Unsupported attachment media type: image/tiff.", "core:media_unsupported_type"), courier.ErrorUnsupportedMedia("image/tiff"))
-	assert.Equal(t, courier.NewChannelError("Invalid FriendlyName.", "twilio:20002"), courier.ErrorServiceSpecific("twilio", "20002", "Invalid FriendlyName."))
-	assert.Equal(t, courier.NewChannelError("Service specific error: 20003.", "twilio:20003"), courier.ErrorServiceSpecific("twilio", "20003", ""))
+	tcs := []struct {
+		err             *courier.ChannelError
+		expectedMessage string
+		expectedCode    string
+	}{
+		{
+			courier.ErrorResponseStatusCode(),
+			"Unexpected response status code.",
+			"core:response_status_code",
+		},
+		{
+			courier.ErrorResponseUnparseable("FOO"),
+			"Unable to parse response as FOO.",
+			"core:response_unparseable",
+		},
+		{
+			courier.ErrorResponseValueMissing("id"),
+			"Unable to find 'id' response.",
+			"core:response_value_missing",
+		},
+		{
+			courier.ErrorResponseValueUnexpected("status", "SUCCESS"),
+			"Expected 'status' in response to be 'SUCCESS'.",
+			"core:response_value_unexpected",
+		},
+		{
+			courier.ErrorResponseValueUnexpected("status", "SUCCESS", "OK"),
+			"Expected 'status' in response to be 'SUCCESS' or 'OK'.",
+			"core:response_value_unexpected",
+		},
+		{
+			courier.ErrorUnsupportedMedia("image/tiff"),
+			"Unsupported attachment media type: image/tiff.",
+			"core:media_unsupported_type",
+		},
+		{
+			courier.ErrorServiceSpecific("twilio", "20002", "Invalid FriendlyName."),
+			"Invalid FriendlyName.",
+			"twilio:20002",
+		},
+		{
+			courier.ErrorServiceSpecific("twilio", "20003", ""),
+			"Service specific error: 20003.",
+			"twilio:20003",
+		},
+	}
+
+	for _, tc := range tcs {
+		assert.Equal(t, tc.expectedMessage, tc.err.Message())
+		assert.Equal(t, tc.expectedCode, tc.err.Code())
+	}
 }

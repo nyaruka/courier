@@ -11,7 +11,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -143,7 +142,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// grab the external id
 		externalID, err := jsonparser.GetString(respBody, "sms_id")
 		if err != nil {
-			clog.RawError(errors.Errorf("unable to get sms_id from body"))
+			clog.Error(courier.ErrorResponseValueMissing("sms_id"))
 			return status, nil
 		}
 

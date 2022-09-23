@@ -911,7 +911,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 
 		externalID, err := jsonparser.GetString(respBody, "message_id")
 		if err != nil {
-			clog.RawError(errors.Errorf("unable to get message_id from body"))
+			clog.Error(courier.ErrorResponseValueMissing("message_id"))
 			return status, nil
 		}
 
@@ -921,7 +921,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 			if msg.URN().IsFacebookRef() {
 				recipientID, err := jsonparser.GetString(respBody, "recipient_id")
 				if err != nil {
-					clog.RawError(errors.Errorf("unable to get recipient_id from body"))
+					clog.Error(courier.ErrorResponseValueMissing("recipient_id"))
 					return status, nil
 				}
 

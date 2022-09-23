@@ -11,7 +11,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/httpx"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -100,16 +99,16 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		}
 
 		// first read our status
-		s, err := jsonparser.GetString(respBody, "data", "messages", "[0]", "status")
+		s, _ := jsonparser.GetString(respBody, "data", "messages", "[0]", "status")
 		if s != "SUCCESS" {
-			clog.RawError(errors.Errorf("received non SUCCESS status: %s", s))
+			clog.Error(courier.ErrorResponseValueUnexpected("status", "SUCCESS"))
 			return status, nil
 		}
 
 		// then get our external id
 		id, err := jsonparser.GetString(respBody, "data", "messages", "[0]", "message_id")
 		if err != nil {
-			clog.RawError(errors.Errorf("unable to get message_id for message"))
+			clog.Error(courier.ErrorResponseValueMissing("message_id"))
 			return status, nil
 		}
 

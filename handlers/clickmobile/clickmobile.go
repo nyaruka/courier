@@ -161,11 +161,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, nil
 		}
 
-		responseCode, err := jsonparser.GetString(respBody, "code")
+		responseCode, _ := jsonparser.GetString(respBody, "code")
 		if responseCode == "000" {
 			status.SetStatus(courier.MsgWired)
 		} else {
-			clog.RawError(fmt.Errorf("Received invalid response content: %s", string(respBody)))
+			clog.Error(courier.ErrorResponseValueUnexpected("code", "000"))
 		}
 	}
 	return status, nil

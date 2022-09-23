@@ -2,6 +2,7 @@ package courier
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/nyaruka/gocommon/dates"
@@ -41,6 +42,18 @@ func ErrorResponseStatusCode() *ChannelError {
 
 func ErrorResponseUnparseable(format string) *ChannelError {
 	return NewChannelError(fmt.Sprintf("Unable to parse response as %s.", format), "core:response_unparseable")
+}
+
+func ErrorResponseValueMissing(key string) *ChannelError {
+	return NewChannelError(fmt.Sprintf("Unable to find '%s' response.", key), "core:response_value_missing")
+}
+
+func ErrorResponseValueUnexpected(key string, expected ...string) *ChannelError {
+	es := make([]string, len(expected))
+	for i := range expected {
+		es[i] = fmt.Sprintf("'%s'", expected[i])
+	}
+	return NewChannelError(fmt.Sprintf("Expected '%s' in response to be %s.", key, strings.Join(es, " or ")), "core:response_value_unexpected")
 }
 
 func ErrorUnsupportedMedia(contentType string) *ChannelError {
