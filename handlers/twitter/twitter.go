@@ -297,10 +297,10 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			if strings.HasPrefix(mimeType, "image") || strings.HasPrefix(mimeType, "video") {
 				mediaID, err = uploadMediaToTwitter(msg, mediaURL, mimeType, s3url, client, clog)
 				if err != nil {
-					clog.Error(errors.Wrap(err, "unable to upload media to Twitter server"))
+					clog.RawError(errors.Wrap(err, "unable to upload media to Twitter server"))
 				}
 			} else {
-				clog.Error(errors.New("unable to upload media, unsupported Twitter attachment"))
+				clog.RawError(errors.New("unable to upload media, unsupported Twitter attachment"))
 			}
 
 			if mediaID != "" {
@@ -345,7 +345,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		externalID, err := jsonparser.GetString(respBody, "event", "id")
 		if err != nil {
-			clog.Error(errors.Errorf("unable to get message_id from body"))
+			clog.RawError(errors.Errorf("unable to get message_id from body"))
 			return status, nil
 		}
 

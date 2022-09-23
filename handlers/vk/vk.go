@@ -448,7 +448,7 @@ func buildTextAndAttachmentParams(msg courier.Msg, clog *courier.ChannelLog) (st
 			if attachment, err := handleMediaUploadAndGetAttachment(msg.Channel(), mediaTypeImage, mediaExt, mediaURL, clog); err == nil {
 				msgAttachments = append(msgAttachments, attachment)
 			} else {
-				clog.Error(err)
+				clog.RawError(err)
 			}
 
 		default:

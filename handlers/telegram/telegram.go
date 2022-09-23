@@ -312,7 +312,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			hasError = err != nil
 
 		default:
-			clog.Error(fmt.Errorf("unknown attachment content type: %s", attachment.ContentType))
+			clog.Error(courier.ErrorUnsupportedMedia(attachment.ContentType))
 			hasError = true
 		}
 	}

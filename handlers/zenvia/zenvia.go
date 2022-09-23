@@ -13,7 +13,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -264,12 +263,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	externalID, err := jsonparser.GetString(respBody, "id")
 	if err != nil {
-		clog.Error(errors.Errorf("unable to get id from body"))
+		clog.Error(courier.ErrorResponseValueMissing("id"))
 		return status, nil
 	}
 
 	status.SetExternalID(externalID)
-	// this was wired successfully
 	status.SetStatus(courier.MsgWired)
 	return status, nil
 }

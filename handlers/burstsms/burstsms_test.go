@@ -86,7 +86,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `not json`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("invalid character 'o' in literal null (expecting 'u')", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseUnparseable("XML")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -96,7 +96,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `{ "message_id": 0 }`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("Received invalid message id: 0", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("message_id")},
 		SendPrep:           setSendURL,
 	},
 	{

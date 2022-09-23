@@ -545,7 +545,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			err = status.SetUpdatedURN(msg.URN(), newURN)
 
 			if err != nil {
-				clog.Error(err)
+				clog.RawError(err)
 			}
 		}
 		status.SetStatus(courier.MsgWired)
@@ -627,7 +627,7 @@ func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]int
 				payload.Video = mediaPayload
 				payloads = append(payloads, payload)
 			} else {
-				clog.Error(fmt.Errorf("unknown attachment mime type: %s", mimeType))
+				clog.Error(courier.ErrorUnsupportedMedia(mimeType))
 				break
 			}
 		}

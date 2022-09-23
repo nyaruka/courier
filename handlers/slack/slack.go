@@ -159,14 +159,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	for _, attachment := range msg.Attachments() {
 		fileAttachment, err := parseAttachmentToFileParams(msg, attachment, clog)
 		if err != nil {
-			clog.Error(err)
+			clog.RawError(err)
 			return status, nil
 		}
 
 		if fileAttachment != nil {
 			err = sendFilePart(msg, botToken, fileAttachment, clog)
 			if err != nil {
-				clog.Error(err)
+				clog.RawError(err)
 				return status, nil
 			}
 		}
@@ -175,7 +175,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	if msg.Text() != "" {
 		err := sendTextMsgPart(msg, botToken, clog)
 		if err != nil {
-			clog.Error(err)
+			clog.RawError(err)
 			return status, nil
 		}
 	}

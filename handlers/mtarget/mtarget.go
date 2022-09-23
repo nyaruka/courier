@@ -202,7 +202,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			status.SetExternalID(externalID)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			clog.Error(fmt.Errorf("Error status code, failing permanently"))
+			clog.RawError(fmt.Errorf("Error status code, failing permanently"))
 			break
 		}
 	}

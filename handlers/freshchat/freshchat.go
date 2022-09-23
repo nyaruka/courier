@@ -148,7 +148,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			msgimage.Image = &Image{URL: mediaURL}
 			payload.Messages[0].MessageParts = append(payload.Messages[0].MessageParts, *msgimage)
 		default:
-			clog.Error(fmt.Errorf("unknown media type: %s", mediaType))
+			clog.Error(courier.ErrorUnsupportedMedia(mediaType))
 		}
 	}
 

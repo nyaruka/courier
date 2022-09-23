@@ -73,7 +73,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 		} else if strings.HasPrefix(attURL, "data:") {
 			attData, err := base64.StdEncoding.DecodeString(attURL[5:])
 			if err != nil {
-				clog.Error(errors.New("unable to decode attachment data"))
+				clog.Error(courier.NewChannelError("Unable to decode attachment data.", ""))
 				return errors.Wrap(err, "unable to decode attachment data")
 			}
 

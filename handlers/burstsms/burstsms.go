@@ -93,7 +93,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		response := &mtResponse{}
 		err = json.Unmarshal(respBody, response)
 		if err != nil {
-			clog.Error(err)
+			clog.Error(courier.ErrorResponseUnparseable("XML"))
 			break
 		}
 
@@ -102,7 +102,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			status.SetExternalID(fmt.Sprintf("%d", response.MessageID))
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			clog.Error(fmt.Errorf("Received invalid message id: %d", response.MessageID))
+			clog.Error(courier.ErrorResponseValueMissing("message_id"))
 			break
 		}
 	}

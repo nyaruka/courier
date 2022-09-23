@@ -327,7 +327,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 401,
 		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -338,7 +338,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -361,7 +361,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -434,7 +434,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 401,
 		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -445,7 +445,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -468,7 +468,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -519,7 +519,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 401,
 		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -530,7 +530,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -553,7 +553,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -604,7 +604,7 @@ var swSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 401,
 		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -615,7 +615,7 @@ var swSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -638,7 +638,7 @@ var swSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{

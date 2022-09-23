@@ -162,7 +162,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   failureResponse,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("received non SUCCESS status: FAILURE", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueUnexpected("status", "SUCCESS")},
 		SendPrep:           setSendURL,
 	},
 }

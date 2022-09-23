@@ -14,12 +14,18 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/stringsx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
 var (
 	sendURL      = "http://202.43.169.11/APIhttpU/receive2waysms.php"
 	maxMsgLength = 160
+
+	errorCodes = map[string]string{
+		"001": "Authentication error.",
+		"101": "Account expired or invalid parameters.",
+	}
 )
 
 type handler struct {
@@ -184,16 +190,9 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, nil
 		}
 
-		responseText := string(respBody)
-		if responseText != "000" {
-			errorMessage := "Unknown error"
-			if responseText == "001" {
-				errorMessage = "Error 001: Authentication Error"
-			}
-			if responseText == "101" {
-				errorMessage = "Error 101: Account expired or invalid parameters"
-			}
-			clog.Error(fmt.Errorf(errorMessage))
+		responseCode := stringsx.Truncate(string(respBody), 3)
+		if responseCode != "000" {
+			clog.Error(courier.ErrorServiceSpecific("dart", responseCode, errorCodes[responseCode]))
 			return status, nil
 		}
 

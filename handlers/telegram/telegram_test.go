@@ -841,12 +841,12 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:           setSendURL,
 	},
 	{
-		Label:             "Unknown Attachment",
+		Label:             "Unknown attachment type",
 		MsgText:           "My pic!",
 		MsgURN:            "telegram:12345",
 		MsgAttachments:    []string{"unknown/foo:https://foo.bar/unknown.foo"},
 		ExpectedMsgStatus: "E",
-		ExpectedErrors:    []*courier.ChannelError{courier.NewChannelError("unknown attachment content type: unknown/foo", "")},
+		ExpectedErrors:    []*courier.ChannelError{courier.ErrorUnsupportedMedia("unknown/foo")},
 		SendPrep:          setSendURL,
 	},
 }

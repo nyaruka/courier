@@ -174,7 +174,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			part, err := writer.CreateFormFile("media", fileName)
 			_, err = io.Copy(part, bytes.NewReader(attBody))
 			if err != nil {
-				clog.Error(err)
+				clog.RawError(err)
 				kwaErr = err
 				break
 			}
@@ -187,14 +187,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			for k, v := range baseForm {
 				part, err := writer.CreateFormField(k)
 				if err != nil {
-					clog.Error(err)
+					clog.RawError(err)
 					kwaErr = err
 					break attachmentsLoop
 				}
 
 				_, err = part.Write([]byte(v))
 				if err != nil {
-					clog.Error(err)
+					clog.RawError(err)
 					kwaErr = err
 					break attachmentsLoop
 				}

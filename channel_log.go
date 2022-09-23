@@ -1,6 +1,8 @@
 package courier
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/nyaruka/gocommon/dates"
@@ -32,6 +34,41 @@ type ChannelError struct {
 
 func NewChannelError(message, code string) *ChannelError {
 	return &ChannelError{message: message, code: code}
+}
+
+func ErrorResponseStatusCode() *ChannelError {
+	return NewChannelError("Unexpected response status code.", "core:response_status_code")
+}
+
+func ErrorResponseUnparseable(format string) *ChannelError {
+	return NewChannelError(fmt.Sprintf("Unable to parse response as %s.", format), "core:response_unparseable")
+}
+
+func ErrorResponseValueMissing(key string) *ChannelError {
+	return NewChannelError(fmt.Sprintf("Unable to find '%s' response.", key), "core:response_value_missing")
+}
+
+func ErrorResponseValueUnexpected(key string, expected ...string) *ChannelError {
+	es := make([]string, len(expected))
+	for i := range expected {
+		es[i] = fmt.Sprintf("'%s'", expected[i])
+	}
+	return NewChannelError(fmt.Sprintf("Expected '%s' in response to be %s.", key, strings.Join(es, " or ")), "core:response_value_unexpected")
+}
+
+func ErrorUnsupportedMedia(contentType string) *ChannelError {
+	return NewChannelError(fmt.Sprintf("Unsupported attachment media type: %s.", contentType), "core:media_unsupported_type")
+}
+
+func ErrorServiceSpecific(ns, code, message string) *ChannelError {
+	if message == "" {
+		message = fmt.Sprintf("Service specific error: %s.", code)
+	}
+	return NewChannelError(message, fmt.Sprintf("%s:%s", ns, code))
+}
+
+func (e *ChannelError) Redact(r stringsx.Redactor) *ChannelError {
+	return &ChannelError{message: r(e.message), code: r(e.code)}
 }
 
 func (e *ChannelError) Message() string {
@@ -91,8 +128,12 @@ func (l *ChannelLog) HTTP(t *httpx.Trace) {
 	l.httpLogs = append(l.httpLogs, l.traceToLog(t))
 }
 
-func (l *ChannelLog) Error(err error) {
-	l.errors = append(l.errors, NewChannelError(l.redactor(err.Error()), ""))
+func (l *ChannelLog) Error(e *ChannelError) {
+	l.errors = append(l.errors, e.Redact(l.redactor))
+}
+
+func (l *ChannelLog) RawError(err error) {
+	l.Error(NewChannelError(err.Error(), ""))
 }
 
 func (l *ChannelLog) End() {

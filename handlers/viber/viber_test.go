@@ -158,7 +158,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []*courier.ChannelError{courier.NewChannelError("received invalid JSON response", "")},
+		ExpectedErrors:      []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
 		SendPrep:            setSendURL,
 	},
 	{
