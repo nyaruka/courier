@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"mime"
 	"net/http"
@@ -22,6 +21,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null"
 	"github.com/pkg/errors"
@@ -66,7 +66,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 		var err error
 
 		if strings.HasPrefix(attURL, "http://") || strings.HasPrefix(attURL, "https://") {
-			newURL, err = downloadAttachmentToStorage(ctx, b, channel, m.OrgID_, m.UUID_, attURL)
+			newURL, err = downloadAttachmentToStorage(ctx, b, channel, m.OrgID_, m.UUID_, attURL, clog)
 			if err != nil {
 				return err
 			}
@@ -242,7 +242,7 @@ WHERE
 // Attachment download and classification
 //-----------------------------------------------------------------------------
 
-func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courier.Channel, orgID OrgID, msgUUID courier.MsgUUID, attURL string) (string, error) {
+func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courier.Channel, orgID OrgID, msgUUID courier.MsgUUID, attURL string, clog *courier.ChannelLog) (string, error) {
 	parsedURL, err := url.Parse(attURL)
 	if err != nil {
 		return "", err
@@ -270,12 +270,10 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 		}
 	}
 
-	resp, err := utils.GetHTTPClient().Do(req)
-	if err != nil {
-		return "", err
+	trace, err := httpx.DoTrace(utils.GetHTTPClient(), req, nil, nil, 100*1024*1024)
+	if trace != nil {
+		clog.HTTP(trace)
 	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -287,7 +285,7 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 	}
 
 	// first try getting our mime type from the first 300 bytes of our body
-	fileType, _ := filetype.Match(body[:300])
+	fileType, _ := filetype.Match(trace.ResponseBody[:300])
 	if fileType != filetype.Unknown {
 		mimeType = fileType.MIME.Value
 		extension = fileType.Extension
@@ -302,7 +300,7 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 
 	// we still don't know our mime type, use our content header instead
 	if mimeType == "" {
-		mimeType, _, _ = mime.ParseMediaType(resp.Header.Get("Content-Type"))
+		mimeType, _, _ = mime.ParseMediaType(trace.Response.Header.Get("Content-Type"))
 		if extension == "" {
 			extensions, err := mime.ExtensionsByType(mimeType)
 			if extensions == nil || err != nil {
@@ -313,7 +311,7 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 		}
 	}
 
-	return saveAttachmentToStorage(ctx, b, orgID, msgUUID, mimeType, body, extension)
+	return saveAttachmentToStorage(ctx, b, orgID, msgUUID, mimeType, trace.ResponseBody, extension)
 }
 
 func saveAttachmentToStorage(ctx context.Context, b *backend, orgID OrgID, msgUUID courier.MsgUUID, contentType string, data []byte, extension string) (string, error) {
