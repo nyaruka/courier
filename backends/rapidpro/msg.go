@@ -278,6 +278,17 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 		return "", err
 	}
 
+	// temp logging for large files
+	if len(trace.ResponseBody) > 25*1024*1024 {
+		var requestStart, deadline time.Time
+		asTime, isTime := ctx.Value(1).(time.Time)
+		if isTime {
+			requestStart = asTime
+		}
+		deadline, _ = ctx.Deadline()
+		logrus.WithContext(ctx).WithField("request_start", requestStart).WithField("deadline", deadline).WithField("bytes", len(trace.ResponseBody)).Warn("Large attachment")
+	}
+
 	mimeType := ""
 	extension := filepath.Ext(parsedURL.Path)
 	if extension != "" {
