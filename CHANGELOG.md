@@ -1,3 +1,7 @@
+v7.5.39
+----------
+ * Tweak large attachment logging
+
 v7.5.38
 ----------
  * Tweak large attachment logging
