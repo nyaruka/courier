@@ -1,3 +1,7 @@
+v7.5.34
+----------
+ * Tweak error message
+
 v7.5.33
 ----------
  * Add more detail to error message from S3 put
