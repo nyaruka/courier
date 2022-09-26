@@ -58,12 +58,6 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 		return nil
 	}
 
-	/////// temp logging ///////
-	if ctx.Err() != nil {
-		deadline, _ := ctx.Deadline()
-		logrus.WithField("ctx_err", ctx.Err()).WithField("deadline", deadline).Warn("Context cancelled")
-	}
-
 	channel := m.Channel()
 
 	// if we have attachment URLs, download them to our own storage
@@ -276,12 +270,6 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 		}
 	}
 
-	/////// temp logging ///////
-	if ctx.Err() != nil {
-		deadline, _ := ctx.Deadline()
-		logrus.WithField("ctx_err", ctx.Err()).WithField("deadline", deadline).Warn("Context cancelled")
-	}
-
 	trace, err := httpx.DoTrace(utils.GetHTTPClient(), req, nil, nil, 100*1024*1024)
 	if trace != nil {
 		clog.HTTP(trace)
@@ -323,6 +311,12 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 		}
 	}
 
+	/////// temp logging ///////
+	if ctx.Err() != nil {
+		deadline, _ := ctx.Deadline()
+		logrus.WithField("ctx_err", ctx.Err()).WithField("deadline", deadline).Warn("Context cancelled 1")
+	}
+
 	return saveAttachmentToStorage(ctx, b, orgID, msgUUID, mimeType, trace.ResponseBody, extension)
 }
 
@@ -341,7 +335,7 @@ func saveAttachmentToStorage(ctx context.Context, b *backend, orgID OrgID, msgUU
 	/////// temp logging ///////
 	if ctx.Err() != nil {
 		deadline, _ := ctx.Deadline()
-		logrus.WithField("ctx_err", ctx.Err()).WithField("deadline", deadline).Warn("Context cancelled")
+		logrus.WithField("ctx_err", ctx.Err()).WithField("deadline", deadline).Warn("Context cancelled 2")
 	}
 
 	start := time.Now()
