@@ -248,6 +248,8 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 		return "", err
 	}
 
+	t0 := time.Now()
+
 	var req *http.Request
 	handler := courier.GetHandler(channel.ChannelType())
 	if handler != nil {
@@ -270,6 +272,8 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 		}
 	}
 
+	t1 := time.Now()
+
 	trace, err := httpx.DoTrace(utils.GetHTTPClient(), req, nil, nil, 100*1024*1024)
 	if trace != nil {
 		clog.HTTP(trace)
@@ -277,6 +281,8 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 	if err != nil {
 		return "", err
 	}
+
+	t2 := time.Now()
 
 	mimeType := ""
 	extension := filepath.Ext(parsedURL.Path)
@@ -309,6 +315,11 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 				extension = extensions[0][1:]
 			}
 		}
+	}
+
+	if len(trace.ResponseBody) > (10 * 1024 * 1024) {
+		t3 := time.Now()
+		logrus.WithField("Bytes", len(trace.ResponseBody)).WithField("T1", t1.Sub(t0)).WithField("T2", t2.Sub(t1)).WithField("T3", t3.Sub(t0)).Warn("Downloaded large attacment")
 	}
 
 	return saveAttachmentToStorage(ctx, b, orgID, msgUUID, mimeType, trace.ResponseBody, extension)
