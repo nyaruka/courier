@@ -1,3 +1,8 @@
+v7.5.33
+----------
+ * Add more detail to error message from S3 put
+ * Update deps
+
 v7.5.32
 ----------
  * Include requests to download attachments on the channel log for the incoming message
