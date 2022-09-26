@@ -1,3 +1,7 @@
+v7.5.38
+----------
+ * Tweak large attachment logging
+
 v7.5.37
 ----------
  * Temp logging for large files
