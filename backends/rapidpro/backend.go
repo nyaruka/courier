@@ -254,6 +254,12 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 
 // WriteMsg writes the passed in message to our store
 func (b *backend) WriteMsg(ctx context.Context, m courier.Msg, clog *courier.ChannelLog) error {
+	/////// temp logging ///////
+	if ctx.Err() != nil {
+		deadline, _ := ctx.Deadline()
+		logrus.WithField("ctx_err", ctx.Err()).WithField("deadline", deadline).Warn("Context cancelled")
+	}
+
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
