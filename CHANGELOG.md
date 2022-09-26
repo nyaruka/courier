@@ -1,3 +1,7 @@
+v7.5.36
+----------
+ * Update to latest gocommon and remove previous temp logging
+
 v7.5.35
 ----------
  * More logging for large attachment downloads
