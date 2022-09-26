@@ -1,3 +1,7 @@
+v7.5.37
+----------
+ * Temp logging for large files
+
 v7.5.36
 ----------
  * Update to latest gocommon and remove previous temp logging
