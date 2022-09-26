@@ -1,3 +1,7 @@
+v7.5.35
+----------
+ * More logging for large attachment downloads
+
 v7.5.34
 ----------
  * Tweak error message
