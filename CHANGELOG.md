@@ -1,3 +1,8 @@
+v7.5.32
+----------
+ * Include requests to download attachments on the channel log for the incoming message
+ * Add support for better channel error reporting
+
 v7.5.31
 ----------
  * Allow twiml channels to send multiple media urls per message
