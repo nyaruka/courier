@@ -328,7 +328,7 @@ func saveAttachmentToStorage(ctx context.Context, b *backend, orgID OrgID, msgUU
 
 	s3URL, err := b.storage.Put(ctx, path, contentType, data)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "error saving attachment to S3 (bytes=%d, path=%s)", len(data), path)
 	}
 
 	// return our new media URL, which is prefixed by our content type
