@@ -293,7 +293,10 @@ var (
 
 var waTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: waReceiveURL, Data: helloMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
-		ExpectedContactName: Sp("Jerry Cooney"), ExpectedMsgText: Sp("hello world"), ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
+		ExpectedContactName: Sp("Jerry Cooney"), ExpectedMsgText: Sp("hello world"), ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+		NoQueueErrorCheck:     true,
+		NoInvalidChannelCheck: true,
+	},
 	{Label: "Receive Duplicate Valid Message", URL: waReceiveURL, Data: duplicateMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText: Sp("hello world"), ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
 	{Label: "Receive Valid Audio Message", URL: waReceiveURL, Data: audioMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
@@ -314,14 +317,14 @@ var waTestCases = []ChannelHandleTestCase{
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
 	{Label: "Receive Valid Voice Message", URL: waReceiveURL, Data: voiceMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Invalid JSON", URL: waReceiveURL, Data: invalidMsg, ExpectedRespStatus: 400, ExpectedBodyContains: "unable to parse"},
-	{Label: "Receive Invalid From", URL: waReceiveURL, Data: invalidFrom, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid whatsapp id"},
-	{Label: "Receive Invalid Timestamp", URL: waReceiveURL, Data: invalidTimestamp, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid timestamp"},
+	{Label: "Receive Invalid JSON", URL: waReceiveURL, Data: invalidMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "unable to parse"},
+	{Label: "Receive Invalid From", URL: waReceiveURL, Data: invalidFrom, ExpectedRespStatus: 200, ExpectedBodyContains: "invalid whatsapp id"},
+	{Label: "Receive Invalid Timestamp", URL: waReceiveURL, Data: invalidTimestamp, ExpectedRespStatus: 200, ExpectedBodyContains: "invalid timestamp"},
 
 	{Label: "Receive Valid Status", URL: waReceiveURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"status"`,
 		ExpectedMsgStatus: "S", ExpectedExternalID: "9712A34B4A8B6AD50F"},
-	{Label: "Receive Invalid JSON", URL: waReceiveURL, Data: "not json", ExpectedRespStatus: 400, ExpectedBodyContains: "unable to parse"},
-	{Label: "Receive Invalid Status", URL: waReceiveURL, Data: invalidStatus, ExpectedRespStatus: 400, ExpectedBodyContains: `"unknown status: in_orbit"`},
+	{Label: "Receive Invalid JSON", URL: waReceiveURL, Data: "not json", ExpectedRespStatus: 200, ExpectedBodyContains: "unable to parse"},
+	{Label: "Receive Invalid Status", URL: waReceiveURL, Data: invalidStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"unknown status: in_orbit"`},
 	{Label: "Receive Ignore Status", URL: waReceiveURL, Data: ignoreStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"ignoring status: deleted"`},
 }
 
