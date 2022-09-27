@@ -554,6 +554,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return status, nil
 }
 
+// WriteRequestError writes the passed in error to our response writer
+func (h *handler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
+	return courier.WriteError(ctx, w, http.StatusOK, err)
+}
+
 func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]interface{}, error) {
 	var payloads []interface{}
 	var err error
