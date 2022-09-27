@@ -311,12 +311,6 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 		}
 	}
 
-	/////// temp logging ///////
-	if ctx.Err() != nil {
-		deadline, _ := ctx.Deadline()
-		logrus.WithField("ctx_err", ctx.Err()).WithField("deadline", deadline).Warn("Context cancelled 1")
-	}
-
 	return saveAttachmentToStorage(ctx, b, orgID, msgUUID, mimeType, trace.ResponseBody, extension)
 }
 
@@ -330,12 +324,6 @@ func saveAttachmentToStorage(ctx context.Context, b *backend, orgID OrgID, msgUU
 	path := filepath.Join(b.config.S3AttachmentsPrefix, strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 	if !strings.HasPrefix(path, "/") {
 		path = fmt.Sprintf("/%s", path)
-	}
-
-	/////// temp logging ///////
-	if ctx.Err() != nil {
-		deadline, _ := ctx.Deadline()
-		logrus.WithField("ctx_err", ctx.Err()).WithField("deadline", deadline).Warn("Context cancelled 2")
 	}
 
 	start := time.Now()
