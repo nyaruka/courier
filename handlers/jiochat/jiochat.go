@@ -18,6 +18,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
@@ -296,8 +297,8 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	return map[string]string{"name": nickname}, nil
 }
 
-// BuildDownloadMediaRequest download media for message attachment
-func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+// BuildAttachmentRequest download media for message attachment
+func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
 	parsedURL, err := url.Parse(attachmentURL)
 	if err != nil {
 		return nil, err
@@ -313,3 +314,9 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backe
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 	return req, nil
 }
+
+func (*handler) AttachmentRequestClient(ch courier.Channel) *http.Client {
+	return utils.GetHTTPClient()
+}
+
+var _ courier.AttachmentRequestBuilder = (*handler)(nil)

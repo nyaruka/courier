@@ -248,29 +248,24 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 		return "", err
 	}
 
-	var req *http.Request
+	var httpClient *http.Client
+	var attRequest *http.Request
+
 	handler := courier.GetHandler(channel.ChannelType())
-	if handler != nil {
-		builder, isBuilder := handler.(courier.MediaDownloadRequestBuilder)
-		if isBuilder {
-			req, err = builder.BuildDownloadMediaRequest(ctx, b, channel, parsedURL.String())
-
-			// in the case of errors, we log the error but move onwards anyways
-			if err != nil {
-				logrus.WithField("channel_uuid", channel.UUID()).WithField("channel_type", channel.ChannelType()).WithField("media_url", attURL).WithError(err).Error("unable to build attachment download request")
-			}
-		}
+	builder, isBuilder := handler.(courier.AttachmentRequestBuilder)
+	if isBuilder {
+		httpClient = builder.AttachmentRequestClient(channel)
+		attRequest, err = builder.BuildAttachmentRequest(ctx, b, channel, parsedURL.String())
+	} else {
+		httpClient = utils.GetHTTPClient()
+		attRequest, err = http.NewRequest(http.MethodGet, attURL, nil)
 	}
 
-	if req == nil {
-		// first fetch our media
-		req, err = http.NewRequest(http.MethodGet, attURL, nil)
-		if err != nil {
-			return "", err
-		}
+	if err != nil {
+		return "", errors.Wrap(err, "unable to create attachment request")
 	}
 
-	trace, err := httpx.DoTrace(utils.GetHTTPClient(), req, nil, nil, 100*1024*1024)
+	trace, err := httpx.DoTrace(httpClient, attRequest, nil, nil, 100*1024*1024)
 	if trace != nil {
 		clog.HTTP(trace)
 	}

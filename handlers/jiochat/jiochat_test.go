@@ -378,7 +378,7 @@ func TestBuildMediaRequest(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		req, _ := handler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], tc.url)
+		req, _ := handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], tc.url)
 		assert.Equal(t, tc.url, req.URL.String())
 		assert.Equal(t, tc.authorizationHeader, req.Header.Get("Authorization"))
 	}

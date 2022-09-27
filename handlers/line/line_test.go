@@ -608,7 +608,7 @@ func TestBuildMediaRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 
 	lnHandler := &handler{NewBaseHandler(courier.ChannelType("LN"), "Line")}
-	req, _ := lnHandler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
+	req, _ := lnHandler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer the-auth-token", req.Header.Get("Authorization"))
 }

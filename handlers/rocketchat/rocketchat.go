@@ -11,6 +11,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -88,8 +89,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
-// BuildDownloadMediaRequest download media for message attachment with RC auth_token/user_id set
-func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+// BuildAttachmentRequest download media for message attachment with RC auth_token/user_id set
+func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
 	adminAuthToken := channel.StringConfigForKey(configAdminAuthToken, "")
 	adminUserID := channel.StringConfigForKey(configAdminUserID, "")
 	if adminAuthToken == "" || adminUserID == "" {
@@ -101,6 +102,12 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backe
 	req.Header.Set("X-User-Id", adminUserID)
 	return req, nil
 }
+
+func (*handler) AttachmentRequestClient(ch courier.Channel) *http.Client {
+	return utils.GetHTTPClient()
+}
+
+var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
 type mtPayload struct {
 	UserURN     string       `json:"user"`

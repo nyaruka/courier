@@ -322,7 +322,7 @@ func TestBuildMediaRequest(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		req, _ := handler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], tc.url)
+		req, _ := handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], tc.url)
 		assert.Equal(t, fmt.Sprintf("%s/media/get?access_token=ACCESS_TOKEN&media_id=12", sendURL), req.URL.String())
 	}
 
