@@ -16,6 +16,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
@@ -181,8 +182,8 @@ func buildMediaURL(mediaID string) string {
 	return mediaURL.String()
 }
 
-// BuildDownloadMediaRequest to download media for message attachment with Bearer token set
-func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+// BuildAttachmentRequest to download media for message attachment with Bearer token set
+func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
 	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
 	if token == "" {
 		return nil, fmt.Errorf("missing token for LN channel")
@@ -193,6 +194,12 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backe
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	return req, nil
 }
+
+func (*handler) AttachmentRequestClient() *http.Client {
+	return utils.GetHTTPClient()
+}
+
+var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
 func (h *handler) validateSignature(channel courier.Channel, r *http.Request) error {
 	actual := r.Header.Get(signatureHeader)

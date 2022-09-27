@@ -308,8 +308,8 @@ func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
 	return fileURL, nil
 }
 
-// BuildDownloadMediaRequest to download media for message attachment with Bearer token set
-func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+// BuildAttachmentRequest to download media for message attachment with Bearer token set
+func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
 	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
 	if token == "" {
 		return nil, fmt.Errorf("missing token for WA channel")
@@ -321,6 +321,12 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backe
 	setWhatsAppAuthHeader(&req.Header, channel)
 	return req, nil
 }
+
+func (*handler) AttachmentRequestClient() *http.Client {
+	return utils.GetHTTPClient()
+}
+
+var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
 var waStatusMapping = map[string]courier.MsgStatusValue{
 	"sending":   courier.MsgWired,
