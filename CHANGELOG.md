@@ -1,3 +1,7 @@
+v7.5.41
+----------
+ * Customize the http client for D3 attachment fetches to have a timeout of 3 secs
+
 v7.5.40
 ----------
  * Always return 200 status for all WA webhook requests
