@@ -1,3 +1,8 @@
+v7.5.40
+----------
+ * Always return 200 status for all WA webhook requests
+ * Remove temporary logging
+
 v7.5.39
 ----------
  * Tweak large attachment logging
