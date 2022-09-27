@@ -254,7 +254,7 @@ func downloadAttachmentToStorage(ctx context.Context, b *backend, channel courie
 	handler := courier.GetHandler(channel.ChannelType())
 	builder, isBuilder := handler.(courier.AttachmentRequestBuilder)
 	if isBuilder {
-		httpClient = builder.AttachmentRequestClient()
+		httpClient = builder.AttachmentRequestClient(channel)
 		attRequest, err = builder.BuildAttachmentRequest(ctx, b, channel, parsedURL.String())
 	} else {
 		httpClient = utils.GetHTTPClient()

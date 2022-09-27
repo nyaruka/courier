@@ -1459,7 +1459,7 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 	return req, nil
 }
 
-func (*handler) AttachmentRequestClient() *http.Client {
+func (*handler) AttachmentRequestClient(ch courier.Channel) *http.Client {
 	return utils.GetHTTPClient()
 }
 
