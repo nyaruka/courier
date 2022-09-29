@@ -13,10 +13,12 @@ func queueMsgHandling(rc redis.Conn, c *DBContact, m *DBMsg) error {
 	channel := m.Channel().(*DBChannel)
 
 	// queue to mailroom
-	body := map[string]interface{}{
+	body := map[string]any{
 		"contact_id":      c.ID_,
 		"org_id":          channel.OrgID_,
-		"channel_id":      channel.ID_,
+		"channel_id":      channel.ID_, // deprecated
+		"channel_uuid":    channel.UUID_,
+		"channel_type":    channel.ChannelType_,
 		"msg_id":          m.ID_,
 		"msg_uuid":        m.UUID_.String(),
 		"msg_external_id": m.ExternalID(),
