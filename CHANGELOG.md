@@ -1,3 +1,8 @@
+v7.5.42
+----------
+ * Add channel UUID and type to queued msg events
+ * More jsonx.MustMarshal
+
 v7.5.41
 ----------
  * Customize the http client for D3 attachment fetches to have a timeout of 3 secs
