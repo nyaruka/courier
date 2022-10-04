@@ -23,7 +23,7 @@ const (
 	ChannelLogTypeMsgStatus     ChannelLogType = "msg_status"
 	ChannelLogTypeMsgReceive    ChannelLogType = "msg_receive"
 	ChannelLogTypeEventReceive  ChannelLogType = "event_receive"
-	ChannelLogTypeTokenFetch    ChannelLogType = "token_fetch"
+	ChannelLogTypeTokenRefresh  ChannelLogType = "token_refresh"
 	ChannelLogTypePageSubscribe ChannelLogType = "page_subscribe"
 )
 

@@ -1001,7 +1001,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
 	ts.NoError(err)
 
-	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel, nil)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenRefresh, channel, nil)
 	clog.HTTP(trace)
 	clog.RawError(errors.New("this is an error"))
 

@@ -169,7 +169,7 @@ type fetchPayload struct {
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel) error {
-	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel, h.RedactValues(channel))
+	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenRefresh, channel, h.RedactValues(channel))
 
 	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "auth/token.action"))
 	payload := &fetchPayload{
