@@ -26,7 +26,7 @@ func TestChannelLog(t *testing.T) {
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
 
 	channel := test.NewMockChannel("fef91e9b-a6ed-44fb-b6ce-feed8af585a8", "NX", "1234", "US", nil)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel, nil)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenRefresh, channel, nil)
 
 	// make a request that will have a response
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
@@ -46,7 +46,7 @@ func TestChannelLog(t *testing.T) {
 	clog.End()
 
 	assert.Equal(t, courier.ChannelLogUUID("c00e5d67-c275-4389-aded-7d8b151cbd5b"), clog.UUID())
-	assert.Equal(t, courier.ChannelLogTypeTokenFetch, clog.Type())
+	assert.Equal(t, courier.ChannelLogTypeTokenRefresh, clog.Type())
 	assert.Equal(t, channel, clog.Channel())
 	assert.Equal(t, courier.NilMsgID, clog.MsgID())
 	assert.Equal(t, 2, len(clog.HTTPLogs()))

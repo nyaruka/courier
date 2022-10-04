@@ -98,7 +98,7 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel) error {
-	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel, h.RedactValues(channel))
+	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenRefresh, channel, h.RedactValues(channel))
 
 	form := url.Values{
 		"grant_type": []string{"client_credential"},
