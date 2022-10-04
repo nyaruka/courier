@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"compress/flate"
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -20,6 +21,8 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -107,6 +110,7 @@ func (s *server) Start() error {
 	s.router.MethodNotAllowed(s.handle405)
 	s.router.Get("/", s.handleIndex)
 	s.router.Get("/status", s.handleStatus)
+	s.router.Get("/fetch-attachment", s.handleFetchAttachment)
 
 	// initialize our handlers
 	s.initializeChannelHandlers()
@@ -419,6 +423,50 @@ func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	buf.WriteString("\n\n")
 	buf.WriteString("</pre></body>")
 	w.Write(buf.Bytes())
+}
+
+type fetchAttachmentRequest struct {
+	ChannelType ChannelType `json:"channel_type"`
+	ChannelUUID ChannelUUID `json:"channel_uuid"`
+	URL         string      `json:"url"`
+}
+
+func (s *server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
+	defer cancel()
+
+	newURL, err := s.fetchAttachment(ctx, r)
+	if err != nil {
+		logrus.WithError(err).Error()
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`Bad Request`))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonx.MustMarshal(map[string]any{"url": newURL}))
+}
+
+func (s *server) fetchAttachment(ctx context.Context, r *http.Request) (string, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "error reading request body")
+	}
+
+	fa := &fetchAttachmentRequest{}
+	if err := json.Unmarshal(body, fa); err != nil {
+		return "", errors.Wrap(err, "error unmarshalling request")
+	}
+
+	ch, err := s.backend.GetChannel(ctx, fa.ChannelType, fa.ChannelUUID)
+	if err != nil {
+		return "", errors.Wrap(err, "error getting channel")
+	}
+
+	clog := NewChannelLogForAttachmentFetch(ch, GetHandler(ch.ChannelType()).RedactValues(ch))
+
+	return FetchAndStoreAttachment(ctx, s.backend, ch, fa.URL, clog)
 }
 
 // for use in request.Context

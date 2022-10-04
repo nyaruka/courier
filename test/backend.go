@@ -328,6 +328,11 @@ func (mb *MockBackend) WriteExternalIDSeen(msg courier.Msg) {
 	mb.seenExternalIDs = append(mb.seenExternalIDs, msg.ExternalID())
 }
 
+// SaveAttachment saves an attachment to backend storage
+func (mb *MockBackend) SaveAttachment(ctx context.Context, ch courier.Channel, contentType string, data []byte, extension string) (string, error) {
+	return "", nil
+}
+
 // ResolveMedia resolves the passed in media URL to a media object
 func (mb *MockBackend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Media, error) {
 	media := mb.media[mediaUrl]
