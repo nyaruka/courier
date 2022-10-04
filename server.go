@@ -466,7 +466,13 @@ func (s *server) fetchAttachment(ctx context.Context, r *http.Request) (string, 
 
 	clog := NewChannelLogForAttachmentFetch(ch, GetHandler(ch.ChannelType()).RedactValues(ch))
 
-	return FetchAndStoreAttachment(ctx, s.backend, ch, fa.URL, clog)
+	newURL, err := FetchAndStoreAttachment(ctx, s.backend, ch, fa.URL, clog)
+
+	if err := s.backend.WriteChannelLog(ctx, clog); err != nil {
+		logrus.WithError(err).Error()
+	}
+
+	return newURL, err
 }
 
 // for use in request.Context

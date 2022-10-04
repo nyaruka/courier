@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -16,6 +17,17 @@ import (
 
 func init() {
 	courier.RegisterBackend("mock", buildMockBackend)
+}
+
+func buildMockBackend(config *courier.Config) courier.Backend {
+	return NewMockBackend()
+}
+
+type SavedAttachment struct {
+	Channel     courier.Channel
+	ContentType string
+	Data        []byte
+	Extension   string
 }
 
 // MockBackend is a mocked version of a backend which doesn't require a real database or cache
@@ -34,6 +46,7 @@ type MockBackend struct {
 	writtenMsgStatuses   []courier.MsgStatus
 	writtenChannelEvents []courier.ChannelEvent
 	writtenChannelLogs   []*courier.ChannelLog
+	savedAttachments     []*SavedAttachment
 
 	lastMsgID       courier.MsgID
 	lastContactName string
@@ -73,21 +86,6 @@ func NewMockBackend() *MockBackend {
 		sentMsgs:          make(map[courier.MsgID]bool),
 		redisPool:         redisPool,
 	}
-}
-
-func (mb *MockBackend) WrittenMsgs() []courier.Msg                   { return mb.writtenMsgs }
-func (mb *MockBackend) WrittenMsgStatuses() []courier.MsgStatus      { return mb.writtenMsgStatuses }
-func (mb *MockBackend) WrittenChannelEvents() []courier.ChannelEvent { return mb.writtenChannelEvents }
-func (mb *MockBackend) WrittenChannelLogs() []*courier.ChannelLog    { return mb.writtenChannelLogs }
-
-// LastContactName returns the contact name set on the last msg or channel event written
-func (mb *MockBackend) LastContactName() string {
-	return mb.lastContactName
-}
-
-// MockMedia adds the given media to the mocked backend
-func (mb *MockBackend) MockMedia(media courier.Media) {
-	mb.media[media.URL()] = media
 }
 
 // DeleteMsgWithExternalID delete a message we receive an event that it should be deleted
@@ -330,7 +328,11 @@ func (mb *MockBackend) WriteExternalIDSeen(msg courier.Msg) {
 
 // SaveAttachment saves an attachment to backend storage
 func (mb *MockBackend) SaveAttachment(ctx context.Context, ch courier.Channel, contentType string, data []byte, extension string) (string, error) {
-	return "", nil
+	mb.savedAttachments = append(mb.savedAttachments, &SavedAttachment{
+		Channel: ch, ContentType: contentType, Data: data, Extension: extension,
+	})
+
+	return fmt.Sprintf("https://backend.com/attachments/test.%s", extension), nil
 }
 
 // ResolveMedia resolves the passed in media URL to a media object
@@ -363,6 +365,22 @@ func (mb *MockBackend) RedisPool() *redis.Pool {
 	return mb.redisPool
 }
 
-func buildMockBackend(config *courier.Config) courier.Backend {
-	return NewMockBackend()
+////////////////////////////////////////////////////////////////////////////////
+// Methods not part of the backed interface but used in tests
+////////////////////////////////////////////////////////////////////////////////
+
+func (mb *MockBackend) WrittenMsgs() []courier.Msg                   { return mb.writtenMsgs }
+func (mb *MockBackend) WrittenMsgStatuses() []courier.MsgStatus      { return mb.writtenMsgStatuses }
+func (mb *MockBackend) WrittenChannelEvents() []courier.ChannelEvent { return mb.writtenChannelEvents }
+func (mb *MockBackend) WrittenChannelLogs() []*courier.ChannelLog    { return mb.writtenChannelLogs }
+func (mb *MockBackend) SavedAttachments() []*SavedAttachment         { return mb.savedAttachments }
+
+// LastContactName returns the contact name set on the last msg or channel event written
+func (mb *MockBackend) LastContactName() string {
+	return mb.lastContactName
+}
+
+// MockMedia adds the given media to the mocked backend
+func (mb *MockBackend) MockMedia(media courier.Media) {
+	mb.media[media.URL()] = media
 }
