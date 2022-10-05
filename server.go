@@ -110,7 +110,7 @@ func (s *server) Start() error {
 	s.router.MethodNotAllowed(s.handle405)
 	s.router.Get("/", s.handleIndex)
 	s.router.Get("/status", s.handleStatus)
-	s.router.Get("/fetch-attachment", s.handleFetchAttachment)
+	s.router.Post("/fetch-attachment", s.handleFetchAttachment)
 
 	// initialize our handlers
 	s.initializeChannelHandlers()
@@ -426,53 +426,59 @@ func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 type fetchAttachmentRequest struct {
-	ChannelType ChannelType `json:"channel_type"`
-	ChannelUUID ChannelUUID `json:"channel_uuid"`
-	URL         string      `json:"url"`
+	ChannelType ChannelType `json:"channel_type" validate:"required"`
+	ChannelUUID ChannelUUID `json:"channel_uuid" validate:"required,uuid"`
+	URL         string      `json:"url"          validate:"required"`
 }
 
 func (s *server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
 	defer cancel()
 
-	newURL, err := s.fetchAttachment(ctx, r)
+	newURL, size, clog, err := s.fetchAttachment(ctx, r)
 	if err != nil {
 		logrus.WithError(err).Error()
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`Bad Request`))
+		WriteError(ctx, w, http.StatusBadRequest, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonx.MustMarshal(map[string]any{"url": newURL}))
+	w.Write(jsonx.MustMarshal(map[string]any{
+		"url":      newURL,
+		"size":     size,
+		"log_uuid": clog.UUID(),
+	}))
 }
 
-func (s *server) fetchAttachment(ctx context.Context, r *http.Request) (string, error) {
+func (s *server) fetchAttachment(ctx context.Context, r *http.Request) (string, int, *ChannelLog, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return "", errors.Wrap(err, "error reading request body")
+		return "", 0, nil, errors.Wrap(err, "error reading request body")
 	}
 
 	fa := &fetchAttachmentRequest{}
 	if err := json.Unmarshal(body, fa); err != nil {
-		return "", errors.Wrap(err, "error unmarshalling request")
+		return "", 0, nil, errors.Wrap(err, "error unmarshalling request")
+	}
+	if err := utils.Validate(fa); err != nil {
+		return "", 0, nil, err
 	}
 
 	ch, err := s.backend.GetChannel(ctx, fa.ChannelType, fa.ChannelUUID)
 	if err != nil {
-		return "", errors.Wrap(err, "error getting channel")
+		return "", 0, nil, errors.Wrap(err, "error getting channel")
 	}
 
 	clog := NewChannelLogForAttachmentFetch(ch, GetHandler(ch.ChannelType()).RedactValues(ch))
 
-	newURL, err := FetchAndStoreAttachment(ctx, s.backend, ch, fa.URL, clog)
+	newURL, size, err := FetchAndStoreAttachment(ctx, s.backend, ch, fa.URL, clog)
 
 	if err := s.backend.WriteChannelLog(ctx, clog); err != nil {
 		logrus.WithError(err).Error()
 	}
 
-	return newURL, err
+	return newURL, size, clog, err
 }
 
 // for use in request.Context

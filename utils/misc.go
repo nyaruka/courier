@@ -10,7 +10,17 @@ import (
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	validator "gopkg.in/go-playground/validator.v9"
 )
+
+var (
+	validate = validator.New()
+)
+
+func Validate(obj any) error {
+	return validate.Struct(obj)
+}
 
 // SignHMAC256 encrypts value with HMAC256 by using a private key
 func SignHMAC256(privateKey string, value string) string {

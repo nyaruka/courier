@@ -59,7 +59,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 		var err error
 
 		if strings.HasPrefix(attURL, "http://") || strings.HasPrefix(attURL, "https://") {
-			newURL, err = courier.FetchAndStoreAttachment(ctx, b, channel, attURL, clog)
+			newURL, _, err = courier.FetchAndStoreAttachment(ctx, b, channel, attURL, clog)
 			if err != nil {
 				return err
 			}

@@ -276,18 +276,6 @@ func (mb *MockBackend) RemoveURNfromContact(context context.Context, channel cou
 	return urn, nil
 }
 
-// AddChannel adds a test channel to the test server
-func (mb *MockBackend) AddChannel(channel courier.Channel) {
-	mb.channels[channel.UUID()] = channel
-	mb.channelsByAddress[channel.ChannelAddress()] = channel
-}
-
-// ClearChannels is a utility function on our mock server to clear all added channels
-func (mb *MockBackend) ClearChannels() {
-	mb.channels = nil
-	mb.channelsByAddress = nil
-}
-
 // Start starts our mock backend
 func (mb *MockBackend) Start() error { return nil }
 
@@ -296,17 +284,6 @@ func (mb *MockBackend) Stop() error { return nil }
 
 // Cleanup cleans up any connections that are open
 func (mb *MockBackend) Cleanup() error { return nil }
-
-// Reset clears our queued messages, seen external IDs, and channel logs
-func (mb *MockBackend) Reset() {
-	mb.lastMsgID = courier.NilMsgID
-	mb.seenExternalIDs = nil
-
-	mb.writtenMsgs = nil
-	mb.writtenMsgStatuses = nil
-	mb.writtenChannelEvents = nil
-	mb.writtenChannelLogs = nil
-}
 
 // CheckExternalIDSeen checks if external ID has been seen in a period
 func (mb *MockBackend) CheckExternalIDSeen(msg courier.Msg) courier.Msg {
@@ -332,7 +309,7 @@ func (mb *MockBackend) SaveAttachment(ctx context.Context, ch courier.Channel, c
 		Channel: ch, ContentType: contentType, Data: data, Extension: extension,
 	})
 
-	return fmt.Sprintf("https://backend.com/attachments/test.%s", extension), nil
+	return fmt.Sprintf("https://backend.com/attachments/%s.%s", uuids.New(), extension), nil
 }
 
 // ResolveMedia resolves the passed in media URL to a media object
@@ -383,4 +360,27 @@ func (mb *MockBackend) LastContactName() string {
 // MockMedia adds the given media to the mocked backend
 func (mb *MockBackend) MockMedia(media courier.Media) {
 	mb.media[media.URL()] = media
+}
+
+// AddChannel adds a test channel to the test server
+func (mb *MockBackend) AddChannel(channel courier.Channel) {
+	mb.channels[channel.UUID()] = channel
+	mb.channelsByAddress[channel.ChannelAddress()] = channel
+}
+
+// ClearChannels is a utility function on our mock server to clear all added channels
+func (mb *MockBackend) ClearChannels() {
+	mb.channels = nil
+	mb.channelsByAddress = nil
+}
+
+// Reset clears our queued messages, seen external IDs, and channel logs
+func (mb *MockBackend) Reset() {
+	mb.lastMsgID = courier.NilMsgID
+	mb.seenExternalIDs = nil
+
+	mb.writtenMsgs = nil
+	mb.writtenMsgStatuses = nil
+	mb.writtenChannelEvents = nil
+	mb.writtenChannelLogs = nil
 }

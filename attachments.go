@@ -17,10 +17,10 @@ const (
 	maxAttBodyReadBytes = 100 * 1024 * 1024
 )
 
-func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, attURL string, clog *ChannelLog) (string, error) {
+func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, attURL string, clog *ChannelLog) (string, int, error) {
 	parsedURL, err := url.Parse(attURL)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	var httpClient *http.Client
@@ -37,7 +37,7 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 	}
 
 	if err != nil {
-		return "", errors.Wrap(err, "unable to create attachment request")
+		return "", 0, errors.Wrap(err, "unable to create attachment request")
 	}
 
 	trace, err := httpx.DoTrace(httpClient, attRequest, nil, nil, maxAttBodyReadBytes)
@@ -45,7 +45,7 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 		clog.HTTP(trace)
 	}
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	mimeType := ""
@@ -81,5 +81,6 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 		}
 	}
 
-	return b.SaveAttachment(ctx, channel, mimeType, trace.ResponseBody, extension)
+	newURL, err := b.SaveAttachment(ctx, channel, mimeType, trace.ResponseBody, extension)
+	return newURL, len(trace.ResponseBody), err
 }

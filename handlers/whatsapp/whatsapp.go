@@ -1148,7 +1148,7 @@ func (h *handler) getTemplate(msg courier.Msg) (*MsgTemplating, error) {
 	}
 
 	// check our template is valid
-	err = handlers.Validate(templating)
+	err = utils.Validate(templating)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid templating definition")
 	}
