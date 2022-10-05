@@ -26,6 +26,7 @@ import (
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null"
 	"github.com/nyaruka/redisx/assertredis"
 	"github.com/sirupsen/logrus"
@@ -1100,7 +1101,20 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 	ts.Equal(1, len(msg.Attachments()))
 	ts.True(strings.HasPrefix(msg.Attachments()[0], "image/jpeg:"))
 	ts.True(strings.HasSuffix(msg.Attachments()[0], ".jpg"))
+}
 
+func (ts *BackendTestSuite) TestSaveAttachment() {
+	testJPG := test.ReadFile("../../test/testdata/test.jpg")
+	ctx := context.Background()
+
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+
+	defer uuids.SetGenerator(uuids.DefaultGenerator)
+	uuids.SetGenerator(uuids.NewSeededGenerator(1234))
+
+	newURL, err := ts.b.SaveAttachment(ctx, knChannel, "image/jpeg", testJPG, "jpg")
+	ts.NoError(err)
+	ts.Equal("image/jpeg:_test_storage/media/1/c00e/5d67/c00e5d67-c275-4389-aded-7d8b151cbd5b.jpg", newURL)
 }
 
 func (ts *BackendTestSuite) TestWriteMsg() {

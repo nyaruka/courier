@@ -1,7 +1,6 @@
 package courier_test
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -64,12 +63,15 @@ func TestServer(t *testing.T) {
 func TestFetchAttachment(t *testing.T) {
 	testJPG := test.ReadFile("test/testdata/test.jpg")
 
-	defer httpx.SetRequestor(httpx.DefaultRequestor)
-	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
-		"http://mock.com/media/hello.jpg": {
+	httpMocks := httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
+		"http://mock.com/media/test.jpg": {
 			httpx.NewMockResponse(200, nil, testJPG),
 		},
-	}))
+	})
+	httpMocks.SetIgnoreLocal(true)
+
+	defer httpx.SetRequestor(httpx.DefaultRequestor)
+	httpx.SetRequestor(httpMocks)
 
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
 	uuids.SetGenerator(uuids.NewSeededGenerator(1234))
@@ -92,8 +94,6 @@ func TestFetchAttachment(t *testing.T) {
 
 	submit := func(body string) (int, []byte) {
 		req, _ := http.NewRequest("POST", "http://localhost:8080/fetch-attachment", strings.NewReader(body))
-		fmt.Println(req.Host)
-		fmt.Println(req.URL.Hostname())
 		trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
 		require.NoError(t, err)
 		return trace.Response.StatusCode, trace.ResponseBody
@@ -111,5 +111,5 @@ func TestFetchAttachment(t *testing.T) {
 
 	statusCode, respBody = submit(`{"channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "url": "http://mock.com/media/test.jpg"}`)
 	assert.Equal(t, 200, statusCode)
-	assert.JSONEq(t, `{"log_uuid":"c00e5d67-c275-4389-aded-7d8b151cbd5b", "size": 15238, "url": "https://backend.com/attachments/cdf7ed27-5ad5-4028-b664-880fc7581c77.jpg"}`, string(respBody))
+	assert.JSONEq(t, `{"log_uuid":"c00e5d67-c275-4389-aded-7d8b151cbd5b", "size": 17301, "url": "https://backend.com/attachments/cdf7ed27-5ad5-4028-b664-880fc7581c77.jpg"}`, string(respBody))
 }
