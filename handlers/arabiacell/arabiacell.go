@@ -96,7 +96,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/xml")
 
-		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		resp, respBody, err := handlers.RequestHTTPInsecure(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
