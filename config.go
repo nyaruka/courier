@@ -33,8 +33,8 @@ type Config struct {
 	MaxWorkers      int    `help:"the maximum number of go routines that will be used for sending (set to 0 to disable sending)"`
 	LibratoUsername string `help:"the username that will be used to authenticate to Librato"`
 	LibratoToken    string `help:"the token that will be used to authenticate to Librato"`
-	StatusUsername  string `help:"the username that is needed to authenticate against the /status endpoint"`
-	StatusPassword  string `help:"the password that is needed to authenticate against the /status endpoint"`
+	AuthUsername    string `help:"the username that is needed to authenticate against internal endpoints"`
+	AuthPassword    string `help:"the password that is needed to authenticate against internal endpoints"`
 	LogLevel        string `help:"the logging level courier should use"`
 	Version         string `help:"the version that will be used in request and response headers"`
 
@@ -70,9 +70,11 @@ func NewConfig() *Config {
 		FacebookWebhookSecret:        "missing_facebook_webhook_secret",
 		WhatsappAdminSystemUserToken: "missing_whatsapp_admin_system_user_token",
 
-		MaxWorkers: 32,
-		LogLevel:   "error",
-		Version:    "Dev",
+		MaxWorkers:   32,
+		AuthUsername: "courier",
+		AuthPassword: "courier",
+		LogLevel:     "error",
+		Version:      "Dev",
 	}
 }
 

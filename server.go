@@ -1,7 +1,6 @@
 package courier
 
 import (
-	"bytes"
 	"compress/flate"
 	"context"
 	"errors"
@@ -62,15 +61,11 @@ func NewServerWithLogger(config *Config, backend Backend, logger *logrus.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Timeout(30 * time.Second))
 
-	chanRouter := chi.NewRouter()
-	router.Mount("/c/", chanRouter)
-
 	return &server{
 		config:  config,
 		backend: backend,
 
-		router:     router,
-		chanRouter: chanRouter,
+		router: router,
 
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},
@@ -105,8 +100,9 @@ func (s *server) Start() error {
 	// wire up our main pages
 	s.router.NotFound(s.handle404)
 	s.router.MethodNotAllowed(s.handle405)
-	s.router.Get("/", s.handleIndex)
-	s.router.Get("/status", s.handleStatus)
+	s.router.Get("/c", s.handleIndex)
+	s.router.Get("/c/_routes", s.authRequiredHandler(s.handleRoutes))
+	s.router.Get("/c/_status", s.authRequiredHandler(s.handleStatus))
 
 	// initialize our handlers
 	s.initializeChannelHandlers()
@@ -217,7 +213,6 @@ type server struct {
 
 	httpServer *http.Server
 	router     *chi.Mux
-	chanRouter *chi.Mux
 
 	foreman *Foreman
 
@@ -353,31 +348,54 @@ func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action s
 	method = strings.ToLower(method)
 	channelType := strings.ToLower(string(handler.ChannelType()))
 
-	path := fmt.Sprintf("/%s/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", channelType)
+	path := fmt.Sprintf("/c/%s/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", channelType)
 	if !handler.UseChannelRouteUUID() {
-		path = fmt.Sprintf("/%s", channelType)
+		path = fmt.Sprintf("/c/%s", channelType)
 	}
 
 	if action != "" {
 		path = fmt.Sprintf("%s/%s", path, action)
 	}
-	s.chanRouter.Method(method, path, s.channelHandleWrapper(handler, handlerFunc))
-	s.routes = append(s.routes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
+	s.router.Method(method, path, s.channelHandleWrapper(handler, handlerFunc))
+	s.routes = append(s.routes, fmt.Sprintf("%-20s - %s %s", path, handler.ChannelName(), action))
 }
 
 func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
+	writeTextResponse(w, splash)
+}
 
-	var buf bytes.Buffer
-	buf.WriteString("<title>courier</title><body><pre>\n")
+func (s *server) handleRoutes(w http.ResponseWriter, r *http.Request) {
+	var buf strings.Builder
 	buf.WriteString(splash)
-	buf.WriteString(s.config.Version)
-
-	buf.WriteString(s.backend.Health())
-
+	buf.WriteString("v" + s.config.Version)
 	buf.WriteString("\n\n")
 	buf.WriteString(strings.Join(s.routes, "\n"))
-	buf.WriteString("</pre></body>")
-	w.Write(buf.Bytes())
+	writeTextResponse(w, buf.String())
+}
+
+func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
+	var buf strings.Builder
+	buf.WriteString(splash)
+	buf.WriteString("v" + s.config.Version)
+	buf.WriteString("\n\n")
+	buf.WriteString(s.backend.Status())
+	buf.WriteString("\n\n")
+	buf.WriteString(s.backend.Health())
+	writeTextResponse(w, buf.String())
+}
+
+// wraps a handler to make it use basic auth
+func (s *server) authRequiredHandler(h func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, pass, ok := r.BasicAuth()
+		if !ok || user != s.config.AuthUsername || pass != s.config.AuthPassword {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Unauthorized.\n"))
+			return
+		}
+		h(w, r)
+	}
 }
 
 func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
@@ -398,29 +416,6 @@ func (s *server) handle405(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
-	if s.config.StatusUsername != "" {
-		user, pass, ok := r.BasicAuth()
-		if !ok || user != s.config.StatusUsername || pass != s.config.StatusPassword {
-			w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
-			w.WriteHeader(401)
-			w.Write([]byte("Unauthorised.\n"))
-			return
-		}
-	}
-
-	var buf bytes.Buffer
-	buf.WriteString("<title>courier</title><body><pre>\n")
-	buf.WriteString(splash)
-	buf.WriteString(s.config.Version)
-
-	buf.WriteString("\n\n")
-	buf.WriteString(s.backend.Status())
-	buf.WriteString("\n\n")
-	buf.WriteString("</pre></body>")
-	w.Write(buf.Bytes())
-}
-
 // for use in request.Context
 type contextKey int
 
@@ -434,4 +429,4 @@ var splash = `
    ___  ____/_________  ___________(_)____________
     _  /  __  __ \  / / /_  ___/_  /_  _ \_  ___/
     / /__  / /_/ / /_/ /_  /   _  / /  __/  /    
-    \____/ \____/\__,_/ /_/    /_/  \___//_/ v`
+    \____/ \____/\__,_/ /_/    /_/  \___//_/ `

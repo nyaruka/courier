@@ -345,7 +345,7 @@ func (mb *MockBackend) Health() string {
 
 // Status returns a string describing the status of the service, queue size etc..
 func (mb *MockBackend) Status() string {
-	return ""
+	return "ALL GOOD"
 }
 
 // Heartbeat is a noop for our mock backend

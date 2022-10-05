@@ -10,49 +10,67 @@ import (
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestServer(t *testing.T) {
 	logger := logrus.New()
 	config := courier.NewConfig()
-	config.StatusUsername = "admin"
-	config.StatusPassword = "password123"
+	config.AuthUsername = "admin"
+	config.AuthPassword = "password123"
 
-	server := courier.NewServerWithLogger(config, test.NewMockBackend(), logger)
+	mb := test.NewMockBackend()
+	mb.AddChannel(test.NewMockChannel("95710b36-855d-4832-a723-5f71f73688a0", "MCK", "12345", "RW", nil))
+
+	server := courier.NewServerWithLogger(config, mb, logger)
 	server.Start()
 	defer server.Stop()
 
 	// wait for server to come up
 	time.Sleep(100 * time.Millisecond)
 
-	// hit our main pages, this is admitedly mostly in the name of coverage
-	req, _ := http.NewRequest("GET", "http://localhost:8080/", nil)
-	trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
-	assert.NoError(t, err)
-	assert.Contains(t, string(trace.ResponseBody), "courier")
+	request := func(method, url, user, pass string) (int, string) {
+		req, _ := http.NewRequest(method, url, nil)
+		if user != "" {
+			req.SetBasicAuth(user, pass)
+		}
+		trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
+		require.NoError(t, err)
+		return trace.Response.StatusCode, string(trace.ResponseBody)
+	}
 
-	// status page without auth
-	req, _ = http.NewRequest("GET", "http://localhost:8080/status", nil)
-	trace, err = httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
-	assert.NoError(t, err)
-	assert.Equal(t, 401, trace.Response.StatusCode)
+	// nothing at the / root
+	statusCode, respBody := request("GET", "http://localhost:8080/", "", "")
+	assert.Equal(t, 404, statusCode)
+	assert.Contains(t, respBody, "not found")
 
-	// status page with auth
-	req, _ = http.NewRequest("GET", "http://localhost:8080/status", nil)
-	req.SetBasicAuth("admin", "password123")
-	trace, err = httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
-	assert.NoError(t, err)
-	assert.Contains(t, string(trace.ResponseBody), "courier")
+	// splash page at /c/ root
+	statusCode, respBody = request("GET", "http://localhost:8080/c/", "", "")
+	assert.Equal(t, 200, statusCode)
+	assert.Contains(t, respBody, "courier")
 
-	// hit an invalid path
-	req, _ = http.NewRequest("GET", "http://localhost:8080/notthere", nil)
-	trace, err = httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
-	assert.NoError(t, err)
-	assert.Contains(t, string(trace.ResponseBody), "not found")
+	// can't access routes list without auth
+	statusCode, respBody = request("GET", "http://localhost:8080/c/_routes", "", "")
+	assert.Equal(t, 401, statusCode)
+	assert.Contains(t, respBody, "Unauthorized")
 
-	// invalid method
-	req, _ = http.NewRequest("POST", "http://localhost:8080/", nil)
-	trace, err = httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
-	assert.NoError(t, err)
-	assert.Contains(t, string(trace.ResponseBody), "method not allowed")
+	// can access routes with auth
+	statusCode, respBody = request("GET", "http://localhost:8080/c/_routes", "admin", "password123")
+	assert.Equal(t, 200, statusCode)
+	assert.Contains(t, respBody, "/c/mck/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/receive - Mock Handler receive")
+
+	// can't access status page without auth
+	statusCode, respBody = request("GET", "http://localhost:8080/c/_status", "", "")
+	assert.Equal(t, 401, statusCode)
+	assert.Contains(t, respBody, "Unauthorized")
+
+	// can't access status page without auth
+	statusCode, respBody = request("GET", "http://localhost:8080/c/_status", "admin", "password123")
+	assert.Equal(t, 200, statusCode)
+	assert.Contains(t, respBody, "ALL GOOD")
+
+	// can't access status page with wrong method
+	statusCode, respBody = request("POST", "http://localhost:8080/c/_status", "admin", "password123")
+	assert.Equal(t, 405, statusCode)
+	assert.Contains(t, respBody, "Method Not Allowed")
 }

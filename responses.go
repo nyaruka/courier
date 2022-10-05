@@ -1,6 +1,7 @@
 package courier
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -69,7 +70,7 @@ func WriteStatusSuccess(ctx context.Context, w http.ResponseWriter, statuses []M
 
 // WriteDataResponse writes a JSON formatted response with the passed in status code, message and data
 func WriteDataResponse(ctx context.Context, w http.ResponseWriter, statusCode int, message string, data []interface{}) error {
-	return writeJSONResponse(ctx, w, statusCode, &dataResponse{message, data})
+	return writeJSONResponse(w, statusCode, &dataResponse{message, data})
 }
 
 // MsgReceiveData is our response payload for a received message
@@ -167,8 +168,16 @@ type dataResponse struct {
 	Data    []interface{} `json:"data"`
 }
 
-func writeJSONResponse(ctx context.Context, w http.ResponseWriter, statusCode int, response interface{}) error {
+func writeJSONResponse(w http.ResponseWriter, statusCode int, response interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	return json.NewEncoder(w).Encode(response)
+}
+
+func writeTextResponse(w http.ResponseWriter, text string) {
+	var buf bytes.Buffer
+	buf.WriteString("<html><head><title>courier</title></head><body><pre>\n")
+	buf.WriteString(text)
+	buf.WriteString("</pre></body></html>")
+	w.Write(buf.Bytes())
 }
