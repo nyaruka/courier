@@ -901,7 +901,8 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string, clog 
 		return "", errors.Wrapf(err, "error building request to media endpoint")
 	}
 	setWhatsAppAuthHeader(&req.Header, msg.Channel())
-	req.Header.Add("Content-Type", httpx.DetectContentType(respBody))
+	mediaType, _ := httpx.DetectContentType(respBody)
+	req.Header.Add("Content-Type", mediaType)
 
 	resp, respBody, err = handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {

@@ -1,3 +1,9 @@
+v7.5.43
+----------
+ * Update dependencies
+ * Skip SSL verification for AC channels
+ * Fix channel log type token_refresh
+
 v7.5.42
 ----------
  * Add channel UUID and type to queued msg events
