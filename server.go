@@ -62,15 +62,15 @@ func NewServerWithLogger(config *Config, backend Backend, logger *logrus.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Timeout(30 * time.Second))
 
-	chanRouter := chi.NewRouter()
-	router.Mount("/c/", chanRouter)
+	publicRouter := chi.NewRouter()
+	router.Mount("/c/", publicRouter)
 
 	return &server{
 		config:  config,
 		backend: backend,
 
-		router:     router,
-		chanRouter: chanRouter,
+		router:       router,
+		publicRouter: publicRouter,
 
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},
@@ -215,9 +215,9 @@ func (s *server) Router() chi.Router { return s.router }
 type server struct {
 	backend Backend
 
-	httpServer *http.Server
-	router     *chi.Mux
-	chanRouter *chi.Mux
+	httpServer   *http.Server
+	router       *chi.Mux
+	publicRouter *chi.Mux
 
 	foreman *Foreman
 
@@ -227,7 +227,7 @@ type server struct {
 	stopChan  chan bool
 	stopped   bool
 
-	routes []string
+	chanRoutes []string // used for index page
 }
 
 func (s *server) initializeChannelHandlers() {
@@ -249,7 +249,7 @@ func (s *server) initializeChannelHandlers() {
 	}
 
 	// sort our route help
-	sort.Strings(s.routes)
+	sort.Strings(s.chanRoutes)
 }
 
 func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc) http.HandlerFunc {
@@ -361,8 +361,8 @@ func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action s
 	if action != "" {
 		path = fmt.Sprintf("%s/%s", path, action)
 	}
-	s.chanRouter.Method(method, path, s.channelHandleWrapper(handler, handlerFunc))
-	s.routes = append(s.routes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
+	s.publicRouter.Method(method, path, s.channelHandleWrapper(handler, handlerFunc))
+	s.chanRoutes = append(s.chanRoutes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
 }
 
 func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -375,7 +375,7 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	buf.WriteString(s.backend.Health())
 
 	buf.WriteString("\n\n")
-	buf.WriteString(strings.Join(s.routes, "\n"))
+	buf.WriteString(strings.Join(s.chanRoutes, "\n"))
 	buf.WriteString("</pre></body>")
 	w.Write(buf.Bytes())
 }
@@ -404,7 +404,7 @@ func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		if !ok || user != s.config.StatusUsername || pass != s.config.StatusPassword {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
 			w.WriteHeader(401)
-			w.Write([]byte("Unauthorised.\n"))
+			w.Write([]byte("Unauthorized.\n"))
 			return
 		}
 	}
