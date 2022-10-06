@@ -432,12 +432,14 @@ func (s *server) handle405(w http.ResponseWriter, r *http.Request) {
 // wraps a handler to make it use basic auth
 func (s *server) basicAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		user, pass, ok := r.BasicAuth()
-		if !ok || user != s.config.StatusUsername || pass != s.config.StatusPassword {
-			w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Unauthorized"))
-			return
+		if s.config.StatusUsername != "" {
+			user, pass, ok := r.BasicAuth()
+			if !ok || user != s.config.StatusUsername || pass != s.config.StatusPassword {
+				w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte("Unauthorized"))
+				return
+			}
 		}
 		h(w, r)
 	}
