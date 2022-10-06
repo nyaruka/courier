@@ -35,6 +35,7 @@ type Config struct {
 	LibratoToken    string `help:"the token that will be used to authenticate to Librato"`
 	StatusUsername  string `help:"the username that is needed to authenticate against the /status endpoint"`
 	StatusPassword  string `help:"the password that is needed to authenticate against the /status endpoint"`
+	AuthToken       string `help:"the authentication token need to access non-channel endpoints"`
 	LogLevel        string `help:"the logging level courier should use"`
 	Version         string `help:"the version that will be used in request and response headers"`
 

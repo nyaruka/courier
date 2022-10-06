@@ -2,6 +2,8 @@ package courier
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"mime"
 	"net/http"
 	"net/url"
@@ -10,12 +12,49 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/h2non/filetype.v1"
 )
 
 const (
 	maxAttBodyReadBytes = 100 * 1024 * 1024
 )
+
+type fetchAttachmentRequest struct {
+	ChannelType ChannelType `json:"channel_type" validate:"required"`
+	ChannelUUID ChannelUUID `json:"channel_uuid" validate:"required,uuid"`
+	URL         string      `json:"url"          validate:"required"`
+}
+
+func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (string, int, *ChannelLog, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return "", 0, nil, errors.Wrap(err, "error reading request body")
+	}
+
+	fa := &fetchAttachmentRequest{}
+	if err := json.Unmarshal(body, fa); err != nil {
+		return "", 0, nil, errors.Wrap(err, "error unmarshalling request")
+	}
+	if err := utils.Validate(fa); err != nil {
+		return "", 0, nil, err
+	}
+
+	ch, err := b.GetChannel(ctx, fa.ChannelType, fa.ChannelUUID)
+	if err != nil {
+		return "", 0, nil, errors.Wrap(err, "error getting channel")
+	}
+
+	clog := NewChannelLogForAttachmentFetch(ch, GetHandler(ch.ChannelType()).RedactValues(ch))
+
+	newURL, size, err := FetchAndStoreAttachment(ctx, b, ch, fa.URL, clog)
+
+	if err := b.WriteChannelLog(ctx, clog); err != nil {
+		logrus.WithError(err).Error()
+	}
+
+	return newURL, size, clog, err
+}
 
 func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, attURL string, clog *ChannelLog) (string, int, error) {
 	parsedURL, err := url.Parse(attURL)
