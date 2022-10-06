@@ -1,3 +1,7 @@
+v7.5.45
+----------
+ * Basic auth on status endpoint should be optional
+
 v7.5.44
 ----------
  * Add endpoint to download and store attachments by their URL
