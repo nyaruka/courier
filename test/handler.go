@@ -10,6 +10,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+func init() {
+	courier.RegisterHandler(NewMockHandler())
+}
+
 type mockHandler struct {
 	server  courier.Server
 	backend courier.Backend

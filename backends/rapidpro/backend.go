@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -402,6 +404,30 @@ func (b *backend) CheckExternalIDSeen(msg courier.Msg) courier.Msg {
 // Mark a external ID as seen for a period
 func (b *backend) WriteExternalIDSeen(msg courier.Msg) {
 	writeExternalIDSeen(b, msg)
+}
+
+// SaveAttachment saves an attachment to backend storage
+func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, contentType string, data []byte, extension string) (string, error) {
+	// create our filename
+	filename := string(uuids.New())
+	if extension != "" {
+		filename = fmt.Sprintf("%s.%s", filename, extension)
+	}
+
+	orgID := ch.(*DBChannel).OrgID()
+
+	path := filepath.Join(b.config.S3AttachmentsPrefix, strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
+	if !strings.HasPrefix(path, "/") {
+		path = fmt.Sprintf("/%s", path)
+	}
+
+	s3URL, err := b.storage.Put(ctx, path, contentType, data)
+	if err != nil {
+		return "", errors.Wrapf(err, "error saving attachment to storage (bytes=%d)", len(data))
+	}
+
+	// return our new media URL, which is prefixed by our content type
+	return fmt.Sprintf("%s:%s", contentType, s3URL), nil
 }
 
 // ResolveMedia resolves the passed in attachment URL to a media object

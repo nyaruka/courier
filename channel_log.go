@@ -18,13 +18,14 @@ type ChannelLogUUID uuids.UUID
 type ChannelLogType string
 
 const (
-	ChannelLogTypeUnknown       ChannelLogType = "unknown"
-	ChannelLogTypeMsgSend       ChannelLogType = "msg_send"
-	ChannelLogTypeMsgStatus     ChannelLogType = "msg_status"
-	ChannelLogTypeMsgReceive    ChannelLogType = "msg_receive"
-	ChannelLogTypeEventReceive  ChannelLogType = "event_receive"
-	ChannelLogTypeTokenRefresh  ChannelLogType = "token_refresh"
-	ChannelLogTypePageSubscribe ChannelLogType = "page_subscribe"
+	ChannelLogTypeUnknown         ChannelLogType = "unknown"
+	ChannelLogTypeMsgSend         ChannelLogType = "msg_send"
+	ChannelLogTypeMsgStatus       ChannelLogType = "msg_status"
+	ChannelLogTypeMsgReceive      ChannelLogType = "msg_receive"
+	ChannelLogTypeEventReceive    ChannelLogType = "event_receive"
+	ChannelLogTypeAttachmentFetch ChannelLogType = "attachment_fetch"
+	ChannelLogTypeTokenRefresh    ChannelLogType = "token_refresh"
+	ChannelLogTypePageSubscribe   ChannelLogType = "page_subscribe"
 )
 
 type ChannelError struct {
@@ -103,6 +104,11 @@ func NewChannelLogForIncoming(ch Channel, r *httpx.Recorder, redactVals []string
 // NewChannelLogForSend creates a new channel log for a message send
 func NewChannelLogForSend(msg Msg, redactVals []string) *ChannelLog {
 	return newChannelLog(ChannelLogTypeMsgSend, msg.Channel(), nil, msg.ID(), redactVals)
+}
+
+// NewChannelLogForSend creates a new channel log for an attachment fetch
+func NewChannelLogForAttachmentFetch(ch Channel, redactVals []string) *ChannelLog {
+	return newChannelLog(ChannelLogTypeAttachmentFetch, ch, nil, NilMsgID, redactVals)
 }
 
 // NewChannelLog creates a new channel log with the given type and channel

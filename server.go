@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/flate"
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -20,6 +19,8 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -114,7 +115,8 @@ func (s *server) Start() error {
 	s.router.NotFound(s.handle404)
 	s.router.MethodNotAllowed(s.handle405)
 	s.router.Get("/", s.handleIndex)
-	s.router.Get("/status", s.authRequiredHandler(s.handleStatus))
+	s.router.Get("/status", s.basicAuthRequired(s.handleStatus))
+	s.publicRouter.Post("/_fetch-attachment", s.tokenAuthRequired(s.handleFetchAttachment)) // becomes /c/_fetch-attachment
 
 	// initialize our handlers
 	s.initializeChannelHandlers()
@@ -393,6 +395,22 @@ func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf.Bytes())
 }
 
+func (s *server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
+	defer cancel()
+
+	newURL, size, clog, err := fetchAttachment(ctx, s.backend, r)
+	if err != nil {
+		logrus.WithError(err).Error()
+		WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonx.MustMarshal(map[string]any{"url": newURL, "size": size, "log_uuid": clog.UUID()}))
+}
+
 func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
 	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "404").Info("not found")
 	errors := []interface{}{NewErrorData(fmt.Sprintf("not found: %s", r.URL.String()))}
@@ -412,13 +430,26 @@ func (s *server) handle405(w http.ResponseWriter, r *http.Request) {
 }
 
 // wraps a handler to make it use basic auth
-func (s *server) authRequiredHandler(h func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+func (s *server) basicAuthRequired(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, pass, ok := r.BasicAuth()
 		if !ok || user != s.config.StatusUsername || pass != s.config.StatusPassword {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Unauthorized.\n"))
+			w.Write([]byte("Unauthorized"))
+			return
+		}
+		h(w, r)
+	}
+}
+
+// wraps a handler to make it use token auth
+func (s *server) tokenAuthRequired(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if !strings.HasPrefix(authHeader, "Bearer ") || authHeader[7:] != s.config.AuthToken {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Unauthorized"))
 			return
 		}
 		h(w, r)

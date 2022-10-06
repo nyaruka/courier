@@ -12,10 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	courier.RegisterHandler(test.NewMockHandler())
-}
-
 func testConfig() *courier.Config {
 	config := courier.NewConfig()
 	config.DB = "postgres://courier:courier@localhost:5432/courier_test?sslmode=disable"
