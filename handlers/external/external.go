@@ -116,7 +116,7 @@ func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channe
 	if err != nil {
 		return nil, err
 	}
-	return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, channelEvent)
+	return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, channelEvent)
 }
 
 // utility function to grab the form value for either the passed in name (if non-empty) or the first set
@@ -223,7 +223,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	moResponse := msgs[0].Channel().StringConfigForKey(configMOResponse, "")
 	if moResponse == "" {
-		return courier.WriteMsgSuccess(ctx, w, msgs)
+		return courier.WriteMsgSuccess(w, msgs)
 	}
 	moResponseContentType := msgs[0].Channel().StringConfigForKey(configMOResponseContentType, "")
 	if moResponseContentType != "" {

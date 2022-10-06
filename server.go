@@ -383,7 +383,7 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
 	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "404").Info("not found")
 	errors := []interface{}{NewErrorData(fmt.Sprintf("not found: %s", r.URL.String()))}
-	err := WriteDataResponse(context.Background(), w, http.StatusNotFound, "Not Found", errors)
+	err := WriteDataResponse(w, http.StatusNotFound, "Not Found", errors)
 	if err != nil {
 		logrus.WithError(err).Error()
 	}
@@ -392,7 +392,7 @@ func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
 func (s *server) handle405(w http.ResponseWriter, r *http.Request) {
 	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "405").Info("invalid method")
 	errors := []interface{}{NewErrorData(fmt.Sprintf("method not allowed: %s", r.Method))}
-	err := WriteDataResponse(context.Background(), w, http.StatusMethodNotAllowed, "Method Not Allowed", errors)
+	err := WriteDataResponse(w, http.StatusMethodNotAllowed, "Method Not Allowed", errors)
 	if err != nil {
 		logrus.WithError(err).Error()
 	}

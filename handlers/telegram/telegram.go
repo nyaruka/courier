@@ -83,7 +83,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		if err != nil {
 			return nil, err
 		}
-		return []courier.Event{event}, courier.WriteChannelEventSuccess(ctx, w, event)
+		return []courier.Event{event}, courier.WriteChannelEventSuccess(w, event)
 	}
 
 	// normal message of some kind

@@ -51,7 +51,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	if secret != "" {
 		authorization := r.Header.Get("Authorization")
 		if authorization != secret {
-			return nil, courier.WriteAndLogUnauthorized(ctx, w, r, c, fmt.Errorf("invalid Authorization header"))
+			return nil, courier.WriteAndLogUnauthorized(w, r, c, fmt.Errorf("invalid Authorization header"))
 		}
 	}
 
