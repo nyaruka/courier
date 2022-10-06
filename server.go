@@ -65,15 +65,15 @@ func NewServerWithLogger(config *Config, backend Backend, logger *logrus.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Timeout(30 * time.Second))
 
-	chanRouter := chi.NewRouter()
-	router.Mount("/c/", chanRouter)
+	publicRouter := chi.NewRouter()
+	router.Mount("/c/", publicRouter)
 
 	return &server{
 		config:  config,
 		backend: backend,
 
-		router:     router,
-		chanRouter: chanRouter,
+		router:       router,
+		publicRouter: publicRouter,
 
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},
@@ -110,7 +110,7 @@ func (s *server) Start() error {
 	s.router.MethodNotAllowed(s.handle405)
 	s.router.Get("/", s.handleIndex)
 	s.router.Get("/status", s.handleStatus)
-	s.router.Post("/fetch-attachment", s.handleFetchAttachment)
+	s.publicRouter.Post("/_fetch-attachment", s.handleFetchAttachment) // becomes /c/_fetch-attachment
 
 	// initialize our handlers
 	s.initializeChannelHandlers()
@@ -219,9 +219,9 @@ func (s *server) Router() chi.Router { return s.router }
 type server struct {
 	backend Backend
 
-	httpServer *http.Server
-	router     *chi.Mux
-	chanRouter *chi.Mux
+	httpServer   *http.Server
+	router       *chi.Mux
+	publicRouter *chi.Mux
 
 	foreman *Foreman
 
@@ -231,7 +231,7 @@ type server struct {
 	stopChan  chan bool
 	stopped   bool
 
-	routes []string
+	chanRoutes []string // used for index page
 }
 
 func (s *server) initializeChannelHandlers() {
@@ -253,7 +253,7 @@ func (s *server) initializeChannelHandlers() {
 	}
 
 	// sort our route help
-	sort.Strings(s.routes)
+	sort.Strings(s.chanRoutes)
 }
 
 func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc) http.HandlerFunc {
@@ -365,8 +365,8 @@ func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action s
 	if action != "" {
 		path = fmt.Sprintf("%s/%s", path, action)
 	}
-	s.chanRouter.Method(method, path, s.channelHandleWrapper(handler, handlerFunc))
-	s.routes = append(s.routes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
+	s.publicRouter.Method(method, path, s.channelHandleWrapper(handler, handlerFunc))
+	s.chanRoutes = append(s.chanRoutes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
 }
 
 func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -379,7 +379,7 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	buf.WriteString(s.backend.Health())
 
 	buf.WriteString("\n\n")
-	buf.WriteString(strings.Join(s.routes, "\n"))
+	buf.WriteString(strings.Join(s.chanRoutes, "\n"))
 	buf.WriteString("</pre></body>")
 	w.Write(buf.Bytes())
 }
@@ -387,7 +387,7 @@ func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
 func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
 	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "404").Info("not found")
 	errors := []interface{}{NewErrorData(fmt.Sprintf("not found: %s", r.URL.String()))}
-	err := WriteDataResponse(context.Background(), w, http.StatusNotFound, "Not Found", errors)
+	err := WriteDataResponse(w, http.StatusNotFound, "Not Found", errors)
 	if err != nil {
 		logrus.WithError(err).Error()
 	}
@@ -396,7 +396,7 @@ func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
 func (s *server) handle405(w http.ResponseWriter, r *http.Request) {
 	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "405").Info("invalid method")
 	errors := []interface{}{NewErrorData(fmt.Sprintf("method not allowed: %s", r.Method))}
-	err := WriteDataResponse(context.Background(), w, http.StatusMethodNotAllowed, "Method Not Allowed", errors)
+	err := WriteDataResponse(w, http.StatusMethodNotAllowed, "Method Not Allowed", errors)
 	if err != nil {
 		logrus.WithError(err).Error()
 	}
@@ -408,7 +408,7 @@ func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		if !ok || user != s.config.StatusUsername || pass != s.config.StatusPassword {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
 			w.WriteHeader(401)
-			w.Write([]byte("Unauthorised.\n"))
+			w.Write([]byte("Unauthorized.\n"))
 			return
 		}
 	}
@@ -438,7 +438,7 @@ func (s *server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
 	newURL, size, clog, err := s.fetchAttachment(ctx, r)
 	if err != nil {
 		logrus.WithError(err).Error()
-		WriteError(ctx, w, http.StatusBadRequest, err)
+		WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 

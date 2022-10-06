@@ -295,7 +295,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		data = append(data, courier.NewStatusData(event))
 	}
 
-	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
+	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
 func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
@@ -570,7 +570,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 // WriteRequestError writes the passed in error to our response writer
 func (h *handler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
-	return courier.WriteError(ctx, w, http.StatusOK, err)
+	return courier.WriteError(w, http.StatusOK, err)
 }
 
 func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]interface{}, error) {

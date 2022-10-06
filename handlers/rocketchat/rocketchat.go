@@ -62,7 +62,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// check authorization
 	secret := channel.StringConfigForKey(configSecret, "")
 	if fmt.Sprintf("Token %s", secret) != r.Header.Get("Authorization") {
-		return nil, courier.WriteAndLogUnauthorized(ctx, w, r, channel, fmt.Errorf("invalid Authorization header"))
+		return nil, courier.WriteAndLogUnauthorized(w, r, channel, fmt.Errorf("invalid Authorization header"))
 	}
 
 	payload := &moPayload{}

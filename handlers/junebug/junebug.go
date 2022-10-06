@@ -68,7 +68,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	if secret != "" {
 		authorization := r.Header.Get("Authorization")
 		if authorization != fmt.Sprintf("Token %s", secret) {
-			return nil, courier.WriteAndLogUnauthorized(ctx, w, r, c, fmt.Errorf("invalid Authorization header"))
+			return nil, courier.WriteAndLogUnauthorized(w, r, c, fmt.Errorf("invalid Authorization header"))
 		}
 	}
 
@@ -120,7 +120,7 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 	if secret != "" {
 		authorization := r.Header.Get("Authorization")
 		if authorization != fmt.Sprintf("Token %s", secret) {
-			return nil, courier.WriteAndLogUnauthorized(ctx, w, r, c, fmt.Errorf("invalid Authorization header"))
+			return nil, courier.WriteAndLogUnauthorized(w, r, c, fmt.Errorf("invalid Authorization header"))
 		}
 	}
 
