@@ -88,7 +88,7 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 		statuses = append(statuses, status)
 	}
 
-	return statuses, courier.WriteDataResponse(ctx, w, http.StatusOK, "statuses handled", data)
+	return statuses, courier.WriteDataResponse(w, http.StatusOK, "statuses handled", data)
 }
 
 //	{

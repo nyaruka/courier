@@ -53,19 +53,19 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.Msg, clog *courier.C
 }
 
 func (h *mockHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.MsgStatus) error {
-	return courier.WriteStatusSuccess(ctx, w, statuses)
+	return courier.WriteStatusSuccess(w, statuses)
 }
 
 func (h *mockHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
-	return courier.WriteMsgSuccess(ctx, w, msgs)
+	return courier.WriteMsgSuccess(w, msgs)
 }
 
 func (h *mockHandler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
-	return courier.WriteError(ctx, w, http.StatusBadRequest, err)
+	return courier.WriteError(w, http.StatusBadRequest, err)
 }
 
 func (h *mockHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
-	return courier.WriteIgnored(ctx, w, details)
+	return courier.WriteIgnored(w, details)
 }
 
 // ReceiveMsg sends the passed in message, returning any error

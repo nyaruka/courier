@@ -274,7 +274,7 @@ func (h *handler) RedactValues(ch courier.Channel) []string {
 
 // WriteRequestError writes the passed in error to our response writer
 func (h *handler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
-	return courier.WriteError(ctx, w, http.StatusOK, err)
+	return courier.WriteError(w, http.StatusOK, err)
 }
 
 // GetChannel returns the channel
@@ -400,7 +400,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return nil, err
 	}
 
-	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
+	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
 func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []interface{}, error) {

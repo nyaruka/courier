@@ -19,7 +19,7 @@ func writeAndLogRequestError(ctx context.Context, h ChannelHandler, w http.Respo
 }
 
 // WriteError writes a JSON response for the passed in error
-func WriteError(ctx context.Context, w http.ResponseWriter, statusCode int, err error) error {
+func WriteError(w http.ResponseWriter, statusCode int, err error) error {
 	errors := []interface{}{NewErrorData(err.Error())}
 
 	vErrs, isValidation := err.(validator.ValidationErrors)
@@ -28,48 +28,48 @@ func WriteError(ctx context.Context, w http.ResponseWriter, statusCode int, err 
 			errors = append(errors, NewErrorData(fmt.Sprintf("field '%s' %s", strings.ToLower(vErrs[i].Field()), vErrs[i].Tag())))
 		}
 	}
-	return WriteDataResponse(ctx, w, statusCode, "Error", errors)
+	return WriteDataResponse(w, statusCode, "Error", errors)
 }
 
 // WriteIgnored writes a JSON response indicating that we ignored the request
-func WriteIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
-	return WriteDataResponse(ctx, w, http.StatusOK, "Ignored", []interface{}{NewInfoData(details)})
+func WriteIgnored(w http.ResponseWriter, details string) error {
+	return WriteDataResponse(w, http.StatusOK, "Ignored", []interface{}{NewInfoData(details)})
 }
 
 // WriteAndLogUnauthorized writes a JSON response for the passed in message and logs an info message
-func WriteAndLogUnauthorized(ctx context.Context, w http.ResponseWriter, r *http.Request, c Channel, err error) error {
+func WriteAndLogUnauthorized(w http.ResponseWriter, r *http.Request, c Channel, err error) error {
 	LogRequestError(r, c, err)
-	return WriteDataResponse(ctx, w, http.StatusUnauthorized, "Unauthorized", []interface{}{NewErrorData(err.Error())})
+	return WriteDataResponse(w, http.StatusUnauthorized, "Unauthorized", []interface{}{NewErrorData(err.Error())})
 }
 
 // WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it
-func WriteChannelEventSuccess(ctx context.Context, w http.ResponseWriter, event ChannelEvent) error {
-	return WriteDataResponse(ctx, w, http.StatusOK, "Event Accepted", []interface{}{NewEventReceiveData(event)})
+func WriteChannelEventSuccess(w http.ResponseWriter, event ChannelEvent) error {
+	return WriteDataResponse(w, http.StatusOK, "Event Accepted", []interface{}{NewEventReceiveData(event)})
 }
 
 // WriteMsgSuccess writes a JSON response for the passed in msg indicating we handled it
-func WriteMsgSuccess(ctx context.Context, w http.ResponseWriter, msgs []Msg) error {
+func WriteMsgSuccess(w http.ResponseWriter, msgs []Msg) error {
 	data := []interface{}{}
 	for _, msg := range msgs {
 		data = append(data, NewMsgReceiveData(msg))
 	}
 
-	return WriteDataResponse(ctx, w, http.StatusOK, "Message Accepted", data)
+	return WriteDataResponse(w, http.StatusOK, "Message Accepted", data)
 }
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
-func WriteStatusSuccess(ctx context.Context, w http.ResponseWriter, statuses []MsgStatus) error {
+func WriteStatusSuccess(w http.ResponseWriter, statuses []MsgStatus) error {
 	data := []interface{}{}
 	for _, status := range statuses {
 		data = append(data, NewStatusData(status))
 	}
 
-	return WriteDataResponse(ctx, w, http.StatusOK, "Status Update Accepted", data)
+	return WriteDataResponse(w, http.StatusOK, "Status Update Accepted", data)
 }
 
 // WriteDataResponse writes a JSON formatted response with the passed in status code, message and data
-func WriteDataResponse(ctx context.Context, w http.ResponseWriter, statusCode int, message string, data []interface{}) error {
-	return writeJSONResponse(ctx, w, statusCode, &dataResponse{message, data})
+func WriteDataResponse(w http.ResponseWriter, statusCode int, message string, data []interface{}) error {
+	return writeJSONResponse(w, statusCode, &dataResponse{message, data})
 }
 
 // MsgReceiveData is our response payload for a received message
@@ -167,7 +167,7 @@ type dataResponse struct {
 	Data    []interface{} `json:"data"`
 }
 
-func writeJSONResponse(ctx context.Context, w http.ResponseWriter, statusCode int, response interface{}) error {
+func writeJSONResponse(w http.ResponseWriter, statusCode int, response interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	return json.NewEncoder(w).Encode(response)
