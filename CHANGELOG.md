@@ -1,3 +1,7 @@
+v7.5.44
+----------
+ * Add endpoint to download and store attachments by their URL
+
 v7.5.43
 ----------
  * Update dependencies
