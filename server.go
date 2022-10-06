@@ -23,6 +23,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// for use in request.Context
+type contextKey int
+
+const (
+	contextRequestURL contextKey = iota
+	contextRequestStart
+)
+
 // Server is the main interface ChannelHandlers use to interact with backends. It provides an
 // abstraction that makes mocking easier for isolated unit tests
 type Server interface {
@@ -106,7 +114,7 @@ func (s *server) Start() error {
 	s.router.NotFound(s.handle404)
 	s.router.MethodNotAllowed(s.handle405)
 	s.router.Get("/", s.handleIndex)
-	s.router.Get("/status", s.handleStatus)
+	s.router.Get("/status", s.authRequiredHandler(s.handleStatus))
 
 	// initialize our handlers
 	s.initializeChannelHandlers()
@@ -126,11 +134,7 @@ func (s *server) Start() error {
 		defer s.waitGroup.Done()
 		err := s.httpServer.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
-			logrus.WithFields(logrus.Fields{
-				"comp":  "server",
-				"state": "stopping",
-				"err":   err,
-			}).Error()
+			logrus.WithFields(logrus.Fields{"comp": "server", "state": "stopping"}).Error(err)
 		}
 	}()
 
@@ -366,17 +370,26 @@ func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action s
 }
 
 func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
-
 	var buf bytes.Buffer
-	buf.WriteString("<title>courier</title><body><pre>\n")
+	buf.WriteString("<html><head><title>courier</title></head><body><pre>\n")
 	buf.WriteString(splash)
 	buf.WriteString(s.config.Version)
-
 	buf.WriteString(s.backend.Health())
-
 	buf.WriteString("\n\n")
 	buf.WriteString(strings.Join(s.chanRoutes, "\n"))
-	buf.WriteString("</pre></body>")
+	buf.WriteString("</pre></body></html>")
+	w.Write(buf.Bytes())
+}
+
+func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
+	var buf bytes.Buffer
+	buf.WriteString("<html><head><title>courier</title></head><body><pre>\n")
+	buf.WriteString(splash)
+	buf.WriteString(s.config.Version)
+	buf.WriteString("\n\n")
+	buf.WriteString(s.backend.Status())
+	buf.WriteString("\n\n")
+	buf.WriteString("</pre></body></html>")
 	w.Write(buf.Bytes())
 }
 
@@ -398,36 +411,19 @@ func (s *server) handle405(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
-	if s.config.StatusUsername != "" {
+// wraps a handler to make it use basic auth
+func (s *server) authRequiredHandler(h func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		user, pass, ok := r.BasicAuth()
 		if !ok || user != s.config.StatusUsername || pass != s.config.StatusPassword {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
-			w.WriteHeader(401)
+			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorized.\n"))
 			return
 		}
+		h(w, r)
 	}
-
-	var buf bytes.Buffer
-	buf.WriteString("<title>courier</title><body><pre>\n")
-	buf.WriteString(splash)
-	buf.WriteString(s.config.Version)
-
-	buf.WriteString("\n\n")
-	buf.WriteString(s.backend.Status())
-	buf.WriteString("\n\n")
-	buf.WriteString("</pre></body>")
-	w.Write(buf.Bytes())
 }
-
-// for use in request.Context
-type contextKey int
-
-const (
-	contextRequestURL contextKey = iota
-	contextRequestStart
-)
 
 var splash = `
  ____________                   _____             
