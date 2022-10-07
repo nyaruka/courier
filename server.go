@@ -399,7 +399,7 @@ func (s *server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
 	defer cancel()
 
-	newURL, size, clog, err := fetchAttachment(ctx, s.backend, r)
+	attachment, clog, err := fetchAttachment(ctx, s.backend, r)
 	if err != nil {
 		logrus.WithError(err).Error()
 		WriteError(w, http.StatusBadRequest, err)
@@ -408,7 +408,7 @@ func (s *server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonx.MustMarshal(map[string]any{"url": newURL, "size": size, "log_uuid": clog.UUID()}))
+	w.Write(jsonx.MustMarshal(map[string]any{"attachment": attachment, "log_uuid": clog.UUID()}))
 }
 
 func (s *server) handle404(w http.ResponseWriter, r *http.Request) {

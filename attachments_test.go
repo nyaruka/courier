@@ -32,10 +32,11 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 
 	clog := courier.NewChannelLogForAttachmentFetch(mockChannel, []string{"sesame"})
 
-	newURL, size, err := courier.FetchAndStoreAttachment(ctx, mb, mockChannel, "http://mock.com/media/hello.jpg", clog)
+	att, err := courier.FetchAndStoreAttachment(ctx, mb, mockChannel, "http://mock.com/media/hello.jpg", clog)
 	assert.NoError(t, err)
-	assert.Equal(t, "https://backend.com/attachments/cdf7ed27-5ad5-4028-b664-880fc7581c77.jpg", newURL)
-	assert.Equal(t, 17301, size)
+	assert.Equal(t, "image/jpeg", att.ContentType)
+	assert.Equal(t, "https://backend.com/attachments/cdf7ed27-5ad5-4028-b664-880fc7581c77.jpg", att.URL)
+	assert.Equal(t, 17301, att.Size)
 
 	assert.Len(t, mb.SavedAttachments(), 1)
 	assert.Equal(t, &test.SavedAttachment{Channel: mockChannel, ContentType: "image/jpeg", Data: testJPG, Extension: "jpg"}, mb.SavedAttachments()[0])

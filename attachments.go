@@ -20,46 +20,52 @@ const (
 	maxAttBodyReadBytes = 100 * 1024 * 1024
 )
 
+type Attachment struct {
+	ContentType string `json:"content_type"`
+	URL         string `json:"url"`
+	Size        int    `json:"size"`
+}
+
 type fetchAttachmentRequest struct {
 	ChannelType ChannelType `json:"channel_type" validate:"required"`
 	ChannelUUID ChannelUUID `json:"channel_uuid" validate:"required,uuid"`
 	URL         string      `json:"url"          validate:"required"`
 }
 
-func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (string, int, *ChannelLog, error) {
+func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*Attachment, *ChannelLog, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return "", 0, nil, errors.Wrap(err, "error reading request body")
+		return nil, nil, errors.Wrap(err, "error reading request body")
 	}
 
 	fa := &fetchAttachmentRequest{}
 	if err := json.Unmarshal(body, fa); err != nil {
-		return "", 0, nil, errors.Wrap(err, "error unmarshalling request")
+		return nil, nil, errors.Wrap(err, "error unmarshalling request")
 	}
 	if err := utils.Validate(fa); err != nil {
-		return "", 0, nil, err
+		return nil, nil, err
 	}
 
 	ch, err := b.GetChannel(ctx, fa.ChannelType, fa.ChannelUUID)
 	if err != nil {
-		return "", 0, nil, errors.Wrap(err, "error getting channel")
+		return nil, nil, errors.Wrap(err, "error getting channel")
 	}
 
 	clog := NewChannelLogForAttachmentFetch(ch, GetHandler(ch.ChannelType()).RedactValues(ch))
 
-	newURL, size, err := FetchAndStoreAttachment(ctx, b, ch, fa.URL, clog)
+	attachment, err := FetchAndStoreAttachment(ctx, b, ch, fa.URL, clog)
 
 	if err := b.WriteChannelLog(ctx, clog); err != nil {
 		logrus.WithError(err).Error()
 	}
 
-	return newURL, size, clog, err
+	return attachment, clog, err
 }
 
-func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, attURL string, clog *ChannelLog) (string, int, error) {
+func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, attURL string, clog *ChannelLog) (*Attachment, error) {
 	parsedURL, err := url.Parse(attURL)
 	if err != nil {
-		return "", 0, err
+		return nil, err
 	}
 
 	var httpClient *http.Client
@@ -76,7 +82,7 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 	}
 
 	if err != nil {
-		return "", 0, errors.Wrap(err, "unable to create attachment request")
+		return nil, errors.Wrap(err, "unable to create attachment request")
 	}
 
 	trace, err := httpx.DoTrace(httpClient, attRequest, nil, nil, maxAttBodyReadBytes)
@@ -84,7 +90,7 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 		clog.HTTP(trace)
 	}
 	if err != nil {
-		return "", 0, err
+		return nil, err
 	}
 
 	mimeType := ""
@@ -120,6 +126,10 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 		}
 	}
 
-	newURL, err := b.SaveAttachment(ctx, channel, mimeType, trace.ResponseBody, extension)
-	return newURL, len(trace.ResponseBody), err
+	storageURL, err := b.SaveAttachment(ctx, channel, mimeType, trace.ResponseBody, extension)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Attachment{ContentType: mimeType, URL: storageURL, Size: len(trace.ResponseBody)}, nil
 }
