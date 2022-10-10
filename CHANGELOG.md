@@ -1,3 +1,7 @@
+v7.5.46
+----------
+ * Rework attachment fetching to keep URL and content type separate
+
 v7.5.45
 ----------
  * Basic auth on status endpoint should be optional
