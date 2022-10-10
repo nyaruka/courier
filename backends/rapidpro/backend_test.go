@@ -1101,6 +1101,16 @@ func (ts *BackendTestSuite) TestWriteAttachment() {
 	ts.Equal(1, len(msg.Attachments()))
 	ts.True(strings.HasPrefix(msg.Attachments()[0], "image/jpeg:"))
 	ts.True(strings.HasSuffix(msg.Attachments()[0], ".jpg"))
+
+	// try a geo attachment
+	msg = ts.b.NewIncomingMsg(knChannel, urn, "geo attachment", clog).(*DBMsg)
+	msg.WithAttachment("geo:123.234,-45.676")
+
+	err = ts.b.WriteMsg(ctx, msg, clog)
+	ts.NoError(err)
+
+	ts.Equal(1, len(msg.Attachments()))
+	ts.Equal("geo:123.234,-45.676", msg.Attachments()[0])
 }
 
 func (ts *BackendTestSuite) TestSaveAttachment() {
