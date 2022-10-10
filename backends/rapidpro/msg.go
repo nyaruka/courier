@@ -55,16 +55,14 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 
 	// if we have attachment URLs, download them to our own storage
 	for i, attURL := range m.Attachments_ {
-		contentType := "unknown"
-		newURL := attURL
+		resolved := attURL // geo links passed as is
 
 		if strings.HasPrefix(attURL, "http://") || strings.HasPrefix(attURL, "https://") {
 			att, err := courier.FetchAndStoreAttachment(ctx, b, channel, attURL, clog)
 			if err != nil {
 				return err
 			}
-			contentType = att.ContentType
-			newURL = att.URL
+			resolved = fmt.Sprintf("%s:%s", att.ContentType, att.URL)
 
 		} else if strings.HasPrefix(attURL, "data:") {
 			attData, err := base64.StdEncoding.DecodeString(attURL[5:])
@@ -73,7 +71,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 				return errors.Wrap(err, "unable to decode attachment data")
 			}
 
-			var extension string
+			var contentType, extension string
 			fileType, _ := filetype.Match(attData[:300])
 			if fileType != filetype.Unknown {
 				contentType = fileType.MIME.Value
@@ -83,13 +81,14 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 				extension = "bin"
 			}
 
-			newURL, err = b.SaveAttachment(ctx, channel, contentType, attData, extension)
+			newURL, err := b.SaveAttachment(ctx, channel, contentType, attData, extension)
 			if err != nil {
 				return err
 			}
+			resolved = fmt.Sprintf("%s:%s", contentType, newURL)
 		}
 
-		m.Attachments_[i] = fmt.Sprintf("%s:%s", contentType, newURL)
+		m.Attachments_[i] = resolved
 	}
 
 	// try to write it our db
