@@ -1114,7 +1114,7 @@ func (ts *BackendTestSuite) TestSaveAttachment() {
 
 	newURL, err := ts.b.SaveAttachment(ctx, knChannel, "image/jpeg", testJPG, "jpg")
 	ts.NoError(err)
-	ts.Equal("image/jpeg:_test_storage/media/1/c00e/5d67/c00e5d67-c275-4389-aded-7d8b151cbd5b.jpg", newURL)
+	ts.Equal("_test_storage/media/1/c00e/5d67/c00e5d67-c275-4389-aded-7d8b151cbd5b.jpg", newURL)
 }
 
 func (ts *BackendTestSuite) TestWriteMsg() {

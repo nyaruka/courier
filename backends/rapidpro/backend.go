@@ -421,13 +421,12 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 		path = fmt.Sprintf("/%s", path)
 	}
 
-	s3URL, err := b.storage.Put(ctx, path, contentType, data)
+	storageURL, err := b.storage.Put(ctx, path, contentType, data)
 	if err != nil {
 		return "", errors.Wrapf(err, "error saving attachment to storage (bytes=%d)", len(data))
 	}
 
-	// return our new media URL, which is prefixed by our content type
-	return fmt.Sprintf("%s:%s", contentType, s3URL), nil
+	return storageURL, nil
 }
 
 // ResolveMedia resolves the passed in attachment URL to a media object
