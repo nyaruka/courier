@@ -1,3 +1,7 @@
+v7.5.47
+----------
+ * Fix handling of geo attachments
+
 v7.5.46
 ----------
  * Rework attachment fetching to keep URL and content type separate
