@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/antchfx/xmlquery v1.3.12
+	github.com/aws/aws-sdk-go v1.44.111
 	github.com/buger/jsonparser v1.1.1
 	github.com/dghubble/oauth1 v0.7.1
 	github.com/evalphobia/logrus_sentry v0.8.2
@@ -14,7 +15,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.6
 	github.com/nyaruka/ezconf v0.2.1
-	github.com/nyaruka/gocommon v1.31.0
+	github.com/nyaruka/gocommon v1.32.0
 	github.com/nyaruka/null v1.2.0
 	github.com/nyaruka/redisx v0.2.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -28,7 +29,6 @@ require (
 
 require (
 	github.com/antchfx/xpath v1.2.1 // indirect
-	github.com/aws/aws-sdk-go v1.44.111 // indirect
 	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/structs v1.1.0 // indirect

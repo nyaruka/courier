@@ -82,7 +82,7 @@ func (ts *BackendTestSuite) SetupSuite() {
 	r.Do("FLUSHDB")
 
 	// use file storage instead of S3
-	ts.b.storage = storage.NewFS(storageDir)
+	ts.b.storage = storage.NewFS(storageDir, 0766)
 }
 
 func (ts *BackendTestSuite) TearDownSuite() {
