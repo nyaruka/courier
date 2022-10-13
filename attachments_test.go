@@ -19,6 +19,12 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 		"http://mock.com/media/hello.jpg": {
 			httpx.NewMockResponse(200, nil, testJPG),
 		},
+		"http://mock.com/media/hello.mp3": {
+			httpx.NewMockResponse(502, nil, []byte(`Timeout`)),
+		},
+		"http://mock.com/media/hello.avi": {
+			httpx.NewMockResponse(200, nil, nil), // 200 status code but empty response
+		},
 	}))
 
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
@@ -42,4 +48,14 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	assert.Equal(t, &test.SavedAttachment{Channel: mockChannel, ContentType: "image/jpeg", Data: testJPG, Extension: "jpg"}, mb.SavedAttachments()[0])
 	assert.Len(t, clog.HTTPLogs(), 1)
 	assert.Equal(t, "http://mock.com/media/hello.jpg", clog.HTTPLogs()[0].URL)
+
+	att, err = courier.FetchAndStoreAttachment(ctx, mb, mockChannel, "http://mock.com/media/hello.mp3", clog)
+	assert.EqualError(t, err, "non 2XX response code (502) trying to fetch attachment")
+	assert.Nil(t, att)
+	assert.Len(t, mb.SavedAttachments(), 1)
+
+	att, err = courier.FetchAndStoreAttachment(ctx, mb, mockChannel, "http://mock.com/media/hello.avi", clog)
+	assert.EqualError(t, err, "received empty response trying to fetch attachment")
+	assert.Nil(t, att)
+	assert.Len(t, mb.SavedAttachments(), 1)
 }
