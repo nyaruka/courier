@@ -1,3 +1,7 @@
+v7.5.48
+----------
+ * Fix handling empty and non-200 responses from attachment fetches
+
 v7.5.47
 ----------
  * Fix handling of geo attachments
