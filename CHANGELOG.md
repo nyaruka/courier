@@ -1,3 +1,7 @@
+v7.5.49
+----------
+ * Stop fetching attachments and let message handling service do that via endpoint
+
 v7.5.48
 ----------
  * Fix handling empty and non-200 responses from attachment fetches
