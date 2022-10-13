@@ -92,6 +92,11 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 	if err != nil {
 		return nil, err
 	}
+	if trace.Response.StatusCode/100 != 2 {
+		// TODO once we're confident this is working maybe we don't log errors like this since sometimes channels
+		// just have problems
+		return nil, errors.Errorf("non 2XX response code (%d) trying to fetch attachment", trace.Response.StatusCode)
+	}
 
 	mimeType := ""
 	extension := filepath.Ext(parsedURL.Path)
