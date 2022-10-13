@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"os"
 	"strings"
@@ -1016,103 +1015,6 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 		Columns(map[string]interface{}{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json", "err": "this is an error"})
 }
 
-func (ts *BackendTestSuite) TestWriteAttachment() {
-	ctx := context.Background()
-
-	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-
-		content := ""
-		switch r.URL.Path {
-		case "/test.jpg":
-			content = "malformedjpegbody"
-
-		case "/giffy":
-			content = "GIF87aandstuff"
-
-		case "/header":
-			w.Header().Add("Content-Type", "image/png")
-			content = "nothingbody"
-
-		default:
-			content = "unknown"
-		}
-
-		w.Write([]byte(content))
-	}))
-
-	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
-	urn, _ := urns.NewTelURNForCountry("12065551215", knChannel.Country())
-	msg := ts.b.NewIncomingMsg(knChannel, urn, "invalid attachment", clog).(*DBMsg)
-	msg.WithAttachment(testServer.URL)
-
-	// should just end up being text/plain
-	err := ts.b.WriteMsg(ctx, msg, clog)
-	ts.NoError(err)
-	ts.True(strings.HasPrefix(msg.Attachments()[0], "text/plain"))
-
-	// use an extension for our attachment instead
-	msg = ts.b.NewIncomingMsg(knChannel, urn, "jpg attachment", clog).(*DBMsg)
-	msg.WithAttachment(testServer.URL + "/test.jpg")
-
-	err = ts.b.WriteMsg(ctx, msg, clog)
-	ts.NoError(err)
-	ts.True(strings.HasPrefix(msg.Attachments()[0], "image/jpeg:"))
-	ts.True(strings.HasSuffix(msg.Attachments()[0], ".jpg"))
-
-	// ok, now derive it from magic bytes
-	msg = ts.b.NewIncomingMsg(knChannel, urn, "gif attachment", clog).(*DBMsg)
-	msg.WithAttachment(testServer.URL + "/giffy")
-
-	err = ts.b.WriteMsg(ctx, msg, clog)
-	ts.NoError(err)
-	if ts.Equal(1, len(msg.Attachments())) {
-		ts.True(strings.HasPrefix(msg.Attachments()[0], "image/gif:"))
-		ts.True(strings.HasSuffix(msg.Attachments()[0], ".gif"))
-	}
-
-	// finally from our header
-	msg = ts.b.NewIncomingMsg(knChannel, urn, "png attachment", clog).(*DBMsg)
-	msg.WithAttachment(testServer.URL + "/header")
-
-	err = ts.b.WriteMsg(ctx, msg, clog)
-	ts.NoError(err)
-	if ts.Equal(1, len(msg.Attachments())) {
-		ts.True(strings.HasPrefix(msg.Attachments()[0], "image/png:"))
-		ts.True(strings.HasSuffix(msg.Attachments()[0], ".png"))
-	}
-
-	// load it back from the id
-	m := readMsgFromDB(ts.b, msg.ID())
-
-	if ts.Equal(1, len(m.Attachments())) {
-		ts.True(strings.HasPrefix(m.Attachments()[0], "image/png:"))
-		ts.True(strings.HasSuffix(m.Attachments()[0], ".png"))
-	}
-
-	// try embedded attachment
-	msg = ts.b.NewIncomingMsg(knChannel, urn, "embedded attachment", clog).(*DBMsg)
-	msg.WithAttachment(fmt.Sprintf("data:%s", base64.StdEncoding.EncodeToString(test.ReadFile("../../test/testdata/test.jpg"))))
-
-	err = ts.b.WriteMsg(ctx, msg, clog)
-	ts.NoError(err)
-
-	ts.Equal(1, len(msg.Attachments()))
-	ts.True(strings.HasPrefix(msg.Attachments()[0], "image/jpeg:"))
-	ts.True(strings.HasSuffix(msg.Attachments()[0], ".jpg"))
-
-	// try a geo attachment
-	msg = ts.b.NewIncomingMsg(knChannel, urn, "geo attachment", clog).(*DBMsg)
-	msg.WithAttachment("geo:123.234,-45.676")
-
-	err = ts.b.WriteMsg(ctx, msg, clog)
-	ts.NoError(err)
-
-	ts.Equal(1, len(msg.Attachments()))
-	ts.Equal("geo:123.234,-45.676", msg.Attachments()[0])
-}
-
 func (ts *BackendTestSuite) TestSaveAttachment() {
 	testJPG := test.ReadFile("../../test/testdata/test.jpg")
 	ctx := context.Background()
@@ -1252,6 +1154,51 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 		"new_contact":     contact.IsNew_,
 		"created_on":      msg.CreatedOn_.Format(time.RFC3339Nano),
 	}, body["task"])
+}
+
+func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
+	ctx := context.Background()
+
+	defer uuids.SetGenerator(uuids.DefaultGenerator)
+	uuids.SetGenerator(uuids.NewSeededGenerator(1234))
+
+	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
+	urn, _ := urns.NewTelURNForCountry("12065551218", knChannel.Country())
+
+	msg := ts.b.NewIncomingMsg(knChannel, urn, "two regular attachments", clog).(*DBMsg)
+	msg.WithAttachment("http://example.com/test.jpg")
+	msg.WithAttachment("http://example.com/test.m4a")
+
+	// should just write attachments as they are
+	err := ts.b.WriteMsg(ctx, msg, clog)
+	ts.NoError(err)
+	ts.Equal([]string{"http://example.com/test.jpg", "http://example.com/test.m4a"}, msg.Attachments())
+
+	// try an embedded attachment
+	msg = ts.b.NewIncomingMsg(knChannel, urn, "embedded attachment data", clog).(*DBMsg)
+	msg.WithAttachment(fmt.Sprintf("data:%s", base64.StdEncoding.EncodeToString(test.ReadFile("../../test/testdata/test.jpg"))))
+
+	// should have actually fetched and saved it to storage, with the correct content type
+	err = ts.b.WriteMsg(ctx, msg, clog)
+	ts.NoError(err)
+	ts.Equal([]string{"image/jpeg:_test_storage/media/1/547d/eaf7/547deaf7-7620-4434-95b3-58675999c4b7.jpg"}, msg.Attachments())
+
+	// try an invalid embedded attachment
+	msg = ts.b.NewIncomingMsg(knChannel, urn, "invalid embedded attachment data", clog).(*DBMsg)
+	msg.WithAttachment("data:34564363576573573")
+
+	err = ts.b.WriteMsg(ctx, msg, clog)
+	ts.EqualError(err, "unable to decode attachment data: illegal base64 data at input byte 16")
+
+	// try a geo attachment
+	msg = ts.b.NewIncomingMsg(knChannel, urn, "geo attachment", clog).(*DBMsg)
+	msg.WithAttachment("geo:123.234,-45.676")
+
+	// should be saved as is
+	err = ts.b.WriteMsg(ctx, msg, clog)
+	ts.NoError(err)
+	ts.Equal([]string{"geo:123.234,-45.676"}, msg.Attachments())
 }
 
 func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {

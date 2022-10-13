@@ -53,18 +53,10 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 
 	channel := m.Channel()
 
-	// if we have attachment URLs, download them to our own storage
+	// check for data: attachment URLs which need to be fetched now - fetching of other URLs can be deferred until
+	// message handling and performed by calling the /c/_fetch-attachment endpoint
 	for i, attURL := range m.Attachments_ {
-		resolved := attURL // geo links passed as is
-
-		if strings.HasPrefix(attURL, "http://") || strings.HasPrefix(attURL, "https://") {
-			att, err := courier.FetchAndStoreAttachment(ctx, b, channel, attURL, clog)
-			if err != nil {
-				return err
-			}
-			resolved = fmt.Sprintf("%s:%s", att.ContentType, att.URL)
-
-		} else if strings.HasPrefix(attURL, "data:") {
+		if strings.HasPrefix(attURL, "data:") {
 			attData, err := base64.StdEncoding.DecodeString(attURL[5:])
 			if err != nil {
 				clog.Error(courier.NewChannelError("Unable to decode attachment data.", ""))
@@ -85,10 +77,8 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 			if err != nil {
 				return err
 			}
-			resolved = fmt.Sprintf("%s:%s", contentType, newURL)
+			m.Attachments_[i] = fmt.Sprintf("%s:%s", contentType, newURL)
 		}
-
-		m.Attachments_[i] = resolved
 	}
 
 	// try to write it our db
