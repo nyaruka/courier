@@ -1142,8 +1142,6 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 		"contact_id":      float64(contact.ID_),
 		"org_id":          float64(1),
 		"channel_id":      float64(10),
-		"channel_uuid":    "dbc126ed-66bc-4e28-b67b-81dc3327c95d",
-		"channel_type":    "KN",
 		"msg_id":          float64(msg.ID_),
 		"msg_uuid":        msg.UUID_.String(),
 		"msg_external_id": msg.ExternalID(),
