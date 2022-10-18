@@ -1,3 +1,9 @@
+v7.5.50
+----------
+ * Fix recording overall time of an attachment-fetch channel log
+ * Remove no longer used channel_uuid and channel_type fields from msg event payload queued to mailroom
+ * Update to latest gocommon
+
 v7.5.49
 ----------
  * Stop fetching attachments and let message handling service do that via endpoint
