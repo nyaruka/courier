@@ -8,7 +8,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -26,8 +25,7 @@ const (
 )
 
 var (
-	baseURL  = "https://api.kaleyra.io"
-	urlRegex = regexp.MustCompile(`https?:\/\/(www\.)?[^\W][-a-zA-Z0-9@:%.\+~#=]{1,256}[^\W]\.[a-zA-Z()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+	baseURL = "https://api.kaleyra.io"
 )
 
 func init() {
@@ -95,7 +93,7 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 
 	// build msg
 	date := time.Unix(ts, 0).UTC()
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Body).WithReceivedOn(date).WithContactName(form.Name)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Body, clog).WithReceivedOn(date).WithContactName(form.Name)
 
 	if form.MediaURL != "" {
 		msg.WithAttachment(form.MediaURL)
@@ -127,7 +125,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// msg not found? ignore this
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus, clog)
 	if status == nil {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("ignoring request, message %s not found", form.ID))
 	}
@@ -145,7 +143,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, errors.New("no account_sid or api_key config")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	sendURL := fmt.Sprintf("%s/v1/%s/messages", baseURL, accountSID)
 	var kwaResp *http.Response
@@ -174,7 +172,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			part, err := writer.CreateFormFile("media", fileName)
 			_, err = io.Copy(part, bytes.NewReader(attBody))
 			if err != nil {
-				clog.Error(err)
+				clog.RawError(err)
 				kwaErr = err
 				break
 			}
@@ -187,14 +185,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			for k, v := range baseForm {
 				part, err := writer.CreateFormField(k)
 				if err != nil {
-					clog.Error(err)
+					clog.RawError(err)
 					kwaErr = err
 					break attachmentsLoop
 				}
 
 				_, err = part.Write([]byte(v))
 				if err != nil {
-					clog.Error(err)
+					clog.RawError(err)
 					kwaErr = err
 					break attachmentsLoop
 				}
@@ -212,7 +210,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		baseForm := h.newSendForm(msg.Channel(), "text", msg.URN().Path())
 		baseForm["body"] = msg.Text()
 		// checks if the message has a valid url to activate the preview
-		if urlRegex.MatchString(msg.Text()) {
+		if handlers.IsURL(msg.Text()) {
 			baseForm["preview_url"] = "true"
 		}
 		for k, v := range baseForm {

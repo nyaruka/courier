@@ -41,7 +41,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	receiveHandler := handlers.NewTelReceiveHandler(&h.BaseHandler, "mobile", "mo")
+	receiveHandler := handlers.NewTelReceiveHandler(h, "mobile", "mo")
 	s.AddHandlerRoute(h, http.MethodPost, "receive", receiveHandler)
 	return nil
 }
@@ -81,7 +81,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no carrier_id set for MG channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		shortcode := strings.TrimPrefix(msg.Channel().Address(), "+")
@@ -105,7 +105,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		response := &mtResponse{}
 		err = xml.Unmarshal(respBody, response)
 		if err != nil {
-			clog.Error(err)
+			clog.RawError(err)
 			break
 		}
 
@@ -114,7 +114,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			status.SetStatus(courier.MsgWired)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			clog.Error(fmt.Errorf("Received invalid response description: %s", response.Description))
+			clog.RawError(fmt.Errorf("Received invalid response description: %s", response.Description))
 			break
 		}
 	}

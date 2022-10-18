@@ -27,38 +27,38 @@ var testChannels = []courier.Channel{
 
 var handleTestCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid Message",
-		URL:                receiveValidMessage,
-		Data:               "empty",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedMsgText:    Sp("Join"),
-		ExpectedURN:        "tel:+2349067554729",
-		ExpectedDate:       time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC),
+		Label:                "Receive Valid Message",
+		URL:                  receiveValidMessage,
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
+		ExpectedDate:         time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC),
 	},
 	{
-		Label:              "Receive Empty Message",
-		URL:                receiveEmptyMessage,
-		Data:               "empty",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedMsgText:    Sp(""),
-		ExpectedURN:        "tel:+2349067554729",
-		ExpectedDate:       time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC),
+		Label:                "Receive Empty Message",
+		URL:                  receiveEmptyMessage,
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp(""),
+		ExpectedURN:          "tel:+2349067554729",
+		ExpectedDate:         time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC),
 	},
 	{
-		Label:              "Receive No Params",
-		URL:                receiveNoParams,
-		Data:               "empty",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "field 'sender' required",
+		Label:                "Receive No Params",
+		URL:                  receiveNoParams,
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "field 'sender' required",
 	},
 	{
-		Label:              "Invalid URN",
-		URL:                receiveInvalidURN,
-		Data:               "empty",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "phone number supplied is not a number",
+		Label:                "Invalid URN",
+		URL:                  receiveInvalidURN,
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
 	},
 	//	{Label: "Status No Params", URL: statusNoParams, Status: 400, Response: "field 'status' required"},
 	//	{Label: "Status Invalid Status", URL: statusInvalidStatus, Status: 400, Response: "unknown status '66', must be one of 1,2,4,8,16"},
@@ -121,10 +121,13 @@ var sendTestCases = []ChannelSendTestCase{
 }
 
 var tokenTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
-		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
+	{
+		Label:             "Plain Send",
+		MsgText:           "Simple Message",
+		MsgURN:            "tel:+250788383383",
 		ExpectedMsgStatus: "E",
-		SendPrep:          setSendURL},
+		SendPrep:          setSendURL,
+	},
 }
 
 func TestSending(t *testing.T) {
@@ -149,9 +152,9 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, []string{"sesame"}, nil)
 
 	tokenURL = server.URL + "?invalid=true"
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), tokenTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), tokenTestCases, []string{"sesame"}, nil)
 }

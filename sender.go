@@ -177,7 +177,6 @@ func (w *Sender) sendMessage(msg Msg) {
 		if err != nil {
 			log.WithError(err).Error("error clearing sent status for msg")
 		}
-
 	}
 
 	// was this msg already sent? (from a double queue?)
@@ -189,25 +188,37 @@ func (w *Sender) sendMessage(msg Msg) {
 	}
 
 	var status MsgStatus
-	clog := NewChannelLogForSend(msg)
+	var redactValues []string
+	handler := server.GetHandler(msg.Channel())
+	if handler != nil {
+		redactValues = handler.RedactValues(msg.Channel())
+	}
 
-	if sent {
-		// if this message was already sent, create a wired status for it
-		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired)
+	clog := NewChannelLogForSend(msg, redactValues)
+
+	if handler == nil {
+		// if there's no handler, create a FAILED status for it
+		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgFailed, clog)
+		log.Errorf("unable to find handler for channel type: %s", msg.Channel().ChannelType())
+
+	} else if sent {
+		// if this message was already sent, create a WIRED status for it
+		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired, clog)
 		log.Warning("duplicate send, marking as wired")
+
 	} else {
 		// send our message
-		status, err = server.SendMsg(sendCTX, msg, clog)
+		status, err = handler.Send(sendCTX, msg, clog)
 		duration := time.Since(start)
 		secondDuration := float64(duration) / float64(time.Second)
 
 		if err != nil {
 			log.WithError(err).WithField("elapsed", duration).Error("error sending message")
-			clog.Error(err)
+			clog.RawError(err)
 
 			// possible for handlers to only return an error in which case we construct an error status
 			if status == nil {
-				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored)
+				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored, clog)
 			}
 		}
 

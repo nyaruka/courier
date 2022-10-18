@@ -7,6 +7,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -74,50 +75,50 @@ var (
 
 var testCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid",
-		URL:                receiveURL,
-		Data:               validReceive,
-		ExpectedRespBody:   "Accepted",
-		ExpectedRespStatus: 200,
-		ExpectedMsgText:    Sp("SMS Response Accepted"),
-		ExpectedURN:        "tel:+998999999999",
+		Label:                "Receive Valid",
+		URL:                  receiveURL,
+		Data:                 validReceive,
+		ExpectedBodyContains: "Accepted",
+		ExpectedRespStatus:   200,
+		ExpectedMsgText:      Sp("SMS Response Accepted"),
+		ExpectedURN:          "tel:+998999999999",
 	},
 	{
-		Label:              "Receive Missing MSISDN",
-		URL:                receiveURL,
-		Data:               invalidReceive,
-		ExpectedRespBody:   "missing required fields msidsn or id",
-		ExpectedRespStatus: 400,
+		Label:                "Receive Missing MSISDN",
+		URL:                  receiveURL,
+		Data:                 invalidReceive,
+		ExpectedBodyContains: "missing required fields msidsn or id",
+		ExpectedRespStatus:   400,
 	},
 	{
-		Label:              "No Messages",
-		URL:                receiveURL,
-		Data:               noMessages,
-		ExpectedRespBody:   "no messages, ignored",
-		ExpectedRespStatus: 200,
+		Label:                "No Messages",
+		URL:                  receiveURL,
+		Data:                 noMessages,
+		ExpectedBodyContains: "no messages, ignored",
+		ExpectedRespStatus:   200,
 	},
 	{
-		Label:              "Invalid XML",
-		URL:                receiveURL,
-		Data:               invalidXML,
-		ExpectedRespBody:   "",
-		ExpectedRespStatus: 405,
+		Label:                "Invalid XML",
+		URL:                  receiveURL,
+		Data:                 invalidXML,
+		ExpectedBodyContains: "",
+		ExpectedRespStatus:   405,
 	},
 	{
-		Label:              "Receive With Prefix",
-		URL:                receiveURL,
-		Data:               receiveWithPrefix,
-		ExpectedRespBody:   "Accepted",
-		ExpectedRespStatus: 200,
-		ExpectedMsgText:    Sp("SMS Response Accepted"),
-		ExpectedURN:        "tel:+998999999999",
+		Label:                "Receive With Prefix",
+		URL:                  receiveURL,
+		Data:                 receiveWithPrefix,
+		ExpectedBodyContains: "Accepted",
+		ExpectedRespStatus:   200,
+		ExpectedMsgText:      Sp("SMS Response Accepted"),
+		ExpectedURN:          "tel:+998999999999",
 	},
 	{
-		Label:              "Receive With Prefix Only",
-		URL:                receiveURL,
-		Data:               receiveWithPrefixOnly,
-		ExpectedRespBody:   "no text",
-		ExpectedRespStatus: 400,
+		Label:                "Receive With Prefix Only",
+		URL:                  receiveURL,
+		Data:                 receiveWithPrefixOnly,
+		ExpectedBodyContains: "no text",
+		ExpectedRespStatus:   400,
 	},
 }
 
@@ -186,5 +187,5 @@ func TestSending(t *testing.T) {
 			"base_url":  "http://91.204.239.42",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)
 }

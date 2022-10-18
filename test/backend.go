@@ -2,16 +2,16 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 	"time"
 
+	"github.com/gomodule/redigo/redis"
+	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
-
-	"github.com/gomodule/redigo/redis"
-	_ "github.com/lib/pq" // postgres driver
 	"github.com/pkg/errors"
 )
 
@@ -19,24 +19,36 @@ func init() {
 	courier.RegisterBackend("mock", buildMockBackend)
 }
 
+func buildMockBackend(config *courier.Config) courier.Backend {
+	return NewMockBackend()
+}
+
+type SavedAttachment struct {
+	Channel     courier.Channel
+	ContentType string
+	Data        []byte
+	Extension   string
+}
+
 // MockBackend is a mocked version of a backend which doesn't require a real database or cache
 type MockBackend struct {
 	channels          map[courier.ChannelUUID]courier.Channel
 	channelsByAddress map[courier.ChannelAddress]courier.Channel
 	contacts          map[urns.URN]courier.Contact
+	outgoingMsgs      []courier.Msg
 	media             map[string]courier.Media // url -> Media
 	errorOnQueue      bool
 
 	mutex     sync.RWMutex
 	redisPool *redis.Pool
-	lastMsgID courier.MsgID
 
-	queueMsgs     []courier.Msg
-	outgoingMsgs  []courier.Msg
-	msgStatuses   []courier.MsgStatus
-	channelEvents []courier.ChannelEvent
-	channelLogs   []*courier.ChannelLog
+	writtenMsgs          []courier.Msg
+	writtenMsgStatuses   []courier.MsgStatus
+	writtenChannelEvents []courier.ChannelEvent
+	writtenChannelLogs   []*courier.ChannelLog
+	savedAttachments     []*SavedAttachment
 
+	lastMsgID       courier.MsgID
 	lastContactName string
 	sentMsgs        map[courier.MsgID]bool
 	seenExternalIDs []string
@@ -76,51 +88,13 @@ func NewMockBackend() *MockBackend {
 	}
 }
 
-func (mb *MockBackend) ChannelLogs() []*courier.ChannelLog { return mb.channelLogs }
-func (mb *MockBackend) MsgStatuses() []courier.MsgStatus   { return mb.msgStatuses }
-func (mb *MockBackend) ClearMsgStatuses()                  { mb.msgStatuses = nil }
-
-// GetLastQueueMsg returns the last message queued to the server
-func (mb *MockBackend) GetLastQueueMsg() (courier.Msg, error) {
-	if len(mb.queueMsgs) == 0 {
-		return nil, courier.ErrMsgNotFound
-	}
-	return mb.queueMsgs[len(mb.queueMsgs)-1], nil
-}
-
-// GetLastChannelEvent returns the last event written to the server
-func (mb *MockBackend) GetLastChannelEvent() (courier.ChannelEvent, error) {
-	if len(mb.channelEvents) == 0 {
-		return nil, errors.New("no channel events")
-	}
-	return mb.channelEvents[len(mb.channelEvents)-1], nil
-}
-
-// GetLastMsgStatus returns the last status written to the server
-func (mb *MockBackend) GetLastMsgStatus() (courier.MsgStatus, error) {
-	if len(mb.msgStatuses) == 0 {
-		return nil, errors.New("no msg statuses")
-	}
-	return mb.msgStatuses[len(mb.msgStatuses)-1], nil
-}
-
-// GetLastContactName returns the contact name set on the last msg or channel event written
-func (mb *MockBackend) GetLastContactName() string {
-	return mb.lastContactName
-}
-
-// MockMedia adds the given media to the mocked backend
-func (mb *MockBackend) MockMedia(media courier.Media) {
-	mb.media[media.URL()] = media
-}
-
 // DeleteMsgWithExternalID delete a message we receive an event that it should be deleted
 func (mb *MockBackend) DeleteMsgWithExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
 	return nil
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
+func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, clog *courier.ChannelLog) courier.Msg {
 	return &mockMsg{channel: channel, urn: urn, text: text}
 }
 
@@ -180,7 +154,7 @@ func (mb *MockBackend) WriteChannelLog(ctx context.Context, clog *courier.Channe
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	mb.channelLogs = append(mb.channelLogs, clog)
+	mb.writtenChannelLogs = append(mb.writtenChannelLogs, clog)
 	return nil
 }
 
@@ -205,13 +179,13 @@ func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.Msg, clog *courie
 		return errors.New("unable to queue message")
 	}
 
-	mb.queueMsgs = append(mb.queueMsgs, m)
+	mb.writtenMsgs = append(mb.writtenMsgs, m)
 	mb.lastContactName = m.(*mockMsg).contactName
 	return nil
 }
 
 // NewMsgStatusForID creates a new Status object for the given message id
-func (mb *MockBackend) NewMsgStatusForID(channel courier.Channel, id courier.MsgID, status courier.MsgStatusValue) courier.MsgStatus {
+func (mb *MockBackend) NewMsgStatusForID(channel courier.Channel, id courier.MsgID, status courier.MsgStatusValue, clog *courier.ChannelLog) courier.MsgStatus {
 	return &mockMsgStatus{
 		channel:   channel,
 		id:        id,
@@ -221,7 +195,7 @@ func (mb *MockBackend) NewMsgStatusForID(channel courier.Channel, id courier.Msg
 }
 
 // NewMsgStatusForExternalID creates a new Status object for the given external id
-func (mb *MockBackend) NewMsgStatusForExternalID(channel courier.Channel, externalID string, status courier.MsgStatusValue) courier.MsgStatus {
+func (mb *MockBackend) NewMsgStatusForExternalID(channel courier.Channel, externalID string, status courier.MsgStatusValue, clog *courier.ChannelLog) courier.MsgStatus {
 	return &mockMsgStatus{
 		channel:    channel,
 		externalID: externalID,
@@ -235,12 +209,12 @@ func (mb *MockBackend) WriteMsgStatus(ctx context.Context, status courier.MsgSta
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	mb.msgStatuses = append(mb.msgStatuses, status)
+	mb.writtenMsgStatuses = append(mb.writtenMsgStatuses, status)
 	return nil
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
-func (mb *MockBackend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN) courier.ChannelEvent {
+func (mb *MockBackend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) courier.ChannelEvent {
 	return &mockChannelEvent{
 		channel:   channel,
 		eventType: eventType,
@@ -253,7 +227,7 @@ func (mb *MockBackend) WriteChannelEvent(ctx context.Context, event courier.Chan
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
-	mb.channelEvents = append(mb.channelEvents, event)
+	mb.writtenChannelEvents = append(mb.writtenChannelEvents, event)
 	mb.lastContactName = event.(*mockChannelEvent).contactName
 	return nil
 }
@@ -295,23 +269,11 @@ func (mb *MockBackend) AddURNtoContact(context context.Context, channel courier.
 
 // RemoveURNFromcontact removes a URN from the passed in contact
 func (mb *MockBackend) RemoveURNfromContact(context context.Context, channel courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
-	contact, found := mb.contacts[urn]
+	_, found := mb.contacts[urn]
 	if found {
 		delete(mb.contacts, urn)
 	}
 	return urn, nil
-}
-
-// AddChannel adds a test channel to the test server
-func (mb *MockBackend) AddChannel(channel courier.Channel) {
-	mb.channels[channel.UUID()] = channel
-	mb.channelsByAddress[channel.ChannelAddress()] = channel
-}
-
-// ClearChannels is a utility function on our mock server to clear all added channels
-func (mb *MockBackend) ClearChannels() {
-	mb.channels = nil
-	mb.channelsByAddress = nil
 }
 
 // Start starts our mock backend
@@ -322,19 +284,6 @@ func (mb *MockBackend) Stop() error { return nil }
 
 // Cleanup cleans up any connections that are open
 func (mb *MockBackend) Cleanup() error { return nil }
-
-// Reset clears our queued messages, seen external IDs, and channel logs
-func (mb *MockBackend) Reset() {
-	mb.lastMsgID = courier.NilMsgID
-	mb.queueMsgs = nil
-	mb.seenExternalIDs = nil
-	mb.channelLogs = nil
-}
-
-// LenQueuedMsgs Get the length of queued msgs
-func (mb *MockBackend) LenQueuedMsgs() int {
-	return len(mb.queueMsgs)
-}
 
 // CheckExternalIDSeen checks if external ID has been seen in a period
 func (mb *MockBackend) CheckExternalIDSeen(msg courier.Msg) courier.Msg {
@@ -354,6 +303,17 @@ func (mb *MockBackend) WriteExternalIDSeen(msg courier.Msg) {
 	mb.seenExternalIDs = append(mb.seenExternalIDs, msg.ExternalID())
 }
 
+// SaveAttachment saves an attachment to backend storage
+func (mb *MockBackend) SaveAttachment(ctx context.Context, ch courier.Channel, contentType string, data []byte, extension string) (string, error) {
+	mb.savedAttachments = append(mb.savedAttachments, &SavedAttachment{
+		Channel: ch, ContentType: contentType, Data: data, Extension: extension,
+	})
+
+	time.Sleep(time.Millisecond * 2)
+
+	return fmt.Sprintf("https://backend.com/attachments/%s.%s", uuids.New(), extension), nil
+}
+
 // ResolveMedia resolves the passed in media URL to a media object
 func (mb *MockBackend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Media, error) {
 	media := mb.media[mediaUrl]
@@ -371,7 +331,7 @@ func (mb *MockBackend) Health() string {
 
 // Status returns a string describing the status of the service, queue size etc..
 func (mb *MockBackend) Status() string {
-	return ""
+	return "ALL GOOD"
 }
 
 // Heartbeat is a noop for our mock backend
@@ -384,6 +344,45 @@ func (mb *MockBackend) RedisPool() *redis.Pool {
 	return mb.redisPool
 }
 
-func buildMockBackend(config *courier.Config) courier.Backend {
-	return NewMockBackend()
+////////////////////////////////////////////////////////////////////////////////
+// Methods not part of the backed interface but used in tests
+////////////////////////////////////////////////////////////////////////////////
+
+func (mb *MockBackend) WrittenMsgs() []courier.Msg                   { return mb.writtenMsgs }
+func (mb *MockBackend) WrittenMsgStatuses() []courier.MsgStatus      { return mb.writtenMsgStatuses }
+func (mb *MockBackend) WrittenChannelEvents() []courier.ChannelEvent { return mb.writtenChannelEvents }
+func (mb *MockBackend) WrittenChannelLogs() []*courier.ChannelLog    { return mb.writtenChannelLogs }
+func (mb *MockBackend) SavedAttachments() []*SavedAttachment         { return mb.savedAttachments }
+
+// LastContactName returns the contact name set on the last msg or channel event written
+func (mb *MockBackend) LastContactName() string {
+	return mb.lastContactName
+}
+
+// MockMedia adds the given media to the mocked backend
+func (mb *MockBackend) MockMedia(media courier.Media) {
+	mb.media[media.URL()] = media
+}
+
+// AddChannel adds a test channel to the test server
+func (mb *MockBackend) AddChannel(channel courier.Channel) {
+	mb.channels[channel.UUID()] = channel
+	mb.channelsByAddress[channel.ChannelAddress()] = channel
+}
+
+// ClearChannels is a utility function on our mock server to clear all added channels
+func (mb *MockBackend) ClearChannels() {
+	mb.channels = nil
+	mb.channelsByAddress = nil
+}
+
+// Reset clears our queued messages, seen external IDs, and channel logs
+func (mb *MockBackend) Reset() {
+	mb.lastMsgID = courier.NilMsgID
+	mb.seenExternalIDs = nil
+
+	mb.writtenMsgs = nil
+	mb.writtenMsgStatuses = nil
+	mb.writtenChannelEvents = nil
+	mb.writtenChannelLogs = nil
 }

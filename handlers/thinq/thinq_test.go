@@ -1,12 +1,16 @@
 package thinq
 
 import (
+	"encoding/base64"
+	"fmt"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -18,56 +22,67 @@ const (
 	statusURL  = "/c/tq/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 )
 
+var testJpgBase64 = base64.StdEncoding.EncodeToString(test.ReadFile("../../test/testdata/test.jpg"))
+
 var testCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid",
-		URL:                receiveURL,
-		Data:               "message=hello+world&from=2065551234&type=sms&to=2065551212",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedMsgText:    Sp("hello world"),
-		ExpectedURN:        "tel:+12065551234",
+		Label:                "Receive Valid",
+		URL:                  receiveURL,
+		Data:                 "message=hello+world&from=2065551234&type=sms&to=2065551212",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("hello world"),
+		ExpectedURN:          "tel:+12065551234",
 	},
 	{
-		Label:              "Receive No Params",
-		URL:                receiveURL,
-		Data:               " ",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   `'From' failed on the 'required'`,
+		Label:                "Receive No Params",
+		URL:                  receiveURL,
+		Data:                 " ",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: `'From' failed on the 'required'`,
 	},
 	{
-		Label:               "Receive Media",
-		URL:                 receiveURL,
-		Data:                "message=http://foo.bar/foo.png&hello+world&from=2065551234&type=mms&to=2065551212",
-		ExpectedRespStatus:  200,
-		ExpectedRespBody:    "Accepted",
-		ExpectedURN:         "tel:+12065551234",
-		ExpectedAttachments: []string{"http://foo.bar/foo.png"},
-	},
-
-	{
-		Label:              "Status Valid",
-		URL:                statusURL,
-		Data:               "guid=1234&status=DELIVRD",
-		ExpectedRespStatus: 200,
-		ExpectedExternalID: "1234",
-		ExpectedRespBody:   `"status":"D"`,
+		Label:                "Receive attachment as URL",
+		URL:                  receiveURL,
+		Data:                 "message=http://foo.bar/foo.png&from=2065551234&type=mms&to=2065551212",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedURN:          "tel:+12065551234",
+		ExpectedAttachments:  []string{"http://foo.bar/foo.png"},
 	},
 	{
-		Label:              "Status Invalid",
-		URL:                statusURL,
-		Data:               "guid=1234&status=UN",
-		ExpectedRespStatus: 400,
-		ExpectedExternalID: "1234",
-		ExpectedRespBody:   `"unknown status: 'UN'"`,
+		Label:                "Receive attachment as base64",
+		URL:                  receiveURL,
+		Data:                 fmt.Sprintf("message=%s&from=2065551234&type=mms&to=2065551212", url.QueryEscape(testJpgBase64)),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedURN:          "tel:+12065551234",
+		ExpectedAttachments:  []string{"data:" + testJpgBase64},
 	},
 	{
-		Label:              "Status Missing GUID",
-		URL:                statusURL,
-		Data:               "status=DELIVRD",
-		ExpectedRespStatus: 400,
-		ExpectedExternalID: "1234",
-		ExpectedRespBody:   `'GUID' failed on the 'required' tag`,
+		Label:                "Status Valid",
+		URL:                  statusURL,
+		Data:                 "guid=1234&status=DELIVRD",
+		ExpectedRespStatus:   200,
+		ExpectedExternalID:   "1234",
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedMsgStatus:    courier.MsgDelivered,
+	},
+	{
+		Label:                "Status Invalid",
+		URL:                  statusURL,
+		Data:                 "guid=1234&status=UN",
+		ExpectedRespStatus:   400,
+		ExpectedExternalID:   "1234",
+		ExpectedBodyContains: `"unknown status: 'UN'"`,
+	},
+	{
+		Label:                "Status Missing GUID",
+		URL:                  statusURL,
+		Data:                 "status=DELIVRD",
+		ExpectedRespStatus:   400,
+		ExpectedExternalID:   "1234",
+		ExpectedBodyContains: `'GUID' failed on the 'required' tag`,
 	},
 }
 
@@ -124,7 +139,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"from_did":"2065551212","to_did":"2067791234","message":"No External ID"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("Unable to read external ID from guid field", "")},
+		ExpectedErrors:      []*courier.ChannelError{courier.ErrorResponseValueMissing("guid")},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -146,5 +161,5 @@ func TestSending(t *testing.T) {
 			configAPITokenUser: "user1",
 			configAPIToken:     "sesame",
 		})
-	RunChannelSendTestCases(t, channel, newHandler(), sendTestCases, nil)
+	RunChannelSendTestCases(t, channel, newHandler(), sendTestCases, []string{httpx.BasicAuth("user1", "sesame")}, nil)
 }

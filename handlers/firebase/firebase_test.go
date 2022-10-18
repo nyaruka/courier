@@ -45,44 +45,44 @@ var testChannels = []courier.Channel{
 
 var testCases = []ChannelHandleTestCase{
 	{
-		Label:               "Receive Valid Message",
-		URL:                 receiveURL,
-		Data:                "from=12345&date=2017-01-01T08:50:00.000&fcm_token=token&name=fred&msg=hello+world",
-		ExpectedRespStatus:  200,
-		ExpectedRespBody:    "Accepted",
-		ExpectedMsgText:     Sp("hello world"),
-		ExpectedURN:         "fcm:12345",
-		ExpectedDate:        time.Date(2017, 1, 1, 8, 50, 0, 0, time.UTC),
-		ExpectedURNAuth:     "token",
-		ExpectedContactName: Sp("fred"),
+		Label:                "Receive Valid Message",
+		URL:                  receiveURL,
+		Data:                 "from=12345&date=2017-01-01T08:50:00.000&fcm_token=token&name=fred&msg=hello+world",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("hello world"),
+		ExpectedURN:          "fcm:12345",
+		ExpectedDate:         time.Date(2017, 1, 1, 8, 50, 0, 0, time.UTC),
+		ExpectedURNAuth:      "token",
+		ExpectedContactName:  Sp("fred"),
 	},
 	{
-		Label:              "Receive Invalid Date",
-		URL:                receiveURL,
-		Data:               "from=12345&date=yo&fcm_token=token&name=fred&msg=hello+world",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "unable to parse date",
+		Label:                "Receive Invalid Date",
+		URL:                  receiveURL,
+		Data:                 "from=12345&date=yo&fcm_token=token&name=fred&msg=hello+world",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "unable to parse date",
 	},
 	{
-		Label:              "Receive Missing From",
-		URL:                receiveURL,
-		Data:               "date=2017-01-01T08:50:00.000&fcm_token=token&name=fred&msg=hello+world",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "field 'from' required",
+		Label:                "Receive Missing From",
+		URL:                  receiveURL,
+		Data:                 "date=2017-01-01T08:50:00.000&fcm_token=token&name=fred&msg=hello+world",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "field 'from' required",
 	},
 	{
-		Label:              "Receive Valid Register",
-		URL:                registerURL,
-		Data:               "urn=12345&fcm_token=token&name=fred",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "contact_uuid",
+		Label:                "Receive Valid Register",
+		URL:                  registerURL,
+		Data:                 "urn=12345&fcm_token=token&name=fred",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "contact_uuid",
 	},
 	{
-		Label:              "Receive Missing URN",
-		URL:                registerURL,
-		Data:               "fcm_token=token&name=fred",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "field 'urn' required",
+		Label:                "Receive Missing URN",
+		URL:                  registerURL,
+		Data:                 "fcm_token=token&name=fred",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "field 'urn' required",
 	},
 }
 
@@ -165,7 +165,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `{ "success": 0 }`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received non-1 value for success in response", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueUnexpected("success", "1")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -176,7 +176,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `{ "success": 1 }`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get multicast_id from response", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("multicast_id")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -192,6 +192,6 @@ var sendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, nil)
-	RunChannelSendTestCases(t, testChannels[1], newHandler(), notificationSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"FCMKey"}, nil)
+	RunChannelSendTestCases(t, testChannels[1], newHandler(), notificationSendTestCases, []string{"FCMKey"}, nil)
 }

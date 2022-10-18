@@ -19,19 +19,19 @@ const (
 
 var testCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid",
-		URL:                receiveURL,
-		Data:               "mo=Msg&mobile=18765422035",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Message Accepted",
-		ExpectedMsgText:    Sp("Msg"),
-		ExpectedURN:        "tel:+18765422035"},
+		Label:                "Receive Valid",
+		URL:                  receiveURL,
+		Data:                 "mo=Msg&mobile=18765422035",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Message Accepted",
+		ExpectedMsgText:      Sp("Msg"),
+		ExpectedURN:          "tel:+18765422035"},
 	{
-		Label:              "Receive Missing Number",
-		URL:                receiveURL,
-		Data:               "mo=Msg",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "required field 'mobile'"},
+		Label:                "Receive Missing Number",
+		URL:                  receiveURL,
+		Data:                 "mo=Msg",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "required field 'mobile'"},
 }
 
 func TestHandler(t *testing.T) {
@@ -91,7 +91,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `<response><input>sendMT</input><status>ERROR</status><description>Completed</description></response>`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("Received invalid response description: Completed", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("Received invalid response description: Completed", "")},
 		SendPrep:           setSendURL,
 	},
 }
@@ -105,5 +105,5 @@ func TestSending(t *testing.T) {
 			"instance_id": 7,
 			"carrier_id":  2,
 		})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"my-private-key"}, nil)
 }

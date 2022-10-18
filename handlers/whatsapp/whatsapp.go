@@ -42,9 +42,11 @@ const (
 
 var (
 	retryParam = ""
-)
 
-var failedMediaCache *cache.Cache
+	failedMediaCache *cache.Cache
+
+	d360AttachmentClient *http.Client
+)
 
 func init() {
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeWa), "WhatsApp"))
@@ -52,6 +54,9 @@ func init() {
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeTXW), "TextIt"))
 
 	failedMediaCache = cache.New(15*time.Minute, 15*time.Minute)
+
+	// seems that we get about 5 seconds to respond to Dialog360 so we can't spend long fetching attachments
+	d360AttachmentClient = &http.Client{Timeout: time.Second * 3}
 }
 
 type handler struct {
@@ -238,7 +243,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// create our message
-		ev := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(msg.ID).WithContactName(contactNames[msg.From])
+		ev := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(msg.ID).WithContactName(contactNames[msg.From])
 		event := h.Backend().CheckExternalIDSeen(ev)
 
 		// we had an error downloading media
@@ -273,7 +278,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			continue
 		}
 
-		event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus)
+		event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus, clog)
 		err := h.Backend().WriteMsgStatus(ctx, event)
 
 		// we don't know about this message, just tell them we ignored it
@@ -290,7 +295,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		data = append(data, courier.NewStatusData(event))
 	}
 
-	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
+	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
 func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
@@ -308,8 +313,8 @@ func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
 	return fileURL, nil
 }
 
-// BuildDownloadMediaRequest to download media for message attachment with Bearer token set
-func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+// BuildAttachmentRequest to download media for message attachment with Bearer token set
+func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
 	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
 	if token == "" {
 		return nil, fmt.Errorf("missing token for WA channel")
@@ -321,6 +326,15 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backe
 	setWhatsAppAuthHeader(&req.Header, channel)
 	return req, nil
 }
+
+func (*handler) AttachmentRequestClient(ch courier.Channel) *http.Client {
+	if ch.ChannelType() == channelTypeD3 {
+		return d360AttachmentClient
+	}
+	return utils.GetHTTPClient()
+}
+
+var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
 var waStatusMapping = map[string]courier.MsgStatusValue{
 	"sending":   courier.MsgWired,
@@ -513,7 +527,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 	sendPath, _ := url.Parse("/v1/messages")
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	var wppID string
 
@@ -545,13 +559,18 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			err = status.SetUpdatedURN(msg.URN(), newURN)
 
 			if err != nil {
-				clog.Error(err)
+				clog.RawError(err)
 			}
 		}
 		status.SetStatus(courier.MsgWired)
 	}
 
 	return status, nil
+}
+
+// WriteRequestError writes the passed in error to our response writer
+func (h *handler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
+	return courier.WriteError(w, http.StatusOK, err)
 }
 
 func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]interface{}, error) {
@@ -627,7 +646,7 @@ func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]int
 				payload.Video = mediaPayload
 				payloads = append(payloads, payload)
 			} else {
-				clog.Error(fmt.Errorf("unknown attachment mime type: %s", mimeType))
+				clog.Error(courier.ErrorUnsupportedMedia(mimeType))
 				break
 			}
 		}
@@ -882,7 +901,8 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string, clog 
 		return "", errors.Wrapf(err, "error building request to media endpoint")
 	}
 	setWhatsAppAuthHeader(&req.Header, msg.Channel())
-	req.Header.Add("Content-Type", httpx.DetectContentType(respBody))
+	mediaType, _ := httpx.DetectContentType(respBody)
+	req.Header.Add("Content-Type", mediaType)
 
 	resp, respBody, err = handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
@@ -1129,7 +1149,7 @@ func (h *handler) getTemplate(msg courier.Msg) (*MsgTemplating, error) {
 	}
 
 	// check our template is valid
-	err = handlers.Validate(templating)
+	err = utils.Validate(templating)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid templating definition")
 	}

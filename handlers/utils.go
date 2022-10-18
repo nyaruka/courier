@@ -13,6 +13,10 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
+var (
+	urlRegex = regexp.MustCompile(`https?:\/\/(www\.)?[^\W][-a-zA-Z0-9@:%.\+~#=]{1,256}[^\W]\.[a-zA-Z()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+)
+
 // GetTextAndAttachments returns both the text of our message as well as any attachments, newline delimited
 func GetTextAndAttachments(m courier.Msg) string {
 	buf := bytes.NewBuffer([]byte(m.Text()))
@@ -52,10 +56,10 @@ var base64Regex, _ = regexp.Compile("^([a-zA-Z0-9+/=]{4})+$")
 var base64Encoding = base64.StdEncoding.Strict()
 
 // DecodePossibleBase64 detects and decodes a possibly base64 encoded messages by doing:
-//  * check it's at least 60 characters
-//  * check its length is divisible by 4
-//  * check that there's no whitespace
-//  * check the decoded string contains at least 50% ascii
+//   - check it's at least 60 characters
+//   - check its length is divisible by 4
+//   - check that there's no whitespace
+//   - check the decoded string contains at least 50% ascii
 func DecodePossibleBase64(original string) string {
 	stripped := strings.TrimSpace(strings.Replace(strings.Replace(original, "\r", "", -1), "\n", "", -1))
 	length := len([]rune(stripped))
@@ -142,4 +146,8 @@ func StrictTelForCountry(number string, country string) (urns.URN, error) {
 	}
 
 	return urn, nil
+}
+
+func IsURL(s string) bool {
+	return urlRegex.MatchString(s)
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -35,7 +34,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("FCM"), "Firebase")}
+	return &handler{handlers.NewBaseHandlerWithParams(courier.ChannelType("FCM"), "Firebase", true, []string{configKey})}
 }
 
 func (h *handler) Initialize(s courier.Server) error {
@@ -76,7 +75,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Msg).WithReceivedOn(date).WithContactName(form.Name).WithURNAuth(form.FCMToken)
+	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Msg, clog).WithReceivedOn(date).WithContactName(form.Name).WithURNAuth(form.FCMToken)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r, clog)
@@ -154,7 +153,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	for i, part := range msgParts {
 		payload := mtPayload{}
 
@@ -202,7 +201,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// was this successful
 		success, _ := jsonparser.GetInt(respBody, "success")
 		if success != 1 {
-			clog.Error(errors.Errorf("received non-1 value for success in response"))
+			clog.Error(courier.ErrorResponseValueUnexpected("success", "1"))
 			return status, nil
 		}
 
@@ -210,7 +209,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		if i == 0 {
 			externalID, err := jsonparser.GetInt(respBody, "multicast_id")
 			if err != nil {
-				clog.Error(errors.Errorf("unable to get multicast_id from response"))
+				clog.Error(courier.ErrorResponseValueMissing("multicast_id"))
 				return status, nil
 			}
 			status.SetExternalID(fmt.Sprintf("%d", externalID))

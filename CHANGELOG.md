@@ -1,3 +1,134 @@
+v7.5.50
+----------
+ * Fix recording overall time of an attachment-fetch channel log
+ * Remove no longer used channel_uuid and channel_type fields from msg event payload queued to mailroom
+ * Update to latest gocommon
+
+v7.5.49
+----------
+ * Stop fetching attachments and let message handling service do that via endpoint
+
+v7.5.48
+----------
+ * Fix handling empty and non-200 responses from attachment fetches
+
+v7.5.47
+----------
+ * Fix handling of geo attachments
+
+v7.5.46
+----------
+ * Rework attachment fetching to keep URL and content type separate
+
+v7.5.45
+----------
+ * Basic auth on status endpoint should be optional
+
+v7.5.44
+----------
+ * Add endpoint to download and store attachments by their URL
+
+v7.5.43
+----------
+ * Update dependencies
+ * Skip SSL verification for AC channels
+ * Fix channel log type token_refresh
+
+v7.5.42
+----------
+ * Add channel UUID and type to queued msg events
+ * More jsonx.MustMarshal
+
+v7.5.41
+----------
+ * Customize the http client for D3 attachment fetches to have a timeout of 3 secs
+
+v7.5.40
+----------
+ * Always return 200 status for all WA webhook requests
+ * Remove temporary logging
+
+v7.5.39
+----------
+ * Tweak large attachment logging
+
+v7.5.38
+----------
+ * Tweak large attachment logging
+
+v7.5.37
+----------
+ * Temp logging for large files
+
+v7.5.36
+----------
+ * Update to latest gocommon and remove previous temp logging
+
+v7.5.35
+----------
+ * More logging for large attachment downloads
+
+v7.5.34
+----------
+ * Tweak error message
+
+v7.5.33
+----------
+ * Add more detail to error message from S3 put
+ * Update deps
+
+v7.5.32
+----------
+ * Include requests to download attachments on the channel log for the incoming message
+ * Add support for better channel error reporting
+
+v7.5.31
+----------
+ * Allow twiml channels to send multiple media urls per message
+
+v7.5.30
+----------
+ * Update msg status updating to allow skipping WIRED state
+
+v7.5.29
+----------
+ * Simplify constructing responses and add tests
+ * Make it easier to override responses per handler
+
+v7.5.28
+----------
+ * Update to use SHA256 signature for FBA payload, increase max body bytes limit to 1MiB
+ * Meta channels webhooks requests, should always return 200 status
+
+v7.5.27
+----------
+ * Fix server logging when channel is nil
+
+v7.5.26
+----------
+ * Fix junebug redaction values
+ * Fix redaction on sends and add redaction of error messages
+
+v7.5.25
+----------
+ * Adjust logging for WAC missing channel
+ * Update to latest gocommon
+ * Implement redaction of channel logs
+
+v7.5.24
+----------
+ * Adjust to use the cache by address correctly
+ * Rework handler tests to assert more state by default
+ * Remove duplicate status writes
+ * Append channel log UUIDs on status writes
+ * Set log UUID on incoming messages and channel events
+ * Use go 1.19
+ * Fix some linter warnings
+
+v7.5.23
+----------
+ * Support channels receiving embedded attachments and use with thinq handler
+
 v7.5.22
 ----------
  * Save channel logs with UUID

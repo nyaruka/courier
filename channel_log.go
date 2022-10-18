@@ -1,10 +1,13 @@
 package courier
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/stringsx"
 	"github.com/nyaruka/gocommon/uuids"
 )
 
@@ -15,13 +18,14 @@ type ChannelLogUUID uuids.UUID
 type ChannelLogType string
 
 const (
-	ChannelLogTypeUnknown       ChannelLogType = "unknown"
-	ChannelLogTypeMsgSend       ChannelLogType = "msg_send"
-	ChannelLogTypeMsgStatus     ChannelLogType = "msg_status"
-	ChannelLogTypeMsgReceive    ChannelLogType = "msg_receive"
-	ChannelLogTypeEventReceive  ChannelLogType = "event_receive"
-	ChannelLogTypeTokenFetch    ChannelLogType = "token_fetch"
-	ChannelLogTypePageSubscribe ChannelLogType = "page_subscribe"
+	ChannelLogTypeUnknown         ChannelLogType = "unknown"
+	ChannelLogTypeMsgSend         ChannelLogType = "msg_send"
+	ChannelLogTypeMsgStatus       ChannelLogType = "msg_status"
+	ChannelLogTypeMsgReceive      ChannelLogType = "msg_receive"
+	ChannelLogTypeEventReceive    ChannelLogType = "event_receive"
+	ChannelLogTypeAttachmentFetch ChannelLogType = "attachment_fetch"
+	ChannelLogTypeTokenRefresh    ChannelLogType = "token_refresh"
+	ChannelLogTypePageSubscribe   ChannelLogType = "page_subscribe"
 )
 
 type ChannelError struct {
@@ -29,8 +33,43 @@ type ChannelError struct {
 	code    string
 }
 
-func NewChannelError(message, code string) ChannelError {
-	return ChannelError{message: message, code: code}
+func NewChannelError(message, code string) *ChannelError {
+	return &ChannelError{message: message, code: code}
+}
+
+func ErrorResponseStatusCode() *ChannelError {
+	return NewChannelError("Unexpected response status code.", "core:response_status_code")
+}
+
+func ErrorResponseUnparseable(format string) *ChannelError {
+	return NewChannelError(fmt.Sprintf("Unable to parse response as %s.", format), "core:response_unparseable")
+}
+
+func ErrorResponseValueMissing(key string) *ChannelError {
+	return NewChannelError(fmt.Sprintf("Unable to find '%s' response.", key), "core:response_value_missing")
+}
+
+func ErrorResponseValueUnexpected(key string, expected ...string) *ChannelError {
+	es := make([]string, len(expected))
+	for i := range expected {
+		es[i] = fmt.Sprintf("'%s'", expected[i])
+	}
+	return NewChannelError(fmt.Sprintf("Expected '%s' in response to be %s.", key, strings.Join(es, " or ")), "core:response_value_unexpected")
+}
+
+func ErrorUnsupportedMedia(contentType string) *ChannelError {
+	return NewChannelError(fmt.Sprintf("Unsupported attachment media type: %s.", contentType), "core:media_unsupported_type")
+}
+
+func ErrorServiceSpecific(ns, code, message string) *ChannelError {
+	if message == "" {
+		message = fmt.Sprintf("Service specific error: %s.", code)
+	}
+	return NewChannelError(message, fmt.Sprintf("%s:%s", ns, code))
+}
+
+func (e *ChannelError) Redact(r stringsx.Redactor) *ChannelError {
+	return &ChannelError{message: r(e.message), code: r(e.code)}
 }
 
 func (e *ChannelError) Message() string {
@@ -47,30 +86,37 @@ type ChannelLog struct {
 	type_     ChannelLogType
 	channel   Channel
 	msgID     MsgID
-	recorder  *httpx.Recorder
 	httpLogs  []*httpx.Log
-	errors    []ChannelError
+	errors    []*ChannelError
 	createdOn time.Time
 	elapsed   time.Duration
+
+	recorder *httpx.Recorder
+	redactor stringsx.Redactor
 }
 
 // NewChannelLogForIncoming creates a new channel log for an incoming request, the type of which won't be known
 // until the handler completes.
-func NewChannelLogForIncoming(r *httpx.Recorder, ch Channel) *ChannelLog {
-	return newChannelLog(ChannelLogTypeUnknown, ch, r, NilMsgID)
+func NewChannelLogForIncoming(ch Channel, r *httpx.Recorder, redactVals []string) *ChannelLog {
+	return newChannelLog(ChannelLogTypeUnknown, ch, r, NilMsgID, redactVals)
 }
 
 // NewChannelLogForSend creates a new channel log for a message send
-func NewChannelLogForSend(msg Msg) *ChannelLog {
-	return newChannelLog(ChannelLogTypeMsgSend, msg.Channel(), nil, msg.ID())
+func NewChannelLogForSend(msg Msg, redactVals []string) *ChannelLog {
+	return newChannelLog(ChannelLogTypeMsgSend, msg.Channel(), nil, msg.ID(), redactVals)
+}
+
+// NewChannelLogForSend creates a new channel log for an attachment fetch
+func NewChannelLogForAttachmentFetch(ch Channel, redactVals []string) *ChannelLog {
+	return newChannelLog(ChannelLogTypeAttachmentFetch, ch, nil, NilMsgID, redactVals)
 }
 
 // NewChannelLog creates a new channel log with the given type and channel
-func NewChannelLog(t ChannelLogType, ch Channel) *ChannelLog {
-	return newChannelLog(t, ch, nil, NilMsgID)
+func NewChannelLog(t ChannelLogType, ch Channel, redactVals []string) *ChannelLog {
+	return newChannelLog(t, ch, nil, NilMsgID, redactVals)
 }
 
-func newChannelLog(t ChannelLogType, ch Channel, r *httpx.Recorder, mid MsgID) *ChannelLog {
+func newChannelLog(t ChannelLogType, ch Channel, r *httpx.Recorder, mid MsgID, redactVals []string) *ChannelLog {
 	return &ChannelLog{
 		uuid:      ChannelLogUUID(uuids.New()),
 		type_:     t,
@@ -78,6 +124,8 @@ func newChannelLog(t ChannelLogType, ch Channel, r *httpx.Recorder, mid MsgID) *
 		recorder:  r,
 		msgID:     mid,
 		createdOn: dates.Now(),
+
+		redactor: stringsx.NewRedactor("**********", redactVals...),
 	}
 }
 
@@ -86,8 +134,12 @@ func (l *ChannelLog) HTTP(t *httpx.Trace) {
 	l.httpLogs = append(l.httpLogs, l.traceToLog(t))
 }
 
-func (l *ChannelLog) Error(err error) {
-	l.errors = append(l.errors, NewChannelError(err.Error(), ""))
+func (l *ChannelLog) Error(e *ChannelError) {
+	l.errors = append(l.errors, e.Redact(l.redactor))
+}
+
+func (l *ChannelLog) RawError(err error) {
+	l.Error(NewChannelError(err.Error(), ""))
 }
 
 func (l *ChannelLog) End() {
@@ -127,7 +179,7 @@ func (l *ChannelLog) HTTPLogs() []*httpx.Log {
 	return l.httpLogs
 }
 
-func (l *ChannelLog) Errors() []ChannelError {
+func (l *ChannelLog) Errors() []*ChannelError {
 	return l.errors
 }
 
@@ -140,5 +192,5 @@ func (l *ChannelLog) Elapsed() time.Duration {
 }
 
 func (l *ChannelLog) traceToLog(t *httpx.Trace) *httpx.Log {
-	return httpx.NewLog(t, 2048, 50000, nil)
+	return httpx.NewLog(t, 2048, 50000, l.redactor)
 }

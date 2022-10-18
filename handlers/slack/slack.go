@@ -41,7 +41,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("SL"), "Slack")}
+	return &handler{handlers.NewBaseHandlerWithParams(courier.ChannelType("SL"), "Slack", true, []string{configBotToken, configUserToken, configValidationToken})}
 }
 
 func (h *handler) Initialize(s courier.Server) error {
@@ -94,7 +94,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		text := payload.Event.Text
-		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(payload.EventID)
+		msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(payload.EventID)
 
 		for _, attURL := range attachmentURLs {
 			msg.WithAttachment(attURL)
@@ -154,19 +154,19 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("missing bot token for SL/slack channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	for _, attachment := range msg.Attachments() {
 		fileAttachment, err := parseAttachmentToFileParams(msg, attachment, clog)
 		if err != nil {
-			clog.Error(err)
+			clog.RawError(err)
 			return status, nil
 		}
 
 		if fileAttachment != nil {
 			err = sendFilePart(msg, botToken, fileAttachment, clog)
 			if err != nil {
-				clog.Error(err)
+				clog.RawError(err)
 				return status, nil
 			}
 		}
@@ -175,7 +175,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	if msg.Text() != "" {
 		err := sendTextMsgPart(msg, botToken, clog)
 		if err != nil {
-			clog.Error(err)
+			clog.RawError(err)
 			return status, nil
 		}
 	}

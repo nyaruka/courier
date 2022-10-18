@@ -8,18 +8,17 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/pkg/errors"
-
-	"github.com/nyaruka/gocommon/urns"
-
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/urns"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -161,7 +160,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 
-		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(lineEvent.ReplyToken).WithReceivedOn(date)
+		msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(lineEvent.ReplyToken).WithReceivedOn(date)
 
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)
@@ -183,8 +182,8 @@ func buildMediaURL(mediaID string) string {
 	return mediaURL.String()
 }
 
-// BuildDownloadMediaRequest to download media for message attachment with Bearer token set
-func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+// BuildAttachmentRequest to download media for message attachment with Bearer token set
+func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
 	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
 	if token == "" {
 		return nil, fmt.Errorf("missing token for LN channel")
@@ -195,6 +194,12 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backe
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	return req, nil
 }
+
+func (*handler) AttachmentRequestClient(ch courier.Channel) *http.Client {
+	return utils.GetHTTPClient()
+}
+
+var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
 func (h *handler) validateSignature(channel courier.Channel, r *http.Request) error {
 	actual := r.Header.Get(signatureHeader)
@@ -224,8 +229,8 @@ func (h *handler) validateSignature(channel courier.Channel, r *http.Request) er
 // see https://developers.line.me/en/docs/messaging-api/reference/#signature-validation
 func calculateSignature(secret string, r *http.Request) ([]byte, error) {
 	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	body, err := io.ReadAll(r.Body)
+	r.Body = io.NopCloser(bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +295,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	if authToken == "" {
 		return nil, fmt.Errorf("no auth token set for LN channel: %s", msg.Channel().UUID())
 	}
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	// all msg parts in JSON
 	var jsonMsgs []string

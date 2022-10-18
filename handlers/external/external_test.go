@@ -26,160 +26,169 @@ var gmChannels = []courier.Channel{
 
 var handleTestCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid Message",
-		URL:                receiveURL + "?sender=%2B2349067554729&text=Join",
-		Data:               "empty",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedMsgText:    Sp("Join"),
-		ExpectedURN:        "tel:+2349067554729",
+		Label:                "Receive Valid Message",
+		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
 	},
 	{
-		Label:              "Receive Valid Post",
-		URL:                receiveURL,
-		Data:               "sender=%2B2349067554729&text=Join",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedMsgText:    Sp("Join"),
-		ExpectedURN:        "tel:+2349067554729",
+		Label:                "Receive Valid Post",
+		URL:                  receiveURL,
+		Data:                 "sender=%2B2349067554729&text=Join",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
 	},
 	{
-		Label:              "Receive Valid Post multipart form",
-		URL:                receiveURL,
-		MultipartForm:      map[string]string{"sender": "2349067554729", "text": "Join"},
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedMsgText:    Sp("Join"),
-		ExpectedURN:        "tel:+2349067554729",
+		Label:                "Receive Valid Post multipart form",
+		URL:                  receiveURL,
+		MultipartForm:        map[string]string{"sender": "2349067554729", "text": "Join"},
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
 	},
 	{
-		Label:              "Receive Valid From",
-		URL:                receiveURL + "?from=%2B2349067554729&text=Join",
-		Data:               "empty",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedMsgText:    Sp("Join"),
-		ExpectedURN:        "tel:+2349067554729",
+		Label:                "Receive Valid From",
+		URL:                  receiveURL + "?from=%2B2349067554729&text=Join",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
 	},
 	{
-		Label:              "Receive Country Parse",
-		URL:                receiveURL + "?from=2349067554729&text=Join",
-		Data:               "empty",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedMsgText:    Sp("Join"),
-		ExpectedURN:        "tel:+2349067554729",
+		Label:                "Receive Country Parse",
+		URL:                  receiveURL + "?from=2349067554729&text=Join",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
 	},
 	{
-		Label:              "Receive Valid Message With Date",
-		URL:                receiveURL + "?sender=%2B2349067554729&text=Join&date=2017-06-23T12:30:00.500Z",
-		Data:               "empty",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedMsgText:    Sp("Join"),
-		ExpectedURN:        "tel:+2349067554729",
-		ExpectedDate:       time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC),
+		Label:                "Receive Valid Message With Date",
+		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join&date=2017-06-23T12:30:00.500Z",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
+		ExpectedDate:         time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC),
 	},
 	{
-		Label:              "Receive Valid Message With Time",
-		URL:                receiveURL + "?sender=%2B2349067554729&text=Join&time=2017-06-23T12:30:00Z",
-		Data:               "empty",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedMsgText:    Sp("Join"),
-		ExpectedURN:        "tel:+2349067554729",
-		ExpectedDate:       time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC),
+		Label:                "Receive Valid Message With Time",
+		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join&time=2017-06-23T12:30:00Z",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
+		ExpectedDate:         time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC),
 	},
 	{
-		Label:              "Invalid URN",
-		URL:                receiveURL + "?sender=MTN&text=Join",
-		Data:               "empty",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "phone number supplied is not a number",
+		Label:                "Invalid URN",
+		URL:                  receiveURL + "?sender=MTN&text=Join",
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
 	},
 	{
-		Label:              "Receive No Params",
-		URL:                receiveURL,
-		Data:               "empty",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "must have one of 'sender' or 'from' set",
+		Label:                "Receive No Params",
+		URL:                  receiveURL,
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "must have one of 'sender' or 'from' set",
 	},
 	{
 		Label:              "Receive No Sender",
 		URL:                receiveURL + "?text=Join",
 		Data:               "empty",
-		ExpectedRespStatus: 400, ExpectedRespBody: "must have one of 'sender' or 'from' set",
+		ExpectedRespStatus: 400, ExpectedBodyContains: "must have one of 'sender' or 'from' set",
 	},
 	{
-		Label:              "Receive Invalid Date",
-		URL:                receiveURL + "?sender=%2B2349067554729&text=Join&time=20170623T123000Z",
-		Data:               "empty",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "invalid date format, must be RFC 3339",
+		Label:                "Receive Invalid Date",
+		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join&time=20170623T123000Z",
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "invalid date format, must be RFC 3339",
 	},
 	{
-		Label:              "Failed No Params",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "field 'id' required",
+		Label:                "Failed No Params",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "field 'id' required",
 	},
 	{
-		Label:              "Failed Valid",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/?id=12345",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   `"status":"F"`,
+		Label:                "Failed Valid",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/?id=12345",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"F"`,
+		ExpectedMsgStatus:    courier.MsgFailed,
 	},
 	{
-		Label:              "Invalid Status",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/wired/",
-		ExpectedRespStatus: 404,
-		ExpectedRespBody:   `page not found`,
+		Label:                "Invalid Status",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/wired/",
+		ExpectedRespStatus:   404,
+		ExpectedBodyContains: `page not found`,
 	},
 	{
-		Label:              "Sent Valid",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/?id=12345",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   `"status":"S"`},
-	{
-		Label:              "Delivered Valid",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?id=12345",
-		ExpectedRespStatus: 200,
-		Data:               "nothing",
-		ExpectedRespBody:   `"status":"D"`,
+		Label:                "Sent Valid",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/?id=12345",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"S"`,
+		ExpectedMsgStatus:    courier.MsgSent,
 	},
 	{
-		Label:              "Delivered Valid Post",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
-		Data:               "id=12345",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   `"status":"D"`,
+		Label:                "Delivered Valid",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/?id=12345",
+		Data:                 "nothing",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedMsgStatus:    courier.MsgDelivered,
 	},
 	{
-		Label:              "Stopped Event",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=%2B2349067554729",
-		ExpectedRespStatus: 200,
-		Data:               "nothing",
-		ExpectedRespBody:   "Accepted",
+		Label:                "Delivered Valid Post",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/",
+		Data:                 "id=12345",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedMsgStatus:    courier.MsgDelivered,
 	},
 	{
-		Label:              "Stopped Event Post",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/",
-		Data:               "from=%2B2349067554729",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
+		Label:                "Stopped Event",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=%2B2349067554729",
+		Data:                 "nothing",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedEvent:        "stop_contact",
+		ExpectedURN:          "tel:+2349067554729",
 	},
 	{
-		Label:              "Stopped Event Invalid URN",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=MTN",
-		Data:               "empty",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "phone number supplied is not a number",
+		Label:                "Stopped Event Post",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/",
+		Data:                 "from=%2B2349067554729",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedEvent:        "stop_contact",
+		ExpectedURN:          "tel:+2349067554729",
 	},
 	{
-		Label:              "Stopped event No Params",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "field 'from' required",
+		Label:                "Stopped Event Invalid URN",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=MTN",
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
+	},
+	{
+		Label:                "Stopped event No Params",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "field 'from' required",
 	},
 }
 
@@ -196,32 +205,32 @@ var testSOAPReceiveChannels = []courier.Channel{
 
 var handleSOAPReceiveTestCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid Post SOAP",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
-		Data:               `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body><com:moRequest><source>2349067554729</source><content>Join</content></com:moRequest></soapenv:Body></soapenv:Envelope>`,
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "<?xml version=“1.0”?><return>0</return>",
-		ExpectedMsgText:    Sp("Join"),
-		ExpectedURN:        "tel:+2349067554729",
+		Label:                "Receive Valid Post SOAP",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+		Data:                 `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body><com:moRequest><source>2349067554729</source><content>Join</content></com:moRequest></soapenv:Body></soapenv:Envelope>`,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "<?xml version=“1.0”?><return>0</return>",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
 	},
 	{
-		Label:              "Receive Invalid SOAP",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
-		Data:               `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body></soapenv:Body></soapenv:Envelope>`,
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "missing from",
+		Label:                "Receive Invalid SOAP",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
+		Data:                 `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="com.hero"><soapenv:Header/><soapenv:Body></soapenv:Body></soapenv:Envelope>`,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "missing from",
 	},
 }
 
 var gmTestCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Non Plus Message",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=2207222333&text=Join",
-		Data:               "empty",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedMsgText:    Sp("Join"),
-		ExpectedURN:        "tel:+2207222333",
+		Label:                "Receive Non Plus Message",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=2207222333&text=Join",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2207222333",
 	},
 }
 
@@ -237,21 +246,21 @@ var customChannels = []courier.Channel{
 
 var customTestCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Custom Message",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from_number=12067799192&messageText=Join&timestamp=2017-06-23T12:30:00Z",
-		Data:               "empty",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedMsgText:    Sp("Join"),
-		ExpectedURN:        "tel:+12067799192",
-		ExpectedDate:       time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC),
+		Label:                "Receive Custom Message",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from_number=12067799192&messageText=Join&timestamp=2017-06-23T12:30:00Z",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+12067799192",
+		ExpectedDate:         time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC),
 	},
 	{
-		Label:              "Receive Custom Missing",
-		URL:                "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sent_from=12067799192&messageText=Join",
-		Data:               "empty",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "must have one of 'sender' or 'from' set",
+		Label:                "Receive Custom Missing",
+		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sent_from=12067799192&messageText=Join",
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "must have one of 'sender' or 'from' set",
 	},
 }
 
@@ -616,7 +625,7 @@ var xmlSendWithResponseContentTestCases = []ChannelSendTestCase{
 		ExpectedRequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("Received invalid response content: <return>1</return>", "")},
+		ExpectedErrors:      []*courier.ChannelError{courier.NewChannelError("Received invalid response content: <return>1</return>", "")},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -717,16 +726,16 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendMethod:  http.MethodPut,
 		})
 
-	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil)
-	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil)
-	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendSmartEncodingTestCases, nil)
-	RunChannelSendTestCases(t, postChannel, newHandler(), postSendTestCases, nil)
-	RunChannelSendTestCases(t, postChannelCustomContentType, newHandler(), postSendCustomContentTypeTestCases, nil)
-	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendTestCases, nil)
-	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendSmartEncodingTestCases, nil)
-	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil)
-	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil)
-	RunChannelSendTestCases(t, xmlChannelWithResponseContent, newHandler(), xmlSendWithResponseContentTestCases, nil)
+	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendSmartEncodingTestCases, nil, nil)
+	RunChannelSendTestCases(t, postChannel, newHandler(), postSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, postChannelCustomContentType, newHandler(), postSendCustomContentTypeTestCases, nil, nil)
+	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendSmartEncodingTestCases, nil, nil)
+	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, xmlChannelWithResponseContent, newHandler(), xmlSendWithResponseContentTestCases, nil, nil)
 
 	var getChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
@@ -760,10 +769,10 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendHeaders: map[string]interface{}{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
-	RunChannelSendTestCases(t, getChannel30IntLength, newHandler(), longSendTestCases, nil)
-	RunChannelSendTestCases(t, getChannel30StrLength, newHandler(), longSendTestCases, nil)
-	RunChannelSendTestCases(t, jsonChannel30IntLength, newHandler(), jsonLongSendTestCases, nil)
-	RunChannelSendTestCases(t, xmlChannel30IntLength, newHandler(), xmlLongSendTestCases, nil)
+	RunChannelSendTestCases(t, getChannel30IntLength, newHandler(), longSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, getChannel30StrLength, newHandler(), longSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, jsonChannel30IntLength, newHandler(), jsonLongSendTestCases, nil, nil)
+	RunChannelSendTestCases(t, xmlChannel30IntLength, newHandler(), xmlLongSendTestCases, nil, nil)
 
 	var nationalChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
@@ -771,7 +780,7 @@ func TestSending(t *testing.T) {
 			"use_national":           true,
 			courier.ConfigSendMethod: http.MethodGet})
 
-	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalGetSendTestCases, nil)
+	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalGetSendTestCases, nil, nil)
 
 	var jsonChannelWithSendAuthorization = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]interface{}{
@@ -781,6 +790,6 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendMethod:        http.MethodPost,
 			courier.ConfigSendAuthorization: "Token ABCDEF",
 		})
-	RunChannelSendTestCases(t, jsonChannelWithSendAuthorization, newHandler(), jsonSendTestCases, nil)
+	RunChannelSendTestCases(t, jsonChannelWithSendAuthorization, newHandler(), jsonSendTestCases, []string{"Token ABCDEF"}, nil)
 
 }

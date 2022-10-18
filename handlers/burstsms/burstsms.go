@@ -10,6 +10,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var (
@@ -38,10 +39,10 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	receiveHandler := handlers.NewTelReceiveHandler(&h.BaseHandler, "mobile", "response")
+	receiveHandler := handlers.NewTelReceiveHandler(h, "mobile", "response")
 	s.AddHandlerRoute(h, http.MethodGet, "receive", receiveHandler)
 
-	statusHandler := handlers.NewExternalIDStatusHandler(&h.BaseHandler, statusMap, "message_id", "status")
+	statusHandler := handlers.NewExternalIDStatusHandler(h, statusMap, "message_id", "status")
 	s.AddHandlerRoute(h, http.MethodGet, "status", statusHandler)
 	return nil
 }
@@ -67,7 +68,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no password set for BS channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		form := url.Values{
 			"to":      []string{strings.TrimLeft(msg.URN().Path(), "+")},
@@ -92,7 +93,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		response := &mtResponse{}
 		err = json.Unmarshal(respBody, response)
 		if err != nil {
-			clog.Error(err)
+			clog.Error(courier.ErrorResponseUnparseable("XML"))
 			break
 		}
 
@@ -101,10 +102,16 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			status.SetExternalID(fmt.Sprintf("%d", response.MessageID))
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			clog.Error(fmt.Errorf("Received invalid message id: %d", response.MessageID))
+			clog.Error(courier.ErrorResponseValueMissing("message_id"))
 			break
 		}
 	}
 
 	return status, nil
+}
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		httpx.BasicAuth(ch.StringConfigForKey(courier.ConfigUsername, ""), ch.StringConfigForKey(courier.ConfigPassword, "")),
+	}
 }

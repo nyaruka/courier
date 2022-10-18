@@ -7,6 +7,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -20,48 +21,49 @@ const (
 
 var testCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid",
-		URL:                receiveURL + "?to=3344&smsc=ncell&from=%2B9779814641111&text=Msg",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Message Accepted",
-		ExpectedMsgText:    Sp("Msg"),
-		ExpectedURN:        "tel:+9779814641111",
+		Label:                "Receive Valid",
+		URL:                  receiveURL + "?to=3344&smsc=ncell&from=%2B9779814641111&text=Msg",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Message Accepted",
+		ExpectedMsgText:      Sp("Msg"),
+		ExpectedURN:          "tel:+9779814641111",
 	},
 	{
-		Label:              "Invalid URN",
-		URL:                receiveURL + "?to=3344&smsc=ncell&from=MTN&text=Msg",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "phone number supplied is not a number",
+		Label:                "Invalid URN",
+		URL:                  receiveURL + "?to=3344&smsc=ncell&from=MTN&text=Msg",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
 	},
 	{
-		Label:              "Receive Empty",
-		URL:                receiveURL + "",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "field 'text' required",
+		Label:                "Receive Empty",
+		URL:                  receiveURL + "",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "field 'text' required",
 	},
 	{
-		Label:              "Receive Missing Text",
-		URL:                receiveURL + "?to=3344&smsc=ncell&from=%2B9779814641111",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "field 'text' required",
+		Label:                "Receive Missing Text",
+		URL:                  receiveURL + "?to=3344&smsc=ncell&from=%2B9779814641111",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "field 'text' required",
 	},
 	{
-		Label:              "Status Invalid",
-		URL:                statusURL + "?id=bmID&status=13",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "unknown status",
+		Label:                "Status Invalid",
+		URL:                  statusURL + "?id=bmID&status=13",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "unknown status",
 	},
 	{
-		Label:              "Status Missing",
-		URL:                statusURL + "?",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "field 'status' required",
+		Label:                "Status Missing",
+		URL:                  statusURL + "?",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "field 'status' required",
 	},
 	{
-		Label:              "Valid Status",
-		URL:                statusURL + "?id=bmID&status=2",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   `"status":"F"`,
+		Label:                "Valid Status",
+		URL:                  statusURL + "?id=bmID&status=2",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"F"`,
+		ExpectedMsgStatus:    courier.MsgFailed,
 	},
 }
 
@@ -120,7 +122,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `{ "error": "failed" }`,
 		MockResponseStatus: 200,
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("no external id returned in body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("no external id returned in body", "")},
 		ExpectedPostParams: map[string]string{"message": `No External ID`, "address": "+250788383383", "senderaddress": "2020"},
 		ExpectedMsgStatus:  "E",
 		SendPrep:           setSendURL,
@@ -145,5 +147,5 @@ func TestSending(t *testing.T) {
 			courier.ConfigAPIKey:   "KEY",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)
 }

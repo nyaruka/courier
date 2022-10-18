@@ -19,20 +19,20 @@ const (
 
 var testCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid",
-		URL:                receiveURL,
-		Data:               "B=Msg&M=254791541111",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Message Accepted",
-		ExpectedMsgText:    Sp("Msg"),
-		ExpectedURN:        "tel:+254791541111",
+		Label:                "Receive Valid",
+		URL:                  receiveURL,
+		Data:                 "B=Msg&M=254791541111",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Message Accepted",
+		ExpectedMsgText:      Sp("Msg"),
+		ExpectedURN:          "tel:+254791541111",
 	},
 	{
-		Label:              "Receive Missing Number",
-		URL:                receiveURL,
-		Data:               "B=Msg",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "required field 'M'",
+		Label:                "Receive Missing Number",
+		URL:                  receiveURL,
+		Data:                 "B=Msg",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "required field 'M'",
 	},
 }
 
@@ -80,7 +80,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `not xml`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("EOF", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseUnparseable("XML")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -90,7 +90,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `<response><code>501</code><text>failure</text><message_id></message_id></response>`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("Received invalid response code: 501", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseStatusCode()},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -112,5 +112,5 @@ func TestSending(t *testing.T) {
 			configServiceID:        "service1",
 			configChargingLevel:    "0",
 		})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"pass1"}, nil)
 }

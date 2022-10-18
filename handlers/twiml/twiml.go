@@ -18,13 +18,13 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/sirupsen/logrus"
-
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -42,6 +42,14 @@ var (
 	maxMsgLength  = 1600
 	twilioBaseURL = "https://api.twilio.com"
 )
+
+// see https://www.twilio.com/docs/sms/accepted-mime-types#accepted-mime-types
+var mediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{
+	handlers.MediaTypeImage:       {MaxBytes: 5 * 1024 * 1024},
+	handlers.MediaTypeAudio:       {MaxBytes: 5 * 1024 * 1024},
+	handlers.MediaTypeVideo:       {MaxBytes: 5 * 1024 * 1024},
+	handlers.MediaTypeApplication: {MaxBytes: 5 * 1024 * 1024},
+}
 
 // error code twilio returns when a contact has sent "stop"
 const errorStopped = 21610
@@ -129,7 +137,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(form.MessageSID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(form.MessageSID)
 
 	// process any attached media
 	for i := 0; i < form.NumMedia; i++ {
@@ -171,13 +179,13 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		if err != nil {
 			logrus.WithError(err).WithField("id", idString).Error("error converting twilio callback id to integer")
 		} else {
-			status = h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus)
+			status = h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus, clog)
 		}
 	}
 
 	// if we have no status, then build it from the external (twilio) id
 	if status == nil {
-		status = h.Backend().NewMsgStatusForExternalID(channel, form.MessageSID, msgStatus)
+		status = h.Backend().NewMsgStatusForExternalID(channel, form.MessageSID, msgStatus, clog)
 	}
 
 	errorCode, _ := strconv.ParseInt(form.ErrorCode, 10, 64)
@@ -188,7 +196,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		}
 
 		// create a stop channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn)
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
 		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
 			return nil, err
@@ -217,7 +225,12 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	channel := msg.Channel()
 
-	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored)
+	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, true)
+	if err != nil {
+		return nil, errors.Wrap(err, "error resolving attachments")
+	}
+
+	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	for i, part := range parts {
 		// build our request
@@ -227,10 +240,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			"StatusCallback": []string{callbackURL},
 		}
 
-		// add any media URL to the first part
-		if len(msg.Attachments()) > 0 && i == 0 {
-			_, mediaURL := handlers.SplitAttachment(msg.Attachments()[0])
-			form["MediaUrl"] = []string{mediaURL}
+		// add any attachments to the first part
+		if i == 0 {
+			for _, a := range attachments {
+				form.Add("MediaUrl", a.URL)
+			}
 		}
 
 		// set our from, either as a messaging service or from our address
@@ -279,13 +293,13 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 					status.SetStatus(courier.MsgFailed)
 
 					// create a stop channel event
-					channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
+					channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN(), clog)
 					err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 					if err != nil {
 						return nil, err
 					}
 				}
-				clog.Error(errors.Errorf("received error code from twilio '%d'", errorCode))
+				clog.RawError(errors.Errorf("received error code from twilio '%d'", errorCode))
 				return status, nil
 			}
 		}
@@ -293,7 +307,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// grab the external id
 		externalID, err := jsonparser.GetString(respBody, "sid")
 		if err != nil {
-			clog.Error(errors.Errorf("unable to get sid from body"))
+			clog.Error(courier.ErrorResponseValueMissing("sid"))
 			return status, nil
 		}
 
@@ -306,6 +320,12 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	return status, nil
+}
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		httpx.BasicAuth(ch.StringConfigForKey(configAccountSID, ""), ch.StringConfigForKey(courier.ConfigAuthToken, "")),
+	}
 }
 
 func (h *handler) parseURN(channel courier.Channel, text, country string) (urns.URN, error) {
@@ -407,7 +427,7 @@ func twCalculateSignature(url string, form url.Values, authToken string) ([]byte
 }
 
 // WriteMsgSuccessResponse writes our response in TWIML format
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, `<?xml version="1.0" encoding="UTF-8"?><Response/>`)
@@ -415,7 +435,7 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 }
 
 // WriteRequestIgnored writes our response in TWIML format
-func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, r *http.Request, details string) error {
+func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
 	w.Header().Set("Content-Type", "text/xml")
 	w.WriteHeader(200)
 	_, err := fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?><!-- %s --><Response/>`, details)

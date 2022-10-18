@@ -292,54 +292,57 @@ var (
 )
 
 var waTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: waReceiveURL, Data: helloMsg, ExpectedRespStatus: 200, ExpectedRespBody: `"type":"msg"`,
-		ExpectedContactName: Sp("Jerry Cooney"), ExpectedMsgText: Sp("hello world"), ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Duplicate Valid Message", URL: waReceiveURL, Data: duplicateMsg, ExpectedRespStatus: 200, ExpectedRespBody: `"type":"msg"`,
+	{Label: "Receive Valid Message", URL: waReceiveURL, Data: helloMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
+		ExpectedContactName: Sp("Jerry Cooney"), ExpectedMsgText: Sp("hello world"), ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+		NoQueueErrorCheck:     true,
+		NoInvalidChannelCheck: true,
+	},
+	{Label: "Receive Duplicate Valid Message", URL: waReceiveURL, Data: duplicateMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText: Sp("hello world"), ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Audio Message", URL: waReceiveURL, Data: audioMsg, ExpectedRespStatus: 200, ExpectedRespBody: `"type":"msg"`,
+	{Label: "Receive Valid Audio Message", URL: waReceiveURL, Data: audioMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Button Message", URL: waReceiveURL, Data: buttonMsg, ExpectedRespStatus: 200, ExpectedRespBody: `"type":"msg"`,
+	{Label: "Receive Valid Button Message", URL: waReceiveURL, Data: buttonMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText: Sp("BUTTON1"), ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Document Message", URL: waReceiveURL, Data: documentMsg, ExpectedRespStatus: 200, ExpectedRespBody: `"type":"msg"`,
+	{Label: "Receive Valid Document Message", URL: waReceiveURL, Data: documentMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText: Sp("the caption"), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Image Message", URL: waReceiveURL, Data: imageMsg, ExpectedRespStatus: 200, ExpectedRespBody: `"type":"msg"`,
+	{Label: "Receive Valid Image Message", URL: waReceiveURL, Data: imageMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText: Sp("the caption"), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Interactive Button Message", URL: waReceiveURL, Data: interactiveButtonMsg, ExpectedRespStatus: 200, ExpectedRespBody: `"type":"msg"`,
+	{Label: "Receive Valid Interactive Button Message", URL: waReceiveURL, Data: interactiveButtonMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText: Sp("BUTTON1"), ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Interactive List Message", URL: waReceiveURL, Data: interactiveListMsg, ExpectedRespStatus: 200, ExpectedRespBody: `"type":"msg"`,
+	{Label: "Receive Valid Interactive List Message", URL: waReceiveURL, Data: interactiveListMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText: Sp("ROW1"), ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Location Message", URL: waReceiveURL, Data: locationMsg, ExpectedRespStatus: 200, ExpectedRespBody: `"type":"msg"`,
+	{Label: "Receive Valid Location Message", URL: waReceiveURL, Data: locationMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:0.000000,1.000000"}, ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Video Message", URL: waReceiveURL, Data: videoMsg, ExpectedRespStatus: 200, ExpectedRespBody: `"type":"msg"`,
+	{Label: "Receive Valid Video Message", URL: waReceiveURL, Data: videoMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Voice Message", URL: waReceiveURL, Data: voiceMsg, ExpectedRespStatus: 200, ExpectedRespBody: `"type":"msg"`,
+	{Label: "Receive Valid Voice Message", URL: waReceiveURL, Data: voiceMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Invalid JSON", URL: waReceiveURL, Data: invalidMsg, ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse"},
-	{Label: "Receive Invalid From", URL: waReceiveURL, Data: invalidFrom, ExpectedRespStatus: 400, ExpectedRespBody: "invalid whatsapp id"},
-	{Label: "Receive Invalid Timestamp", URL: waReceiveURL, Data: invalidTimestamp, ExpectedRespStatus: 400, ExpectedRespBody: "invalid timestamp"},
+	{Label: "Receive Invalid JSON", URL: waReceiveURL, Data: invalidMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "unable to parse"},
+	{Label: "Receive Invalid From", URL: waReceiveURL, Data: invalidFrom, ExpectedRespStatus: 200, ExpectedBodyContains: "invalid whatsapp id"},
+	{Label: "Receive Invalid Timestamp", URL: waReceiveURL, Data: invalidTimestamp, ExpectedRespStatus: 200, ExpectedBodyContains: "invalid timestamp"},
 
-	{Label: "Receive Valid Status", URL: waReceiveURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedRespBody: `"type":"status"`,
+	{Label: "Receive Valid Status", URL: waReceiveURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"status"`,
 		ExpectedMsgStatus: "S", ExpectedExternalID: "9712A34B4A8B6AD50F"},
-	{Label: "Receive Invalid JSON", URL: waReceiveURL, Data: "not json", ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse"},
-	{Label: "Receive Invalid Status", URL: waReceiveURL, Data: invalidStatus, ExpectedRespStatus: 400, ExpectedRespBody: `"unknown status: in_orbit"`},
-	{Label: "Receive Ignore Status", URL: waReceiveURL, Data: ignoreStatus, ExpectedRespStatus: 200, ExpectedRespBody: `"ignoring status: deleted"`},
+	{Label: "Receive Invalid JSON", URL: waReceiveURL, Data: "not json", ExpectedRespStatus: 200, ExpectedBodyContains: "unable to parse"},
+	{Label: "Receive Invalid Status", URL: waReceiveURL, Data: invalidStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"unknown status: in_orbit"`},
+	{Label: "Receive Ignore Status", URL: waReceiveURL, Data: ignoreStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"ignoring status: deleted"`},
 }
 
 func TestBuildMediaRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 
 	waHandler := &handler{NewBaseHandler(courier.ChannelType("WA"), "WhatsApp")}
-	req, _ := waHandler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
+	req, _ := waHandler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer the-auth-token", req.Header.Get("Authorization"))
 
 	d3Handler := &handler{NewBaseHandler(courier.ChannelType("D3"), "360Dialog")}
-	req, _ = d3Handler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[1], "https://example.org/v1/media/41")
+	req, _ = d3Handler.BuildAttachmentRequest(context.Background(), mb, testChannels[1], "https://example.org/v1/media/41")
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "the-auth-token", req.Header.Get("D360-API-KEY"))
 
 	txHandler := &handler{NewBaseHandler(courier.ChannelType("TXW"), "TextIt")}
-	req, _ = txHandler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
+	req, _ = txHandler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer the-auth-token", req.Header.Get("Authorization"))
 }
@@ -577,7 +580,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Label:          "Template Invalid Language",
 		MsgText:        "templated message",
 		MsgURN:         "whatsapp:250788123123",
-		ExpectedErrors: []courier.ChannelError{courier.NewChannelError(`unable to decode template: {"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}} for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c56ab: unable to find mapping for language: bnt`, "")},
+		ExpectedErrors: []*courier.ChannelError{courier.NewChannelError(`unable to decode template: {"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}} for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c56ab: unable to find mapping for language: bnt`, "")},
 		MsgMetadata:    json.RawMessage(`{"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}}`),
 	},
 	{
@@ -935,10 +938,10 @@ func TestSending(t *testing.T) {
 			"version":      "v2.35.2",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), defaultSendTestCases, nil)
-	RunChannelSendTestCases(t, hsmSupportChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), hsmSupportSendTestCases, nil)
-	RunChannelSendTestCases(t, d3Channel, newWAHandler(courier.ChannelType("D3"), "360Dialog"), defaultSendTestCases, nil)
-	RunChannelSendTestCases(t, txwChannel, newWAHandler(courier.ChannelType("TXW"), "TextIt"), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), defaultSendTestCases, []string{"token123"}, nil)
+	RunChannelSendTestCases(t, hsmSupportChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), hsmSupportSendTestCases, []string{"token123"}, nil)
+	RunChannelSendTestCases(t, d3Channel, newWAHandler(courier.ChannelType("D3"), "360Dialog"), defaultSendTestCases, []string{"token123"}, nil)
+	RunChannelSendTestCases(t, txwChannel, newWAHandler(courier.ChannelType("TXW"), "TextIt"), defaultSendTestCases, []string{"token123"}, nil)
 
 	mediaServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
@@ -948,5 +951,5 @@ func TestSending(t *testing.T) {
 	defer mediaServer.Close()
 	mediaCacheSendTestCases := mockAttachmentURLs(mediaServer, mediaCacheSendTestCases)
 
-	RunChannelSendTestCases(t, defaultChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), mediaCacheSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), mediaCacheSendTestCases, []string{"token123"}, nil)
 }

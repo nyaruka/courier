@@ -23,29 +23,29 @@ const (
 
 var testCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid",
-		URL:                receiveURL,
-		Headers:            map[string]string{"Authorization": "sesame"},
-		Data:               "text=Msg&from=18686846481",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Message Accepted",
-		ExpectedMsgText:    Sp("Msg"),
-		ExpectedURN:        "tel:+18686846481",
+		Label:                "Receive Valid",
+		URL:                  receiveURL,
+		Headers:              map[string]string{"Authorization": "sesame"},
+		Data:                 "text=Msg&from=18686846481",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Message Accepted",
+		ExpectedMsgText:      Sp("Msg"),
+		ExpectedURN:          "tel:+18686846481",
 	},
 	{
-		Label:              "Receive Missing Number",
-		URL:                receiveURL,
-		Headers:            map[string]string{"Authorization": "sesame"},
-		Data:               "text=Msg",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "required field 'from'",
+		Label:                "Receive Missing Number",
+		URL:                  receiveURL,
+		Headers:              map[string]string{"Authorization": "sesame"},
+		Data:                 "text=Msg",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "required field 'from'",
 	},
 	{
-		Label:              "Receive Missing Authorization",
-		URL:                receiveURL,
-		Data:               "text=Msg&from=18686846481",
-		ExpectedRespStatus: 401,
-		ExpectedRespBody:   "invalid Authorization header",
+		Label:                "Receive Missing Authorization",
+		URL:                  receiveURL,
+		Data:                 "text=Msg&from=18686846481",
+		ExpectedRespStatus:   401,
+		ExpectedBodyContains: "invalid Authorization header",
 	},
 }
 
@@ -100,7 +100,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received invalid response", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("received invalid response", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -110,7 +110,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received invalid response", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("received invalid response", "")},
 		SendPrep:           setSendURL,
 	},
 }
@@ -123,5 +123,5 @@ func TestSending(t *testing.T) {
 			"merchant_secret": "my-merchant-secret",
 			"secret":          "sesame",
 		})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"my-merchant-secret", "sesame"}, nil)
 }

@@ -78,7 +78,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text, clog).WithReceivedOn(date)
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
@@ -114,7 +114,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	resp, _, err := handlers.RequestHTTPInsecure(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {

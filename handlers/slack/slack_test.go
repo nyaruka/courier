@@ -130,50 +130,50 @@ func setSendUrl(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 
 var handleTestCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Hello Msg",
-		URL:                receiveURL,
-		Headers:            map[string]string{},
-		Data:               helloMsg,
-		ExpectedURN:        "slack:U0123ABCDEF",
-		ExpectedMsgText:    Sp("Hello World!"),
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedExternalID: "Ev0PV52K21",
+		Label:                "Receive Hello Msg",
+		URL:                  receiveURL,
+		Headers:              map[string]string{},
+		Data:                 helloMsg,
+		ExpectedURN:          "slack:U0123ABCDEF",
+		ExpectedMsgText:      Sp("Hello World!"),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedExternalID:   "Ev0PV52K21",
 	},
 	{
-		Label:               "Receive image file",
-		URL:                 receiveURL,
-		Headers:             map[string]string{},
-		Data:                imageFileMsg,
-		ExpectedAttachments: []string{"https://files.slack.com/files-pri/T03CN5KTA6S-F03GTH43SSF/download/batata.jpg?pub_secret=39fcf577f2"},
-		ExpectedURN:         "slack:U0123ABCDEF",
-		ExpectedMsgText:     Sp(""),
-		ExpectedRespStatus:  200,
-		ExpectedRespBody:    "Accepted",
-		ExpectedExternalID:  "Ev0PV52K21",
+		Label:                "Receive image file",
+		URL:                  receiveURL,
+		Headers:              map[string]string{},
+		Data:                 imageFileMsg,
+		ExpectedAttachments:  []string{"https://files.slack.com/files-pri/T03CN5KTA6S-F03GTH43SSF/download/batata.jpg?pub_secret=39fcf577f2"},
+		ExpectedURN:          "slack:U0123ABCDEF",
+		ExpectedMsgText:      Sp(""),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedExternalID:   "Ev0PV52K21",
 	},
 	{
-		Label:               "Receive audio file",
-		URL:                 receiveURL,
-		Headers:             map[string]string{},
-		Data:                audioFileMsg,
-		ExpectedAttachments: []string{"https://files.slack.com/files-pri/T03CN5KTA6S-F03GWURCZL4/download/here_we_go_again.mp3?pub_secret=471020b300"},
-		ExpectedURN:         "slack:U0123ABCDEF",
-		ExpectedMsgText:     Sp(""),
-		ExpectedRespStatus:  200,
-		ExpectedRespBody:    "Accepted",
-		ExpectedExternalID:  "Ev0PV52K21",
+		Label:                "Receive audio file",
+		URL:                  receiveURL,
+		Headers:              map[string]string{},
+		Data:                 audioFileMsg,
+		ExpectedAttachments:  []string{"https://files.slack.com/files-pri/T03CN5KTA6S-F03GWURCZL4/download/here_we_go_again.mp3?pub_secret=471020b300"},
+		ExpectedURN:          "slack:U0123ABCDEF",
+		ExpectedMsgText:      Sp(""),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedExternalID:   "Ev0PV52K21",
 	},
 	{
-		Label:              "Receive video file (not allowed)",
-		URL:                receiveURL,
-		Headers:            map[string]string{},
-		Data:               videoFileMsg,
-		ExpectedURN:        "slack:U0123ABCDEF",
-		ExpectedMsgText:    Sp(""),
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedExternalID: "Ev0PV52K21",
+		Label:                "Receive video file (not allowed)",
+		URL:                  receiveURL,
+		Headers:              map[string]string{},
+		Data:                 videoFileMsg,
+		ExpectedURN:          "slack:U0123ABCDEF",
+		ExpectedMsgText:      Sp(""),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedExternalID:   "Ev0PV52K21",
 	},
 }
 
@@ -206,7 +206,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"Hello"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("invalid_auth", "")},
+		ExpectedErrors:      []*courier.ChannelError{courier.NewChannelError("invalid_auth", "")},
 		SendPrep:            setSendUrl,
 	},
 }
@@ -252,7 +252,7 @@ func TestHandler(t *testing.T) {
 }
 
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), defaultSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
 }
 
 func TestSendFiles(t *testing.T) {
@@ -260,15 +260,15 @@ func TestSendFiles(t *testing.T) {
 	defer fileServer.Close()
 	fileSendTestCases := mockAttachmentURLs(fileServer, fileSendTestCases)
 
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), fileSendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), fileSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
 }
 
 func TestVerification(t *testing.T) {
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
 		{Label: "Valid token", URL: receiveURL, ExpectedRespStatus: 200,
-			Data:             `{"token":"one-long-verification-token","challenge":"challenge123","type":"url_verification"}`,
-			Headers:          map[string]string{"content-type": "text/plain"},
-			ExpectedRespBody: "challenge123", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
+			Data:                 `{"token":"one-long-verification-token","challenge":"challenge123","type":"url_verification"}`,
+			Headers:              map[string]string{"content-type": "text/plain"},
+			ExpectedBodyContains: "challenge123", NoQueueErrorCheck: true, NoInvalidChannelCheck: true,
 		},
 		{Label: "Invalid token", URL: receiveURL, ExpectedRespStatus: 403,
 			Data:    `{"token":"abc321","challenge":"challenge123","type":"url_verification"}`,
@@ -359,13 +359,15 @@ func TestDescribeURN(t *testing.T) {
 	server := buildMockSlackService([]ChannelHandleTestCase{})
 	defer server.Close()
 
-	handler := newHandler().(courier.URNDescriber)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0])
+	handler := newHandler()
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 	urn, _ := urns.NewURNFromParts(urns.SlackScheme, "U012345", "", "")
 
 	data := map[string]string{"name": "dummy user"}
 
-	describe, err := handler.DescribeURN(context.Background(), testChannels[0], urn, clog)
+	describe, err := handler.(courier.URNDescriber).DescribeURN(context.Background(), testChannels[0], urn, clog)
 	assert.Nil(t, err)
 	assert.Equal(t, data, describe)
+
+	AssertChannelLogRedaction(t, clog, []string{"xoxb-abc123", "one-long-verification-token"})
 }

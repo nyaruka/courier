@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 const configAccountID = "account_id"
@@ -43,6 +43,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
+// see https://apidocs.thinq.com/#829c8863-8a47-4273-80fb-d962aa64c901
 // from: Source DID
 // to: Destination DID
 // type: sms|mms
@@ -70,10 +71,15 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	var msg courier.Msg
+
 	if form.Type == "sms" {
-		msg = h.Backend().NewIncomingMsg(channel, urn, form.Message)
+		msg = h.Backend().NewIncomingMsg(channel, urn, form.Message, clog)
 	} else if form.Type == "mms" {
-		msg = h.Backend().NewIncomingMsg(channel, urn, "").WithAttachment(form.Message)
+		if strings.HasPrefix(form.Message, "http://") || strings.HasPrefix(form.Message, "https://") {
+			msg = h.Backend().NewIncomingMsg(channel, urn, "", clog).WithAttachment(form.Message)
+		} else {
+			msg = h.Backend().NewIncomingMsg(channel, urn, "", clog).WithAttachment("data:" + form.Message)
+		}
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown message type: %s", form.Type))
 	}
@@ -118,7 +124,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.GUID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, form.GUID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -145,7 +151,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no token set for TQ channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	// we send attachments first so that text appears below
 	for _, a := range msg.Attachments() {
@@ -174,7 +180,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// try to get our external id
 		externalID, err := jsonparser.GetString(respBody, "guid")
 		if err != nil {
-			clog.Error(errors.New("Unable to read external ID"))
+			clog.Error(courier.ErrorResponseValueMissing("guid"))
 			return status, nil
 		}
 		status.SetStatus(courier.MsgWired)
@@ -207,7 +213,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			// get our external id
 			externalID, err := jsonparser.GetString(respBody, "guid")
 			if err != nil {
-				clog.Error(errors.New("Unable to read external ID from guid field"))
+				clog.Error(courier.ErrorResponseValueMissing("guid"))
 				return status, nil
 			}
 
@@ -217,4 +223,10 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	return status, nil
+}
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		httpx.BasicAuth(ch.StringConfigForKey(configAPITokenUser, ""), ch.StringConfigForKey(configAPIToken, "")),
+	}
 }

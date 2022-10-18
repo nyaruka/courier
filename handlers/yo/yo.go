@@ -90,7 +90,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Message).WithReceivedOn(date)
+	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Message, clog).WithReceivedOn(date)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r, clog)
@@ -108,7 +108,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no password set for YO channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	var err error
 
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
@@ -138,12 +138,12 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			responseQS, _ := url.ParseQuery(string(respBody))
 
 			// check whether we were blacklisted
-			createMessage, _ := responseQS["ybs_autocreate_message"]
+			createMessage := responseQS["ybs_autocreate_message"]
 			if len(createMessage) > 0 && strings.Contains(createMessage[0], "BLACKLISTED") {
 				status.SetStatus(courier.MsgFailed)
 
 				// create a stop channel event
-				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN())
+				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN(), clog)
 				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 				if err != nil {
 					return nil, err
@@ -153,7 +153,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			}
 
 			// finally check that we were sent
-			createStatus, _ := responseQS["ybs_autocreate_status"]
+			createStatus := responseQS["ybs_autocreate_status"]
 			if len(createStatus) > 0 && createStatus[0] == "OK" {
 				status.SetStatus(courier.MsgWired)
 				return status, nil

@@ -5,7 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -15,15 +15,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier"
+	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
-
 	"github.com/stretchr/testify/assert"
-
-	"github.com/nyaruka/courier"
-	. "github.com/nyaruka/courier/handlers"
 )
 
 var testChannels = []courier.Channel{
@@ -104,7 +101,7 @@ func addValidSignature(r *http.Request) {
 	nonce := "nonce"
 
 	stringSlice := []string{"secret", timestamp, nonce}
-	sort.Sort(sort.StringSlice(stringSlice))
+	sort.Strings(stringSlice)
 
 	value := strings.Join(stringSlice, "")
 
@@ -128,7 +125,7 @@ func addInvalidSignature(r *http.Request) {
 	nonce := "nonce"
 
 	stringSlice := []string{"secret", timestamp, nonce}
-	sort.Sort(sort.StringSlice(stringSlice))
+	sort.Strings(stringSlice)
 
 	value := strings.Join(stringSlice, "")
 
@@ -146,29 +143,80 @@ func addInvalidSignature(r *http.Request) {
 }
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
-		ExpectedMsgText: Sp("Simple Message"), ExpectedURN: "jiochat:1234", ExpectedExternalID: "123456",
-		ExpectedDate: time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
-
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedRespBody: "invalid jiochat id"},
-	{Label: "Missing params", URL: receiveURL, Data: missingParamsRequired, ExpectedRespStatus: 400, ExpectedRespBody: "Error:Field validation"},
-	{Label: "Missing params Event or MsgId", URL: receiveURL, Data: missingParams, ExpectedRespStatus: 400, ExpectedRespBody: "missing parameters, must have either 'MsgId' or 'Event'"},
-
-	{Label: "Receive Image", URL: receiveURL, Data: imageMessage, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
-		ExpectedMsgText: Sp(""), ExpectedURN: "jiochat:1234", ExpectedExternalID: "123456",
-		ExpectedAttachments: []string{"https://channels.jiochat.com/media/download.action?media_id=12"},
-		ExpectedDate:        time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
-
-	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, ExpectedRespStatus: 200, ExpectedRespBody: "Event Accepted",
-		ExpectedEvent: courier.NewConversation, ExpectedURN: "jiochat:1234"},
-
-	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, ExpectedRespStatus: 200, ExpectedRespBody: "unknown event"},
-
-	{Label: "Verify URL", URL: verifyURL, ExpectedRespStatus: 200, ExpectedRespBody: "SUCCESS",
-		PrepRequest: addValidSignature},
-
-	{Label: "Verify URL Invalid signature", URL: verifyURL, ExpectedRespStatus: 400, ExpectedRespBody: "unknown request",
-		PrepRequest: addInvalidSignature},
+	{
+		Label:                "Receive Message",
+		URL:                  receiveURL,
+		Data:                 validMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Simple Message"),
+		ExpectedURN:          "jiochat:1234",
+		ExpectedExternalID:   "123456",
+		ExpectedDate:         time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC),
+	},
+	{
+		Label:                "Invalid URN",
+		URL:                  receiveURL,
+		Data:                 invalidURN,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "invalid jiochat id",
+	},
+	{
+		Label:                "Missing params",
+		URL:                  receiveURL,
+		Data:                 missingParamsRequired,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error:Field validation",
+	},
+	{
+		Label:                "Missing params Event or MsgId",
+		URL:                  receiveURL,
+		Data:                 missingParams,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "missing parameters, must have either 'MsgId' or 'Event'",
+	},
+	{
+		Label:                "Receive Image",
+		URL:                  receiveURL,
+		Data:                 imageMessage,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp(""),
+		ExpectedURN:          "jiochat:1234",
+		ExpectedExternalID:   "123456",
+		ExpectedAttachments:  []string{"https://channels.jiochat.com/media/download.action?media_id=12"},
+		ExpectedDate:         time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC),
+	},
+	{
+		Label:                "Subscribe Event",
+		URL:                  receiveURL,
+		Data:                 subscribeEvent,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Event Accepted",
+		ExpectedEvent:        courier.NewConversation,
+		ExpectedURN:          "jiochat:1234",
+	},
+	{
+		Label:                "Unsubscribe Event",
+		URL:                  receiveURL,
+		Data:                 unsubscribeEvent,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "unknown event",
+	},
+	{
+		Label:                "Verify URL",
+		URL:                  verifyURL,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "SUCCESS",
+		PrepRequest:          addValidSignature,
+	},
+	{
+		Label:                "Verify URL Invalid signature",
+		URL:                  verifyURL,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "unknown request",
+		PrepRequest:          addInvalidSignature,
+	},
 }
 
 func TestHandler(t *testing.T) {
@@ -195,13 +243,28 @@ func TestFetchAccessToken(t *testing.T) {
 	fetchTimeout = time.Millisecond
 
 	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
-		{Label: "Receive Message", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted"},
-
-		{Label: "Verify URL", URL: verifyURL, ExpectedRespStatus: 200, ExpectedRespBody: "SUCCESS",
-			PrepRequest: addValidSignature},
-
-		{Label: "Verify URL Invalid signature", URL: verifyURL, ExpectedRespStatus: 400, ExpectedRespBody: "unknown request",
-			PrepRequest: addInvalidSignature},
+		{
+			Label:                "Receive Message",
+			URL:                  receiveURL,
+			Data:                 validMsg,
+			ExpectedRespStatus:   200,
+			ExpectedBodyContains: "Accepted",
+			ExpectedMsgText:      Sp("Simple Message"),
+			ExpectedURN:          "jiochat:1234",
+		},
+		{
+			Label:                "Verify URL",
+			URL:                  verifyURL,
+			ExpectedRespStatus:   200,
+			ExpectedBodyContains: "SUCCESS",
+			PrepRequest:          addValidSignature,
+		},
+		{
+			Label:                "Verify URL Invalid signature",
+			URL:                  verifyURL,
+			ExpectedRespStatus:   400,
+			ExpectedBodyContains: "unknown request",
+			PrepRequest:          addInvalidSignature},
 	})
 
 	// wait for our fetch to be called
@@ -220,7 +283,7 @@ func buildMockJCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 		defer r.Body.Close()
 
 		if authorizationHeader != "Bearer ACCESS_TOKEN" {
-			http.Error(w, "invalid file", 403)
+			http.Error(w, "invalid file", http.StatusForbidden)
 			return
 		}
 
@@ -247,8 +310,8 @@ func buildMockJCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 func newServer(backend courier.Backend) courier.Server {
 	// for benchmarks, log to null
 	logger := logrus.New()
-	logger.Out = ioutil.Discard
-	logrus.SetOutput(ioutil.Discard)
+	logger.Out = io.Discard
+	logrus.SetOutput(io.Discard)
 	config := courier.NewConfig()
 	config.DB = "postgres://courier:courier@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
@@ -270,9 +333,9 @@ func TestDescribeURN(t *testing.T) {
 	conn.Close()
 
 	s := newServer(mb)
-	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
+	handler := &handler{NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
 	handler.Initialize(s)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0])
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 
 	tcs := []struct {
 		urn              urns.URN
@@ -286,6 +349,8 @@ func TestDescribeURN(t *testing.T) {
 		metadata, _ := handler.DescribeURN(context.Background(), testChannels[0], tc.urn, clog)
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
+
+	AssertChannelLogRedaction(t, clog, []string{"secret"})
 }
 
 func TestBuildMediaRequest(t *testing.T) {
@@ -299,7 +364,7 @@ func TestBuildMediaRequest(t *testing.T) {
 
 	conn.Close()
 	s := newServer(mb)
-	handler := &handler{handlers.NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
+	handler := &handler{NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
 	handler.Initialize(s)
 
 	tcs := []struct {
@@ -313,7 +378,7 @@ func TestBuildMediaRequest(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		req, _ := handler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], tc.url)
+		req, _ := handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], tc.url)
 		assert.Equal(t, tc.url, req.URL.String())
 		assert.Equal(t, tc.authorizationHeader, req.Header.Get("Authorization"))
 	}
@@ -396,5 +461,6 @@ func setupBackend(mb *test.MockBackend) {
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configAppSecret: "secret", configAppID: "app-id"})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, setupBackend)
+
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret"}, setupBackend)
 }

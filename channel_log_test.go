@@ -26,7 +26,7 @@ func TestChannelLog(t *testing.T) {
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
 
 	channel := test.NewMockChannel("fef91e9b-a6ed-44fb-b6ce-feed8af585a8", "NX", "1234", "US", nil)
-	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenFetch, channel)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenRefresh, channel, nil)
 
 	// make a request that will have a response
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
@@ -41,15 +41,16 @@ func TestChannelLog(t *testing.T) {
 	assert.EqualError(t, err, "unable to connect to server")
 
 	clog.HTTP(trace)
-	clog.Error(errors.New("this is an error"))
+	clog.Error(courier.NewChannelError("Something not right", "twilio:23456"))
+	clog.RawError(errors.New("this is an error"))
 	clog.End()
 
 	assert.Equal(t, courier.ChannelLogUUID("c00e5d67-c275-4389-aded-7d8b151cbd5b"), clog.UUID())
-	assert.Equal(t, courier.ChannelLogTypeTokenFetch, clog.Type())
+	assert.Equal(t, courier.ChannelLogTypeTokenRefresh, clog.Type())
 	assert.Equal(t, channel, clog.Channel())
 	assert.Equal(t, courier.NilMsgID, clog.MsgID())
 	assert.Equal(t, 2, len(clog.HTTPLogs()))
-	assert.Equal(t, 1, len(clog.Errors()))
+	assert.Equal(t, 2, len(clog.Errors()))
 	assert.False(t, clog.CreatedOn().IsZero())
 	assert.Greater(t, clog.Elapsed(), time.Duration(0))
 
@@ -65,12 +66,70 @@ func TestChannelLog(t *testing.T) {
 	assert.Equal(t, "", hlog2.Response)
 
 	err1 := clog.Errors()[0]
-	assert.Equal(t, "this is an error", err1.Message())
-	assert.Equal(t, "", err1.Code())
+	assert.Equal(t, "Something not right", err1.Message())
+	assert.Equal(t, "twilio:23456", err1.Code())
+
+	err2 := clog.Errors()[1]
+	assert.Equal(t, "this is an error", err2.Message())
+	assert.Equal(t, "", err2.Code())
 
 	clog.SetMsgID(courier.NewMsgID(123))
 	clog.SetType(courier.ChannelLogTypeEventReceive)
 
 	assert.Equal(t, courier.NewMsgID(123), clog.MsgID())
 	assert.Equal(t, courier.ChannelLogTypeEventReceive, clog.Type())
+}
+
+func TestChannelErrors(t *testing.T) {
+	tcs := []struct {
+		err             *courier.ChannelError
+		expectedMessage string
+		expectedCode    string
+	}{
+		{
+			courier.ErrorResponseStatusCode(),
+			"Unexpected response status code.",
+			"core:response_status_code",
+		},
+		{
+			courier.ErrorResponseUnparseable("FOO"),
+			"Unable to parse response as FOO.",
+			"core:response_unparseable",
+		},
+		{
+			courier.ErrorResponseValueMissing("id"),
+			"Unable to find 'id' response.",
+			"core:response_value_missing",
+		},
+		{
+			courier.ErrorResponseValueUnexpected("status", "SUCCESS"),
+			"Expected 'status' in response to be 'SUCCESS'.",
+			"core:response_value_unexpected",
+		},
+		{
+			courier.ErrorResponseValueUnexpected("status", "SUCCESS", "OK"),
+			"Expected 'status' in response to be 'SUCCESS' or 'OK'.",
+			"core:response_value_unexpected",
+		},
+		{
+			courier.ErrorUnsupportedMedia("image/tiff"),
+			"Unsupported attachment media type: image/tiff.",
+			"core:media_unsupported_type",
+		},
+		{
+			courier.ErrorServiceSpecific("twilio", "20002", "Invalid FriendlyName."),
+			"Invalid FriendlyName.",
+			"twilio:20002",
+		},
+		{
+			courier.ErrorServiceSpecific("twilio", "20003", ""),
+			"Service specific error: 20003.",
+			"twilio:20003",
+		},
+	}
+
+	for _, tc := range tcs {
+		assert.Equal(t, tc.expectedMessage, tc.err.Message())
+		assert.Equal(t, tc.expectedCode, tc.err.Code())
+	}
 }

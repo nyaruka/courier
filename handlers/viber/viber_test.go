@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -146,7 +146,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("received non-0 status: '3'", "")},
+		ExpectedErrors:      []*courier.ChannelError{courier.NewChannelError("received non-0 status: '3'", "")},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -158,7 +158,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("received invalid JSON response", "")},
+		ExpectedErrors:      []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -177,7 +177,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 var invalidTokenSendTestCases = []ChannelSendTestCase{
 	{
 		Label:          "Invalid token",
-		ExpectedErrors: []courier.ChannelError{courier.NewChannelError("missing auth token in config", "")},
+		ExpectedErrors: []*courier.ChannelError{courier.NewChannelError("missing auth token in config", "")},
 	},
 }
 
@@ -213,9 +213,9 @@ func TestSending(t *testing.T) {
 			courier.ConfigAuthToken: "Token",
 			"button_layout":         map[string]interface{}{"bg_color": "#f7bb3f", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
 		})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
-	RunChannelSendTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases, nil)
-	RunChannelSendTestCases(t, buttonLayoutChannel, newHandler(), buttonLayoutSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Token"}, nil)
+	RunChannelSendTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases, []string{"Token"}, nil)
+	RunChannelSendTestCases(t, buttonLayoutChannel, newHandler(), buttonLayoutSendTestCases, []string{"Token"}, nil)
 }
 
 var testChannels = []courier.Channel{
@@ -481,56 +481,72 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
+	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
 		PrepRequest: addValidSignature},
-	{Label: "Receive invalid signature", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 400, ExpectedRespBody: "invalid request signature",
+	{Label: "Receive invalid signature", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid request signature",
 		PrepRequest: addInvalidSignature},
-	{Label: "Receive invalid JSON", URL: receiveURL, Data: invalidJSON, ExpectedRespStatus: 400, ExpectedRespBody: "unable to parse request JSON",
+	{Label: "Receive invalid JSON", URL: receiveURL, Data: invalidJSON, ExpectedRespStatus: 400, ExpectedBodyContains: "unable to parse request JSON",
 		PrepRequest: addValidSignature},
-	{Label: "Receive invalid URN", URL: receiveURL, Data: invalidURNMsg, ExpectedRespStatus: 400, ExpectedRespBody: "invalid viber id",
+	{Label: "Receive invalid URN", URL: receiveURL, Data: invalidURNMsg, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid viber id",
 		PrepRequest: addValidSignature},
-	{Label: "Receive invalid Message Type", URL: receiveURL, Data: receiveInvalidMessageType, ExpectedRespStatus: 400, ExpectedRespBody: "unknown message type",
+	{Label: "Receive invalid Message Type", URL: receiveURL, Data: receiveInvalidMessageType, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown message type",
 		PrepRequest: addValidSignature},
-	{Label: "Webhook validation", URL: receiveURL, Data: webhookCheck, ExpectedRespStatus: 200, ExpectedRespBody: "webhook valid", PrepRequest: addValidSignature},
-	{Label: "Failed Status Report", URL: receiveURL, Data: failedStatusReport, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"F"`, PrepRequest: addValidSignature},
-	{Label: "Delivered Status Report", URL: receiveURL, Data: deliveredStatusReport, ExpectedRespStatus: 200, ExpectedRespBody: `Ignored`, PrepRequest: addValidSignature},
-	{Label: "Subcribe", URL: receiveURL, Data: validSubscribed, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted", PrepRequest: addValidSignature},
-	{Label: "Subcribe Invalid URN", URL: receiveURL, Data: invalidURNSubscribed, ExpectedRespStatus: 400, ExpectedRespBody: "invalid viber id", PrepRequest: addValidSignature},
-	{Label: "Unsubcribe", URL: receiveURL, Data: validUnsubscribed, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted", ExpectedEvent: courier.StopContact, PrepRequest: addValidSignature},
-	{Label: "Unsubcribe Invalid URN", URL: receiveURL, Data: invalidURNUnsubscribed, ExpectedRespStatus: 400, ExpectedRespBody: "invalid viber id", PrepRequest: addValidSignature},
-	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, ExpectedRespStatus: 200, ExpectedRespBody: "ignored conversation start", PrepRequest: addValidSignature},
+	{Label: "Webhook validation", URL: receiveURL, Data: webhookCheck, ExpectedRespStatus: 200, ExpectedBodyContains: "webhook valid", PrepRequest: addValidSignature},
+	{Label: "Failed Status Report", URL: receiveURL, Data: failedStatusReport, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"F"`, ExpectedMsgStatus: courier.MsgFailed, PrepRequest: addValidSignature},
+	{Label: "Delivered Status Report", URL: receiveURL, Data: deliveredStatusReport, ExpectedRespStatus: 200, ExpectedBodyContains: `Ignored`, PrepRequest: addValidSignature},
+	{Label: "Subcribe", URL: receiveURL, Data: validSubscribed, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted", ExpectedEvent: "new_conversation", ExpectedURN: "viber:01234567890A=", PrepRequest: addValidSignature},
+	{Label: "Subcribe Invalid URN", URL: receiveURL, Data: invalidURNSubscribed, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid viber id", PrepRequest: addValidSignature},
+	{Label: "Unsubcribe", URL: receiveURL, Data: validUnsubscribed, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted", ExpectedEvent: courier.StopContact, ExpectedURN: "viber:01234567890A=", PrepRequest: addValidSignature},
+	{Label: "Unsubcribe Invalid URN", URL: receiveURL, Data: invalidURNUnsubscribed, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid viber id", PrepRequest: addValidSignature},
+	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, ExpectedRespStatus: 200, ExpectedBodyContains: "ignored conversation start", PrepRequest: addValidSignature},
 	{Label: "Unexpected event", URL: receiveURL, Data: unexpectedEvent, ExpectedRespStatus: 400,
-		ExpectedRespBody: "not handled, unknown event: unexpected", PrepRequest: addValidSignature},
-	{Label: "Message missing text", URL: receiveURL, Data: rejectedMessage, ExpectedRespStatus: 400, ExpectedRespBody: "missing text or media in message in request body", PrepRequest: addValidSignature},
-	{Label: "Picture missing media", URL: receiveURL, Data: rejectedPicture, ExpectedRespStatus: 400, ExpectedRespBody: "missing text or media in message in request body", PrepRequest: addValidSignature},
-	{Label: "Video missing media", URL: receiveURL, Data: rejectedVideo, ExpectedRespStatus: 400, ExpectedRespBody: "missing text or media in message in request body", PrepRequest: addValidSignature},
+		ExpectedBodyContains: "not handled, unknown event: unexpected", PrepRequest: addValidSignature},
+	{Label: "Message missing text", URL: receiveURL, Data: rejectedMessage, ExpectedRespStatus: 400, ExpectedBodyContains: "missing text or media in message in request body", PrepRequest: addValidSignature},
+	{Label: "Picture missing media", URL: receiveURL, Data: rejectedPicture, ExpectedRespStatus: 400, ExpectedBodyContains: "missing text or media in message in request body", PrepRequest: addValidSignature},
+	{Label: "Video missing media", URL: receiveURL, Data: rejectedVideo, ExpectedRespStatus: 400, ExpectedBodyContains: "missing text or media in message in request body", PrepRequest: addValidSignature},
 
-	{Label: "Valid Contact receive", URL: receiveURL, Data: validReceiveContact, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
+	{Label: "Valid Contact receive", URL: receiveURL, Data: validReceiveContact, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("Alex: +12067799191"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
 		PrepRequest: addValidSignature},
-	{Label: "Valid URL receive", URL: receiveURL, Data: validReceiveURL, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
+	{Label: "Valid URL receive", URL: receiveURL, Data: validReceiveURL, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("http://foo.com/"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
 		PrepRequest: addValidSignature},
 
-	{Label: "Valid Location receive", URL: receiveURL, Data: validReceiveLocation, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
+	{Label: "Valid Location receive", URL: receiveURL, Data: validReceiveLocation, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
 		ExpectedAttachments: []string{"geo:1.200000,-1.300000"}, PrepRequest: addValidSignature},
-	{Label: "Valid Sticker", URL: receiveURL, Data: validSticker, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
+	{Label: "Valid Sticker", URL: receiveURL, Data: validSticker, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
 		ExpectedAttachments: []string{"https://viber.github.io/docs/img/stickers/40133.png"}, PrepRequest: addValidSignature},
 }
 
 var testWelcomeMessageCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedRespBody: "Accepted",
-		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
-		PrepRequest: addValidSignature},
-	{Label: "Conversation Started", URL: receiveURL, Data: validConversationStarted, ExpectedRespStatus: 200, ExpectedRespBody: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0"}`, PrepRequest: addValidSignature},
+	{
+		Label:                "Receive Valid",
+		URL:                  receiveURL,
+		Data:                 validMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("incoming msg"),
+		ExpectedURN:          "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		ExpectedExternalID:   "4987381189870374000",
+		PrepRequest:          addValidSignature},
+	{
+		Label:                "Conversation Started",
+		URL:                  receiveURL,
+		Data:                 validConversationStarted,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0"}`,
+		ExpectedEvent:        "welcome_message",
+		ExpectedURN:          "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		PrepRequest:          addValidSignature,
+	},
 }
 
 func addValidSignature(r *http.Request) {
-	body, _ := ioutil.ReadAll(r.Body)
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	body, _ := io.ReadAll(r.Body)
+	r.Body = io.NopCloser(bytes.NewBuffer(body))
 	sig := calculateSignature("Token", body)
 	r.Header.Set(viberSignatureHeader, string(sig))
 }

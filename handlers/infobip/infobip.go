@@ -12,7 +12,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/pkg/errors"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var sendURL = "https://api.infobip.com/sms/1/text/advanced"
@@ -74,7 +74,7 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForExternalID(channel, s.MessageID, msgStatus)
+		status := h.Backend().NewMsgStatusForExternalID(channel, s.MessageID, msgStatus, clog)
 		err = h.Backend().WriteMsgStatus(ctx, status)
 		if err == courier.ErrMsgNotFound {
 			data = append(data, courier.NewInfoData(fmt.Sprintf("ignoring status update message id: %s, not found", s.MessageID)))
@@ -88,7 +88,7 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 		statuses = append(statuses, status)
 	}
 
-	return statuses, courier.WriteDataResponse(ctx, w, http.StatusOK, "statuses handled", data)
+	return statuses, courier.WriteDataResponse(w, http.StatusOK, "statuses handled", data)
 }
 
 //	{
@@ -162,7 +162,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// build our infobipMessage
-		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(messageID)
+		msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(messageID)
 		msgs = append(msgs, msg)
 
 	}
@@ -225,7 +225,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(username, password)
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
@@ -234,17 +234,23 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	groupID, err := jsonparser.GetInt(respBody, "messages", "[0]", "status", "groupId")
 	if err != nil || (groupID != 1 && groupID != 3) {
-		clog.Error(errors.Errorf("received error status: '%d'", groupID))
+		clog.Error(courier.ErrorResponseValueUnexpected("groupId", "1", "3"))
 		return status, nil
 	}
 
-	externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "messageId")
+	externalID, _ := jsonparser.GetString(respBody, "messages", "[0]", "messageId")
 	if externalID != "" {
 		status.SetExternalID(externalID)
 	}
 
 	status.SetStatus(courier.MsgWired)
 	return status, nil
+}
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		httpx.BasicAuth(ch.StringConfigForKey(courier.ConfigUsername, ""), ch.StringConfigForKey(courier.ConfigPassword, "")),
+	}
 }
 
 // {

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -195,13 +194,13 @@ type mediaUploadInfoPayload struct {
 // receiveEvent handles request event type
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// read request body
-	bodyBytes, err := ioutil.ReadAll(io.LimitReader(r.Body, 100000))
+	bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 100000))
 
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to read request body: %s", err))
 	}
 	// restore body to its original value
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	payload := &moPayload{}
 
 	if err := json.Unmarshal(bodyBytes, payload); err != nil {
@@ -251,7 +250,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	date := time.Unix(payload.Object.Message.Date, 0).UTC()
 	text := payload.Object.Message.Text
 	externalId := strconv.FormatInt(payload.Object.Message.Id, 10)
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(externalId)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(externalId)
 	event := h.Backend().CheckExternalIDSeen(msg)
 
 	if attachment := takeFirstAttachmentUrl(*payload); attachment != "" {
@@ -387,7 +386,7 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	params := buildApiBaseParams(msg.Channel())
 	params.Set(paramUserId, msg.URN().Path())
@@ -449,7 +448,7 @@ func buildTextAndAttachmentParams(msg courier.Msg, clog *courier.ChannelLog) (st
 			if attachment, err := handleMediaUploadAndGetAttachment(msg.Channel(), mediaTypeImage, mediaExt, mediaURL, clog); err == nil {
 				msgAttachments = append(msgAttachments, attachment)
 			} else {
-				clog.Error(err)
+				clog.RawError(err)
 			}
 
 		default:

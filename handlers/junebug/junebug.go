@@ -11,7 +11,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/pkg/errors"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var (
@@ -68,7 +68,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	if secret != "" {
 		authorization := r.Header.Get("Authorization")
 		if authorization != fmt.Sprintf("Token %s", secret) {
-			return nil, courier.WriteAndLogUnauthorized(ctx, w, r, c, fmt.Errorf("invalid Authorization header"))
+			return nil, courier.WriteAndLogUnauthorized(w, r, c, fmt.Errorf("invalid Authorization header"))
 		}
 	}
 
@@ -83,7 +83,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
-	msg := h.Backend().NewIncomingMsg(c, urn, payload.Content).WithExternalID(payload.MessageID).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(c, urn, payload.Content, clog).WithExternalID(payload.MessageID).WithReceivedOn(date.UTC())
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
@@ -120,7 +120,7 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 	if secret != "" {
 		authorization := r.Header.Get("Authorization")
 		if authorization != fmt.Sprintf("Token %s", secret) {
-			return nil, courier.WriteAndLogUnauthorized(ctx, w, r, c, fmt.Errorf("invalid Authorization header"))
+			return nil, courier.WriteAndLogUnauthorized(w, r, c, fmt.Errorf("invalid Authorization header"))
 		}
 	}
 
@@ -135,7 +135,7 @@ func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.Re
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "ignoring existing pending status")
 	}
 
-	status := h.Backend().NewMsgStatusForExternalID(c, payload.MessageID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(c, payload.MessageID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 }
 
@@ -171,7 +171,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	eventURL := fmt.Sprintf("https://%s/c/jn/%s/event", callbackDomain, msg.Channel().UUID())
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	for i, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		payload := mtPayload{
 			EventURL: eventURL,
@@ -204,7 +204,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		externalID, err := jsonparser.GetString(respBody, "result", "message_id")
 		if err != nil {
-			clog.Error(errors.Errorf("unable to get result.message_id from body"))
+			clog.Error(courier.ErrorResponseValueMissing("message_id"))
 			return status, nil
 		}
 
@@ -217,4 +217,15 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	// this was wired successfully
 	status.SetStatus(courier.MsgWired)
 	return status, nil
+}
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	vals := []string{
+		httpx.BasicAuth(ch.StringConfigForKey(courier.ConfigUsername, ""), ch.StringConfigForKey(courier.ConfigPassword, "")),
+	}
+	secret := ch.StringConfigForKey(courier.ConfigSecret, "")
+	if secret != "" {
+		vals = append(vals, secret)
+	}
+	return vals
 }

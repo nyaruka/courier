@@ -14,7 +14,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -91,7 +91,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date)
 
 	//add image
 	if mediaURL != "" {
@@ -114,7 +114,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	user := strings.Split(msg.URN().Path(), "/")
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	url := apiURL + "/conversations"
 
 	// create base payload
@@ -148,7 +148,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			msgimage.Image = &Image{URL: mediaURL}
 			payload.Messages[0].MessageParts = append(payload.Messages[0].MessageParts, *msgimage)
 		default:
-			clog.Error(fmt.Errorf("unknown media type: %s", mediaType))
+			clog.Error(courier.ErrorUnsupportedMedia(mediaType))
 		}
 	}
 
@@ -195,10 +195,10 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if actual == "" {
 		return fmt.Errorf("missing request signature")
 	}
-	buf, _ := ioutil.ReadAll(r.Body)
-	rdr1 := ioutil.NopCloser(bytes.NewBuffer(buf))
-	rdr2 := ioutil.NopCloser(bytes.NewBuffer(buf))
-	token, err := ioutil.ReadAll(rdr1)
+	buf, _ := io.ReadAll(r.Body)
+	rdr1 := io.NopCloser(bytes.NewBuffer(buf))
+	rdr2 := io.NopCloser(bytes.NewBuffer(buf))
+	token, err := io.ReadAll(rdr1)
 	if err != nil {
 		return fmt.Errorf("unable to read Body, %s", err.Error())
 	}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/flate"
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -20,7 +19,17 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+)
+
+// for use in request.Context
+type contextKey int
+
+const (
+	contextRequestURL contextKey = iota
+	contextRequestStart
 )
 
 // Server is the main interface ChannelHandlers use to interact with backends. It provides an
@@ -29,8 +38,7 @@ type Server interface {
 	Config() *Config
 
 	AddHandlerRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelHandleFunc)
-
-	SendMsg(context.Context, Msg, *ChannelLog) (MsgStatus, error)
+	GetHandler(Channel) ChannelHandler
 
 	Backend() Backend
 
@@ -63,15 +71,15 @@ func NewServerWithLogger(config *Config, backend Backend, logger *logrus.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Timeout(30 * time.Second))
 
-	chanRouter := chi.NewRouter()
-	router.Mount("/c/", chanRouter)
+	publicRouter := chi.NewRouter()
+	router.Mount("/c/", publicRouter)
 
 	return &server{
 		config:  config,
 		backend: backend,
 
-		router:     router,
-		chanRouter: chanRouter,
+		router:       router,
+		publicRouter: publicRouter,
 
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},
@@ -107,7 +115,8 @@ func (s *server) Start() error {
 	s.router.NotFound(s.handle404)
 	s.router.MethodNotAllowed(s.handle405)
 	s.router.Get("/", s.handleIndex)
-	s.router.Get("/status", s.handleStatus)
+	s.router.Get("/status", s.basicAuthRequired(s.handleStatus))
+	s.publicRouter.Post("/_fetch-attachment", s.tokenAuthRequired(s.handleFetchAttachment)) // becomes /c/_fetch-attachment
 
 	// initialize our handlers
 	s.initializeChannelHandlers()
@@ -127,11 +136,7 @@ func (s *server) Start() error {
 		defer s.waitGroup.Done()
 		err := s.httpServer.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
-			logrus.WithFields(logrus.Fields{
-				"comp":  "server",
-				"state": "stopping",
-				"err":   err,
-			}).Error()
+			logrus.WithFields(logrus.Fields{"comp": "server", "state": "stopping"}).Error(err)
 		}
 	}()
 
@@ -203,16 +208,7 @@ func (s *server) Stop() error {
 	return nil
 }
 
-func (s *server) SendMsg(ctx context.Context, msg Msg, clog *ChannelLog) (MsgStatus, error) {
-	// find the handler for this message type
-	handler, found := activeHandlers[msg.Channel().ChannelType()]
-	if !found {
-		return nil, fmt.Errorf("unable to find handler for channel type: %s", msg.Channel().ChannelType())
-	}
-
-	// have the handler send it
-	return handler.Send(ctx, msg, clog)
-}
+func (s *server) GetHandler(ch Channel) ChannelHandler { return activeHandlers[ch.ChannelType()] }
 
 func (s *server) WaitGroup() *sync.WaitGroup { return s.waitGroup }
 func (s *server) StopChan() chan bool        { return s.stopChan }
@@ -225,9 +221,9 @@ func (s *server) Router() chi.Router { return s.router }
 type server struct {
 	backend Backend
 
-	httpServer *http.Server
-	router     *chi.Mux
-	chanRouter *chi.Mux
+	httpServer   *http.Server
+	router       *chi.Mux
+	publicRouter *chi.Mux
 
 	foreman *Foreman
 
@@ -237,7 +233,7 @@ type server struct {
 	stopChan  chan bool
 	stopped   bool
 
-	routes []string
+	chanRoutes []string // used for index page
 }
 
 func (s *server) initializeChannelHandlers() {
@@ -259,7 +255,7 @@ func (s *server) initializeChannelHandlers() {
 	}
 
 	// sort our route help
-	sort.Strings(s.routes)
+	sort.Strings(s.chanRoutes)
 }
 
 func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc) http.HandlerFunc {
@@ -275,17 +271,22 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 		defer cancel()
 		r = r.WithContext(ctx)
 
-		// get the channel for this request - can be nil, e.g. FBA verification requests
-		channel, err := handler.GetChannel(ctx, r)
+		recorder, err := httpx.NewRecorder(r, w, true)
 		if err != nil {
-			WriteError(ctx, w, r, err)
+			writeAndLogRequestError(ctx, handler, w, r, nil, err)
 			return
 		}
 
-		recorder, err := httpx.NewRecorder(r, w, true)
+		// get the channel for this request - can be nil, e.g. FBA verification requests
+		channel, err := handler.GetChannel(ctx, r)
 		if err != nil {
-			writeAndLogRequestError(ctx, w, r, channel, err)
+			writeAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, err)
 			return
+		}
+
+		var channelUUID ChannelUUID
+		if channel != nil {
+			channelUUID = channel.UUID()
 		}
 
 		defer func() {
@@ -293,12 +294,12 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			panicLog := recover()
 			if panicLog != nil {
 				debug.PrintStack()
-				logrus.WithError(err).WithField("channel_uuid", channel.UUID()).WithField("request", string(recorder.Trace.RequestTrace)).WithField("trace", panicLog).Error("panic handling request")
-				writeAndLogRequestError(ctx, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
+				logrus.WithError(err).WithField("channel_uuid", channelUUID).WithField("request", string(recorder.Trace.RequestTrace)).WithField("trace", panicLog).Error("panic handling request")
+				writeAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, errors.New("panic handling msg"))
 			}
 		}()
 
-		clog := NewChannelLogForIncoming(recorder, channel)
+		clog := NewChannelLogForIncoming(channel, recorder, handler.RedactValues(channel))
 
 		events, hErr := handlerFunc(ctx, channel, recorder.ResponseWriter, r, clog)
 		duration := time.Since(start)
@@ -306,14 +307,14 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 
 		// if we received an error, write it out and report it
 		if hErr != nil {
-			logrus.WithError(hErr).WithField("channel_uuid", channel.UUID()).WithField("request", string(recorder.Trace.RequestTrace)).Error("error handling request")
-			writeAndLogRequestError(ctx, recorder.ResponseWriter, r, channel, hErr)
+			logrus.WithError(hErr).WithField("channel_uuid", channelUUID).WithField("request", string(recorder.Trace.RequestTrace)).Error("error handling request")
+			writeAndLogRequestError(ctx, handler, recorder.ResponseWriter, r, channel, hErr)
 		}
 
 		// end recording of the request so that we have a response trace
 		if err := recorder.End(); err != nil {
-			logrus.WithError(err).WithField("channel_uuid", channel.UUID()).WithField("request", string(recorder.Trace.RequestTrace)).Error("error receording request")
-			writeAndLogRequestError(ctx, w, r, channel, err)
+			logrus.WithError(err).WithField("channel_uuid", channelUUID).WithField("request", string(recorder.Trace.RequestTrace)).Error("error recording request")
+			writeAndLogRequestError(ctx, handler, w, r, channel, err)
 		}
 
 		if channel != nil {
@@ -366,29 +367,54 @@ func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action s
 	if action != "" {
 		path = fmt.Sprintf("%s/%s", path, action)
 	}
-	s.chanRouter.Method(method, path, s.channelHandleWrapper(handler, handlerFunc))
-	s.routes = append(s.routes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
+	s.publicRouter.Method(method, path, s.channelHandleWrapper(handler, handlerFunc))
+	s.chanRoutes = append(s.chanRoutes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
 }
 
 func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
-
 	var buf bytes.Buffer
-	buf.WriteString("<title>courier</title><body><pre>\n")
+	buf.WriteString("<html><head><title>courier</title></head><body><pre>\n")
 	buf.WriteString(splash)
 	buf.WriteString(s.config.Version)
-
 	buf.WriteString(s.backend.Health())
-
 	buf.WriteString("\n\n")
-	buf.WriteString(strings.Join(s.routes, "\n"))
-	buf.WriteString("</pre></body>")
+	buf.WriteString(strings.Join(s.chanRoutes, "\n"))
+	buf.WriteString("</pre></body></html>")
 	w.Write(buf.Bytes())
+}
+
+func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
+	var buf bytes.Buffer
+	buf.WriteString("<html><head><title>courier</title></head><body><pre>\n")
+	buf.WriteString(splash)
+	buf.WriteString(s.config.Version)
+	buf.WriteString("\n\n")
+	buf.WriteString(s.backend.Status())
+	buf.WriteString("\n\n")
+	buf.WriteString("</pre></body></html>")
+	w.Write(buf.Bytes())
+}
+
+func (s *server) handleFetchAttachment(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
+	defer cancel()
+
+	attachment, clog, err := fetchAttachment(ctx, s.backend, r)
+	if err != nil {
+		logrus.WithError(err).Error()
+		WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonx.MustMarshal(map[string]any{"attachment": attachment, "log_uuid": clog.UUID()}))
 }
 
 func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
 	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "404").Info("not found")
 	errors := []interface{}{NewErrorData(fmt.Sprintf("not found: %s", r.URL.String()))}
-	err := WriteDataResponse(context.Background(), w, http.StatusNotFound, "Not Found", errors)
+	err := WriteDataResponse(w, http.StatusNotFound, "Not Found", errors)
 	if err != nil {
 		logrus.WithError(err).Error()
 	}
@@ -397,42 +423,40 @@ func (s *server) handle404(w http.ResponseWriter, r *http.Request) {
 func (s *server) handle405(w http.ResponseWriter, r *http.Request) {
 	logrus.WithField("url", r.URL.String()).WithField("method", r.Method).WithField("resp_status", "405").Info("invalid method")
 	errors := []interface{}{NewErrorData(fmt.Sprintf("method not allowed: %s", r.Method))}
-	err := WriteDataResponse(context.Background(), w, http.StatusMethodNotAllowed, "Method Not Allowed", errors)
+	err := WriteDataResponse(w, http.StatusMethodNotAllowed, "Method Not Allowed", errors)
 	if err != nil {
 		logrus.WithError(err).Error()
 	}
 }
 
-func (s *server) handleStatus(w http.ResponseWriter, r *http.Request) {
-	if s.config.StatusUsername != "" {
-		user, pass, ok := r.BasicAuth()
-		if !ok || user != s.config.StatusUsername || pass != s.config.StatusPassword {
-			w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
-			w.WriteHeader(401)
-			w.Write([]byte("Unauthorised.\n"))
-			return
+// wraps a handler to make it use basic auth
+func (s *server) basicAuthRequired(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if s.config.StatusUsername != "" {
+			user, pass, ok := r.BasicAuth()
+			if !ok || user != s.config.StatusUsername || pass != s.config.StatusPassword {
+				w.Header().Set("WWW-Authenticate", `Basic realm="Authenticate"`)
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte("Unauthorized"))
+				return
+			}
 		}
+		h(w, r)
 	}
-
-	var buf bytes.Buffer
-	buf.WriteString("<title>courier</title><body><pre>\n")
-	buf.WriteString(splash)
-	buf.WriteString(s.config.Version)
-
-	buf.WriteString("\n\n")
-	buf.WriteString(s.backend.Status())
-	buf.WriteString("\n\n")
-	buf.WriteString("</pre></body>")
-	w.Write(buf.Bytes())
 }
 
-// for use in request.Context
-type contextKey int
-
-const (
-	contextRequestURL contextKey = iota
-	contextRequestStart
-)
+// wraps a handler to make it use token auth
+func (s *server) tokenAuthRequired(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if !strings.HasPrefix(authHeader, "Bearer ") || authHeader[7:] != s.config.AuthToken {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Unauthorized"))
+			return
+		}
+		h(w, r)
+	}
+}
 
 var splash = `
  ____________                   _____             

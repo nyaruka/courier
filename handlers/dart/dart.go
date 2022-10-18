@@ -14,12 +14,18 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/stringsx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
 var (
 	sendURL      = "http://202.43.169.11/APIhttpU/receive2waysms.php"
 	maxMsgLength = 160
+
+	errorCodes = map[string]string{
+		"001": "Authentication error.",
+		"101": "Account expired or invalid parameters.",
+	}
 )
 
 type handler struct {
@@ -77,7 +83,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message, clog)
 
 	// and finally queue our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
@@ -120,19 +126,19 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus)
+	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // DartMedia expects "000" from a message receive request
-func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, statuses []courier.MsgStatus) error {
+func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.MsgStatus) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "000")
 	return err
 }
 
 // DartMedia expects "000" from a status request
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "000")
 	return err
@@ -150,7 +156,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no password set for %s channel", msg.Channel().ChannelType())
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), h.maxLength)
 	for i, part := range parts {
 		form := url.Values{
@@ -184,16 +190,9 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, nil
 		}
 
-		responseText := string(respBody)
-		if responseText != "000" {
-			errorMessage := "Unknown error"
-			if responseText == "001" {
-				errorMessage = "Error 001: Authentication Error"
-			}
-			if responseText == "101" {
-				errorMessage = "Error 101: Account expired or invalid parameters"
-			}
-			clog.Error(fmt.Errorf(errorMessage))
+		responseCode := stringsx.Truncate(string(respBody), 3)
+		if responseCode != "000" {
+			clog.Error(courier.ErrorServiceSpecific("dart", responseCode, errorCodes[responseCode]))
 			return status, nil
 		}
 

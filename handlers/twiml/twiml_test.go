@@ -3,6 +3,7 @@ package twiml
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -76,160 +78,160 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: receiveValid, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Valid", URL: receiveURL, Data: receiveValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
-	{Label: "Receive Button Ignored", URL: receiveURL, Data: receiveButtonIgnored, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Button Ignored", URL: receiveURL, Data: receiveButtonIgnored, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
-	{Label: "Receive Invalid Signature", URL: receiveURL, Data: receiveValid, ExpectedRespStatus: 400, ExpectedRespBody: "invalid request signature",
+	{Label: "Receive Invalid Signature", URL: receiveURL, Data: receiveValid, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid request signature",
 		PrepRequest: addInvalidSignature},
-	{Label: "Receive Missing Signature", URL: receiveURL, Data: receiveValid, ExpectedRespStatus: 400, ExpectedRespBody: "missing request signature"},
-	{Label: "Receive No Params", URL: receiveURL, Data: " ", ExpectedRespStatus: 400, ExpectedRespBody: "field 'messagesid' required",
+	{Label: "Receive Missing Signature", URL: receiveURL, Data: receiveValid, ExpectedRespStatus: 400, ExpectedBodyContains: "missing request signature"},
+	{Label: "Receive No Params", URL: receiveURL, Data: " ", ExpectedRespStatus: 400, ExpectedBodyContains: "field 'messagesid' required",
 		PrepRequest: addValidSignature},
-	{Label: "Receive Media", URL: receiveURL, Data: receiveMedia, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Media", URL: receiveURL, Data: receiveMedia, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", ExpectedAttachments: []string{"cat.jpg", "dog.jpg"},
 		PrepRequest: addValidSignature},
-	{Label: "Receive Media With Msg", URL: receiveURL, Data: receiveMediaWithMsg, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Media With Msg", URL: receiveURL, Data: receiveMediaWithMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", ExpectedAttachments: []string{"cat.jpg", "dog.jpg"},
 		PrepRequest: addValidSignature},
-	{Label: "Receive Base64", URL: receiveURL, Data: receiveBase64, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Base64", URL: receiveURL, Data: receiveBase64, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
-	{Label: "Status Stop contact", URL: statusURL, Data: statusStop, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"F"`,
+	{Label: "Status Stop contact", URL: statusURL, Data: statusStop, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"F"`, ExpectedMsgStatus: courier.MsgFailed, ExpectedEvent: "stop_contact", ExpectedURN: "tel:+12028831111",
 		PrepRequest: addValidSignature},
-	{Label: "Status No Params", URL: statusURL, Data: " ", ExpectedRespStatus: 200, ExpectedRespBody: "no msg status, ignoring",
+	{Label: "Status No Params", URL: statusURL, Data: " ", ExpectedRespStatus: 200, ExpectedBodyContains: "no msg status, ignoring",
 		PrepRequest: addValidSignature},
-	{Label: "Status Invalid Status", URL: statusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedRespBody: "unknown status 'huh'",
+	{Label: "Status Invalid Status", URL: statusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown status 'huh'",
 		PrepRequest: addValidSignature},
-	{Label: "Status Valid", URL: statusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
+	{Label: "Status Valid", URL: statusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
-	{Label: "Status Read", URL: statusURL, Data: statusRead, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
+	{Label: "Status Read", URL: statusURL, Data: statusRead, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
-	{Label: "Status ID Valid", URL: statusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedMsgID: 12345,
+	{Label: "Status ID Valid", URL: statusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedMsgID: 12345,
 		PrepRequest: addValidSignature},
-	{Label: "Status ID Invalid", URL: statusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
+	{Label: "Status ID Invalid", URL: statusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
 }
 
 var tmsTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: tmsReceiveURL, Data: receiveValid, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Valid", URL: tmsReceiveURL, Data: receiveValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
-	{Label: "Receive TMS extra", URL: tmsReceiveURL, Data: tmsReceiveExtra, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive TMS extra", URL: tmsReceiveURL, Data: tmsReceiveExtra, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("John Cruz"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMbbf29aeb9d380ce2a1c0ae4635ff9dab",
 		PrepRequest: addValidSignature},
-	{Label: "Receive Invalid Signature", URL: tmsReceiveURL, Data: receiveValid, ExpectedRespStatus: 400, ExpectedRespBody: "invalid request signature",
+	{Label: "Receive Invalid Signature", URL: tmsReceiveURL, Data: receiveValid, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid request signature",
 		PrepRequest: addInvalidSignature},
-	{Label: "Receive Missing Signature", URL: tmsReceiveURL, Data: receiveValid, ExpectedRespStatus: 400, ExpectedRespBody: "missing request signature"},
-	{Label: "Receive No Params", URL: tmsReceiveURL, Data: " ", ExpectedRespStatus: 400, ExpectedRespBody: "field 'messagesid' required",
+	{Label: "Receive Missing Signature", URL: tmsReceiveURL, Data: receiveValid, ExpectedRespStatus: 400, ExpectedBodyContains: "missing request signature"},
+	{Label: "Receive No Params", URL: tmsReceiveURL, Data: " ", ExpectedRespStatus: 400, ExpectedBodyContains: "field 'messagesid' required",
 		PrepRequest: addValidSignature},
-	{Label: "Receive Media", URL: tmsReceiveURL, Data: receiveMedia, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Media", URL: tmsReceiveURL, Data: receiveMedia, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", ExpectedAttachments: []string{"cat.jpg", "dog.jpg"},
 		PrepRequest: addValidSignature},
-	{Label: "Receive Media With Msg", URL: tmsReceiveURL, Data: receiveMediaWithMsg, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Media With Msg", URL: tmsReceiveURL, Data: receiveMediaWithMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", ExpectedAttachments: []string{"cat.jpg", "dog.jpg"},
 		PrepRequest: addValidSignature},
-	{Label: "Receive Base64", URL: tmsReceiveURL, Data: receiveBase64, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Base64", URL: tmsReceiveURL, Data: receiveBase64, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
-	{Label: "Status Stop contact", URL: tmsStatusURL, Data: statusStop, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"F"`,
+	{Label: "Status Stop contact", URL: tmsStatusURL, Data: statusStop, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"F"`, ExpectedMsgStatus: courier.MsgFailed, ExpectedEvent: "stop_contact", ExpectedURN: "tel:+12028831111",
 		PrepRequest: addValidSignature},
-	{Label: "Status TMS extra", URL: tmsStatusURL, Data: tmsStatusExtra, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"S"`,
+	{Label: "Status TMS extra", URL: tmsStatusURL, Data: tmsStatusExtra, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"S"`, ExpectedMsgStatus: courier.MsgSent,
 		ExpectedExternalID: "SM0b6e2697aae04182a9f5b5c7a8994c7f", PrepRequest: addValidSignature},
-	{Label: "Status No Params", URL: tmsStatusURL, Data: " ", ExpectedRespStatus: 200, ExpectedRespBody: "no msg status, ignoring",
+	{Label: "Status No Params", URL: tmsStatusURL, Data: " ", ExpectedRespStatus: 200, ExpectedBodyContains: "no msg status, ignoring",
 		PrepRequest: addValidSignature},
-	{Label: "Status Invalid Status", URL: tmsStatusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedRespBody: "unknown status 'huh'",
+	{Label: "Status Invalid Status", URL: tmsStatusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown status 'huh'",
 		PrepRequest: addValidSignature},
-	{Label: "Status Valid", URL: tmsStatusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
+	{Label: "Status Valid", URL: tmsStatusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
-	{Label: "Status ID Valid", URL: tmsStatusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedMsgID: 12345,
+	{Label: "Status ID Valid", URL: tmsStatusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedMsgID: 12345,
 		PrepRequest: addValidSignature},
-	{Label: "Status ID Invalid", URL: tmsStatusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
+	{Label: "Status ID Invalid", URL: tmsStatusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
 }
 
 var twTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: twReceiveURL, Data: receiveValid, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Valid", URL: twReceiveURL, Data: receiveValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
 	{Label: "Receive Forwarded Valid", URL: twReceiveURL, Data: receiveValid,
 		Headers:            map[string]string{forwardedPathHeader: "/handlers/twilio/receive/8eb23e93-5ecb-45ba-b726-3b064e0c56ab"},
-		ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+		ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addForwardSignature},
-	{Label: "Receive Invalid Signature", URL: twReceiveURL, Data: receiveValid, ExpectedRespStatus: 400, ExpectedRespBody: "invalid request signature",
+	{Label: "Receive Invalid Signature", URL: twReceiveURL, Data: receiveValid, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid request signature",
 		PrepRequest: addInvalidSignature},
-	{Label: "Receive Missing Signature", URL: twReceiveURL, Data: receiveValid, ExpectedRespStatus: 400, ExpectedRespBody: "missing request signature"},
-	{Label: "Receive No Params", URL: twReceiveURL, Data: " ", ExpectedRespStatus: 400, ExpectedRespBody: "field 'messagesid' required",
+	{Label: "Receive Missing Signature", URL: twReceiveURL, Data: receiveValid, ExpectedRespStatus: 400, ExpectedBodyContains: "missing request signature"},
+	{Label: "Receive No Params", URL: twReceiveURL, Data: " ", ExpectedRespStatus: 400, ExpectedBodyContains: "field 'messagesid' required",
 		PrepRequest: addValidSignature},
-	{Label: "Receive Media", URL: twReceiveURL, Data: receiveMedia, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Media", URL: twReceiveURL, Data: receiveMedia, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", ExpectedAttachments: []string{"cat.jpg", "dog.jpg"},
 		PrepRequest: addValidSignature},
-	{Label: "Receive Media With Msg", URL: twReceiveURL, Data: receiveMediaWithMsg, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Media With Msg", URL: twReceiveURL, Data: receiveMediaWithMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", ExpectedAttachments: []string{"cat.jpg", "dog.jpg"},
 		PrepRequest: addValidSignature},
-	{Label: "Receive Base64", URL: twReceiveURL, Data: receiveBase64, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Base64", URL: twReceiveURL, Data: receiveBase64, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
-	{Label: "Status Stop contact", URL: twStatusURL, Data: statusStop, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"F"`,
+	{Label: "Status Stop contact", URL: twStatusURL, Data: statusStop, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"F"`, ExpectedMsgStatus: courier.MsgFailed, ExpectedEvent: "stop_contact", ExpectedURN: "tel:+12028831111",
 		PrepRequest: addValidSignature},
-	{Label: "Status No Params", URL: twStatusURL, Data: " ", ExpectedRespStatus: 200, ExpectedRespBody: "no msg status, ignoring",
+	{Label: "Status No Params", URL: twStatusURL, Data: " ", ExpectedRespStatus: 200, ExpectedBodyContains: "no msg status, ignoring",
 		PrepRequest: addValidSignature},
-	{Label: "Status Invalid Status", URL: twStatusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedRespBody: "unknown status 'huh'",
+	{Label: "Status Invalid Status", URL: twStatusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown status 'huh'",
 		PrepRequest: addValidSignature},
-	{Label: "Status Valid", URL: twStatusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
+	{Label: "Status Valid", URL: twStatusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
-	{Label: "Status ID Valid", URL: twStatusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedMsgID: 12345,
+	{Label: "Status ID Valid", URL: twStatusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedMsgID: 12345,
 		PrepRequest: addValidSignature},
-	{Label: "Status ID Invalid", URL: twStatusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
+	{Label: "Status ID Invalid", URL: twStatusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
 }
 
 var swTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: swReceiveURL, Data: receiveValid, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Valid", URL: swReceiveURL, Data: receiveValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b"},
-	{Label: "Receive No Params", URL: swReceiveURL, Data: " ", ExpectedRespStatus: 400, ExpectedRespBody: "field 'messagesid' required"},
-	{Label: "Receive Media", URL: swReceiveURL, Data: receiveMedia, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive No Params", URL: swReceiveURL, Data: " ", ExpectedRespStatus: 400, ExpectedBodyContains: "field 'messagesid' required"},
+	{Label: "Receive Media", URL: swReceiveURL, Data: receiveMedia, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", ExpectedAttachments: []string{"cat.jpg", "dog.jpg"}},
-	{Label: "Receive Media With Msg", URL: swReceiveURL, Data: receiveMediaWithMsg, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Media With Msg", URL: swReceiveURL, Data: receiveMediaWithMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", ExpectedAttachments: []string{"cat.jpg", "dog.jpg"}},
-	{Label: "Receive Base64", URL: swReceiveURL, Data: receiveBase64, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Base64", URL: swReceiveURL, Data: receiveBase64, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Bannon Explains The World ...\n“The Camp of the Saints"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b"},
-	{Label: "Status Stop contact", URL: swStatusURL, Data: statusStop, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"F"`,
+	{Label: "Status Stop contact", URL: swStatusURL, Data: statusStop, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"F"`, ExpectedMsgStatus: courier.MsgFailed, ExpectedEvent: "stop_contact", ExpectedURN: "tel:+12028831111",
 		PrepRequest: addValidSignature},
-	{Label: "Status No Params", URL: swStatusURL, Data: " ", ExpectedRespStatus: 200, ExpectedRespBody: "no msg status, ignoring"},
-	{Label: "Status Invalid Status", URL: swStatusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedRespBody: "unknown status 'huh'"},
-	{Label: "Status Valid", URL: swStatusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b"},
-	{Label: "Status ID Valid", URL: swStatusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedMsgID: 12345},
-	{Label: "Status ID Invalid", URL: swStatusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b"},
+	{Label: "Status No Params", URL: swStatusURL, Data: " ", ExpectedRespStatus: 200, ExpectedBodyContains: "no msg status, ignoring"},
+	{Label: "Status Invalid Status", URL: swStatusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown status 'huh'"},
+	{Label: "Status Valid", URL: swStatusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b"},
+	{Label: "Status ID Valid", URL: swStatusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedMsgID: 12345},
+	{Label: "Status ID Invalid", URL: swStatusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b"},
 }
 
 var waTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: waReceiveValid, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Valid", URL: receiveURL, Data: waReceiveValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "whatsapp:14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
 }
 
 var twaTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: twaReceiveURL, Data: waReceiveValid, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Valid", URL: twaReceiveURL, Data: waReceiveValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "whatsapp:14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
-	{Label: "Receive Valid", URL: twaReceiveURL, Data: waReceiveButtonValid, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Valid", URL: twaReceiveURL, Data: waReceiveButtonValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Confirm"), ExpectedURN: "whatsapp:14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
-	{Label: "Receive Prefixless URN", URL: twaReceiveURL, Data: waReceivePrefixlessURN, ExpectedRespStatus: 200, ExpectedRespBody: "<Response/>",
+	{Label: "Receive Prefixless URN", URL: twaReceiveURL, Data: waReceivePrefixlessURN, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "whatsapp:14133881111", ExpectedExternalID: "SM681a1f26d9ec591431ce406e8f399525",
 		PrepRequest: addValidSignature},
-	{Label: "Status No Params", URL: twaStatusURL, Data: " ", ExpectedRespStatus: 200, ExpectedRespBody: "no msg status, ignoring",
+	{Label: "Status No Params", URL: twaStatusURL, Data: " ", ExpectedRespStatus: 200, ExpectedBodyContains: "no msg status, ignoring",
 		PrepRequest: addValidSignature},
-	{Label: "Status Invalid Status", URL: twaStatusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedRespBody: "unknown status 'huh'",
+	{Label: "Status Invalid Status", URL: twaStatusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown status 'huh'",
 		PrepRequest: addValidSignature},
-	{Label: "Status Valid", URL: twaStatusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
+	{Label: "Status Valid", URL: twaStatusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
-	{Label: "Status ID Valid", URL: twaStatusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedMsgID: 12345,
+	{Label: "Status ID Valid", URL: twaStatusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedMsgID: 12345,
 		PrepRequest: addValidSignature},
-	{Label: "Status ID Invalid", URL: twaStatusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"D"`, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
+	{Label: "Status ID Invalid", URL: twaStatusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
 }
 
@@ -325,7 +327,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 401,
 		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -336,7 +338,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -348,7 +350,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedStopEvent:  true,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -359,19 +361,41 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
-		Label:              "Send Attachment",
+		Label:              "Single attachment and text",
 		MsgText:            "My pic!",
 		MsgURN:             "tel:+250788383383",
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:   `{ "sid": "1002" }`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "My pic!", "To": "+250788383383", "MediaUrl": "https://foo.bar/image.jpg", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "W",
-		SendPrep:           setSendURL,
+		ExpectedPostForm: url.Values{
+			"Body":           []string{"My pic!"},
+			"To":             []string{"+250788383383"},
+			"MediaUrl":       []string{"https://foo.bar/image.jpg"},
+			"From":           []string{"2020"},
+			"StatusCallback": []string{"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+		},
+		ExpectedMsgStatus: "W",
+		SendPrep:          setSendURL,
+	},
+	{
+		Label:              "Multiple attachments, no text",
+		MsgURN:             "tel:+250788383383",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg", "audio/mp4:https://foo.bar/audio.m4a"},
+		MockResponseBody:   `{ "sid": "1002" }`,
+		MockResponseStatus: 200,
+		ExpectedPostForm: url.Values{
+			"Body":           []string{""},
+			"To":             []string{"+250788383383"},
+			"MediaUrl":       []string{"https://foo.bar/image.jpg", "https://foo.bar/audio.m4a"},
+			"From":           []string{"2020"},
+			"StatusCallback": []string{"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+		},
+		ExpectedMsgStatus: "W",
+		SendPrep:          setSendURL,
 	},
 }
 
@@ -410,7 +434,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 401,
 		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -421,7 +445,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -433,7 +457,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
 		ExpectedStopEvent:  true,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -444,7 +468,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -495,7 +519,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 401,
 		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -506,7 +530,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -518,7 +542,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "F",
 		ExpectedStopEvent:  true,
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -529,7 +553,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -580,7 +604,7 @@ var swSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 401,
 		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -591,7 +615,7 @@ var swSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -603,7 +627,7 @@ var swSendTestCases = []ChannelSendTestCase{
 		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "F",
 		ExpectedStopEvent:  true,
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -614,7 +638,7 @@ var swSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sid from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -687,10 +711,10 @@ func TestSending(t *testing.T) {
 			configSendURL:           "BASE_URL",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newTWIMLHandler("T", "Twilio", true), defaultSendTestCases, nil)
-	RunChannelSendTestCases(t, tmsDefaultChannel, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsDefaultSendTestCases, nil)
-	RunChannelSendTestCases(t, twDefaultChannel, newTWIMLHandler("TW", "TwiML", true), twDefaultSendTestCases, nil)
-	RunChannelSendTestCases(t, swChannel, newTWIMLHandler("SW", "SignalWire", false), swSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newTWIMLHandler("T", "Twilio", true), defaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunChannelSendTestCases(t, tmsDefaultChannel, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsDefaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunChannelSendTestCases(t, twDefaultChannel, newTWIMLHandler("TW", "TwiML", true), twDefaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunChannelSendTestCases(t, swChannel, newTWIMLHandler("SW", "SignalWire", false), swSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 
 	waChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
 		map[string]interface{}{
@@ -700,7 +724,7 @@ func TestSending(t *testing.T) {
 	)
 	waChannel.SetScheme(urns.WhatsAppScheme)
 
-	RunChannelSendTestCases(t, waChannel, newTWIMLHandler("T", "Twilio Whatsapp", true), waSendTestCases, nil)
+	RunChannelSendTestCases(t, waChannel, newTWIMLHandler("T", "Twilio Whatsapp", true), waSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 
 	twaChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
 		map[string]interface{}{
@@ -710,5 +734,5 @@ func TestSending(t *testing.T) {
 	)
 	twaChannel.SetScheme(urns.WhatsAppScheme)
 
-	RunChannelSendTestCases(t, twaChannel, newTWIMLHandler("TWA", "Twilio Whatsapp", true), twaSendTestCases, nil)
+	RunChannelSendTestCases(t, twaChannel, newTWIMLHandler("TWA", "Twilio Whatsapp", true), twaSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 }

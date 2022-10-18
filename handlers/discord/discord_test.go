@@ -19,7 +19,7 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("bac782c2-7aeb-4389-92f5-97887744f573", "DS", "discord", "US", map[string]interface{}{}),
+	test.NewMockChannel("bac782c2-7aeb-4389-92f5-97887744f573", "DS", "discord", "US", map[string]interface{}{courier.ConfigSendAuthorization: "sesame"}),
 }
 
 var testCases = []ChannelHandleTestCase{
@@ -41,32 +41,33 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedAttachments: []string{"https://test.test/foo.png"},
 	},
 	{
-		Label:              "Invalid ID",
-		URL:                "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive",
-		Data:               `from=somebody&text=hello`,
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "Error",
+		Label:                "Invalid ID",
+		URL:                  "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive",
+		Data:                 `from=somebody&text=hello`,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error",
 	},
 	{
-		Label:              "Garbage Body",
-		URL:                "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive",
-		Data:               `sdfaskdfajsdkfajsdfaksdf`,
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "Error",
+		Label:                "Garbage Body",
+		URL:                  "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive",
+		Data:                 `sdfaskdfajsdkfajsdfaksdf`,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error",
 	},
 	{
-		Label:              "Missing Text",
-		URL:                "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive",
-		Data:               `from=694634743521607802`,
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "Error",
+		Label:                "Missing Text",
+		URL:                  "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive",
+		Data:                 `from=694634743521607802`,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error",
 	},
 	{
-		Label:              "Message Sent Handler",
-		URL:                "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/sent/",
-		Data:               `id=12345`,
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   `"status":"S"`,
+		Label:                "Message Sent Handler",
+		URL:                  "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/sent/",
+		Data:                 `id=12345`,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"S"`,
+		ExpectedMsgStatus:    courier.MsgSent,
 	},
 	{
 		Label:              "Message Sent Handler Garbage",
@@ -118,5 +119,5 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 }
 
 func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, nil)
+	RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"sesame"}, nil)
 }

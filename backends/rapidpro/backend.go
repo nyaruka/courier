@@ -8,11 +8,14 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
@@ -131,12 +134,12 @@ func (b *backend) DeleteMsgWithExternalID(ctx context.Context, channel courier.C
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
+func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, clog *courier.ChannelLog) courier.Msg {
 	// remove any control characters
 	text = utils.CleanString(text)
 
 	// create our msg
-	msg := newMsg(MsgIncoming, channel, urn, text)
+	msg := newMsg(MsgIncoming, channel, urn, text, clog)
 
 	// set received on to now
 	msg.WithReceivedOn(time.Now().UTC())
@@ -149,11 +152,6 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text str
 		msg.alreadyWritten = true
 	}
 	return msg
-}
-
-// NewOutgoingMsg creates a new outgoing message from the given params
-func (b *backend) NewOutgoingMsg(channel courier.Channel, urn urns.URN, text string) courier.Msg {
-	return newMsg(MsgOutgoing, channel, urn, text)
 }
 
 // PopNextOutgoingMsg pops the next message that needs to be sent
@@ -266,13 +264,13 @@ func (b *backend) WriteMsg(ctx context.Context, m courier.Msg, clog *courier.Cha
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewMsgStatusForID(channel courier.Channel, id courier.MsgID, status courier.MsgStatusValue) courier.MsgStatus {
-	return newMsgStatus(channel, id, "", status)
+func (b *backend) NewMsgStatusForID(channel courier.Channel, id courier.MsgID, status courier.MsgStatusValue, clog *courier.ChannelLog) courier.MsgStatus {
+	return newMsgStatus(channel, id, "", status, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID string, status courier.MsgStatusValue) courier.MsgStatus {
-	return newMsgStatus(channel, courier.NilMsgID, externalID, status)
+func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID string, status courier.MsgStatusValue, clog *courier.ChannelLog) courier.MsgStatus {
+	return newMsgStatus(channel, courier.NilMsgID, externalID, status, clog)
 }
 
 // WriteMsgStatus writes the passed in MsgStatus to our store
@@ -367,8 +365,8 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.MsgStatus
 }
 
 // NewChannelEvent creates a new channel event with the passed in parameters
-func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN) courier.ChannelEvent {
-	return newChannelEvent(channel, eventType, urn)
+func (b *backend) NewChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) courier.ChannelEvent {
+	return newChannelEvent(channel, eventType, urn, clog)
 }
 
 // WriteChannelEvent writes the passed in channel even returning any error
@@ -407,6 +405,29 @@ func (b *backend) CheckExternalIDSeen(msg courier.Msg) courier.Msg {
 // Mark a external ID as seen for a period
 func (b *backend) WriteExternalIDSeen(msg courier.Msg) {
 	writeExternalIDSeen(b, msg)
+}
+
+// SaveAttachment saves an attachment to backend storage
+func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, contentType string, data []byte, extension string) (string, error) {
+	// create our filename
+	filename := string(uuids.New())
+	if extension != "" {
+		filename = fmt.Sprintf("%s.%s", filename, extension)
+	}
+
+	orgID := ch.(*DBChannel).OrgID()
+
+	path := filepath.Join(b.config.S3AttachmentsPrefix, strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
+	if !strings.HasPrefix(path, "/") {
+		path = fmt.Sprintf("/%s", path)
+	}
+
+	storageURL, err := b.storage.Put(ctx, path, contentType, data)
+	if err != nil {
+		return "", errors.Wrapf(err, "error saving attachment to storage (bytes=%d)", len(data))
+	}
+
+	return storageURL, nil
 }
 
 // ResolveMedia resolves the passed in attachment URL to a media object
@@ -727,9 +748,9 @@ func (b *backend) Start() error {
 		if err != nil {
 			return err
 		}
-		b.storage = storage.NewS3(s3Client, b.config.S3AttachmentsBucket, b.config.S3Region, 32)
+		b.storage = storage.NewS3(s3Client, b.config.S3AttachmentsBucket, b.config.S3Region, s3.BucketCannedACLPublicRead, 32)
 	} else {
-		b.storage = storage.NewFS("_storage")
+		b.storage = storage.NewFS("_storage", 0766)
 	}
 
 	// test our storage

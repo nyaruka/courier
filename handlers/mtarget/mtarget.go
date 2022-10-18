@@ -46,7 +46,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMsg)
 
-	statusHandler := handlers.NewExternalIDStatusHandler(&h.BaseHandler, statusMapping, "MsgId", "Status")
+	statusHandler := handlers.NewExternalIDStatusHandler(h, statusMapping, "MsgId", "Status")
 	s.AddHandlerRoute(h, http.MethodPost, "status", statusHandler)
 	return nil
 }
@@ -133,16 +133,16 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 
 	// if this a stop command, shortcut stopping that contact
 	if keyword == "Stop" {
-		stop := h.Backend().NewChannelEvent(c, courier.StopContact, urn)
+		stop := h.Backend().NewChannelEvent(c, courier.StopContact, urn, clog)
 		err := h.Backend().WriteChannelEvent(ctx, stop, clog)
 		if err != nil {
 			return nil, err
 		}
-		return []courier.Event{stop}, courier.WriteChannelEventSuccess(ctx, w, r, stop)
+		return []courier.Event{stop}, courier.WriteChannelEventSuccess(w, stop)
 	}
 
 	// otherwise, create our incoming message and write that
-	msg := h.Backend().NewIncomingMsg(c, urn, text).WithReceivedOn(time.Now().UTC())
+	msg := h.Backend().NewIncomingMsg(c, urn, text, clog).WithReceivedOn(time.Now().UTC())
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
@@ -160,7 +160,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	// send our message
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		// build our request
 		params := url.Values{
@@ -202,7 +202,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			status.SetExternalID(externalID)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			clog.Error(fmt.Errorf("Error status code, failing permanently"))
+			clog.RawError(fmt.Errorf("Error status code, failing permanently"))
 			break
 		}
 	}

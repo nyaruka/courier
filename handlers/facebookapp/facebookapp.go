@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -27,9 +27,9 @@ var (
 	sendURL  = "https://graph.facebook.com/v12.0/me/messages"
 	graphURL = "https://graph.facebook.com/v12.0/"
 
-	signatureHeader = "X-Hub-Signature"
+	signatureHeader = "X-Hub-Signature-256"
 
-	configWACPhoneNumberID = "wac_phone_number_id"
+	maxRequestBodyBytes int64 = 1024 * 1024
 
 	// max for the body
 	maxMsgLength = 1000
@@ -71,7 +71,7 @@ var waIgnoreStatuses = map[string]bool{
 }
 
 func newHandler(channelType courier.ChannelType, name string, useUUIDRoutes bool) courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, useUUIDRoutes)}
+	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, useUUIDRoutes, []string{courier.ConfigAuthToken})}
 }
 
 func init() {
@@ -198,7 +198,6 @@ type moPayload struct {
 						Origin *struct {
 							Type string `json:"type"`
 						} `json:"origin"`
-						ExpirationTimestamp int64 `json:"expiration_timestamp"`
 					} `json:"conversation"`
 					Pricing *struct {
 						PricingModel string `json:"pricing_model"`
@@ -265,6 +264,17 @@ type moPayload struct {
 			} `json:"delivery"`
 		} `json:"messaging"`
 	} `json:"entry"`
+}
+
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	vals := h.BaseHandler.RedactValues(ch)
+	vals = append(vals, h.Server().Config().FacebookApplicationSecret, h.Server().Config().FacebookWebhookSecret, h.Server().Config().WhatsappAdminSystemUserToken)
+	return vals
+}
+
+// WriteRequestError writes the passed in error to our response writer
+func (h *handler) WriteRequestError(ctx context.Context, w http.ResponseWriter, err error) error {
+	return courier.WriteError(w, http.StatusOK, err)
 }
 
 // GetChannel returns the channel
@@ -390,7 +400,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return nil, err
 	}
 
-	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
+	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
 func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []interface{}, error) {
@@ -463,7 +473,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 				}
 
 				// create our message
-				ev := h.Backend().NewIncomingMsg(channel, urn, text).WithReceivedOn(date).WithExternalID(msg.ID).WithContactName(contactNames[msg.From])
+				ev := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(msg.ID).WithContactName(contactNames[msg.From])
 				event := h.Backend().CheckExternalIDSeen(ev)
 
 				// we had an error downloading media
@@ -499,7 +509,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					continue
 				}
 
-				event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus)
+				event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus, clog)
 				err := h.Backend().WriteMsgStatus(ctx, event)
 
 				// we don't know about this message, just tell them we ignored it
@@ -584,7 +594,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 				}
 			}
 
-			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn).WithOccurredOn(date)
+			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]interface{}{
@@ -606,7 +616,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			if msg.Postback.Referral.Ref != "" {
 				eventType = courier.Referral
 			}
-			event := h.Backend().NewChannelEvent(channel, eventType, urn).WithOccurredOn(date)
+			event := h.Backend().NewChannelEvent(channel, eventType, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]interface{}{
@@ -637,7 +647,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 		} else if msg.Referral != nil {
 			// this is an incoming referral
-			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn).WithOccurredOn(date)
+			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]interface{}{
@@ -713,7 +723,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			}
 
 			// create our message
-			ev := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(msg.Message.MID).WithReceivedOn(date)
+			ev := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(msg.Message.MID).WithReceivedOn(date)
 			event := h.Backend().CheckExternalIDSeen(ev)
 
 			// add any attachment URL found
@@ -734,7 +744,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 		} else if msg.Delivery != nil {
 			// this is a delivery report
 			for _, mid := range msg.Delivery.MIDs {
-				event := h.Backend().NewMsgStatusForExternalID(channel, mid, courier.MsgDelivered)
+				event := h.Backend().NewMsgStatusForExternalID(channel, mid, courier.MsgDelivered, clog)
 				err := h.Backend().WriteMsgStatus(ctx, event)
 
 				// we don't know about this message, just tell them we ignored it
@@ -845,7 +855,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 	query.Set("access_token", accessToken)
 	msgURL.RawQuery = query.Encode()
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
@@ -901,7 +911,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 
 		externalID, err := jsonparser.GetString(respBody, "message_id")
 		if err != nil {
-			clog.Error(errors.Errorf("unable to get message_id from body"))
+			clog.Error(courier.ErrorResponseValueMissing("message_id"))
 			return status, nil
 		}
 
@@ -911,7 +921,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 			if msg.URN().IsFacebookRef() {
 				recipientID, err := jsonparser.GetString(respBody, "recipient_id")
 				if err != nil {
-					clog.Error(errors.Errorf("unable to get recipient_id from body"))
+					clog.Error(courier.ErrorResponseValueMissing("recipient_id"))
 					return status, nil
 				}
 
@@ -919,29 +929,29 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 
 				realIDURN, err := urns.NewFacebookURN(recipientID)
 				if err != nil {
-					clog.Error(errors.Errorf("unable to make facebook urn from %s", recipientID))
+					clog.RawError(errors.Errorf("unable to make facebook urn from %s", recipientID))
 				}
 
 				contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), "", "", clog)
 				if err != nil {
-					clog.Error(errors.Errorf("unable to get contact for %s", msg.URN().String()))
+					clog.RawError(errors.Errorf("unable to get contact for %s", msg.URN().String()))
 				}
 				realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN)
 				if err != nil {
-					clog.Error(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
+					clog.RawError(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
 				}
 				referralIDExtURN, err := urns.NewURNFromParts(urns.ExternalScheme, referralID, "", "")
 				if err != nil {
-					clog.Error(errors.Errorf("unable to make ext urn from %s", referralID))
+					clog.RawError(errors.Errorf("unable to make ext urn from %s", referralID))
 				}
 				extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN)
 				if err != nil {
-					clog.Error(errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
+					clog.RawError(errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
 				}
 
 				referralFacebookURN, err := h.Backend().RemoveURNfromContact(ctx, msg.Channel(), contact, msg.URN())
 				if err != nil {
-					clog.Error(errors.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
+					clog.RawError(errors.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
 				}
 
 			}
@@ -1063,7 +1073,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 	path, _ := url.Parse(fmt.Sprintf("/%s/messages", msg.Channel().Address()))
 	wacPhoneURL := base.ResolveReference(path)
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	hasCaption := false
 
@@ -1359,7 +1369,7 @@ func requestWAC(payload wacMTPayload, accessToken string, status courier.MsgStat
 	respPayload := &wacMTResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
-		clog.Error(errors.Errorf("unable to unmarshal response body"))
+		clog.RawError(errors.Errorf("unable to unmarshal response body"))
 		return status, nil
 	}
 
@@ -1429,7 +1439,7 @@ func (h *handler) validateSignature(r *http.Request) error {
 	}
 	appSecret := h.Server().Config().FacebookApplicationSecret
 
-	body, err := handlers.ReadBody(r, 100000)
+	body, err := handlers.ReadBody(r, maxRequestBodyBytes)
 	if err != nil {
 		return fmt.Errorf("unable to read request body: %s", err)
 	}
@@ -1440,8 +1450,8 @@ func (h *handler) validateSignature(r *http.Request) error {
 	}
 
 	signature := ""
-	if len(headerSignature) == 45 && strings.HasPrefix(headerSignature, "sha1=") {
-		signature = strings.TrimPrefix(headerSignature, "sha1=")
+	if len(headerSignature) == 71 && strings.HasPrefix(headerSignature, "sha256=") {
+		signature = strings.TrimPrefix(headerSignature, "sha256=")
 	}
 
 	// compare signatures in way that isn't sensitive to a timing attack
@@ -1457,7 +1467,7 @@ func fbCalculateSignature(appSecret string, body []byte) (string, error) {
 	buffer.Write(body)
 
 	// hash with SHA1
-	mac := hmac.New(sha1.New, []byte(appSecret))
+	mac := hmac.New(sha256.New, []byte(appSecret))
 	mac.Write(buffer.Bytes())
 
 	return hex.EncodeToString(mac.Sum(nil)), nil
@@ -1479,7 +1489,7 @@ func (h *handler) getTemplate(msg courier.Msg) (*MsgTemplating, error) {
 	}
 
 	// check our template is valid
-	err = handlers.Validate(templating)
+	err = utils.Validate(templating)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid templating definition")
 	}
@@ -1498,8 +1508,8 @@ func (h *handler) getTemplate(msg courier.Msg) (*MsgTemplating, error) {
 	return templating, err
 }
 
-// BuildDownloadMediaRequest to download media for message attachment with Bearer token set
-func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+// BuildAttachmentRequest to download media for message attachment with Bearer token set
+func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
 	token := h.Server().Config().WhatsappAdminSystemUserToken
 	if token == "" {
 		return nil, fmt.Errorf("missing token for WAC channel")
@@ -1513,6 +1523,12 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backe
 	}
 	return req, nil
 }
+
+func (*handler) AttachmentRequestClient(ch courier.Channel) *http.Client {
+	return utils.GetHTTPClient()
+}
+
+var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
 type TemplateMetadata struct {
 	Templating *MsgTemplating `json:"templating"`

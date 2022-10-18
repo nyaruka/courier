@@ -31,23 +31,23 @@ var (
 )
 
 var testCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedRespBody: "-1",
+	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "-1",
 		ExpectedMsgText: Sp("Hello"), ExpectedURN: "tel:+60124361111", ExpectedDate: time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC),
 		ExpectedExternalID: "abc1234"},
-	{Label: "Receive Valid via GET", URL: receiveURL + "?" + validReceive, ExpectedRespStatus: 200, ExpectedRespBody: "-1",
+	{Label: "Receive Valid via GET", URL: receiveURL + "?" + validReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "-1",
 		ExpectedMsgText: Sp("Hello"), ExpectedURN: "tel:+60124361111", ExpectedDate: time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC),
 		ExpectedExternalID: "abc1234"},
-	{Label: "Receive Valid", URL: receiveURL, Data: validLongcodeReceive, ExpectedRespStatus: 200, ExpectedRespBody: "-1",
+	{Label: "Receive Valid", URL: receiveURL, Data: validLongcodeReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "-1",
 		ExpectedMsgText: Sp("Hello"), ExpectedURN: "tel:+60124361111", ExpectedDate: time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC),
 		ExpectedExternalID: "abc1234"},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedRespBody: "phone number supplied is not a number"},
-	{Label: "Missing Params", URL: receiveURL, Data: missingParamsReceive, ExpectedRespStatus: 400, ExpectedRespBody: "missing shortcode, longcode, from or msisdn parameters"},
-	{Label: "Invalid Params", URL: receiveURL, Data: invalidParamsReceive, ExpectedRespStatus: 400, ExpectedRespBody: "missing shortcode, longcode, from or msisdn parameters"},
-	{Label: "Invalid Address Params", URL: receiveURL, Data: invalidAddress, ExpectedRespStatus: 400, ExpectedRespBody: "invalid to number [1515], expecting [2020]"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedBodyContains: "phone number supplied is not a number"},
+	{Label: "Missing Params", URL: receiveURL, Data: missingParamsReceive, ExpectedRespStatus: 400, ExpectedBodyContains: "missing shortcode, longcode, from or msisdn parameters"},
+	{Label: "Invalid Params", URL: receiveURL, Data: invalidParamsReceive, ExpectedRespStatus: 400, ExpectedBodyContains: "missing shortcode, longcode, from or msisdn parameters"},
+	{Label: "Invalid Address Params", URL: receiveURL, Data: invalidAddress, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid to number [1515], expecting [2020]"},
 
-	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"S"`},
-	{Label: "Wired Status", URL: statusURL, Data: processingStatus, ExpectedRespStatus: 200, ExpectedRespBody: `"status":"W"`},
-	{Label: "Unknown Status", URL: statusURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedRespBody: `ignoring unknown status 'UNKNOWN'`},
+	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"S"`, ExpectedMsgStatus: courier.MsgSent},
+	{Label: "Wired Status", URL: statusURL, Data: processingStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"W"`, ExpectedMsgStatus: courier.MsgWired},
+	{Label: "Unknown Status", URL: statusURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `ignoring unknown status 'UNKNOWN'`},
 }
 
 func TestHandler(t *testing.T) {
@@ -110,7 +110,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExpectedMsgStatus:  "E",
 		MockResponseBody:   `{ "missing":"OzYDlvf3SQVc" }`,
 		MockResponseStatus: 200,
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to parse response body from Macrokiosk", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("unable to parse response body from Macrokiosk", "")},
 		ExpectedHeaders: map[string]string{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",
@@ -138,5 +138,5 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
 }

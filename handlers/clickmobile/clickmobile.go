@@ -77,7 +77,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Text).WithExternalID(payload.ReferenceID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Text, clog).WithExternalID(payload.ReferenceID)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
@@ -121,7 +121,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	cmSendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, sendURL)
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 
@@ -161,11 +161,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, nil
 		}
 
-		responseCode, err := jsonparser.GetString(respBody, "code")
+		responseCode, _ := jsonparser.GetString(respBody, "code")
 		if responseCode == "000" {
 			status.SetStatus(courier.MsgWired)
 		} else {
-			clog.Error(fmt.Errorf("Received invalid response content: %s", string(respBody)))
+			clog.Error(courier.ErrorResponseValueUnexpected("code", "000"))
 		}
 	}
 	return status, nil

@@ -169,7 +169,7 @@ func getChannelByAddress(ctx context.Context, db *sqlx.DB, channelType courier.C
 	}
 
 	// we found it in the db, cache it locally
-	cacheChannel(channel)
+	cacheChannelByAddress(channel)
 	return channel, nil
 }
 
@@ -408,14 +408,4 @@ func (c *DBChannel) IntConfigForKey(key string, defaultValue int) int {
 // CallbackDomain is convenience utility to get the callback domain configured for this channel
 func (c *DBChannel) CallbackDomain(fallbackDomain string) string {
 	return c.StringConfigForKey(courier.ConfigCallbackDomain, fallbackDomain)
-}
-
-// supportsScheme returns whether the passed in channel supports the passed in scheme
-func (c *DBChannel) supportsScheme(scheme string) bool {
-	for _, s := range c.Schemes_ {
-		if s == scheme {
-			return true
-		}
-	}
-	return false
 }

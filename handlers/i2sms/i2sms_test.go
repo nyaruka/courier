@@ -7,6 +7,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -19,20 +20,20 @@ const (
 
 var testCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid",
-		URL:                receiveURL,
-		Data:               "message=Msg&mobile=254791541111",
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "",
-		ExpectedMsgText:    Sp("Msg"),
-		ExpectedURN:        "tel:+254791541111",
+		Label:                "Receive Valid",
+		URL:                  receiveURL,
+		Data:                 "message=Msg&mobile=254791541111",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "",
+		ExpectedMsgText:      Sp("Msg"),
+		ExpectedURN:          "tel:+254791541111",
 	},
 	{
-		Label:              "Receive Missing Number",
-		URL:                receiveURL,
-		Data:               "message=Msg",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "required field 'mobile'",
+		Label:                "Receive Missing Number",
+		URL:                  receiveURL,
+		Data:                 "message=Msg",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "required field 'mobile'",
 	},
 }
 
@@ -73,7 +74,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `not json`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("invalid character 'o' in literal null (expecting 'u')", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -83,7 +84,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `{"result":{}, "error_code": "10", "error_desc": "Failed"}`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("Received invalid response code: 10", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("Received invalid response code: 10", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -104,5 +105,5 @@ func TestSending(t *testing.T) {
 			courier.ConfigPassword: "pass1",
 			configChannelHash:      "hash123",
 		})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("user1", "pass1"), "hash123"}, nil)
 }

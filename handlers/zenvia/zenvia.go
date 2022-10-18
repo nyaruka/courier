@@ -13,7 +13,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -126,7 +125,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// build our msg
-		msg := h.Backend().NewIncomingMsg(channel, urn, text).WithExternalID(payload.Message.ID).WithReceivedOn(date.UTC()).WithContactName(contactName)
+		msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(payload.Message.ID).WithReceivedOn(date.UTC()).WithContactName(contactName)
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)
 		}
@@ -174,7 +173,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, payload.MessageID, msgStatus)
+	status := h.Backend().NewMsgStatusForExternalID(channel, payload.MessageID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -207,7 +206,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		To:   strings.TrimLeft(msg.URN().Path(), "+"),
 	}
 
-	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored)
+	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored, clog)
 
 	text := ""
 	if channel.ChannelType() == "ZVW" {
@@ -264,12 +263,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	externalID, err := jsonparser.GetString(respBody, "id")
 	if err != nil {
-		clog.Error(errors.Errorf("unable to get id from body"))
+		clog.Error(courier.ErrorResponseValueMissing("id"))
 		return status, nil
 	}
 
 	status.SetExternalID(externalID)
-	// this was wired successfully
 	status.SetStatus(courier.MsgWired)
 	return status, nil
 }

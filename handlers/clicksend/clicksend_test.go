@@ -7,6 +7,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 const (
@@ -19,22 +20,22 @@ var testChannels = []courier.Channel{
 
 var handleTestCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid Message",
-		URL:                receiveURL,
-		Data:               `from=639171234567&body=hello+world`,
-		Headers:            map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "Accepted",
-		ExpectedMsgText:    Sp("hello world"),
-		ExpectedURN:        "tel:+639171234567",
+		Label:                "Receive Valid Message",
+		URL:                  receiveURL,
+		Data:                 `from=639171234567&body=hello+world`,
+		Headers:              map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("hello world"),
+		ExpectedURN:          "tel:+639171234567",
 	},
 	{
-		Label:              "Receive Missing From",
-		URL:                receiveURL,
-		Data:               `body=hello+world`,
-		Headers:            map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "Error",
+		Label:                "Receive Missing From",
+		URL:                  receiveURL,
+		Data:                 `body=hello+world`,
+		Headers:              map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error",
 	},
 }
 
@@ -161,7 +162,7 @@ var sendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   failureResponse,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("received non SUCCESS status: FAILURE", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueUnexpected("status", "SUCCESS")},
 		SendPrep:           setSendURL,
 	},
 }
@@ -174,5 +175,5 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, []string{httpx.BasicAuth("Aladdin", "open sesame")}, nil)
 }

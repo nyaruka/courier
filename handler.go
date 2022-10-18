@@ -21,11 +21,18 @@ type ChannelHandleFunc func(context.Context, Channel, http.ResponseWriter, *http
 // ChannelHandler is the interface all handlers must satisfy
 type ChannelHandler interface {
 	Initialize(Server) error
+	Server() Server
 	ChannelType() ChannelType
 	ChannelName() string
 	UseChannelRouteUUID() bool
+	RedactValues(Channel) []string
 	GetChannel(context.Context, *http.Request) (Channel, error)
 	Send(context.Context, Msg, *ChannelLog) (MsgStatus, error)
+
+	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []MsgStatus) error
+	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []Msg) error
+	WriteRequestError(context.Context, http.ResponseWriter, error) error
+	WriteRequestIgnored(context.Context, http.ResponseWriter, string) error
 }
 
 // URNDescriber is the interface handlers which can look up URN metadata for new contacts should satisfy.
@@ -33,9 +40,10 @@ type URNDescriber interface {
 	DescribeURN(context.Context, Channel, urns.URN, *ChannelLog) (map[string]string, error)
 }
 
-// MediaDownloadRequestBuilder is the interface handlers which can allow a custom way to download attachment media for messages should satisfy
-type MediaDownloadRequestBuilder interface {
-	BuildDownloadMediaRequest(context.Context, Backend, Channel, string) (*http.Request, error)
+// AttachmentRequestBuilder is the interface handlers which can allow a custom way to download attachment media for messages should satisfy
+type AttachmentRequestBuilder interface {
+	BuildAttachmentRequest(context.Context, Backend, Channel, string) (*http.Request, error)
+	AttachmentRequestClient(Channel) *http.Client
 }
 
 // RegisterHandler adds a new handler for a channel type, this is called by individual handlers when they are initialized

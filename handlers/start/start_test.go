@@ -8,6 +8,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -73,77 +74,77 @@ const (
 
 var testCases = []ChannelHandleTestCase{
 	{
-		Label:              "Receive Valid",
-		URL:                receiveURL,
-		Data:               validReceive,
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "<state>Accepted</state>",
-		ExpectedMsgText:    Sp("Hello World"),
-		ExpectedURN:        "tel:+250788123123",
-		ExpectedDate:       time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC),
+		Label:                "Receive Valid",
+		URL:                  receiveURL,
+		Data:                 validReceive,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "<state>Accepted</state>",
+		ExpectedMsgText:      Sp("Hello World"),
+		ExpectedURN:          "tel:+250788123123",
+		ExpectedDate:         time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC),
 	},
 	{
-		Label:              "Receive Valid Encoded",
-		URL:                receiveURL,
-		Data:               validReceiveEncoded,
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "<state>Accepted</state>",
-		ExpectedMsgText:    Sp("Кохання"),
-		ExpectedURN:        "tel:+380501529999",
-		ExpectedDate:       time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC),
+		Label:                "Receive Valid Encoded",
+		URL:                  receiveURL,
+		Data:                 validReceiveEncoded,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "<state>Accepted</state>",
+		ExpectedMsgText:      Sp("Кохання"),
+		ExpectedURN:          "tel:+380501529999",
+		ExpectedDate:         time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC),
 	},
 	{
-		Label:              "Receive Valid with empty Text",
-		URL:                receiveURL,
-		Data:               validReceiveEmptyText,
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "<state>Accepted</state>",
-		ExpectedMsgText:    Sp(""),
-		ExpectedURN:        "tel:+250788123123",
+		Label:                "Receive Valid with empty Text",
+		URL:                  receiveURL,
+		Data:                 validReceiveEmptyText,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "<state>Accepted</state>",
+		ExpectedMsgText:      Sp(""),
+		ExpectedURN:          "tel:+250788123123",
 	},
 	{
-		Label:              "Receive Valid missing body",
-		URL:                receiveURL,
-		Data:               validMissingBody,
-		ExpectedRespStatus: 200,
-		ExpectedRespBody:   "<state>Accepted</state>",
-		ExpectedMsgText:    Sp(""),
-		ExpectedURN:        "tel:+250788123123",
+		Label:                "Receive Valid missing body",
+		URL:                  receiveURL,
+		Data:                 validMissingBody,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "<state>Accepted</state>",
+		ExpectedMsgText:      Sp(""),
+		ExpectedURN:          "tel:+250788123123",
 	},
 	{
-		Label:              "Receive invalidURN",
-		URL:                receiveURL,
-		Data:               invalidURNReceive,
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "phone number supplied is not a number",
+		Label:                "Receive invalidURN",
+		URL:                  receiveURL,
+		Data:                 invalidURNReceive,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
 	},
 	{
-		Label:              "Receive missing Request ID",
-		URL:                receiveURL,
-		Data:               missingRequestID,
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "Error",
+		Label:                "Receive missing Request ID",
+		URL:                  receiveURL,
+		Data:                 missingRequestID,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error",
 	},
 	{
-		Label:              "Receive missing From",
-		URL:                receiveURL,
-		Data:               missingFrom,
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "Error",
+		Label:                "Receive missing From",
+		URL:                  receiveURL,
+		Data:                 missingFrom,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error",
 	},
 	{
-		Label:              "Receive missing To",
-		URL:                receiveURL,
-		Data:               missingTo,
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "Error",
+		Label:                "Receive missing To",
+		URL:                  receiveURL,
+		Data:                 missingTo,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error",
 	},
 	{
-		Label:              "Invalid XML",
-		URL:                receiveURL,
-		Data:               "empty",
-		ExpectedRespStatus: 400,
-		ExpectedRespBody:   "Error",
+		Label:                "Invalid XML",
+		URL:                  receiveURL,
+		Data:                 "empty",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Error",
 	},
 }
 
@@ -240,5 +241,5 @@ var defaultSendTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ST", "2020", "UA", map[string]interface{}{"username": "Username", "password": "Password"})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)
 }

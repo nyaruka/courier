@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -38,23 +39,20 @@ type ChannelHandleTestCase struct {
 	Headers       map[string]string
 	MultipartForm map[string]string
 
-	ExpectedRespStatus  int
-	ExpectedRespBody    string
-	ExpectedContactName *string
-	ExpectedMsgText     *string
-	ExpectedURN         urns.URN
-	ExpectedURNAuth     string
-	ExpectedAttachments []string
-	ExpectedDate        time.Time
-	ExpectedMsgStatus   courier.MsgStatusValue
-	ExpectedExternalID  string
-	ExpectedMsgID       int64
-	ExpectedEvent       courier.ChannelEventType
-	ExpectedEventExtra  map[string]interface{}
+	ExpectedRespStatus   int
+	ExpectedBodyContains string
+	ExpectedContactName  *string
+	ExpectedMsgText      *string
+	ExpectedURN          urns.URN
+	ExpectedURNAuth      string
+	ExpectedAttachments  []string
+	ExpectedDate         time.Time
+	ExpectedMsgStatus    courier.MsgStatusValue
+	ExpectedExternalID   string
+	ExpectedMsgID        int64
+	ExpectedEvent        courier.ChannelEventType
+	ExpectedEventExtra   map[string]interface{}
 }
-
-// SendPrepFunc allows test cases to modify the channel, msg or server before a message is sent
-type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, courier.Channel, courier.Msg)
 
 // MockedRequest is a fake HTTP request
 type MockedRequest struct {
@@ -69,44 +67,8 @@ func (m MockedRequest) Matches(r *http.Request, body []byte) bool {
 	return m.Method == r.Method && m.Path == r.URL.Path && m.RawQuery == r.URL.RawQuery && (m.Body == string(body) || (m.BodyContains != "" && strings.Contains(string(body), m.BodyContains)))
 }
 
-// ChannelSendTestCase defines the test values for a particular test case
-type ChannelSendTestCase struct {
-	Label    string
-	SendPrep SendPrepFunc
-
-	MsgText                 string
-	MsgURN                  string
-	MsgURNAuth              string
-	MsgAttachments          []string
-	MsgQuickReplies         []string
-	MsgTopic                string
-	MsgHighPriority         bool
-	MsgResponseToExternalID string
-	MsgMetadata             json.RawMessage
-	MsgFlow                 *courier.FlowReference
-
-	MockResponseStatus int
-	MockResponseBody   string
-	MockResponses      map[MockedRequest]*httpx.MockResponse
-
-	ExpectedRequestPath string
-	ExpectedURLParams   map[string]string
-	ExpectedPostParams  map[string]string
-	ExpectedRequestBody string
-	ExpectedHeaders     map[string]string
-	ExpectedMsgStatus   courier.MsgStatusValue
-	ExpectedExternalID  string
-	ExpectedErrors      []courier.ChannelError
-	ExpectedStopEvent   bool
-	ExpectedContactURNs map[string]bool
-	ExpectedNewURN      string
-}
-
-// Sp is a utility method to get the pointer to the passed in string
-func Sp(s string) *string { return &s }
-
 // utility method to make a request to a handler URL
-func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, expectedStatus int, expectedBody *string, requestPrepFunc RequestPrepFunc) string {
+func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, expectedStatus int, expectedBodyContains string, requestPrepFunc RequestPrepFunc) string {
 	var req *http.Request
 	var err error
 	url := fmt.Sprintf("https://%s%s", s.Config().Domain, path)
@@ -157,10 +119,10 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers ma
 
 	body := rr.Body.String()
 
-	require.Equal(tb, expectedStatus, rr.Code, fmt.Sprintf("incorrect status code with response: %s", body))
+	assert.Equal(tb, expectedStatus, rr.Code, "status code mismatch")
 
-	if expectedBody != nil {
-		require.Contains(tb, body, *expectedBody)
+	if expectedBodyContains != "" {
+		assert.Contains(tb, body, expectedBodyContains)
 	}
 
 	return body
@@ -181,8 +143,147 @@ func newServer(backend courier.Backend) courier.Server {
 
 }
 
+// RunChannelTestCases runs all the passed in tests cases for the passed in channel configurations
+func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelHandleTestCase) {
+	mb := test.NewMockBackend()
+	s := newServer(mb)
+
+	for _, ch := range channels {
+		mb.AddChannel(ch)
+	}
+	handler.Initialize(s)
+
+	for _, tc := range testCases {
+		t.Run(tc.Label, func(t *testing.T) {
+			require := require.New(t)
+
+			mb.Reset()
+
+			testHandlerRequest(t, s, tc.URL, tc.Headers, tc.Data, tc.MultipartForm, tc.ExpectedRespStatus, tc.ExpectedBodyContains, tc.PrepRequest)
+
+			if tc.ExpectedMsgText != nil || tc.ExpectedAttachments != nil {
+				require.Len(mb.WrittenMsgs(), 1, "expected a msg to be written")
+				msg := mb.WrittenMsgs()[0]
+
+				if tc.ExpectedMsgText != nil {
+					assert.Equal(t, *tc.ExpectedMsgText, msg.Text())
+				}
+				if len(tc.ExpectedAttachments) > 0 {
+					assert.Equal(t, tc.ExpectedAttachments, msg.Attachments())
+				}
+				if !tc.ExpectedDate.IsZero() {
+					assert.Equal(t, tc.ExpectedDate.Local(), msg.ReceivedOn().Local())
+				}
+				if tc.ExpectedExternalID != "" {
+					assert.Equal(t, tc.ExpectedExternalID, msg.ExternalID())
+				}
+				assert.Equal(t, tc.ExpectedURN, msg.URN())
+				assert.Equal(t, tc.ExpectedURNAuth, msg.URNAuth())
+			} else {
+				assert.Empty(t, mb.WrittenMsgs(), "unexpected msg written")
+			}
+
+			if tc.ExpectedMsgStatus != "" {
+				// TODO find better way to test statuses because some channels (e.g. infobip) can create multiple statuses in one call
+				require.Greater(len(mb.WrittenMsgStatuses()), 0, "expected a msg status to be written")
+				status := mb.WrittenMsgStatuses()[len(mb.WrittenMsgStatuses())-1]
+
+				assert.Equal(t, tc.ExpectedMsgStatus, status.Status())
+
+				if tc.ExpectedExternalID != "" {
+					assert.Equal(t, tc.ExpectedExternalID, status.ExternalID())
+				}
+				if tc.ExpectedMsgID != 0 {
+					assert.Equal(t, tc.ExpectedMsgID, int64(status.ID()))
+				}
+			} else {
+				assert.Empty(t, mb.WrittenMsgStatuses(), "unexpected msg status written")
+			}
+
+			if tc.ExpectedEvent != "" {
+				require.Len(mb.WrittenChannelEvents(), 1, "expected a channel event to be written")
+				event := mb.WrittenChannelEvents()[0]
+
+				assert.Equal(t, tc.ExpectedEvent, event.EventType())
+				assert.Equal(t, tc.ExpectedEventExtra, event.Extra())
+				assert.Equal(t, tc.ExpectedURN, event.URN())
+
+				if !tc.ExpectedDate.IsZero() {
+					assert.Equal(t, tc.ExpectedDate, event.OccurredOn())
+				}
+			} else {
+				assert.Empty(t, mb.WrittenChannelEvents(), "unexpected channel event written")
+			}
+
+			if tc.ExpectedContactName != nil {
+				require.Equal(*tc.ExpectedContactName, mb.LastContactName())
+			}
+
+			// if we're expecting a message, status or event, check we have a log for it
+			if tc.ExpectedMsgText != nil || tc.ExpectedMsgStatus != "" || tc.ExpectedEvent != "" {
+				assert.Greater(t, len(mb.WrittenChannelLogs()), 0, "expected at least one channel log")
+			}
+		})
+	}
+
+	// check non-channel specific error conditions against first test case
+	validCase := testCases[0]
+
+	if !validCase.NoQueueErrorCheck {
+		t.Run("Queue Error", func(t *testing.T) {
+			mb.SetErrorOnQueue(true)
+			defer mb.SetErrorOnQueue(false)
+			testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, validCase.MultipartForm, 400, "unable to queue message", validCase.PrepRequest)
+		})
+	}
+
+	if !validCase.NoInvalidChannelCheck {
+		t.Run("Receive With Invalid Channel", func(t *testing.T) {
+			mb.ClearChannels()
+			testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, validCase.MultipartForm, 400, "channel not found", validCase.PrepRequest)
+		})
+	}
+}
+
+// SendPrepFunc allows test cases to modify the channel, msg or server before a message is sent
+type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, courier.Channel, courier.Msg)
+
+// ChannelSendTestCase defines the test values for a particular test case
+type ChannelSendTestCase struct {
+	Label    string
+	SendPrep SendPrepFunc
+
+	MsgText                 string
+	MsgURN                  string
+	MsgURNAuth              string
+	MsgAttachments          []string
+	MsgQuickReplies         []string
+	MsgTopic                string
+	MsgHighPriority         bool
+	MsgResponseToExternalID string
+	MsgMetadata             json.RawMessage
+	MsgFlow                 *courier.FlowReference
+
+	MockResponseStatus int
+	MockResponseBody   string
+	MockResponses      map[MockedRequest]*httpx.MockResponse
+
+	ExpectedRequestPath string
+	ExpectedURLParams   map[string]string
+	ExpectedPostParams  map[string]string // deprecated, use ExpectedPostForm
+	ExpectedPostForm    url.Values
+	ExpectedRequestBody string
+	ExpectedHeaders     map[string]string
+	ExpectedMsgStatus   courier.MsgStatusValue
+	ExpectedExternalID  string
+	ExpectedErrors      []*courier.ChannelError
+	ExpectedStopEvent   bool
+	ExpectedContactURNs map[string]bool
+	ExpectedNewURN      string
+}
+
 // RunChannelSendTestCases runs all the passed in test cases against the channel
-func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler courier.ChannelHandler, testCases []ChannelSendTestCase, setupBackend func(*test.MockBackend)) {
+func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler courier.ChannelHandler, testCases []ChannelSendTestCase, checkRedacted []string, setupBackend func(*test.MockBackend)) {
 	mb := test.NewMockBackend()
 	if setupBackend != nil {
 		setupBackend(mb)
@@ -193,6 +294,8 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 	for _, tc := range testCases {
 		mockRRCount := 0
+
+		mb.Reset()
 
 		t.Run(tc.Label, func(t *testing.T) {
 			require := require.New(t)
@@ -239,7 +342,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				tc.SendPrep(server, handler, channel, msg)
 			}
 
-			clog := courier.NewChannelLogForSend(msg)
+			clog := courier.NewChannelLogForSend(msg, handler.RedactValues(channel))
 
 			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 			status, err := handler.Send(ctx, msg, clog)
@@ -247,7 +350,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 			// we don't currently distinguish between a returned error and logged errors
 			if err != nil {
-				clog.Error(err)
+				clog.RawError(err)
 			}
 
 			assert.Equal(t, tc.ExpectedErrors, clog.Errors(), "unexpected errors logged")
@@ -271,6 +374,10 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 					value := testRequest.PostFormValue(k)
 					require.Equal(v, value)
 				}
+			} else if tc.ExpectedPostForm != nil {
+				require.NotNil(testRequest, "post body should not be nil")
+				testRequest.ParseMultipartForm(32 << 20)
+				assert.Equal(t, tc.ExpectedPostForm, testRequest.PostForm)
 			}
 
 			if tc.ExpectedRequestBody != "" {
@@ -301,9 +408,9 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 			}
 
 			if tc.ExpectedStopEvent {
-				evt, err := mb.GetLastChannelEvent()
-				require.NoError(err)
-				require.Equal(courier.StopContact, evt.EventType())
+				require.Len(mb.WrittenChannelEvents(), 1)
+				event := mb.WrittenChannelEvents()[0]
+				require.Equal(courier.StopContact, event.EventType())
 			}
 
 			if tc.ExpectedContactURNs != nil {
@@ -327,122 +434,8 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 				require.Equal(urns.URN(tc.MsgURN), old)
 				require.Equal(urns.URN(tc.ExpectedNewURN), new)
 			}
-		})
-	}
 
-}
-
-// RunChannelTestCases runs all the passed in tests cases for the passed in channel configurations
-func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelHandleTestCase) {
-	mb := test.NewMockBackend()
-	s := newServer(mb)
-
-	for _, ch := range channels {
-		mb.AddChannel(ch)
-	}
-	handler.Initialize(s)
-
-	for _, tc := range testCases {
-		t.Run(tc.Label, func(t *testing.T) {
-			require := require.New(t)
-
-			mb.Reset()
-
-			testHandlerRequest(t, s, tc.URL, tc.Headers, tc.Data, tc.MultipartForm, tc.ExpectedRespStatus, &tc.ExpectedRespBody, tc.PrepRequest)
-
-			// pop our message off and test against it
-			contactName := mb.GetLastContactName()
-			msg, _ := mb.GetLastQueueMsg()
-			event, _ := mb.GetLastChannelEvent()
-			status, _ := mb.GetLastMsgStatus()
-
-			if tc.ExpectedRespStatus == 200 {
-				if tc.ExpectedContactName != nil {
-					require.Equal(*tc.ExpectedContactName, contactName)
-				}
-				if tc.ExpectedMsgText != nil {
-					require.NotNil(msg)
-					require.Equal(mb.LenQueuedMsgs(), 1)
-					require.Equal(*tc.ExpectedMsgText, msg.Text())
-				}
-				if tc.ExpectedEvent != "" {
-					assert.Equal(t, tc.ExpectedEvent, event.EventType())
-				}
-				if tc.ExpectedEventExtra != nil {
-					require.Equal(tc.ExpectedEventExtra, event.Extra())
-				}
-				if tc.ExpectedURN != "" {
-					if msg != nil {
-						assert.Equal(t, tc.ExpectedURN, msg.URN())
-					} else if event != nil {
-						assert.Equal(t, tc.ExpectedURN, event.URN())
-					} else {
-						assert.Equal(t, tc.ExpectedURN, "")
-					}
-				}
-				if tc.ExpectedURNAuth != "" {
-					if msg != nil {
-						assert.Equal(t, tc.ExpectedURNAuth, msg.URNAuth())
-					} else {
-						assert.Equal(t, tc.ExpectedURNAuth, "")
-					}
-				}
-				if tc.ExpectedExternalID != "" {
-					if msg != nil {
-						assert.Equal(t, tc.ExpectedExternalID, msg.ExternalID())
-					} else if status != nil {
-						assert.Equal(t, tc.ExpectedExternalID, status.ExternalID())
-					} else {
-						assert.Equal(t, tc.ExpectedExternalID, "")
-					}
-				}
-				if tc.ExpectedMsgStatus != "" {
-					require.NotNil(status)
-					require.Equal(tc.ExpectedMsgStatus, status.Status())
-				}
-				if tc.ExpectedMsgID != 0 {
-					if status != nil {
-						require.Equal(tc.ExpectedMsgID, int64(status.ID()))
-					} else {
-						require.Equal(tc.ExpectedMsgID, -1)
-					}
-				}
-				if len(tc.ExpectedAttachments) > 0 {
-					require.Equal(tc.ExpectedAttachments, msg.Attachments())
-				}
-				if !tc.ExpectedDate.IsZero() {
-					if msg != nil {
-						require.Equal((tc.ExpectedDate).Local(), (*msg.ReceivedOn()).Local())
-					} else if event != nil {
-						require.Equal(tc.ExpectedDate, event.OccurredOn())
-					} else {
-						require.Equal(tc.ExpectedDate, nil)
-					}
-				}
-			}
-
-			// if we're expecting a message, status or event, check we have a log for it
-			if tc.ExpectedMsgText != nil || tc.ExpectedMsgStatus != "" || tc.ExpectedEvent != "" {
-				assert.Greater(t, len(mb.ChannelLogs()), 0, "expected at least one channel log")
-			}
-		})
-	}
-
-	// check non-channel specific error conditions against first test case
-	validCase := testCases[0]
-
-	if !validCase.NoQueueErrorCheck {
-		t.Run("Queue Error", func(t *testing.T) {
-			mb.SetErrorOnQueue(true)
-			defer mb.SetErrorOnQueue(false)
-			testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, validCase.MultipartForm, 400, Sp("unable to queue message"), validCase.PrepRequest)
-		})
-	}
-
-	if !validCase.NoInvalidChannelCheck {
-		t.Run("Receive With Invalid Channel", func(t *testing.T) {
-			mb.ClearChannels()
-			testHandlerRequest(t, s, validCase.URL, validCase.Headers, validCase.Data, validCase.MultipartForm, 400, Sp("channel not found"), validCase.PrepRequest)
+			AssertChannelLogRedaction(t, clog, checkRedacted)
 		})
 	}
 }
@@ -462,8 +455,29 @@ func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler cour
 
 		b.Run(testCase.Label, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				testHandlerRequest(b, s, testCase.URL, testCase.Headers, testCase.Data, testCase.MultipartForm, testCase.ExpectedRespStatus, nil, testCase.PrepRequest)
+				testHandlerRequest(b, s, testCase.URL, testCase.Headers, testCase.Data, testCase.MultipartForm, testCase.ExpectedRespStatus, "", testCase.PrepRequest)
 			}
 		})
 	}
 }
+
+// asserts that the given channel log doesn't contain any of the given values
+func AssertChannelLogRedaction(t *testing.T, clog *courier.ChannelLog, vals []string) {
+	assertRedacted := func(s string) {
+		for _, v := range vals {
+			assert.NotContains(t, s, v, "expected '%s' to not contain redacted value '%s'", s, v)
+		}
+	}
+
+	for _, h := range clog.HTTPLogs() {
+		assertRedacted(h.URL)
+		assertRedacted(h.Request)
+		assertRedacted(h.Response)
+	}
+	for _, e := range clog.Errors() {
+		assertRedacted(e.Message())
+	}
+}
+
+// Sp is a utility method to get the pointer to the passed in string
+func Sp(s string) *string { return &s }
