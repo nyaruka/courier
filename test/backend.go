@@ -309,6 +309,8 @@ func (mb *MockBackend) SaveAttachment(ctx context.Context, ch courier.Channel, c
 		Channel: ch, ContentType: contentType, Data: data, Extension: extension,
 	})
 
+	time.Sleep(time.Millisecond * 2)
+
 	return fmt.Sprintf("https://backend.com/attachments/%s.%s", uuids.New(), extension), nil
 }
 

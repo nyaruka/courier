@@ -55,6 +55,8 @@ func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*Attachme
 
 	attachment, err := FetchAndStoreAttachment(ctx, b, ch, fa.URL, clog)
 
+	clog.End()
+
 	if err := b.WriteChannelLog(ctx, clog); err != nil {
 		logrus.WithError(err).Error()
 	}
