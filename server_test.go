@@ -131,4 +131,10 @@ func TestFetchAttachment(t *testing.T) {
 	statusCode, respBody = submit(`{"channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "url": "http://mock.com/media/test.jpg"}`, "sesame")
 	assert.Equal(t, 200, statusCode)
 	assert.JSONEq(t, `{"attachment": {"content_type": "image/jpeg", "url": "https://backend.com/attachments/cdf7ed27-5ad5-4028-b664-880fc7581c77.jpg", "size": 17301}, "log_uuid": "c00e5d67-c275-4389-aded-7d8b151cbd5b"}`, string(respBody))
+
+	assert.Len(t, mb.WrittenChannelLogs(), 1)
+	clog := mb.WrittenChannelLogs()[0]
+	assert.Equal(t, courier.ChannelLogTypeAttachmentFetch, clog.Type())
+	assert.Len(t, clog.HTTPLogs(), 1)
+	assert.Greater(t, clog.Elapsed(), time.Duration(0))
 }
