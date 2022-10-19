@@ -299,6 +299,11 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 }
 
 func resolveMediaURL(channel courier.Channel, mediaID string) (string, error) {
+	// sometimes WA will send an attachment with status=undownloaded and no ID
+	if mediaID == "" {
+		return "", nil
+	}
+
 	urlStr := channel.StringConfigForKey(courier.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
 	if err != nil {

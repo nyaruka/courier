@@ -129,6 +129,22 @@ var documentMsg = `{
 	}]
 }`
 
+var documentMsgMissingFile = `{
+	"messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"timestamp": "1454119029",
+		"type": "document",
+		"document": {
+			"mime_type": "text/plain",
+			"sha256": "the-sha-signature",
+			"caption": "the caption",
+			"filename": "filename.type",
+			"status": "undownloaded"
+		}
+	}]
+}`
+
 var imageMsg = `{
 	"messages": [{
 		"from": "250788123123",
@@ -416,6 +432,18 @@ var waTestCases = []ChannelHandleTestCase{
 		ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText:      Sp(""),
 		ExpectedAttachments:  []string{"https://foo.bar/v1/media/41"},
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive document message with missing file",
+		URL:                  waReceiveURL,
+		Data:                 documentMsgMissingFile,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"msg"`,
+		ExpectedMsgText:      Sp("the caption"),
+		ExpectedAttachments:  []string{},
 		ExpectedURN:          "whatsapp:250788123123",
 		ExpectedExternalID:   "41",
 		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
