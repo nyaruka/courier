@@ -3,7 +3,6 @@ package justcall
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/jsonx"
 )
 
 var (
@@ -193,12 +193,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		payload.MediaURL = strings.Join(mediaURLs, ",")
 	}
 
-	jsonPayload, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonPayload))
+	req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonx.MustMarshal(payload)))
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +209,6 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	respStatus, err := jsonparser.GetString(respBody, "status")
 	if err != nil {
 		clog.Error(courier.ErrorResponseValueMissing("status"))
-		clog.End()
 		return status, h.Backend().WriteChannelLog(ctx, clog)
 	}
 	if respStatus != "success" {
@@ -225,7 +219,6 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	externalID, err := jsonparser.GetInt(respBody, "id")
 	if err != nil {
 		clog.Error(courier.ErrorResponseValueMissing("id"))
-		clog.End()
 		return status, h.Backend().WriteChannelLog(ctx, clog)
 	}
 
