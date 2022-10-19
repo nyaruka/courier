@@ -1,3 +1,7 @@
+v7.5.52
+----------
+ * Add support for JustCall channel type
+
 v7.5.51
 ----------
  * Don't try to download WA attachments with no mediaID
