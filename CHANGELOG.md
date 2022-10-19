@@ -1,3 +1,8 @@
+v7.5.51
+----------
+ * Don't try to download WA attachments with no mediaID
+ * Add WAC interactive message support with attachments, quick replies and captions.
+
 v7.5.50
 ----------
  * Fix recording overall time of an attachment-fetch channel log
