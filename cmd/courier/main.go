@@ -37,6 +37,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/jasmin"
 	_ "github.com/nyaruka/courier/handlers/jiochat"
 	_ "github.com/nyaruka/courier/handlers/junebug"
+	_ "github.com/nyaruka/courier/handlers/justcall"
 	_ "github.com/nyaruka/courier/handlers/kaleyra"
 	_ "github.com/nyaruka/courier/handlers/kannel"
 	_ "github.com/nyaruka/courier/handlers/line"
