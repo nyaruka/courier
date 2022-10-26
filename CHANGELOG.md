@@ -1,3 +1,7 @@
+v7.5.53
+----------
+ * Use redisx.IntervalHash for message de-duping checks
+
 v7.5.52
 ----------
  * Add support for JustCall channel type
