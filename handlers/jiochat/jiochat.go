@@ -232,6 +232,12 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	return map[string]string{"name": nickname}, nil
 }
 
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		ch.StringConfigForKey(configAppSecret, ""),
+	}
+}
+
 // BuildAttachmentRequest download media for message attachment
 func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
 	parsedURL, err := url.Parse(attachmentURL)
@@ -274,12 +280,12 @@ func (h *handler) getAccessToken(ctx context.Context, channel courier.Channel, c
 		return token, nil
 	}
 
-	token, err = h.fetchAccessToken(ctx, channel, clog)
+	token, expires, err := h.fetchAccessToken(ctx, channel, clog)
 	if err != nil {
 		return "", errors.Wrap(err, "error fetching new access token")
 	}
 
-	_, err = rc.Do("SET", tokenKey, token, "EX", 7200)
+	_, err = rc.Do("SET", tokenKey, token, "EX", int(expires/time.Second))
 	if err != nil {
 		return "", errors.Wrap(err, "error updating cached access token")
 	}
@@ -294,7 +300,7 @@ type fetchPayload struct {
 }
 
 // fetchAccessToken tries to fetch a new token for our channel
-func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel, clog *courier.ChannelLog) (string, error) {
+func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel, clog *courier.ChannelLog) (string, time.Duration, error) {
 	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "auth/token.action"))
 	payload := &fetchPayload{
 		GrantType:    "client_credentials",
@@ -304,21 +310,26 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel,
 
 	req, err := http.NewRequest(http.MethodPost, tokenURL.String(), bytes.NewReader(jsonx.MustMarshal(payload)))
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
 	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
-		return "", err
+		return "", 0, err
 	}
 
 	token, err := jsonparser.GetString(respBody, "access_token")
 	if err != nil {
 		clog.Error(courier.ErrorResponseValueMissing("access_token"))
-		return "", err
+		return "", 0, err
 	}
 
-	return token, nil
+	expiration, err := jsonparser.GetInt(respBody, "expires_in")
+	if err != nil || expiration == 0 {
+		expiration = 7200
+	}
+
+	return token, time.Second * time.Duration(expiration), nil
 }

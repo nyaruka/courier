@@ -6,12 +6,12 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -20,13 +20,12 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 )
 
 var (
 	sendURL      = "https://api.weixin.qq.com/cgi-bin"
 	maxMsgLength = 1600
-	fetchTimeout = time.Second * 2
 )
 
 const (
@@ -40,10 +39,15 @@ func init() {
 
 type handler struct {
 	handlers.BaseHandler
+
+	fetchTokenMutex sync.Mutex
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("WC"), "WeChat")}
+	return &handler{
+		BaseHandler:     handlers.NewBaseHandler(courier.ChannelType("WC"), "WeChat"),
+		fetchTokenMutex: sync.Mutex{},
+	}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -84,78 +88,12 @@ func (h *handler) VerifyURL(ctx context.Context, channel courier.Channel, w http
 	if encoded == form.Signature {
 		ResponseText = form.EchoStr
 		StatusCode = 200
-		go func() {
-			time.Sleep(fetchTimeout)
-			h.fetchAccessToken(ctx, channel)
-		}()
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(StatusCode)
 	_, err = fmt.Fprint(w, ResponseText)
 	return nil, err
-}
-
-// fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
-func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel) error {
-	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenRefresh, channel, h.RedactValues(channel))
-
-	form := url.Values{
-		"grant_type": []string{"client_credential"},
-		"appid":      []string{channel.StringConfigForKey(configAppID, "")},
-		"secret":     []string{channel.StringConfigForKey(configAppSecret, "")},
-	}
-	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "token"))
-	tokenURL.RawQuery = form.Encode()
-
-	req, _ := http.NewRequest(http.MethodGet, tokenURL.String(), nil)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "application/json")
-
-	resp, respBody, err := handlers.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		clog.End()
-		return h.Backend().WriteChannelLog(ctx, clog)
-	}
-
-	accessToken, err := jsonparser.GetString(respBody, "access_token")
-	if err != nil {
-		clog.Error(courier.ErrorResponseValueMissing("access_token"))
-		clog.End()
-		return h.Backend().WriteChannelLog(ctx, clog)
-	}
-
-	expiration, err := jsonparser.GetInt(respBody, "expires_in")
-	if err != nil {
-		expiration = 7200
-	}
-
-	rc := h.Backend().RedisPool().Get()
-	defer rc.Close()
-
-	cacheKey := fmt.Sprintf("wechat_channel_access_token:%s", channel.UUID().String())
-	_, err = rc.Do("SET", cacheKey, accessToken, expiration)
-
-	if err != nil {
-		logrus.WithError(err).Error("error setting the access token to redis")
-	}
-	return err
-}
-
-func (h *handler) getAccessToken(channel courier.Channel) (string, error) {
-	rc := h.Backend().RedisPool().Get()
-	defer rc.Close()
-
-	cacheKey := fmt.Sprintf("wechat_channel_access_token:%s", channel.UUID().String())
-	accessToken, err := redis.String(rc.Do("GET", cacheKey))
-	if err != nil {
-		return "", err
-	}
-	if accessToken == "" {
-		return "", fmt.Errorf("no access token for channel")
-	}
-
-	return accessToken, nil
 }
 
 type moPayload struct {
@@ -237,7 +175,7 @@ type mtPayload struct {
 
 // Send sends the given message, logging any HTTP calls or errors
 func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
-	accessToken, err := h.getAccessToken(msg.Channel())
+	accessToken, err := h.getAccessToken(ctx, msg.Channel(), clog)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +219,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 // DescribeURN handles WeChat contact details
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLog) (map[string]string, error) {
-	accessToken, err := h.getAccessToken(channel)
+	accessToken, err := h.getAccessToken(ctx, channel, clog)
 	if err != nil {
 		return nil, err
 	}
@@ -311,9 +249,16 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	return map[string]string{"name": nickname}, nil
 }
 
+func (h *handler) RedactValues(ch courier.Channel) []string {
+	return []string{
+		ch.StringConfigForKey(courier.ConfigSecret, ""),
+		ch.StringConfigForKey(configAppSecret, ""),
+	}
+}
+
 // BuildAttachmentRequest download media for message attachment
 func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
-	accessToken, err := h.getAccessToken(channel)
+	accessToken, err := h.getAccessToken(ctx, channel, clog)
 	if err != nil {
 		return nil, err
 	}
@@ -336,3 +281,67 @@ func (*handler) AttachmentRequestClient(ch courier.Channel) *http.Client {
 }
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
+
+func (h *handler) getAccessToken(ctx context.Context, channel courier.Channel, clog *courier.ChannelLog) (string, error) {
+	rc := h.Backend().RedisPool().Get()
+	defer rc.Close()
+
+	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID().String())
+
+	h.fetchTokenMutex.Lock()
+	defer h.fetchTokenMutex.Unlock()
+
+	token, err := redis.String(rc.Do("GET", tokenKey))
+	if err != nil && err != redis.ErrNil {
+		return "", errors.Wrap(err, "error reading cached access token")
+	}
+
+	if token != "" {
+		return token, nil
+	}
+
+	token, expires, err := h.fetchAccessToken(ctx, channel, clog)
+	if err != nil {
+		return "", errors.Wrap(err, "error fetching new access token")
+	}
+
+	_, err = rc.Do("SET", tokenKey, token, "EX", int(expires/time.Second))
+	if err != nil {
+		return "", errors.Wrap(err, "error updating cached access token")
+	}
+
+	return token, nil
+}
+
+// fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
+func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel, clog *courier.ChannelLog) (string, time.Duration, error) {
+	form := url.Values{
+		"grant_type": []string{"client_credential"},
+		"appid":      []string{channel.StringConfigForKey(configAppID, "")},
+		"secret":     []string{channel.StringConfigForKey(configAppSecret, "")},
+	}
+	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", sendURL, "token"))
+	tokenURL.RawQuery = form.Encode()
+
+	req, _ := http.NewRequest(http.MethodGet, tokenURL.String(), nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return "", 0, err
+	}
+
+	token, err := jsonparser.GetString(respBody, "access_token")
+	if err != nil {
+		clog.Error(courier.ErrorResponseValueMissing("access_token"))
+		return "", 0, err
+	}
+
+	expiration, err := jsonparser.GetInt(respBody, "expires_in")
+	if err != nil || expiration == 0 {
+		expiration = 7200
+	}
+
+	return token, time.Second * time.Duration(expiration), nil
+}

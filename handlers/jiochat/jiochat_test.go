@@ -23,7 +23,7 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configAppSecret: "secret", configAppID: "app-id"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configAppSecret: "secret123", configAppID: "app-id"}),
 }
 
 var (
@@ -99,7 +99,7 @@ func addValidSignature(r *http.Request) {
 	timestamp := t.Format("20060102150405")
 	nonce := "nonce"
 
-	stringSlice := []string{"secret", timestamp, nonce}
+	stringSlice := []string{"secret123", timestamp, nonce}
 	sort.Strings(stringSlice)
 
 	value := strings.Join(stringSlice, "")
@@ -123,7 +123,7 @@ func addInvalidSignature(r *http.Request) {
 	timestamp := t.Format("20060102150405")
 	nonce := "nonce"
 
-	stringSlice := []string{"secret", timestamp, nonce}
+	stringSlice := []string{"secret123", timestamp, nonce}
 	sort.Strings(stringSlice)
 
 	value := strings.Join(stringSlice, "")
@@ -297,7 +297,7 @@ func TestDescribeURN(t *testing.T) {
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 
-	AssertChannelLogRedaction(t, clog, []string{"secret"})
+	AssertChannelLogRedaction(t, clog, []string{"secret123"})
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {
@@ -339,6 +339,8 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	assert.Equal(t, "https://channels.jiochat.com/media/download.action?media_id=13", req.URL.String())
 	assert.Equal(t, "Bearer SESAME", req.Header.Get("Authorization"))
 	assert.Len(t, clog.HTTPLogs(), 1)
+
+	AssertChannelLogRedaction(t, clog, []string{"secret123"})
 }
 
 // setSendURL takes care of setting the sendURL to call
@@ -412,7 +414,7 @@ func setupBackend(mb *test.MockBackend) {
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configAppSecret: "secret", configAppID: "app-id"})
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configAppSecret: "secret123", configAppID: "app-id"})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret"}, setupBackend)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret123"}, setupBackend)
 }
