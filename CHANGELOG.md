@@ -1,3 +1,7 @@
+v7.5.54
+----------
+ * Fetch access tokens for WeChat, JioChat channels as needed
+
 v7.5.53
 ----------
  * Use redisx.IntervalHash for message de-duping checks
