@@ -145,7 +145,7 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text str
 	msg.WithReceivedOn(time.Now().UTC())
 
 	// have we seen this msg in the past period?
-	prevUUID := checkMsgSeen(b, msg)
+	prevUUID := b.checkMsgSeen(msg)
 	if prevUUID != courier.NilMsgUUID {
 		// if so, use its UUID and that we've been written
 		msg.UUID_ = prevUUID
@@ -182,7 +182,7 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
 		dbMsg.workerToken = token
 
 		// clear out our seen incoming messages
-		clearMsgSeen(rc, dbMsg)
+		b.clearMsgSeen(rc, dbMsg)
 
 		return dbMsg, nil
 	}
@@ -392,8 +392,8 @@ func (b *backend) WriteChannelLog(ctx context.Context, clog *courier.ChannelLog)
 
 // Check if external ID has been seen in a period
 func (b *backend) CheckExternalIDSeen(msg courier.Msg) courier.Msg {
-	var prevUUID = checkExternalIDSeen(b, msg)
 	m := msg.(*DBMsg)
+	var prevUUID = b.checkExternalIDSeen(m)
 	if prevUUID != courier.NilMsgUUID {
 		// if so, use its UUID and that we've been written
 		m.UUID_ = prevUUID
@@ -404,7 +404,7 @@ func (b *backend) CheckExternalIDSeen(msg courier.Msg) courier.Msg {
 
 // Mark a external ID as seen for a period
 func (b *backend) WriteExternalIDSeen(msg courier.Msg) {
-	writeExternalIDSeen(b, msg)
+	b.writeExternalIDSeen(msg.(*DBMsg))
 }
 
 // SaveAttachment saves an attachment to backend storage
@@ -871,6 +871,9 @@ func newBackend(cfg *courier.Config) courier.Backend {
 
 		mediaCache:   redisx.NewIntervalHash("media-lookups", time.Hour*24, 2),
 		mediaMutexes: *syncx.NewHashMutex(8),
+
+		seenMsgs:        redisx.NewIntervalHash("seen-msgs", time.Second*2, 2),
+		seenExternalIDs: redisx.NewIntervalHash("seen-external-ids", time.Hour*24, 2),
 	}
 }
 
@@ -890,6 +893,9 @@ type backend struct {
 
 	mediaCache   *redisx.IntervalHash
 	mediaMutexes syncx.HashMutex
+
+	seenMsgs        *redisx.IntervalHash
+	seenExternalIDs *redisx.IntervalHash
 
 	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments
 	dbWaitDuration    time.Duration
