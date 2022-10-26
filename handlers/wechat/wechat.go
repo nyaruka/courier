@@ -312,7 +312,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 }
 
 // BuildAttachmentRequest download media for message attachment
-func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
 	accessToken, err := h.getAccessToken(channel)
 	if err != nil {
 		return nil, err

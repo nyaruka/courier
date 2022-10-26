@@ -506,17 +506,17 @@ func TestBuildMediaRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 
 	waHandler := &handler{NewBaseHandler(courier.ChannelType("WA"), "WhatsApp")}
-	req, _ := waHandler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
+	req, _ := waHandler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer the-auth-token", req.Header.Get("Authorization"))
 
 	d3Handler := &handler{NewBaseHandler(courier.ChannelType("D3"), "360Dialog")}
-	req, _ = d3Handler.BuildAttachmentRequest(context.Background(), mb, testChannels[1], "https://example.org/v1/media/41")
+	req, _ = d3Handler.BuildAttachmentRequest(context.Background(), mb, testChannels[1], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "the-auth-token", req.Header.Get("D360-API-KEY"))
 
 	txHandler := &handler{NewBaseHandler(courier.ChannelType("TXW"), "TextIt")}
-	req, _ = txHandler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
+	req, _ = txHandler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer the-auth-token", req.Header.Get("Authorization"))
 }

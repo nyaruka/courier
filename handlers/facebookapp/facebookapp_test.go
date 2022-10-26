@@ -1417,19 +1417,19 @@ func TestBuildMediaRequest(t *testing.T) {
 	s := newServer(mb)
 	wacHandler := &handler{NewBaseHandlerWithParams(courier.ChannelType("WAC"), "WhatsApp Cloud", false, nil)}
 	wacHandler.Initialize(s)
-	req, _ := wacHandler.BuildAttachmentRequest(context.Background(), mb, testChannelsWAC[0], "https://example.org/v1/media/41")
+	req, _ := wacHandler.BuildAttachmentRequest(context.Background(), mb, testChannelsWAC[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer wac_admin_system_user_token", req.Header.Get("Authorization"))
 
 	fbaHandler := &handler{NewBaseHandlerWithParams(courier.ChannelType("FBA"), "Facebook", false, nil)}
 	fbaHandler.Initialize(s)
-	req, _ = fbaHandler.BuildAttachmentRequest(context.Background(), mb, testChannelsFBA[0], "https://example.org/v1/media/41")
+	req, _ = fbaHandler.BuildAttachmentRequest(context.Background(), mb, testChannelsFBA[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, http.Header{}, req.Header)
 
 	igHandler := &handler{NewBaseHandlerWithParams(courier.ChannelType("IG"), "Instagram", false, nil)}
 	igHandler.Initialize(s)
-	req, _ = igHandler.BuildAttachmentRequest(context.Background(), mb, testChannelsFBA[0], "https://example.org/v1/media/41")
+	req, _ = igHandler.BuildAttachmentRequest(context.Background(), mb, testChannelsFBA[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, http.Header{}, req.Header)
 }
