@@ -4,9 +4,7 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
-	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -18,13 +16,14 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configAppSecret: "secret", configAppID: "app-id"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configAppSecret: "secret123", configAppID: "app-id"}),
 }
 
 var (
@@ -100,7 +99,7 @@ func addValidSignature(r *http.Request) {
 	timestamp := t.Format("20060102150405")
 	nonce := "nonce"
 
-	stringSlice := []string{"secret", timestamp, nonce}
+	stringSlice := []string{"secret123", timestamp, nonce}
 	sort.Strings(stringSlice)
 
 	value := strings.Join(stringSlice, "")
@@ -124,7 +123,7 @@ func addInvalidSignature(r *http.Request) {
 	timestamp := t.Format("20060102150405")
 	nonce := "nonce"
 
-	stringSlice := []string{"secret", timestamp, nonce}
+	stringSlice := []string{"secret123", timestamp, nonce}
 	sort.Strings(stringSlice)
 
 	value := strings.Join(stringSlice, "")
@@ -227,55 +226,6 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
-func TestFetchAccessToken(t *testing.T) {
-	fetchCalled := false
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "auth/token.action") {
-			defer r.Body.Close()
-			// valid token
-			w.Write([]byte(`{"access_token": "TOKEN"}`))
-		}
-
-		// mark that we were called
-		fetchCalled = true
-	}))
-	sendURL = server.URL
-	fetchTimeout = time.Millisecond
-
-	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
-		{
-			Label:                "Receive Message",
-			URL:                  receiveURL,
-			Data:                 validMsg,
-			ExpectedRespStatus:   200,
-			ExpectedBodyContains: "Accepted",
-			ExpectedMsgText:      Sp("Simple Message"),
-			ExpectedURN:          "jiochat:1234",
-		},
-		{
-			Label:                "Verify URL",
-			URL:                  verifyURL,
-			ExpectedRespStatus:   200,
-			ExpectedBodyContains: "SUCCESS",
-			PrepRequest:          addValidSignature,
-		},
-		{
-			Label:                "Verify URL Invalid signature",
-			URL:                  verifyURL,
-			ExpectedRespStatus:   400,
-			ExpectedBodyContains: "unknown request",
-			PrepRequest:          addInvalidSignature},
-	})
-
-	// wait for our fetch to be called
-	time.Sleep(100 * time.Millisecond)
-
-	if !fetchCalled {
-		t.Error("fetch access point should have been called")
-	}
-
-}
-
 // mocks the call to the Jiochat API
 func buildMockJCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -323,17 +273,14 @@ func TestDescribeURN(t *testing.T) {
 	defer JCAPI.Close()
 
 	mb := test.NewMockBackend()
-	conn := mb.RedisPool().Get()
 
-	_, err := conn.Do("SET", "jiochat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	conn.Close()
+	// ensure there's a cached access token
+	rc := mb.RedisPool().Get()
+	defer rc.Close()
+	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 
 	s := newServer(mb)
-	handler := &handler{NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
+	handler := newHandler().(*handler)
 	handler.Initialize(s)
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 
@@ -350,39 +297,50 @@ func TestDescribeURN(t *testing.T) {
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 
-	AssertChannelLogRedaction(t, clog, []string{"secret"})
+	AssertChannelLogRedaction(t, clog, []string{"secret123"})
 }
 
-func TestBuildMediaRequest(t *testing.T) {
+func TestBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
-	conn := mb.RedisPool().Get()
 
-	_, err := conn.Do("SET", "jiochat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// reset send URL
+	sendURL = "https://channels.jiochat.com"
 
-	conn.Close()
-	s := newServer(mb)
-	handler := &handler{NewBaseHandler(courier.ChannelType("JC"), "Jiochat")}
-	handler.Initialize(s)
-
-	tcs := []struct {
-		url                 string
-		authorizationHeader string
-	}{
-		{
-			fmt.Sprintf("%s/media/download.action?media_id=12", sendURL),
-			"Bearer ACCESS_TOKEN",
+	defer httpx.SetRequestor(httpx.DefaultRequestor)
+	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
+		"https://channels.jiochat.com/auth/token.action": {
+			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"access_token": "SESAME"}`)),
 		},
-	}
+	}))
 
-	for _, tc := range tcs {
-		req, _ := handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], tc.url)
-		assert.Equal(t, tc.url, req.URL.String())
-		assert.Equal(t, tc.authorizationHeader, req.Header.Get("Authorization"))
-	}
+	// ensure that we start with no cached token
+	rc := mb.RedisPool().Get()
+	defer rc.Close()
+	rc.Do("DEL", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab")
 
+	s := newServer(mb)
+	handler := newHandler().(*handler)
+	handler.Initialize(s)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
+
+	// check that request has the fetched access token
+	req, err := handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://channels.jiochat.com/media/download.action?media_id=12", clog)
+	assert.NoError(t, err)
+	assert.Equal(t, "https://channels.jiochat.com/media/download.action?media_id=12", req.URL.String())
+	assert.Equal(t, "Bearer SESAME", req.Header.Get("Authorization"))
+
+	// and that we have a log for that request
+	assert.Len(t, clog.HTTPLogs(), 1)
+	assert.Equal(t, "https://channels.jiochat.com/auth/token.action", clog.HTTPLogs()[0].URL)
+
+	// check that another request reads token from cache
+	req, err = handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://channels.jiochat.com/media/download.action?media_id=13", clog)
+	assert.NoError(t, err)
+	assert.Equal(t, "https://channels.jiochat.com/media/download.action?media_id=13", req.URL.String())
+	assert.Equal(t, "Bearer SESAME", req.Header.Get("Authorization"))
+	assert.Len(t, clog.HTTPLogs(), 1)
+
+	AssertChannelLogRedaction(t, clog, []string{"secret123"})
 }
 
 // setSendURL takes care of setting the sendURL to call
@@ -448,19 +406,15 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 func setupBackend(mb *test.MockBackend) {
-	conn := mb.RedisPool().Get()
-
-	_, err := conn.Do("SET", "jiochat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	conn.Close()
+	// ensure there's a cached access token
+	rc := mb.RedisPool().Get()
+	defer rc.Close()
+	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 }
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configAppSecret: "secret", configAppID: "app-id"})
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]interface{}{configAppSecret: "secret123", configAppID: "app-id"})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret"}, setupBackend)
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret123"}, setupBackend)
 }

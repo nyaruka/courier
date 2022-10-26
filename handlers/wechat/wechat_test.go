@@ -4,9 +4,7 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
-	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -18,6 +16,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +24,7 @@ import (
 
 var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US",
-		map[string]interface{}{courier.ConfigSecret: "secret", configAppSecret: "app-secret", configAppID: "app-id"}),
+		map[string]interface{}{courier.ConfigSecret: "secret123", configAppSecret: "app-secret123", configAppID: "app-id"}),
 }
 
 var (
@@ -97,7 +96,7 @@ func addValidSignature(r *http.Request) {
 	timestamp := t.Format("20060102150405")
 	nonce := "nonce"
 
-	stringSlice := []string{"secret", timestamp, nonce}
+	stringSlice := []string{"secret123", timestamp, nonce}
 	sort.Strings(stringSlice)
 
 	value := strings.Join(stringSlice, "")
@@ -121,7 +120,7 @@ func addInvalidSignature(r *http.Request) {
 	timestamp := t.Format("20060102150405")
 	nonce := "nonce"
 
-	stringSlice := []string{"secret", timestamp, nonce}
+	stringSlice := []string{"secret123", timestamp, nonce}
 	sort.Strings(stringSlice)
 
 	value := strings.Join(stringSlice, "")
@@ -172,56 +171,6 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
-func TestFetchAccessToken(t *testing.T) {
-	fetchCalled := false
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "token") {
-			defer r.Body.Close()
-			// valid token
-			w.Write([]byte(`{"access_token": "TOKEN"}`))
-		}
-
-		// mark that we were called
-		fetchCalled = true
-	}))
-	sendURL = server.URL
-	fetchTimeout = time.Millisecond
-
-	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
-		{
-			Label:                "Receive Message",
-			URL:                  receiveURL,
-			Data:                 validMsg,
-			ExpectedRespStatus:   200,
-			ExpectedBodyContains: "",
-			ExpectedMsgText:      Sp("Simple Message"),
-			ExpectedURN:          "wechat:1234",
-		},
-		{
-			Label:                "Verify URL",
-			URL:                  receiveURL,
-			ExpectedRespStatus:   200,
-			ExpectedBodyContains: "SUCCESS",
-			PrepRequest:          addValidSignature,
-		},
-		{
-			Label:                "Verify URL Invalid signature",
-			URL:                  receiveURL,
-			ExpectedRespStatus:   400,
-			ExpectedBodyContains: "unknown request",
-			PrepRequest:          addInvalidSignature,
-		},
-	})
-
-	// wait for our fetch to be called
-	time.Sleep(100 * time.Millisecond)
-
-	if !fetchCalled {
-		t.Error("fetch access point should have been called")
-	}
-
-}
-
 // mocks the call to the WeChat API
 func buildMockWCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -269,17 +218,14 @@ func TestDescribeURN(t *testing.T) {
 	defer WCAPI.Close()
 
 	mb := test.NewMockBackend()
-	conn := mb.RedisPool().Get()
 
-	_, err := conn.Do("SET", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	conn.Close()
+	// ensure there's a cached access token
+	rc := mb.RedisPool().Get()
+	defer rc.Close()
+	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 
 	s := newServer(mb)
-	handler := &handler{NewBaseHandler(courier.ChannelType("WC"), "WeChat")}
+	handler := newHandler().(*handler)
 	handler.Initialize(s)
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 
@@ -296,36 +242,46 @@ func TestDescribeURN(t *testing.T) {
 		assert.Equal(t, metadata, tc.expectedMetadata)
 	}
 
-	AssertChannelLogRedaction(t, clog, []string{"secret"})
+	AssertChannelLogRedaction(t, clog, []string{"secret123"})
 }
 
-func TestBuildMediaRequest(t *testing.T) {
+func TestBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
-	conn := mb.RedisPool().Get()
 
-	_, err := conn.Do("SET", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// reset send URL
+	sendURL = "https://api.weixin.qq.com/cgi-bin"
 
-	conn.Close()
-	s := newServer(mb)
-	handler := &handler{NewBaseHandler(courier.ChannelType("WC"), "WeChat")}
-	handler.Initialize(s)
-
-	tcs := []struct {
-		url string
-	}{
-		{
-			fmt.Sprintf("%s/media/get?media_id=12", sendURL),
+	defer httpx.SetRequestor(httpx.DefaultRequestor)
+	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
+		"https://api.weixin.qq.com/cgi-bin/token?appid=app-id&grant_type=client_credential&secret=app-secret123": {
+			httpx.NewMockResponse(http.StatusOK, nil, []byte(`{"access_token": "SESAME"}`)),
 		},
-	}
+	}))
 
-	for _, tc := range tcs {
-		req, _ := handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], tc.url)
-		assert.Equal(t, fmt.Sprintf("%s/media/get?access_token=ACCESS_TOKEN&media_id=12", sendURL), req.URL.String())
-	}
+	// ensure that we start with no cached token
+	rc := mb.RedisPool().Get()
+	defer rc.Close()
+	rc.Do("DEL", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab")
 
+	s := newServer(mb)
+	handler := newHandler().(*handler)
+	handler.Initialize(s)
+	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
+
+	// check that request has the fetched access token
+	req, err := handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://api.weixin.qq.com/cgi-bin/media/download.action?media_id=12", clog)
+	assert.NoError(t, err)
+	assert.Equal(t, "https://api.weixin.qq.com/cgi-bin/media/download.action?access_token=SESAME&media_id=12", req.URL.String())
+
+	// and that we have a log for that request
+	assert.Len(t, clog.HTTPLogs(), 1)
+	assert.Equal(t, "https://api.weixin.qq.com/cgi-bin/token?appid=app-id&grant_type=client_credential&secret=**********", clog.HTTPLogs()[0].URL)
+
+	// check that another request reads token from cache
+	req, err = handler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://api.weixin.qq.com/cgi-bin/media/download.action?media_id=13", clog)
+	assert.NoError(t, err)
+	assert.Equal(t, "https://api.weixin.qq.com/cgi-bin/media/download.action?access_token=SESAME&media_id=13", req.URL.String())
+	assert.Len(t, clog.HTTPLogs(), 1)
 }
 
 // setSendURL takes care of setting the sendURL to call
@@ -388,18 +344,14 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 func setupBackend(mb *test.MockBackend) {
-	conn := mb.RedisPool().Get()
-
-	_, err := conn.Do("SET", "wechat_channel_access_token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	conn.Close()
+	// ensure there's a cached access token
+	rc := mb.RedisPool().Get()
+	defer rc.Close()
+	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 }
 
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US", map[string]interface{}{configAppSecret: "secret", configAppID: "app-id"})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret"}, setupBackend)
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WC", "2020", "US", map[string]interface{}{configAppSecret: "secret123", configAppID: "app-id"})
+	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret123"}, setupBackend)
 }
