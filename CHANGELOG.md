@@ -1,3 +1,7 @@
+v7.5.55
+----------
+ * Update deps including phonenumbers
+
 v7.5.54
 ----------
  * Fetch access tokens for WeChat, JioChat channels as needed
