@@ -1,3 +1,7 @@
+v7.5.56
+----------
+ * Allow empty attachments, e.g. a txt file
+
 v7.5.55
 ----------
  * Update deps including phonenumbers
