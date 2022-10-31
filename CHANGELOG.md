@@ -1,3 +1,7 @@
+v7.5.57
+----------
+ * Update to latest gocommon
+
 v7.5.56
 ----------
  * Allow empty attachments, e.g. a txt file
