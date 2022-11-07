@@ -1,3 +1,8 @@
+v7.5.58
+----------
+ * Set server idle timeout to 90 seconds
+ * Test against redis 6.2 and postgres 14
+
 v7.5.57
 ----------
  * Update to latest gocommon
