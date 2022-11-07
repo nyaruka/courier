@@ -127,6 +127,7 @@ func (s *server) Start() error {
 		Handler:      s.router,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  90 * time.Second,
 	}
 
 	s.waitGroup.Add(1)
