@@ -978,7 +978,33 @@ func (ts *BackendTestSuite) TestChannel() {
 	ts.False(exChannel2.HasRole(courier.ChannelRoleReceive))
 	ts.False(exChannel2.HasRole(courier.ChannelRoleCall))
 	ts.False(exChannel2.HasRole(courier.ChannelRoleAnswer))
+}
 
+func (ts *BackendTestSuite) TestGetChannel() {
+	ctx := context.Background()
+
+	knUUID, _ := courier.NewChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	xxUUID, _ := courier.NewChannelUUID("0a1256fe-c6e4-494d-99d3-576286f31d3b") // doesn't exist
+
+	ch, err := ts.b.GetChannel(ctx, courier.ChannelType("KN"), knUUID)
+	ts.Assert().NoError(err)
+	ts.Assert().NotNil(ch)
+	ts.Assert().Equal(knUUID, ch.UUID())
+
+	ch, err = ts.b.GetChannel(ctx, courier.ChannelType("KN"), knUUID) // from cache
+	ts.Assert().NoError(err)
+	ts.Assert().NotNil(ch)
+	ts.Assert().Equal(knUUID, ch.UUID())
+
+	ch, err = ts.b.GetChannel(ctx, courier.ChannelType("KN"), xxUUID)
+	ts.Assert().Error(err)
+	ts.Assert().Nil(ch)
+	ts.Assert().True(ch == nil) // https://github.com/stretchr/testify/issues/503
+
+	ch, err = ts.b.GetChannel(ctx, courier.ChannelType("KN"), xxUUID) // from cache
+	ts.Assert().Error(err)
+	ts.Assert().Nil(ch)
+	ts.Assert().True(ch == nil) // https://github.com/stretchr/testify/issues/503
 }
 
 func (ts *BackendTestSuite) TestWriteChanneLog() {
