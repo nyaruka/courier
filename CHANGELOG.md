@@ -1,3 +1,7 @@
+v7.5.59
+----------
+ * Fix returning non-nil courier.Channel for deleted channels
+
 v7.5.58
 ----------
  * Set server idle timeout to 90 seconds
