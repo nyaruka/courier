@@ -32,28 +32,35 @@ type fetchAttachmentRequest struct {
 	URL         string      `json:"url"          validate:"required"`
 }
 
-func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*Attachment, *ChannelLog, error) {
+type fetchAttachmentResponse struct {
+	Attachment *Attachment    `json:"attachment"`
+	LogUUID    ChannelLogUUID `json:"log_uuid"`
+}
+
+func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAttachmentResponse, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "error reading request body")
+		return nil, errors.Wrap(err, "error reading request body")
 	}
 
 	fa := &fetchAttachmentRequest{}
 	if err := json.Unmarshal(body, fa); err != nil {
-		return nil, nil, errors.Wrap(err, "error unmarshalling request")
+		return nil, errors.Wrap(err, "error unmarshalling request")
 	}
 	if err := utils.Validate(fa); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	ch, err := b.GetChannel(ctx, fa.ChannelType, fa.ChannelUUID)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "error getting channel")
+		return nil, errors.Wrap(err, "error getting channel")
 	}
 
 	clog := NewChannelLogForAttachmentFetch(ch, GetHandler(ch.ChannelType()).RedactValues(ch))
 
 	attachment, err := FetchAndStoreAttachment(ctx, b, ch, fa.URL, clog)
+
+	resp := &fetchAttachmentResponse{Attachment: attachment, LogUUID: clog.UUID()}
 
 	clog.End()
 
@@ -61,7 +68,7 @@ func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*Attachme
 		logrus.WithError(err).Error()
 	}
 
-	return attachment, clog, err
+	return resp, err
 }
 
 func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, attURL string, clog *ChannelLog) (*Attachment, error) {
@@ -95,9 +102,7 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 		return nil, err
 	}
 	if trace.Response.StatusCode/100 != 2 {
-		// TODO once we're confident this is working maybe we don't log errors like this since sometimes channels
-		// just have problems
-		return nil, errors.Errorf("non 2XX response code (%d) trying to fetch attachment", trace.Response.StatusCode)
+		return &Attachment{ContentType: "unavailable", URL: attURL, Size: 0}, nil
 	}
 
 	mimeType := ""
