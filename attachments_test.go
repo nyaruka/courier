@@ -33,7 +33,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", map[string]interface{}{})
 	mb.AddChannel(mockChannel)
 
-	clog := courier.NewChannelLogForAttachmentFetch(mockChannel, []string{"sesame"})
+	clog := courier.NewChannelLogForAttachmentFetch(mockChannel, courier.MsgID(123), []string{"sesame"})
 
 	att, err := courier.FetchAndStoreAttachment(ctx, mb, mockChannel, "http://mock.com/media/hello.jpg", clog)
 	assert.NoError(t, err)

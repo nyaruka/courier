@@ -30,6 +30,7 @@ type fetchAttachmentRequest struct {
 	ChannelType ChannelType `json:"channel_type" validate:"required"`
 	ChannelUUID ChannelUUID `json:"channel_uuid" validate:"required,uuid"`
 	URL         string      `json:"url"          validate:"required"`
+	MsgID       MsgID       `json:"msg_id"`
 }
 
 type fetchAttachmentResponse struct {
@@ -56,7 +57,7 @@ func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAtt
 		return nil, errors.Wrap(err, "error getting channel")
 	}
 
-	clog := NewChannelLogForAttachmentFetch(ch, GetHandler(ch.ChannelType()).RedactValues(ch))
+	clog := NewChannelLogForAttachmentFetch(ch, fa.MsgID, GetHandler(ch.ChannelType()).RedactValues(ch))
 
 	attachment, err := FetchAndStoreAttachment(ctx, b, ch, fa.URL, clog)
 

@@ -107,8 +107,8 @@ func NewChannelLogForSend(msg Msg, redactVals []string) *ChannelLog {
 }
 
 // NewChannelLogForSend creates a new channel log for an attachment fetch
-func NewChannelLogForAttachmentFetch(ch Channel, redactVals []string) *ChannelLog {
-	return newChannelLog(ChannelLogTypeAttachmentFetch, ch, nil, NilMsgID, redactVals)
+func NewChannelLogForAttachmentFetch(ch Channel, msgID MsgID, redactVals []string) *ChannelLog {
+	return newChannelLog(ChannelLogTypeAttachmentFetch, ch, nil, msgID, redactVals)
 }
 
 // NewChannelLog creates a new channel log with the given type and channel
