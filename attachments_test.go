@@ -47,7 +47,13 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	assert.Equal(t, "http://mock.com/media/hello.jpg", clog.HTTPLogs()[0].URL)
 
 	att, err = courier.FetchAndStoreAttachment(ctx, mb, mockChannel, "http://mock.com/media/hello.mp3", clog)
-	assert.EqualError(t, err, "non 2XX response code (502) trying to fetch attachment")
-	assert.Nil(t, att)
+	assert.NoError(t, err)
+	assert.Equal(t, "unavailable", att.ContentType)
+	assert.Equal(t, "http://mock.com/media/hello.mp3", att.URL) // the original URL
+	assert.Equal(t, 0, att.Size)
+
+	// should have a logged HTTP request but no attachments will have been saved to storage
+	assert.Len(t, clog.HTTPLogs(), 2)
+	assert.Equal(t, "http://mock.com/media/hello.mp3", clog.HTTPLogs()[1].URL)
 	assert.Len(t, mb.SavedAttachments(), 1)
 }
