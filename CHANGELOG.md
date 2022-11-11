@@ -1,3 +1,8 @@
+v7.5.60
+----------
+ * Allow msg id to be passed to fetch attachment requests and saved on the channel log
+ * Update attachment fetching to handle non-200 response as an unavailable attachment
+
 v7.5.59
 ----------
  * Fix returning non-nil courier.Channel for deleted channels
