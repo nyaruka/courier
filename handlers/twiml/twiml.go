@@ -193,19 +193,21 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	errorCode, _ := strconv.ParseInt(form.ErrorCode, 10, 64)
-	if errorCode == errorStopped {
-		urn, err := h.parseURN(channel, form.To, "")
-		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-		}
+	if errorCode != 0 {
+		if errorCode == errorStopped {
+			urn, err := h.parseURN(channel, form.To, "")
+			if err != nil {
+				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			}
 
-		// create a stop channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
-		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
-		if err != nil {
-			return nil, err
+			// create a stop channel event
+			channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
+			err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
+			if err != nil {
+				return nil, err
+			}
 		}
-
+		clog.Error(twilioError(errorCode))
 	}
 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
@@ -446,6 +448,7 @@ func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter
 	return err
 }
 
+// https://www.twilio.com/docs/api/errors
 func twilioError(code int64) *courier.ChannelError {
 	codeAsStr := strconv.Itoa(int(code))
 	errMsg, _ := jsonparser.GetString(errorCodes, codeAsStr)

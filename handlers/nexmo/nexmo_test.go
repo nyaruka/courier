@@ -77,6 +77,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedMsgStatus:    courier.MsgFailed,
 		ExpectedExternalID:   "external1",
+		ExpectedErrors:       []*courier.ChannelError{courier.ErrorServiceSpecific("vonage", "d6", "Anti-Spam Rejection")},
 	},
 	{
 		Label:                "Status accepted",

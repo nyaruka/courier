@@ -52,6 +52,7 @@ type ChannelHandleTestCase struct {
 	ExpectedMsgID        int64
 	ExpectedEvent        courier.ChannelEventType
 	ExpectedEventExtra   map[string]interface{}
+	ExpectedErrors       []*courier.ChannelError
 }
 
 // MockedRequest is a fake HTTP request
@@ -222,6 +223,9 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 			// if we're expecting a message, status or event, check we have a log for it
 			if tc.ExpectedMsgText != nil || tc.ExpectedMsgStatus != "" || tc.ExpectedEvent != "" {
 				assert.Greater(t, len(mb.WrittenChannelLogs()), 0, "expected at least one channel log")
+
+				clog := mb.WrittenChannelLogs()[0]
+				assert.Equal(t, tc.ExpectedErrors, clog.Errors(), "unexpected errors logged")
 			}
 		})
 	}
