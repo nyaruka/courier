@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha1"
+	_ "embed"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -41,6 +42,9 @@ const (
 var (
 	maxMsgLength  = 1600
 	twilioBaseURL = "https://api.twilio.com"
+
+	//go:embed errors.json
+	errorCodes []byte
 )
 
 // see https://www.twilio.com/docs/sms/accepted-mime-types#accepted-mime-types
@@ -299,7 +303,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						return nil, err
 					}
 				}
-				clog.Error(courier.ErrorServiceSpecific("twilio", strconv.Itoa(int(errorCode)), ""))
+				clog.Error(twilioError(errorCode))
 				return status, nil
 			}
 		}
@@ -440,4 +444,10 @@ func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter
 	w.WriteHeader(200)
 	_, err := fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?><!-- %s --><Response/>`, details)
 	return err
+}
+
+func twilioError(code int64) *courier.ChannelError {
+	codeAsStr := strconv.Itoa(int(code))
+	errMsg, _ := jsonparser.GetString(errorCodes, codeAsStr)
+	return courier.ErrorServiceSpecific("twilio", codeAsStr, errMsg)
 }

@@ -1,6 +1,7 @@
 package courier_test
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -40,8 +41,8 @@ func TestChannelLog(t *testing.T) {
 	assert.EqualError(t, err, "unable to connect to server")
 
 	clog.HTTP(trace)
-	clog.Error(courier.NewChannelError("Something not right.", "twilio:23456"))
-	clog.Error(courier.ErrorResponseStatusCode())
+	clog.Error(courier.NewChannelError("Something not right", "twilio:23456"))
+	clog.RawError(errors.New("this is an error"))
 	clog.End()
 
 	assert.Equal(t, courier.ChannelLogUUID("c00e5d67-c275-4389-aded-7d8b151cbd5b"), clog.UUID())
@@ -65,12 +66,12 @@ func TestChannelLog(t *testing.T) {
 	assert.Equal(t, "", hlog2.Response)
 
 	err1 := clog.Errors()[0]
-	assert.Equal(t, "Something not right.", err1.Message())
+	assert.Equal(t, "Something not right", err1.Message())
 	assert.Equal(t, "twilio:23456", err1.Code())
 
 	err2 := clog.Errors()[1]
-	assert.Equal(t, "Unexpected response status code.", err2.Message())
-	assert.Equal(t, "core:response_status_code", err2.Code())
+	assert.Equal(t, "this is an error", err2.Message())
+	assert.Equal(t, "", err2.Code())
 
 	clog.SetMsgID(courier.NewMsgID(123))
 	clog.SetType(courier.ChannelLogTypeEventReceive)
