@@ -84,7 +84,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `{"result":{}, "error_code": "10", "error_desc": "Failed"}`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("Received invalid response code: 10", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueUnexpected("error_code", "00")},
 		SendPrep:           setSendURL,
 	},
 	{

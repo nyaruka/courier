@@ -350,7 +350,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedStopEvent:  true,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorServiceSpecific("twilio", "21610", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -457,7 +457,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
 		ExpectedStopEvent:  true,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorServiceSpecific("twilio", "21610", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -542,7 +542,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "F",
 		ExpectedStopEvent:  true,
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorServiceSpecific("twilio", "21610", "")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -627,7 +627,7 @@ var swSendTestCases = []ChannelSendTestCase{
 		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "F",
 		ExpectedStopEvent:  true,
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("received error code from twilio '21610'", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorServiceSpecific("twilio", "21610", "")},
 		SendPrep:           setSendURL,
 	},
 	{

@@ -299,7 +299,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						return nil, err
 					}
 				}
-				clog.RawError(errors.Errorf("received error code from twilio '%d'", errorCode))
+				clog.Error(courier.ErrorServiceSpecific("twilio", strconv.Itoa(int(errorCode)), ""))
 				return status, nil
 			}
 		}

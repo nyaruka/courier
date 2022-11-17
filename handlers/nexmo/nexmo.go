@@ -15,7 +15,6 @@ import (
 	"github.com/nyaruka/gocommon/gsm7"
 
 	"github.com/buger/jsonparser"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -53,10 +52,12 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
+// https://developer.vonage.com/messaging/sms/guides/delivery-receipts
 type statusForm struct {
 	To        string `name:"to"`
-	MessageID string `name:"messageID"`
+	MessageID string `name:"messageId"`
 	Status    string `name:"status"`
+	ErrCode   int    `name:"err-code"`
 }
 
 var statusMappings = map[string]courier.MsgStatusValue{
@@ -81,6 +82,10 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	msgStatus, found := statusMappings[form.Status]
 	if !found {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring unknown status report")
+	}
+
+	if form.ErrCode != 0 {
+		clog.Error(courier.ErrorServiceSpecific("vonage", strconv.Itoa(form.ErrCode), ""))
 	}
 
 	status := h.Backend().NewMsgStatusForExternalID(channel, form.MessageID, msgStatus, clog)
@@ -179,7 +184,8 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		nexmoStatus, err := jsonparser.GetString(respBody, "messages", "[0]", "status")
 		if err != nil || nexmoStatus != "0" {
-			clog.RawError(errors.Errorf("failed to send message, received error status [%s]", nexmoStatus))
+			// https://developer.vonage.com/messaging/sms/guides/troubleshooting-sms
+			clog.Error(courier.ErrorServiceSpecific("vonage", nexmoStatus, ""))
 			return status, nil
 		}
 
