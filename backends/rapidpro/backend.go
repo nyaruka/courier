@@ -21,7 +21,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/batch"
 	"github.com/nyaruka/courier/queue"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -143,10 +142,8 @@ func (b *backend) DeleteMsgWithExternalID(ctx context.Context, channel courier.C
 
 // NewIncomingMsg creates a new message from the given params
 func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, clog *courier.ChannelLog) courier.Msg {
-	// remove any control characters
-	text = utils.CleanString(text)
+	text = dbutil.ToValidUTF8(text) // strip out invalid UTF8 and NULL chars
 
-	// create our msg
 	msg := newMsg(MsgIncoming, channel, urn, text, clog)
 
 	// set received on to now
