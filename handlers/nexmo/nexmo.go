@@ -15,7 +15,6 @@ import (
 	"github.com/nyaruka/gocommon/gsm7"
 
 	"github.com/buger/jsonparser"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -29,6 +28,55 @@ var (
 	maxMsgLength = 1600
 	sendURL      = "https://rest.nexmo.com/sms/json"
 	throttledRE  = regexp.MustCompile(`.*Throughput Rate Exceeded - please wait \[ (\d+) \] and retry.*`)
+
+	// https://developer.vonage.com/messaging/sms/guides/troubleshooting-sms#sms-api-error-codes
+	sendErrorCodes = map[int]string{
+		1:  "Throttled",
+		2:  "Missing Parameters",
+		3:  "Invalid Parameters",
+		4:  "Invalid Credentials",
+		5:  "Internal Error",
+		6:  "Invalid Message",
+		7:  "Number Barred",
+		8:  "Partner Account Barred",
+		9:  "Partner Quota Violation",
+		10: "Too Many Existing Binds",
+		11: "Account Not Enabled For HTTP",
+		12: "Message Too Long",
+		14: "Invalid Signature",
+		15: "Invalid Sender Address",
+		22: "Invalid Network Code",
+		23: "Invalid Callback URL",
+		29: "Non-Whitelisted Destination",
+		32: "Signature And API Secret Disallowed",
+		33: "Number De-activated",
+	}
+
+	// https://developer.vonage.com/messaging/sms/guides/delivery-receipts#dlr-error-codes
+	dlrErrorCodes = map[int]string{
+		1:  "Unknown",
+		2:  "Absent Subscriber - Temporary",
+		3:  "Absent Subscriber - Permanent",
+		4:  "Call Barred by User",
+		5:  "Portability Error",
+		6:  "Anti-Spam Rejection",
+		7:  "Handset Busy",
+		8:  "Network Error",
+		9:  "Illegal Number",
+		10: "Illegal Message",
+		11: "Unroutable",
+		12: "Destination Unreachable",
+		13: "Subscriber Age Restriction",
+		14: "Number Blocked by Carrier",
+		15: "Prepaid Insufficient Funds",
+		16: "Gateway Quota Exceeded",
+		50: "Entity Filter",
+		51: "Header Filter",
+		52: "Content Filter",
+		53: "Consent Filter",
+		54: "Regulation Error",
+		99: "General Error",
+	}
 )
 
 func init() {
@@ -53,10 +101,12 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
+// https://developer.vonage.com/messaging/sms/guides/delivery-receipts
 type statusForm struct {
 	To        string `name:"to"`
-	MessageID string `name:"messageID"`
+	MessageID string `name:"messageId"`
 	Status    string `name:"status"`
+	ErrCode   int    `name:"err-code"`
 }
 
 var statusMappings = map[string]courier.MsgStatusValue{
@@ -81,6 +131,10 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	msgStatus, found := statusMappings[form.Status]
 	if !found {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring unknown status report")
+	}
+
+	if form.ErrCode != 0 {
+		clog.Error(courier.ErrorServiceSpecific("vonage", "d"+strconv.Itoa(form.ErrCode), dlrErrorCodes[form.ErrCode]))
 	}
 
 	status := h.Backend().NewMsgStatusForExternalID(channel, form.MessageID, msgStatus, clog)
@@ -178,8 +232,10 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		}
 
 		nexmoStatus, err := jsonparser.GetString(respBody, "messages", "[0]", "status")
+		errCode, _ := strconv.Atoi(nexmoStatus)
 		if err != nil || nexmoStatus != "0" {
-			clog.RawError(errors.Errorf("failed to send message, received error status [%s]", nexmoStatus))
+			// https://developer.vonage.com/messaging/sms/guides/troubleshooting-sms
+			clog.Error(courier.ErrorServiceSpecific("vonage", "s"+nexmoStatus, sendErrorCodes[errCode]))
 			return status, nil
 		}
 

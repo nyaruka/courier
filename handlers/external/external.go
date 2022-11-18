@@ -279,7 +279,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	// figure out what encoding to tell kannel to send as
 	encoding := msg.Channel().StringConfigForKey(configEncoding, encodingDefault)
-	responseContent := msg.Channel().StringConfigForKey(configMTResponseCheck, "")
+	responseCheck := msg.Channel().StringConfigForKey(configMTResponseCheck, "")
 	sendMethod := msg.Channel().StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
 	sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
 	contentType := msg.Channel().StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
@@ -366,10 +366,10 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, nil
 		}
 
-		if responseContent == "" || strings.Contains(string(respBody), responseContent) {
+		if responseCheck == "" || strings.Contains(string(respBody), responseCheck) {
 			status.SetStatus(courier.MsgWired)
 		} else {
-			clog.RawError(fmt.Errorf("Received invalid response content: %s", string(respBody)))
+			clog.Error(courier.ErrorResponseUnexpected(responseCheck))
 		}
 	}
 

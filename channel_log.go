@@ -45,6 +45,10 @@ func ErrorResponseUnparseable(format string) *ChannelError {
 	return NewChannelError(fmt.Sprintf("Unable to parse response as %s.", format), "core:response_unparseable")
 }
 
+func ErrorResponseUnexpected(expected string) *ChannelError {
+	return NewChannelError(fmt.Sprintf("Expected response to be '%s'.", expected), "core:response_unexpected")
+}
+
 func ErrorResponseValueMissing(key string) *ChannelError {
 	return NewChannelError(fmt.Sprintf("Unable to find '%s' response.", key), "core:response_value_missing")
 }
@@ -138,6 +142,7 @@ func (l *ChannelLog) Error(e *ChannelError) {
 	l.errors = append(l.errors, e.Redact(l.redactor))
 }
 
+// Deprecated: channel handlers should add user-facing error messages via .Error() instead
 func (l *ChannelLog) RawError(err error) {
 	l.Error(NewChannelError(err.Error(), ""))
 }

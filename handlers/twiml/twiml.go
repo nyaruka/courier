@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha1"
+	_ "embed"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -41,6 +42,9 @@ const (
 var (
 	maxMsgLength  = 1600
 	twilioBaseURL = "https://api.twilio.com"
+
+	//go:embed errors.json
+	errorCodes []byte
 )
 
 // see https://www.twilio.com/docs/sms/accepted-mime-types#accepted-mime-types
@@ -189,19 +193,21 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	errorCode, _ := strconv.ParseInt(form.ErrorCode, 10, 64)
-	if errorCode == errorStopped {
-		urn, err := h.parseURN(channel, form.To, "")
-		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-		}
+	if errorCode != 0 {
+		if errorCode == errorStopped {
+			urn, err := h.parseURN(channel, form.To, "")
+			if err != nil {
+				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			}
 
-		// create a stop channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
-		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
-		if err != nil {
-			return nil, err
+			// create a stop channel event
+			channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
+			err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
+			if err != nil {
+				return nil, err
+			}
 		}
-
+		clog.Error(twilioError(errorCode))
 	}
 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
@@ -299,7 +305,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						return nil, err
 					}
 				}
-				clog.RawError(errors.Errorf("received error code from twilio '%d'", errorCode))
+				clog.Error(twilioError(errorCode))
 				return status, nil
 			}
 		}
@@ -440,4 +446,11 @@ func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter
 	w.WriteHeader(200)
 	_, err := fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?><!-- %s --><Response/>`, details)
 	return err
+}
+
+// https://www.twilio.com/docs/api/errors
+func twilioError(code int64) *courier.ChannelError {
+	codeAsStr := strconv.Itoa(int(code))
+	errMsg, _ := jsonparser.GetString(errorCodes, codeAsStr)
+	return courier.ErrorServiceSpecific("twilio", codeAsStr, errMsg)
 }

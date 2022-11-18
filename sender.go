@@ -214,7 +214,11 @@ func (w *Sender) sendMessage(msg Msg) {
 
 		if err != nil {
 			log.WithError(err).WithField("elapsed", duration).Error("error sending message")
-			clog.RawError(err)
+
+			// handlers should log errors implicitly with user friendly messages.. but if not.. add what we have
+			if len(clog.Errors()) == 0 {
+				clog.Error(NewChannelError(err.Error(), ""))
+			}
 
 			// possible for handlers to only return an error in which case we construct an error status
 			if status == nil {

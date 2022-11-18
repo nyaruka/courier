@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -1029,7 +1028,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenRefresh, channel, nil)
 	clog.HTTP(trace)
-	clog.RawError(errors.New("this is an error"))
+	clog.Error(courier.ErrorResponseStatusCode())
 
 	err = ts.b.WriteChannelLog(ctx, clog)
 	ts.NoError(err)
@@ -1038,7 +1037,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM channels_channellog`).Returns(1)
 	assertdb.Query(ts.T(), ts.b.db, `SELECT channel_id, http_logs->0->>'url' AS url, errors->0->>'message' AS err FROM channels_channellog`).
-		Columns(map[string]interface{}{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json", "err": "this is an error"})
+		Columns(map[string]interface{}{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json", "err": "Unexpected response status code."})
 }
 
 func (ts *BackendTestSuite) TestSaveAttachment() {

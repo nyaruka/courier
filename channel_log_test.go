@@ -97,6 +97,11 @@ func TestChannelErrors(t *testing.T) {
 			"core:response_unparseable",
 		},
 		{
+			courier.ErrorResponseUnexpected("all good!"),
+			"Expected response to be 'all good!'.",
+			"core:response_unexpected",
+		},
+		{
 			courier.ErrorResponseValueMissing("id"),
 			"Unable to find 'id' response.",
 			"core:response_value_missing",

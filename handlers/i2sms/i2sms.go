@@ -136,7 +136,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			status.SetExternalID(response.Result.SessionID)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			clog.RawError(fmt.Errorf("Received invalid response code: %s", response.ErrorCode))
+			clog.Error(courier.ErrorResponseValueUnexpected("error_code", "00"))
 			break
 		}
 	}
