@@ -142,6 +142,7 @@ func (b *backend) DeleteMsgWithExternalID(ctx context.Context, channel courier.C
 
 // NewIncomingMsg creates a new message from the given params
 func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, clog *courier.ChannelLog) courier.Msg {
+	urn = urns.URN(dbutil.ToValidUTF8(string(urn)))
 	text = dbutil.ToValidUTF8(text) // strip out invalid UTF8 and NULL chars
 
 	msg := newMsg(MsgIncoming, channel, urn, text, clog)
