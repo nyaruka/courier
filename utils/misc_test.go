@@ -1,7 +1,6 @@
 package utils_test
 
 import (
-	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier/utils"
@@ -23,17 +22,6 @@ func TestStringArrayContains(t *testing.T) {
 	assert.False(t, utils.StringArrayContains([]string{}, "x"))
 	assert.False(t, utils.StringArrayContains([]string{"a", "b"}, "x"))
 	assert.True(t, utils.StringArrayContains([]string{"a", "b", "x", "y"}, "x"))
-}
-
-func TestCleanString(t *testing.T) {
-	assert.Equal(t, "\x41hello", utils.CleanString("\x02\x41hello"))
-	assert.Equal(t, "😅 happy!", utils.CleanString("😅 happy!"))
-	assert.Equal(t, "Hello  There", utils.CleanString("Hello \x00 There"))
-	assert.Equal(t, "Hello There", utils.CleanString("Hello There\u0000"))
-	assert.Equal(t, "Hello z There", utils.CleanString("Hello \xc5z There"))
-
-	text, _ := url.PathUnescape("hi%1C%00%00%00%00%00%07%E0%00")
-	assert.Equal(t, "hi\x1c\a", utils.CleanString(text))
 }
 
 func TestURLGetFile(t *testing.T) {
