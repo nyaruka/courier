@@ -139,13 +139,13 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 			if handler != nil {
 				describer, isDescriber := handler.(courier.URNDescriber)
 				if isDescriber {
-					atts, err := describer.DescribeURN(ctx, channel, urn, clog)
+					attrs, err := describer.DescribeURN(ctx, channel, urn, clog)
 
 					// in the case of errors, we log the error but move onwards anyways
 					if err != nil {
 						logrus.WithField("channel_uuid", channel.UUID()).WithField("channel_type", channel.ChannelType()).WithField("urn", urn).WithError(err).Error("unable to describe URN")
 					} else {
-						name = atts["name"]
+						name = attrs["name"]
 					}
 				}
 			}
@@ -156,7 +156,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 				name = string([]rune(name)[:127])
 			}
 
-			contact.Name_ = null.String(name)
+			contact.Name_ = null.String(dbutil.ToValidUTF8(name))
 		}
 	}
 
