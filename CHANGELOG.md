@@ -1,3 +1,10 @@
+v7.5.61 (2022-11-18)
+-------------------------
+ * Ensure that URN and contact name are valid utf8 before trying to write to DB
+ * Update to latest gocommon which provides dbutil.ToValidUTF8
+ * Resolve error codes to messages for Twilio and Vonage and log errors for Twilio DLRs
+ * Don't add returned err to channel log if it has logged errors already
+
 v7.5.60
 ----------
  * Allow msg id to be passed to fetch attachment requests and saved on the channel log
