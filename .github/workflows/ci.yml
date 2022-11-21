@@ -16,7 +16,7 @@ jobs:
       - name: Install Redis
         uses: zhulik/redis-action@v1.0.0
         with:
-          redis version: ${{ matrix.env-version }}
+          redis version: ${{ env.redis-version }}
 
       - name: Install PostgreSQL
         uses: harmon758/postgresql-action@v1
