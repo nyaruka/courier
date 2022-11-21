@@ -448,8 +448,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 				}
 
 				for _, msgError := range msg.Errors {
-					codeAsStr := strconv.Itoa(int(msgError.Code))
-					clog.Error(courier.ErrorServiceSpecific("whatsapp_cloud", codeAsStr, msgError.Title))
+					clog.Error(courier.ErrorExternal(strconv.Itoa(msgError.Code), msgError.Title))
 				}
 
 				text := ""
@@ -524,8 +523,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 				}
 
 				for _, statusError := range status.Errors {
-					codeAsStr := strconv.Itoa(int(statusError.Code))
-					clog.Error(courier.ErrorServiceSpecific("whatsapp_cloud", codeAsStr, statusError.Title))
+					clog.Error(courier.ErrorExternal(strconv.Itoa(statusError.Code), statusError.Title))
 				}
 
 				event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus, clog)
@@ -547,8 +545,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 			}
 
 			for _, chError := range change.Value.Errors {
-				codeAsStr := strconv.Itoa(int(chError.Code))
-				clog.Error(courier.ErrorServiceSpecific("whatsapp_cloud", codeAsStr, chError.Title))
+				clog.Error(courier.ErrorExternal(strconv.Itoa(chError.Code), chError.Title))
 			}
 
 		}
@@ -1393,13 +1390,12 @@ func requestWAC(payload wacMTPayload, accessToken string, status courier.MsgStat
 	respPayload := &wacMTResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
-		clog.RawError(errors.Errorf("unable to unmarshal response body"))
+		clog.Error(courier.ErrorResponseUnparseable("JSON"))
 		return status, nil
 	}
 
 	if respPayload.Error.Code != 0 {
-		codeAsStr := strconv.Itoa(int(respPayload.Error.Code))
-		clog.Error(courier.ErrorServiceSpecific("whatsapp_cloud", codeAsStr, respPayload.Error.Message))
+		clog.Error(courier.ErrorExternal(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message))
 		return status, nil
 	}
 

@@ -354,7 +354,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 			// sender adds returned error to channel log if there aren't other logged errors
 			if err != nil && len(clog.Errors()) == 0 {
-				clog.Error(courier.NewChannelError(err.Error(), ""))
+				clog.RawError(err)
 			}
 
 			assert.Equal(t, tc.ExpectedErrors, clog.Errors(), "unexpected errors logged")

@@ -651,7 +651,7 @@ func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]int
 				payload.Video = mediaPayload
 				payloads = append(payloads, payload)
 			} else {
-				clog.Error(courier.ErrorUnsupportedMedia(mimeType))
+				clog.Error(courier.ErrorMediaUnsupported(mimeType))
 				break
 			}
 		}

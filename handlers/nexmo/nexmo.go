@@ -134,7 +134,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	if form.ErrCode != 0 {
-		clog.Error(courier.ErrorServiceSpecific("vonage", "d"+strconv.Itoa(form.ErrCode), dlrErrorCodes[form.ErrCode]))
+		clog.Error(courier.ErrorExternal("dlr:"+strconv.Itoa(form.ErrCode), dlrErrorCodes[form.ErrCode]))
 	}
 
 	status := h.Backend().NewMsgStatusForExternalID(channel, form.MessageID, msgStatus, clog)
@@ -235,7 +235,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		errCode, _ := strconv.Atoi(nexmoStatus)
 		if err != nil || nexmoStatus != "0" {
 			// https://developer.vonage.com/messaging/sms/guides/troubleshooting-sms
-			clog.Error(courier.ErrorServiceSpecific("vonage", "s"+nexmoStatus, sendErrorCodes[errCode]))
+			clog.Error(courier.ErrorExternal("send:"+nexmoStatus, sendErrorCodes[errCode]))
 			return status, nil
 		}
 
