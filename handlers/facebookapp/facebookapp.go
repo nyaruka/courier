@@ -447,9 +447,9 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 				}
 
-				for _, msg_error := range msg.Errors {
-					codeAsStr := strconv.Itoa(int(msg_error.Code))
-					clog.Error(courier.ErrorServiceSpecific("whatsapp_cloud", codeAsStr, msg_error.Title))
+				for _, msgError := range msg.Errors {
+					codeAsStr := strconv.Itoa(int(msgError.Code))
+					clog.Error(courier.ErrorServiceSpecific("whatsapp_cloud", codeAsStr, msgError.Title))
 				}
 
 				text := ""
@@ -523,9 +523,9 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					continue
 				}
 
-				for _, status_error := range status.Errors {
-					codeAsStr := strconv.Itoa(int(status_error.Code))
-					clog.Error(courier.ErrorServiceSpecific("whatsapp_cloud", codeAsStr, status_error.Title))
+				for _, statusError := range status.Errors {
+					codeAsStr := strconv.Itoa(int(statusError.Code))
+					clog.Error(courier.ErrorServiceSpecific("whatsapp_cloud", codeAsStr, statusError.Title))
 				}
 
 				event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus, clog)
@@ -546,9 +546,9 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 
 			}
 
-			for _, ch_error := range change.Value.Errors {
-				codeAsStr := strconv.Itoa(int(ch_error.Code))
-				clog.Error(courier.ErrorServiceSpecific("whatsapp_cloud", codeAsStr, ch_error.Title))
+			for _, chError := range change.Value.Errors {
+				codeAsStr := strconv.Itoa(int(chError.Code))
+				clog.Error(courier.ErrorServiceSpecific("whatsapp_cloud", codeAsStr, chError.Title))
 			}
 
 		}
