@@ -375,7 +375,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				msgText = ""
 
 			default:
-				clog.Error(courier.ErrorUnsupportedMedia(mediaType))
+				clog.Error(courier.ErrorMediaUnsupported(mediaType))
 			}
 
 		} else {

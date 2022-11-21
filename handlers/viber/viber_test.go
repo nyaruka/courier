@@ -146,7 +146,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []*courier.ChannelError{courier.NewChannelError("received non-0 status: '3'", "")},
+		ExpectedErrors:      []*courier.ChannelError{courier.NewChannelError("", "", "received non-0 status: '3'")},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -177,7 +177,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 var invalidTokenSendTestCases = []ChannelSendTestCase{
 	{
 		Label:          "Invalid token",
-		ExpectedErrors: []*courier.ChannelError{courier.NewChannelError("missing auth token in config", "")},
+		ExpectedErrors: []*courier.ChannelError{courier.NewChannelError("", "", "missing auth token in config")},
 	},
 }
 

@@ -41,7 +41,7 @@ func TestChannelLog(t *testing.T) {
 	assert.EqualError(t, err, "unable to connect to server")
 
 	clog.HTTP(trace)
-	clog.Error(courier.NewChannelError("Something not right", "twilio:23456"))
+	clog.Error(courier.NewChannelError("not_right", "", "Something not right"))
 	clog.RawError(errors.New("this is an error"))
 	clog.End()
 
@@ -66,8 +66,9 @@ func TestChannelLog(t *testing.T) {
 	assert.Equal(t, "", hlog2.Response)
 
 	err1 := clog.Errors()[0]
+	assert.Equal(t, "not_right", err1.Code())
+	assert.Equal(t, "", err1.ExtCode())
 	assert.Equal(t, "Something not right", err1.Message())
-	assert.Equal(t, "twilio:23456", err1.Code())
 
 	err2 := clog.Errors()[1]
 	assert.Equal(t, "this is an error", err2.Message())
@@ -83,58 +84,67 @@ func TestChannelLog(t *testing.T) {
 func TestChannelErrors(t *testing.T) {
 	tcs := []struct {
 		err             *courier.ChannelError
-		expectedMessage string
 		expectedCode    string
+		expectedExtCode string
+		expectedMessage string
 	}{
 		{
-			courier.ErrorResponseStatusCode(),
-			"Unexpected response status code.",
-			"core:response_status_code",
+			err:             courier.ErrorResponseStatusCode(),
+			expectedCode:    "response_status_code",
+			expectedMessage: "Unexpected response status code.",
 		},
 		{
-			courier.ErrorResponseUnparseable("FOO"),
-			"Unable to parse response as FOO.",
-			"core:response_unparseable",
+			err:             courier.ErrorResponseUnparseable("FOO"),
+			expectedCode:    "response_unparseable",
+			expectedMessage: "Unable to parse response as FOO.",
 		},
 		{
-			courier.ErrorResponseUnexpected("all good!"),
-			"Expected response to be 'all good!'.",
-			"core:response_unexpected",
+			err:             courier.ErrorResponseUnexpected("all good!"),
+			expectedCode:    "response_unexpected",
+			expectedMessage: "Expected response to be 'all good!'.",
 		},
 		{
-			courier.ErrorResponseValueMissing("id"),
-			"Unable to find 'id' response.",
-			"core:response_value_missing",
+			err:             courier.ErrorResponseValueMissing("id"),
+			expectedCode:    "response_value_missing",
+			expectedMessage: "Unable to find 'id' response.",
 		},
 		{
-			courier.ErrorResponseValueUnexpected("status", "SUCCESS"),
-			"Expected 'status' in response to be 'SUCCESS'.",
-			"core:response_value_unexpected",
+			err:             courier.ErrorResponseValueUnexpected("status", "SUCCESS"),
+			expectedCode:    "response_value_unexpected",
+			expectedMessage: "Expected 'status' in response to be 'SUCCESS'.",
 		},
 		{
-			courier.ErrorResponseValueUnexpected("status", "SUCCESS", "OK"),
-			"Expected 'status' in response to be 'SUCCESS' or 'OK'.",
-			"core:response_value_unexpected",
+			err:             courier.ErrorResponseValueUnexpected("status", "SUCCESS", "OK"),
+			expectedCode:    "response_value_unexpected",
+			expectedMessage: "Expected 'status' in response to be 'SUCCESS' or 'OK'.",
 		},
 		{
-			courier.ErrorUnsupportedMedia("image/tiff"),
-			"Unsupported attachment media type: image/tiff.",
-			"core:media_unsupported_type",
+			err:             courier.ErrorMediaUnsupported("image/tiff"),
+			expectedCode:    "media_unsupported",
+			expectedMessage: "Unsupported attachment media type: image/tiff.",
 		},
 		{
-			courier.ErrorServiceSpecific("twilio", "20002", "Invalid FriendlyName."),
-			"Invalid FriendlyName.",
-			"twilio:20002",
+			err:             courier.ErrorAttachmentNotDecodable(),
+			expectedCode:    "attachment_not_decodable",
+			expectedMessage: "Unable to decode embedded attachment data.",
 		},
 		{
-			courier.ErrorServiceSpecific("twilio", "20003", ""),
-			"Service specific error: 20003.",
-			"twilio:20003",
+			err:             courier.ErrorExternal("20002", "Invalid FriendlyName."),
+			expectedCode:    "external",
+			expectedExtCode: "20002",
+			expectedMessage: "Invalid FriendlyName.",
+		},
+		{
+			err:             courier.ErrorExternal("20003", ""),
+			expectedCode:    "external",
+			expectedExtCode: "20003",
+			expectedMessage: "Service specific error: 20003.",
 		},
 	}
 
 	for _, tc := range tcs {
-		assert.Equal(t, tc.expectedMessage, tc.err.Message())
 		assert.Equal(t, tc.expectedCode, tc.err.Code())
+		assert.Equal(t, tc.expectedExtCode, tc.err.ExtCode())
+		assert.Equal(t, tc.expectedMessage, tc.err.Message())
 	}
 }

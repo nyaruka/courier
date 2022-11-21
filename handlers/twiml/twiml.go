@@ -452,5 +452,5 @@ func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter
 func twilioError(code int64) *courier.ChannelError {
 	codeAsStr := strconv.Itoa(int(code))
 	errMsg, _ := jsonparser.GetString(errorCodes, codeAsStr)
-	return courier.ErrorServiceSpecific("twilio", codeAsStr, errMsg)
+	return courier.ErrorExternal(codeAsStr, errMsg)
 }

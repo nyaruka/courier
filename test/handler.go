@@ -51,7 +51,7 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.Msg, clog *courier.C
 	clog.HTTP(trace)
 
 	// log an error than contains a value that should be redacted
-	clog.Error(courier.NewChannelError("contains sesame seeds", ""))
+	clog.Error(courier.NewChannelError("seeds", "", "contains sesame seeds"))
 
 	return h.backend.NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgSent, clog), nil
 }

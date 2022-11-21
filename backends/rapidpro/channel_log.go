@@ -32,8 +32,9 @@ func (l *ChannelLog) RowID() string {
 }
 
 type channelError struct {
-	Message string `json:"message"`
 	Code    string `json:"code"`
+	ExtCode string `json:"ext_code,omitempty"`
+	Message string `json:"message"`
 }
 
 // queues the passed in channel log the committer, we do not queue on errors but instead just throw away the log
@@ -53,7 +54,7 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 
 	errors := make([]channelError, len(clog.Errors()))
 	for i, e := range clog.Errors() {
-		errors[i] = channelError{Message: e.Message(), Code: e.Code()}
+		errors[i] = channelError{Code: e.Code(), ExtCode: e.ExtCode(), Message: e.Message()}
 	}
 
 	// create our value for committing

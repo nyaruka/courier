@@ -192,7 +192,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		responseCode := stringsx.Truncate(string(respBody), 3)
 		if responseCode != "000" {
-			clog.Error(courier.ErrorServiceSpecific("dart", responseCode, errorCodes[responseCode]))
+			clog.Error(courier.ErrorExternal(responseCode, errorCodes[responseCode]))
 			return status, nil
 		}
 

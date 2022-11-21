@@ -217,7 +217,7 @@ func (w *Sender) sendMessage(msg Msg) {
 
 			// handlers should log errors implicitly with user friendly messages.. but if not.. add what we have
 			if len(clog.Errors()) == 0 {
-				clog.Error(NewChannelError(err.Error(), ""))
+				clog.RawError(err)
 			}
 
 			// possible for handlers to only return an error in which case we construct an error status
