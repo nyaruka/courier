@@ -5,10 +5,9 @@ env:
 jobs:
   test:
     name: Test
-    strategy:
-      matrix:
-        redis-version: ["5.0.6", "6.2"]
-        pg-version: ["13", "14"]
+    env:
+      pg-version: "14"
+      redis-version: "6.2"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -17,12 +16,12 @@ jobs:
       - name: Install Redis
         uses: zhulik/redis-action@v1.0.0
         with:
-          redis version: ${{ matrix.redis-version }}
+          redis version: ${{ matrix.env-version }}
 
       - name: Install PostgreSQL
         uses: harmon758/postgresql-action@v1
         with:
-          postgresql version: ${{ matrix.pg-version }}
+          postgresql version: ${{ env.pg-version }}
           postgresql db: courier_test
           postgresql user: courier
           postgresql password: courier
