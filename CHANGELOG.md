@@ -1,3 +1,8 @@
+v7.5.62 (2022-11-21)
+-------------------------
+ * Rework channel log errors to have separate code and ext_code fields to remove the need for namespaces
+ * Add logs for WhatsApp Cloud specific errors
+
 v7.5.61 (2022-11-18)
 -------------------------
  * Ensure that URN and contact name are valid utf8 before trying to write to DB
