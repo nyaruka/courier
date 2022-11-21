@@ -186,6 +186,10 @@ type moPayload struct {
 							Title string `json:"title"`
 						} `json:"list_reply,omitempty"`
 					} `json:"interactive,omitempty"`
+					Errors []struct {
+						Code  int    `json:"code"`
+						Title string `json:"title"`
+					} `json:"errors"`
 				} `json:"messages"`
 				Statuses []struct {
 					ID           string `json:"id"`
@@ -204,6 +208,10 @@ type moPayload struct {
 						Billable     bool   `json:"billable"`
 						Category     string `json:"category"`
 					} `json:"pricing"`
+					Errors []struct {
+						Code  int    `json:"code"`
+						Title string `json:"title"`
+					} `json:"errors"`
 				} `json:"statuses"`
 				Errors []struct {
 					Code  int    `json:"code"`
@@ -439,6 +447,11 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 				}
 
+				for _, msg_error := range msg.Errors {
+					codeAsStr := strconv.Itoa(int(msg_error.Code))
+					clog.Error(courier.ErrorServiceSpecific("whatsapp_cloud", codeAsStr, msg_error.Title))
+				}
+
 				text := ""
 				mediaURL := ""
 
@@ -470,6 +483,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 				} else {
 					// we received a message type we do not support.
 					courier.LogRequestError(r, channel, fmt.Errorf("unsupported message type %s", msg.Type))
+					continue
 				}
 
 				// create our message
@@ -509,6 +523,11 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					continue
 				}
 
+				for _, status_error := range status.Errors {
+					codeAsStr := strconv.Itoa(int(status_error.Code))
+					clog.Error(courier.ErrorServiceSpecific("whatsapp_cloud", codeAsStr, status_error.Title))
+				}
+
 				event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus, clog)
 				err := h.Backend().WriteMsgStatus(ctx, event)
 
@@ -525,6 +544,11 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 				events = append(events, event)
 				data = append(data, courier.NewStatusData(event))
 
+			}
+
+			for _, ch_error := range change.Value.Errors {
+				codeAsStr := strconv.Itoa(int(ch_error.Code))
+				clog.Error(courier.ErrorServiceSpecific("whatsapp_cloud", codeAsStr, ch_error.Title))
 			}
 
 		}
@@ -1063,6 +1087,10 @@ type wacMTResponse struct {
 	Messages []*struct {
 		ID string `json:"id"`
 	} `json:"messages"`
+	Error struct {
+		Message string `json:"message"`
+		Code    int    `json:"code"`
+	} `json:"error"`
 }
 
 func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
@@ -1361,15 +1389,17 @@ func requestWAC(payload wacMTPayload, accessToken string, status courier.MsgStat
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	resp, respBody, err := handlers.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		return status, nil
-	}
-
+	_, respBody, _ := handlers.RequestHTTP(req, clog)
 	respPayload := &wacMTResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
 		clog.RawError(errors.Errorf("unable to unmarshal response body"))
+		return status, nil
+	}
+
+	if respPayload.Error.Code != 0 {
+		codeAsStr := strconv.Itoa(int(respPayload.Error.Code))
+		clog.Error(courier.ErrorServiceSpecific("whatsapp_cloud", codeAsStr, respPayload.Error.Message))
 		return status, nil
 	}
 
