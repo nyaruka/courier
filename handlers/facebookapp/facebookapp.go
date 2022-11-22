@@ -844,6 +844,15 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return nil, fmt.Errorf("unssuported channel type")
 }
 
+type fbaMTResponse struct {
+	ExternalID  string `json:"message_id"`
+	RecipientID string `json:"recipient_id"`
+	Error       struct {
+		Message string `json:"message"`
+		Code    int    `json:"code"`
+	} `json:"error"`
+}
+
 func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	// can't do anything without an access token
 	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
@@ -925,23 +934,30 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		resp, respBody, err := handlers.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
+		_, respBody, _ := handlers.RequestHTTP(req, clog)
+		respPayload := &fbaMTResponse{}
+		err = json.Unmarshal(respBody, respPayload)
+		if err != nil {
+			clog.Error(courier.ErrorResponseUnparseable("JSON"))
 			return status, nil
 		}
 
-		externalID, err := jsonparser.GetString(respBody, "message_id")
-		if err != nil {
+		if respPayload.Error.Code != 0 {
+			clog.Error(courier.ErrorExternal(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message))
+			return status, nil
+		}
+
+		if respPayload.ExternalID == "" {
 			clog.Error(courier.ErrorResponseValueMissing("message_id"))
 			return status, nil
 		}
 
 		// if this is our first message, record the external id
 		if i == 0 {
-			status.SetExternalID(externalID)
+			status.SetExternalID(respPayload.ExternalID)
 			if msg.URN().IsFacebookRef() {
-				recipientID, err := jsonparser.GetString(respBody, "recipient_id")
-				if err != nil {
+				recipientID := respPayload.RecipientID
+				if recipientID == "" {
 					clog.Error(courier.ErrorResponseValueMissing("recipient_id"))
 					return status, nil
 				}
