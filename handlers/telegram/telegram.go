@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
@@ -170,6 +169,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 	err = json.Unmarshal(respBody, response)
 
 	if err != nil || resp.StatusCode/100 != 2 || !response.Ok {
+		clog.Error(courier.ErrorExternal(strconv.Itoa(response.ErrorCode), response.Description))
 		if response.ErrorCode == 403 && response.Description == "Forbidden: bot was blocked by the user" {
 			return "", true, errors.Errorf("response not 'ok'")
 		}
@@ -324,6 +324,15 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return status, nil
 }
 
+type fileResponse struct {
+	Ok          bool   `json:"ok"`
+	ErrorCode   int    `json:"error_code"`
+	Description string `json:"description"`
+	Result      struct {
+		FilePath string `json:"file_path"`
+	} `json:"result"`
+}
+
 func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fileID string, clog *courier.ChannelLog) (string, error) {
 	confAuth := channel.ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
@@ -343,27 +352,28 @@ func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fi
 		courier.LogRequestError(req, channel, err)
 	}
 
-	resp, respBody, err := handlers.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
+	resp, respBody, _ := handlers.RequestHTTP(req, clog)
+
+	respPayload := &fileResponse{}
+	err = json.Unmarshal(respBody, respPayload)
+	if err != nil {
+		clog.Error(courier.ErrorResponseUnparseable("JSON"))
 		return "", errors.New("unable to resolve file")
 	}
 
-	// was this request successful?
-	ok, err := jsonparser.GetBoolean(respBody, "ok")
-	if err != nil {
-		return "", errors.Errorf("no 'ok' in response")
+	if resp.StatusCode/100 != 2 || respPayload.ErrorCode != 0 {
+		clog.Error(courier.ErrorExternal(strconv.Itoa(respPayload.ErrorCode), respPayload.Description))
+		return "", errors.New("unable to resolve file")
 	}
 
-	if !ok {
+	if !respPayload.Ok {
 		return "", errors.Errorf("file id '%s' not present", fileID)
 	}
 
-	// grab the path for our file
-	filePath, err := jsonparser.GetString(respBody, "result", "file_path")
-	if err != nil {
+	filePath := respPayload.Result.FilePath
+	if filePath == "" {
 		return "", errors.Errorf("no 'result.file_path' in response")
 	}
-
 	// return the URL
 	return fmt.Sprintf("%s/file/bot%s/%s", apiURL, authToken, filePath), nil
 }
