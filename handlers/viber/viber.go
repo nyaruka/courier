@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
@@ -308,6 +307,11 @@ type mtPayload struct {
 	Keyboard     *Keyboard         `json:"keyboard,omitempty"`
 }
 
+type mtResponse struct {
+	Status        int    `json:"status"`
+	StatusMessage string `json:"status_message"`
+}
+
 // Send sends the given message, logging any HTTP calls or errors
 func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
@@ -413,15 +417,19 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		resp, respBody, err := handlers.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
+			clog.Error(courier.ErrorResponseStatusCode())
 			return status, nil
 		}
-		responseStatus, err := jsonparser.GetInt(respBody, "status")
+
+		respPayload := &mtResponse{}
+		err = json.Unmarshal(respBody, respPayload)
 		if err != nil {
 			clog.Error(courier.ErrorResponseUnparseable("JSON"))
 			return status, nil
 		}
-		if responseStatus != 0 {
-			clog.RawError(errors.Errorf("received non-0 status: '%d'", responseStatus))
+
+		if respPayload.Status != 0 {
+			clog.Error(courier.ErrorExternal(strconv.Itoa(respPayload.Status), respPayload.StatusMessage))
 			return status, nil
 		}
 

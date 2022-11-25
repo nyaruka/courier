@@ -142,11 +142,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgText:             "Simple Message",
 		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
 		MockResponseStatus:  200,
-		MockResponseBody:    `{"status":3,"status_message":"InvalidToken"}`,
+		MockResponseBody:    `{"status":3,"status_message":"badData"}`,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []*courier.ChannelError{courier.NewChannelError("", "", "received non-0 status: '3'")},
+		ExpectedErrors:      []*courier.ChannelError{courier.ErrorExternal("3", "badData")},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -170,6 +170,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Error Message","type":"text","tracking_data":"10"}`,
 		ExpectedMsgStatus:   "E",
+		ExpectedErrors:      []*courier.ChannelError{courier.ErrorResponseStatusCode()},
 		SendPrep:            setSendURL,
 	},
 }
