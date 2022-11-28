@@ -191,6 +191,70 @@ var noOkFile = `
   }
 }`
 
+var invalidJsonFile = `
+{
+  "update_id":174114373,
+  "message":{
+    "message_id":44,
+    "from":{
+      "id":3527065,
+      "first_name":"Nic",
+      "last_name":"Pottier"
+    },
+    "chat":{
+      "id":3527065,
+      "first_name":"Nic",
+      "last_name":"Pottier",
+      "type":"private"
+    },
+    "date":1454119668,
+    "sticker":{
+      "width":436,
+      "height":512,
+      "thumb":{
+        "file_id":"invalidjson",
+        "file_size":2510,
+        "width":77,
+        "height":90
+      },
+      "file_id":"BQADAwADRQADyIsGAAHtBskMy6GoLAI",
+      "file_size":38440
+    }
+  }
+}`
+
+var errorFile = `
+{
+  "update_id":174114373,
+  "message":{
+    "message_id":44,
+    "from":{
+      "id":3527065,
+      "first_name":"Nic",
+      "last_name":"Pottier"
+    },
+    "chat":{
+      "id":3527065,
+      "first_name":"Nic",
+      "last_name":"Pottier",
+      "type":"private"
+    },
+    "date":1454119668,
+    "sticker":{
+      "width":436,
+      "height":512,
+      "thumb":{
+        "file_id":"error",
+        "file_size":2510,
+        "width":77,
+        "height":90
+      },
+      "file_id":"BQADAwADRQADyIsGAAHtBskMy6GoLAI",
+      "file_size":38440
+    }
+  }
+}`
+
 var noFile = `
 {
   "update_id":174114373,
@@ -613,7 +677,23 @@ var testCases = []ChannelHandleTestCase{
 		URL:                  "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
 		Data:                 noOkFile,
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "no 'ok' in response",
+		ExpectedBodyContains: "not present",
+	},
+	{
+		Label:                "Receive invalid JSON File response",
+		URL:                  "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+		Data:                 invalidJsonFile,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "unable to resolve file",
+		ExpectedErrors:       []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
+	},
+	{
+		Label:                "Receive error File response",
+		URL:                  "/c/tg/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive/",
+		Data:                 errorFile,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "unable to resolve file",
+		ExpectedErrors:       []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
 	},
 	{
 		Label:                "Receive NotOk FileID",
@@ -651,6 +731,12 @@ func buildMockTelegramService(testCases []ChannelHandleTestCase) *httptest.Serve
 			filePath = "document.xls"
 		case "notok":
 			w.Write([]byte(`{ "ok": false, "result": { "file_path": "nothing" } }`))
+			return
+		case "invalidjson":
+			w.Write([]byte(`invalid`))
+			return
+		case "error":
+			w.Write([]byte(`{ "error_code": 500, "description": "error loading file" }`))
 			return
 		case "nook":
 			w.Write([]byte(`{}`))
@@ -765,9 +851,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Label:              "Error",
 		MsgText:            "Error",
 		MsgURN:             "telegram:12345",
-		MockResponseBody:   `{ "ok": false }`,
+		MockResponseBody:   `{ "ok": false, "error_code":400, "description":"Bot domain invalid." }`,
 		MockResponseStatus: 403,
 		ExpectedPostParams: map[string]string{"text": `Error`, "chat_id": "12345"},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorExternal("400", "Bot domain invalid.")},
 		ExpectedMsgStatus:  "E",
 		SendPrep:           setSendURL,
 	},
@@ -779,6 +866,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 403,
 		ExpectedPostParams: map[string]string{"text": `Stopped Contact`, "chat_id": "12345"},
 		ExpectedMsgStatus:  "F",
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorExternal("403", "Forbidden: bot was blocked by the user")},
 		ExpectedStopEvent:  true,
 		SendPrep:           setSendURL,
 	},
