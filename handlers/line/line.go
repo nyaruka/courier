@@ -11,9 +11,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
-	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
@@ -289,6 +289,10 @@ type mtPayload struct {
 	Messages   json.RawMessage `json:"messages"`
 }
 
+type mtResponse struct {
+	Message string `json:"message"`
+}
+
 // Send sends the given message, logging any HTTP calls or errors
 func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
@@ -368,25 +372,42 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			}
 
 			resp, respBody, err := handlers.RequestHTTP(req, clog)
+
 			if err == nil && resp.StatusCode/100 == 2 {
 				batch = []string{}
 				batchCount = 0
 				continue
 			}
 
-			// retry without the reply token if it's invalid
-			errMsg, err := jsonparser.GetString(respBody, "message")
-			if err == nil && errMsg == "Invalid reply token" {
+			respPayload := &mtResponse{}
+			err = json.Unmarshal(respBody, respPayload)
+			if err != nil {
+				clog.Error(courier.ErrorResponseUnparseable("JSON"))
+				return status, nil
+			}
+
+			errMsg := respPayload.Message
+			if errMsg == "Invalid reply token" {
 				req, err = buildSendMsgRequest(authToken, msg.URN().Path(), "", batch)
 				if err != nil {
 					return status, err
 				}
 
-				resp, _, err := handlers.RequestHTTP(req, clog)
-				if err != nil || resp.StatusCode/100 != 2 {
+				resp, respBody, _ := handlers.RequestHTTP(req, clog)
+
+				respPayload := &mtResponse{}
+				err = json.Unmarshal(respBody, respPayload)
+				if err != nil {
+					clog.Error(courier.ErrorResponseUnparseable("JSON"))
+					return status, nil
+				}
+
+				if resp.StatusCode/100 != 2 {
+					clog.Error(courier.ErrorExternal(strconv.Itoa(resp.StatusCode), respPayload.Message))
 					return status, nil
 				}
 			} else {
+				clog.Error(courier.ErrorExternal(strconv.Itoa(resp.StatusCode), respPayload.Message))
 				return status, err
 			}
 		}
