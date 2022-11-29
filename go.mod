@@ -4,18 +4,18 @@ go 1.19
 
 require (
 	github.com/antchfx/xmlquery v1.3.12
-	github.com/aws/aws-sdk-go v1.44.124
+	github.com/aws/aws-sdk-go v1.44.146
 	github.com/buger/jsonparser v1.1.1
 	github.com/dghubble/oauth1 v0.7.1
 	github.com/evalphobia/logrus_sentry v0.8.2
 	github.com/go-chi/chi v4.1.2+incompatible
-	github.com/gofrs/uuid v4.3.0+incompatible
+	github.com/gofrs/uuid v4.3.1+incompatible
 	github.com/gomodule/redigo v1.8.9
 	github.com/gorilla/schema v1.2.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.7
 	github.com/nyaruka/ezconf v0.2.1
-	github.com/nyaruka/gocommon v1.33.0
+	github.com/nyaruka/gocommon v1.33.1
 	github.com/nyaruka/null v1.2.0
 	github.com/nyaruka/redisx v0.2.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -45,11 +45,11 @@ require (
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.1.1 // indirect
 	github.com/nyaruka/librato v1.0.0 // indirect
-	github.com/nyaruka/phonenumbers v1.1.2 // indirect
+	github.com/nyaruka/phonenumbers v1.1.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
-	golang.org/x/net v0.1.0 // indirect
-	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/net v0.2.0 // indirect
+	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
