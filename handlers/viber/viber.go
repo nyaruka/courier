@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
@@ -29,6 +28,34 @@ var (
 	sendURL              = "https://chatapi.viber.com/pa/send_message"
 	maxMsgLength         = 7000
 	descriptionMaxLength = 512
+
+	// https://developers.viber.com/docs/api/rest-bot-api/#error-codes
+	sendErrorCodes = map[int]string{
+		1:  "The webhook URL is not valid",
+		2:  "The authentication token is not valid",
+		3:  "There is an error in the request itself (missing comma, brackets, etc.)",
+		4:  "Some mandatory data is missing",
+		5:  "The receiver is not registered to Viber",
+		6:  "The receiver is not subscribed to the account",
+		7:  "The account is blocked",
+		8:  "The account associated with the token is not a account.",
+		9:  "The account is suspended",
+		10: "No webhook was set for the account",
+		11: "The receiver is using a device or a Viber version that don’t support accounts",
+		12: "Rate control breach",
+		13: "Maximum supported account version by all user’s devices is less than the minApiVersion in the message",
+		14: "minApiVersion is not compatible to the message fields",
+		15: "The account is not authorized",
+		16: "Inline message not allowed",
+		17: "The account is not inline",
+		18: "Failed to post to public account. The bot is missing a Public Chat interface",
+		19: "Cannot send broadcast message",
+		20: "Attempt to send broadcast message from the bot",
+		21: "The message sent is not supported in the destination country",
+		22: "The bot does not support payment messages",
+		23: "The non-billable bot has reached the monthly threshold of free out of session messages",
+		24: "No balance for a billable bot (when the “free out of session messages” threshold has been reached)",
+	}
 )
 
 func init() {
@@ -308,6 +335,11 @@ type mtPayload struct {
 	Keyboard     *Keyboard         `json:"keyboard,omitempty"`
 }
 
+type mtResponse struct {
+	Status        int    `json:"status"`
+	StatusMessage string `json:"status_message"`
+}
+
 // Send sends the given message, logging any HTTP calls or errors
 func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
@@ -413,15 +445,23 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		resp, respBody, err := handlers.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
+			clog.Error(courier.ErrorResponseStatusCode())
 			return status, nil
 		}
-		responseStatus, err := jsonparser.GetInt(respBody, "status")
+
+		respPayload := &mtResponse{}
+		err = json.Unmarshal(respBody, respPayload)
 		if err != nil {
 			clog.Error(courier.ErrorResponseUnparseable("JSON"))
 			return status, nil
 		}
-		if responseStatus != 0 {
-			clog.RawError(errors.Errorf("received non-0 status: '%d'", responseStatus))
+
+		if respPayload.Status != 0 {
+			errorMessage, found := sendErrorCodes[respPayload.Status]
+			if !found {
+				errorMessage = "General error"
+			}
+			clog.Error(courier.ErrorExternal(strconv.Itoa(respPayload.Status), errorMessage))
 			return status, nil
 		}
 
