@@ -1,3 +1,8 @@
+v7.5.63 (2022-11-30)
+-------------------------
+ * Add logs for Facebook, Instagram, Viber, Telgram and Line specific errors
+ * Update deps
+
 v7.5.62 (2022-11-21)
 -------------------------
  * Rework channel log errors to have separate code and ext_code fields to remove the need for namespaces
