@@ -18,7 +18,6 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
@@ -274,10 +273,6 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 	// first fetch our media
 	req, _ := http.NewRequest(http.MethodGet, parsedURL.String(), nil)
 	return req, nil
-}
-
-func (*handler) AttachmentRequestClient(ch courier.Channel) *http.Client {
-	return utils.GetHTTPClient()
 }
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)

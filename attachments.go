@@ -78,16 +78,13 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 		return nil, err
 	}
 
-	var httpClient *http.Client
 	var attRequest *http.Request
 
 	handler := GetHandler(channel.ChannelType())
 	builder, isBuilder := handler.(AttachmentRequestBuilder)
 	if isBuilder {
-		httpClient = builder.AttachmentRequestClient(channel)
 		attRequest, err = builder.BuildAttachmentRequest(ctx, b, channel, parsedURL.String(), clog)
 	} else {
-		httpClient = utils.GetHTTPClient()
 		attRequest, err = http.NewRequest(http.MethodGet, attURL, nil)
 	}
 
@@ -95,7 +92,7 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 		return nil, errors.Wrap(err, "unable to create attachment request")
 	}
 
-	trace, err := httpx.DoTrace(httpClient, attRequest, nil, nil, maxAttBodyReadBytes)
+	trace, err := httpx.DoTrace(utils.GetHTTPClient(), attRequest, nil, nil, maxAttBodyReadBytes)
 	if trace != nil {
 		clog.HTTP(trace)
 	}

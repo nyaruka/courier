@@ -11,7 +11,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -101,10 +100,6 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 	req.Header.Set("X-Auth-Token", adminAuthToken)
 	req.Header.Set("X-User-Id", adminUserID)
 	return req, nil
-}
-
-func (*handler) AttachmentRequestClient(ch courier.Channel) *http.Client {
-	return utils.GetHTTPClient()
 }
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
