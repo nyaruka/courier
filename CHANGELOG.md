@@ -1,3 +1,7 @@
+v7.5.64 (2022-12-13)
+-------------------------
+ * Remove temp workaround to stop D360 channels taking longer than 5 seconds to request attachments
+
 v7.5.63 (2022-11-30)
 -------------------------
  * Add logs for Facebook, Instagram, Viber, Telgram and Line specific errors
