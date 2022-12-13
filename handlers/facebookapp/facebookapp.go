@@ -1566,10 +1566,6 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 	return req, nil
 }
 
-func (*handler) AttachmentRequestClient(ch courier.Channel) *http.Client {
-	return utils.GetHTTPClient()
-}
-
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
 type TemplateMetadata struct {

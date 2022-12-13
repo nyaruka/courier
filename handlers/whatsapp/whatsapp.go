@@ -44,8 +44,6 @@ var (
 	retryParam = ""
 
 	failedMediaCache *cache.Cache
-
-	d360AttachmentClient *http.Client
 )
 
 func init() {
@@ -54,9 +52,6 @@ func init() {
 	courier.RegisterHandler(newWAHandler(courier.ChannelType(channelTypeTXW), "TextIt"))
 
 	failedMediaCache = cache.New(15*time.Minute, 15*time.Minute)
-
-	// seems that we get about 5 seconds to respond to Dialog360 so we can't spend long fetching attachments
-	d360AttachmentClient = &http.Client{Timeout: time.Second * 3}
 }
 
 type handler struct {
@@ -330,13 +325,6 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 	req.Header.Set("User-Agent", utils.HTTPUserAgent)
 	setWhatsAppAuthHeader(&req.Header, channel)
 	return req, nil
-}
-
-func (*handler) AttachmentRequestClient(ch courier.Channel) *http.Client {
-	if ch.ChannelType() == channelTypeD3 {
-		return d360AttachmentClient
-	}
-	return utils.GetHTTPClient()
 }
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
