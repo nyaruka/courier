@@ -1,3 +1,7 @@
+v7.5.65 (2023-01-05)
+-------------------------
+ * Enable back Arabiacell SSL validation
+
 v7.5.64 (2022-12-13)
 -------------------------
  * Remove temp workaround to stop D360 channels taking longer than 5 seconds to request attachments
