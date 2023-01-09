@@ -8,8 +8,8 @@ Courier is a messaging gateway for text-based messaging channels. It abstracts o
 texting mediums and providers, allowing applications to focus on the creation and processing of those messages.
 
 Currently it supports over 50 different channel types, ranging for SMS aggregators like Twilio to
-IP channels like Facebook and Telegram messenger. The goal is for Courier to support every popular
-messaging channels and aggregator and we are happy to accept pull requests to help accomplish that.
+IP channels like Facebook and Telegram messenger. The goal is for Courier to support all popular
+messaging channels and aggregators and we are happy to accept pull requests to help accomplish that.
 
 Courier is currently used to power [RapidPro](https://rapidpro.io) and [TextIt](https://textit.com)
 but the backend is pluggable, so you can add your own backend to read and write messages.
