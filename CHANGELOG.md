@@ -1,3 +1,7 @@
+v7.5.66 (2023-01-09)
+-------------------------
+ * Support bandwidth channel type
+
 v7.5.65 (2023-01-05)
 -------------------------
  * Enable back Arabiacell SSL validation
