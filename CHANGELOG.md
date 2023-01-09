@@ -1,3 +1,7 @@
+v8.0.0 (2023-01-09)
+-------------------------
+ * Fix typos in README
+
 v7.5.66 (2023-01-09)
 -------------------------
  * Support bandwidth channel type
