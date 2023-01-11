@@ -1,3 +1,7 @@
+v8.0.2 (2023-01-11)
+-------------------------
+ * Fix for BW handler not being loaded 
+
 v8.0.0 (2023-01-09)
 -------------------------
  * Fix typos in README
