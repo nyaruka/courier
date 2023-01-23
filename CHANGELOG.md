@@ -1,3 +1,7 @@
+v8.1.0 (2023-01-23)
+-------------------------
+ * Remove passing the parameters as null for WA template components
+
 v8.0.2 (2023-01-11)
 -------------------------
  * Fix for BW handler not being loaded 
