@@ -436,7 +436,7 @@ type Param struct {
 
 type Component struct {
 	Type       string  `json:"type"`
-	Parameters []Param `json:"parameters"`
+	Parameters []Param `json:"parameters,omitempty"`
 }
 
 type templatePayload struct {
