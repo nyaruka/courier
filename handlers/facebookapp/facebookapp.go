@@ -1123,6 +1123,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	}
 	qrs := msg.QuickReplies()
+	langCode := getSupportedLanguage(msg.Locale())
 
 	var payloadAudio wacMTPayload
 
@@ -1132,7 +1133,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 		if len(msg.Attachments()) == 0 {
 			// do we have a template?
 			var templating *MsgTemplating
-			templating, err := h.getTemplate(msg)
+			templating, err := h.getTemplating(msg)
 			if err != nil {
 				return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
 			}
@@ -1140,7 +1141,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 
 				payload.Type = "template"
 
-				template := wacTemplate{Name: templating.Template.Name, Language: &wacLanguage{Policy: "deterministic", Code: templating.Language}}
+				template := wacTemplate{Name: templating.Template.Name, Language: &wacLanguage{Policy: "deterministic", Code: langCode}}
 				payload.Template = &template
 
 				component := &wacComponent{Type: "body"}
@@ -1515,39 +1516,27 @@ func fbCalculateSignature(appSecret string, body []byte) (string, error) {
 	return hex.EncodeToString(mac.Sum(nil)), nil
 }
 
-func (h *handler) getTemplate(msg courier.Msg) (*MsgTemplating, error) {
-	mdJSON := msg.Metadata()
-	if len(mdJSON) == 0 {
+func (h *handler) getTemplating(msg courier.Msg) (*MsgTemplating, error) {
+	if len(msg.Metadata()) == 0 {
 		return nil, nil
 	}
-	metadata := &TemplateMetadata{}
-	err := json.Unmarshal(mdJSON, metadata)
-	if err != nil {
+
+	metadata := &struct {
+		Templating *MsgTemplating `json:"templating"`
+	}{}
+	if err := json.Unmarshal(msg.Metadata(), metadata); err != nil {
 		return nil, err
 	}
-	templating := metadata.Templating
-	if templating == nil {
+
+	if metadata.Templating == nil {
 		return nil, nil
 	}
 
-	// check our template is valid
-	err = utils.Validate(templating)
-	if err != nil {
+	if err := utils.Validate(metadata.Templating); err != nil {
 		return nil, errors.Wrapf(err, "invalid templating definition")
 	}
-	// check country
-	if templating.Country != "" {
-		templating.Language = fmt.Sprintf("%s_%s", templating.Language, templating.Country)
-	}
 
-	// map our language from iso639-3_iso3166-2 to the WA country / iso638-2 pair
-	language, found := languageMap[templating.Language]
-	if !found {
-		return nil, fmt.Errorf("unable to find mapping for language: %s", templating.Language)
-	}
-	templating.Language = language
-
-	return templating, err
+	return metadata.Templating, nil
 }
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set
@@ -1568,23 +1557,34 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
-type TemplateMetadata struct {
-	Templating *MsgTemplating `json:"templating"`
-}
-
 type MsgTemplating struct {
 	Template struct {
 		Name string `json:"name" validate:"required"`
 		UUID string `json:"uuid" validate:"required"`
 	} `json:"template" validate:"required,dive"`
-	Language  string   `json:"language" validate:"required"`
-	Country   string   `json:"country"`
 	Namespace string   `json:"namespace"`
 	Variables []string `json:"variables"`
 }
 
-// mapping from iso639-3_iso3166-2 to WA language code
-var languageMap = map[string]string{
+func getSupportedLanguage(lc courier.Locale) string {
+	// look for exact match
+	if lang := supportedLanguages[lc]; lang != "" {
+		return lang
+	}
+
+	// if we have a country, strip that off and look again for a match
+	l, c := lc.ToParts()
+	if c != "" {
+		if lang := supportedLanguages[courier.Locale(l)]; lang != "" {
+			return lang
+		}
+	}
+	return "en" // fallback to English
+}
+
+// Mapping from engine locales to supported languages. Note that these are not all valid BCP47 codes, e.g. fil
+// see https://developers.facebook.com/docs/whatsapp/api/messages/message-templates/
+var supportedLanguages = map[courier.Locale]string{
 	"afr":    "af",    // Afrikaans
 	"sqi":    "sq",    // Albanian
 	"ara":    "ar",    // Arabic
@@ -1593,16 +1593,16 @@ var languageMap = map[string]string{
 	"bul":    "bg",    // Bulgarian
 	"cat":    "ca",    // Catalan
 	"zho":    "zh_CN", // Chinese
-	"zho_CN": "zh_CN", // Chinese (CHN)
-	"zho_HK": "zh_HK", // Chinese (HKG)
-	"zho_TW": "zh_TW", // Chinese (TAI)
+	"zho-CN": "zh_CN", // Chinese (CHN)
+	"zho-HK": "zh_HK", // Chinese (HKG)
+	"zho-TW": "zh_TW", // Chinese (TAI)
 	"hrv":    "hr",    // Croatian
 	"ces":    "cs",    // Czech
 	"dah":    "da",    // Danish
 	"nld":    "nl",    // Dutch
 	"eng":    "en",    // English
-	"eng_GB": "en_GB", // English (UK)
-	"eng_US": "en_US", // English (US)
+	"eng-GB": "en_GB", // English (UK)
+	"eng-US": "en_US", // English (US)
 	"est":    "et",    // Estonian
 	"fil":    "fil",   // Filipino
 	"fin":    "fi",    // Finnish
@@ -1635,8 +1635,8 @@ var languageMap = map[string]string{
 	"fas":    "fa",    // Persian
 	"pol":    "pl",    // Polish
 	"por":    "pt_PT", // Portuguese
-	"por_BR": "pt_BR", // Portuguese (BR)
-	"por_PT": "pt_PT", // Portuguese (POR)
+	"por-BR": "pt_BR", // Portuguese (BR)
+	"por-PT": "pt_PT", // Portuguese (POR)
 	"pan":    "pa",    // Punjabi
 	"ron":    "ro",    // Romanian
 	"rus":    "ru",    // Russian
@@ -1644,9 +1644,9 @@ var languageMap = map[string]string{
 	"slk":    "sk",    // Slovak
 	"slv":    "sl",    // Slovenian
 	"spa":    "es",    // Spanish
-	"spa_AR": "es_AR", // Spanish (ARG)
-	"spa_ES": "es_ES", // Spanish (SPA)
-	"spa_MX": "es_MX", // Spanish (MEX)
+	"spa-AR": "es_AR", // Spanish (ARG)
+	"spa-ES": "es_ES", // Spanish (SPA)
+	"spa-MX": "es_MX", // Spanish (MEX)
 	"swa":    "sw",    // Swahili
 	"swe":    "sv",    // Swedish
 	"tam":    "ta",    // Tamil
