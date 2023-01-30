@@ -1543,4 +1543,6 @@ func TestGetSupportedLanguage(t *testing.T) {
 	assert.Equal(t, "pt_PT", getSupportedLanguage(courier.Locale("por-PT")))
 	assert.Equal(t, "pt_BR", getSupportedLanguage(courier.Locale("por-BR")))
 	assert.Equal(t, "fil", getSupportedLanguage(courier.Locale("fil")))
+	assert.Equal(t, "fr", getSupportedLanguage(courier.Locale("fra-CA")))
+	assert.Equal(t, "en", getSupportedLanguage(courier.Locale("run")))
 }
