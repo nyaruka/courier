@@ -1,3 +1,7 @@
+v8.1.1 (2023-01-30)
+-------------------------
+ * Support reading msg locale and use that instead of language+country on templating
+
 v8.1.0 (2023-01-23)
 -------------------------
  * Remove passing the parameters as null for WA template components
