@@ -1351,6 +1351,19 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		SendPrep:            setSendURL,
 	},
 	{
+		Label:               "Interactive List Message Send In Spanish",
+		MsgText:             "Hola",
+		MsgURN:              "whatsapp:250788123123",
+		MsgLocale:           "spa",
+		MsgQuickReplies:     []string{"ROW1", "ROW2", "ROW3", "ROW4"},
+		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  201,
+		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Hola"},"action":{"button":"Menú","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		SendPrep:            setSendURL,
+	},
+	{
 		Label:               "Interactive Button Message Send with image attachment",
 		MsgText:             "Interactive Button Msg",
 		MsgURN:              "whatsapp:250788123123",
@@ -1536,13 +1549,13 @@ func TestBuildMediaRequest(t *testing.T) {
 }
 
 func TestGetSupportedLanguage(t *testing.T) {
-	assert.Equal(t, "en", getSupportedLanguage(courier.NilLocale))
-	assert.Equal(t, "en", getSupportedLanguage(courier.Locale("eng")))
-	assert.Equal(t, "en_US", getSupportedLanguage(courier.Locale("eng-US")))
-	assert.Equal(t, "pt_PT", getSupportedLanguage(courier.Locale("por")))
-	assert.Equal(t, "pt_PT", getSupportedLanguage(courier.Locale("por-PT")))
-	assert.Equal(t, "pt_BR", getSupportedLanguage(courier.Locale("por-BR")))
-	assert.Equal(t, "fil", getSupportedLanguage(courier.Locale("fil")))
-	assert.Equal(t, "fr", getSupportedLanguage(courier.Locale("fra-CA")))
-	assert.Equal(t, "en", getSupportedLanguage(courier.Locale("run")))
+	assert.Equal(t, languageInfo{"en", "Menu"}, getSupportedLanguage(courier.NilLocale))
+	assert.Equal(t, languageInfo{"en", "Menu"}, getSupportedLanguage(courier.Locale("eng")))
+	assert.Equal(t, languageInfo{"en_US", "Menu"}, getSupportedLanguage(courier.Locale("eng-US")))
+	assert.Equal(t, languageInfo{"pt_PT", "Menu"}, getSupportedLanguage(courier.Locale("por")))
+	assert.Equal(t, languageInfo{"pt_PT", "Menu"}, getSupportedLanguage(courier.Locale("por-PT")))
+	assert.Equal(t, languageInfo{"pt_BR", "Menu"}, getSupportedLanguage(courier.Locale("por-BR")))
+	assert.Equal(t, languageInfo{"fil", "Menu"}, getSupportedLanguage(courier.Locale("fil")))
+	assert.Equal(t, languageInfo{"fr", "Menu"}, getSupportedLanguage(courier.Locale("fra-CA")))
+	assert.Equal(t, languageInfo{"en", "Menu"}, getSupportedLanguage(courier.Locale("run")))
 }

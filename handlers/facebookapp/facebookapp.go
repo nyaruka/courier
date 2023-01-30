@@ -1123,7 +1123,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	}
 	qrs := msg.QuickReplies()
-	langCode := getSupportedLanguage(msg.Locale())
+	lang := getSupportedLanguage(msg.Locale())
 
 	var payloadAudio wacMTPayload
 
@@ -1140,7 +1140,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 
 				payload.Type = "template"
 
-				template := wacTemplate{Name: templating.Template.Name, Language: &wacLanguage{Policy: "deterministic", Code: langCode}}
+				template := wacTemplate{Name: templating.Template.Name, Language: &wacLanguage{Policy: "deterministic", Code: lang.code}}
 				payload.Template = &template
 
 				component := &wacComponent{Type: "body"}
@@ -1202,7 +1202,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 								Button   string         "json:\"button,omitempty\""
 								Sections []wacMTSection "json:\"sections,omitempty\""
 								Buttons  []wacMTButton  "json:\"buttons,omitempty\""
-							}{Button: "Menu", Sections: []wacMTSection{
+							}{Button: lang.menu, Sections: []wacMTSection{
 								section,
 							}}
 
@@ -1350,7 +1350,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 						Button   string         "json:\"button,omitempty\""
 						Sections []wacMTSection "json:\"sections,omitempty\""
 						Buttons  []wacMTButton  "json:\"buttons,omitempty\""
-					}{Button: "Menu", Sections: []wacMTSection{
+					}{Button: lang.menu, Sections: []wacMTSection{
 						section,
 					}}
 
@@ -1565,96 +1565,101 @@ type MsgTemplating struct {
 	Variables []string `json:"variables"`
 }
 
-func getSupportedLanguage(lc courier.Locale) string {
+func getSupportedLanguage(lc courier.Locale) languageInfo {
 	// look for exact match
-	if lang := supportedLanguages[lc]; lang != "" {
+	if lang := supportedLanguages[lc]; lang.code != "" {
 		return lang
 	}
 
 	// if we have a country, strip that off and look again for a match
 	l, c := lc.ToParts()
 	if c != "" {
-		if lang := supportedLanguages[courier.Locale(l)]; lang != "" {
+		if lang := supportedLanguages[courier.Locale(l)]; lang.code != "" {
 			return lang
 		}
 	}
-	return "en" // fallback to English
+	return supportedLanguages["eng"] // fallback to English
+}
+
+type languageInfo struct {
+	code string
+	menu string // translation of "Menu"
 }
 
 // Mapping from engine locales to supported languages. Note that these are not all valid BCP47 codes, e.g. fil
 // see https://developers.facebook.com/docs/whatsapp/api/messages/message-templates/
-var supportedLanguages = map[courier.Locale]string{
-	"afr":    "af",    // Afrikaans
-	"sqi":    "sq",    // Albanian
-	"ara":    "ar",    // Arabic
-	"aze":    "az",    // Azerbaijani
-	"ben":    "bn",    // Bengali
-	"bul":    "bg",    // Bulgarian
-	"cat":    "ca",    // Catalan
-	"zho":    "zh_CN", // Chinese
-	"zho-CN": "zh_CN", // Chinese (CHN)
-	"zho-HK": "zh_HK", // Chinese (HKG)
-	"zho-TW": "zh_TW", // Chinese (TAI)
-	"hrv":    "hr",    // Croatian
-	"ces":    "cs",    // Czech
-	"dah":    "da",    // Danish
-	"nld":    "nl",    // Dutch
-	"eng":    "en",    // English
-	"eng-GB": "en_GB", // English (UK)
-	"eng-US": "en_US", // English (US)
-	"est":    "et",    // Estonian
-	"fil":    "fil",   // Filipino
-	"fin":    "fi",    // Finnish
-	"fra":    "fr",    // French
-	"kat":    "ka",    // Georgian
-	"deu":    "de",    // German
-	"ell":    "el",    // Greek
-	"guj":    "gu",    // Gujarati
-	"hau":    "ha",    // Hausa
-	"enb":    "he",    // Hebrew
-	"hin":    "hi",    // Hindi
-	"hun":    "hu",    // Hungarian
-	"ind":    "id",    // Indonesian
-	"gle":    "ga",    // Irish
-	"ita":    "it",    // Italian
-	"jpn":    "ja",    // Japanese
-	"kan":    "kn",    // Kannada
-	"kaz":    "kk",    // Kazakh
-	"kin":    "rw_RW", // Kinyarwanda
-	"kor":    "ko",    // Korean
-	"kir":    "ky_KG", // Kyrgyzstan
-	"lao":    "lo",    // Lao
-	"lav":    "lv",    // Latvian
-	"lit":    "lt",    // Lithuanian
-	"mal":    "ml",    // Malayalam
-	"mkd":    "mk",    // Macedonian
-	"msa":    "ms",    // Malay
-	"mar":    "mr",    // Marathi
-	"nob":    "nb",    // Norwegian
-	"fas":    "fa",    // Persian
-	"pol":    "pl",    // Polish
-	"por":    "pt_PT", // Portuguese
-	"por-BR": "pt_BR", // Portuguese (BR)
-	"por-PT": "pt_PT", // Portuguese (POR)
-	"pan":    "pa",    // Punjabi
-	"ron":    "ro",    // Romanian
-	"rus":    "ru",    // Russian
-	"srp":    "sr",    // Serbian
-	"slk":    "sk",    // Slovak
-	"slv":    "sl",    // Slovenian
-	"spa":    "es",    // Spanish
-	"spa-AR": "es_AR", // Spanish (ARG)
-	"spa-ES": "es_ES", // Spanish (SPA)
-	"spa-MX": "es_MX", // Spanish (MEX)
-	"swa":    "sw",    // Swahili
-	"swe":    "sv",    // Swedish
-	"tam":    "ta",    // Tamil
-	"tel":    "te",    // Telugu
-	"tha":    "th",    // Thai
-	"tur":    "tr",    // Turkish
-	"ukr":    "uk",    // Ukrainian
-	"urd":    "ur",    // Urdu
-	"uzb":    "uz",    // Uzbek
-	"vie":    "vi",    // Vietnamese
-	"zul":    "zu",    // Zulu
+var supportedLanguages = map[courier.Locale]languageInfo{
+	"afr":    {code: "af", menu: "Kieslys"},   // Afrikaans
+	"sqi":    {code: "sq", menu: "Menu"},      // Albanian
+	"ara":    {code: "ar", menu: "قائمة"},     // Arabic
+	"aze":    {code: "az", menu: "Menu"},      // Azerbaijani
+	"ben":    {code: "bn", menu: "Menu"},      // Bengali
+	"bul":    {code: "bg", menu: "Menu"},      // Bulgarian
+	"cat":    {code: "ca", menu: "Menu"},      // Catalan
+	"zho":    {code: "zh_CN", menu: "菜单"},     // Chinese
+	"zho-CN": {code: "zh_CN", menu: "菜单"},     // Chinese (CHN)
+	"zho-HK": {code: "zh_HK", menu: "菜单"},     // Chinese (HKG)
+	"zho-TW": {code: "zh_TW", menu: "菜单"},     // Chinese (TAI)
+	"hrv":    {code: "hr", menu: "Menu"},      // Croatian
+	"ces":    {code: "cs", menu: "Menu"},      // Czech
+	"dah":    {code: "da", menu: "Menu"},      // Danish
+	"nld":    {code: "nl", menu: "Menu"},      // Dutch
+	"eng":    {code: "en", menu: "Menu"},      // English
+	"eng-GB": {code: "en_GB", menu: "Menu"},   // English (UK)
+	"eng-US": {code: "en_US", menu: "Menu"},   // English (US)
+	"est":    {code: "et", menu: "Menu"},      // Estonian
+	"fil":    {code: "fil", menu: "Menu"},     // Filipino
+	"fin":    {code: "fi", menu: "Menu"},      // Finnish
+	"fra":    {code: "fr", menu: "Menu"},      // French
+	"kat":    {code: "ka", menu: "Menu"},      // Georgian
+	"deu":    {code: "de", menu: "Menü"},      // German
+	"ell":    {code: "el", menu: "Menu"},      // Greek
+	"guj":    {code: "gu", menu: "Menu"},      // Gujarati
+	"hau":    {code: "ha", menu: "Menu"},      // Hausa
+	"enb":    {code: "he", menu: "תפריט"},     // Hebrew
+	"hin":    {code: "hi", menu: "Menu"},      // Hindi
+	"hun":    {code: "hu", menu: "Menu"},      // Hungarian
+	"ind":    {code: "id", menu: "Menu"},      // Indonesian
+	"gle":    {code: "ga", menu: "Roghchlár"}, // Irish
+	"ita":    {code: "it", menu: "Menu"},      // Italian
+	"jpn":    {code: "ja", menu: "Menu"},      // Japanese
+	"kan":    {code: "kn", menu: "Menu"},      // Kannada
+	"kaz":    {code: "kk", menu: "Menu"},      // Kazakh
+	"kin":    {code: "rw_RW", menu: "Menu"},   // Kinyarwanda
+	"kor":    {code: "ko", menu: "Menu"},      // Korean
+	"kir":    {code: "ky_KG", menu: "Menu"},   // Kyrgyzstan
+	"lao":    {code: "lo", menu: "Menu"},      // Lao
+	"lav":    {code: "lv", menu: "Menu"},      // Latvian
+	"lit":    {code: "lt", menu: "Menu"},      // Lithuanian
+	"mal":    {code: "ml", menu: "Menu"},      // Malayalam
+	"mkd":    {code: "mk", menu: "Menu"},      // Macedonian
+	"msa":    {code: "ms", menu: "Menu"},      // Malay
+	"mar":    {code: "mr", menu: "Menu"},      // Marathi
+	"nob":    {code: "nb", menu: "Menu"},      // Norwegian
+	"fas":    {code: "fa", menu: "Menu"},      // Persian
+	"pol":    {code: "pl", menu: "Menu"},      // Polish
+	"por":    {code: "pt_PT", menu: "Menu"},   // Portuguese
+	"por-BR": {code: "pt_BR", menu: "Menu"},   // Portuguese (BR)
+	"por-PT": {code: "pt_PT", menu: "Menu"},   // Portuguese (POR)
+	"pan":    {code: "pa", menu: "Menu"},      // Punjabi
+	"ron":    {code: "ro", menu: "Menu"},      // Romanian
+	"rus":    {code: "ru", menu: "Menu"},      // Russian
+	"srp":    {code: "sr", menu: "Menu"},      // Serbian
+	"slk":    {code: "sk", menu: "Menu"},      // Slovak
+	"slv":    {code: "sl", menu: "Menu"},      // Slovenian
+	"spa":    {code: "es", menu: "Menú"},      // Spanish
+	"spa-AR": {code: "es_AR", menu: "Menú"},   // Spanish (ARG)
+	"spa-ES": {code: "es_ES", menu: "Menú"},   // Spanish (SPA)
+	"spa-MX": {code: "es_MX", menu: "Menú"},   // Spanish (MEX)
+	"swa":    {code: "sw", menu: "Menyu"},     // Swahili
+	"swe":    {code: "sv", menu: "Menu"},      // Swedish
+	"tam":    {code: "ta", menu: "Menu"},      // Tamil
+	"tel":    {code: "te", menu: "Menu"},      // Telugu
+	"tha":    {code: "th", menu: "Menu"},      // Thai
+	"tur":    {code: "tr", menu: "Menu"},      // Turkish
+	"ukr":    {code: "uk", menu: "Menu"},      // Ukrainian
+	"urd":    {code: "ur", menu: "Menu"},      // Urdu
+	"uzb":    {code: "uz", menu: "Menu"},      // Uzbek
+	"vie":    {code: "vi", menu: "Menu"},      // Vietnamese
+	"zul":    {code: "zu", menu: "Menu"},      // Zulu
 }
