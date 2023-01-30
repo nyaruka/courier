@@ -1,3 +1,7 @@
+v8.1.2 (2023-01-30)
+-------------------------
+ * Use Msg.locale with on-prem WhatsApp channels too
+
 v8.1.1 (2023-01-30)
 -------------------------
  * Support reading msg locale and use that instead of language+country on templating
