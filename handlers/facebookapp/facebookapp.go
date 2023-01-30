@@ -1132,7 +1132,6 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 
 		if len(msg.Attachments()) == 0 {
 			// do we have a template?
-			var templating *MsgTemplating
 			templating, err := h.getTemplating(msg)
 			if err != nil {
 				return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
