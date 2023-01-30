@@ -336,6 +336,7 @@ type DBMsg struct {
 	URNAuth_              string                 `json:"urn_auth"`
 	Text_                 string                 `json:"text"            db:"text"`
 	Attachments_          pq.StringArray         `json:"attachments"     db:"attachments"`
+	Locale_               null.String            `json:"locale"          db:"locale"`
 	ExternalID_           null.String            `json:"external_id"     db:"external_id"`
 	ResponseToExternalID_ string                 `json:"response_to_external_id"`
 	IsResend_             bool                   `json:"is_resend,omitempty"`
@@ -378,6 +379,7 @@ func (m *DBMsg) EventID() int64               { return int64(m.ID_) }
 func (m *DBMsg) UUID() courier.MsgUUID        { return m.UUID_ }
 func (m *DBMsg) Text() string                 { return m.Text_ }
 func (m *DBMsg) Attachments() []string        { return []string(m.Attachments_) }
+func (m *DBMsg) Locale() courier.Locale       { return courier.Locale(string(m.Locale_)) }
 func (m *DBMsg) ExternalID() string           { return string(m.ExternalID_) }
 func (m *DBMsg) URN() urns.URN                { return m.URN_ }
 func (m *DBMsg) URNAuth() string              { return m.URNAuth_ }
@@ -473,6 +475,8 @@ func (m *DBMsg) WithAttachment(url string) courier.Msg {
 	m.Attachments_ = append(m.Attachments_, url)
 	return m
 }
+
+func (m *DBMsg) WithLocale(lc courier.Locale) courier.Msg { m.Locale_ = null.String(lc); return m }
 
 // WithURNAuth can be used to add a URN auth setting to a message
 func (m *DBMsg) WithURNAuth(auth string) courier.Msg {

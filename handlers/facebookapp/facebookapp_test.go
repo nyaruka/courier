@@ -1291,9 +1291,10 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		Label:               "Template Send",
 		MsgText:             "templated message",
 		MsgURN:              "whatsapp:250788123123",
+		MsgLocale:           "eng",
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "variables": ["Chef", "tomorrow"]}}`),
 		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "157b5e14568e8",
-		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "variables": ["Chef", "tomorrow"]}}`),
 		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","sub_type":"","index":"","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
@@ -1303,7 +1304,8 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		Label:               "Template Country Language",
 		MsgText:             "templated message",
 		MsgURN:              "whatsapp:250788123123",
-		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "country": "US", "variables": ["Chef", "tomorrow"]}}`),
+		MsgLocale:           "eng-US",
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "variables": ["Chef", "tomorrow"]}}`),
 		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","sub_type":"","index":"","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
@@ -1312,11 +1314,17 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		SendPrep:            setSendURL,
 	},
 	{
-		Label:          "Template Invalid Language",
-		MsgText:        "templated message",
-		MsgURN:         "whatsapp:250788123123",
-		MsgMetadata:    json.RawMessage(`{"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}}`),
-		ExpectedErrors: []*courier.ChannelError{courier.NewChannelError("", "", `unable to decode template: {"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}} for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c56ab: unable to find mapping for language: bnt`)},
+		Label:               "Template Invalid Language",
+		MsgText:             "templated message",
+		MsgURN:              "whatsapp:250788123123",
+		MsgLocale:           "bnt",
+		MsgMetadata:         json.RawMessage(`{"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "variables": ["Chef", "tomorrow"]}}`),
+		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","sub_type":"","index":"","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		SendPrep:            setSendURL,
 	},
 	{
 		Label:               "Interactive Button Message Send",
@@ -1525,4 +1533,16 @@ func TestBuildMediaRequest(t *testing.T) {
 	req, _ = igHandler.BuildAttachmentRequest(context.Background(), mb, testChannelsFBA[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, http.Header{}, req.Header)
+}
+
+func TestGetSupportedLanguage(t *testing.T) {
+	assert.Equal(t, "en", getSupportedLanguage(courier.NilLocale))
+	assert.Equal(t, "en", getSupportedLanguage(courier.Locale("eng")))
+	assert.Equal(t, "en_US", getSupportedLanguage(courier.Locale("eng-US")))
+	assert.Equal(t, "pt_PT", getSupportedLanguage(courier.Locale("por")))
+	assert.Equal(t, "pt_PT", getSupportedLanguage(courier.Locale("por-PT")))
+	assert.Equal(t, "pt_BR", getSupportedLanguage(courier.Locale("por-BR")))
+	assert.Equal(t, "fil", getSupportedLanguage(courier.Locale("fil")))
+	assert.Equal(t, "fr", getSupportedLanguage(courier.Locale("fra-CA")))
+	assert.Equal(t, "en", getSupportedLanguage(courier.Locale("run")))
 }
