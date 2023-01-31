@@ -1,3 +1,7 @@
+v8.1.3 (2023-01-31)
+-------------------------
+ * Add support for localizing Menu header on facebook list messages
+
 v8.1.2 (2023-01-30)
 -------------------------
  * Use Msg.locale with on-prem WhatsApp channels too
