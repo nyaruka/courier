@@ -10,7 +10,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/null"
+	"github.com/nyaruka/null/v2"
 )
 
 // ErrMsgNotFound is returned when trying to queue the status for a Msg that doesn't exit
@@ -20,7 +20,7 @@ var ErrMsgNotFound = errors.New("message not found")
 var ErrWrongIncomingMsgStatus = errors.New("incoming messages can only be PENDING or HANDLED")
 
 // MsgID is our typing of the db int type
-type MsgID null.Int
+type MsgID null.Int64
 
 // NewMsgID creates a new MsgID for the passed in int64
 func NewMsgID(id int64) MsgID {
@@ -35,25 +35,10 @@ func (i MsgID) String() string {
 	return "null"
 }
 
-// MarshalJSON marshals into JSON. 0 values will become null
-func (i MsgID) MarshalJSON() ([]byte, error) {
-	return null.Int(i).MarshalJSON()
-}
-
-// UnmarshalJSON unmarshals from JSON. null values become 0
-func (i *MsgID) UnmarshalJSON(b []byte) error {
-	return null.UnmarshalInt(b, (*null.Int)(i))
-}
-
-// Value returns the db value, null is returned for 0
-func (i MsgID) Value() (driver.Value, error) {
-	return null.Int(i).Value()
-}
-
-// Scan scans from the db value. null values become 0
-func (i *MsgID) Scan(value interface{}) error {
-	return null.ScanInt(value, (*null.Int)(i))
-}
+func (i *MsgID) Scan(value any) error         { return null.ScanInt(value, i) }
+func (i MsgID) Value() (driver.Value, error)  { return null.IntValue(i) }
+func (i *MsgID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
+func (i MsgID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
 
 // NilMsgID is our nil value for MsgID
 var NilMsgID = MsgID(0)

@@ -13,7 +13,7 @@ import (
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
-	"github.com/nyaruka/null"
+	"github.com/nyaruka/null/v2"
 	"github.com/pkg/errors"
 
 	"github.com/jmoiron/sqlx"
@@ -29,25 +29,10 @@ type ContactID null.Int
 // NilContactID represents our nil value for ContactID
 var NilContactID = ContactID(0)
 
-// MarshalJSON marshals into JSON. 0 values will become null
-func (i ContactID) MarshalJSON() ([]byte, error) {
-	return null.Int(i).MarshalJSON()
-}
-
-// UnmarshalJSON unmarshals from JSON. null values become 0
-func (i *ContactID) UnmarshalJSON(b []byte) error {
-	return null.UnmarshalInt(b, (*null.Int)(i))
-}
-
-// Value returns the db value, null is returned for 0
-func (i ContactID) Value() (driver.Value, error) {
-	return null.Int(i).Value()
-}
-
-// Scan scans from the db value. null values become 0
-func (i *ContactID) Scan(value interface{}) error {
-	return null.ScanInt(value, (*null.Int)(i))
-}
+func (i *ContactID) Scan(value any) error         { return null.ScanInt(value, i) }
+func (i ContactID) Value() (driver.Value, error)  { return null.IntValue(i) }
+func (i *ContactID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
+func (i ContactID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
 
 // String returns a string representation of the id
 func (i ContactID) String() string {

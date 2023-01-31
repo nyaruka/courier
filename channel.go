@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/nyaruka/null"
+	"github.com/nyaruka/null/v2"
 
 	"github.com/gofrs/uuid"
 )
@@ -101,6 +101,16 @@ type ChannelID null.Int
 // NilChannelID represents a nil channel id
 const NilChannelID = ChannelID(0)
 
+// NewChannelID creates a new ChannelID for the passed in int64
+func NewChannelID(id int64) ChannelID {
+	return ChannelID(id)
+}
+
+func (i *ChannelID) Scan(value any) error         { return null.ScanInt(value, i) }
+func (i ChannelID) Value() (driver.Value, error)  { return null.IntValue(i) }
+func (i *ChannelID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
+func (i ChannelID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
+
 // ChannelAddress is our SQL type for a channel address
 type ChannelAddress null.String
 
@@ -109,31 +119,6 @@ const NilChannelAddress = ChannelAddress("")
 
 func (address ChannelAddress) String() string {
 	return string(address)
-}
-
-// MarshalJSON marshals into JSON. 0 values will become null
-func (i ChannelID) MarshalJSON() ([]byte, error) {
-	return null.Int(i).MarshalJSON()
-}
-
-// UnmarshalJSON unmarshals from JSON. null values become 0
-func (i *ChannelID) UnmarshalJSON(b []byte) error {
-	return null.UnmarshalInt(b, (*null.Int)(i))
-}
-
-// Value returns the db value, null is returned for 0
-func (i ChannelID) Value() (driver.Value, error) {
-	return null.Int(i).Value()
-}
-
-// Scan scans from the db value. null values become 0
-func (i *ChannelID) Scan(value interface{}) error {
-	return null.ScanInt(value, (*null.Int)(i))
-}
-
-// NewChannelID creates a new ChannelID for the passed in int64
-func NewChannelID(id int64) ChannelID {
-	return ChannelID(id)
 }
 
 // ErrChannelExpired is returned when our cached channel has outlived it's TTL
