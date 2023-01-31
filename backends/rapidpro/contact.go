@@ -8,6 +8,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/dbutil"
@@ -15,8 +16,6 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v2"
 	"github.com/pkg/errors"
-
-	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
 
