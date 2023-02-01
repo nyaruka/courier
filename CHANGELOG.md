@@ -1,3 +1,7 @@
+v8.1.4 (2023-02-01)
+-------------------------
+ * Update to v2 of nyaruka/null
+
 v8.1.3 (2023-01-31)
 -------------------------
  * Add support for localizing Menu header on facebook list messages
