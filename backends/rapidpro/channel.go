@@ -12,7 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/null"
+	"github.com/nyaruka/null/v2"
 )
 
 // getChannel will look up the channel with the passed in UUID and channel type.
@@ -349,7 +349,7 @@ func (c *DBChannel) HasRole(role courier.ChannelRole) bool {
 
 // ConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
 func (c *DBChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
-	value, found := c.Config_.Map()[key]
+	value, found := c.Config_[key]
 	if !found {
 		return defaultValue
 	}
@@ -358,7 +358,7 @@ func (c *DBChannel) ConfigForKey(key string, defaultValue interface{}) interface
 
 // OrgConfigForKey returns the org config value for the passed in key, or defaultValue if it isn't found
 func (c *DBChannel) OrgConfigForKey(key string, defaultValue interface{}) interface{} {
-	value, found := c.OrgConfig_.Map()[key]
+	value, found := c.OrgConfig_[key]
 	if !found {
 		return defaultValue
 	}

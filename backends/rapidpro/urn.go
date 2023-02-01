@@ -5,7 +5,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 
-	"github.com/nyaruka/null"
+	"github.com/nyaruka/null/v2"
 	"github.com/pkg/errors"
 
 	"github.com/jmoiron/sqlx"
@@ -20,25 +20,10 @@ type ContactURNID null.Int
 // NilContactURNID is our constant for a nil contact URN id
 const NilContactURNID = ContactURNID(0)
 
-// MarshalJSON marshals into JSON. 0 values will become null
-func (i ContactURNID) MarshalJSON() ([]byte, error) {
-	return null.Int(i).MarshalJSON()
-}
-
-// UnmarshalJSON unmarshals from JSON. null values become 0
-func (i *ContactURNID) UnmarshalJSON(b []byte) error {
-	return null.UnmarshalInt(b, (*null.Int)(i))
-}
-
-// Value returns the db value, null is returned for 0
-func (i ContactURNID) Value() (driver.Value, error) {
-	return null.Int(i).Value()
-}
-
-// Scan scans from the db value. null values become 0
-func (i *ContactURNID) Scan(value interface{}) error {
-	return null.ScanInt(value, (*null.Int)(i))
-}
+func (i *ContactURNID) Scan(value any) error         { return null.ScanInt(value, i) }
+func (i ContactURNID) Value() (driver.Value, error)  { return null.IntValue(i) }
+func (i *ContactURNID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
+func (i ContactURNID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
 
 // NewDBContactURN returns a new ContactURN object for the passed in org, contact and string urn, this is not saved to the DB yet
 func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN, auth string) *DBContactURN {
