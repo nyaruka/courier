@@ -1,3 +1,7 @@
+v8.1.5 (2023-02-02)
+-------------------------
+ * Read quick_replies from msg field instead of inside metadata
+
 v8.1.4 (2023-02-01)
 -------------------------
  * Update to v2 of nyaruka/null
