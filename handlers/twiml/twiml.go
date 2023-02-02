@@ -183,7 +183,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		if err != nil {
 			logrus.WithError(err).WithField("id", idString).Error("error converting twilio callback id to integer")
 		} else {
-			status = h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus, clog)
+			status = h.Backend().NewMsgStatusForID(channel, courier.MsgID(msgID), msgStatus, clog)
 		}
 	}
 

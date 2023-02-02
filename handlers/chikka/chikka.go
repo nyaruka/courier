@@ -76,7 +76,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.MessageID), msgStatus, clog)
+		status := h.Backend().NewMsgStatusForID(channel, courier.MsgID(form.MessageID), msgStatus, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 	} else if messageType == "incoming" {

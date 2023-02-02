@@ -193,15 +193,15 @@ func (ts *BackendTestSuite) TestCheckMsgExists() {
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
 
 	// check with invalid message id
-	err := checkMsgExists(ts.b, ts.b.NewMsgStatusForID(knChannel, courier.NewMsgID(-1), courier.MsgStatusValue("S"), clog))
+	err := checkMsgExists(ts.b, ts.b.NewMsgStatusForID(knChannel, -1, courier.MsgStatusValue("S"), clog))
 	ts.Equal(err, courier.ErrMsgNotFound)
 
 	// check with valid message id
-	err = checkMsgExists(ts.b, ts.b.NewMsgStatusForID(knChannel, courier.NewMsgID(10000), courier.MsgStatusValue("S"), clog))
+	err = checkMsgExists(ts.b, ts.b.NewMsgStatusForID(knChannel, 10000, courier.MsgStatusValue("S"), clog))
 	ts.Nil(err)
 
 	// only outgoing messages are matched
-	err = checkMsgExists(ts.b, ts.b.NewMsgStatusForID(knChannel, courier.NewMsgID(10002), courier.MsgStatusValue("S"), clog))
+	err = checkMsgExists(ts.b, ts.b.NewMsgStatusForID(knChannel, 10002, courier.MsgStatusValue("S"), clog))
 	ts.Equal(err, courier.ErrMsgNotFound)
 
 	// check with invalid external id
@@ -231,7 +231,7 @@ func (ts *BackendTestSuite) TestDeleteMsgWithExternalID() {
 	err = ts.b.DeleteMsgWithExternalID(ctx, knChannel, "ext1")
 	ts.Nil(err)
 
-	m := readMsgFromDB(ts.b, courier.NewMsgID(10000))
+	m := readMsgFromDB(ts.b, 10000)
 	ts.Equal(m.Text_, "test message")
 	ts.Equal(len(m.Attachments()), 0)
 	ts.Equal(m.Visibility_, MsgVisibility("V"))
@@ -240,7 +240,7 @@ func (ts *BackendTestSuite) TestDeleteMsgWithExternalID() {
 	err = ts.b.DeleteMsgWithExternalID(ctx, knChannel, "ext2")
 	ts.Nil(err)
 
-	m = readMsgFromDB(ts.b, courier.NewMsgID(10002))
+	m = readMsgFromDB(ts.b, 10002)
 	ts.Equal(m.Text_, "")
 	ts.Equal(len(m.Attachments()), 0)
 	ts.Equal(m.Visibility_, MsgVisibility("X"))
@@ -650,7 +650,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	time.Sleep(time.Second) // give committer time to write this
 
-	m = readMsgFromDB(ts.b, courier.NewMsgID(10000))
+	m = readMsgFromDB(ts.b, 10000)
 	ts.Equal(m.Status_, courier.MsgErrored)
 	ts.Equal(m.ErrorCount_, 1)
 	ts.True(m.ModifiedOn_.After(now))
@@ -664,7 +664,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	time.Sleep(time.Second) // give committer time to write this
 
-	m = readMsgFromDB(ts.b, courier.NewMsgID(10000))
+	m = readMsgFromDB(ts.b, 10000)
 	ts.Equal(m.Status_, courier.MsgErrored)
 	ts.Equal(m.ErrorCount_, 2)
 	ts.Equal(null.NullString, m.FailedReason_)
@@ -676,7 +676,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	time.Sleep(time.Second) // give committer time to write this
 
 	ts.NoError(err)
-	m = readMsgFromDB(ts.b, courier.NewMsgID(10000))
+	m = readMsgFromDB(ts.b, 10000)
 	ts.Equal(m.Status_, courier.MsgFailed)
 	ts.Equal(m.ErrorCount_, 3)
 	ts.Equal(null.String("E"), m.FailedReason_)
@@ -788,7 +788,7 @@ func (ts *BackendTestSuite) TestDupes() {
 	uuid2 := msg.UUID().String()
 
 	// an outgoing message should clear things
-	dbMsg := readMsgFromDB(ts.b, courier.NewMsgID(10000))
+	dbMsg := readMsgFromDB(ts.b, 10000)
 	dbMsg.URN_ = urn
 	dbMsg.channel = knChannel
 	dbMsg.ChannelUUID_ = knChannel.UUID()
@@ -839,7 +839,7 @@ func (ts *BackendTestSuite) TestStatus() {
 	r := ts.b.redisPool.Get()
 	defer r.Close()
 
-	dbMsg := readMsgFromDB(ts.b, courier.NewMsgID(10000))
+	dbMsg := readMsgFromDB(ts.b, 10000)
 	dbMsg.ChannelUUID_, _ = courier.NewChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ts.NotNil(dbMsg)
 
@@ -860,7 +860,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	r := ts.b.redisPool.Get()
 	defer r.Close()
 
-	dbMsg := readMsgFromDB(ts.b, courier.NewMsgID(10000))
+	dbMsg := readMsgFromDB(ts.b, 10000)
 	dbMsg.ChannelUUID_, _ = courier.NewChannelUUID("dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	ts.NotNil(dbMsg)
 
@@ -898,7 +898,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.Nil(err)
 
 	// checking another message should show unsent
-	msg3 := readMsgFromDB(ts.b, courier.NewMsgID(10001))
+	msg3 := readMsgFromDB(ts.b, 10001)
 	sent, err = ts.b.WasMsgSent(ctx, msg3.ID())
 	ts.NoError(err)
 	ts.False(sent)

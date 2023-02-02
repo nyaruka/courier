@@ -305,7 +305,7 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 	if status.ID() != courier.NilMsgID && status.Status() == courier.MsgErrored {
 		err := b.ClearMsgSent(ctx, status.ID())
 		if err != nil {
-			logrus.WithError(err).WithField("msg", status.ID().String()).Error("error clearing sent flags")
+			logrus.WithError(err).WithField("msg", status.ID()).Error("error clearing sent flags")
 		}
 	}
 

@@ -193,10 +193,10 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	ibMsg := mtPayload{
 		Messages: []mtMessage{
-			mtMessage{
+			{
 				From: msg.Channel().Address(),
 				Destinations: []mtDestination{
-					mtDestination{
+					{
 						To:        strings.TrimLeft(msg.URN().Path(), "+"),
 						MessageID: msg.ID().String(),
 					},

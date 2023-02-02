@@ -74,10 +74,10 @@ func TestChannelLog(t *testing.T) {
 	assert.Equal(t, "this is an error", err2.Message())
 	assert.Equal(t, "", err2.Code())
 
-	clog.SetMsgID(courier.NewMsgID(123))
+	clog.SetMsgID(123)
 	clog.SetType(courier.ChannelLogTypeEventReceive)
 
-	assert.Equal(t, courier.NewMsgID(123), clog.MsgID())
+	assert.Equal(t, courier.MsgID(123), clog.MsgID())
 	assert.Equal(t, courier.ChannelLogTypeEventReceive, clog.Type())
 }
 
