@@ -183,6 +183,7 @@ SELECT
 	direction,
 	text,
 	attachments,
+	quick_replies,
 	msg_count,
 	error_count,
 	failed_reason,
@@ -336,6 +337,7 @@ type DBMsg struct {
 	URNAuth_              string                 `json:"urn_auth"`
 	Text_                 string                 `json:"text"            db:"text"`
 	Attachments_          pq.StringArray         `json:"attachments"     db:"attachments"`
+	QuickReplies_         pq.StringArray         `json:"quick_replies"   db:"quick_replies"`
 	Locale_               null.String            `json:"locale"          db:"locale"`
 	ExternalID_           null.String            `json:"external_id"     db:"external_id"`
 	ResponseToExternalID_ string                 `json:"response_to_external_id"`
@@ -371,14 +373,14 @@ type DBMsg struct {
 	channel        *DBChannel
 	workerToken    queue.WorkerToken
 	alreadyWritten bool
-	quickReplies   []string
 }
 
 func (m *DBMsg) ID() courier.MsgID            { return m.ID_ }
 func (m *DBMsg) EventID() int64               { return int64(m.ID_) }
 func (m *DBMsg) UUID() courier.MsgUUID        { return m.UUID_ }
 func (m *DBMsg) Text() string                 { return m.Text_ }
-func (m *DBMsg) Attachments() []string        { return []string(m.Attachments_) }
+func (m *DBMsg) Attachments() []string        { return m.Attachments_ }
+func (m *DBMsg) QuickReplies() []string       { return m.QuickReplies_ }
 func (m *DBMsg) Locale() courier.Locale       { return courier.Locale(string(m.Locale_)) }
 func (m *DBMsg) ExternalID() string           { return string(m.ExternalID_) }
 func (m *DBMsg) URN() urns.URN                { return m.URN_ }
@@ -389,10 +391,8 @@ func (m *DBMsg) ReceivedOn() *time.Time       { return m.SentOn_ }
 func (m *DBMsg) SentOn() *time.Time           { return m.SentOn_ }
 func (m *DBMsg) ResponseToExternalID() string { return m.ResponseToExternalID_ }
 func (m *DBMsg) IsResend() bool               { return m.IsResend_ }
-
-func (m *DBMsg) Channel() courier.Channel { return m.channel }
-func (m *DBMsg) SessionStatus() string    { return m.SessionStatus_ }
-
+func (m *DBMsg) Channel() courier.Channel     { return m.channel }
+func (m *DBMsg) SessionStatus() string        { return m.SessionStatus_ }
 func (m *DBMsg) Flow() *courier.FlowReference { return m.Flow_ }
 
 func (m *DBMsg) FlowName() string {
@@ -407,25 +407,6 @@ func (m *DBMsg) FlowUUID() string {
 		return ""
 	}
 	return m.Flow_.UUID
-}
-
-func (m *DBMsg) QuickReplies() []string {
-	if m.quickReplies != nil {
-		return m.quickReplies
-	}
-
-	if m.Metadata_ == nil {
-		return nil
-	}
-
-	m.quickReplies = []string{}
-	jsonparser.ArrayEach(
-		m.Metadata_,
-		func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-			m.quickReplies = append(m.quickReplies, string(value))
-		},
-		"quick_replies")
-	return m.quickReplies
 }
 
 func (m *DBMsg) Topic() string {

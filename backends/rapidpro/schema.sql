@@ -58,8 +58,11 @@ CREATE TABLE contacts_contacturn (
 DROP TABLE IF EXISTS msgs_msg CASCADE;
 CREATE TABLE msgs_msg (
     id bigserial primary key,
-    uuid character varying(36) NULL,
+    uuid uuid NULL,
     text text NOT NULL,
+    attachments character varying(255)[] NULL,
+    quick_replies character varying(64)[] NULL,
+    locale character varying(6) NULL,
     high_priority boolean NULL,
     created_on timestamp with time zone NOT NULL,
     modified_on timestamp with time zone,
@@ -74,7 +77,6 @@ CREATE TABLE msgs_msg (
     next_attempt timestamp with time zone NOT NULL,
     failed_reason character varying(1),
     external_id character varying(255),
-    attachments character varying(255)[],
     channel_id integer references channels_channel(id) on delete cascade,
     contact_id integer NOT NULL references contacts_contact(id) on delete cascade,
     contact_urn_id integer NOT NULL references contacts_contacturn(id) on delete cascade,
