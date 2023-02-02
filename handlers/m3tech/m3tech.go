@@ -105,7 +105,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			"Telco":       []string{"0"},
 		}
 
-		msgURL, err := url.Parse(sendURL)
+		msgURL, _ := url.Parse(sendURL)
 
 		msgURL.RawQuery = params.Encode()
 		req, err := http.NewRequest(http.MethodGet, msgURL.String(), nil)

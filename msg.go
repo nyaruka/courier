@@ -22,26 +22,16 @@ var ErrWrongIncomingMsgStatus = errors.New("incoming messages can only be PENDIN
 // MsgID is our typing of the db int type
 type MsgID null.Int64
 
-// NewMsgID creates a new MsgID for the passed in int64
-func NewMsgID(id int64) MsgID {
-	return MsgID(id)
-}
+// NilMsgID is our nil value for MsgID
+var NilMsgID = MsgID(0)
 
 // String satisfies the Stringer interface
-func (i MsgID) String() string {
-	if i != NilMsgID {
-		return strconv.FormatInt(int64(i), 10)
-	}
-	return "null"
-}
+func (i MsgID) String() string { return strconv.FormatInt(int64(i), 10) }
 
 func (i *MsgID) Scan(value any) error         { return null.ScanInt(value, i) }
 func (i MsgID) Value() (driver.Value, error)  { return null.IntValue(i) }
 func (i *MsgID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
 func (i MsgID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
-
-// NilMsgID is our nil value for MsgID
-var NilMsgID = MsgID(0)
 
 // MsgUUID is the UUID of a message which has been received
 type MsgUUID struct {
