@@ -109,6 +109,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"status": "P",
 		"direction": "O",
 		"attachments": ["https://foo.bar/image.jpg"],
+		"quick_replies": ["Yes", "No"],
 		"queued_on": null,
 		"text": "Test message 21",
 		"contact_id": 30,
@@ -130,7 +131,7 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"response_to_external_id": "external-id",
 		"external_id": null,
 		"is_resend": true,
-		"metadata": {"quick_replies": ["Yes", "No"], "topic": "event"}
+		"metadata": {"topic": "event"}
 	}`
 
 	msg := DBMsg{}
@@ -154,7 +155,6 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	msgJSONNoQR := `{
 		"status": "P",
 		"direction": "O",
-		"attachments": ["https://foo.bar/image.jpg"],
 		"queued_on": null,
 		"text": "Test message 21",
 		"contact_id": 30,
@@ -179,7 +179,8 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	msg = DBMsg{}
 	err = json.Unmarshal([]byte(msgJSONNoQR), &msg)
 	ts.NoError(err)
-	ts.Equal([]string{}, msg.QuickReplies())
+	ts.Nil(msg.Attachments())
+	ts.Nil(msg.QuickReplies())
 	ts.Equal("", msg.Topic())
 	ts.Equal("", msg.ResponseToExternalID())
 	ts.False(msg.IsResend())

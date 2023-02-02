@@ -78,10 +78,9 @@ func (m *mockMsg) Topic() string                { return m.topic }
 func (m *mockMsg) ResponseToExternalID() string { return m.responseToExternalID }
 func (m *mockMsg) Metadata() json.RawMessage    { return m.metadata }
 func (m *mockMsg) IsResend() bool               { return m.isResend }
-
-func (m *mockMsg) ReceivedOn() *time.Time { return m.receivedOn }
-func (m *mockMsg) SentOn() *time.Time     { return m.sentOn }
-func (m *mockMsg) WiredOn() *time.Time    { return m.wiredOn }
+func (m *mockMsg) ReceivedOn() *time.Time       { return m.receivedOn }
+func (m *mockMsg) SentOn() *time.Time           { return m.sentOn }
+func (m *mockMsg) WiredOn() *time.Time          { return m.wiredOn }
 
 func (m *mockMsg) WithContactName(name string) courier.Msg   { m.contactName = name; return m }
 func (m *mockMsg) WithURNAuth(auth string) courier.Msg       { m.urnAuth = auth; return m }
