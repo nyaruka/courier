@@ -85,7 +85,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 		defer rc.Close()
 
 		// first things first, populate the new part we just received
-		mapKey := fmt.Sprintf("%s:%s", c.UUID().String(), longID)
+		mapKey := fmt.Sprintf("%s:%s", c.UUID(), longID)
 		rc.Send("MULTI")
 		rc.Send("HSET", mapKey, longRef, text)
 		rc.Send("EXPIRE", mapKey, 300)

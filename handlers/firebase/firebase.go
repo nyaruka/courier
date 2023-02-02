@@ -109,7 +109,7 @@ func (h *handler) registerContact(ctx context.Context, channel courier.Channel, 
 
 	// return our contact UUID
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(map[string]string{"contact_uuid": contact.UUID().String()})
+	err = json.NewEncoder(w).Encode(map[string]string{"contact_uuid": string(contact.UUID())})
 	return nil, err
 }
 

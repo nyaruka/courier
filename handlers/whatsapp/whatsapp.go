@@ -586,7 +586,7 @@ func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]int
 			mimeType, mediaURL := handlers.SplitAttachment(attachment)
 			mediaID, err := h.fetchMediaID(msg, mimeType, mediaURL, clog)
 			if err != nil {
-				logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("error while uploading media to whatsapp")
+				logrus.WithField("channel_uuid", msg.Channel().UUID()).WithError(err).Error("error while uploading media to whatsapp")
 			}
 			fileURL := mediaURL
 			if err == nil && mediaID != "" {
@@ -613,7 +613,7 @@ func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]int
 
 				// Logging error
 				if err != nil {
-					logrus.WithField("channel_uuid", msg.Channel().UUID().String()).WithError(err).Error("Error while parsing the media URL")
+					logrus.WithField("channel_uuid", msg.Channel().UUID()).WithError(err).Error("Error while parsing the media URL")
 				}
 				payload.Document = mediaPayload
 				payloads = append(payloads, payload)
@@ -851,7 +851,7 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string, clog 
 	rc := h.Backend().RedisPool().Get()
 	defer rc.Close()
 
-	cacheKey := fmt.Sprintf(mediaCacheKeyPattern, msg.Channel().UUID().String())
+	cacheKey := fmt.Sprintf(mediaCacheKeyPattern, msg.Channel().UUID())
 	mediaCache := redisx.NewIntervalHash(cacheKey, time.Hour*24, 2)
 	mediaID, err := mediaCache.Get(rc, mediaURL)
 	if err != nil {
@@ -861,7 +861,7 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string, clog 
 	}
 
 	// check in failure cache
-	failKey := fmt.Sprintf("%s-%s", msg.Channel().UUID().String(), mediaURL)
+	failKey := fmt.Sprintf("%s-%s", msg.Channel().UUID(), mediaURL)
 	found, _ := failedMediaCache.Get(failKey)
 
 	// any non nil value means we cached a failure, don't try again until our cache expires
@@ -933,7 +933,7 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload 
 	}
 
 	if resp != nil && (resp.StatusCode == 429 || resp.StatusCode == 503) {
-		rateLimitKey := fmt.Sprintf("rate_limit:%s", msg.Channel().UUID().String())
+		rateLimitKey := fmt.Sprintf("rate_limit:%s", msg.Channel().UUID())
 		rc.Do("SET", rateLimitKey, "engaged")
 
 		// The rate limit is 50 requests per second
@@ -950,7 +950,7 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload 
 	// handle send msg errors
 	if err == nil && len(errPayload.Errors) > 0 {
 		if hasTiersError(*errPayload) {
-			rateLimitBulkKey := fmt.Sprintf("rate_limit_bulk:%s", msg.Channel().UUID().String())
+			rateLimitBulkKey := fmt.Sprintf("rate_limit_bulk:%s", msg.Channel().UUID())
 			rc.Do("SET", rateLimitBulkKey, "engaged")
 
 			// The WA tiers spam rate limit hit

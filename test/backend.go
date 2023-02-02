@@ -254,8 +254,7 @@ func (mb *MockBackend) GetChannelByAddress(ctx context.Context, cType courier.Ch
 func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, urn urns.URN, auth, name string, clog *courier.ChannelLog) (courier.Contact, error) {
 	contact, found := mb.contacts[urn]
 	if !found {
-		uuid, _ := courier.NewContactUUID(string(uuids.New()))
-		contact = &mockContact{channel, urn, auth, uuid}
+		contact = &mockContact{channel, urn, auth, courier.ContactUUID(uuids.New())}
 		mb.contacts[urn] = contact
 	}
 	return contact, nil

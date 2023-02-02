@@ -133,7 +133,7 @@ RETURNING
 
 // DeleteMsgWithExternalID delete a message we receive an event that it should be deleted
 func (b *backend) DeleteMsgWithExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
-	_, err := b.db.ExecContext(ctx, updateMsgVisibilityDeletedBySender, string(channel.UUID().String()), externalID)
+	_, err := b.db.ExecContext(ctx, updateMsgVisibilityDeletedBySender, string(channel.UUID()), externalID)
 	if err != nil {
 		return err
 	}
@@ -619,7 +619,7 @@ func (b *backend) Status() string {
 		tps := parts[1]
 
 		// try to look up our channel
-		channelUUID, _ := courier.NewChannelUUID(uuid)
+		channelUUID := courier.ChannelUUID(uuid)
 		channel, err := getChannel(context.Background(), b.db, courier.AnyChannelType, channelUUID)
 		channelType := "!!"
 		if err == nil {

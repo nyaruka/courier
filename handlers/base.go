@@ -83,11 +83,7 @@ func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
 
 // GetChannel returns the channel
 func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
-	uuid, err := courier.NewChannelUUID(chi.URLParam(r, "uuid"))
-	if err != nil {
-		return nil, err
-	}
-
+	uuid := courier.ChannelUUID(chi.URLParam(r, "uuid"))
 	return h.backend.GetChannel(ctx, h.ChannelType(), uuid)
 }
 

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofrs/uuid"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v2"
 )
 
@@ -34,24 +34,10 @@ func (i *MsgID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
 func (i MsgID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
 
 // MsgUUID is the UUID of a message which has been received
-type MsgUUID struct {
-	uuid.UUID
-}
+type MsgUUID uuids.UUID
 
 // NilMsgUUID is a "zero value" message UUID
-var NilMsgUUID = MsgUUID{uuid.Nil}
-
-// NewMsgUUID creates a new unique message UUID
-func NewMsgUUID() MsgUUID {
-	u, _ := uuid.NewV4()
-	return MsgUUID{u}
-}
-
-// NewMsgUUIDFromString creates a new message UUID for the passed in string
-func NewMsgUUIDFromString(uuidString string) MsgUUID {
-	uuid, _ := uuid.FromString(uuidString)
-	return MsgUUID{uuid}
-}
+const NilMsgUUID = MsgUUID("")
 
 type FlowReference struct {
 	UUID string `json:"uuid" validate:"uuid4"`
