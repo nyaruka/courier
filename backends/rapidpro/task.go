@@ -18,7 +18,7 @@ func queueMsgHandling(rc redis.Conn, c *DBContact, m *DBMsg) error {
 		"org_id":          channel.OrgID_,
 		"channel_id":      channel.ID_,
 		"msg_id":          m.ID_,
-		"msg_uuid":        m.UUID_.String(),
+		"msg_uuid":        m.UUID(),
 		"msg_external_id": m.ExternalID(),
 		"urn":             m.URN().String(),
 		"urn_id":          m.ContactURNID_,

@@ -32,7 +32,7 @@ func getChannel(ctx context.Context, db *sqlx.DB, channelType courier.ChannelTyp
 	// if it wasn't found in the DB, clear our cache and return that it wasn't found
 	if dbErr == courier.ErrChannelNotFound {
 		clearLocalChannel(channelUUID)
-		return cachedChannel, fmt.Errorf("unable to find channel with type: %s and uuid: %s", channelType.String(), channelUUID.String())
+		return cachedChannel, fmt.Errorf("unable to find channel with type: %s and uuid: %s", channelType, channelUUID)
 	}
 
 	// if we had some other db error, return it if our cached channel was only just expired

@@ -299,7 +299,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			"to_no_plus":     strings.TrimPrefix(msg.URN().Path(), "+"),
 			"from":           msg.Channel().Address(),
 			"from_no_plus":   strings.TrimPrefix(msg.Channel().Address(), "+"),
-			"channel":        msg.Channel().UUID().String(),
+			"channel":        string(msg.Channel().UUID()),
 			"session_status": msg.SessionStatus(),
 		}
 

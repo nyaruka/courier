@@ -16,6 +16,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v2"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -86,7 +87,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 
 	// fail? log
 	if err != nil {
-		logrus.WithError(err).WithField("msg", m.UUID().String()).Error("error writing to db")
+		logrus.WithError(err).WithField("msg", m.UUID()).Error("error writing to db")
 	}
 
 	// if we failed write to spool
@@ -105,7 +106,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 
 	return &DBMsg{
 		OrgID_:        dbChannel.OrgID(),
-		UUID_:         courier.NewMsgUUID(),
+		UUID_:         courier.MsgUUID(uuids.New()),
 		Direction_:    direction,
 		Status_:       courier.MsgPending,
 		Visibility_:   MsgVisible,
@@ -275,7 +276,7 @@ func (b *backend) checkMsgSeen(msg *DBMsg) courier.MsgUUID {
 
 		// if it is the same, return the UUID
 		if prevText == msg.Text() {
-			return courier.NewMsgUUIDFromString(uuidAndText[:36])
+			return courier.MsgUUID(uuidAndText[:36])
 		}
 	}
 	return courier.NilMsgUUID
@@ -287,7 +288,7 @@ func (b *backend) writeMsgSeen(msg *DBMsg) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	b.seenMsgs.Set(rc, msg.fingerprint(false), fmt.Sprintf("%s|%s", msg.UUID().String(), msg.Text()))
+	b.seenMsgs.Set(rc, msg.fingerprint(false), fmt.Sprintf("%s|%s", msg.UUID(), msg.Text()))
 }
 
 // clearMsgSeen clears our seen incoming messages for the passed in channel and URN
@@ -307,7 +308,7 @@ func (b *backend) checkExternalIDSeen(msg *DBMsg) courier.MsgUUID {
 
 		// if it is the same, return the UUID
 		if prevText == msg.Text() {
-			return courier.NewMsgUUIDFromString(uuidAndText[:36])
+			return courier.MsgUUID(uuidAndText[:36])
 		}
 	}
 	return courier.NilMsgUUID
@@ -317,7 +318,7 @@ func (b *backend) writeExternalIDSeen(msg *DBMsg) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	b.seenExternalIDs.Set(rc, msg.fingerprint(true), fmt.Sprintf("%s|%s", msg.UUID().String(), msg.Text()))
+	b.seenExternalIDs.Set(rc, msg.fingerprint(true), fmt.Sprintf("%s|%s", msg.UUID(), msg.Text()))
 }
 
 //-----------------------------------------------------------------------------

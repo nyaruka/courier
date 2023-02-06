@@ -110,7 +110,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 
 	// didn't find it, we need to create it instead
 	contact.OrgID_ = org
-	contact.UUID_, _ = courier.NewContactUUID(string(uuids.New()))
+	contact.UUID_ = courier.ContactUUID(uuids.New())
 	contact.CreatedOn_ = time.Now()
 	contact.ModifiedOn_ = time.Now()
 	contact.IsNew_ = true

@@ -174,7 +174,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		ID:           msg.ID().String(),
 		Text:         msg.Text(),
 		To:           msg.URN().Path(),
-		Channel:      msg.Channel().UUID().String(),
+		Channel:      string(msg.Channel().UUID()),
 		Attachments:  attachmentURLs,
 		QuickReplies: msg.QuickReplies(),
 	}

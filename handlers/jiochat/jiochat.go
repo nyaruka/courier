@@ -261,7 +261,7 @@ func (h *handler) getAccessToken(ctx context.Context, channel courier.Channel, c
 	rc := h.Backend().RedisPool().Get()
 	defer rc.Close()
 
-	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID().String())
+	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID())
 
 	h.fetchTokenMutex.Lock()
 	defer h.fetchTokenMutex.Unlock()

@@ -43,7 +43,7 @@ func TestWriteAndLogUnauthorized(t *testing.T) {
 
 func TestWriteMsgSuccess(t *testing.T) {
 	ch := test.NewMockChannel("5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec", "NX", "+1234567890", "US", nil)
-	msg := test.NewMockBackend().NewIncomingMsg(ch, "tel:+0987654321", "hi there", nil).WithUUID(courier.NewMsgUUIDFromString("588aafc4-ab5c-48ce-89e8-05c9fdeeafb7"))
+	msg := test.NewMockBackend().NewIncomingMsg(ch, "tel:+0987654321", "hi there", nil).WithUUID("588aafc4-ab5c-48ce-89e8-05c9fdeeafb7")
 	w := httptest.NewRecorder()
 
 	err := courier.WriteMsgSuccess(w, []courier.Msg{msg})

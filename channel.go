@@ -3,11 +3,9 @@ package courier
 import (
 	"database/sql/driver"
 	"errors"
-	"strings"
 
+	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v2"
-
-	"github.com/gofrs/uuid"
 )
 
 const (
@@ -79,21 +77,10 @@ const (
 )
 
 // ChannelUUID is our typing of a channel's UUID
-type ChannelUUID struct {
-	uuid.UUID
-}
+type ChannelUUID uuids.UUID
 
 // NilChannelUUID is our nil value for channel UUIDs
-var NilChannelUUID = ChannelUUID{uuid.Nil}
-
-// NewChannelUUID creates a new ChannelUUID for the passed in string
-func NewChannelUUID(u string) (ChannelUUID, error) {
-	channelUUID, err := uuid.FromString(strings.ToLower(u))
-	if err != nil {
-		return NilChannelUUID, err
-	}
-	return ChannelUUID{channelUUID}, nil
-}
+var NilChannelUUID = ChannelUUID("")
 
 // ChannelID is our SQL type for a channel's id
 type ChannelID null.Int
