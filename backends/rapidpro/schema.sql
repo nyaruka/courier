@@ -71,7 +71,7 @@ CREATE TABLE msgs_msg (
     direction character varying(1) NOT NULL,
     status character varying(1) NOT NULL,
     visibility character varying(1) NOT NULL,
-    msg_type character varying(1),
+    msg_type character varying(1) NOT NULL,
     msg_count integer NOT NULL,
     error_count integer NOT NULL,
     next_attempt timestamp with time zone NOT NULL,

@@ -38,19 +38,19 @@ INSERT INTO contacts_contacturn("id", "identity", "path", "scheme", "priority", 
 
 /** Msg with id 10,000 */
 DELETE from msgs_msg;
-INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility",
+INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility", "msg_type",
                         "msg_count", "error_count", "next_attempt", "external_id", "channel_id", "contact_id", "contact_urn_id", "org_id")
-              VALUES(10000, 'test message', True, now(), now(), now(), now(), 'O', 'W', 'V',
+              VALUES(10000, 'test message', True, now(), now(), now(), now(), 'O', 'W', 'V', 'T',
                      1, 0, now(), 'ext1', 10, 100, 1000, 1);
 
-INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility",
+INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility", "msg_type",
                         "msg_count", "error_count", "next_attempt", "external_id", "channel_id", "contact_id", "contact_urn_id", "org_id")
-              VALUES(10001, 'test message without external', True, now(), now(), now(), now(), 'O', 'W', 'V',
+              VALUES(10001, 'test message without external', True, now(), now(), now(), now(), 'O', 'W', 'V', 'T',
                      1, 0, now(), '', 10, 100, 1000, 1);
 
-INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility",
+INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility", "msg_type",
                         "msg_count", "error_count", "next_attempt", "external_id", "channel_id", "contact_id", "contact_urn_id", "org_id")
-              VALUES(10002, 'test message incoming', True, now(), now(), now(), now(), 'I', 'P', 'V',
+              VALUES(10002, 'test message incoming', True, now(), now(), now(), now(), 'I', 'P', 'V', 'T',
                      1, 0, now(), 'ext2', 10, 100, 1000, 1);
 
 INSERT INTO msgs_media("id", "uuid", "org_id", "content_type", "url", "path", "size", "duration", "width", "height", "original_id")
