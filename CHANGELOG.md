@@ -1,3 +1,9 @@
+v8.1.6 (2023-03-08)
+-------------------------
+ * Create messages with msg_type=T
+ * Bump golang.org/x/net from 0.2.0 to 0.7.0
+ * Switch to gocommon/uuids for UUID types
+
 v8.1.5 (2023-02-02)
 -------------------------
  * Read quick_replies from msg field instead of inside metadata
