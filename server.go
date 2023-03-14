@@ -126,7 +126,7 @@ func (s *server) Start() error {
 		Addr:         fmt.Sprintf("%s:%d", s.config.Address, s.config.Port),
 		Handler:      s.router,
 		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		WriteTimeout: 45 * time.Second,
 		IdleTimeout:  90 * time.Second,
 	}
 
