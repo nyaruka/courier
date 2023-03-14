@@ -272,7 +272,6 @@ var validStatus = `
 {
   "statuses": [{
     "id": "9712A34B4A8B6AD50F",
-    "recipient_id": "16315555555",
     "status": "sent",
     "timestamp": "1518694700"
   }]
@@ -282,7 +281,6 @@ var invalidStatus = `
 {
   "statuses": [{
     "id": "9712A34B4A8B6AD50F",
-    "recipient_id": "16315555555",
     "status": "in_orbit",
     "timestamp": "1518694700"
   }]
@@ -292,7 +290,6 @@ var ignoreStatus = `
 {
   "statuses": [{
     "id": "9712A34B4A8B6AD50F",
-    "recipient_id": "16315555555",
     "status": "deleted",
     "timestamp": "1518694700"
   }]

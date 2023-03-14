@@ -164,10 +164,9 @@ type eventPayload struct {
 		} `json:"voice"`
 	} `json:"messages"`
 	Statuses []struct {
-		ID          string `json:"id"           validate:"required"`
-		RecipientID string `json:"recipient_id" validate:"required"`
-		Timestamp   string `json:"timestamp"    validate:"required"`
-		Status      string `json:"status"       validate:"required"`
+		ID        string `json:"id"           validate:"required"`
+		Timestamp string `json:"timestamp"    validate:"required"`
+		Status    string `json:"status"       validate:"required"`
 	} `json:"statuses"`
 }
 
