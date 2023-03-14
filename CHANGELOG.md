@@ -1,3 +1,9 @@
+v8.1.7 (2023-03-14)
+-------------------------
+ * Remove recipient_id requirements on statuses part of payload
+ * Reduce time allowed for attachment requests so that we return before server cancels us
+ * Test with org and channel configs as non-null JSONB columns
+
 v8.1.6 (2023-03-08)
 -------------------------
  * Create messages with msg_type=T
