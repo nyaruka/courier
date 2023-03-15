@@ -47,6 +47,7 @@ import (
 	_ "github.com/nyaruka/courier/handlers/mblox"
 	_ "github.com/nyaruka/courier/handlers/messangi"
 	_ "github.com/nyaruka/courier/handlers/mtarget"
+	_ "github.com/nyaruka/courier/handlers/mtn"
 	_ "github.com/nyaruka/courier/handlers/nexmo"
 	_ "github.com/nyaruka/courier/handlers/novo"
 	_ "github.com/nyaruka/courier/handlers/playmobile"
