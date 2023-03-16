@@ -78,7 +78,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	msgStatus, found := statusMapping[payload.DeliveryStatus[0].Status]
 	if !found {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
-			fmt.Errorf("unknown status '%s', must be one of 'DeliveredToTerminal','DeliveryUncertain','DeliveryImpossible','DeliveredToNetwork', 'MessageWaiting', or 'DeliveryNotificationNotSupported'", payload.DeliveryStatus[0].Status))
+			fmt.Errorf("unknown status '%s'", payload.DeliveryStatus[0].Status))
 	}
 
 	if msgStatus == courier.MsgWired {
