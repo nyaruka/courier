@@ -29,6 +29,18 @@ var helloMsg = `{
 }
 `
 
+var validStatus = `{
+	"requestId": "req445454",
+	"clientCorrelator": "string",
+	"deliveryStatus": [
+		{
+			"receiverAddress": "27568942200",
+			"status": "DeliveredToTerminal"
+		}
+	]
+}
+`
+
 var testCases = []ChannelHandleTestCase{
 	{
 		Label:                "Receive Valid Message",
@@ -39,6 +51,15 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedMsgText:      Sp("Hello there"),
 		ExpectedURN:          "tel:+242064661201",
 		ExpectedDate:         time.Date(2023, time.March, 14, 11, 46, 4, 855000000, time.UTC),
+	},
+	{
+		Label:                "Receive Valid Status",
+		URL:                  statusURL,
+		Data:                 validStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedMsgStatus:    courier.MsgDelivered,
+		ExpectedExternalID:   "req445454",
 	},
 }
 

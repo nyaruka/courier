@@ -45,7 +45,49 @@ func newHandler() courier.ChannelHandler {
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
 	return nil
+}
+
+var statusMapping = map[string]courier.MsgStatusValue{
+	"DeliveredToTerminal": courier.MsgDelivered,
+	"DeliveryUncertain":   courier.MsgSent,
+	"DeliveryImpossible":  courier.MsgErrored,
+	"DeliveredToNetwork":  courier.MsgSent,
+
+	// no changes
+	"MessageWaiting":                   courier.MsgWired,
+	"DeliveryNotificationNotSupported": courier.MsgWired,
+}
+
+type statusPayload struct {
+	RequestID      string `json:"requestId"`
+	DeliveryStatus []struct {
+		ReceiverAddress string `json:"receiverAddress"`
+		Status          string `json:"status"`
+	} `json:"deliveryStatus"`
+}
+
+// receiveStatus is our HTTP handler function for status updates
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+	payload := &statusPayload{}
+	err := handlers.DecodeAndValidateJSON(payload, r)
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+	}
+	msgStatus, found := statusMapping[payload.DeliveryStatus[0].Status]
+	if !found {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
+			fmt.Errorf("unknown status '%s', must be one of 'DeliveredToTerminal','DeliveryUncertain','DeliveryImpossible','DeliveredToNetwork', 'MessageWaiting', or 'DeliveryNotificationNotSupported'", payload.DeliveryStatus[0].Status))
+	}
+
+	if msgStatus == courier.MsgWired {
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no status changed, ignored")
+	}
+
+	// write our status
+	status := h.Backend().NewMsgStatusForExternalID(channel, payload.RequestID, msgStatus, clog)
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 type moPayload struct {
