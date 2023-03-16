@@ -1,3 +1,7 @@
+v8.1.8 (2023-03-16)
+-------------------------
+ * Add support for MTN Developer Portal channel
+
 v8.1.7 (2023-03-14)
 -------------------------
  * Remove recipient_id requirements on statuses part of payload
