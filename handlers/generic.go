@@ -57,3 +57,18 @@ func NewExternalIDStatusHandler(h courier.ChannelHandler, statuses map[string]co
 		return WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 	}
 }
+
+type JSONHandlerFunc[T any] func(context.Context, courier.Channel, http.ResponseWriter, *http.Request, *T, *courier.ChannelLog) ([]courier.Event, error)
+
+func JSONPayload[T any](h courier.ChannelHandler, handlerFunc JSONHandlerFunc[T]) courier.ChannelHandleFunc {
+	return func(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+		payload := new(T)
+
+		err := DecodeAndValidateJSON(payload, r)
+		if err != nil {
+			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
+		}
+
+		return handlerFunc(ctx, c, w, r, payload, clog)
+	}
+}
