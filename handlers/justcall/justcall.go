@@ -35,45 +35,45 @@ func init() {
 // Initialize implements courier.ChannelHandler
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "status", h.statusMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", handlers.JSONPayload(h, h.receiveMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "status", handlers.JSONPayload(h, h.statusMessage))
 	return nil
 }
 
-// {
-// 	"data": {
-// 	  "type": "sms",
-// 	  "direction": "0",
-// 	  "justcall_number": "192XXXXXXXX",
-// 	  "contact_name": "Sushant Tripathi",
-// 	  "contact_number": "+91810XXXXXXX",
-// 	  "contact_email": "customer@gmail.com",
-// 	  "is_contact": 1,
-// 	  "content": "Hey !",
-// 	  "signature": "35e89fc56b497xxxxxxxxxx8f7b27fe49d",
-// 	  "datetime": "2020-12-03 13:35:13",
-// 	  "delivery_status": "sent",
-// 	  "requestid": "1229153",
-// 	  "messageid": 26523491,
-// 	  "is_mms": "1",
-// 	  "mms": [
-// 		{
-// 		  "media_url": "https://www.filepicker.io/api/file/p6j9ExQNWMCCYOQvHI",
-// 		  "content_type": "image/jpeg"
-// 		},
-// 		{
-// 		  "media_url": "https://www.filepicker.io/api/file/axNH43SFm7inN3iKDz",
-// 		  "content_type": "image/png"
-// 		},
-// 		{
-// 		  "media_url": "https://www.filepicker.io/api//file/cN95JZSM2ScSXGamlh",
-// 		  "content_type": "image/jpeg"
-// 		}
-// 	  ] ,
-// 	  "agent_name": "Sales JustCall",
-// 	  "agent_id": 10636
-// 	}
-//   }
+//	{
+//	  "data": {
+//	    "type": "sms",
+//	    "direction": "0",
+//	    "justcall_number": "192XXXXXXXX",
+//	    "contact_name": "Sushant Tripathi",
+//	    "contact_number": "+91810XXXXXXX",
+//	    "contact_email": "customer@gmail.com",
+//	    "is_contact": 1,
+//	    "content": "Hey !",
+//	    "signature": "35e89fc56b497xxxxxxxxxx8f7b27fe49d",
+//	    "datetime": "2020-12-03 13:35:13",
+//	    "delivery_status": "sent",
+//	    "requestid": "1229153",
+//	    "messageid": 26523491,
+//	    "is_mms": "1",
+//	    "mms": [
+//	      {
+//	        "media_url": "https://www.filepicker.io/api/file/p6j9ExQNWMCCYOQvHI",
+//	        "content_type": "image/jpeg"
+//	      },
+//	      {
+//	        "media_url": "https://www.filepicker.io/api/file/axNH43SFm7inN3iKDz",
+//	        "content_type": "image/png"
+//	      },
+//	      {
+//	        "media_url": "https://www.filepicker.io/api//file/cN95JZSM2ScSXGamlh",
+//	        "content_type": "image/jpeg"
+//	      }
+//	    ],
+//	    "agent_name": "Sales JustCall",
+//	    "agent_id": 10636
+//	  }
+//	}
 type moPayload struct {
 	Data struct {
 		Type      string `json:"type"`
@@ -92,19 +92,14 @@ type moPayload struct {
 	} `json:"data"`
 }
 
-func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
-	payload := &moPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
-	}
-
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if payload.Data.Type != "sms" || payload.Data.Direction != "I" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "Ignoring request, no message")
 	}
 
 	dateString := payload.Data.Datetime
 	date := time.Now()
+	var err error
 	if dateString != "" {
 		date, err = time.Parse("2006-01-02 15:04:05", dateString)
 		if err != nil {
@@ -136,13 +131,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 	"failed":      courier.MsgFailed,
 }
 
-func (h *handler) statusMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
-	payload := &moPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
-	}
-
+func (h *handler) statusMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if payload.Data.Type != "sms" || payload.Data.Direction != "O" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "Ignoring request, no message")
 	}

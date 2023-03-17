@@ -199,20 +199,6 @@ const msgGeolocationOnly = `{
   },
   "secret": "abc123xyz"
 }`
-const eventWithSecret = `{
-  "type": "some_event",
-  "object": {},
-  "secret": "abc123xyz"
-}`
-const eventWithoutSecret = `{
-  "type": "some_event",
-  "object": {}
-}`
-const eventServerVerification = `{
-  "type": "confirmation",
-  "secret": "abc123xyz"
-}`
-
 const msgKeyboard = `{
 	"type": "message_new",
 	"object": {
@@ -329,23 +315,30 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedAttachments:  []string{"geo:-9.652278,-35.701095"},
 	},
 	{
-		Label:                "Validate secret",
+		Label:                "Valid secret",
 		URL:                  receiveURL,
-		Data:                 eventWithSecret,
+		Data:                 `{"type": "some_event", "object": {}, "secret": "abc123xyz"}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "no message or server verification event",
 	},
 	{
-		Label:                "Invalidate secret",
+		Label:                "Missing secret",
 		URL:                  receiveURL,
-		Data:                 eventWithoutSecret,
+		Data:                 `{"type": "some_event", "object": {}}`,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "Field validation for 'SecretKey' failed on the 'required' tag",
+	},
+	{
+		Label:                "Invalid secret",
+		URL:                  receiveURL,
+		Data:                 `{"type": "some_event", "object": {}, "secret": "0987654321"}`,
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "wrong secret key",
 	},
 	{
 		Label:                "Verify server",
 		URL:                  receiveURL,
-		Data:                 eventServerVerification,
+		Data:                 `{"type": "confirmation", "secret": "abc123xyz"}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "a1b2c3",
 	},
