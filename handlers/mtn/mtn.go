@@ -217,7 +217,7 @@ func (h *handler) getAccessToken(ctx context.Context, channel courier.Channel, c
 func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel, clog *courier.ChannelLog) (string, time.Duration, error) {
 	form := url.Values{
 		"client_id":     []string{channel.StringConfigForKey(courier.ConfigAPIKey, "")},
-		"client_secret": []string{channel.StringConfigForKey(courier.ConfigSecret, "")},
+		"client_secret": []string{channel.StringConfigForKey(courier.ConfigAuthToken, "")},
 	}
 	tokenURL, _ := url.Parse(tokenURL)
 
