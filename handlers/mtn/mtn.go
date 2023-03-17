@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -236,7 +237,9 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel,
 		return "", 0, err
 	}
 
-	expiration, err := jsonparser.GetInt(respBody, "expires_in")
+	expirationStr, _ := jsonparser.GetString(respBody, "expires_in")
+	expiration, err := strconv.Atoi(expirationStr)
+
 	if err != nil || expiration == 0 {
 		expiration = 3600
 	}
