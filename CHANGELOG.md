@@ -1,3 +1,8 @@
+v8.1.9 (2023-03-17)
+-------------------------
+ * Fix config for MTN channel for getting token and setting expiration
+ * Add generic JSON handler wrapper that takes care of decoding and validaing incoming JSON payloads
+
 v8.1.8 (2023-03-16)
 -------------------------
  * Add support for MTN Developer Portal channel
