@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -205,7 +206,7 @@ func (h *handler) getAccessToken(ctx context.Context, channel courier.Channel, c
 func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel, clog *courier.ChannelLog) (string, time.Duration, error) {
 	form := url.Values{
 		"client_id":     []string{channel.StringConfigForKey(courier.ConfigAPIKey, "")},
-		"client_secret": []string{channel.StringConfigForKey(courier.ConfigSecret, "")},
+		"client_secret": []string{channel.StringConfigForKey(courier.ConfigAuthToken, "")},
 	}
 	tokenURL, _ := url.Parse(tokenURL)
 
@@ -224,7 +225,9 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel,
 		return "", 0, err
 	}
 
-	expiration, err := jsonparser.GetInt(respBody, "expires_in")
+	expirationStr, _ := jsonparser.GetString(respBody, "expires_in")
+	expiration, err := strconv.Atoi(expirationStr)
+
 	if err != nil || expiration == 0 {
 		expiration = 3600
 	}
