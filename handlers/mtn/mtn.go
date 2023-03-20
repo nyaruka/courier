@@ -20,9 +20,9 @@ import (
 )
 
 var (
-	sendURL      = "https://api.mtn.com/v2/messages/sms/outbound"
-	maxMsgLength = 160
-	tokenURL     = "https://api.mtn.com/v1/oauth/access_token?grant_type=client_credentials"
+	APIHostURL    = "https://api.mtn.com"
+	configAPIHost = "api_host"
+	maxMsgLength  = 160
 )
 
 func init() {
@@ -120,7 +120,8 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, err
 	}
 
-	partSendURL, _ := url.Parse(sendURL)
+	baseURL := msg.Channel().StringConfigForKey(configAPIHost, APIHostURL)
+	partSendURL, _ := url.Parse(fmt.Sprintf("%s/%s", baseURL, "v2/messages/sms/outbound"))
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
@@ -208,7 +209,9 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel,
 		"client_id":     []string{channel.StringConfigForKey(courier.ConfigAPIKey, "")},
 		"client_secret": []string{channel.StringConfigForKey(courier.ConfigAuthToken, "")},
 	}
-	tokenURL, _ := url.Parse(tokenURL)
+
+	baseURL := channel.StringConfigForKey(configAPIHost, APIHostURL)
+	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", baseURL, "v1/oauth/access_token?grant_type=client_credentials"))
 
 	req, _ := http.NewRequest(http.MethodPost, tokenURL.String(), strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
