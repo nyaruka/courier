@@ -20,9 +20,8 @@ import (
 )
 
 var (
-	APIHostURL    = "https://api.mtn.com"
+	apiHostURL    = "https://api.mtn.com"
 	configAPIHost = "api_host"
-	maxMsgLength  = 160
 )
 
 func init() {
@@ -108,9 +107,10 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 type mtPayload struct {
-	From    string   `json:"senderAddress"`
-	To      []string `json:"receiverAddress"`
-	Message string   `json:"message"`
+	From             string   `json:"senderAddress"`
+	To               []string `json:"receiverAddress"`
+	Message          string   `json:"message"`
+	ClientCorrelator string   `json:"clientCorrelator"`
 }
 
 // Send implements courier.ChannelHandler
@@ -120,47 +120,44 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, err
 	}
 
-	baseURL := msg.Channel().StringConfigForKey(configAPIHost, APIHostURL)
+	baseURL := msg.Channel().StringConfigForKey(configAPIHost, apiHostURL)
 	partSendURL, _ := url.Parse(fmt.Sprintf("%s/%s", baseURL, "v2/messages/sms/outbound"))
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
-	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
-	for i, part := range parts {
-		mtMsg := &mtPayload{}
-		mtMsg.From = strings.TrimPrefix(msg.Channel().Address(), "+")
-		mtMsg.To = []string{strings.TrimPrefix(msg.URN().Path(), "+")}
-		mtMsg.Message = part
 
-		requestBody := &bytes.Buffer{}
-		json.NewEncoder(requestBody).Encode(mtMsg)
+	mtMsg := &mtPayload{}
+	mtMsg.From = strings.TrimPrefix(msg.Channel().Address(), "+")
+	mtMsg.To = []string{strings.TrimPrefix(msg.URN().Path(), "+")}
+	mtMsg.Message = handlers.GetTextAndAttachments(msg)
+	mtMsg.ClientCorrelator = msg.ID().String()
 
-		// build our request
-		req, err := http.NewRequest(http.MethodPost, partSendURL.String(), requestBody)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json")
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+	requestBody := &bytes.Buffer{}
+	json.NewEncoder(requestBody).Encode(mtMsg)
 
-		resp, respBody, err := handlers.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
-		}
-
-		externalID, err := jsonparser.GetString(respBody, "transactionId")
-		if err != nil {
-			clog.Error(courier.ErrorResponseValueMissing("transactionId"))
-			return status, nil
-		}
-
-		// if this is our first message, record the external id
-		if i == 0 {
-			status.SetExternalID(externalID)
-			status.SetStatus(courier.MsgWired)
-		}
-
+	// build our request
+	req, err := http.NewRequest(http.MethodPost, partSendURL.String(), requestBody)
+	if err != nil {
+		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return status, nil
+	}
+
+	externalID, err := jsonparser.GetString(respBody, "transactionId")
+	if err != nil {
+		clog.Error(courier.ErrorResponseValueMissing("transactionId"))
+		return status, nil
+	}
+
+	// if this is our first message, record the external id
+
+	status.SetExternalID(externalID)
+	status.SetStatus(courier.MsgWired)
 
 	return status, nil
 }
@@ -210,7 +207,7 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel,
 		"client_secret": []string{channel.StringConfigForKey(courier.ConfigAuthToken, "")},
 	}
 
-	baseURL := channel.StringConfigForKey(configAPIHost, APIHostURL)
+	baseURL := channel.StringConfigForKey(configAPIHost, apiHostURL)
 	tokenURL, _ := url.Parse(fmt.Sprintf("%s/%s", baseURL, "v1/oauth/access_token?grant_type=client_credentials"))
 
 	req, _ := http.NewRequest(http.MethodPost, tokenURL.String(), strings.NewReader(form.Encode()))
