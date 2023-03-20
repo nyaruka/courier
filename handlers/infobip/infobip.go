@@ -34,8 +34,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "delivered", h.statusMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", handlers.JSONPayload(h, h.receiveMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "delivered", handlers.JSONPayload(h, h.statusMessage))
 	return nil
 }
 
@@ -58,13 +58,7 @@ type ibStatus struct {
 }
 
 // statusMessage is our HTTP handler function for status updates
-func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
-	payload := &statusPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
+func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	data := make([]interface{}, len(payload.Results))
 	statuses := make([]courier.Event, len(payload.Results))
 	for _, s := range payload.Results {
@@ -75,7 +69,7 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 
 		// write our status
 		status := h.Backend().NewMsgStatusForExternalID(channel, s.MessageID, msgStatus, clog)
-		err = h.Backend().WriteMsgStatus(ctx, status)
+		err := h.Backend().WriteMsgStatus(ctx, status)
 		if err == courier.ErrMsgNotFound {
 			data = append(data, courier.NewInfoData(fmt.Sprintf("ignoring status update message id: %s, not found", s.MessageID)))
 			continue
@@ -126,13 +120,7 @@ type moMessage struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
-	payload := &moPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if payload.MessageCount == 0 {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
@@ -148,6 +136,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		date := time.Now()
+		var err error
 		if dateString != "" {
 			date, err = time.Parse("2006-01-02T15:04:05.999999999-0700", dateString)
 			if err != nil {
