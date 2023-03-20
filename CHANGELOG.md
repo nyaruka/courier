@@ -1,3 +1,8 @@
+v8.1.10 (2023-03-20)
+-------------------------
+ * Add way to customize the API host for MTN channels in channel config
+ * Convert more handlers to use JSONPayload wrapper
+
 v8.1.9 (2023-03-17)
 -------------------------
  * Fix config for MTN channel for getting token and setting expiration
