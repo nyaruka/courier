@@ -1,3 +1,7 @@
+v8.1.11 (2023-03-22)
+-------------------------
+ * MTN status reports are sent to the MO callback URL
+
 v8.1.10 (2023-03-20)
 -------------------------
  * Add way to customize the API host for MTN channels in channel config
