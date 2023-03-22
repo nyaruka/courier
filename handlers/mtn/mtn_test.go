@@ -29,6 +29,16 @@ var helloMsg = `{
 }
 `
 
+var invalidURN = `{
+	"id":null,
+	"senderAddress":"foobar",
+	"receiverAddress":"2020",
+	"message":"Hello there",
+	"created":1678794364855,
+	"submittedDate":null
+}
+`
+
 var validStatus = `{
 	"TransactionID": "rrt-58503",
 	"clientCorrelator": "string",
@@ -53,6 +63,29 @@ var validDeliveredStatus = `{
 }
 `
 
+var ignoredStatus = `{
+	"TransactionID": "rrt-58503",
+	"clientCorrelator": "string",
+	"deliveryStatus": [
+		{
+			"receiverAddress": "27568942200",
+			"status": "MessageWaiting"
+		}
+	]
+}
+`
+var uknownStatus = `{
+	"TransactionID": "rrt-58503",
+	"clientCorrelator": "string",
+	"deliveryStatus": [
+		{
+			"receiverAddress": "27568942200",
+			"status": "blabla"
+		}
+	]
+}
+`
+
 var testCases = []ChannelHandleTestCase{
 	{
 		Label:                "Receive Valid Message",
@@ -63,6 +96,13 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedMsgText:      Sp("Hello there"),
 		ExpectedURN:          "tel:+242064661201",
 		ExpectedDate:         time.Date(2023, time.March, 14, 11, 46, 4, 855000000, time.UTC),
+	},
+	{
+		Label:                "Receive invalid URN Message",
+		URL:                  receiveURL,
+		Data:                 invalidURN,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
 	},
 	{
 		Label:                "Receive Valid Status",
@@ -81,6 +121,22 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedMsgStatus:    courier.MsgDelivered,
 		ExpectedExternalID:   "rrt-58503",
+	},
+	{
+		Label:                "Receive ignored Status",
+		URL:                  receiveURL,
+		Data:                 ignoredStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `Ignored`,
+		ExpectedMsgStatus:    "",
+		ExpectedExternalID:   "rrt-58503",
+	},
+	{
+		Label:                "Receive uknown Status",
+		URL:                  receiveURL,
+		Data:                 uknownStatus,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "unknown status",
 	},
 }
 
