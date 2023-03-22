@@ -29,13 +29,58 @@ var helloMsg = `{
 }
 `
 
+var invalidURN = `{
+	"id":null,
+	"senderAddress":"foobar",
+	"receiverAddress":"2020",
+	"message":"Hello there",
+	"created":1678794364855,
+	"submittedDate":null
+}
+`
+
 var validStatus = `{
-	"requestId": "req445454",
+	"TransactionID": "rrt-58503",
 	"clientCorrelator": "string",
 	"deliveryStatus": [
 		{
 			"receiverAddress": "27568942200",
 			"status": "DeliveredToTerminal"
+		}
+	]
+}
+`
+
+var validDeliveredStatus = `{
+	"TransactionID": "rrt-58503",
+	"clientCorrelator": "string",
+	"deliveryStatus": [
+		{
+			"receiverAddress": "27568942200",
+			"status": "DELIVRD"
+		}
+	]
+}
+`
+
+var ignoredStatus = `{
+	"TransactionID": "rrt-58503",
+	"clientCorrelator": "string",
+	"deliveryStatus": [
+		{
+			"receiverAddress": "27568942200",
+			"status": "MessageWaiting"
+		}
+	]
+}
+`
+var uknownStatus = `{
+	"TransactionID": "rrt-58503",
+	"clientCorrelator": "string",
+	"deliveryStatus": [
+		{
+			"receiverAddress": "27568942200",
+			"status": "blabla"
 		}
 	]
 }
@@ -53,13 +98,45 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedDate:         time.Date(2023, time.March, 14, 11, 46, 4, 855000000, time.UTC),
 	},
 	{
+		Label:                "Receive invalid URN Message",
+		URL:                  receiveURL,
+		Data:                 invalidURN,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
+	},
+	{
 		Label:                "Receive Valid Status",
-		URL:                  statusURL,
+		URL:                  receiveURL,
 		Data:                 validStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedMsgStatus:    courier.MsgDelivered,
-		ExpectedExternalID:   "req445454",
+		ExpectedExternalID:   "rrt-58503",
+	},
+	{
+		Label:                "Receive Valid delivered Status",
+		URL:                  receiveURL,
+		Data:                 validDeliveredStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedMsgStatus:    courier.MsgDelivered,
+		ExpectedExternalID:   "rrt-58503",
+	},
+	{
+		Label:                "Receive ignored Status",
+		URL:                  receiveURL,
+		Data:                 ignoredStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `Ignored`,
+		ExpectedMsgStatus:    "",
+		ExpectedExternalID:   "rrt-58503",
+	},
+	{
+		Label:                "Receive uknown Status",
+		URL:                  receiveURL,
+		Data:                 uknownStatus,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "unknown status",
 	},
 }
 
