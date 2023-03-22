@@ -45,11 +45,11 @@ func newHandler() courier.ChannelHandler {
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", handlers.JSONPayload(h, h.receiveMessage))
-	s.AddHandlerRoute(h, http.MethodPost, "status", handlers.JSONPayload(h, h.receiveStatus))
 	return nil
 }
 
 var statusMapping = map[string]courier.MsgStatusValue{
+	"DELIVRD":             courier.MsgDelivered,
 	"DeliveredToTerminal": courier.MsgDelivered,
 	"DeliveryUncertain":   courier.MsgSent,
 	"DeliveryImpossible":  courier.MsgErrored,
@@ -60,50 +60,50 @@ var statusMapping = map[string]courier.MsgStatusValue{
 	"DeliveryNotificationNotSupported": courier.MsgWired,
 }
 
-type statusPayload struct {
-	RequestID      string `json:"requestId"`
+type moPayload struct {
+	// MO message fields
+	From    string `json:"senderAddress"`
+	To      string `json:"receiverAddress"`
+	Message string `json:"message"`
+	Created int64  `json:"created"`
+
+	// status report fields
+	TransactionID  string `json:"transactionId"`
 	DeliveryStatus []struct {
 		ReceiverAddress string `json:"receiverAddress"`
 		Status          string `json:"status"`
 	} `json:"deliveryStatus"`
 }
 
-// receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
-	msgStatus, found := statusMapping[payload.DeliveryStatus[0].Status]
-	if !found {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
-			fmt.Errorf("unknown status '%s'", payload.DeliveryStatus[0].Status))
-	}
-
-	if msgStatus == courier.MsgWired {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no status changed, ignored")
-	}
-
-	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, payload.RequestID, msgStatus, clog)
-	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
-}
-
-type moPayload struct {
-	From    string `json:"senderAddress"`
-	To      string `json:"receiverAddress"`
-	Message string `json:"message"`
-	Created int64  `json:"created"`
-}
-
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
-	date := time.Unix(payload.Created/1000, payload.Created%1000*1000000).UTC()
-	urn, err := handlers.StrictTelForCountry(payload.From, channel.Country())
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
+	if payload.Message != "" {
+		date := time.Unix(payload.Created/1000, payload.Created%1000*1000000).UTC()
+		urn, err := handlers.StrictTelForCountry(payload.From, channel.Country())
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		}
 
-	// create our message
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Message, clog).WithReceivedOn(date)
-	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
+		// create our message
+		msg := h.Backend().NewIncomingMsg(channel, urn, payload.Message, clog).WithReceivedOn(date)
+		// and finally write our message
+		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
+
+	} else {
+		msgStatus, found := statusMapping[payload.DeliveryStatus[0].Status]
+		if !found {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
+				fmt.Errorf("unknown status '%s'", payload.DeliveryStatus[0].Status))
+		}
+
+		if msgStatus == courier.MsgWired {
+			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no status changed, ignored")
+		}
+
+		// write our status
+		status := h.Backend().NewMsgStatusForExternalID(channel, payload.TransactionID, msgStatus, clog)
+		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
+	}
 }
 
 type mtPayload struct {

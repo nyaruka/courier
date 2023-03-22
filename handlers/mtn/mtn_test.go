@@ -30,12 +30,24 @@ var helloMsg = `{
 `
 
 var validStatus = `{
-	"requestId": "req445454",
+	"TransactionID": "rrt-58503",
 	"clientCorrelator": "string",
 	"deliveryStatus": [
 		{
 			"receiverAddress": "27568942200",
 			"status": "DeliveredToTerminal"
+		}
+	]
+}
+`
+
+var validDeliveredStatus = `{
+	"TransactionID": "rrt-58503",
+	"clientCorrelator": "string",
+	"deliveryStatus": [
+		{
+			"receiverAddress": "27568942200",
+			"status": "DELIVRD"
 		}
 	]
 }
@@ -54,12 +66,21 @@ var testCases = []ChannelHandleTestCase{
 	},
 	{
 		Label:                "Receive Valid Status",
-		URL:                  statusURL,
+		URL:                  receiveURL,
 		Data:                 validStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedMsgStatus:    courier.MsgDelivered,
-		ExpectedExternalID:   "req445454",
+		ExpectedExternalID:   "rrt-58503",
+	},
+	{
+		Label:                "Receive Valid delivered Status",
+		URL:                  receiveURL,
+		Data:                 validDeliveredStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedMsgStatus:    courier.MsgDelivered,
+		ExpectedExternalID:   "rrt-58503",
 	},
 }
 
