@@ -42,47 +42,27 @@ var invalidURN = `{
 var validStatus = `{
 	"TransactionID": "rrt-58503",
 	"clientCorrelator": "string",
-	"deliveryStatus": [
-		{
-			"receiverAddress": "27568942200",
-			"status": "DeliveredToTerminal"
-		}
-	]
+	"deliveryStatus":  "DeliveredToTerminal"
 }
 `
 
 var validDeliveredStatus = `{
 	"TransactionID": "rrt-58503",
 	"clientCorrelator": "string",
-	"deliveryStatus": [
-		{
-			"receiverAddress": "27568942200",
-			"status": "DELIVRD"
-		}
-	]
+	"deliveryStatus": "DELIVRD"
 }
 `
 
 var ignoredStatus = `{
 	"TransactionID": "rrt-58503",
 	"clientCorrelator": "string",
-	"deliveryStatus": [
-		{
-			"receiverAddress": "27568942200",
-			"status": "MessageWaiting"
-		}
-	]
+	"deliveryStatus": "MessageWaiting"
 }
 `
 var uknownStatus = `{
 	"TransactionID": "rrt-58503",
 	"clientCorrelator": "string",
-	"deliveryStatus": [
-		{
-			"receiverAddress": "27568942200",
-			"status": "blabla"
-		}
-	]
+	"deliveryStatus": "blabla"
 }
 `
 

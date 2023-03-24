@@ -69,10 +69,7 @@ type moPayload struct {
 
 	// status report fields
 	TransactionID  string `json:"transactionId"`
-	DeliveryStatus []struct {
-		ReceiverAddress string `json:"receiverAddress"`
-		Status          string `json:"status"`
-	} `json:"deliveryStatus"`
+	DeliveryStatus string `json:"deliveryStatus"`
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
@@ -90,10 +87,10 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 
 	} else {
-		msgStatus, found := statusMapping[payload.DeliveryStatus[0].Status]
+		msgStatus, found := statusMapping[payload.DeliveryStatus]
 		if !found {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
-				fmt.Errorf("unknown status '%s'", payload.DeliveryStatus[0].Status))
+				fmt.Errorf("unknown status '%s'", payload.DeliveryStatus))
 		}
 
 		if msgStatus == courier.MsgWired {
