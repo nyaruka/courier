@@ -1,3 +1,7 @@
+v8.1.12 (2023-03-24)
+-------------------------
+ * Fix MTN status report payload
+
 v8.1.11 (2023-03-22)
 -------------------------
  * MTN status reports are sent to the MO callback URL
