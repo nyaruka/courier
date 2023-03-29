@@ -61,15 +61,17 @@ func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAtt
 
 	attachment, err := FetchAndStoreAttachment(ctx, b, ch, fa.URL, clog)
 
-	resp := &fetchAttachmentResponse{Attachment: attachment, LogUUID: clog.UUID()}
-
+	// try to write channel log even if we have an error
 	clog.End()
-
 	if err := b.WriteChannelLog(ctx, clog); err != nil {
 		logrus.WithError(err).Error()
 	}
 
-	return resp, err
+	if err != nil {
+		return nil, err
+	}
+
+	return &fetchAttachmentResponse{Attachment: attachment, LogUUID: clog.UUID()}, nil
 }
 
 func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, attURL string, clog *ChannelLog) (*Attachment, error) {
@@ -87,7 +89,6 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 	} else {
 		attRequest, err = http.NewRequest(http.MethodGet, attURL, nil)
 	}
-
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create attachment request")
 	}
@@ -95,12 +96,15 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 	trace, err := httpx.DoTrace(utils.GetHTTPClient(), attRequest, nil, nil, maxAttBodyReadBytes)
 	if trace != nil {
 		clog.HTTP(trace)
+
+		// if we got a non-200 response, return the attachment with a pseudo content type which tells the caller
+		// to continue without the attachment
+		if trace.Response == nil || trace.Response.StatusCode/100 != 2 {
+			return &Attachment{ContentType: "unavailable", URL: attURL}, nil
+		}
 	}
 	if err != nil {
 		return nil, err
-	}
-	if trace.Response.StatusCode/100 != 2 {
-		return &Attachment{ContentType: "unavailable", URL: attURL, Size: 0}, nil
 	}
 
 	mimeType := ""
