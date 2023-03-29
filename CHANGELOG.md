@@ -1,3 +1,7 @@
+v8.1.13 (2023-03-29)
+-------------------------
+ * Fetch attachments endpoint should return connection errors as unavailable attachments
+
 v8.1.12 (2023-03-24)
 -------------------------
  * Fix MTN status report payload
