@@ -47,6 +47,7 @@ type MockBackend struct {
 	writtenChannelEvents []courier.ChannelEvent
 	writtenChannelLogs   []*courier.ChannelLog
 	savedAttachments     []*SavedAttachment
+	storageError         error
 
 	lastMsgID       courier.MsgID
 	lastContactName string
@@ -304,6 +305,10 @@ func (mb *MockBackend) WriteExternalIDSeen(msg courier.Msg) {
 
 // SaveAttachment saves an attachment to backend storage
 func (mb *MockBackend) SaveAttachment(ctx context.Context, ch courier.Channel, contentType string, data []byte, extension string) (string, error) {
+	if mb.storageError != nil {
+		return "", mb.storageError
+	}
+
 	mb.savedAttachments = append(mb.savedAttachments, &SavedAttachment{
 		Channel: ch, ContentType: contentType, Data: data, Extension: extension,
 	})
@@ -384,4 +389,9 @@ func (mb *MockBackend) Reset() {
 	mb.writtenMsgStatuses = nil
 	mb.writtenChannelEvents = nil
 	mb.writtenChannelLogs = nil
+}
+
+// SetStorageError sets the error to return for operation that try to use storage
+func (mb *MockBackend) SetStorageError(err error) {
+	mb.storageError = err
 }

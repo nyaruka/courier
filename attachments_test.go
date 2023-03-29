@@ -2,6 +2,7 @@ package courier_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -20,7 +21,13 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 			httpx.NewMockResponse(200, nil, testJPG),
 		},
 		"http://mock.com/media/hello.mp3": {
-			httpx.NewMockResponse(502, nil, []byte(`Timeout`)),
+			httpx.NewMockResponse(502, nil, []byte(`My gateways!`)),
+		},
+		"http://mock.com/media/hello.pdf": {
+			httpx.MockConnectionError,
+		},
+		"http://mock.com/media/hello.txt": {
+			httpx.NewMockResponse(200, nil, []byte(`hi`)),
 		},
 	}))
 
@@ -46,14 +53,25 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	assert.Len(t, clog.HTTPLogs(), 1)
 	assert.Equal(t, "http://mock.com/media/hello.jpg", clog.HTTPLogs()[0].URL)
 
+	// a non-200 response should return an unavailable attachment
 	att, err = courier.FetchAndStoreAttachment(ctx, mb, mockChannel, "http://mock.com/media/hello.mp3", clog)
 	assert.NoError(t, err)
-	assert.Equal(t, "unavailable", att.ContentType)
-	assert.Equal(t, "http://mock.com/media/hello.mp3", att.URL) // the original URL
-	assert.Equal(t, 0, att.Size)
+	assert.Equal(t, &courier.Attachment{ContentType: "unavailable", URL: "http://mock.com/media/hello.mp3"}, att)
 
 	// should have a logged HTTP request but no attachments will have been saved to storage
 	assert.Len(t, clog.HTTPLogs(), 2)
 	assert.Equal(t, "http://mock.com/media/hello.mp3", clog.HTTPLogs()[1].URL)
 	assert.Len(t, mb.SavedAttachments(), 1)
+
+	// same for a connection error
+	att, err = courier.FetchAndStoreAttachment(ctx, mb, mockChannel, "http://mock.com/media/hello.pdf", clog)
+	assert.NoError(t, err)
+	assert.Equal(t, &courier.Attachment{ContentType: "unavailable", URL: "http://mock.com/media/hello.pdf"}, att)
+
+	// an actual error on our part should be returned as an error
+	mb.SetStorageError(errors.New("boom"))
+
+	att, err = courier.FetchAndStoreAttachment(ctx, mb, mockChannel, "http://mock.com/media/hello.txt", clog)
+	assert.EqualError(t, err, "boom")
+	assert.Nil(t, att)
 }

@@ -71,8 +71,14 @@ func TestFetchAttachment(t *testing.T) {
 	testJPG := test.ReadFile("test/testdata/test.jpg")
 
 	httpMocks := httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
-		"http://mock.com/media/test.jpg": {
+		"http://mock.com/media/hello.jpg": {
 			httpx.NewMockResponse(200, nil, testJPG),
+		},
+		"http://mock.com/media/hello.mp3": {
+			httpx.NewMockResponse(404, nil, []byte(`No such file`)),
+		},
+		"http://mock.com/media/hello.pdf": {
+			httpx.MockConnectionError,
 		},
 	})
 	httpMocks.SetIgnoreLocal(true)
@@ -124,11 +130,11 @@ func TestFetchAttachment(t *testing.T) {
 	assert.Contains(t, string(respBody), `Field validation for 'ChannelType' failed on the 'required' tag`)
 
 	// try to submit with non-existent channel
-	statusCode, respBody = submit(`{"channel_uuid": "c25aab53-f23a-46c9-8ae3-1af850ad9fd9", "channel_type": "VV", "url": "http://mock.com/media/test.jpg"}`, "sesame")
+	statusCode, respBody = submit(`{"channel_uuid": "c25aab53-f23a-46c9-8ae3-1af850ad9fd9", "channel_type": "VV", "url": "http://mock.com/media/hello.jpg"}`, "sesame")
 	assert.Equal(t, 400, statusCode)
 	assert.Contains(t, string(respBody), `channel not found`)
 
-	statusCode, respBody = submit(`{"channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "url": "http://mock.com/media/test.jpg"}`, "sesame")
+	statusCode, respBody = submit(`{"channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "url": "http://mock.com/media/hello.jpg"}`, "sesame")
 	assert.Equal(t, 200, statusCode)
 	assert.JSONEq(t, `{"attachment": {"content_type": "image/jpeg", "url": "https://backend.com/attachments/cdf7ed27-5ad5-4028-b664-880fc7581c77.jpg", "size": 17301}, "log_uuid": "c00e5d67-c275-4389-aded-7d8b151cbd5b"}`, string(respBody))
 
@@ -137,4 +143,14 @@ func TestFetchAttachment(t *testing.T) {
 	assert.Equal(t, courier.ChannelLogTypeAttachmentFetch, clog.Type())
 	assert.Len(t, clog.HTTPLogs(), 1)
 	assert.Greater(t, clog.Elapsed(), time.Duration(0))
+
+	// if fetching attachment from channel returns non-200, return unavailable attachment so caller doesn't retry
+	statusCode, respBody = submit(`{"channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "url": "http://mock.com/media/hello.mp3"}`, "sesame")
+	assert.Equal(t, 200, statusCode)
+	assert.JSONEq(t, `{"attachment": {"content_type": "unavailable", "url": "http://mock.com/media/hello.mp3", "size": 0}, "log_uuid": "547deaf7-7620-4434-95b3-58675999c4b7"}`, string(respBody))
+
+	// same if fetching attachment times out
+	statusCode, respBody = submit(`{"channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "url": "http://mock.com/media/hello.pdf"}`, "sesame")
+	assert.Equal(t, 200, statusCode)
+	assert.JSONEq(t, `{"attachment": {"content_type": "unavailable", "url": "http://mock.com/media/hello.pdf", "size": 0}, "log_uuid": "338ff339-5663-49ed-8ef6-384876655d1b"}`, string(respBody))
 }
