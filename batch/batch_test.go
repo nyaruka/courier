@@ -25,7 +25,7 @@ func (l *Label) RowID() string {
 }
 
 func TestBatchInsert(t *testing.T) {
-	db := sqlx.MustConnect("postgres", "postgres://courier:courier@localhost:5432/courier_test?sslmode=disable")
+	db := sqlx.MustConnect("postgres", "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable")
 	db.MustExec("DROP TABLE IF EXISTS labels;")
 	db.MustExec("CREATE TABLE labels(id serial primary key, label text not null unique);")
 
@@ -58,7 +58,7 @@ func TestBatchInsert(t *testing.T) {
 }
 
 func TestBatchUpdate(t *testing.T) {
-	db := sqlx.MustConnect("postgres", "postgres://courier:courier@localhost:5432/courier_test?sslmode=disable")
+	db := sqlx.MustConnect("postgres", "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable")
 	db.MustExec("DROP TABLE IF EXISTS labels;")
 	db.MustExec("CREATE TABLE labels(id serial primary key, label text not null unique);")
 	db.MustExec("INSERT INTO labels(label) VALUES('label1'), ('label2'), ('label3');")

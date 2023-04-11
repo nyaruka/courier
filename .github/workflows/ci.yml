@@ -23,8 +23,8 @@ jobs:
         with:
           postgresql version: ${{ env.pg-version }}
           postgresql db: courier_test
-          postgresql user: courier
-          postgresql password: courier
+          postgresql user: courier_test
+          postgresql password: temba
 
       - name: Install Go
         uses: actions/setup-go@v1
