@@ -40,7 +40,7 @@ type BackendTestSuite struct {
 
 func testConfig() *courier.Config {
 	config := courier.NewConfig()
-	config.DB = "postgres://courier:courier@localhost:5432/courier_test?sslmode=disable"
+	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
 	config.MediaDomain = "nyaruka.s3.com"
 	return config
@@ -78,7 +78,8 @@ func (ts *BackendTestSuite) SetupSuite() {
 	// clear redis
 	r := ts.b.redisPool.Get()
 	defer r.Close()
-	r.Do("FLUSHDB")
+	_, err = r.Do("FLUSHDB")
+	ts.Require().NoError(err)
 
 	// use file storage instead of S3
 	ts.b.storage = storage.NewFS(storageDir, 0766)
