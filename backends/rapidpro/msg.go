@@ -141,7 +141,7 @@ RETURNING id`
 
 func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg, clog *courier.ChannelLog) error {
 	// grab the contact for this msg
-	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuth_, m.ContactName_, clog)
+	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuth_, m.contactName, clog)
 
 	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {
@@ -330,9 +330,9 @@ type DBMsg struct {
 	OrgID_                OrgID                  `json:"org_id"          db:"org_id"`
 	ID_                   courier.MsgID          `json:"id"              db:"id"`
 	UUID_                 courier.MsgUUID        `json:"uuid"            db:"uuid"`
-	Direction_            MsgDirection           `json:"direction"       db:"direction"`
-	Status_               courier.MsgStatusValue `json:"status"          db:"status"`
-	Visibility_           MsgVisibility          `json:"visibility"      db:"visibility"`
+	Direction_            MsgDirection           `                       db:"direction"`
+	Status_               courier.MsgStatusValue `                       db:"status"`
+	Visibility_           MsgVisibility          `                       db:"visibility"`
 	HighPriority_         bool                   `json:"high_priority"   db:"high_priority"`
 	URN_                  urns.URN               `json:"urn"`
 	URNAuth_              string                 `json:"urn_auth"`
@@ -340,28 +340,27 @@ type DBMsg struct {
 	Attachments_          pq.StringArray         `json:"attachments"     db:"attachments"`
 	QuickReplies_         pq.StringArray         `json:"quick_replies"   db:"quick_replies"`
 	Locale_               null.String            `json:"locale"          db:"locale"`
-	ExternalID_           null.String            `json:"external_id"     db:"external_id"`
+	ExternalID_           null.String            `                       db:"external_id"`
 	ResponseToExternalID_ string                 `json:"response_to_external_id"`
 	IsResend_             bool                   `json:"is_resend,omitempty"`
 	Metadata_             json.RawMessage        `json:"metadata"        db:"metadata"`
 
-	ChannelID_    courier.ChannelID `json:"channel_id"      db:"channel_id"`
+	ChannelID_    courier.ChannelID `                       db:"channel_id"`
 	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
 	ContactURNID_ ContactURNID      `json:"contact_urn_id"  db:"contact_urn_id"`
 
-	MessageCount_ int         `json:"msg_count"     db:"msg_count"`
-	ErrorCount_   int         `json:"error_count"   db:"error_count"`
-	FailedReason_ null.String `json:"failed_reason" db:"failed_reason"`
+	MessageCount_ int         `                     db:"msg_count"`
+	ErrorCount_   int         `                     db:"error_count"`
+	FailedReason_ null.String `                     db:"failed_reason"`
 
 	ChannelUUID_ courier.ChannelUUID `json:"channel_uuid"`
-	ContactName_ string              `json:"contact_name"`
 
-	NextAttempt_ time.Time      `json:"next_attempt"  db:"next_attempt"`
+	NextAttempt_ time.Time      `                     db:"next_attempt"`
 	CreatedOn_   time.Time      `json:"created_on"    db:"created_on"`
-	ModifiedOn_  time.Time      `json:"modified_on"   db:"modified_on"`
-	QueuedOn_    time.Time      `json:"queued_on"     db:"queued_on"`
-	SentOn_      *time.Time     `json:"sent_on"       db:"sent_on"`
-	LogUUIDs     pq.StringArray `json:"log_uuids"     db:"log_uuids"`
+	ModifiedOn_  time.Time      `                     db:"modified_on"`
+	QueuedOn_    time.Time      `                     db:"queued_on"`
+	SentOn_      *time.Time     `                     db:"sent_on"`
+	LogUUIDs     pq.StringArray `                     db:"log_uuids"`
 
 	// fields used to allow courier to update a session's timeout when a message is sent for efficient timeout behavior
 	SessionID_            SessionID  `json:"session_id,omitempty"`
@@ -371,6 +370,7 @@ type DBMsg struct {
 
 	Flow_ *courier.FlowReference `json:"flow,omitempty"`
 
+	contactName    string
 	channel        *DBChannel
 	workerToken    queue.WorkerToken
 	alreadyWritten bool
@@ -386,7 +386,7 @@ func (m *DBMsg) Locale() courier.Locale       { return courier.Locale(string(m.L
 func (m *DBMsg) ExternalID() string           { return string(m.ExternalID_) }
 func (m *DBMsg) URN() urns.URN                { return m.URN_ }
 func (m *DBMsg) URNAuth() string              { return m.URNAuth_ }
-func (m *DBMsg) ContactName() string          { return m.ContactName_ }
+func (m *DBMsg) ContactName() string          { return m.contactName }
 func (m *DBMsg) HighPriority() bool           { return m.HighPriority_ }
 func (m *DBMsg) ReceivedOn() *time.Time       { return m.SentOn_ }
 func (m *DBMsg) SentOn() *time.Time           { return m.SentOn_ }
@@ -432,7 +432,7 @@ func (m *DBMsg) fingerprint(withExtID bool) string {
 }
 
 // WithContactName can be used to set the contact name on a msg
-func (m *DBMsg) WithContactName(name string) courier.Msg { m.ContactName_ = name; return m }
+func (m *DBMsg) WithContactName(name string) courier.Msg { m.contactName = name; return m }
 
 // WithReceivedOn can be used to set sent_on on a msg in a chained call
 func (m *DBMsg) WithReceivedOn(date time.Time) courier.Msg { m.SentOn_ = &date; return m }

@@ -106,17 +106,12 @@ func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *DBChannel {
 
 func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	msgJSON := `{
-		"status": "P",
-		"direction": "O",
 		"attachments": ["https://foo.bar/image.jpg"],
 		"quick_replies": ["Yes", "No"],
-		"queued_on": null,
 		"text": "Test message 21",
 		"contact_id": 30,
 		"contact_urn_id": 14,
-		"error_count": 0,
 		"flow": {"uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", "name": "Favorites"},
-		"modified_on": "2017-07-21T19:22:23.254133Z",
 		"id": 204,
 		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba",
 		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f",
@@ -125,11 +120,8 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"urn_auth": "5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2",
 		"org_id": 1,
 		"created_on": "2017-07-21T19:22:23.242757Z",
-		"sent_on": null,
 		"high_priority": true,
-		"channel_id": 11,
 		"response_to_external_id": "external-id",
-		"external_id": null,
 		"is_resend": true,
 		"metadata": {"topic": "event"}
 	}`
@@ -138,7 +130,6 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	err := json.Unmarshal([]byte(msgJSON), &msg)
 	ts.NoError(err)
 	ts.Equal(courier.ChannelUUID("f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba"), msg.ChannelUUID_)
-	ts.Equal(courier.NewChannelID(11), msg.ChannelID_)
 	ts.Equal([]string{"https://foo.bar/image.jpg"}, msg.Attachments())
 	ts.Equal("5ApPVsFDcFt:RZdK9ne7LgfvBYdtCYg7tv99hC9P2", msg.URNAuth_)
 	ts.Equal("", msg.ExternalID())
@@ -153,14 +144,9 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal("9de3663f-c5c5-4c92-9f45-ecbc09abcc85", msg.FlowUUID())
 
 	msgJSONNoQR := `{
-		"status": "P",
-		"direction": "O",
-		"queued_on": null,
 		"text": "Test message 21",
 		"contact_id": 30,
 		"contact_urn_id": 14,
-		"error_count": 0,
-		"modified_on": "2017-07-21T19:22:23.254133Z",
 		"id": 204,
 		"channel_uuid": "f3ad3eb6-d00d-4dc3-92e9-9f34f32940ba",
 		"uuid": "54c893b9-b026-44fc-a490-50aed0361c3f",
@@ -168,11 +154,8 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 		"urn": "telegram:3527065",
 		"org_id": 1,
 		"created_on": "2017-07-21T19:22:23.242757Z",
-		"sent_on": null,
 		"high_priority": true,
-		"channel_id": 11,
 		"response_to_external_id": null,
-		"external_id": null,
 		"metadata": null
 	}`
 
