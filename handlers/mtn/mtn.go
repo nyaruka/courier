@@ -52,6 +52,7 @@ var statusMapping = map[string]courier.MsgStatusValue{
 	"DELIVRD":             courier.MsgDelivered,
 	"DeliveredToTerminal": courier.MsgDelivered,
 	"DeliveryUncertain":   courier.MsgSent,
+	"EXPIRED":             courier.MsgFailed,
 	"DeliveryImpossible":  courier.MsgErrored,
 	"DeliveredToNetwork":  courier.MsgSent,
 
@@ -87,6 +88,10 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 
 	} else {
+		if payload.TransactionID == "" {
+			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "missing transactionId, ignored")
+		}
+
 		msgStatus, found := statusMapping[payload.DeliveryStatus]
 		if !found {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,

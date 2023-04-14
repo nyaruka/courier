@@ -59,12 +59,25 @@ var ignoredStatus = `{
 	"deliveryStatus": "MessageWaiting"
 }
 `
+
+var expiredStatus = `{
+	"TransactionID": "rrt-58503",
+	"clientCorrelator": "string",
+	"deliveryStatus": "EXPIRED"
+}
+`
+
 var uknownStatus = `{
 	"TransactionID": "rrt-58503",
 	"clientCorrelator": "string",
 	"deliveryStatus": "blabla"
 }
 `
+var missingTransactionID = `{
+	"TransactionID": null,
+	"clientCorrelator": "string",
+	"deliveryStatus": "EXPIRED"
+}`
 
 var testCases = []ChannelHandleTestCase{
 	{
@@ -109,6 +122,23 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `Ignored`,
 		ExpectedMsgStatus:    "",
+		ExpectedExternalID:   "rrt-58503",
+	},
+	{
+		Label:                "Receive ignored Status, missing transaction ID",
+		URL:                  receiveURL,
+		Data:                 missingTransactionID,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `Ignored`,
+		ExpectedMsgStatus:    "",
+	},
+	{
+		Label:                "Receive expired Status",
+		URL:                  receiveURL,
+		Data:                 expiredStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"F"`,
+		ExpectedMsgStatus:    courier.MsgFailed,
 		ExpectedExternalID:   "rrt-58503",
 	},
 	{
