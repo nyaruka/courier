@@ -167,8 +167,15 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
 	defer rc.Close()
 
 	token, msgJSON, err := queue.PopFromQueue(rc, msgQueueName)
+	if err != nil {
+		return nil, err
+	}
+
 	for token == queue.Retry {
 		token, msgJSON, err = queue.PopFromQueue(rc, msgQueueName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if msgJSON != "" {
@@ -176,14 +183,17 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
 		err = json.Unmarshal([]byte(msgJSON), dbMsg)
 		if err != nil {
 			queue.MarkComplete(rc, msgQueueName, token)
-			return nil, fmt.Errorf("unable to unmarshal message '%s': %s", msgJSON, err)
+			return nil, errors.Wrapf(err, "unable to unmarshal message: %s", string(msgJSON))
 		}
+
 		// populate the channel on our db msg
 		channel, err := b.GetChannel(ctx, courier.AnyChannelType, dbMsg.ChannelUUID_)
 		if err != nil {
 			queue.MarkComplete(rc, msgQueueName, token)
 			return nil, err
 		}
+
+		dbMsg.Direction_ = MsgOutgoing
 		dbMsg.channel = channel.(*DBChannel)
 		dbMsg.workerToken = token
 
