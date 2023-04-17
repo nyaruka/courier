@@ -1,3 +1,7 @@
+v8.1.15 (2023-04-17)
+-------------------------
+ * Remove JSON tags for msg fields not used in sending
+
 v8.1.14 (2023-04-17)
 -------------------------
  * Address the expired status for MTN msgs
