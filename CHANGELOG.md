@@ -1,3 +1,8 @@
+v8.1.14 (2023-04-17)
+-------------------------
+ * Address the expired status for MTN msgs
+ * Update test database credentials for consistency with other projects
+
 v8.1.13 (2023-03-29)
 -------------------------
  * Fetch attachments endpoint should return connection errors as unavailable attachments
