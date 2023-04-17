@@ -44,6 +44,15 @@ type FlowReference struct {
 	Name string `json:"name"`
 }
 
+type MsgOrigin string
+
+const (
+	MsgOriginFlow      MsgOrigin = "flow"
+	MsgOriginBroadcast MsgOrigin = "broadcast"
+	MsgOriginTicket    MsgOrigin = "ticket"
+	MsgOriginChat      MsgOrigin = "chat"
+)
+
 //-----------------------------------------------------------------------------
 // Locale
 //-----------------------------------------------------------------------------
@@ -85,6 +94,7 @@ type Msg interface {
 	URNAuth() string
 	ContactName() string
 	QuickReplies() []string
+	Origin() MsgOrigin
 	Topic() string
 	Metadata() json.RawMessage
 	ResponseToExternalID() string

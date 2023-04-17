@@ -368,7 +368,8 @@ type DBMsg struct {
 	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on,omitempty"`
 	SessionStatus_        string     `json:"session_status,omitempty"`
 
-	Flow_ *courier.FlowReference `json:"flow,omitempty"`
+	Flow_   *courier.FlowReference `json:"flow,omitempty"`
+	Origin_ courier.MsgOrigin      `json:"origin"`
 
 	contactName    string
 	channel        *DBChannel
@@ -395,6 +396,7 @@ func (m *DBMsg) IsResend() bool               { return m.IsResend_ }
 func (m *DBMsg) Channel() courier.Channel     { return m.channel }
 func (m *DBMsg) SessionStatus() string        { return m.SessionStatus_ }
 func (m *DBMsg) Flow() *courier.FlowReference { return m.Flow_ }
+func (m *DBMsg) Origin() courier.MsgOrigin    { return m.Origin_ }
 
 func (m *DBMsg) FlowName() string {
 	if m.Flow_ == nil {

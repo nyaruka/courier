@@ -21,6 +21,7 @@ type mockMsg struct {
 	contactName          string
 	highPriority         bool
 	quickReplies         []string
+	origin               courier.MsgOrigin
 	topic                string
 	responseToExternalID string
 	metadata             json.RawMessage
@@ -74,6 +75,7 @@ func (m *mockMsg) URNAuth() string              { return m.urnAuth }
 func (m *mockMsg) ContactName() string          { return m.contactName }
 func (m *mockMsg) HighPriority() bool           { return m.highPriority }
 func (m *mockMsg) QuickReplies() []string       { return m.quickReplies }
+func (m *mockMsg) Origin() courier.MsgOrigin    { return m.origin }
 func (m *mockMsg) Topic() string                { return m.topic }
 func (m *mockMsg) ResponseToExternalID() string { return m.responseToExternalID }
 func (m *mockMsg) Metadata() json.RawMessage    { return m.metadata }
