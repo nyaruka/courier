@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
@@ -47,7 +46,7 @@ type moPayload struct {
 	Sender      string `validate:"required"`
 	MessageText string
 	ShortCode   string `validate:"required"`
-	TimeSent    int64  `validate:"required"`
+	TimeSent    int64  // ignored as not reliable or accurate (e.g. 20230418, 202304172)
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
@@ -58,15 +57,12 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
-	// create our date from the timestamp
-	date := time.Unix(payload.TimeSent, 0).UTC()
-
 	urn, err := handlers.StrictTelForCountry(payload.Sender, c.Country())
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
-	msg := h.Backend().NewIncomingMsg(c, urn, payload.MessageText, clog).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(c, urn, payload.MessageText, clog)
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
