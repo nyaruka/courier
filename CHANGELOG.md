@@ -1,3 +1,9 @@
+v8.1.16 (2023-04-18)
+-------------------------
+ * Update github actions versions
+ * Ignore dates for hormund mo as they're not reliable or accurate
+ * Remove chikka handler (company no longer exists)
+
 v8.1.15 (2023-04-17)
 -------------------------
  * Remove JSON tags for msg fields not used in sending
