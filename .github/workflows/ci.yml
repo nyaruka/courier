@@ -56,7 +56,7 @@ jobs:
           go-version: ${{ env.go-version }}
 
       - name: Publish release
-        uses: goreleaser/goreleaser-action@v1
+        uses: goreleaser/goreleaser-action@v4
         if: ${{ !contains(github.ref, '-') }}
         with:
           args: release --clean
@@ -64,7 +64,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish non-master release
-        uses: goreleaser/goreleaser-action@v1
+        uses: goreleaser/goreleaser-action@v4
         if: contains(github.ref, '-')
         with:
           args: release --clean --skip-validate
