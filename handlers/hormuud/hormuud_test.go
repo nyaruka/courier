@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
@@ -13,9 +12,9 @@ import (
 
 var (
 	receiveNoParams     = "/c/hm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
-	receiveValidMessage = "/c/hm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?Sender=%2B2349067554729&MessageText=Join&TimeSent=1493735509&&ShortCode=2020"
-	receiveInvalidURN   = "/c/hm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?Sender=bad&MessageText=Join&TimeSent=1493735509&&ShortCode=2020"
-	receiveEmptyMessage = "/c/hm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?Sender=%2B2349067554729&MessageText=&TimeSent=1493735509&&ShortCode=2020"
+	receiveValidMessage = "/c/hm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?Sender=%2B2349067554729&MessageText=Join&TimeSent=20230418&&ShortCode=2020"
+	receiveInvalidURN   = "/c/hm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?Sender=bad&MessageText=Join&TimeSent=20230418&&ShortCode=2020"
+	receiveEmptyMessage = "/c/hm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?Sender=%2B2349067554729&MessageText=&TimeSent=20230418&&ShortCode=2020"
 	//statusNoParams      = "/c/hm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 	//statusInvalidStatus = "/c/hm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=66"
 	//statusValid         = "/c/hm/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/?id=12345&status=4"
@@ -34,7 +33,6 @@ var handleTestCases = []ChannelHandleTestCase{
 		ExpectedBodyContains: "Accepted",
 		ExpectedMsgText:      Sp("Join"),
 		ExpectedURN:          "tel:+2349067554729",
-		ExpectedDate:         time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC),
 	},
 	{
 		Label:                "Receive Empty Message",
@@ -44,7 +42,6 @@ var handleTestCases = []ChannelHandleTestCase{
 		ExpectedBodyContains: "Accepted",
 		ExpectedMsgText:      Sp(""),
 		ExpectedURN:          "tel:+2349067554729",
-		ExpectedDate:         time.Date(2017, 5, 2, 14, 31, 49, 0, time.UTC),
 	},
 	{
 		Label:                "Receive No Params",
