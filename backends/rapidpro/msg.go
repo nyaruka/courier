@@ -327,23 +327,19 @@ func (b *backend) writeExternalIDSeen(msg *DBMsg) {
 
 // DBMsg is our base struct to represent msgs both in our JSON and db representations
 type DBMsg struct {
-	OrgID_                OrgID                  `json:"org_id"          db:"org_id"`
-	ID_                   courier.MsgID          `json:"id"              db:"id"`
-	UUID_                 courier.MsgUUID        `json:"uuid"            db:"uuid"`
-	Direction_            MsgDirection           `                       db:"direction"`
-	Status_               courier.MsgStatusValue `                       db:"status"`
-	Visibility_           MsgVisibility          `                       db:"visibility"`
-	HighPriority_         bool                   `json:"high_priority"   db:"high_priority"`
-	URN_                  urns.URN               `json:"urn"`
-	URNAuth_              string                 `json:"urn_auth"`
-	Text_                 string                 `json:"text"            db:"text"`
-	Attachments_          pq.StringArray         `json:"attachments"     db:"attachments"`
-	QuickReplies_         pq.StringArray         `json:"quick_replies"   db:"quick_replies"`
-	Locale_               null.String            `json:"locale"          db:"locale"`
-	ExternalID_           null.String            `                       db:"external_id"`
-	ResponseToExternalID_ string                 `json:"response_to_external_id"`
-	IsResend_             bool                   `json:"is_resend,omitempty"`
-	Metadata_             json.RawMessage        `json:"metadata"        db:"metadata"`
+	OrgID_        OrgID                  `json:"org_id"          db:"org_id"`
+	ID_           courier.MsgID          `json:"id"              db:"id"`
+	UUID_         courier.MsgUUID        `json:"uuid"            db:"uuid"`
+	Direction_    MsgDirection           `                       db:"direction"`
+	Status_       courier.MsgStatusValue `                       db:"status"`
+	Visibility_   MsgVisibility          `                       db:"visibility"`
+	HighPriority_ bool                   `json:"high_priority"   db:"high_priority"`
+	Text_         string                 `json:"text"            db:"text"`
+	Attachments_  pq.StringArray         `json:"attachments"     db:"attachments"`
+	QuickReplies_ pq.StringArray         `json:"quick_replies"   db:"quick_replies"`
+	Locale_       null.String            `json:"locale"          db:"locale"`
+	ExternalID_   null.String            `                       db:"external_id"`
+	Metadata_     json.RawMessage        `json:"metadata"        db:"metadata"`
 
 	ChannelID_    courier.ChannelID `                       db:"channel_id"`
 	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`
@@ -353,8 +349,6 @@ type DBMsg struct {
 	ErrorCount_   int         `                     db:"error_count"`
 	FailedReason_ null.String `                     db:"failed_reason"`
 
-	ChannelUUID_ courier.ChannelUUID `json:"channel_uuid"`
-
 	NextAttempt_ time.Time      `                     db:"next_attempt"`
 	CreatedOn_   time.Time      `json:"created_on"    db:"created_on"`
 	ModifiedOn_  time.Time      `                     db:"modified_on"`
@@ -362,13 +356,19 @@ type DBMsg struct {
 	SentOn_      *time.Time     `                     db:"sent_on"`
 	LogUUIDs     pq.StringArray `                     db:"log_uuids"`
 
-	// fields used to allow courier to update a session's timeout when a message is sent for efficient timeout behavior
-	SessionID_            SessionID  `json:"session_id,omitempty"`
-	SessionTimeout_       int        `json:"session_timeout,omitempty"`
-	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on,omitempty"`
-	SessionStatus_        string     `json:"session_status,omitempty"`
+	// extra non-model fields that mailroom will include in queued payload
+	ChannelUUID_          courier.ChannelUUID    `json:"channel_uuid"`
+	URN_                  urns.URN               `json:"urn"`
+	URNAuth_              string                 `json:"urn_auth"`
+	ResponseToExternalID_ string                 `json:"response_to_external_id"`
+	IsResend_             bool                   `json:"is_resend"`
+	Flow_                 *courier.FlowReference `json:"flow"`
 
-	Flow_ *courier.FlowReference `json:"flow,omitempty"`
+	// extra fields used to allow courier to update a session's timeout to *after* the message has been sent
+	SessionID_            SessionID  `json:"session_id"`
+	SessionTimeout_       int        `json:"session_timeout"`
+	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on"`
+	SessionStatus_        string     `json:"session_status"`
 
 	contactName    string
 	channel        *DBChannel
