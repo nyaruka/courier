@@ -268,6 +268,8 @@ type ChannelSendTestCase struct {
 	MsgResponseToExternalID string
 	MsgMetadata             json.RawMessage
 	MsgFlow                 *courier.FlowReference
+	MsgOrigin               courier.MsgOrigin
+	MsgContactLastSeenOn    *time.Time
 
 	MockResponseStatus int
 	MockResponseBody   string
@@ -299,13 +301,17 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 
 	for _, tc := range testCases {
 		mockRRCount := 0
+		msgOrigin := courier.MsgOriginFlow
+		if tc.MsgOrigin != "" {
+			msgOrigin = tc.MsgOrigin
+		}
 
 		mb.Reset()
 
 		t.Run(tc.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			msg := mb.NewOutgoingMsg(channel, 10, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgTopic, tc.MsgResponseToExternalID)
+			msg := mb.NewOutgoingMsg(channel, 10, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgTopic, tc.MsgResponseToExternalID, msgOrigin, tc.MsgContactLastSeenOn)
 			msg.WithLocale(tc.MsgLocale)
 
 			for _, a := range tc.MsgAttachments {

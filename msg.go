@@ -95,6 +95,7 @@ type Msg interface {
 	ContactName() string
 	QuickReplies() []string
 	Origin() MsgOrigin
+	ContactLastSeenOn() *time.Time
 	Topic() string
 	Metadata() json.RawMessage
 	ResponseToExternalID() string
