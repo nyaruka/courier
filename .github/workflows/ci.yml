@@ -5,26 +5,26 @@ env:
 jobs:
   test:
     name: Test
-    env:
-      pg-version: "14"
-      redis-version: "6.2"
     runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:6.2-alpine
+        ports:
+          - 6379:6379
+      postgres:
+        image: postgres:14-alpine
+        env:
+          POSTGRES_DB: courier_test
+          POSTGRES_USER: courier_test
+          POSTGRES_PASSWORD: temba
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Install Redis
-        uses: zhulik/redis-action@1.1.0
-        with:
-          redis version: ${{ env.redis-version }}
-
-      - name: Install PostgreSQL
-        uses: harmon758/postgresql-action@v1
-        with:
-          postgresql version: ${{ env.pg-version }}
-          postgresql db: courier_test
-          postgresql user: courier_test
-          postgresql password: temba
 
       - name: Install Go
         uses: actions/setup-go@v3
@@ -56,19 +56,17 @@ jobs:
           go-version: ${{ env.go-version }}
 
       - name: Publish release
-        uses: goreleaser/goreleaser-action@v1
+        uses: goreleaser/goreleaser-action@v4
         if: ${{ !contains(github.ref, '-') }}
         with:
-          version: v0.147.2
-          args: release --rm-dist
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish non-master release
-        uses: goreleaser/goreleaser-action@v1
+        uses: goreleaser/goreleaser-action@v4
         if: contains(github.ref, '-')
         with:
-          version: v0.147.2
-          args: release --rm-dist --skip-validate
+          args: release --clean --skip-validate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
