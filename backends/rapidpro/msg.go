@@ -363,6 +363,8 @@ type DBMsg struct {
 	ResponseToExternalID_ string                 `json:"response_to_external_id"`
 	IsResend_             bool                   `json:"is_resend"`
 	Flow_                 *courier.FlowReference `json:"flow"`
+	Origin_               courier.MsgOrigin      `json:"origin"`
+	ContactLastSeenOn_    *time.Time             `json:"contact_last_seen_on"`
 
 	// extra fields used to allow courier to update a session's timeout to *after* the message has been sent
 	SessionID_            SessionID  `json:"session_id"`
@@ -376,25 +378,27 @@ type DBMsg struct {
 	alreadyWritten bool
 }
 
-func (m *DBMsg) ID() courier.MsgID            { return m.ID_ }
-func (m *DBMsg) EventID() int64               { return int64(m.ID_) }
-func (m *DBMsg) UUID() courier.MsgUUID        { return m.UUID_ }
-func (m *DBMsg) Text() string                 { return m.Text_ }
-func (m *DBMsg) Attachments() []string        { return m.Attachments_ }
-func (m *DBMsg) QuickReplies() []string       { return m.QuickReplies_ }
-func (m *DBMsg) Locale() courier.Locale       { return courier.Locale(string(m.Locale_)) }
-func (m *DBMsg) ExternalID() string           { return string(m.ExternalID_) }
-func (m *DBMsg) URN() urns.URN                { return m.URN_ }
-func (m *DBMsg) URNAuth() string              { return m.URNAuth_ }
-func (m *DBMsg) ContactName() string          { return m.contactName }
-func (m *DBMsg) HighPriority() bool           { return m.HighPriority_ }
-func (m *DBMsg) ReceivedOn() *time.Time       { return m.SentOn_ }
-func (m *DBMsg) SentOn() *time.Time           { return m.SentOn_ }
-func (m *DBMsg) ResponseToExternalID() string { return m.ResponseToExternalID_ }
-func (m *DBMsg) IsResend() bool               { return m.IsResend_ }
-func (m *DBMsg) Channel() courier.Channel     { return m.channel }
-func (m *DBMsg) SessionStatus() string        { return m.SessionStatus_ }
-func (m *DBMsg) Flow() *courier.FlowReference { return m.Flow_ }
+func (m *DBMsg) ID() courier.MsgID             { return m.ID_ }
+func (m *DBMsg) EventID() int64                { return int64(m.ID_) }
+func (m *DBMsg) UUID() courier.MsgUUID         { return m.UUID_ }
+func (m *DBMsg) Text() string                  { return m.Text_ }
+func (m *DBMsg) Attachments() []string         { return m.Attachments_ }
+func (m *DBMsg) QuickReplies() []string        { return m.QuickReplies_ }
+func (m *DBMsg) Locale() courier.Locale        { return courier.Locale(string(m.Locale_)) }
+func (m *DBMsg) ExternalID() string            { return string(m.ExternalID_) }
+func (m *DBMsg) URN() urns.URN                 { return m.URN_ }
+func (m *DBMsg) URNAuth() string               { return m.URNAuth_ }
+func (m *DBMsg) ContactName() string           { return m.contactName }
+func (m *DBMsg) HighPriority() bool            { return m.HighPriority_ }
+func (m *DBMsg) ReceivedOn() *time.Time        { return m.SentOn_ }
+func (m *DBMsg) SentOn() *time.Time            { return m.SentOn_ }
+func (m *DBMsg) ResponseToExternalID() string  { return m.ResponseToExternalID_ }
+func (m *DBMsg) IsResend() bool                { return m.IsResend_ }
+func (m *DBMsg) Channel() courier.Channel      { return m.channel }
+func (m *DBMsg) SessionStatus() string         { return m.SessionStatus_ }
+func (m *DBMsg) Flow() *courier.FlowReference  { return m.Flow_ }
+func (m *DBMsg) Origin() courier.MsgOrigin     { return m.Origin_ }
+func (m *DBMsg) ContactLastSeenOn() *time.Time { return m.ContactLastSeenOn_ }
 
 func (m *DBMsg) FlowName() string {
 	if m.Flow_ == nil {
