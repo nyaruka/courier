@@ -1,3 +1,7 @@
+v8.1.18 (2023-04-20)
+-------------------------
+ * Change default for FBA channels to messaging_type=UPDATE
+
 v8.1.17 (2023-04-20)
 -------------------------
  * Use origin and contact last seen on to determine message type and tag for FBA channels
