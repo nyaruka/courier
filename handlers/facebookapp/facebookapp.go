@@ -854,17 +854,10 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 		return nil, fmt.Errorf("missing access token")
 	}
 
-	in24HourWindow := msg.ContactLastSeenOn() != nil && time.Since(*msg.ContactLastSeenOn()) < 24*time.Hour
 	isHuman := msg.Origin() == courier.MsgOriginChat || msg.Origin() == courier.MsgOriginTicket
 	payload := mtPayload{}
 
-	if in24HourWindow {
-		if msg.ResponseToExternalID() != "" {
-			payload.MessagingType = "RESPONSE"
-		} else {
-			payload.MessagingType = "UPDATE"
-		}
-	} else {
+	if msg.Topic() != "" || isHuman {
 		payload.MessagingType = "MESSAGE_TAG"
 
 		if msg.Topic() != "" {
@@ -872,8 +865,12 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 		} else if isHuman {
 			// this will most likely fail if we're out of the 7 day window.. but user was warned and we try anyway
 			payload.Tag = "HUMAN_AGENT"
+		}
+	} else {
+		if msg.ResponseToExternalID() != "" {
+			payload.MessagingType = "RESPONSE"
 		} else {
-			payload.Tag = "ACCOUNT_UPDATE"
+			payload.MessagingType = "UPDATE"
 		}
 	}
 
