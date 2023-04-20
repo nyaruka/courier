@@ -1,3 +1,8 @@
+v8.1.17 (2023-04-20)
+-------------------------
+ * Use origin and contact last seen on to determine message type and tag for FBA channels
+ * Use postgres and redis as services in github actions
+
 v8.1.16 (2023-04-18)
 -------------------------
  * Update github actions versions
