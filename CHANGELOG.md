@@ -1,3 +1,7 @@
+v8.1.19 (2023-05-24)
+-------------------------
+ * Use max_length from config for external channels
+
 v8.1.18 (2023-04-20)
 -------------------------
  * Change default for FBA channels to messaging_type=UPDATE
