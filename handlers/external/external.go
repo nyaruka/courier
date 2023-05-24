@@ -272,24 +272,27 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 
 // Send sends the given message, logging any HTTP calls or errors
 func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
-	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
+	channel := msg.Channel()
+
+	sendURL := channel.StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
 		return nil, fmt.Errorf("no send url set for EX channel")
 	}
 
 	// figure out what encoding to tell kannel to send as
-	encoding := msg.Channel().StringConfigForKey(configEncoding, encodingDefault)
-	responseCheck := msg.Channel().StringConfigForKey(configMTResponseCheck, "")
-	sendMethod := msg.Channel().StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
-	sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
-	contentType := msg.Channel().StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
+	encoding := channel.StringConfigForKey(configEncoding, encodingDefault)
+	responseCheck := channel.StringConfigForKey(configMTResponseCheck, "")
+	sendMethod := channel.StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
+	sendBody := channel.StringConfigForKey(courier.ConfigSendBody, "")
+	sendMaxLength := channel.IntConfigForKey(courier.ConfigMaxLength, 160)
+	contentType := channel.StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
 	contentTypeHeader := contentTypeMappings[contentType]
 	if contentTypeHeader == "" {
 		contentTypeHeader = contentType
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
-	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), 160)
+	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored, clog)
+	parts := handlers.SplitMsgByChannel(channel, handlers.GetTextAndAttachments(msg), sendMaxLength)
 	for i, part := range parts {
 		// build our request
 		form := map[string]string{
@@ -297,18 +300,18 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			"text":           part,
 			"to":             msg.URN().Path(),
 			"to_no_plus":     strings.TrimPrefix(msg.URN().Path(), "+"),
-			"from":           msg.Channel().Address(),
-			"from_no_plus":   strings.TrimPrefix(msg.Channel().Address(), "+"),
-			"channel":        string(msg.Channel().UUID()),
+			"from":           channel.Address(),
+			"from_no_plus":   strings.TrimPrefix(channel.Address(), "+"),
+			"channel":        string(channel.UUID()),
 			"session_status": msg.SessionStatus(),
 		}
 
-		useNationalStr := msg.Channel().ConfigForKey(courier.ConfigUseNational, false)
+		useNationalStr := channel.ConfigForKey(courier.ConfigUseNational, false)
 		useNational, _ := useNationalStr.(bool)
 
 		// if we are meant to use national formatting (no country code) pull that out
 		if useNational {
-			nationalTo := msg.URN().Localize(msg.Channel().Country())
+			nationalTo := msg.URN().Localize(channel.Country())
 			form["to"] = nationalTo.Path()
 			form["to_no_plus"] = nationalTo.Path()
 		}
@@ -351,12 +354,12 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		req.Header.Set("Content-Type", contentTypeHeader)
 
 		// TODO can drop this when channels have been migrated to use ConfigSendHeaders
-		authorization := msg.Channel().StringConfigForKey(courier.ConfigSendAuthorization, "")
+		authorization := channel.StringConfigForKey(courier.ConfigSendAuthorization, "")
 		if authorization != "" {
 			req.Header.Set("Authorization", authorization)
 		}
 
-		headers := msg.Channel().ConfigForKey(courier.ConfigSendHeaders, map[string]interface{}{}).(map[string]interface{})
+		headers := channel.ConfigForKey(courier.ConfigSendHeaders, map[string]interface{}{}).(map[string]interface{})
 		for hKey, hValue := range headers {
 			req.Header.Set(hKey, fmt.Sprint(hValue))
 		}
