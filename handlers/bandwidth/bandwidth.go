@@ -251,6 +251,24 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 }
 
+// BuildAttachmentRequest to download media for message attachment with Basic auth set
+func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
+	username := channel.StringConfigForKey(courier.ConfigUsername, "")
+	if username == "" {
+		return nil, fmt.Errorf("no username set for BW channel")
+	}
+
+	password := channel.StringConfigForKey(courier.ConfigPassword, "")
+	if password == "" {
+		return nil, fmt.Errorf("no password set for BW channel")
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
+	req.SetBasicAuth(username, password)
+
+	return req, nil
+}
+
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	return []string{
 		httpx.BasicAuth(ch.StringConfigForKey(courier.ConfigUsername, ""), ch.StringConfigForKey(courier.ConfigPassword, "")),
