@@ -1,3 +1,7 @@
+v8.1.20 (2023-05-25)
+-------------------------
+ * Save received MO media for BW channels
+
 v8.1.19 (2023-05-24)
 -------------------------
  * Use max_length from config for external channels
