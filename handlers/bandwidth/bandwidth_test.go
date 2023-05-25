@@ -186,6 +186,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedBodyContains: "Accepted",
 		ExpectedMsgText:      Sp("hello world"),
 		ExpectedURN:          "tel:+12065551234",
+		ExpectedAttachments:  []string{"https://messaging.bandwidth.com/api/v2/users/{accountId}/media/14762070468292kw2fuqty55yp2b2/0/bw.png"},
 	},
 	{
 		Label:                "Invalid URN",
