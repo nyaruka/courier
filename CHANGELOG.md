@@ -1,3 +1,7 @@
+v8.1.21 (2023-05-25)
+-------------------------
+ * Use Basic auth for fetching BW media attachments
+
 v8.1.20 (2023-05-25)
 -------------------------
  * Save received MO media for BW channels
