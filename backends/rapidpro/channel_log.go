@@ -10,15 +10,14 @@ import (
 )
 
 const insertLogSQL = `
-INSERT INTO channels_channellog( uuid,  log_type,  channel_id,  msg_id,  http_logs,  errors,  is_error,  created_on,  elapsed_ms)
-                         VALUES(:uuid, :log_type, :channel_id, :msg_id, :http_logs, :errors, :is_error, :created_on, :elapsed_ms)`
+INSERT INTO channels_channellog( uuid,  log_type,  channel_id,  http_logs,  errors,  is_error,  created_on,  elapsed_ms)
+                         VALUES(:uuid, :log_type, :channel_id, :http_logs, :errors, :is_error, :created_on, :elapsed_ms)`
 
 // ChannelLog is our DB specific struct for logs
 type ChannelLog struct {
 	UUID      courier.ChannelLogUUID `db:"uuid"`
 	Type      courier.ChannelLogType `db:"log_type"`
 	ChannelID courier.ChannelID      `db:"channel_id"`
-	MsgID     courier.MsgID          `db:"msg_id"`
 	HTTPLogs  json.RawMessage        `db:"http_logs"`
 	Errors    json.RawMessage        `db:"errors"`
 	IsError   bool                   `db:"is_error"`
@@ -62,7 +61,6 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 		UUID:      clog.UUID(),
 		Type:      clog.Type(),
 		ChannelID: dbChan.ID(),
-		MsgID:     clog.MsgID(),
 		HTTPLogs:  jsonx.MustMarshal(clog.HTTPLogs()),
 		Errors:    jsonx.MustMarshal(errors),
 		IsError:   isError,
