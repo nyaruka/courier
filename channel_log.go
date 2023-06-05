@@ -98,7 +98,6 @@ type ChannelLog struct {
 	uuid      ChannelLogUUID
 	type_     ChannelLogType
 	channel   Channel
-	msgID     MsgID
 	httpLogs  []*httpx.Log
 	errors    []*ChannelError
 	createdOn time.Time
@@ -135,7 +134,6 @@ func newChannelLog(t ChannelLogType, ch Channel, r *httpx.Recorder, mid MsgID, r
 		type_:     t,
 		channel:   ch,
 		recorder:  r,
-		msgID:     mid,
 		createdOn: dates.Now(),
 
 		redactor: stringsx.NewRedactor("**********", redactVals...),
@@ -179,14 +177,6 @@ func (l *ChannelLog) SetType(t ChannelLogType) {
 
 func (l *ChannelLog) Channel() Channel {
 	return l.channel
-}
-
-func (l *ChannelLog) MsgID() MsgID {
-	return l.msgID
-}
-
-func (l *ChannelLog) SetMsgID(id MsgID) {
-	l.msgID = id
 }
 
 func (l *ChannelLog) HTTPLogs() []*httpx.Log {
