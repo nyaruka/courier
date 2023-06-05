@@ -1,3 +1,7 @@
+v8.1.22 (2023-06-05)
+-------------------------
+ * Stop writing ChannelLog.msg
+
 v8.1.21 (2023-05-25)
 -------------------------
  * Use Basic auth for fetching BW media attachments
