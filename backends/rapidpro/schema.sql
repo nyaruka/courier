@@ -92,7 +92,6 @@ CREATE TABLE channels_channellog (
     id serial primary key,
     uuid uuid NOT NULL,
     channel_id integer NOT NULL references channels_channel(id) on delete cascade,
-    msg_id bigint references msgs_msg(id) on delete cascade,
     log_type character varying(16),
     http_logs jsonb,
     errors jsonb,
