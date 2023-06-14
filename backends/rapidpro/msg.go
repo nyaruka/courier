@@ -15,6 +15,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v2"
@@ -384,7 +385,7 @@ func (m *DBMsg) UUID() courier.MsgUUID         { return m.UUID_ }
 func (m *DBMsg) Text() string                  { return m.Text_ }
 func (m *DBMsg) Attachments() []string         { return m.Attachments_ }
 func (m *DBMsg) QuickReplies() []string        { return m.QuickReplies_ }
-func (m *DBMsg) Locale() courier.Locale        { return courier.Locale(string(m.Locale_)) }
+func (m *DBMsg) Locale() utils.Locale          { return utils.Locale(string(m.Locale_)) }
 func (m *DBMsg) ExternalID() string            { return string(m.ExternalID_) }
 func (m *DBMsg) URN() urns.URN                 { return m.URN_ }
 func (m *DBMsg) URNAuth() string               { return m.URNAuth_ }
@@ -462,7 +463,7 @@ func (m *DBMsg) WithAttachment(url string) courier.Msg {
 	return m
 }
 
-func (m *DBMsg) WithLocale(lc courier.Locale) courier.Msg { m.Locale_ = null.String(lc); return m }
+func (m *DBMsg) WithLocale(lc utils.Locale) courier.Msg { m.Locale_ = null.String(lc); return m }
 
 // WithURNAuth can be used to add a URN auth setting to a message
 func (m *DBMsg) WithURNAuth(auth string) courier.Msg {

@@ -1146,15 +1146,3 @@ func TestSending(t *testing.T) {
 
 	RunChannelSendTestCases(t, defaultChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), mediaCacheSendTestCases, []string{"token123"}, nil)
 }
-
-func TestGetSupportedLanguage(t *testing.T) {
-	assert.Equal(t, "en", getSupportedLanguage(courier.NilLocale))
-	assert.Equal(t, "en", getSupportedLanguage(courier.Locale("eng")))
-	assert.Equal(t, "en_US", getSupportedLanguage(courier.Locale("eng-US")))
-	assert.Equal(t, "pt_PT", getSupportedLanguage(courier.Locale("por")))
-	assert.Equal(t, "pt_PT", getSupportedLanguage(courier.Locale("por-PT")))
-	assert.Equal(t, "pt_BR", getSupportedLanguage(courier.Locale("por-BR")))
-	assert.Equal(t, "fil", getSupportedLanguage(courier.Locale("fil")))
-	assert.Equal(t, "fr", getSupportedLanguage(courier.Locale("fra-CA")))
-	assert.Equal(t, "en", getSupportedLanguage(courier.Locale("run")))
-}

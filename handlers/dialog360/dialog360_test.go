@@ -568,14 +568,3 @@ func TestSending(t *testing.T) {
 
 	RunChannelSendTestCases(t, ChannelWAC, newWAHandler(courier.ChannelType("D3C"), "360Dialog"), SendTestCasesD3C, checkRedacted, nil)
 }
-func TestGetSupportedLanguage(t *testing.T) {
-	assert.Equal(t, languageInfo{"en", "Menu"}, getSupportedLanguage(courier.NilLocale))
-	assert.Equal(t, languageInfo{"en", "Menu"}, getSupportedLanguage(courier.Locale("eng")))
-	assert.Equal(t, languageInfo{"en_US", "Menu"}, getSupportedLanguage(courier.Locale("eng-US")))
-	assert.Equal(t, languageInfo{"pt_PT", "Menu"}, getSupportedLanguage(courier.Locale("por")))
-	assert.Equal(t, languageInfo{"pt_PT", "Menu"}, getSupportedLanguage(courier.Locale("por-PT")))
-	assert.Equal(t, languageInfo{"pt_BR", "Menu"}, getSupportedLanguage(courier.Locale("por-BR")))
-	assert.Equal(t, languageInfo{"fil", "Menu"}, getSupportedLanguage(courier.Locale("fil")))
-	assert.Equal(t, languageInfo{"fr", "Menu"}, getSupportedLanguage(courier.Locale("fra-CA")))
-	assert.Equal(t, languageInfo{"en", "Menu"}, getSupportedLanguage(courier.Locale("run")))
-}

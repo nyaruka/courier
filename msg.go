@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
-	"strings"
 	"time"
 
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v2"
@@ -54,31 +54,6 @@ const (
 )
 
 //-----------------------------------------------------------------------------
-// Locale
-//-----------------------------------------------------------------------------
-
-// Locale is the combination of a language and optional country, e.g. US English, Brazilian Portuguese, encoded as the
-// language code followed by the country code, e.g. eng-US, por-BR
-type Locale string
-
-func (l Locale) ToParts() (string, string) {
-	if l == NilLocale || len(l) < 3 {
-		return "", ""
-	}
-
-	parts := strings.SplitN(string(l), "-", 2)
-	lang := parts[0]
-	country := ""
-	if len(parts) > 1 {
-		country = parts[1]
-	}
-
-	return lang, country
-}
-
-var NilLocale = Locale("")
-
-//-----------------------------------------------------------------------------
 // Msg interface
 //-----------------------------------------------------------------------------
 
@@ -88,7 +63,7 @@ type Msg interface {
 	UUID() MsgUUID
 	Text() string
 	Attachments() []string
-	Locale() Locale
+	Locale() utils.Locale
 	ExternalID() string
 	URN() urns.URN
 	URNAuth() string
@@ -118,7 +93,7 @@ type Msg interface {
 	WithID(id MsgID) Msg
 	WithUUID(uuid MsgUUID) Msg
 	WithAttachment(url string) Msg
-	WithLocale(Locale) Msg
+	WithLocale(utils.Locale) Msg
 	WithURNAuth(auth string) Msg
 	WithMetadata(metadata json.RawMessage) Msg
 	WithFlow(flow *FlowReference) Msg

@@ -255,9 +255,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 	// now with any status updates
 	for _, status := range payload.Statuses {
-		msgStatus, found := waStatusMapping[status.Status]
+		msgStatus, found := handlers.WaStatusMapping[status.Status]
 		if !found {
-			if waIgnoreStatuses[status.Status] {
+			if handlers.WaIgnoreStatuses[status.Status] {
 				data = append(data, courier.NewInfoData(fmt.Sprintf("ignoring status: %s", status.Status)))
 			} else {
 				handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status: %s", status.Status))
@@ -320,18 +320,6 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 }
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
-
-var waStatusMapping = map[string]courier.MsgStatusValue{
-	"sending":   courier.MsgWired,
-	"sent":      courier.MsgSent,
-	"delivered": courier.MsgDelivered,
-	"read":      courier.MsgDelivered,
-	"failed":    courier.MsgFailed,
-}
-
-var waIgnoreStatuses = map[string]bool{
-	"deleted": true,
-}
 
 // {
 //   "to": "16315555555",
@@ -565,7 +553,7 @@ func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]int
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 
 	qrs := msg.QuickReplies()
-	langCode := getSupportedLanguage(msg.Locale())
+	lang := utils.GetSupportedLanguage(msg.Locale())
 	wppVersion := msg.Channel().ConfigForKey("version", "0").(string)
 	isInteractiveMsgCompatible := semver.Compare(wppVersion, interactiveMsgMinSupVersion)
 	isInteractiveMsg := (isInteractiveMsgCompatible >= 0) && (len(qrs) > 0)
@@ -713,7 +701,7 @@ func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]int
 
 	} else {
 		// do we have a template?
-		templating, err := h.getTemplating(msg)
+		templating, err := handlers.GetTemplating(msg)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
 		}
@@ -734,7 +722,7 @@ func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]int
 				payload.HSM.Namespace = namespace
 				payload.HSM.ElementName = templating.Template.Name
 				payload.HSM.Language.Policy = "deterministic"
-				payload.HSM.Language.Code = langCode
+				payload.HSM.Language.Code = lang.Code
 				for _, v := range templating.Variables {
 					payload.HSM.LocalizableParams = append(payload.HSM.LocalizableParams, LocalizableParam{Default: v})
 				}
@@ -748,7 +736,7 @@ func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]int
 				payload.Template.Namespace = namespace
 				payload.Template.Name = templating.Template.Name
 				payload.Template.Language.Policy = "deterministic"
-				payload.Template.Language.Code = langCode
+				payload.Template.Language.Code = lang.Code
 
 				component := &Component{Type: "body"}
 
@@ -1116,129 +1104,4 @@ func checkWhatsAppContact(channel courier.Channel, baseURL string, urn urns.URN,
 	} else {
 		return respBody, err
 	}
-}
-
-func (h *handler) getTemplating(msg courier.Msg) (*MsgTemplating, error) {
-	if len(msg.Metadata()) == 0 {
-		return nil, nil
-	}
-
-	metadata := &struct {
-		Templating *MsgTemplating `json:"templating"`
-	}{}
-	if err := json.Unmarshal(msg.Metadata(), metadata); err != nil {
-		return nil, err
-	}
-
-	if metadata.Templating == nil {
-		return nil, nil
-	}
-
-	if err := utils.Validate(metadata.Templating); err != nil {
-		return nil, errors.Wrapf(err, "invalid templating definition")
-	}
-
-	return metadata.Templating, nil
-}
-
-type MsgTemplating struct {
-	Template struct {
-		Name string `json:"name" validate:"required"`
-		UUID string `json:"uuid" validate:"required"`
-	} `json:"template" validate:"required,dive"`
-	Namespace string   `json:"namespace"`
-	Variables []string `json:"variables"`
-}
-
-func getSupportedLanguage(lc courier.Locale) string {
-	// look for exact match
-	if lang := supportedLanguages[lc]; lang != "" {
-		return lang
-	}
-
-	// if we have a country, strip that off and look again for a match
-	l, c := lc.ToParts()
-	if c != "" {
-		if lang := supportedLanguages[courier.Locale(l)]; lang != "" {
-			return lang
-		}
-	}
-	return "en" // fallback to English
-}
-
-// Mapping from engine locales to supported languages, see https://developers.facebook.com/docs/whatsapp/api/messages/message-templates/
-var supportedLanguages = map[courier.Locale]string{
-	"afr":    "af",    // Afrikaans
-	"sqi":    "sq",    // Albanian
-	"ara":    "ar",    // Arabic
-	"aze":    "az",    // Azerbaijani
-	"ben":    "bn",    // Bengali
-	"bul":    "bg",    // Bulgarian
-	"cat":    "ca",    // Catalan
-	"zho":    "zh_CN", // Chinese
-	"zho-CN": "zh_CN", // Chinese (CHN)
-	"zho-HK": "zh_HK", // Chinese (HKG)
-	"zho-TW": "zh_TW", // Chinese (TAI)
-	"hrv":    "hr",    // Croatian
-	"ces":    "cs",    // Czech
-	"dah":    "da",    // Danish
-	"nld":    "nl",    // Dutch
-	"eng":    "en",    // English
-	"eng-GB": "en_GB", // English (UK)
-	"eng-US": "en_US", // English (US)
-	"est":    "et",    // Estonian
-	"fil":    "fil",   // Filipino
-	"fin":    "fi",    // Finnish
-	"fra":    "fr",    // French
-	"kat":    "ka",    // Georgian
-	"deu":    "de",    // German
-	"ell":    "el",    // Greek
-	"guj":    "gu",    // Gujarati
-	"hau":    "ha",    // Hausa
-	"enb":    "he",    // Hebrew
-	"hin":    "hi",    // Hindi
-	"hun":    "hu",    // Hungarian
-	"ind":    "id",    // Indonesian
-	"gle":    "ga",    // Irish
-	"ita":    "it",    // Italian
-	"jpn":    "ja",    // Japanese
-	"kan":    "kn",    // Kannada
-	"kaz":    "kk",    // Kazakh
-	"kin":    "rw_RW", // Kinyarwanda
-	"kor":    "ko",    // Korean
-	"kir":    "ky_KG", // Kyrgyzstan
-	"lao":    "lo",    // Lao
-	"lav":    "lv",    // Latvian
-	"lit":    "lt",    // Lithuanian
-	"mal":    "ml",    // Malayalam
-	"mkd":    "mk",    // Macedonian
-	"msa":    "ms",    // Malay
-	"mar":    "mr",    // Marathi
-	"nob":    "nb",    // Norwegian
-	"fas":    "fa",    // Persian
-	"pol":    "pl",    // Polish
-	"por":    "pt_PT", // Portuguese
-	"por-BR": "pt_BR", // Portuguese (BR)
-	"por-PT": "pt_PT", // Portuguese (POR)
-	"pan":    "pa",    // Punjabi
-	"ron":    "ro",    // Romanian
-	"rus":    "ru",    // Russian
-	"srp":    "sr",    // Serbian
-	"slk":    "sk",    // Slovak
-	"slv":    "sl",    // Slovenian
-	"spa":    "es",    // Spanish
-	"spa-AR": "es_AR", // Spanish (ARG)
-	"spa-ES": "es_ES", // Spanish (SPA)
-	"spa-MX": "es_MX", // Spanish (MEX)
-	"swa":    "sw",    // Swahili
-	"swe":    "sv",    // Swedish
-	"tam":    "ta",    // Tamil
-	"tel":    "te",    // Telugu
-	"tha":    "th",    // Thai
-	"tur":    "tr",    // Turkish
-	"ukr":    "uk",    // Ukrainian
-	"urd":    "ur",    // Urdu
-	"uzb":    "uz",    // Uzbek
-	"vie":    "vi",    // Vietnamese
-	"zul":    "zu",    // Zulu
 }

@@ -46,148 +46,8 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-var waStatusMapping = map[string]courier.MsgStatusValue{
-	"sent":      courier.MsgSent,
-	"delivered": courier.MsgDelivered,
-	"read":      courier.MsgDelivered,
-	"failed":    courier.MsgFailed,
-}
-
-var waIgnoreStatuses = map[string]bool{
-	"deleted": true,
-}
-
-type Sender struct {
-	ID      string `json:"id"`
-	UserRef string `json:"user_ref,omitempty"`
-}
-
-type User struct {
-	ID string `json:"id"`
-}
-
-// {
-//   "object":"page",
-//   "entry":[{
-//     "id":"180005062406476",
-//     "time":1514924367082,
-//     "messaging":[{
-//       "sender":  {"id":"1630934236957797"},
-//       "recipient":{"id":"180005062406476"},
-//       "timestamp":1514924366807,
-//       "message":{
-//         "mid":"mid.$cAAD5QiNHkz1m6cyj11guxokwkhi2",
-//         "seq":33116,
-//         "text":"65863634"
-//       }
-//     }]
-//   }]
-// }
-
-type wacMedia struct {
-	Caption  string `json:"caption"`
-	Filename string `json:"filename"`
-	ID       string `json:"id"`
-	Mimetype string `json:"mime_type"`
-	SHA256   string `json:"sha256"`
-}
-type moPayload struct {
-	Object string `json:"object"`
-	Entry  []struct {
-		ID      string `json:"id"`
-		Time    int64  `json:"time"`
-		Changes []struct {
-			Field string `json:"field"`
-			Value struct {
-				MessagingProduct string `json:"messaging_product"`
-				Metadata         *struct {
-					DisplayPhoneNumber string `json:"display_phone_number"`
-					PhoneNumberID      string `json:"phone_number_id"`
-				} `json:"metadata"`
-				Contacts []struct {
-					Profile struct {
-						Name string `json:"name"`
-					} `json:"profile"`
-					WaID string `json:"wa_id"`
-				} `json:"contacts"`
-				Messages []struct {
-					ID        string `json:"id"`
-					From      string `json:"from"`
-					Timestamp string `json:"timestamp"`
-					Type      string `json:"type"`
-					Context   *struct {
-						Forwarded           bool   `json:"forwarded"`
-						FrequentlyForwarded bool   `json:"frequently_forwarded"`
-						From                string `json:"from"`
-						ID                  string `json:"id"`
-					} `json:"context"`
-					Text struct {
-						Body string `json:"body"`
-					} `json:"text"`
-					Image    *wacMedia `json:"image"`
-					Audio    *wacMedia `json:"audio"`
-					Video    *wacMedia `json:"video"`
-					Document *wacMedia `json:"document"`
-					Voice    *wacMedia `json:"voice"`
-					Location *struct {
-						Latitude  float64 `json:"latitude"`
-						Longitude float64 `json:"longitude"`
-						Name      string  `json:"name"`
-						Address   string  `json:"address"`
-					} `json:"location"`
-					Button *struct {
-						Text    string `json:"text"`
-						Payload string `json:"payload"`
-					} `json:"button"`
-					Interactive struct {
-						Type        string `json:"type"`
-						ButtonReply struct {
-							ID    string `json:"id"`
-							Title string `json:"title"`
-						} `json:"button_reply,omitempty"`
-						ListReply struct {
-							ID    string `json:"id"`
-							Title string `json:"title"`
-						} `json:"list_reply,omitempty"`
-					} `json:"interactive,omitempty"`
-					Errors []struct {
-						Code  int    `json:"code"`
-						Title string `json:"title"`
-					} `json:"errors"`
-				} `json:"messages"`
-				Statuses []struct {
-					ID           string `json:"id"`
-					RecipientID  string `json:"recipient_id"`
-					Status       string `json:"status"`
-					Timestamp    string `json:"timestamp"`
-					Type         string `json:"type"`
-					Conversation *struct {
-						ID     string `json:"id"`
-						Origin *struct {
-							Type string `json:"type"`
-						} `json:"origin"`
-					} `json:"conversation"`
-					Pricing *struct {
-						PricingModel string `json:"pricing_model"`
-						Billable     bool   `json:"billable"`
-						Category     string `json:"category"`
-					} `json:"pricing"`
-					Errors []struct {
-						Code  int    `json:"code"`
-						Title string `json:"title"`
-					} `json:"errors"`
-				} `json:"statuses"`
-				Errors []struct {
-					Code  int    `json:"code"`
-					Title string `json:"title"`
-				} `json:"errors"`
-			} `json:"value"`
-		} `json:"changes"`
-	} `json:"entry"`
-}
-
 // receiveEvent is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *handlers.WACMOPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 
 	// is not a 'whatsapp_business_account' object? ignore it
 	if payload.Object != "whatsapp_business_account" {
@@ -210,7 +70,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
-func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []interface{}, error) {
+func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *handlers.WACMOPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []interface{}, error) {
 	// the list of events we deal with
 	events := make([]courier.Event, 0, 2)
 
@@ -309,9 +169,9 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 
 			for _, status := range change.Value.Statuses {
 
-				msgStatus, found := waStatusMapping[status.Status]
+				msgStatus, found := handlers.WaStatusMapping[status.Status]
 				if !found {
-					if waIgnoreStatuses[status.Status] {
+					if handlers.WaIgnoreStatuses[status.Status] {
 						data = append(data, courier.NewInfoData(fmt.Sprintf("ignoring status: %s", status.Status)))
 					} else {
 						handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("unknown status: %s", status.Status))
@@ -387,110 +247,6 @@ func resolveMediaURL(channel courier.Channel, mediaID string, clog *courier.Chan
 	return fileURL, nil
 }
 
-type wacMTMedia struct {
-	ID       string `json:"id,omitempty"`
-	Link     string `json:"link,omitempty"`
-	Caption  string `json:"caption,omitempty"`
-	Filename string `json:"filename,omitempty"`
-}
-
-type wacMTSection struct {
-	Title string            `json:"title,omitempty"`
-	Rows  []wacMTSectionRow `json:"rows" validate:"required"`
-}
-
-type wacMTSectionRow struct {
-	ID          string `json:"id" validate:"required"`
-	Title       string `json:"title,omitempty"`
-	Description string `json:"description,omitempty"`
-}
-
-type wacMTButton struct {
-	Type  string `json:"type" validate:"required"`
-	Reply struct {
-		ID    string `json:"id" validate:"required"`
-		Title string `json:"title" validate:"required"`
-	} `json:"reply" validate:"required"`
-}
-
-type wacParam struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
-}
-
-type wacComponent struct {
-	Type    string      `json:"type"`
-	SubType string      `json:"sub_type"`
-	Index   string      `json:"index"`
-	Params  []*wacParam `json:"parameters"`
-}
-
-type wacText struct {
-	Body       string `json:"body"`
-	PreviewURL bool   `json:"preview_url"`
-}
-
-type wacLanguage struct {
-	Policy string `json:"policy"`
-	Code   string `json:"code"`
-}
-
-type wacTemplate struct {
-	Name       string          `json:"name"`
-	Language   *wacLanguage    `json:"language"`
-	Components []*wacComponent `json:"components"`
-}
-
-type wacInteractive struct {
-	Type   string `json:"type"`
-	Header *struct {
-		Type     string      `json:"type"`
-		Text     string      `json:"text,omitempty"`
-		Video    *wacMTMedia `json:"video,omitempty"`
-		Image    *wacMTMedia `json:"image,omitempty"`
-		Document *wacMTMedia `json:"document,omitempty"`
-	} `json:"header,omitempty"`
-	Body struct {
-		Text string `json:"text"`
-	} `json:"body" validate:"required"`
-	Footer *struct {
-		Text string `json:"text"`
-	} `json:"footer,omitempty"`
-	Action *struct {
-		Button   string         `json:"button,omitempty"`
-		Sections []wacMTSection `json:"sections,omitempty"`
-		Buttons  []wacMTButton  `json:"buttons,omitempty"`
-	} `json:"action,omitempty"`
-}
-
-type wacMTPayload struct {
-	MessagingProduct string `json:"messaging_product"`
-	RecipientType    string `json:"recipient_type"`
-	To               string `json:"to"`
-	Type             string `json:"type"`
-
-	Text *wacText `json:"text,omitempty"`
-
-	Document *wacMTMedia `json:"document,omitempty"`
-	Image    *wacMTMedia `json:"image,omitempty"`
-	Audio    *wacMTMedia `json:"audio,omitempty"`
-	Video    *wacMTMedia `json:"video,omitempty"`
-
-	Interactive *wacInteractive `json:"interactive,omitempty"`
-
-	Template *wacTemplate `json:"template,omitempty"`
-}
-
-type wacMTResponse struct {
-	Messages []*struct {
-		ID string `json:"id"`
-	} `json:"messages"`
-	Error struct {
-		Message string `json:"message"`
-		Code    int    `json:"code"`
-	} `json:"error"`
-}
-
 // Send implements courier.ChannelHandler
 func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	conn := h.Backend().RedisPool().Get()
@@ -519,16 +275,16 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	}
 	qrs := msg.QuickReplies()
-	lang := getSupportedLanguage(msg.Locale())
+	lang := utils.GetSupportedLanguage(msg.Locale())
 
-	var payloadAudio wacMTPayload
+	var payloadAudio handlers.WACMTPayload
 
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
-		payload := wacMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
+		payload := handlers.WACMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
 
 		if len(msg.Attachments()) == 0 {
 			// do we have a template?
-			templating, err := h.getTemplating(msg)
+			templating, err := handlers.GetTemplating(msg)
 			if err != nil {
 				return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
 			}
@@ -536,20 +292,20 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 				payload.Type = "template"
 
-				template := wacTemplate{Name: templating.Template.Name, Language: &wacLanguage{Policy: "deterministic", Code: lang.code}}
+				template := handlers.WACTemplate{Name: templating.Template.Name, Language: &handlers.WACLanguage{Policy: "deterministic", Code: lang.Code}}
 				payload.Template = &template
 
-				component := &wacComponent{Type: "body"}
+				component := &handlers.WACComponent{Type: "body"}
 
 				for _, v := range templating.Variables {
-					component.Params = append(component.Params, &wacParam{Type: "text", Text: v})
+					component.Params = append(component.Params, &handlers.WACParam{Type: "text", Text: v})
 				}
 				template.Components = append(payload.Template.Components, component)
 
 			} else {
 				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 					// this is still a msg part
-					text := &wacText{PreviewURL: false}
+					text := &handlers.WACText{PreviewURL: false}
 					payload.Type = "text"
 					if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
 						text.PreviewURL = true
@@ -561,44 +317,44 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						payload.Type = "interactive"
 						// We can use buttons
 						if len(qrs) <= 3 {
-							interactive := wacInteractive{Type: "button", Body: struct {
+							interactive := handlers.WACInteractive{Type: "button", Body: struct {
 								Text string "json:\"text\""
 							}{Text: msgParts[i-len(msg.Attachments())]}}
 
-							btns := make([]wacMTButton, len(qrs))
+							btns := make([]handlers.WACMTButton, len(qrs))
 							for i, qr := range qrs {
-								btns[i] = wacMTButton{
+								btns[i] = handlers.WACMTButton{
 									Type: "reply",
 								}
 								btns[i].Reply.ID = fmt.Sprint(i)
 								btns[i].Reply.Title = qr
 							}
 							interactive.Action = &struct {
-								Button   string         "json:\"button,omitempty\""
-								Sections []wacMTSection "json:\"sections,omitempty\""
-								Buttons  []wacMTButton  "json:\"buttons,omitempty\""
+								Button   string                  "json:\"button,omitempty\""
+								Sections []handlers.WACMTSection "json:\"sections,omitempty\""
+								Buttons  []handlers.WACMTButton  "json:\"buttons,omitempty\""
 							}{Buttons: btns}
 							payload.Interactive = &interactive
 						} else if len(qrs) <= 10 {
-							interactive := wacInteractive{Type: "list", Body: struct {
+							interactive := handlers.WACInteractive{Type: "list", Body: struct {
 								Text string "json:\"text\""
 							}{Text: msgParts[i-len(msg.Attachments())]}}
 
-							section := wacMTSection{
-								Rows: make([]wacMTSectionRow, len(qrs)),
+							section := handlers.WACMTSection{
+								Rows: make([]handlers.WACMTSectionRow, len(qrs)),
 							}
 							for i, qr := range qrs {
-								section.Rows[i] = wacMTSectionRow{
+								section.Rows[i] = handlers.WACMTSectionRow{
 									ID:    fmt.Sprint(i),
 									Title: qr,
 								}
 							}
 
 							interactive.Action = &struct {
-								Button   string         "json:\"button,omitempty\""
-								Sections []wacMTSection "json:\"sections,omitempty\""
-								Buttons  []wacMTButton  "json:\"buttons,omitempty\""
-							}{Button: lang.menu, Sections: []wacMTSection{
+								Button   string                  "json:\"button,omitempty\""
+								Sections []handlers.WACMTSection "json:\"sections,omitempty\""
+								Buttons  []handlers.WACMTButton  "json:\"buttons,omitempty\""
+							}{Button: lang.Menu, Sections: []handlers.WACMTSection{
 								section,
 							}}
 
@@ -608,7 +364,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						}
 					} else {
 						// this is still a msg part
-						text := &wacText{PreviewURL: false}
+						text := &handlers.WACText{PreviewURL: false}
 						payload.Type = "text"
 						if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
 							text.PreviewURL = true
@@ -626,7 +382,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				attType = "document"
 			}
 			payload.Type = attType
-			media := wacMTMedia{Link: attURL}
+			media := handlers.WACMTMedia{Link: attURL}
 
 			if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(msg.QuickReplies()) == 0 {
 				media.Caption = msgParts[i]
@@ -647,7 +403,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				payload.Type = "interactive"
 				// We can use buttons
 				if len(qrs) <= 3 {
-					interactive := wacInteractive{Type: "button", Body: struct {
+					interactive := handlers.WACInteractive{Type: "button", Body: struct {
 						Text string "json:\"text\""
 					}{Text: msgParts[i]}}
 
@@ -659,49 +415,49 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 							attType = "document"
 						}
 						if attType == "image" {
-							image := wacMTMedia{
+							image := handlers.WACMTMedia{
 								Link: attURL,
 							}
 							interactive.Header = &struct {
-								Type     string      "json:\"type\""
-								Text     string      "json:\"text,omitempty\""
-								Video    *wacMTMedia "json:\"video,omitempty\""
-								Image    *wacMTMedia "json:\"image,omitempty\""
-								Document *wacMTMedia "json:\"document,omitempty\""
+								Type     string               "json:\"type\""
+								Text     string               "json:\"text,omitempty\""
+								Video    *handlers.WACMTMedia "json:\"video,omitempty\""
+								Image    *handlers.WACMTMedia "json:\"image,omitempty\""
+								Document *handlers.WACMTMedia "json:\"document,omitempty\""
 							}{Type: "image", Image: &image}
 						} else if attType == "video" {
-							video := wacMTMedia{
+							video := handlers.WACMTMedia{
 								Link: attURL,
 							}
 							interactive.Header = &struct {
-								Type     string      "json:\"type\""
-								Text     string      "json:\"text,omitempty\""
-								Video    *wacMTMedia "json:\"video,omitempty\""
-								Image    *wacMTMedia "json:\"image,omitempty\""
-								Document *wacMTMedia "json:\"document,omitempty\""
+								Type     string               "json:\"type\""
+								Text     string               "json:\"text,omitempty\""
+								Video    *handlers.WACMTMedia "json:\"video,omitempty\""
+								Image    *handlers.WACMTMedia "json:\"image,omitempty\""
+								Document *handlers.WACMTMedia "json:\"document,omitempty\""
 							}{Type: "video", Video: &video}
 						} else if attType == "document" {
 							filename, err := utils.BasePathForURL(attURL)
 							if err != nil {
 								return nil, err
 							}
-							document := wacMTMedia{
+							document := handlers.WACMTMedia{
 								Link:     attURL,
 								Filename: filename,
 							}
 							interactive.Header = &struct {
-								Type     string      "json:\"type\""
-								Text     string      "json:\"text,omitempty\""
-								Video    *wacMTMedia "json:\"video,omitempty\""
-								Image    *wacMTMedia "json:\"image,omitempty\""
-								Document *wacMTMedia "json:\"document,omitempty\""
+								Type     string               "json:\"type\""
+								Text     string               "json:\"text,omitempty\""
+								Video    *handlers.WACMTMedia "json:\"video,omitempty\""
+								Image    *handlers.WACMTMedia "json:\"image,omitempty\""
+								Document *handlers.WACMTMedia "json:\"document,omitempty\""
 							}{Type: "document", Document: &document}
 						} else if attType == "audio" {
 							var zeroIndex bool
 							if i == 0 {
 								zeroIndex = true
 							}
-							payloadAudio = wacMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &wacMTMedia{Link: attURL}}
+							payloadAudio = handlers.WACMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &handlers.WACMTMedia{Link: attURL}}
 							status, err := requestD3C(payloadAudio, accessToken, status, sendURL, zeroIndex, clog)
 							if err != nil {
 								return status, nil
@@ -712,41 +468,41 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						}
 					}
 
-					btns := make([]wacMTButton, len(qrs))
+					btns := make([]handlers.WACMTButton, len(qrs))
 					for i, qr := range qrs {
-						btns[i] = wacMTButton{
+						btns[i] = handlers.WACMTButton{
 							Type: "reply",
 						}
 						btns[i].Reply.ID = fmt.Sprint(i)
 						btns[i].Reply.Title = qr
 					}
 					interactive.Action = &struct {
-						Button   string         "json:\"button,omitempty\""
-						Sections []wacMTSection "json:\"sections,omitempty\""
-						Buttons  []wacMTButton  "json:\"buttons,omitempty\""
+						Button   string                  "json:\"button,omitempty\""
+						Sections []handlers.WACMTSection "json:\"sections,omitempty\""
+						Buttons  []handlers.WACMTButton  "json:\"buttons,omitempty\""
 					}{Buttons: btns}
 					payload.Interactive = &interactive
 
 				} else if len(qrs) <= 10 {
-					interactive := wacInteractive{Type: "list", Body: struct {
+					interactive := handlers.WACInteractive{Type: "list", Body: struct {
 						Text string "json:\"text\""
 					}{Text: msgParts[i-len(msg.Attachments())]}}
 
-					section := wacMTSection{
-						Rows: make([]wacMTSectionRow, len(qrs)),
+					section := handlers.WACMTSection{
+						Rows: make([]handlers.WACMTSectionRow, len(qrs)),
 					}
 					for i, qr := range qrs {
-						section.Rows[i] = wacMTSectionRow{
+						section.Rows[i] = handlers.WACMTSectionRow{
 							ID:    fmt.Sprint(i),
 							Title: qr,
 						}
 					}
 
 					interactive.Action = &struct {
-						Button   string         "json:\"button,omitempty\""
-						Sections []wacMTSection "json:\"sections,omitempty\""
-						Buttons  []wacMTButton  "json:\"buttons,omitempty\""
-					}{Button: lang.menu, Sections: []wacMTSection{
+						Button   string                  "json:\"button,omitempty\""
+						Sections []handlers.WACMTSection "json:\"sections,omitempty\""
+						Buttons  []handlers.WACMTButton  "json:\"buttons,omitempty\""
+					}{Button: lang.Menu, Sections: []handlers.WACMTSection{
 						section,
 					}}
 
@@ -756,7 +512,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				}
 			} else {
 				// this is still a msg part
-				text := &wacText{PreviewURL: false}
+				text := &handlers.WACText{PreviewURL: false}
 				payload.Type = "text"
 				if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
 					text.PreviewURL = true
@@ -783,7 +539,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return status, nil
 }
 
-func requestD3C(payload wacMTPayload, accessToken string, status courier.MsgStatus, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func requestD3C(payload handlers.WACMTPayload, accessToken string, status courier.MsgStatus, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
 		return status, err
@@ -799,7 +555,7 @@ func requestD3C(payload wacMTPayload, accessToken string, status courier.MsgStat
 	req.Header.Set("Accept", "application/json")
 
 	_, respBody, _ := handlers.RequestHTTP(req, clog)
-	respPayload := &wacMTResponse{}
+	respPayload := &handlers.WACMTResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
 		clog.Error(courier.ErrorResponseUnparseable("JSON"))
@@ -818,135 +574,4 @@ func requestD3C(payload wacMTPayload, accessToken string, status courier.MsgStat
 	// this was wired successfully
 	status.SetStatus(courier.MsgWired)
 	return status, nil
-}
-
-func (h *handler) getTemplating(msg courier.Msg) (*MsgTemplating, error) {
-	if len(msg.Metadata()) == 0 {
-		return nil, nil
-	}
-
-	metadata := &struct {
-		Templating *MsgTemplating `json:"templating"`
-	}{}
-	if err := json.Unmarshal(msg.Metadata(), metadata); err != nil {
-		return nil, err
-	}
-
-	if metadata.Templating == nil {
-		return nil, nil
-	}
-
-	if err := utils.Validate(metadata.Templating); err != nil {
-		return nil, errors.Wrapf(err, "invalid templating definition")
-	}
-
-	return metadata.Templating, nil
-}
-
-type MsgTemplating struct {
-	Template struct {
-		Name string `json:"name" validate:"required"`
-		UUID string `json:"uuid" validate:"required"`
-	} `json:"template" validate:"required,dive"`
-	Namespace string   `json:"namespace"`
-	Variables []string `json:"variables"`
-}
-
-func getSupportedLanguage(lc courier.Locale) languageInfo {
-	// look for exact match
-	if lang := supportedLanguages[lc]; lang.code != "" {
-		return lang
-	}
-
-	// if we have a country, strip that off and look again for a match
-	l, c := lc.ToParts()
-	if c != "" {
-		if lang := supportedLanguages[courier.Locale(l)]; lang.code != "" {
-			return lang
-		}
-	}
-	return supportedLanguages["eng"] // fallback to English
-}
-
-type languageInfo struct {
-	code string
-	menu string // translation of "Menu"
-}
-
-// Mapping from engine locales to supported languages. Note that these are not all valid BCP47 codes, e.g. fil
-// see https://developers.facebook.com/docs/whatsapp/api/messages/message-templates/
-var supportedLanguages = map[courier.Locale]languageInfo{
-	"afr":    {code: "af", menu: "Kieslys"},   // Afrikaans
-	"sqi":    {code: "sq", menu: "Menu"},      // Albanian
-	"ara":    {code: "ar", menu: "قائمة"},     // Arabic
-	"aze":    {code: "az", menu: "Menu"},      // Azerbaijani
-	"ben":    {code: "bn", menu: "Menu"},      // Bengali
-	"bul":    {code: "bg", menu: "Menu"},      // Bulgarian
-	"cat":    {code: "ca", menu: "Menu"},      // Catalan
-	"zho":    {code: "zh_CN", menu: "菜单"},     // Chinese
-	"zho-CN": {code: "zh_CN", menu: "菜单"},     // Chinese (CHN)
-	"zho-HK": {code: "zh_HK", menu: "菜单"},     // Chinese (HKG)
-	"zho-TW": {code: "zh_TW", menu: "菜单"},     // Chinese (TAI)
-	"hrv":    {code: "hr", menu: "Menu"},      // Croatian
-	"ces":    {code: "cs", menu: "Menu"},      // Czech
-	"dah":    {code: "da", menu: "Menu"},      // Danish
-	"nld":    {code: "nl", menu: "Menu"},      // Dutch
-	"eng":    {code: "en", menu: "Menu"},      // English
-	"eng-GB": {code: "en_GB", menu: "Menu"},   // English (UK)
-	"eng-US": {code: "en_US", menu: "Menu"},   // English (US)
-	"est":    {code: "et", menu: "Menu"},      // Estonian
-	"fil":    {code: "fil", menu: "Menu"},     // Filipino
-	"fin":    {code: "fi", menu: "Menu"},      // Finnish
-	"fra":    {code: "fr", menu: "Menu"},      // French
-	"kat":    {code: "ka", menu: "Menu"},      // Georgian
-	"deu":    {code: "de", menu: "Menü"},      // German
-	"ell":    {code: "el", menu: "Menu"},      // Greek
-	"guj":    {code: "gu", menu: "Menu"},      // Gujarati
-	"hau":    {code: "ha", menu: "Menu"},      // Hausa
-	"enb":    {code: "he", menu: "תפריט"},     // Hebrew
-	"hin":    {code: "hi", menu: "Menu"},      // Hindi
-	"hun":    {code: "hu", menu: "Menu"},      // Hungarian
-	"ind":    {code: "id", menu: "Menu"},      // Indonesian
-	"gle":    {code: "ga", menu: "Roghchlár"}, // Irish
-	"ita":    {code: "it", menu: "Menu"},      // Italian
-	"jpn":    {code: "ja", menu: "Menu"},      // Japanese
-	"kan":    {code: "kn", menu: "Menu"},      // Kannada
-	"kaz":    {code: "kk", menu: "Menu"},      // Kazakh
-	"kin":    {code: "rw_RW", menu: "Menu"},   // Kinyarwanda
-	"kor":    {code: "ko", menu: "Menu"},      // Korean
-	"kir":    {code: "ky_KG", menu: "Menu"},   // Kyrgyzstan
-	"lao":    {code: "lo", menu: "Menu"},      // Lao
-	"lav":    {code: "lv", menu: "Menu"},      // Latvian
-	"lit":    {code: "lt", menu: "Menu"},      // Lithuanian
-	"mal":    {code: "ml", menu: "Menu"},      // Malayalam
-	"mkd":    {code: "mk", menu: "Menu"},      // Macedonian
-	"msa":    {code: "ms", menu: "Menu"},      // Malay
-	"mar":    {code: "mr", menu: "Menu"},      // Marathi
-	"nob":    {code: "nb", menu: "Menu"},      // Norwegian
-	"fas":    {code: "fa", menu: "Menu"},      // Persian
-	"pol":    {code: "pl", menu: "Menu"},      // Polish
-	"por":    {code: "pt_PT", menu: "Menu"},   // Portuguese
-	"por-BR": {code: "pt_BR", menu: "Menu"},   // Portuguese (BR)
-	"por-PT": {code: "pt_PT", menu: "Menu"},   // Portuguese (POR)
-	"pan":    {code: "pa", menu: "Menu"},      // Punjabi
-	"ron":    {code: "ro", menu: "Menu"},      // Romanian
-	"rus":    {code: "ru", menu: "Menu"},      // Russian
-	"srp":    {code: "sr", menu: "Menu"},      // Serbian
-	"slk":    {code: "sk", menu: "Menu"},      // Slovak
-	"slv":    {code: "sl", menu: "Menu"},      // Slovenian
-	"spa":    {code: "es", menu: "Menú"},      // Spanish
-	"spa-AR": {code: "es_AR", menu: "Menú"},   // Spanish (ARG)
-	"spa-ES": {code: "es_ES", menu: "Menú"},   // Spanish (SPA)
-	"spa-MX": {code: "es_MX", menu: "Menú"},   // Spanish (MEX)
-	"swa":    {code: "sw", menu: "Menyu"},     // Swahili
-	"swe":    {code: "sv", menu: "Menu"},      // Swedish
-	"tam":    {code: "ta", menu: "Menu"},      // Tamil
-	"tel":    {code: "te", menu: "Menu"},      // Telugu
-	"tha":    {code: "th", menu: "Menu"},      // Thai
-	"tur":    {code: "tr", menu: "Menu"},      // Turkish
-	"ukr":    {code: "uk", menu: "Menu"},      // Ukrainian
-	"urd":    {code: "ur", menu: "Menu"},      // Urdu
-	"uzb":    {code: "uz", menu: "Menu"},      // Uzbek
-	"vie":    {code: "vi", menu: "Menu"},      // Vietnamese
-	"zul":    {code: "zu", menu: "Menu"},      // Zulu
 }
