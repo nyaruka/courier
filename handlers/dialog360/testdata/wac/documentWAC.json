@@ -1,0 +1,43 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "8856996819413533",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "+250 788 123 200",
+              "phone_number_id": "12345"
+            },
+            "contacts": [
+              {
+                "profile": {
+                  "name": "Kerry Fisher"
+                },
+                "wa_id": "5678"
+              }
+            ],
+            "messages": [
+              {
+                "from": "5678",
+                "id": "external_id",
+                "timestamp": "1454119029",
+                "type": "document",
+                "document": {
+                  "caption": "80skaraokesonglistartist",
+                  "file": "/usr/local/wamedia/shared/fc233119-733f-49c-bcbd-b2f68f798e33",
+                  "id": "id_document",
+                  "mime_type": "application/pdf",
+                  "sha256": "3b11fa6ef2bde1dd14726e09d3edaf782120919d06f6484f32d5d5caa4b8e"
+                }
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}
