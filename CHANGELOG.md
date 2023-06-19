@@ -1,3 +1,7 @@
+v8.1.23 (2023-06-19)
+-------------------------
+ * Support Dialog360 Cloud API channels
+
 v8.1.22 (2023-06-05)
 -------------------------
  * Stop writing ChannelLog.msg
