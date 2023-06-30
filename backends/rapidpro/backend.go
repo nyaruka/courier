@@ -813,17 +813,7 @@ func (b *backend) Start() error {
 	b.statusCommitter.Start()
 
 	// create our log committer and start it
-	b.logCommitter = batch.NewCommitter("log committer", b.db, insertLogSQL, time.Millisecond*500, b.committerWG,
-		func(err error, value batch.Value) {
-			log := logrus.WithField("comp", "log committer")
-
-			if qerr := dbutil.AsQueryError(err); qerr != nil {
-				query, params := qerr.Query()
-				log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
-			}
-
-			log.WithError(err).Error("error writing channel log")
-		})
+	b.logCommitter = NewLogCommitter(b.db, b.committerWG)
 	b.logCommitter.Start()
 
 	// register and start our spool flushers
@@ -897,7 +887,7 @@ type backend struct {
 	config *courier.Config
 
 	statusCommitter batch.Committer
-	logCommitter    batch.Committer
+	logCommitter    *LogCommitter
 	committerWG     *sync.WaitGroup
 
 	db        *sqlx.DB
