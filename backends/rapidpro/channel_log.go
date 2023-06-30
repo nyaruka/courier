@@ -8,14 +8,14 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/batch"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/syncx"
 	"github.com/sirupsen/logrus"
 )
 
-const insertLogSQL = `
+const sqlInsertChannelLog = `
 INSERT INTO channels_channellog( uuid,  log_type,  channel_id,  http_logs,  errors,  is_error,  created_on,  elapsed_ms)
                          VALUES(:uuid, :log_type, :channel_id, :http_logs, :errors, :is_error, :created_on, :elapsed_ms)`
 
@@ -70,17 +70,19 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 	}
 
 	// queue it
-	b.logCommitter.Queue(v)
+	if b.logCommitter.Queue(v) <= 0 {
+		logrus.Error("channel log buffer full")
+	}
 	return nil
 }
 
 type LogCommitter struct {
-	*batch.Batcher[*ChannelLog]
+	*syncx.Batcher[*ChannelLog]
 }
 
 func NewLogCommitter(db *sqlx.DB, wg *sync.WaitGroup) *LogCommitter {
 	return &LogCommitter{
-		Batcher: batch.NewBatcher[*ChannelLog](func(batch []*ChannelLog) {
+		Batcher: syncx.NewBatcher[*ChannelLog](func(batch []*ChannelLog) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel()
 
@@ -91,14 +93,14 @@ func NewLogCommitter(db *sqlx.DB, wg *sync.WaitGroup) *LogCommitter {
 
 func writeChannelLogs(ctx context.Context, db *sqlx.DB, logs []*ChannelLog) {
 	for _, batch := range utils.ChunkSlice(logs, 1000) {
-		err := dbutil.BulkQuery(ctx, db, insertLogSQL, batch)
+		err := dbutil.BulkQuery(ctx, db, sqlInsertChannelLog, batch)
 
 		// if we received an error, try again one at a time (in case it is one value hanging us up)
 		if err != nil {
 			for _, v := range batch {
-				err = dbutil.BulkQuery(ctx, db, insertLogSQL, []*ChannelLog{v})
+				err = dbutil.BulkQuery(ctx, db, sqlInsertChannelLog, []*ChannelLog{v})
 				if err != nil {
-					log := logrus.WithField("comp", "log committer")
+					log := logrus.WithField("comp", "log committer").WithField("log_uuid", v.UUID)
 
 					if qerr := dbutil.AsQueryError(err); qerr != nil {
 						query, params := qerr.Query()
