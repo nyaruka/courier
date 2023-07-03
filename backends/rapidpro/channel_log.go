@@ -70,18 +70,18 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 	}
 
 	// queue it
-	if b.logCommitter.Queue(v) <= 0 {
+	if b.logWriter.Queue(v) <= 0 {
 		logrus.Error("channel log buffer full")
 	}
 	return nil
 }
 
-type LogCommitter struct {
+type LogWriter struct {
 	*syncx.Batcher[*ChannelLog]
 }
 
-func NewLogCommitter(db *sqlx.DB, wg *sync.WaitGroup) *LogCommitter {
-	return &LogCommitter{
+func NewLogWriter(db *sqlx.DB, wg *sync.WaitGroup) *LogWriter {
+	return &LogWriter{
 		Batcher: syncx.NewBatcher[*ChannelLog](func(batch []*ChannelLog) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel()
