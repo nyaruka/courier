@@ -9,11 +9,16 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/dbutil"
+	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/sirupsen/logrus"
 )
 
 // newMsgStatus creates a new DBMsgStatus for the passed in parameters
@@ -249,7 +254,7 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 	return err
 }
 
-const bulkUpdateMsgStatusSQL = `
+const sqlUpdateMsgStatus = `
 UPDATE msgs_msg SET 
 	status = CASE 
 		WHEN 
@@ -281,6 +286,14 @@ UPDATE msgs_msg SET
 		ELSE 
 			next_attempt 
 		END,
+	failed_reason = CASE
+		WHEN
+			error_count >= 2
+		THEN
+			'E'
+		ELSE
+			failed_reason
+	    END,
 	sent_on = CASE 
 		WHEN
 			s.status IN ('W', 'S', 'D')
@@ -372,3 +385,46 @@ func (s *DBMsgStatus) SetExternalID(id string) { s.ExternalID_ = id }
 
 func (s *DBMsgStatus) Status() courier.MsgStatusValue          { return s.Status_ }
 func (s *DBMsgStatus) SetStatus(status courier.MsgStatusValue) { s.Status_ = status }
+
+type StatusWriter struct {
+	*syncx.Batcher[*DBMsgStatus]
+}
+
+func NewStatusWriter(db *sqlx.DB, spoolDir string, wg *sync.WaitGroup) *StatusWriter {
+	return &StatusWriter{
+		Batcher: syncx.NewBatcher[*DBMsgStatus](func(batch []*DBMsgStatus) {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+
+			writeMsgStatuses(ctx, db, spoolDir, batch)
+		}, time.Millisecond*500, 1000, wg),
+	}
+}
+
+func writeMsgStatuses(ctx context.Context, db *sqlx.DB, spoolDir string, statuses []*DBMsgStatus) {
+	for _, batch := range utils.ChunkSlice(statuses, 1000) {
+		err := dbutil.BulkQuery(ctx, db, sqlUpdateMsgStatus, batch)
+
+		// if we received an error, try again one at a time (in case it is one value hanging us up)
+		if err != nil {
+			for _, s := range batch {
+				err = dbutil.BulkQuery(ctx, db, sqlUpdateMsgStatus, []*DBMsgStatus{s})
+				if err != nil {
+					log := logrus.WithField("comp", "status writer").WithField("msg_id", s.ID())
+
+					if qerr := dbutil.AsQueryError(err); qerr != nil {
+						query, params := qerr.Query()
+						log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
+					}
+
+					log.WithError(err).Error("error writing msg status")
+
+					err = courier.WriteToSpool(spoolDir, "statuses", s)
+					if err != nil {
+						logrus.WithField("comp", "status committer").WithError(err).Error("error writing status to spool")
+					}
+				}
+			}
+		}
+	}
+}

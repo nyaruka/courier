@@ -19,7 +19,6 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/batch"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/dbutil"
@@ -302,7 +301,7 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 	}
 	// if we have an ID, we can have our batch commit for us
 	if status.ID() != courier.NilMsgID {
-		b.statusCommitter.Queue(status.(*DBMsgStatus))
+		b.statusWriter.Queue(status.(*DBMsgStatus))
 	} else {
 		// otherwise, write normally (synchronously)
 		err := writeMsgStatus(timeout, b, status)
@@ -793,24 +792,9 @@ func (b *backend) Start() error {
 		log.Info("spool directories ok")
 	}
 
-	// create our status committer and start it
-	b.statusCommitter = batch.NewCommitter("status committer", b.db, bulkUpdateMsgStatusSQL, time.Millisecond*500, b.writerWG,
-		func(err error, value batch.Value) {
-			log := logrus.WithField("comp", "status committer")
-
-			if qerr := dbutil.AsQueryError(err); qerr != nil {
-				query, params := qerr.Query()
-				log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
-			}
-
-			log.WithError(err).Error("error writing status")
-
-			err = courier.WriteToSpool(b.config.SpoolDir, "statuses", value)
-			if err != nil {
-				logrus.WithField("comp", "status committer").WithError(err).Error("error writing status to spool")
-			}
-		})
-	b.statusCommitter.Start()
+	// create our status writer and start it
+	b.statusWriter = NewStatusWriter(b.db, b.config.SpoolDir, b.writerWG)
+	b.statusWriter.Start()
 
 	// create our log writer and start it
 	b.logWriter = NewLogWriter(b.db, b.writerWG)
@@ -840,9 +824,9 @@ func (b *backend) Stop() error {
 }
 
 func (b *backend) Cleanup() error {
-	// stop our status committer
-	if b.statusCommitter != nil {
-		b.statusCommitter.Stop()
+	// stop our status writer
+	if b.statusWriter != nil {
+		b.statusWriter.Stop()
 	}
 
 	// stop our log writer
@@ -886,9 +870,9 @@ func newBackend(cfg *courier.Config) courier.Backend {
 type backend struct {
 	config *courier.Config
 
-	statusCommitter batch.Committer
-	logWriter       *LogWriter
-	writerWG        *sync.WaitGroup
+	statusWriter *StatusWriter
+	logWriter    *LogWriter
+	writerWG     *sync.WaitGroup
 
 	db        *sqlx.DB
 	redisPool *redis.Pool
