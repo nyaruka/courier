@@ -3,13 +3,19 @@ package rapidpro
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/syncx"
+	"github.com/sirupsen/logrus"
 )
 
-const insertLogSQL = `
+const sqlInsertChannelLog = `
 INSERT INTO channels_channellog( uuid,  log_type,  channel_id,  http_logs,  errors,  is_error,  created_on,  elapsed_ms)
                          VALUES(:uuid, :log_type, :channel_id, :http_logs, :errors, :is_error, :created_on, :elapsed_ms)`
 
@@ -23,11 +29,6 @@ type ChannelLog struct {
 	IsError   bool                   `db:"is_error"`
 	CreatedOn time.Time              `db:"created_on"`
 	ElapsedMS int                    `db:"elapsed_ms"`
-}
-
-// RowID satisfies our batch.Value interface, we are always inserting logs so we have no row id
-func (l *ChannelLog) RowID() string {
-	return ""
 }
 
 type channelError struct {
@@ -69,6 +70,46 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 	}
 
 	// queue it
-	b.logCommitter.Queue(v)
+	if b.logWriter.Queue(v) <= 0 {
+		logrus.Error("channel log buffer full")
+	}
 	return nil
+}
+
+type LogWriter struct {
+	*syncx.Batcher[*ChannelLog]
+}
+
+func NewLogWriter(db *sqlx.DB, wg *sync.WaitGroup) *LogWriter {
+	return &LogWriter{
+		Batcher: syncx.NewBatcher[*ChannelLog](func(batch []*ChannelLog) {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+
+			writeChannelLogs(ctx, db, batch)
+		}, time.Millisecond*500, 1000, wg),
+	}
+}
+
+func writeChannelLogs(ctx context.Context, db *sqlx.DB, logs []*ChannelLog) {
+	for _, batch := range utils.ChunkSlice(logs, 1000) {
+		err := dbutil.BulkQuery(ctx, db, sqlInsertChannelLog, batch)
+
+		// if we received an error, try again one at a time (in case it is one value hanging us up)
+		if err != nil {
+			for _, v := range batch {
+				err = dbutil.BulkQuery(ctx, db, sqlInsertChannelLog, []*ChannelLog{v})
+				if err != nil {
+					log := logrus.WithField("comp", "log committer").WithField("log_uuid", v.UUID)
+
+					if qerr := dbutil.AsQueryError(err); qerr != nil {
+						query, params := qerr.Query()
+						log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
+					}
+
+					log.WithError(err).Error("error writing channel log")
+				}
+			}
+		}
+	}
 }

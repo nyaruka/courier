@@ -794,7 +794,7 @@ func (b *backend) Start() error {
 	}
 
 	// create our status committer and start it
-	b.statusCommitter = batch.NewCommitter("status committer", b.db, bulkUpdateMsgStatusSQL, time.Millisecond*500, b.committerWG,
+	b.statusCommitter = batch.NewCommitter("status committer", b.db, bulkUpdateMsgStatusSQL, time.Millisecond*500, b.writerWG,
 		func(err error, value batch.Value) {
 			log := logrus.WithField("comp", "status committer")
 
@@ -812,19 +812,9 @@ func (b *backend) Start() error {
 		})
 	b.statusCommitter.Start()
 
-	// create our log committer and start it
-	b.logCommitter = batch.NewCommitter("log committer", b.db, insertLogSQL, time.Millisecond*500, b.committerWG,
-		func(err error, value batch.Value) {
-			log := logrus.WithField("comp", "log committer")
-
-			if qerr := dbutil.AsQueryError(err); qerr != nil {
-				query, params := qerr.Query()
-				log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
-			}
-
-			log.WithError(err).Error("error writing channel log")
-		})
-	b.logCommitter.Start()
+	// create our log writer and start it
+	b.logWriter = NewLogWriter(b.db, b.writerWG)
+	b.logWriter.Start()
 
 	// register and start our spool flushers
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "msgs"), b.flushMsgFile)
@@ -855,13 +845,13 @@ func (b *backend) Cleanup() error {
 		b.statusCommitter.Stop()
 	}
 
-	// stop our log committer
-	if b.logCommitter != nil {
-		b.logCommitter.Stop()
+	// stop our log writer
+	if b.logWriter != nil {
+		b.logWriter.Stop()
 	}
 
 	// wait for them to flush fully
-	b.committerWG.Wait()
+	b.writerWG.Wait()
 
 	// close our db and redis pool
 	if b.db != nil {
@@ -883,7 +873,7 @@ func newBackend(cfg *courier.Config) courier.Backend {
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},
 
-		committerWG: &sync.WaitGroup{},
+		writerWG: &sync.WaitGroup{},
 
 		mediaCache:   redisx.NewIntervalHash("media-lookups", time.Hour*24, 2),
 		mediaMutexes: *syncx.NewHashMutex(8),
@@ -897,8 +887,8 @@ type backend struct {
 	config *courier.Config
 
 	statusCommitter batch.Committer
-	logCommitter    batch.Committer
-	committerWG     *sync.WaitGroup
+	logWriter       *LogWriter
+	writerWG        *sync.WaitGroup
 
 	db        *sqlx.DB
 	redisPool *redis.Pool

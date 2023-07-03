@@ -120,3 +120,16 @@ func StringsToRows(strs []string, maxRows, maxRowRunes, paddingRunes int) [][]st
 	}
 	return rows
 }
+
+func ChunkSlice[T any](slice []T, size int) [][]T {
+	chunks := make([][]T, 0, len(slice)/size+1)
+
+	for i := 0; i < len(slice); i += size {
+		end := i + size
+		if end > len(slice) {
+			end = len(slice)
+		}
+		chunks = append(chunks, slice[i:end])
+	}
+	return chunks
+}
