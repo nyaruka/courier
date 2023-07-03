@@ -499,7 +499,7 @@ var waTestCases = []ChannelHandleTestCase{
 	},
 }
 
-func TestBuildMediaRequest(t *testing.T) {
+func TestBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 
 	waHandler := &handler{NewBaseHandler(courier.ChannelType("WA"), "WhatsApp")}

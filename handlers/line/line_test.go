@@ -616,7 +616,7 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"AccessToken"}, setupMedia)
 }
 
-func TestBuildMediaRequest(t *testing.T) {
+func TestBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 
 	lnHandler := &handler{NewBaseHandler(courier.ChannelType("LN"), "Line")}

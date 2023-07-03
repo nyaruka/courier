@@ -1563,7 +1563,7 @@ func newServer(backend courier.Backend) courier.Server {
 	return courier.NewServer(config, backend)
 }
 
-func TestBuildMediaRequest(t *testing.T) {
+func TestBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 	s := newServer(mb)
 	wacHandler := &handler{NewBaseHandlerWithParams(courier.ChannelType("WAC"), "WhatsApp Cloud", false, nil)}
