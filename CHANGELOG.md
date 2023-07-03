@@ -1,3 +1,7 @@
+v8.1.26 (2023-07-03)
+-------------------------
+ * Rework writing msg statuses to use Batcher like channel logs
+
 v8.1.25 (2023-07-03)
 -------------------------
  * Rework log committer to use new generic Batcher type which will be easier to rework to support S3 logs as well
