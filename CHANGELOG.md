@@ -1,3 +1,8 @@
+v8.1.25 (2023-07-03)
+-------------------------
+ * Rework log committer to use new generic Batcher type which will be easier to rework to support S3 logs as well
+ * Support requesting attachments for Twilio with basic auth
+
 v8.1.24 (2023-06-28)
 -------------------------
  * Update README
