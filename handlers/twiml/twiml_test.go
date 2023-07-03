@@ -1,6 +1,7 @@
 package twiml
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -13,6 +14,7 @@ import (
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/stretchr/testify/assert"
 )
 
 var testChannels = []courier.Channel{
@@ -775,4 +777,29 @@ func TestSending(t *testing.T) {
 	twaChannel.SetScheme(urns.WhatsAppScheme)
 
 	RunChannelSendTestCases(t, twaChannel, newTWIMLHandler("TWA", "Twilio Whatsapp", true), twaSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+}
+
+func TestBuildMediaRequest(t *testing.T) {
+	mb := test.NewMockBackend()
+
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US",
+		map[string]interface{}{
+			configAccountSID:        "accountSID",
+			courier.ConfigAuthToken: "authToken"})
+
+	twHandler := &handler{NewBaseHandler(courier.ChannelType("T"), "Twilio"), true}
+	req, _ := twHandler.BuildAttachmentRequest(context.Background(), mb, defaultChannel, "https://example.org/v1/media/41", nil)
+	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
+	assert.Equal(t, "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=", req.Header.Get("Authorization"))
+
+	var swChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US",
+		map[string]interface{}{
+			configAccountSID:        "accountSID",
+			courier.ConfigAuthToken: "authToken",
+			configSendURL:           "BASE_URL",
+		})
+	swHandler := &handler{NewBaseHandler(courier.ChannelType("SW"), "SignalWire"), false}
+	req, _ = swHandler.BuildAttachmentRequest(context.Background(), mb, swChannel, "https://example.org/v1/media/41", nil)
+	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
+	assert.Equal(t, "", req.Header.Get("Authorization"))
 }

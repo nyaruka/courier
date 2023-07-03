@@ -328,6 +328,27 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return status, nil
 }
 
+// BuildAttachmentRequest to download media for message attachment with Basic auth set
+func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
+	accountSID := channel.StringConfigForKey(configAccountSID, "")
+	if accountSID == "" {
+		return nil, fmt.Errorf("missing account sid for %s channel", h.ChannelName())
+	}
+
+	accountToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	if accountToken == "" {
+		return nil, fmt.Errorf("missing account auth token for %s channel", h.ChannelName())
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
+
+	if h.validateSignatures {
+		// set the basic auth token as the authorization header
+		req.SetBasicAuth(accountSID, accountToken)
+	}
+	return req, nil
+}
+
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	return []string{
 		httpx.BasicAuth(ch.StringConfigForKey(configAccountSID, ""), ch.StringConfigForKey(courier.ConfigAuthToken, "")),
