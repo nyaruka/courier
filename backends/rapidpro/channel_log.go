@@ -100,7 +100,7 @@ func writeChannelLogs(ctx context.Context, db *sqlx.DB, logs []*ChannelLog) {
 			for _, v := range batch {
 				err = dbutil.BulkQuery(ctx, db, sqlInsertChannelLog, []*ChannelLog{v})
 				if err != nil {
-					log := logrus.WithField("comp", "log committer").WithField("log_uuid", v.UUID)
+					log := logrus.WithField("comp", "log writer").WithField("log_uuid", v.UUID)
 
 					if qerr := dbutil.AsQueryError(err); qerr != nil {
 						query, params := qerr.Query()
