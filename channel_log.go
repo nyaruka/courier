@@ -205,6 +205,21 @@ func (l *ChannelLog) Elapsed() time.Duration {
 	return l.elapsed
 }
 
+// if we have an error or a non 2XX/3XX http response then log is considered an error
+func (l *ChannelLog) IsError() bool {
+	if len(l.errors) > 0 {
+		return true
+	}
+
+	for _, l := range l.httpLogs {
+		if l.StatusCode < 200 || l.StatusCode >= 400 {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (l *ChannelLog) traceToLog(t *httpx.Trace) *httpx.Log {
 	return httpx.NewLog(t, 2048, 50000, l.redactor)
 }
