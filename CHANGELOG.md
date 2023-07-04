@@ -1,3 +1,7 @@
+v8.1.27 (2023-07-04)
+-------------------------
+ * Add writer to write attached logs to storage instead of db
+
 v8.1.26 (2023-07-03)
 -------------------------
  * Rework writing msg statuses to use Batcher like channel logs
