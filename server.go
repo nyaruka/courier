@@ -331,10 +331,12 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			for _, event := range events {
 				switch e := event.(type) {
 				case Msg:
+					clog.SetMsgID(e.ID())
 					clog.SetType(ChannelLogTypeMsgReceive)
 					analytics.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
 					LogMsgReceived(r, e)
 				case MsgStatus:
+					clog.SetMsgID(e.ID())
 					clog.SetType(ChannelLogTypeMsgStatus)
 					analytics.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
 					LogMsgStatusReceived(r, e)

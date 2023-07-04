@@ -98,6 +98,7 @@ type ChannelLog struct {
 	uuid      ChannelLogUUID
 	type_     ChannelLogType
 	channel   Channel
+	msgID     MsgID
 	httpLogs  []*httpx.Log
 	errors    []*ChannelError
 	createdOn time.Time
@@ -133,6 +134,7 @@ func newChannelLog(t ChannelLogType, ch Channel, r *httpx.Recorder, mid MsgID, r
 		uuid:      ChannelLogUUID(uuids.New()),
 		type_:     t,
 		channel:   ch,
+		msgID:     mid,
 		recorder:  r,
 		createdOn: dates.Now(),
 
@@ -179,6 +181,14 @@ func (l *ChannelLog) Channel() Channel {
 	return l.channel
 }
 
+func (l *ChannelLog) MsgID() MsgID {
+	return l.msgID
+}
+
+func (l *ChannelLog) SetMsgID(id MsgID) {
+	l.msgID = id
+}
+
 func (l *ChannelLog) HTTPLogs() []*httpx.Log {
 	return l.httpLogs
 }
@@ -193,6 +203,21 @@ func (l *ChannelLog) CreatedOn() time.Time {
 
 func (l *ChannelLog) Elapsed() time.Duration {
 	return l.elapsed
+}
+
+// if we have an error or a non 2XX/3XX http response then log is considered an error
+func (l *ChannelLog) IsError() bool {
+	if len(l.errors) > 0 {
+		return true
+	}
+
+	for _, l := range l.httpLogs {
+		if l.StatusCode < 200 || l.StatusCode >= 400 {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (l *ChannelLog) traceToLog(t *httpx.Trace) *httpx.Log {

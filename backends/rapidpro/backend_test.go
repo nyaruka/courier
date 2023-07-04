@@ -22,7 +22,6 @@ import (
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/httpx"
-	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v2"
@@ -30,8 +29,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 )
-
-const storageDir = "_test_storage"
 
 type BackendTestSuite struct {
 	suite.Suite
@@ -47,6 +44,8 @@ func testConfig() *courier.Config {
 }
 
 func (ts *BackendTestSuite) SetupSuite() {
+	storageDir = "_test_storage"
+
 	// turn off logging
 	logrus.SetOutput(io.Discard)
 
@@ -80,9 +79,6 @@ func (ts *BackendTestSuite) SetupSuite() {
 	defer r.Close()
 	_, err = r.Do("FLUSHDB")
 	ts.Require().NoError(err)
-
-	// use file storage instead of S3
-	ts.b.storage = storage.NewFS(storageDir, 0766)
 }
 
 func (ts *BackendTestSuite) TearDownSuite() {
@@ -1014,14 +1010,30 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	clog.HTTP(trace)
 	clog.Error(courier.ErrorResponseStatusCode())
 
+	// log isn't attached to a message so will be written to the database
 	err = ts.b.WriteChannelLog(ctx, clog)
 	ts.NoError(err)
 
-	time.Sleep(time.Second) // give committer time to write this
+	time.Sleep(time.Second) // give writer time to write this
 
 	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM channels_channellog`).Returns(1)
 	assertdb.Query(ts.T(), ts.b.db, `SELECT channel_id, http_logs->0->>'url' AS url, errors->0->>'message' AS err FROM channels_channellog`).
 		Columns(map[string]interface{}{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json", "err": "Unexpected response status code."})
+
+	clog = courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
+	clog.HTTP(trace)
+	clog.SetMsgID(1234)
+
+	// log is attached to a message so will be written to storage
+	err = ts.b.WriteChannelLog(ctx, clog)
+	ts.NoError(err)
+
+	time.Sleep(time.Second) // give writer time to write this
+
+	_, body, err := ts.b.logStorage.Get(context.Background(), fmt.Sprintf("channels/%s/%s/%s.json", channel.UUID(), clog.UUID()[0:4], clog.UUID()))
+	ts.NoError(err)
+	ts.Contains(string(body), "msg_send")
+	ts.Contains(string(body), "https://api.messages.com/send.json")
 }
 
 func (ts *BackendTestSuite) TestSaveAttachment() {
@@ -1035,7 +1047,7 @@ func (ts *BackendTestSuite) TestSaveAttachment() {
 
 	newURL, err := ts.b.SaveAttachment(ctx, knChannel, "image/jpeg", testJPG, "jpg")
 	ts.NoError(err)
-	ts.Equal("_test_storage/media/1/c00e/5d67/c00e5d67-c275-4389-aded-7d8b151cbd5b.jpg", newURL)
+	ts.Equal("_test_storage/attachments/media/1/c00e/5d67/c00e5d67-c275-4389-aded-7d8b151cbd5b.jpg", newURL)
 }
 
 func (ts *BackendTestSuite) TestWriteMsg() {
@@ -1188,7 +1200,7 @@ func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
 	// should have actually fetched and saved it to storage, with the correct content type
 	err = ts.b.WriteMsg(ctx, msg, clog)
 	ts.NoError(err)
-	ts.Equal([]string{"image/jpeg:_test_storage/media/1/9b95/5e36/9b955e36-ac16-4c6b-8ab6-9b9af5cd042a.jpg"}, msg.Attachments())
+	ts.Equal([]string{"image/jpeg:_test_storage/attachments/media/1/9b95/5e36/9b955e36-ac16-4c6b-8ab6-9b9af5cd042a.jpg"}, msg.Attachments())
 
 	// try an invalid embedded attachment
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "invalid embedded attachment data", clog).(*DBMsg)

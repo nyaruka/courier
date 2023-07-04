@@ -41,6 +41,9 @@ const sentSetName = "msgs_sent_%s"
 // our timeout for backend operations
 const backendTimeout = time.Second * 20
 
+// storage directory (only used with file system storage)
+var storageDir = "_storage"
+
 var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 
 func init() {
@@ -397,10 +400,7 @@ func (b *backend) WriteChannelLog(ctx context.Context, clog *courier.ChannelLog)
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	err := queueChannelLog(timeout, b, clog)
-	if err != nil {
-		logrus.WithError(err).Error("error queuing channel log")
-	}
+	queueChannelLog(timeout, b, clog)
 
 	return nil
 }
@@ -437,7 +437,7 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 		path = fmt.Sprintf("/%s", path)
 	}
 
-	storageURL, err := b.storage.Put(ctx, path, contentType, data)
+	storageURL, err := b.attachmentStorage.Put(ctx, path, contentType, data)
 	if err != nil {
 		return "", errors.Wrapf(err, "error saving attachment to storage (bytes=%d)", len(data))
 	}
@@ -763,19 +763,23 @@ func (b *backend) Start() error {
 		if err != nil {
 			return err
 		}
-		b.storage = storage.NewS3(s3Client, b.config.S3AttachmentsBucket, b.config.S3Region, s3.BucketCannedACLPublicRead, 32)
+		b.attachmentStorage = storage.NewS3(s3Client, b.config.S3AttachmentsBucket, b.config.S3Region, s3.BucketCannedACLPublicRead, 32)
+		b.logStorage = storage.NewS3(s3Client, b.config.S3LogsBucket, b.config.S3Region, s3.BucketCannedACLPrivate, 32)
 	} else {
-		b.storage = storage.NewFS("_storage", 0766)
+		b.attachmentStorage = storage.NewFS(storageDir+"/attachments", 0766)
+		b.logStorage = storage.NewFS(storageDir+"/logs", 0766)
 	}
 
-	// test our storage
-	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
-	err = b.storage.Test(ctx)
-	cancel()
-	if err != nil {
-		log.WithError(err).Error(b.storage.Name() + " storage not available")
+	// check our storages
+	if err := checkStorage(b.attachmentStorage); err != nil {
+		log.WithError(err).Error(b.attachmentStorage.Name() + " attachment storage not available")
 	} else {
-		log.Info(b.storage.Name() + " storage ok")
+		log.Info(b.attachmentStorage.Name() + " attachment storage ok")
+	}
+	if err := checkStorage(b.logStorage); err != nil {
+		log.WithError(err).Error(b.logStorage.Name() + " log storage not available")
+	} else {
+		log.Info(b.logStorage.Name() + " log storage ok")
 	}
 
 	// make sure our spool dirs are writable
@@ -792,24 +796,22 @@ func (b *backend) Start() error {
 		log.Info("spool directories ok")
 	}
 
-	// create our status writer and start it
+	// create our batched writers and start them
 	b.statusWriter = NewStatusWriter(b.db, b.config.SpoolDir, b.writerWG)
 	b.statusWriter.Start()
 
-	// create our log writer and start it
-	b.logWriter = NewLogWriter(b.db, b.writerWG)
-	b.logWriter.Start()
+	b.dbLogWriter = NewDBLogWriter(b.db, b.writerWG)
+	b.dbLogWriter.Start()
+
+	b.stLogWriter = NewStorageLogWriter(b.logStorage, b.writerWG)
+	b.stLogWriter.Start()
 
 	// register and start our spool flushers
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "msgs"), b.flushMsgFile)
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "statuses"), b.flushStatusFile)
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "events"), b.flushChannelEventFile)
 
-	logrus.WithFields(logrus.Fields{
-		"comp":  "backend",
-		"state": "started",
-	}).Info("backend started")
-
+	logrus.WithFields(logrus.Fields{"comp": "backend", "state": "started"}).Info("backend started")
 	return nil
 }
 
@@ -824,14 +826,15 @@ func (b *backend) Stop() error {
 }
 
 func (b *backend) Cleanup() error {
-	// stop our status writer
+	// stop our batched writers
 	if b.statusWriter != nil {
 		b.statusWriter.Stop()
 	}
-
-	// stop our log writer
-	if b.logWriter != nil {
-		b.logWriter.Stop()
+	if b.dbLogWriter != nil {
+		b.dbLogWriter.Stop()
+	}
+	if b.stLogWriter != nil {
+		b.stLogWriter.Stop()
 	}
 
 	// wait for them to flush fully
@@ -871,12 +874,14 @@ type backend struct {
 	config *courier.Config
 
 	statusWriter *StatusWriter
-	logWriter    *LogWriter
+	dbLogWriter  *DBLogWriter      // unattached logs being written to the database
+	stLogWriter  *StorageLogWriter // attached logs being written to storage
 	writerWG     *sync.WaitGroup
 
-	db        *sqlx.DB
-	redisPool *redis.Pool
-	storage   storage.Storage
+	db                *sqlx.DB
+	redisPool         *redis.Pool
+	attachmentStorage storage.Storage
+	logStorage        storage.Storage
 
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
@@ -892,4 +897,11 @@ type backend struct {
 	dbWaitCount       int64
 	redisWaitDuration time.Duration
 	redisWaitCount    int64
+}
+
+func checkStorage(s storage.Storage) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	err := s.Test(ctx)
+	cancel()
+	return err
 }
