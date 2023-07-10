@@ -449,7 +449,7 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Media, error) {
 	u, err := url.Parse(mediaUrl)
 	if err != nil {
-		return nil, errors.Errorf("error parsing media URL: %s", mediaUrl)
+		return nil, errors.Wrapf(err, "error parsing media URL")
 	}
 
 	mediaUUID := uuidRegex.FindString(u.Path)

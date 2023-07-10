@@ -1419,8 +1419,8 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 			},
 		},
 		{ // user entered unparseable URL
-			url: "::::",
-			err: "error parsing media URL: ::::",
+			url: ":xx",
+			err: "error parsing media URL: parse \":xx\": missing protocol scheme",
 		},
 	}
 
