@@ -1,3 +1,7 @@
+v8.1.28 (2023-07-10)
+-------------------------
+ * Tweak error message on media parse failure
+
 v8.1.27 (2023-07-04)
 -------------------------
  * Add writer to write attached logs to storage instead of db
