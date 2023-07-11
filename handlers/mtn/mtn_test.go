@@ -224,7 +224,26 @@ func setupBackend(mb *test.MockBackend) {
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 }
 
+var cpAddressSendTestCases = []ChannelSendTestCase{
+	{Label: "Plain Send",
+		MsgText:            "Simple Message ☺",
+		MsgURN:             "tel:+250788383383",
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "OzYDlvf3SQVc",
+		MockResponseBody:   `{ "transactionId":"OzYDlvf3SQVc" }`,
+		MockResponseStatus: 201,
+		ExpectedHeaders: map[string]string{
+			"Content-Type":  "application/json",
+			"Accept":        "application/json",
+			"Authorization": "Bearer ACCESS_TOKEN",
+		},
+		ExpectedRequestBody: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"Simple Message ☺","clientCorrelator":"10","cpAddress":"FOO"}`,
+		SendPrep:            setSendURL},
+}
+
 func TestSending(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MTN", "2020", "US", map[string]interface{}{courier.ConfigAuthToken: "customer-secret123", courier.ConfigAPIKey: "customer-key"})
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"customer-key", "customer-secret123"}, setupBackend)
+	var cpAddressChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MTN", "2020", "US", map[string]interface{}{courier.ConfigAuthToken: "customer-secret123", courier.ConfigAPIKey: "customer-key", configCPAddress: "FOO"})
+	RunChannelSendTestCases(t, cpAddressChannel, newHandler(), cpAddressSendTestCases, []string{"customer-key", "customer-secret123"}, setupBackend)
 }
