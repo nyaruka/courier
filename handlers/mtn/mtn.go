@@ -20,8 +20,9 @@ import (
 )
 
 var (
-	apiHostURL    = "https://api.mtn.com"
-	configAPIHost = "api_host"
+	apiHostURL      = "https://api.mtn.com"
+	configAPIHost   = "api_host"
+	configCPAddress = "cp_address"
 )
 
 func init() {
@@ -113,6 +114,7 @@ type mtPayload struct {
 	To               []string `json:"receiverAddress"`
 	Message          string   `json:"message"`
 	ClientCorrelator string   `json:"clientCorrelator"`
+	CPAddress        string   `json:"cpAddress,omitempty"`
 }
 
 // Send implements courier.ChannelHandler
@@ -123,6 +125,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	baseURL := msg.Channel().StringConfigForKey(configAPIHost, apiHostURL)
+	cpAddress := msg.Channel().StringConfigForKey(configCPAddress, "")
 	partSendURL, _ := url.Parse(fmt.Sprintf("%s/%s", baseURL, "v2/messages/sms/outbound"))
 
 	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
@@ -132,6 +135,9 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	mtMsg.To = []string{strings.TrimPrefix(msg.URN().Path(), "+")}
 	mtMsg.Message = handlers.GetTextAndAttachments(msg)
 	mtMsg.ClientCorrelator = msg.ID().String()
+	if cpAddress != "" {
+		mtMsg.CPAddress = cpAddress
+	}
 
 	requestBody := &bytes.Buffer{}
 	json.NewEncoder(requestBody).Encode(mtMsg)
