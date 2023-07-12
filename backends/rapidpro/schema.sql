@@ -21,6 +21,7 @@ CREATE TABLE channels_channel (
     country character varying(2),
     config jsonb NOT NULL,
     role character varying(4) NOT NULL,
+    log_policy character varying(1) NOT NULL,
     org_id integer references orgs_org(id) on delete cascade
 );
 
