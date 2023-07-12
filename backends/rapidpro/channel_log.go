@@ -64,6 +64,12 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 	for i, e := range clog.Errors() {
 		errors[i] = channelError{Code: e.Code(), ExtCode: e.ExtCode(), Message: e.Message()}
 	}
+	isError := clog.IsError()
+
+	// depending on the channel log policy, we might be able to discard this log
+	if dbChan.LogPolicy == LogPolicyNone || (dbChan.LogPolicy == LogPolicyErrors && !isError) {
+		return
+	}
 
 	// if log is attached to a call or message, only write to storage
 	if clog.MsgID() != courier.NilMsgID {
@@ -87,7 +93,7 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 			ChannelID: dbChan.ID(),
 			HTTPLogs:  jsonx.MustMarshal(clog.HTTPLogs()),
 			Errors:    jsonx.MustMarshal(errors),
-			IsError:   clog.IsError(),
+			IsError:   isError,
 			CreatedOn: clog.CreatedOn(),
 			ElapsedMS: int(clog.Elapsed() / time.Millisecond),
 		}

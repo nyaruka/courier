@@ -15,6 +15,14 @@ import (
 	"github.com/nyaruka/null/v2"
 )
 
+type LogPolicy string
+
+const (
+	LogPolicyAll    = "all"
+	LogPolicyErrors = "errors"
+	LogPolicyNone   = "none"
+)
+
 // getChannel will look up the channel with the passed in UUID and channel type.
 // It will return an error if the channel does not exist or is not active.
 func getChannel(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, channelUUID courier.ChannelUUID) (*DBChannel, error) {
@@ -62,6 +70,7 @@ SELECT
 	c.country,
 	c.config,
 	c.role,
+	c.log_policy,
 	o.config AS org_config,
 	o.is_anon AS org_is_anon
   FROM channels_channel c
@@ -185,6 +194,7 @@ SELECT
 	c.country,
 	c.config,
 	c.role,
+	c.log_policy,
 	o.config AS org_config,
 	o.is_anon AS org_is_anon
   FROM channels_channel c
@@ -280,6 +290,7 @@ type DBChannel struct {
 	Country_     sql.NullString      `db:"country"`
 	Config_      null.Map            `db:"config"`
 	Role_        string              `db:"role"`
+	LogPolicy    LogPolicy           `db:"log_policy"`
 
 	OrgConfig_ null.Map `db:"org_config"`
 	OrgIsAnon_ bool     `db:"org_is_anon"`

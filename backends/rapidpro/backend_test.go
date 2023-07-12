@@ -1006,12 +1006,12 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 0)
 	ts.NoError(err)
 
-	clog := courier.NewChannelLog(courier.ChannelLogTypeTokenRefresh, channel, nil)
-	clog.HTTP(trace)
-	clog.Error(courier.ErrorResponseStatusCode())
+	clog1 := courier.NewChannelLog(courier.ChannelLogTypeTokenRefresh, channel, nil)
+	clog1.HTTP(trace)
+	clog1.Error(courier.ErrorResponseStatusCode())
 
 	// log isn't attached to a message so will be written to the database
-	err = ts.b.WriteChannelLog(ctx, clog)
+	err = ts.b.WriteChannelLog(ctx, clog1)
 	ts.NoError(err)
 
 	time.Sleep(time.Second) // give writer time to write this
@@ -1020,20 +1020,54 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 	assertdb.Query(ts.T(), ts.b.db, `SELECT channel_id, http_logs->0->>'url' AS url, errors->0->>'message' AS err FROM channels_channellog`).
 		Columns(map[string]interface{}{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json", "err": "Unexpected response status code."})
 
-	clog = courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
-	clog.HTTP(trace)
-	clog.SetMsgID(1234)
+	clog2 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
+	clog2.HTTP(trace)
+	clog2.SetMsgID(1234)
 
 	// log is attached to a message so will be written to storage
-	err = ts.b.WriteChannelLog(ctx, clog)
+	err = ts.b.WriteChannelLog(ctx, clog2)
 	ts.NoError(err)
 
 	time.Sleep(time.Second) // give writer time to write this
 
-	_, body, err := ts.b.logStorage.Get(context.Background(), fmt.Sprintf("channels/%s/%s/%s.json", channel.UUID(), clog.UUID()[0:4], clog.UUID()))
+	_, body, err := ts.b.logStorage.Get(context.Background(), fmt.Sprintf("channels/%s/%s/%s.json", channel.UUID(), clog2.UUID()[0:4], clog2.UUID()))
 	ts.NoError(err)
 	ts.Contains(string(body), "msg_send")
 	ts.Contains(string(body), "https://api.messages.com/send.json")
+
+	ts.b.db.MustExec(`DELETE FROM channels_channellog`)
+
+	// channel channel log policy to only write errors
+	channel.LogPolicy = LogPolicyErrors
+
+	clog3 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
+	clog3.HTTP(trace)
+	ts.NoError(ts.b.WriteChannelLog(ctx, clog3))
+
+	time.Sleep(time.Second) // give writer time to.. not write this
+
+	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM channels_channellog`).Returns(0)
+
+	clog4 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
+	clog4.HTTP(trace)
+	clog4.Error(courier.ErrorResponseStatusCode())
+	ts.NoError(ts.b.WriteChannelLog(ctx, clog4))
+
+	time.Sleep(time.Second) // give writer time to write this because it's an error
+
+	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM channels_channellog`).Returns(1)
+
+	// channel channel log policy to discard all
+	channel.LogPolicy = LogPolicyNone
+
+	clog5 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
+	clog5.HTTP(trace)
+	clog5.Error(courier.ErrorResponseStatusCode())
+	ts.NoError(ts.b.WriteChannelLog(ctx, clog5))
+
+	time.Sleep(time.Second) // give writer time to.. not write this
+
+	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM channels_channellog`).Returns(1)
 }
 
 func (ts *BackendTestSuite) TestSaveAttachment() {
