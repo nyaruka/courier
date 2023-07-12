@@ -1,3 +1,8 @@
+v8.1.29 (2023-07-12)
+-------------------------
+ * Add log_policy field to channel
+ * Add cpAddress parameters to MTN outbound requests
+
 v8.1.28 (2023-07-10)
 -------------------------
  * Tweak error message on media parse failure
