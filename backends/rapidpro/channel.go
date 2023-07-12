@@ -18,9 +18,9 @@ import (
 type LogPolicy string
 
 const (
-	LogPolicyAll    = "all"
-	LogPolicyErrors = "errors"
-	LogPolicyNone   = "none"
+	LogPolicyNone   = "N"
+	LogPolicyErrors = "E"
+	LogPolicyAll    = "A"
 )
 
 // getChannel will look up the channel with the passed in UUID and channel type.
