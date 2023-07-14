@@ -1,3 +1,7 @@
+v8.1.30 (2023-07-14)
+-------------------------
+ * Adjust to make sure we set the name of the document for the WAC files attached
+
 v8.1.29 (2023-07-12)
 -------------------------
  * Add log_policy field to channel
