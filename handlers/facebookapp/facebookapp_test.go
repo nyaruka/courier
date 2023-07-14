@@ -1292,7 +1292,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 		MsgAttachments:      []string{"application/pdf:https://foo.bar/document.pdf"},
 		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
 		MockResponseStatus:  201,
-		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption"}}`,
+		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`,
 		ExpectedRequestPath: "/12345_ID/messages",
 		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "157b5e14568e8",
