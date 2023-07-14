@@ -949,6 +949,13 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 			} else if attType == "video" {
 				payload.Video = &media
 			} else if attType == "document" {
+				filename, err := utils.BasePathForURL(attURL)
+				if err != nil {
+					filename = ""
+				}
+				if filename != "" {
+					media.Filename = filename
+				}
 				payload.Document = &media
 			}
 		} else {
