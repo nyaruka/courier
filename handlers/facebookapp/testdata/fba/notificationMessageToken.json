@@ -1,0 +1,31 @@
+{
+	"object": "page",
+	"entry": [
+		{
+			"id": "12345",
+			"messaging": [
+				{
+					"optin": {
+                        "type": "notification_messages",
+                        "title": "NOTIFICATION TITLE",
+                        "payload": "NOTIFICATION PAYLOAD",
+                        "notification_messages_token": "NOTIFICATION_TOKEN",
+                        "notification_messages_timezone": "NOTIFICATION_TIMEZONE",
+                        "user_token_status": "REFRESHED",
+                        "notification_messages_status": "RESUME NOTIFICATIONS",
+                        "token_expiry_timestamp": 1509991487970
+
+					},
+					"recipient": {
+						"id": "12345"
+					},
+					"sender": {
+						"id": "5678"
+					},
+					"timestamp": 1459991487970
+				}
+			],
+			"time": 1459991487970
+		}
+	]
+}
