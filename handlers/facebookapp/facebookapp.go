@@ -57,6 +57,12 @@ const (
 	typeKey       = "type"
 	titleKey      = "title"
 	payloadKey    = "payload"
+
+	notificationMessageToken    = "notification_messages_token"
+	notificationMessageTimezone = "notification_messages_timezone"
+	notificationMessageStatus   = "notification_messages_status"
+	tokenExpiryTimestamp        = "token_expiry_timestamp"
+	userTokenStatus             = "user_token_status"
 )
 
 var waStatusMapping = map[string]courier.MsgStatusValue{
@@ -225,6 +231,15 @@ type moPayload struct {
 			Timestamp int64  `json:"timestamp"`
 
 			OptIn *struct {
+				Type                         string `json:"type"`
+				Title                        string `json:"title"`
+				Payload                      string `json:"payload"`
+				NotificationMessagesToken    string `json:"notification_messages_token"`
+				NotificationMessagesTimezone string `json:"notification_messages_timezone"`
+				TokenExpiryTimestamp         int64  `json:"token_expiry_timestamp"`
+				UserTokenStatus              string `json:"user_token_status"`
+				NotificationMessagesStatus   string `json:"notification_messages_status"`
+
 				Ref     string `json:"ref"`
 				UserRef string `json:"user_ref"`
 			} `json:"optin"`
@@ -596,26 +611,44 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 		}
 
 		if msg.OptIn != nil {
-			// this is an opt in, if we have a user_ref, use that as our URN (this is a checkbox plugin)
-			// TODO:
-			//    We need to deal with the case of them responding and remapping the user_ref in that case:
-			//    https://developers.facebook.com/docs/messenger-platform/discovery/checkbox-plugin
-			//    Right now that we even support this isn't documented and I don't think anybody uses it, so leaving that out.
-			//    (things will still work, we just will have dupe contacts, one with user_ref for the first contact, then with the real id when they reply)
-			if msg.OptIn.UserRef != "" {
-				urn, err = urns.NewFacebookURN(urns.FacebookRefPrefix + msg.OptIn.UserRef)
-				if err != nil {
-					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			var event courier.ChannelEvent
+
+			// Message Opt In Webhook Notification
+			if msg.OptIn.Type == "notification_messages" {
+				event = h.Backend().NewChannelEvent(channel, courier.FacebookNotications, urn, clog).WithOccurredOn(date)
+				// build our extra
+				extra := map[string]interface{}{
+					notificationMessageToken:    msg.OptIn.NotificationMessagesToken,
+					notificationMessageTimezone: msg.OptIn.NotificationMessagesTimezone,
+					notificationMessageStatus:   msg.OptIn.NotificationMessagesStatus,
+					userTokenStatus:             msg.OptIn.UserTokenStatus,
+					tokenExpiryTimestamp:        msg.OptIn.TokenExpiryTimestamp,
+					titleKey:                    msg.OptIn.Title,
 				}
-			}
+				event = event.WithExtra(extra)
+			} else {
 
-			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn, clog).WithOccurredOn(date)
+				// this is an opt in, if we have a user_ref, use that as our URN (this is a checkbox plugin)
+				// TODO:
+				//    We need to deal with the case of them responding and remapping the user_ref in that case:
+				//    https://developers.facebook.com/docs/messenger-platform/discovery/checkbox-plugin
+				//    Right now that we even support this isn't documented and I don't think anybody uses it, so leaving that out.
+				//    (things will still work, we just will have dupe contacts, one with user_ref for the first contact, then with the real id when they reply)
+				if msg.OptIn.UserRef != "" {
+					urn, err = urns.NewFacebookURN(urns.FacebookRefPrefix + msg.OptIn.UserRef)
+					if err != nil {
+						return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+					}
+				}
 
-			// build our extra
-			extra := map[string]interface{}{
-				referrerIDKey: msg.OptIn.Ref,
+				event = h.Backend().NewChannelEvent(channel, courier.Referral, urn, clog).WithOccurredOn(date)
+
+				// build our extra
+				extra := map[string]interface{}{
+					referrerIDKey: msg.OptIn.Ref,
+				}
+				event = event.WithExtra(extra)
 			}
-			event = event.WithExtra(extra)
 
 			err := h.Backend().WriteChannelEvent(ctx, event, clog)
 			if err != nil {
