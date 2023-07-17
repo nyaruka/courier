@@ -17,7 +17,6 @@ import (
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/test"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
@@ -263,7 +262,7 @@ type ChannelSendTestCase struct {
 	MsgURNAuth              string
 	MsgAttachments          []string
 	MsgQuickReplies         []string
-	MsgLocale               utils.Locale
+	MsgLocale               courier.Locale
 	MsgTopic                string
 	MsgHighPriority         bool
 	MsgResponseToExternalID string

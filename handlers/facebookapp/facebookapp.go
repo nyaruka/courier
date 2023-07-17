@@ -828,7 +828,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	}
 	qrs := msg.QuickReplies()
-	lang := utils.GetSupportedLanguage(msg.Locale())
+	lang := handlers.WAGetSupportedLanguage(msg.Locale())
 
 	var payloadAudio handlers.WACMTPayload
 

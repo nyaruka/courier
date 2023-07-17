@@ -553,7 +553,7 @@ func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]int
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 
 	qrs := msg.QuickReplies()
-	lang := utils.GetSupportedLanguage(msg.Locale())
+	lang := handlers.WAGetSupportedLanguage(msg.Locale())
 	wppVersion := msg.Channel().ConfigForKey("version", "0").(string)
 	isInteractiveMsgCompatible := semver.Compare(wppVersion, interactiveMsgMinSupVersion)
 	isInteractiveMsg := (isInteractiveMsgCompatible >= 0) && (len(qrs) > 0)
