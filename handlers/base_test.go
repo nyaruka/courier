@@ -73,15 +73,3 @@ func TestSplitMsgByChannel(t *testing.T) {
 	assert.Equal([]string{" "}, SplitMsgByChannel(channelWithMaxLength, " ", 20))
 	assert.Equal([]string{"This is a message", "longer than 10"}, SplitMsgByChannel(channelWithMaxLength, "This is a message   longer than 10", 20))
 }
-
-func TestGetSupportedLanguage(t *testing.T) {
-	assert.Equal(t, LanguageInfo{"en", "Menu"}, WAGetSupportedLanguage(courier.NilLocale))
-	assert.Equal(t, LanguageInfo{"en", "Menu"}, WAGetSupportedLanguage(courier.Locale("eng")))
-	assert.Equal(t, LanguageInfo{"en_US", "Menu"}, WAGetSupportedLanguage(courier.Locale("eng-US")))
-	assert.Equal(t, LanguageInfo{"pt_PT", "Menu"}, WAGetSupportedLanguage(courier.Locale("por")))
-	assert.Equal(t, LanguageInfo{"pt_PT", "Menu"}, WAGetSupportedLanguage(courier.Locale("por-PT")))
-	assert.Equal(t, LanguageInfo{"pt_BR", "Menu"}, WAGetSupportedLanguage(courier.Locale("por-BR")))
-	assert.Equal(t, LanguageInfo{"fil", "Menu"}, WAGetSupportedLanguage(courier.Locale("fil")))
-	assert.Equal(t, LanguageInfo{"fr", "Menu"}, WAGetSupportedLanguage(courier.Locale("fra-CA")))
-	assert.Equal(t, LanguageInfo{"en", "Menu"}, WAGetSupportedLanguage(courier.Locale("run")))
-}
