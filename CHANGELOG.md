@@ -1,3 +1,7 @@
+v8.1.31 (2023-07-20)
+-------------------------
+ * Update deps including gocommon which changes requirement for storage paths to start with slash
+
 v8.1.30 (2023-07-14)
 -------------------------
  * Adjust to make sure we set the name of the document for the WAC files attached
