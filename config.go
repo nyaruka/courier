@@ -64,7 +64,7 @@ func NewConfig() *Config {
 		S3Endpoint:          "https://s3.amazonaws.com",
 		S3Region:            "us-east-1",
 		S3AttachmentsBucket: "courier-media",
-		S3AttachmentsPrefix: "/media/",
+		S3AttachmentsPrefix: "media/",
 		S3LogsBucket:        "courier-logs",
 		S3DisableSSL:        false,
 		S3ForcePathStyle:    false,

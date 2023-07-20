@@ -433,9 +433,6 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 	orgID := ch.(*DBChannel).OrgID()
 
 	path := filepath.Join(b.config.S3AttachmentsPrefix, strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
-	if !strings.HasPrefix(path, "/") {
-		path = fmt.Sprintf("/%s", path)
-	}
 
 	storageURL, err := b.attachmentStorage.Put(ctx, path, contentType, data)
 	if err != nil {
