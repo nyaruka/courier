@@ -66,23 +66,23 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
 
 	sentHandler := h.buildStatusHandler("sent")
-	s.AddHandlerRoute(h, http.MethodGet, "sent", sentHandler)
-	s.AddHandlerRoute(h, http.MethodPost, "sent", sentHandler)
+	s.AddHandlerRoute(h, http.MethodGet, "sent", courier.ChannelLogTypeMsgStatus, sentHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "sent", courier.ChannelLogTypeMsgStatus, sentHandler)
 
 	deliveredHandler := h.buildStatusHandler("delivered")
-	s.AddHandlerRoute(h, http.MethodGet, "delivered", deliveredHandler)
-	s.AddHandlerRoute(h, http.MethodPost, "delivered", deliveredHandler)
+	s.AddHandlerRoute(h, http.MethodGet, "delivered", courier.ChannelLogTypeMsgStatus, deliveredHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "delivered", courier.ChannelLogTypeMsgStatus, deliveredHandler)
 
 	failedHandler := h.buildStatusHandler("failed")
-	s.AddHandlerRoute(h, http.MethodGet, "failed", failedHandler)
-	s.AddHandlerRoute(h, http.MethodPost, "failed", failedHandler)
+	s.AddHandlerRoute(h, http.MethodGet, "failed", courier.ChannelLogTypeMsgStatus, failedHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "failed", courier.ChannelLogTypeMsgStatus, failedHandler)
 
-	s.AddHandlerRoute(h, http.MethodPost, "stopped", h.receiveStopContact)
-	s.AddHandlerRoute(h, http.MethodGet, "stopped", h.receiveStopContact)
+	s.AddHandlerRoute(h, http.MethodPost, "stopped", courier.ChannelLogTypeEventReceive, h.receiveStopContact)
+	s.AddHandlerRoute(h, http.MethodGet, "stopped", courier.ChannelLogTypeEventReceive, h.receiveStopContact)
 
 	return nil
 }

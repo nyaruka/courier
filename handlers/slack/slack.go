@@ -46,7 +46,7 @@ func newHandler() courier.ChannelHandler {
 
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", handlers.JSONPayload(h, h.receiveEvent))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
 	return nil
 }
 
@@ -64,11 +64,14 @@ func handleURLVerification(ctx context.Context, channel courier.Channel, w http.
 
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if payload.Type == "url_verification" {
+		clog.SetType(courier.ChannelLogTypeWebhookVerify)
+
 		return handleURLVerification(ctx, channel, w, r, payload)
 	}
 
 	// if event is not a message or is from the bot ignore it
 	if payload.Event.Type == "message" && payload.Event.BotID == "" && payload.Event.ChannelType == "im" {
+		clog.SetType(courier.ChannelLogTypeMsgReceive)
 
 		date := time.Unix(int64(payload.EventTime), 0)
 

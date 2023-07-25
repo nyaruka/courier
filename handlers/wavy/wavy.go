@@ -33,9 +33,9 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", handlers.JSONPayload(h, h.receiveMessage))
-	s.AddHandlerRoute(h, http.MethodPost, "sent", handlers.JSONPayload(h, h.sentStatusMessage))
-	s.AddHandlerRoute(h, http.MethodPost, "delivered", handlers.JSONPayload(h, h.deliveredStatusMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "sent", courier.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.sentStatusMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "delivered", courier.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.deliveredStatusMessage))
 	return nil
 }
 

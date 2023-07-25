@@ -65,7 +65,7 @@ func newWAHandler(channelType courier.ChannelType, name string) courier.ChannelH
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", handlers.JSONPayload(h, h.receiveEvent))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvents))
 	return nil
 }
 
@@ -86,7 +86,7 @@ func (h *handler) Initialize(s courier.Server) error {
 //	    "type": "text"
 //	  }]
 //	}
-type eventPayload struct {
+type eventsPayload struct {
 	Contacts []struct {
 		Profile struct {
 			Name string `json:"name"`
@@ -170,8 +170,8 @@ type eventPayload struct {
 	} `json:"statuses"`
 }
 
-// receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *eventPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+// receiveEvents is our HTTP handler function for incoming messages and status updates
+func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *eventsPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	events := make([]courier.Event, 0, 2)
 
 	// the list of data we will return in our response
