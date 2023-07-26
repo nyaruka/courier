@@ -1,4 +1,4 @@
-package freshchat
+package messagebird
 
 /*
  * Handler for FreshChat
@@ -34,7 +34,7 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler("MBD", "Messagebird", true))
+	courier.RegisterHandler(newHandler(true))
 }
 
 type handler struct {
@@ -42,7 +42,7 @@ type handler struct {
 	validateSignatures bool
 }
 
-func newHandler(channelType courier.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
+func newHandler(validateSignatures bool) courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("MBD"), "Messagebird"), validateSignatures}
 }
 
@@ -154,14 +154,9 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 }
 
 func CalculateSignature(appSecret string, body []byte) (string, error) {
-	var buffer bytes.Buffer
-	buffer.Write(body)
+	mac := sha256.Sum256(body)
 
-	// hash with SHA1
-	mac := hmac.New(sha256.New, []byte(appSecret))
-	mac.Write(buffer.Bytes())
-
-	return hex.EncodeToString(mac.Sum(nil)), nil
+	return hex.EncodeToString(mac[:]), nil
 }
 
 func verifyToken(tokenString string, secret string) (string, error) {
@@ -202,7 +197,11 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if headerSignature == "" {
 		return fmt.Errorf("missing request signature")
 	}
-	payloadHash, err := verifyToken(headerSignature, c.StringConfigForKey(courier.ConfigSecret, ""))
+	configsecret :=  c.StringConfigForKey(courier.ConfigSecret, "")
+	if configsecret == "" {
+		return fmt.Errorf("missing configsecret")
+	}
+	payloadHash, err := verifyToken(headerSignature, configsecret)
 	if err != nil {
 		return err
 	}
@@ -220,7 +219,7 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 		return err
 	}
 	if !hmac.Equal([]byte(expectedSignature), []byte(payloadHash)) {
-		return fmt.Errorf("invalid request signature, expected: %s got: %s for body: '%s'", expectedSignature, payloadHash, string(body))
+		return fmt.Errorf("invalid request signature, jwt was: %s signature expected: %s got: %s for body: '%s'", headerSignature, expectedSignature, payloadHash, string(body))
 	}
 	return nil
 }

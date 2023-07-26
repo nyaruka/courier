@@ -1,4 +1,4 @@
-package freshchat
+package messagebird
 
 import (
 	"net/http/httptest"
@@ -71,12 +71,12 @@ var testCases = []ChannelHandleTestCase{
 }
 
 func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler("FC", "FreshChat", true), sigtestCases)
-	RunChannelTestCases(t, testChannels, newHandler("FC", "FreshChat", false), testCases)
+	RunChannelTestCases(t, testChannels, newHandler("MBD", "Messagebird", true), sigtestCases)
+	RunChannelTestCases(t, testChannels, newHandler("MBD", "Messagebird", false), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler("FC", "FreshChat", false), testCases)
+	RunChannelBenchmarks(b, testChannels, newHandler("MBD", "Messagebird", false), testCases)
 }
 
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
