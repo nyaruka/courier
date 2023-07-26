@@ -53,10 +53,10 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodGet, "", h.VerifyURL)
-	s.AddHandlerRoute(h, http.MethodPost, "rcv/msg/message", handlers.JSONPayload(h, h.receiveMessage))
-	s.AddHandlerRoute(h, http.MethodPost, "rcv/event/menu", handlers.JSONPayload(h, h.receiveMessage))
-	s.AddHandlerRoute(h, http.MethodPost, "rcv/event/follow", handlers.JSONPayload(h, h.receiveMessage))
+	s.AddHandlerRoute(h, http.MethodGet, "", courier.ChannelLogTypeWebhookVerify, h.VerifyURL)
+	s.AddHandlerRoute(h, http.MethodPost, "rcv/msg/message", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "rcv/event/menu", courier.ChannelLogTypeEventReceive, handlers.JSONPayload(h, h.receiveMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "rcv/event/follow", courier.ChannelLogTypeEventReceive, handlers.JSONPayload(h, h.receiveMessage))
 	return nil
 }
 

@@ -35,7 +35,7 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeUnknown, h.receiveMessage)
 	return nil
 }
 
@@ -73,6 +73,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	if form.MsgType == 5 {
+		clog.SetType(courier.ChannelLogTypeMsgStatus)
+
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
@@ -86,6 +88,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		status := h.Backend().NewMsgStatusForExternalID(channel, form.DLRID, msgStatus, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 	}
+
+	clog.SetType(courier.ChannelLogTypeMsgReceive)
 
 	// create our URN
 	urn, err := handlers.StrictTelForCountry(form.From, channel.Country())

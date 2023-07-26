@@ -23,9 +23,11 @@ const (
 	ChannelLogTypeMsgStatus       ChannelLogType = "msg_status"
 	ChannelLogTypeMsgReceive      ChannelLogType = "msg_receive"
 	ChannelLogTypeEventReceive    ChannelLogType = "event_receive"
+	ChannelLogTypeMultiReceive    ChannelLogType = "multi_receive"
 	ChannelLogTypeAttachmentFetch ChannelLogType = "attachment_fetch"
 	ChannelLogTypeTokenRefresh    ChannelLogType = "token_refresh"
 	ChannelLogTypePageSubscribe   ChannelLogType = "page_subscribe"
+	ChannelLogTypeWebhookVerify   ChannelLogType = "webhook_verify"
 )
 
 type ChannelError struct {
@@ -110,8 +112,8 @@ type ChannelLog struct {
 
 // NewChannelLogForIncoming creates a new channel log for an incoming request, the type of which won't be known
 // until the handler completes.
-func NewChannelLogForIncoming(ch Channel, r *httpx.Recorder, redactVals []string) *ChannelLog {
-	return newChannelLog(ChannelLogTypeUnknown, ch, r, NilMsgID, redactVals)
+func NewChannelLogForIncoming(logType ChannelLogType, ch Channel, r *httpx.Recorder, redactVals []string) *ChannelLog {
+	return newChannelLog(logType, ch, r, NilMsgID, redactVals)
 }
 
 // NewChannelLogForSend creates a new channel log for a message send

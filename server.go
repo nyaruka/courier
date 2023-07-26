@@ -37,7 +37,7 @@ const (
 type Server interface {
 	Config() *Config
 
-	AddHandlerRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelHandleFunc)
+	AddHandlerRoute(handler ChannelHandler, method string, action string, logType ChannelLogType, handlerFunc ChannelHandleFunc)
 	GetHandler(Channel) ChannelHandler
 
 	Backend() Backend
@@ -259,7 +259,7 @@ func (s *server) initializeChannelHandlers() {
 	sort.Strings(s.chanRoutes)
 }
 
-func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc) http.HandlerFunc {
+func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc ChannelHandleFunc, logType ChannelLogType) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
@@ -300,7 +300,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			}
 		}()
 
-		clog := NewChannelLogForIncoming(channel, recorder, handler.RedactValues(channel))
+		clog := NewChannelLogForIncoming(logType, channel, recorder, handler.RedactValues(channel))
 
 		events, hErr := handlerFunc(ctx, channel, recorder.ResponseWriter, r, clog)
 		duration := time.Since(start)
@@ -332,16 +332,13 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 				switch e := event.(type) {
 				case Msg:
 					clog.SetMsgID(e.ID())
-					clog.SetType(ChannelLogTypeMsgReceive)
 					analytics.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
 					LogMsgReceived(r, e)
 				case MsgStatus:
 					clog.SetMsgID(e.ID())
-					clog.SetType(ChannelLogTypeMsgStatus)
 					analytics.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
 					LogMsgStatusReceived(r, e)
 				case ChannelEvent:
-					clog.SetType(ChannelLogTypeEventReceive)
 					analytics.Gauge(fmt.Sprintf("courier.evt_receive_%s", channel.ChannelType()), secondDuration)
 					LogChannelEventReceived(r, e)
 				}
@@ -356,7 +353,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 	}
 }
 
-func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action string, handlerFunc ChannelHandleFunc) {
+func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action string, logType ChannelLogType, handlerFunc ChannelHandleFunc) {
 	method = strings.ToLower(method)
 	channelType := strings.ToLower(string(handler.ChannelType()))
 
@@ -368,7 +365,7 @@ func (s *server) AddHandlerRoute(handler ChannelHandler, method string, action s
 	if action != "" {
 		path = fmt.Sprintf("%s/%s", path, action)
 	}
-	s.publicRouter.Method(method, path, s.channelHandleWrapper(handler, handlerFunc))
+	s.publicRouter.Method(method, path, s.channelHandleWrapper(handler, handlerFunc, logType))
 	s.chanRoutes = append(s.chanRoutes, fmt.Sprintf("%-20s - %s %s", "/c"+path, handler.ChannelName(), action))
 }
 

@@ -45,7 +45,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize implements courier.ChannelHandler
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", handlers.JSONPayload(h, h.receiveEvent))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
 	return nil
 }
 
@@ -77,6 +77,8 @@ type moPayload struct {
 // receiveEvent is our HTTP handler function for incoming messages
 func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if payload.Message != "" {
+		clog.SetType(courier.ChannelLogTypeMsgReceive)
+
 		date := time.Unix(payload.Created/1000, payload.Created%1000*1000000).UTC()
 		urn, err := handlers.StrictTelForCountry(payload.From, channel.Country())
 		if err != nil {
@@ -89,6 +91,8 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 
 	} else {
+		clog.SetType(courier.ChannelLogTypeMsgStatus)
+
 		if payload.TransactionID == "" {
 			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "missing transactionId, ignored")
 		}

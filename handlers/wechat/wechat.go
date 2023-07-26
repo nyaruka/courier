@@ -52,8 +52,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodGet, "", h.VerifyURL)
-	s.AddHandlerRoute(h, http.MethodPost, "", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodGet, "", courier.ChannelLogTypeWebhookVerify, h.VerifyURL)
+	s.AddHandlerRoute(h, http.MethodPost, "", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
 
@@ -125,6 +125,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// subscribe event, trigger a new conversation
 	if payload.MsgType == "event" && payload.Event == "subscribe" {
+		clog.SetType(courier.ChannelLogTypeEventReceive)
+
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn, clog)
 
 		err := h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
@@ -137,6 +139,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// unknown event type (we only deal with subscribe)
 	if payload.MsgType == "event" {
+		clog.SetType(courier.ChannelLogTypeEventReceive)
+
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "unknown event type")
 	}
 

@@ -89,7 +89,7 @@ func newHandler() courier.ChannelHandler {
 
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", handlers.JSONPayload(h, h.receiveEvent))
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeUnknown, handlers.JSONPayload(h, h.receiveEvent))
 	return nil
 }
 
@@ -202,9 +202,13 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	// check event type and decode body to correspondent struct
 	switch payload.Type {
 	case eventTypeServerVerification:
+		clog.SetType(courier.ChannelLogTypeWebhookVerify)
+
 		return h.verifyServer(channel, w)
 
 	case eventTypeNewMessage:
+		clog.SetType(courier.ChannelLogTypeMsgReceive)
+
 		newMessage := &moNewMessagePayload{}
 
 		if err := handlers.DecodeAndValidateJSON(newMessage, r); err != nil {

@@ -40,10 +40,10 @@ func newHandler() courier.ChannelHandler {
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	receiveHandler := handlers.NewTelReceiveHandler(h, "mobile", "response")
-	s.AddHandlerRoute(h, http.MethodGet, "receive", receiveHandler)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeMsgReceive, receiveHandler)
 
 	statusHandler := handlers.NewExternalIDStatusHandler(h, statusMap, "message_id", "status")
-	s.AddHandlerRoute(h, http.MethodGet, "status", statusHandler)
+	s.AddHandlerRoute(h, http.MethodGet, "status", courier.ChannelLogTypeMsgStatus, statusHandler)
 	return nil
 }
 

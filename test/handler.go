@@ -39,7 +39,7 @@ func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (courier.
 func (h *mockHandler) Initialize(s courier.Server) error {
 	h.server = s
 	h.backend = s.Backend()
-	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMsg)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMsg)
 	return nil
 }
 
