@@ -142,7 +142,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	msgID, err := jsonparser.GetString(respBody, "id")
 	if err == nil {
-		status.SetExternalID(msgID)
+		handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, msgID, msg)
 	}
 
 	status.SetStatus(courier.MsgSent)

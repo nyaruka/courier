@@ -174,7 +174,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		if err == nil {
 			status.SetStatus(courier.MsgWired)
 			if i == 0 {
-				status.SetExternalID(response.ID)
+				handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, response.ID, msg)
 			}
 		}
 	}

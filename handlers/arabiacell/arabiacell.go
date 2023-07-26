@@ -112,7 +112,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// we always get 204 on success
 		if response.Code == "204" {
 			status.SetStatus(courier.MsgWired)
-			status.SetExternalID(response.MessageID)
+			handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, response.MessageID, msg)
 		} else {
 			status.SetStatus(courier.MsgFailed)
 			clog.Error(courier.ErrorResponseStatusCode())

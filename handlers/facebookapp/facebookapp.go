@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
@@ -955,7 +956,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 
 		// if this is our first message, record the external id
 		if i == 0 {
-			status.SetExternalID(respPayload.ExternalID)
+			handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, respPayload.ExternalID, msg)
 			if msg.URN().IsFacebookRef() {
 				recipientID := respPayload.RecipientID
 				if recipientID == "" {
@@ -1314,7 +1315,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 								zeroIndex = true
 							}
 							payloadAudio = wacMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &wacMTMedia{Link: attURL}}
-							status, err := requestWAC(payloadAudio, accessToken, status, wacPhoneURL, zeroIndex, clog)
+							status, err := requestWAC(h.Backend().RedisPool(), msg, payloadAudio, accessToken, status, wacPhoneURL, zeroIndex, clog)
 							if err != nil {
 								return status, nil
 							}
@@ -1383,7 +1384,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 			zeroIndex = true
 		}
 
-		status, err := requestWAC(payload, accessToken, status, wacPhoneURL, zeroIndex, clog)
+		status, err := requestWAC(h.Backend().RedisPool(), msg, payload, accessToken, status, wacPhoneURL, zeroIndex, clog)
 		if err != nil {
 			return status, err
 		}
@@ -1395,7 +1396,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 	return status, nil
 }
 
-func requestWAC(payload wacMTPayload, accessToken string, status courier.MsgStatus, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func requestWAC(rp *redis.Pool, msg courier.Msg, payload wacMTPayload, accessToken string, status courier.MsgStatus, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
 		return status, err
@@ -1425,7 +1426,7 @@ func requestWAC(payload wacMTPayload, accessToken string, status courier.MsgStat
 
 	externalID := respPayload.Messages[0].ID
 	if zeroIndex && externalID != "" {
-		status.SetExternalID(externalID)
+		handlers.CacheAndSetMsgExternalID(rp, status, externalID, msg)
 	}
 	// this was wired successfully
 	status.SetStatus(courier.MsgWired)

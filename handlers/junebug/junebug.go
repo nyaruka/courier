@@ -198,7 +198,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		// if this is our first message, record the external id
 		if i == 0 {
-			status.SetExternalID(externalID)
+			handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, externalID, msg)
 		}
 	}
 

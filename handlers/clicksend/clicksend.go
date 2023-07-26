@@ -112,7 +112,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, nil
 		}
 
-		status.SetExternalID(id)
+		handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, id, msg)
 		status.SetStatus(courier.MsgWired)
 	}
 

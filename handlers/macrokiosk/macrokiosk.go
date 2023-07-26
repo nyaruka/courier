@@ -203,7 +203,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		// set the external id if this is our first part
 		if i == 0 {
-			status.SetExternalID(externalID)
+			handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, externalID, msg)
 		}
 	}
 	status.SetStatus(courier.MsgWired)

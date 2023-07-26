@@ -288,6 +288,16 @@ func (b *backend) NewMsgStatusForID(channel courier.Channel, id courier.MsgID, s
 
 // NewStatusUpdateForID creates a new Status object for the given message id
 func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID string, status courier.MsgStatusValue, clog *courier.ChannelLog) courier.MsgStatus {
+	rc := b.RedisPool().Get()
+	defer rc.Close()
+
+	key := fmt.Sprintf("msg-external-id|%s|%s", string(channel.UUID()), externalID)
+
+	msgID, err := redis.Int64(rc.Do("GET", key))
+	if err == nil {
+		return newMsgStatus(channel, courier.MsgID(msgID), "", status, clog)
+	}
+
 	return newMsgStatus(channel, courier.NilMsgID, externalID, status, clog)
 }
 

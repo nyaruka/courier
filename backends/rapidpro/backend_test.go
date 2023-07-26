@@ -553,6 +553,22 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.True(m.SentOn_.Equal(sentOn)) // no change
 	ts.Equal(pq.StringArray([]string{string(clog1.UUID()), string(clog2.UUID()), string(clog3.UUID())}), m.LogUUIDs)
 
+	// put test message back into queued state
+	ts.b.db.MustExec(`UPDATE msgs_msg SET status = 'Q', sent_on = NULL, external_id = NULL WHERE id = $1`, 10001)
+
+	rc := ts.b.redisPool.Get()
+	defer rc.Close()
+
+	key := fmt.Sprintf("msg-external-id|%s|%s", string(m.Channel().UUID()), "ext0")
+	rc.Do("SET", key, 10001, "EX", 300)
+
+	clog4 := updateStatusByExtID("ext0", courier.MsgSent)
+	m = readMsgFromDB(ts.b, 10001)
+	ts.Equal(courier.MsgSent, m.Status_)
+	ts.Equal(null.NullString, m.ExternalID_) // no change
+	ts.True(m.ModifiedOn_.After(now))
+	ts.Equal(pq.StringArray([]string{string(clog1.UUID()), string(clog2.UUID()), string(clog3.UUID()), string(clog4.UUID())}), m.LogUUIDs)
+
 	// no change for incoming messages
 	updateStatusByID(10002, courier.MsgSent, "")
 

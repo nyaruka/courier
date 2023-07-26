@@ -212,7 +212,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				clog.Error(courier.ErrorResponseValueMissing("multicast_id"))
 				return status, nil
 			}
-			status.SetExternalID(fmt.Sprintf("%d", externalID))
+			handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, fmt.Sprintf("%d", externalID), msg)
 		}
 	}
 

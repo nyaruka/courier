@@ -184,7 +184,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, nil
 		}
 		status.SetStatus(courier.MsgWired)
-		status.SetExternalID(externalID)
+		handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, externalID, msg)
 	}
 
 	// now send our text if we have any
@@ -218,7 +218,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			}
 
 			status.SetStatus(courier.MsgWired)
-			status.SetExternalID(externalID)
+			handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, externalID, msg)
 		}
 	}
 

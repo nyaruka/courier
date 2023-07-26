@@ -99,7 +99,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		if response.MessageID != 0 {
 			status.SetStatus(courier.MsgWired)
-			status.SetExternalID(fmt.Sprintf("%d", response.MessageID))
+			handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, fmt.Sprintf("%d", response.MessageID), msg)
 		} else {
 			status.SetStatus(courier.MsgFailed)
 			clog.Error(courier.ErrorResponseValueMissing("message_id"))

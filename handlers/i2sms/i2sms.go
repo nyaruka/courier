@@ -133,7 +133,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// we always get 00 on success
 		if response.ErrorCode == "00" {
 			status.SetStatus(courier.MsgWired)
-			status.SetExternalID(response.Result.SessionID)
+			handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, response.Result.SessionID, msg)
 		} else {
 			status.SetStatus(courier.MsgFailed)
 			clog.Error(courier.ErrorResponseValueUnexpected("error_code", "00"))

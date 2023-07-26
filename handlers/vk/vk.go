@@ -407,7 +407,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	if err != nil {
 		return status, errors.Errorf("no '%s' value in response", responseOutgoingMessageKey)
 	}
-	status.SetExternalID(strconv.FormatInt(externalMsgId, 10))
+	handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, strconv.FormatInt(externalMsgId, 10), msg)
 	status.SetStatus(courier.MsgSent)
 
 	return status, nil

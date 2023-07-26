@@ -230,7 +230,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	// record external id from the last sent msg request
 	externalID, err := jsonparser.GetString(kwaRespBody, "id")
 	if err == nil {
-		status.SetExternalID(externalID)
+		handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, externalID, msg)
 	}
 
 	status.SetStatus(courier.MsgWired)

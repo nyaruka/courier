@@ -199,7 +199,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		if code == "0" && externalID != "" {
 			// all went well, set ourselves to wired
 			status.SetStatus(courier.MsgWired)
-			status.SetExternalID(externalID)
+			handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, externalID, msg)
 		} else {
 			status.SetStatus(courier.MsgFailed)
 			clog.RawError(fmt.Errorf("Error status code, failing permanently"))

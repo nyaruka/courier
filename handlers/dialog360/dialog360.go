@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
@@ -709,7 +710,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 								zeroIndex = true
 							}
 							payloadAudio = wacMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &wacMTMedia{Link: attURL}}
-							status, err := requestD3C(payloadAudio, accessToken, status, sendURL, zeroIndex, clog)
+							status, err := requestD3C(h.Backend().RedisPool(), msg, payloadAudio, accessToken, status, sendURL, zeroIndex, clog)
 							if err != nil {
 								return status, nil
 							}
@@ -778,7 +779,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			zeroIndex = true
 		}
 
-		status, err := requestD3C(payload, accessToken, status, sendURL, zeroIndex, clog)
+		status, err := requestD3C(h.Backend().RedisPool(), msg, payload, accessToken, status, sendURL, zeroIndex, clog)
 		if err != nil {
 			return status, err
 		}
@@ -790,7 +791,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return status, nil
 }
 
-func requestD3C(payload wacMTPayload, accessToken string, status courier.MsgStatus, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func requestD3C(rp *redis.Pool, msg courier.Msg, payload wacMTPayload, accessToken string, status courier.MsgStatus, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
 		return status, err
@@ -820,7 +821,7 @@ func requestD3C(payload wacMTPayload, accessToken string, status courier.MsgStat
 
 	externalID := respPayload.Messages[0].ID
 	if zeroIndex && externalID != "" {
-		status.SetExternalID(externalID)
+		handlers.CacheAndSetMsgExternalID(rp, status, externalID, msg)
 	}
 	// this was wired successfully
 	status.SetStatus(courier.MsgWired)

@@ -228,7 +228,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 			return status, err
 		}
-		status.SetExternalID(externalID)
+		handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, externalID, msg)
 		hasError = err != nil
 
 	}
@@ -254,7 +254,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 				return status, err
 			}
-			status.SetExternalID(externalID)
+			handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, externalID, msg)
 			hasError = err != nil
 
 		case handlers.MediaTypeVideo:
@@ -270,7 +270,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 				return status, err
 			}
-			status.SetExternalID(externalID)
+			handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, externalID, msg)
 			hasError = err != nil
 
 		case handlers.MediaTypeAudio:
@@ -286,7 +286,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 				return status, err
 			}
-			status.SetExternalID(externalID)
+			handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, externalID, msg)
 			hasError = err != nil
 
 		case handlers.MediaTypeApplication:
@@ -302,7 +302,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 				return status, err
 			}
-			status.SetExternalID(externalID)
+			handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, externalID, msg)
 			hasError = err != nil
 
 		default:

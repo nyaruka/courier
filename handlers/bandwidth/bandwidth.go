@@ -243,7 +243,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		if response.ID == "" {
 			clog.Error(courier.ErrorResponseValueMissing("id"))
 		} else {
-			status.SetExternalID(response.ID)
+			handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, response.ID, msg)
 		}
 
 	}

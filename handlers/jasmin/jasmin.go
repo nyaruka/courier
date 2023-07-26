@@ -172,7 +172,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	// try to read our external id out
 	matches := idRegex.FindSubmatch(respBody)
 	if len(matches) == 2 {
-		status.SetExternalID(string(matches[1]))
+		handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, string(matches[1]), msg)
 	}
 
 	return status, nil

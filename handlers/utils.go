@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
@@ -150,4 +151,16 @@ func StrictTelForCountry(number string, country string) (urns.URN, error) {
 
 func IsURL(s string) bool {
 	return urlRegex.MatchString(s)
+}
+
+// CacheAndSetExternalID
+func CacheAndSetMsgExternalID(rp *redis.Pool, status courier.MsgStatus, id string, msg courier.Msg) {
+	rc := rp.Get()
+	defer rc.Close()
+
+	key := fmt.Sprintf("msg-external-id|%s|%s", string(msg.Channel().UUID()), id)
+
+	msgID, _ := msg.ID().Value()
+	rc.Do("SET", key, msgID, "EX", 300)
+	status.SetExternalID(id)
 }

@@ -175,7 +175,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// grab the external id if we can
 		externalID, _ := jsonparser.GetString(respBody, "results", "[0]", "msgid")
 		status.SetStatus(courier.MsgWired)
-		status.SetExternalID(externalID)
+		handlers.CacheAndSetMsgExternalID(h.Backend().RedisPool(), status, externalID, msg)
 
 	}
 	return status, nil
