@@ -1,3 +1,7 @@
+v8.1.32 (2023-07-26)
+-------------------------
+ * Fix setting of log type of channel logs and add additional types
+
 v8.1.31 (2023-07-20)
 -------------------------
  * Update deps including gocommon which changes requirement for storage paths to start with slash
