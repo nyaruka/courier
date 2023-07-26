@@ -56,7 +56,7 @@ var testCases = []ChannelHandleTestCase{
 	},
 	{
 		Label:                "Status delivered",
-		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=delivered",
+		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=delivered&err-code=0",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedMsgStatus:    courier.MsgDelivered,
@@ -64,7 +64,7 @@ var testCases = []ChannelHandleTestCase{
 	},
 	{
 		Label:                "Status expired",
-		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=expired",
+		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=expired&err-code=0",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedMsgStatus:    courier.MsgFailed,
@@ -72,11 +72,12 @@ var testCases = []ChannelHandleTestCase{
 	},
 	{
 		Label:                "Status failed",
-		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=failed",
+		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?to=2020&messageId=external1&status=failed&err-code=6",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedMsgStatus:    courier.MsgFailed,
 		ExpectedExternalID:   "external1",
+		ExpectedErrors:       []*courier.ChannelError{courier.ErrorExternal("dlr:6", "Anti-Spam Rejection")},
 	},
 	{
 		Label:                "Status accepted",
@@ -169,7 +170,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"text": "Error status", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("failed to send message, received error status [10]", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorExternal("send:10", "Too Many Existing Binds")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -200,7 +201,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("failed to send message, received error status [1]", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorExternal("send:1", "Throttled")},
 		SendPrep:           setSendURL,
 	},
 }

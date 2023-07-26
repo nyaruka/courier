@@ -23,7 +23,7 @@ func TestDoHTTPRequest(t *testing.T) {
 
 	mb := test.NewMockBackend()
 	mc := test.NewMockChannel("7a8ff1d4-f211-4492-9d05-e1905f6da8c8", "NX", "1234", "EC", nil)
-	mm := mb.NewOutgoingMsg(mc, courier.NewMsgID(123), urns.URN("tel:+1234"), "Hello World", false, nil, "", "")
+	mm := mb.NewOutgoingMsg(mc, 123, urns.URN("tel:+1234"), "Hello World", false, nil, "", "", courier.MsgOriginChat, nil)
 	clog := courier.NewChannelLogForSend(mm, nil)
 
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)

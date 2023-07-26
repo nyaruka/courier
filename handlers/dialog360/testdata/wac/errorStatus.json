@@ -1,0 +1,55 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "8856996819413533",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "+250 788 123 200",
+              "phone_number_id": "12345"
+            },
+            "contacts": [
+              {
+                "profile": {
+                  "name": "Kerry Fisher"
+                },
+                "wa_id": "5678"
+              }
+            ],
+            "statuses": [
+              {
+                "id": "external_id",
+                "recipient_id": "5678",
+                "status": "failed",
+                "timestamp": "1454119029",
+                "type": "message",
+                "conversation": {
+                  "id": "CONVERSATION_ID",
+                  "expiration_timestamp": 1454119029,
+                  "origin": {
+                    "type": "referral_conversion"
+                  }
+                },
+                "pricing": {
+                  "pricing_model": "CBP",
+                  "billable": false,
+                  "category": "referral_conversion"
+                },
+                "errors": [
+                  {
+                    "code": 131014,
+                    "title": "Request for url https://URL.jpg failed with error: 404 (Not Found)"
+                  }
+                ]
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}

@@ -66,23 +66,23 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
 
 	sentHandler := h.buildStatusHandler("sent")
-	s.AddHandlerRoute(h, http.MethodGet, "sent", sentHandler)
-	s.AddHandlerRoute(h, http.MethodPost, "sent", sentHandler)
+	s.AddHandlerRoute(h, http.MethodGet, "sent", courier.ChannelLogTypeMsgStatus, sentHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "sent", courier.ChannelLogTypeMsgStatus, sentHandler)
 
 	deliveredHandler := h.buildStatusHandler("delivered")
-	s.AddHandlerRoute(h, http.MethodGet, "delivered", deliveredHandler)
-	s.AddHandlerRoute(h, http.MethodPost, "delivered", deliveredHandler)
+	s.AddHandlerRoute(h, http.MethodGet, "delivered", courier.ChannelLogTypeMsgStatus, deliveredHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "delivered", courier.ChannelLogTypeMsgStatus, deliveredHandler)
 
 	failedHandler := h.buildStatusHandler("failed")
-	s.AddHandlerRoute(h, http.MethodGet, "failed", failedHandler)
-	s.AddHandlerRoute(h, http.MethodPost, "failed", failedHandler)
+	s.AddHandlerRoute(h, http.MethodGet, "failed", courier.ChannelLogTypeMsgStatus, failedHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "failed", courier.ChannelLogTypeMsgStatus, failedHandler)
 
-	s.AddHandlerRoute(h, http.MethodPost, "stopped", h.receiveStopContact)
-	s.AddHandlerRoute(h, http.MethodGet, "stopped", h.receiveStopContact)
+	s.AddHandlerRoute(h, http.MethodPost, "stopped", courier.ChannelLogTypeEventReceive, h.receiveStopContact)
+	s.AddHandlerRoute(h, http.MethodGet, "stopped", courier.ChannelLogTypeEventReceive, h.receiveStopContact)
 
 	return nil
 }
@@ -116,7 +116,7 @@ func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channe
 	if err != nil {
 		return nil, err
 	}
-	return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(ctx, w, channelEvent)
+	return []courier.Event{channelEvent}, courier.WriteChannelEventSuccess(w, channelEvent)
 }
 
 // utility function to grab the form value for either the passed in name (if non-empty) or the first set
@@ -223,7 +223,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
 	moResponse := msgs[0].Channel().StringConfigForKey(configMOResponse, "")
 	if moResponse == "" {
-		return courier.WriteMsgSuccess(ctx, w, msgs)
+		return courier.WriteMsgSuccess(w, msgs)
 	}
 	moResponseContentType := msgs[0].Channel().StringConfigForKey(configMOResponseContentType, "")
 	if moResponseContentType != "" {
@@ -266,30 +266,33 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.ID), msgStatus, clog)
+	status := h.Backend().NewMsgStatusForID(channel, courier.MsgID(form.ID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // Send sends the given message, logging any HTTP calls or errors
 func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
-	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
+	channel := msg.Channel()
+
+	sendURL := channel.StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
 		return nil, fmt.Errorf("no send url set for EX channel")
 	}
 
 	// figure out what encoding to tell kannel to send as
-	encoding := msg.Channel().StringConfigForKey(configEncoding, encodingDefault)
-	responseContent := msg.Channel().StringConfigForKey(configMTResponseCheck, "")
-	sendMethod := msg.Channel().StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
-	sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
-	contentType := msg.Channel().StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
+	encoding := channel.StringConfigForKey(configEncoding, encodingDefault)
+	responseCheck := channel.StringConfigForKey(configMTResponseCheck, "")
+	sendMethod := channel.StringConfigForKey(courier.ConfigSendMethod, http.MethodPost)
+	sendBody := channel.StringConfigForKey(courier.ConfigSendBody, "")
+	sendMaxLength := channel.IntConfigForKey(courier.ConfigMaxLength, 160)
+	contentType := channel.StringConfigForKey(courier.ConfigContentType, contentURLEncoded)
 	contentTypeHeader := contentTypeMappings[contentType]
 	if contentTypeHeader == "" {
 		contentTypeHeader = contentType
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
-	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), 160)
+	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored, clog)
+	parts := handlers.SplitMsgByChannel(channel, handlers.GetTextAndAttachments(msg), sendMaxLength)
 	for i, part := range parts {
 		// build our request
 		form := map[string]string{
@@ -297,18 +300,18 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			"text":           part,
 			"to":             msg.URN().Path(),
 			"to_no_plus":     strings.TrimPrefix(msg.URN().Path(), "+"),
-			"from":           msg.Channel().Address(),
-			"from_no_plus":   strings.TrimPrefix(msg.Channel().Address(), "+"),
-			"channel":        msg.Channel().UUID().String(),
+			"from":           channel.Address(),
+			"from_no_plus":   strings.TrimPrefix(channel.Address(), "+"),
+			"channel":        string(channel.UUID()),
 			"session_status": msg.SessionStatus(),
 		}
 
-		useNationalStr := msg.Channel().ConfigForKey(courier.ConfigUseNational, false)
+		useNationalStr := channel.ConfigForKey(courier.ConfigUseNational, false)
 		useNational, _ := useNationalStr.(bool)
 
 		// if we are meant to use national formatting (no country code) pull that out
 		if useNational {
-			nationalTo := msg.URN().Localize(msg.Channel().Country())
+			nationalTo := msg.URN().Localize(channel.Country())
 			form["to"] = nationalTo.Path()
 			form["to_no_plus"] = nationalTo.Path()
 		}
@@ -351,12 +354,12 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		req.Header.Set("Content-Type", contentTypeHeader)
 
 		// TODO can drop this when channels have been migrated to use ConfigSendHeaders
-		authorization := msg.Channel().StringConfigForKey(courier.ConfigSendAuthorization, "")
+		authorization := channel.StringConfigForKey(courier.ConfigSendAuthorization, "")
 		if authorization != "" {
 			req.Header.Set("Authorization", authorization)
 		}
 
-		headers := msg.Channel().ConfigForKey(courier.ConfigSendHeaders, map[string]interface{}{}).(map[string]interface{})
+		headers := channel.ConfigForKey(courier.ConfigSendHeaders, map[string]interface{}{}).(map[string]interface{})
 		for hKey, hValue := range headers {
 			req.Header.Set(hKey, fmt.Sprint(hValue))
 		}
@@ -366,10 +369,10 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, nil
 		}
 
-		if responseContent == "" || strings.Contains(string(respBody), responseContent) {
+		if responseCheck == "" || strings.Contains(string(respBody), responseCheck) {
 			status.SetStatus(courier.MsgWired)
 		} else {
-			clog.Error(fmt.Errorf("Received invalid response content: %s", string(respBody)))
+			clog.Error(courier.ErrorResponseUnexpected(responseCheck))
 		}
 	}
 

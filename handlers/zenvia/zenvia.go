@@ -13,7 +13,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -38,8 +37,8 @@ func newHandler(channelType courier.ChannelType, name string) courier.ChannelHan
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "status", courier.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.receiveStatus))
 	return nil
 }
 
@@ -76,14 +75,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
-	// get our params
-	payload := &moPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if strings.ToUpper(payload.Type) != "MESSAGE" {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unsupported event type: %s", payload.Type))
 	}
@@ -156,14 +148,7 @@ type statusPayload struct {
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
-	// get our params
-	payload := &statusPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if strings.ToUpper(payload.Type) != "MESSAGE_STATUS" {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unsupported event type: %s", payload.Type))
 	}
@@ -264,12 +249,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	externalID, err := jsonparser.GetString(respBody, "id")
 	if err != nil {
-		clog.Error(errors.Errorf("unable to get id from body"))
+		clog.Error(courier.ErrorResponseValueMissing("id"))
 		return status, nil
 	}
 
 	status.SetExternalID(externalID)
-	// this was wired successfully
 	status.SetStatus(courier.MsgWired)
 	return status, nil
 }

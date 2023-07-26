@@ -8,7 +8,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -26,8 +25,7 @@ const (
 )
 
 var (
-	baseURL  = "https://api.kaleyra.io"
-	urlRegex = regexp.MustCompile(`https?:\/\/(www\.)?[^\W][-a-zA-Z0-9@:%.\+~#=]{1,256}[^\W]\.[a-zA-Z()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+	baseURL = "https://api.kaleyra.io"
 )
 
 func init() {
@@ -45,8 +43,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMsg)
-	s.AddHandlerRoute(h, http.MethodGet, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMsg)
+	s.AddHandlerRoute(h, http.MethodGet, "status", courier.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil
 }
 
@@ -174,7 +172,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			part, err := writer.CreateFormFile("media", fileName)
 			_, err = io.Copy(part, bytes.NewReader(attBody))
 			if err != nil {
-				clog.Error(err)
+				clog.RawError(err)
 				kwaErr = err
 				break
 			}
@@ -187,14 +185,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			for k, v := range baseForm {
 				part, err := writer.CreateFormField(k)
 				if err != nil {
-					clog.Error(err)
+					clog.RawError(err)
 					kwaErr = err
 					break attachmentsLoop
 				}
 
 				_, err = part.Write([]byte(v))
 				if err != nil {
-					clog.Error(err)
+					clog.RawError(err)
 					kwaErr = err
 					break attachmentsLoop
 				}
@@ -212,7 +210,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		baseForm := h.newSendForm(msg.Channel(), "text", msg.URN().Path())
 		baseForm["body"] = msg.Text()
 		// checks if the message has a valid url to activate the preview
-		if urlRegex.MatchString(msg.Text()) {
+		if handlers.IsURL(msg.Text()) {
 			baseForm["preview_url"] = "true"
 		}
 		for k, v := range baseForm {

@@ -12,7 +12,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -40,8 +39,8 @@ func newHandler() courier.ChannelHandler {
 
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "register", h.registerContact)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "register", courier.ChannelLogTypeEventReceive, h.registerContact)
 	return nil
 }
 
@@ -110,7 +109,7 @@ func (h *handler) registerContact(ctx context.Context, channel courier.Channel, 
 
 	// return our contact UUID
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(map[string]string{"contact_uuid": contact.UUID().String()})
+	err = json.NewEncoder(w).Encode(map[string]string{"contact_uuid": string(contact.UUID())})
 	return nil, err
 }
 
@@ -202,7 +201,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// was this successful
 		success, _ := jsonparser.GetInt(respBody, "success")
 		if success != 1 {
-			clog.Error(errors.Errorf("received non-1 value for success in response"))
+			clog.Error(courier.ErrorResponseValueUnexpected("success", "1"))
 			return status, nil
 		}
 
@@ -210,7 +209,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		if i == 0 {
 			externalID, err := jsonparser.GetInt(respBody, "multicast_id")
 			if err != nil {
-				clog.Error(errors.Errorf("unable to get multicast_id from response"))
+				clog.Error(courier.ErrorResponseValueMissing("multicast_id"))
 				return status, nil
 			}
 			status.SetExternalID(fmt.Sprintf("%d", externalID))

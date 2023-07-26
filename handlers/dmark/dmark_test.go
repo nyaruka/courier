@@ -117,7 +117,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExpectedHeaders:    map[string]string{"Authorization": "Token Authy"},
 		ExpectedPostParams: map[string]string{"text": "Error Message", "receiver": "250788383383", "sender": "2020"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get sms_id from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("sms_id")},
 		SendPrep:           setSendURL,
 	},
 	{

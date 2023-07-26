@@ -40,9 +40,9 @@ type URNDescriber interface {
 	DescribeURN(context.Context, Channel, urns.URN, *ChannelLog) (map[string]string, error)
 }
 
-// MediaDownloadRequestBuilder is the interface handlers which can allow a custom way to download attachment media for messages should satisfy
-type MediaDownloadRequestBuilder interface {
-	BuildDownloadMediaRequest(context.Context, Backend, Channel, string) (*http.Request, error)
+// AttachmentRequestBuilder is the interface handlers which can allow a custom way to download attachment media for messages should satisfy
+type AttachmentRequestBuilder interface {
+	BuildAttachmentRequest(context.Context, Backend, Channel, string, *ChannelLog) (*http.Request, error)
 }
 
 // RegisterHandler adds a new handler for a channel type, this is called by individual handlers when they are initialized

@@ -2,33 +2,32 @@ name: CI
 on: [push, pull_request]
 env:
   go-version: "1.19.x"
-  redis-version: "5.0.6"
 jobs:
   test:
     name: Test
-    strategy:
-      matrix:
-        pg-version: ["12", "13"]
     runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:6.2-alpine
+        ports:
+          - 6379:6379
+      postgres:
+        image: postgres:14-alpine
+        env:
+          POSTGRES_DB: courier_test
+          POSTGRES_USER: courier_test
+          POSTGRES_PASSWORD: temba
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v1
-
-      - name: Install Redis
-        uses: zhulik/redis-action@v1.0.0
-        with:
-          redis version: ${{ env.redis-version }}
-
-      - name: Install PostgreSQL
-        uses: harmon758/postgresql-action@v1
-        with:
-          postgresql version: ${{ matrix.pg-version }}
-          postgresql db: courier_test
-          postgresql user: courier
-          postgresql password: courier
+        uses: actions/checkout@v3
 
       - name: Install Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.go-version }}
 
@@ -37,7 +36,7 @@ jobs:
 
       - name: Upload coverage
         if: success()
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
@@ -49,27 +48,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Install Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.go-version }}
 
       - name: Publish release
-        uses: goreleaser/goreleaser-action@v1
+        uses: goreleaser/goreleaser-action@v4
         if: ${{ !contains(github.ref, '-') }}
         with:
-          version: v0.147.2
-          args: release --rm-dist
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish non-master release
-        uses: goreleaser/goreleaser-action@v1
+        uses: goreleaser/goreleaser-action@v4
         if: contains(github.ref, '-')
         with:
-          version: v0.147.2
-          args: release --rm-dist --skip-validate
+          args: release --clean --skip-validate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

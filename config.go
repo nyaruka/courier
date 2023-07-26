@@ -22,6 +22,7 @@ type Config struct {
 	S3Region            string `help:"the S3 region we will write attachments to"`
 	S3AttachmentsBucket string `help:"the S3 bucket we will write attachments to"`
 	S3AttachmentsPrefix string `help:"the prefix that will be added to attachment filenames"`
+	S3LogsBucket        string `help:"the S3 bucket we will write channel logs to"`
 	S3DisableSSL        bool   `help:"whether we disable SSL when accessing S3. Should always be set to False unless you're hosting an S3 compatible service within a secure internal network"`
 	S3ForcePathStyle    bool   `help:"whether we force S3 path style. Should generally need to default to False unless you're hosting an S3 compatible service"`
 
@@ -35,6 +36,7 @@ type Config struct {
 	LibratoToken    string `help:"the token that will be used to authenticate to Librato"`
 	StatusUsername  string `help:"the username that is needed to authenticate against the /status endpoint"`
 	StatusPassword  string `help:"the password that is needed to authenticate against the /status endpoint"`
+	AuthToken       string `help:"the authentication token need to access non-channel endpoints"`
 	LogLevel        string `help:"the logging level courier should use"`
 	Version         string `help:"the version that will be used in request and response headers"`
 
@@ -62,7 +64,8 @@ func NewConfig() *Config {
 		S3Endpoint:          "https://s3.amazonaws.com",
 		S3Region:            "us-east-1",
 		S3AttachmentsBucket: "courier-media",
-		S3AttachmentsPrefix: "/media/",
+		S3AttachmentsPrefix: "media/",
+		S3LogsBucket:        "courier-logs",
 		S3DisableSSL:        false,
 		S3ForcePathStyle:    false,
 

@@ -88,6 +88,10 @@ type Backend interface {
 	// Mark a external ID as seen for a period
 	WriteExternalIDSeen(Msg)
 
+	// SaveAttachment saves an attachment to backend storage
+	SaveAttachment(context.Context, Channel, string, []byte, string) (string, error)
+
+	// ResolveMedia resolves an outgoing attachment URL to a media object
 	ResolveMedia(context.Context, string) (Media, error)
 
 	// Health returns a string describing any health problems the backend has, or empty string if all is well

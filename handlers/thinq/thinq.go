@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -39,8 +38,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "status", courier.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil
 }
 
@@ -181,7 +180,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// try to get our external id
 		externalID, err := jsonparser.GetString(respBody, "guid")
 		if err != nil {
-			clog.Error(errors.New("Unable to read external ID"))
+			clog.Error(courier.ErrorResponseValueMissing("guid"))
 			return status, nil
 		}
 		status.SetStatus(courier.MsgWired)
@@ -214,7 +213,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			// get our external id
 			externalID, err := jsonparser.GetString(respBody, "guid")
 			if err != nil {
-				clog.Error(errors.New("Unable to read external ID from guid field"))
+				clog.Error(courier.ErrorResponseValueMissing("guid"))
 				return status, nil
 			}
 

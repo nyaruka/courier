@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha1"
+	_ "embed"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -41,7 +42,18 @@ const (
 var (
 	maxMsgLength  = 1600
 	twilioBaseURL = "https://api.twilio.com"
+
+	//go:embed errors.json
+	errorCodes []byte
 )
+
+// see https://www.twilio.com/docs/sms/accepted-mime-types#accepted-mime-types
+var mediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{
+	handlers.MediaTypeImage:       {MaxBytes: 5 * 1024 * 1024},
+	handlers.MediaTypeAudio:       {MaxBytes: 5 * 1024 * 1024},
+	handlers.MediaTypeVideo:       {MaxBytes: 5 * 1024 * 1024},
+	handlers.MediaTypeApplication: {MaxBytes: 5 * 1024 * 1024},
+}
 
 // error code twilio returns when a contact has sent "stop"
 const errorStopped = 21610
@@ -66,8 +78,8 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "status", courier.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil
 }
 
@@ -171,7 +183,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		if err != nil {
 			logrus.WithError(err).WithField("id", idString).Error("error converting twilio callback id to integer")
 		} else {
-			status = h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus, clog)
+			status = h.Backend().NewMsgStatusForID(channel, courier.MsgID(msgID), msgStatus, clog)
 		}
 	}
 
@@ -181,19 +193,21 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	errorCode, _ := strconv.ParseInt(form.ErrorCode, 10, 64)
-	if errorCode == errorStopped {
-		urn, err := h.parseURN(channel, form.To, "")
-		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-		}
+	if errorCode != 0 {
+		if errorCode == errorStopped {
+			urn, err := h.parseURN(channel, form.To, "")
+			if err != nil {
+				return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			}
 
-		// create a stop channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
-		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
-		if err != nil {
-			return nil, err
+			// create a stop channel event
+			channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
+			err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
+			if err != nil {
+				return nil, err
+			}
 		}
-
+		clog.Error(twilioError(errorCode))
 	}
 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
@@ -217,6 +231,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	channel := msg.Channel()
 
+	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, true)
+	if err != nil {
+		return nil, errors.Wrap(err, "error resolving attachments")
+	}
+
 	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	for i, part := range parts {
@@ -227,10 +246,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			"StatusCallback": []string{callbackURL},
 		}
 
-		// add any media URL to the first part
-		if len(msg.Attachments()) > 0 && i == 0 {
-			_, mediaURL := handlers.SplitAttachment(msg.Attachments()[0])
-			form["MediaUrl"] = []string{mediaURL}
+		// add any attachments to the first part
+		if i == 0 {
+			for _, a := range attachments {
+				form.Add("MediaUrl", a.URL)
+			}
 		}
 
 		// set our from, either as a messaging service or from our address
@@ -285,7 +305,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						return nil, err
 					}
 				}
-				clog.Error(errors.Errorf("received error code from twilio '%d'", errorCode))
+				clog.Error(twilioError(errorCode))
 				return status, nil
 			}
 		}
@@ -293,7 +313,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// grab the external id
 		externalID, err := jsonparser.GetString(respBody, "sid")
 		if err != nil {
-			clog.Error(errors.Errorf("unable to get sid from body"))
+			clog.Error(courier.ErrorResponseValueMissing("sid"))
 			return status, nil
 		}
 
@@ -306,6 +326,27 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	return status, nil
+}
+
+// BuildAttachmentRequest to download media for message attachment with Basic auth set
+func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
+	accountSID := channel.StringConfigForKey(configAccountSID, "")
+	if accountSID == "" {
+		return nil, fmt.Errorf("missing account sid for %s channel", h.ChannelName())
+	}
+
+	accountToken := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	if accountToken == "" {
+		return nil, fmt.Errorf("missing account auth token for %s channel", h.ChannelName())
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
+
+	if h.validateSignatures {
+		// set the basic auth token as the authorization header
+		req.SetBasicAuth(accountSID, accountToken)
+	}
+	return req, nil
 }
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
@@ -426,4 +467,11 @@ func (h *handler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter
 	w.WriteHeader(200)
 	_, err := fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?><!-- %s --><Response/>`, details)
 	return err
+}
+
+// https://www.twilio.com/docs/api/errors
+func twilioError(code int64) *courier.ChannelError {
+	codeAsStr := strconv.Itoa(int(code))
+	errMsg, _ := jsonparser.GetString(errorCodes, codeAsStr)
+	return courier.ErrorExternal(codeAsStr, errMsg)
 }

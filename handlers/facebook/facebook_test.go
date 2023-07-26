@@ -843,7 +843,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseBody:   `{ "is_error": true }`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []courier.ChannelError{courier.NewChannelError("unable to get message_id from body", "")},
+		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("message_id")},
 		SendPrep:           setSendURL,
 	},
 	{

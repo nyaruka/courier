@@ -14,12 +14,18 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/stringsx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
 var (
 	sendURL      = "http://202.43.169.11/APIhttpU/receive2waysms.php"
 	maxMsgLength = 160
+
+	errorCodes = map[string]string{
+		"001": "Authentication error.",
+		"101": "Account expired or invalid parameters.",
+	}
 )
 
 type handler struct {
@@ -44,8 +50,8 @@ func init() {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodGet, "delivered", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodGet, "delivered", courier.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil
 }
 
@@ -120,7 +126,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(msgID), msgStatus, clog)
+	status := h.Backend().NewMsgStatusForID(channel, courier.MsgID(msgID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -184,16 +190,9 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, nil
 		}
 
-		responseText := string(respBody)
-		if responseText != "000" {
-			errorMessage := "Unknown error"
-			if responseText == "001" {
-				errorMessage = "Error 001: Authentication Error"
-			}
-			if responseText == "101" {
-				errorMessage = "Error 101: Account expired or invalid parameters"
-			}
-			clog.Error(fmt.Errorf(errorMessage))
+		responseCode := stringsx.Truncate(string(respBody), 3)
+		if responseCode != "000" {
+			clog.Error(courier.ErrorExternal(responseCode, errorCodes[responseCode]))
 			return status, nil
 		}
 

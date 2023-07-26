@@ -120,13 +120,27 @@ var documentMsg = `{
 		"timestamp": "1454119029",
 		"type": "document",
 		"document": {
-			"file": "/path/to/v1/media/41",
 			"id": "41",
-			"link": "https://example.org/v1/media/41",
 			"mime_type": "text/plain",
 			"sha256": "the-sha-signature",
 			"caption": "the caption",
 			"filename": "filename.type"
+		}
+	}]
+}`
+
+var documentMsgMissingFile = `{
+	"messages": [{
+		"from": "250788123123",
+		"id": "41",
+		"timestamp": "1454119029",
+		"type": "document",
+		"document": {
+			"mime_type": "text/plain",
+			"sha256": "the-sha-signature",
+			"caption": "the caption",
+			"filename": "filename.type",
+			"status": "undownloaded"
 		}
 	}]
 }`
@@ -258,7 +272,6 @@ var validStatus = `
 {
   "statuses": [{
     "id": "9712A34B4A8B6AD50F",
-    "recipient_id": "16315555555",
     "status": "sent",
     "timestamp": "1518694700"
   }]
@@ -268,7 +281,6 @@ var invalidStatus = `
 {
   "statuses": [{
     "id": "9712A34B4A8B6AD50F",
-    "recipient_id": "16315555555",
     "status": "in_orbit",
     "timestamp": "1518694700"
   }]
@@ -278,7 +290,6 @@ var ignoreStatus = `
 {
   "statuses": [{
     "id": "9712A34B4A8B6AD50F",
-    "recipient_id": "16315555555",
     "status": "deleted",
     "timestamp": "1518694700"
   }]
@@ -292,54 +303,217 @@ var (
 )
 
 var waTestCases = []ChannelHandleTestCase{
-	{Label: "Receive Valid Message", URL: waReceiveURL, Data: helloMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
-		ExpectedContactName: Sp("Jerry Cooney"), ExpectedMsgText: Sp("hello world"), ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Duplicate Valid Message", URL: waReceiveURL, Data: duplicateMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
-		ExpectedMsgText: Sp("hello world"), ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Audio Message", URL: waReceiveURL, Data: audioMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Button Message", URL: waReceiveURL, Data: buttonMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
-		ExpectedMsgText: Sp("BUTTON1"), ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Document Message", URL: waReceiveURL, Data: documentMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
-		ExpectedMsgText: Sp("the caption"), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Image Message", URL: waReceiveURL, Data: imageMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
-		ExpectedMsgText: Sp("the caption"), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Interactive Button Message", URL: waReceiveURL, Data: interactiveButtonMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
-		ExpectedMsgText: Sp("BUTTON1"), ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Interactive List Message", URL: waReceiveURL, Data: interactiveListMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
-		ExpectedMsgText: Sp("ROW1"), ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Location Message", URL: waReceiveURL, Data: locationMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"geo:0.000000,1.000000"}, ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Video Message", URL: waReceiveURL, Data: videoMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Valid Voice Message", URL: waReceiveURL, Data: voiceMsg, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"msg"`,
-		ExpectedMsgText: Sp(""), ExpectedAttachments: []string{"https://foo.bar/v1/media/41"}, ExpectedURN: "whatsapp:250788123123", ExpectedExternalID: "41", ExpectedDate: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
-	{Label: "Receive Invalid JSON", URL: waReceiveURL, Data: invalidMsg, ExpectedRespStatus: 400, ExpectedBodyContains: "unable to parse"},
-	{Label: "Receive Invalid From", URL: waReceiveURL, Data: invalidFrom, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid whatsapp id"},
-	{Label: "Receive Invalid Timestamp", URL: waReceiveURL, Data: invalidTimestamp, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid timestamp"},
+	{
+		Label:                 "Receive Valid Message",
+		URL:                   waReceiveURL,
+		Data:                  helloMsg,
+		ExpectedRespStatus:    200,
+		ExpectedBodyContains:  `"type":"msg"`,
+		ExpectedContactName:   Sp("Jerry Cooney"),
+		ExpectedMsgText:       Sp("hello world"),
+		ExpectedURN:           "whatsapp:250788123123",
+		ExpectedExternalID:    "41",
+		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+		NoQueueErrorCheck:     true,
+		NoInvalidChannelCheck: true,
+	},
+	{
+		Label:                "Receive duplicate valid message",
+		URL:                  waReceiveURL,
+		Data:                 duplicateMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"msg"`,
+		ExpectedMsgText:      Sp("hello world"),
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive valid audio message",
+		URL:                  waReceiveURL,
+		Data:                 audioMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"msg"`,
+		ExpectedMsgText:      Sp(""),
+		ExpectedAttachments:  []string{"https://foo.bar/v1/media/41"},
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive valid button message",
+		URL:                  waReceiveURL,
+		Data:                 buttonMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"msg"`,
+		ExpectedMsgText:      Sp("BUTTON1"),
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive valid document message",
+		URL:                  waReceiveURL,
+		Data:                 documentMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"msg"`,
+		ExpectedMsgText:      Sp("the caption"),
+		ExpectedAttachments:  []string{"https://foo.bar/v1/media/41"},
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive valid image message",
+		URL:                  waReceiveURL,
+		Data:                 imageMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"msg"`,
+		ExpectedMsgText:      Sp("the caption"),
+		ExpectedAttachments:  []string{"https://foo.bar/v1/media/41"},
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive valid interactive button message",
+		URL:                  waReceiveURL,
+		Data:                 interactiveButtonMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"msg"`,
+		ExpectedMsgText:      Sp("BUTTON1"),
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive valid interactive list message",
+		URL:                  waReceiveURL,
+		Data:                 interactiveListMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"msg"`,
+		ExpectedMsgText:      Sp("ROW1"),
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive valid location message",
+		URL:                  waReceiveURL,
+		Data:                 locationMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"msg"`,
+		ExpectedMsgText:      Sp(""),
+		ExpectedAttachments:  []string{"geo:0.000000,1.000000"},
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive valid video message",
+		URL:                  waReceiveURL,
+		Data:                 videoMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"msg"`,
+		ExpectedMsgText:      Sp(""),
+		ExpectedAttachments:  []string{"https://foo.bar/v1/media/41"},
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive valid voice message",
+		URL:                  waReceiveURL,
+		Data:                 voiceMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"msg"`,
+		ExpectedMsgText:      Sp(""),
+		ExpectedAttachments:  []string{"https://foo.bar/v1/media/41"},
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive document message with missing file",
+		URL:                  waReceiveURL,
+		Data:                 documentMsgMissingFile,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"msg"`,
+		ExpectedMsgText:      Sp("the caption"),
+		ExpectedAttachments:  []string{},
+		ExpectedURN:          "whatsapp:250788123123",
+		ExpectedExternalID:   "41",
+		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
+		Label:                "Receive invalid JSON",
+		URL:                  waReceiveURL,
+		Data:                 invalidMsg,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "unable to parse",
+	},
+	{
+		Label:                "Receive invalid from",
+		URL:                  waReceiveURL,
+		Data:                 invalidFrom,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "invalid whatsapp id",
+	},
+	{
+		Label:                "Receive invalid timestamp",
+		URL:                  waReceiveURL,
+		Data:                 invalidTimestamp,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "invalid timestamp",
+	},
 
-	{Label: "Receive Valid Status", URL: waReceiveURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"type":"status"`,
-		ExpectedMsgStatus: "S", ExpectedExternalID: "9712A34B4A8B6AD50F"},
-	{Label: "Receive Invalid JSON", URL: waReceiveURL, Data: "not json", ExpectedRespStatus: 400, ExpectedBodyContains: "unable to parse"},
-	{Label: "Receive Invalid Status", URL: waReceiveURL, Data: invalidStatus, ExpectedRespStatus: 400, ExpectedBodyContains: `"unknown status: in_orbit"`},
-	{Label: "Receive Ignore Status", URL: waReceiveURL, Data: ignoreStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"ignoring status: deleted"`},
+	{
+		Label:                "Receive valid status",
+		URL:                  waReceiveURL,
+		Data:                 validStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"type":"status"`,
+		ExpectedMsgStatus:    "S",
+		ExpectedExternalID:   "9712A34B4A8B6AD50F",
+	},
+	{
+		Label:                "Receive invalid JSON",
+		URL:                  waReceiveURL,
+		Data:                 "not json",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "unable to parse",
+	},
+	{
+		Label:                "Receive invalid status",
+		URL:                  waReceiveURL,
+		Data:                 invalidStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"unknown status: in_orbit"`,
+	},
+	{
+		Label:                "Receive ignore status",
+		URL:                  waReceiveURL,
+		Data:                 ignoreStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"ignoring status: deleted"`,
+	},
 }
 
-func TestBuildMediaRequest(t *testing.T) {
+func TestBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 
 	waHandler := &handler{NewBaseHandler(courier.ChannelType("WA"), "WhatsApp")}
-	req, _ := waHandler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
+	req, _ := waHandler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer the-auth-token", req.Header.Get("Authorization"))
 
 	d3Handler := &handler{NewBaseHandler(courier.ChannelType("D3"), "360Dialog")}
-	req, _ = d3Handler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[1], "https://example.org/v1/media/41")
+	req, _ = d3Handler.BuildAttachmentRequest(context.Background(), mb, testChannels[1], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "the-auth-token", req.Header.Get("D360-API-KEY"))
 
 	txHandler := &handler{NewBaseHandler(courier.ChannelType("TXW"), "TextIt")}
-	req, _ = txHandler.BuildDownloadMediaRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41")
+	req, _ = txHandler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Bearer the-auth-token", req.Header.Get("Authorization"))
 }
@@ -541,7 +715,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Label:               "Template Send",
 		MsgText:             "templated message",
 		MsgURN:              "whatsapp:250788123123",
-		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "variables": ["Chef", "tomorrow"]}}`),
+		MsgLocale:           "eng",
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "variables": ["Chef", "tomorrow"]}}`),
 		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
@@ -550,10 +725,24 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:            setSendURL,
 	},
 	{
+		Label:               "Template Send no variables",
+		MsgText:             "templated message",
+		MsgURN:              "whatsapp:250788123123",
+		MsgLocale:           "eng",
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "variables": []}}`),
+		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body"}]}}`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		SendPrep:            setSendURL,
+	},
+	{
 		Label:               "Template Country Language",
 		MsgText:             "templated message",
 		MsgURN:              "whatsapp:250788123123",
-		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "country": "US", "variables": ["Chef", "tomorrow"]}}`),
+		MsgLocale:           "eng-US",
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "variables": ["Chef", "tomorrow"]}}`),
 		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
@@ -565,7 +754,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Label:               "Template Namespace",
 		MsgText:             "templated message",
 		MsgURN:              "whatsapp:250788123123",
-		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "namespace": "wa_template_namespace", "language": "eng", "country": "US", "variables": ["Chef", "tomorrow"]}}`),
+		MsgLocale:           "eng-US",
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "namespace": "wa_template_namespace", "variables": ["Chef", "tomorrow"]}}`),
 		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"wa_template_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
@@ -574,11 +764,17 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:            setSendURL,
 	},
 	{
-		Label:          "Template Invalid Language",
-		MsgText:        "templated message",
-		MsgURN:         "whatsapp:250788123123",
-		ExpectedErrors: []courier.ChannelError{courier.NewChannelError(`unable to decode template: {"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}} for channel: 8eb23e93-5ecb-45ba-b726-3b064e0c56ab: unable to find mapping for language: bnt`, "")},
-		MsgMetadata:    json.RawMessage(`{"templating": { "template": { "name": "revive_issue", "uuid": "8ca114b4-bee2-4d3b-aaf1-9aa6b48d41e8" }, "language": "bnt", "variables": ["Chef", "tomorrow"]}}`),
+		Label:               "Template Invalid Language",
+		MsgText:             "templated message",
+		MsgURN:              "whatsapp:250788123123",
+		MsgLocale:           "bnt",
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "variables": ["Chef", "tomorrow"]}}`),
+		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		SendPrep:            setSendURL,
 	},
 	{
 		Label:   "WhatsApp Contact Error",
@@ -949,4 +1145,16 @@ func TestSending(t *testing.T) {
 	mediaCacheSendTestCases := mockAttachmentURLs(mediaServer, mediaCacheSendTestCases)
 
 	RunChannelSendTestCases(t, defaultChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), mediaCacheSendTestCases, []string{"token123"}, nil)
+}
+
+func TestGetSupportedLanguage(t *testing.T) {
+	assert.Equal(t, "en", getSupportedLanguage(courier.NilLocale))
+	assert.Equal(t, "en", getSupportedLanguage(courier.Locale("eng")))
+	assert.Equal(t, "en_US", getSupportedLanguage(courier.Locale("eng-US")))
+	assert.Equal(t, "pt_PT", getSupportedLanguage(courier.Locale("por")))
+	assert.Equal(t, "pt_PT", getSupportedLanguage(courier.Locale("por-PT")))
+	assert.Equal(t, "pt_BR", getSupportedLanguage(courier.Locale("por-BR")))
+	assert.Equal(t, "fil", getSupportedLanguage(courier.Locale("fil")))
+	assert.Equal(t, "fr", getSupportedLanguage(courier.Locale("fra-CA")))
+	assert.Equal(t, "en", getSupportedLanguage(courier.Locale("run")))
 }

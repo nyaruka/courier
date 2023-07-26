@@ -25,7 +25,7 @@ type MockChannel struct {
 func (c *MockChannel) UUID() courier.ChannelUUID { return c.uuid }
 
 // Name returns the name of this channel, we just return our UUID for our mock instances
-func (c *MockChannel) Name() string { return fmt.Sprintf("Channel: %s", c.uuid.String()) }
+func (c *MockChannel) Name() string { return fmt.Sprintf("Channel: %s", c.uuid) }
 
 // ChannelType returns the type of this channel
 func (c *MockChannel) ChannelType() courier.ChannelType { return c.channelType }
@@ -154,10 +154,8 @@ func (c *MockChannel) HasRole(role courier.ChannelRole) bool {
 
 // NewMockChannel creates a new mock channel for the passed in type, address, country and config
 func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}) *MockChannel {
-	cUUID, _ := courier.NewChannelUUID(uuid)
-
-	channel := &MockChannel{
-		uuid:        cUUID,
+	return &MockChannel{
+		uuid:        courier.ChannelUUID(uuid),
 		channelType: courier.ChannelType(channelType),
 		schemes:     []string{urns.TelScheme},
 		address:     courier.ChannelAddress(address),
@@ -166,5 +164,4 @@ func NewMockChannel(uuid string, channelType string, address string, country str
 		role:        "SR",
 		orgConfig:   map[string]interface{}{},
 	}
-	return channel
 }

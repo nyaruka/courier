@@ -142,11 +142,23 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgText:             "Simple Message",
 		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
 		MockResponseStatus:  200,
-		MockResponseBody:    `{"status":3,"status_message":"InvalidToken"}`,
+		MockResponseBody:    `{"status":3,"status_message":"badData"}`,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("received non-0 status: '3'", "")},
+		ExpectedErrors:      []*courier.ChannelError{courier.ErrorExternal("3", "There is an error in the request itself (missing comma, brackets, etc.)")},
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Got general error response",
+		MsgText:             "Simple Message",
+		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponseStatus:  200,
+		MockResponseBody:    `{"status":99,"status_message":"General error"}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
+		ExpectedMsgStatus:   "E",
+		ExpectedErrors:      []*courier.ChannelError{courier.ErrorExternal("99", "General error")},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -158,7 +170,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("received invalid JSON response", "")},
+		ExpectedErrors:      []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -170,6 +182,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Error Message","type":"text","tracking_data":"10"}`,
 		ExpectedMsgStatus:   "E",
+		ExpectedErrors:      []*courier.ChannelError{courier.ErrorResponseStatusCode()},
 		SendPrep:            setSendURL,
 	},
 }
@@ -177,7 +190,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 var invalidTokenSendTestCases = []ChannelSendTestCase{
 	{
 		Label:          "Invalid token",
-		ExpectedErrors: []courier.ChannelError{courier.NewChannelError("missing auth token in config", "")},
+		ExpectedErrors: []*courier.ChannelError{courier.NewChannelError("", "", "missing auth token in config")},
 	},
 }
 

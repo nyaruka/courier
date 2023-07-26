@@ -59,8 +59,8 @@ func newHandler(channelType string, name string) courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
-	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveVerify)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvents))
+	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeWebhookVerify, h.receiveVerify)
 	return nil
 }
 
@@ -133,18 +133,12 @@ type moPayload struct {
 	Users map[string]moUser `json:"users"`
 }
 
-// receiveEvent is our HTTP handler function for incoming events
-func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+// receiveEvents is our HTTP handler function for incoming events
+func (h *handler) receiveEvents(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// read our handle id
 	handleID := c.StringConfigForKey(configHandleID, "")
 	if handleID == "" {
 		return nil, fmt.Errorf("Missing handle id config for TWT channel")
-	}
-
-	payload := &moPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
 	// no direct message events? ignore
@@ -297,10 +291,10 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			if strings.HasPrefix(mimeType, "image") || strings.HasPrefix(mimeType, "video") {
 				mediaID, err = uploadMediaToTwitter(msg, mediaURL, mimeType, s3url, client, clog)
 				if err != nil {
-					clog.Error(errors.Wrap(err, "unable to upload media to Twitter server"))
+					clog.RawError(errors.Wrap(err, "unable to upload media to Twitter server"))
 				}
 			} else {
-				clog.Error(errors.New("unable to upload media, unsupported Twitter attachment"))
+				clog.RawError(errors.New("unable to upload media, unsupported Twitter attachment"))
 			}
 
 			if mediaID != "" {
@@ -345,7 +339,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		externalID, err := jsonparser.GetString(respBody, "event", "id")
 		if err != nil {
-			clog.Error(errors.Errorf("unable to get message_id from body"))
+			clog.RawError(errors.Errorf("unable to get message_id from body"))
 			return status, nil
 		}
 

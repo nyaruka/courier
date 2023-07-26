@@ -71,8 +71,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveEvent)
-	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveVerify)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMultiReceive, handlers.JSONPayload(h, h.receiveEvents))
+	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeWebhookVerify, h.receiveVerify)
 	return nil
 }
 
@@ -213,14 +213,8 @@ type moPayload struct {
 	} `json:"entry"`
 }
 
-// receiveEvent is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
-	payload := &moPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
+// receiveEvents is our HTTP handler function for incoming messages and status updates
+func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// not a page object? ignore
 	if payload.Object != "page" {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring non-page request")
@@ -434,7 +428,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 	}
 
-	return events, courier.WriteDataResponse(ctx, w, http.StatusOK, "Events Handled", data)
+	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
 //	{
@@ -570,7 +564,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		externalID, err := jsonparser.GetString(respBody, "message_id")
 		if err != nil {
-			clog.Error(errors.Errorf("unable to get message_id from body"))
+			clog.Error(courier.ErrorResponseValueMissing("message_id"))
 			return status, nil
 		}
 
@@ -580,7 +574,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			if msg.URN().IsFacebookRef() {
 				recipientID, err := jsonparser.GetString(respBody, "recipient_id")
 				if err != nil {
-					clog.Error(errors.Errorf("unable to get recipient_id from body"))
+					clog.Error(courier.ErrorResponseValueMissing("recipient_id"))
 					return status, nil
 				}
 
@@ -588,29 +582,29 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 				realIDURN, err := urns.NewFacebookURN(recipientID)
 				if err != nil {
-					clog.Error(errors.Errorf("unable to make facebook urn from %s", recipientID))
+					clog.RawError(errors.Errorf("unable to make facebook urn from %s", recipientID))
 				}
 
 				contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), "", "", clog)
 				if err != nil {
-					clog.Error(errors.Errorf("unable to get contact for %s", msg.URN().String()))
+					clog.RawError(errors.Errorf("unable to get contact for %s", msg.URN().String()))
 				}
 				realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN)
 				if err != nil {
-					clog.Error(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
+					clog.RawError(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
 				}
 				referralIDExtURN, err := urns.NewURNFromParts(urns.ExternalScheme, referralID, "", "")
 				if err != nil {
-					clog.Error(errors.Errorf("unable to make ext urn from %s", referralID))
+					clog.RawError(errors.Errorf("unable to make ext urn from %s", referralID))
 				}
 				extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN)
 				if err != nil {
-					clog.Error(errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
+					clog.RawError(errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
 				}
 
 				referralFacebookURN, err := h.Backend().RemoveURNfromContact(ctx, msg.Channel(), contact, msg.URN())
 				if err != nil {
-					clog.Error(errors.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
+					clog.RawError(errors.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
 				}
 			}
 		}

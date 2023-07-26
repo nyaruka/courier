@@ -12,7 +12,15 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/null"
+	"github.com/nyaruka/null/v2"
+)
+
+type LogPolicy string
+
+const (
+	LogPolicyNone   = "N"
+	LogPolicyErrors = "E"
+	LogPolicyAll    = "A"
 )
 
 // getChannel will look up the channel with the passed in UUID and channel type.
@@ -32,7 +40,7 @@ func getChannel(ctx context.Context, db *sqlx.DB, channelType courier.ChannelTyp
 	// if it wasn't found in the DB, clear our cache and return that it wasn't found
 	if dbErr == courier.ErrChannelNotFound {
 		clearLocalChannel(channelUUID)
-		return cachedChannel, fmt.Errorf("unable to find channel with type: %s and uuid: %s", channelType.String(), channelUUID.String())
+		return cachedChannel, fmt.Errorf("unable to find channel with type: %s and uuid: %s", channelType, channelUUID)
 	}
 
 	// if we had some other db error, return it if our cached channel was only just expired
@@ -62,6 +70,7 @@ SELECT
 	c.country,
 	c.config,
 	c.role,
+	c.log_policy,
 	o.config AS org_config,
 	o.is_anon AS org_is_anon
   FROM channels_channel c
@@ -185,6 +194,7 @@ SELECT
 	c.country,
 	c.config,
 	c.role,
+	c.log_policy,
 	o.config AS org_config,
 	o.is_anon AS org_is_anon
   FROM channels_channel c
@@ -280,6 +290,7 @@ type DBChannel struct {
 	Country_     sql.NullString      `db:"country"`
 	Config_      null.Map            `db:"config"`
 	Role_        string              `db:"role"`
+	LogPolicy    LogPolicy           `db:"log_policy"`
 
 	OrgConfig_ null.Map `db:"org_config"`
 	OrgIsAnon_ bool     `db:"org_is_anon"`
@@ -349,7 +360,7 @@ func (c *DBChannel) HasRole(role courier.ChannelRole) bool {
 
 // ConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
 func (c *DBChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
-	value, found := c.Config_.Map()[key]
+	value, found := c.Config_[key]
 	if !found {
 		return defaultValue
 	}
@@ -358,7 +369,7 @@ func (c *DBChannel) ConfigForKey(key string, defaultValue interface{}) interface
 
 // OrgConfigForKey returns the org config value for the passed in key, or defaultValue if it isn't found
 func (c *DBChannel) OrgConfigForKey(key string, defaultValue interface{}) interface{} {
-	value, found := c.OrgConfig_.Map()[key]
+	value, found := c.OrgConfig_[key]
 	if !found {
 		return defaultValue
 	}

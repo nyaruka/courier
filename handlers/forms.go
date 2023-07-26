@@ -9,12 +9,13 @@ import (
 	"net/http"
 
 	"github.com/gorilla/schema"
-	validator "gopkg.in/go-playground/validator.v9"
+	"github.com/nyaruka/courier/utils"
 )
 
+const maxBodyReadBytes = 1024 * 1024 // 1MB
+
 var (
-	decoder  = schema.NewDecoder()
-	validate = validator.New()
+	decoder = schema.NewDecoder()
 )
 
 func init() {
@@ -22,14 +23,9 @@ func init() {
 	decoder.SetAliasTag("name")
 }
 
-// Validate validates the passe din struct using our shared validator instance
-func Validate(form interface{}) error {
-	return validate.Struct(form)
-}
-
 // DecodeAndValidateForm takes the passed in form and attempts to parse and validate it from the
 // URL query parameters as well as any POST parameters of the passed in request
-func DecodeAndValidateForm(form interface{}, r *http.Request) error {
+func DecodeAndValidateForm(form any, r *http.Request) error {
 	err := r.ParseForm()
 	if err != nil {
 		return err
@@ -41,7 +37,7 @@ func DecodeAndValidateForm(form interface{}, r *http.Request) error {
 	}
 
 	// check our input is valid
-	err = validate.Struct(form)
+	err = utils.Validate(form)
 	if err != nil {
 		return err
 	}
@@ -51,8 +47,8 @@ func DecodeAndValidateForm(form interface{}, r *http.Request) error {
 
 // DecodeAndValidateJSON takes the passed in envelope and tries to unmarshal it from the body
 // of the passed in request, then validating it
-func DecodeAndValidateJSON(envelope interface{}, r *http.Request) error {
-	body, err := ReadBody(r, 1000000)
+func DecodeAndValidateJSON(envelope any, r *http.Request) error {
+	body, err := ReadBody(r, maxBodyReadBytes)
 	if err != nil {
 		return fmt.Errorf("unable to read request body: %s", err)
 	}
@@ -63,7 +59,7 @@ func DecodeAndValidateJSON(envelope interface{}, r *http.Request) error {
 	}
 
 	// check our input is valid
-	err = validate.Struct(envelope)
+	err = utils.Validate(envelope)
 	if err != nil {
 		return fmt.Errorf("request JSON doesn't match required schema: %s", err)
 	}
@@ -73,8 +69,8 @@ func DecodeAndValidateJSON(envelope interface{}, r *http.Request) error {
 
 // DecodeAndValidateXML takes the passed in envelope and tries to unmarshal it from the body
 // of the passed in request, then validating it
-func DecodeAndValidateXML(envelope interface{}, r *http.Request) error {
-	body, err := ReadBody(r, 100000)
+func DecodeAndValidateXML(envelope any, r *http.Request) error {
+	body, err := ReadBody(r, maxBodyReadBytes)
 	if err != nil {
 		return fmt.Errorf("unable to read request body: %s", err)
 	}
@@ -85,7 +81,7 @@ func DecodeAndValidateXML(envelope interface{}, r *http.Request) error {
 	}
 
 	// check our input is valid
-	err = validate.Struct(envelope)
+	err = utils.Validate(envelope)
 	if err != nil {
 		return fmt.Errorf("request XML doesn't match required schema: %s", err)
 	}
@@ -93,10 +89,13 @@ func DecodeAndValidateXML(envelope interface{}, r *http.Request) error {
 	return nil
 }
 
-// ReadBody of a HTTP request up to limit bytes and make sure the Body is not consumed
+// ReadBody of a HTTP request up to limit bytes
 func ReadBody(r *http.Request, limit int64) ([]byte, error) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, limit))
+
+	// reset body so it can be read again
 	r.Body = io.NopCloser(bytes.NewBuffer(body))
+
 	return body, err
 
 }

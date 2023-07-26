@@ -13,7 +13,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/null"
+	"github.com/nyaruka/null/v2"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,25 +22,10 @@ type ChannelEventID null.Int
 
 const NilChannelEventID = ChannelEventID(0)
 
-// MarshalJSON marshals into JSON. 0 values will become null
-func (i ChannelEventID) MarshalJSON() ([]byte, error) {
-	return null.Int(i).MarshalJSON()
-}
-
-// UnmarshalJSON unmarshals from JSON. null values become 0
-func (i *ChannelEventID) UnmarshalJSON(b []byte) error {
-	return null.UnmarshalInt(b, (*null.Int)(i))
-}
-
-// Value returns the db value, null is returned for 0
-func (i ChannelEventID) Value() (driver.Value, error) {
-	return null.Int(i).Value()
-}
-
-// Scan scans from the db value. null values become 0
-func (i *ChannelEventID) Scan(value interface{}) error {
-	return null.ScanInt(value, (*null.Int)(i))
-}
+func (i *ChannelEventID) Scan(value any) error         { return null.ScanInt(value, i) }
+func (i ChannelEventID) Value() (driver.Value, error)  { return null.IntValue(i) }
+func (i *ChannelEventID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
+func (i ChannelEventID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
 
 // String satisfies the Stringer interface
 func (i ChannelEventID) String() string {
@@ -198,7 +183,7 @@ func (e *DBChannelEvent) ChannelID() courier.ChannelID        { return e.Channel
 func (e *DBChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.ChannelUUID_ }
 func (e *DBChannelEvent) ContactName() string                 { return e.ContactName_ }
 func (e *DBChannelEvent) URN() urns.URN                       { return e.URN_ }
-func (e *DBChannelEvent) Extra() map[string]interface{}       { return e.Extra_.Map() }
+func (e *DBChannelEvent) Extra() map[string]interface{}       { return e.Extra_ }
 func (e *DBChannelEvent) EventType() courier.ChannelEventType { return e.EventType_ }
 func (e *DBChannelEvent) OccurredOn() time.Time               { return e.OccurredOn_ }
 func (e *DBChannelEvent) CreatedOn() time.Time                { return e.CreatedOn_ }
@@ -209,7 +194,7 @@ func (e *DBChannelEvent) WithContactName(name string) courier.ChannelEvent {
 	return e
 }
 func (e *DBChannelEvent) WithExtra(extra map[string]interface{}) courier.ChannelEvent {
-	e.Extra_ = null.NewMap(extra)
+	e.Extra_ = null.Map(extra)
 	return e
 }
 

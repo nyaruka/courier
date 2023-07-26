@@ -7,10 +7,18 @@ import (
 	"encoding/hex"
 	"net/url"
 	"path"
-	"regexp"
-	"strings"
 	"unicode/utf8"
+
+	validator "gopkg.in/go-playground/validator.v9"
 )
+
+var (
+	validate = validator.New()
+)
+
+func Validate(obj any) error {
+	return validate.Struct(obj)
+}
 
 // SignHMAC256 encrypts value with HMAC256 by using a private key
 func SignHMAC256(privateKey string, value string) string {
@@ -64,33 +72,6 @@ func StringArrayContains(s []string, e string) bool {
 	return false
 }
 
-var invalidChars = regexp.MustCompile("([\u0000-\u0008]|[\u000B-\u000C]|[\u000E-\u001F])")
-
-// CleanString removes any control characters from the passed in string
-func CleanString(s string) string {
-	cleaned := invalidChars.ReplaceAllString(s, "")
-
-	// check whether this is valid UTF8
-	if !utf8.ValidString(cleaned) || strings.Contains(cleaned, "\x00") {
-		v := make([]rune, 0, len(cleaned))
-		for i, r := range s {
-			if r == utf8.RuneError {
-				_, size := utf8.DecodeRuneInString(s[i:])
-				if size == 1 {
-					continue
-				}
-			}
-
-			if r != 0 {
-				v = append(v, r)
-			}
-		}
-		cleaned = string(v)
-	}
-
-	return cleaned
-}
-
 // BasePathForURL, parse static URL, and return filename + format
 func BasePathForURL(rawURL string) (string, error) {
 	parsedURL, err := url.Parse(rawURL)
@@ -138,4 +119,17 @@ func StringsToRows(strs []string, maxRows, maxRowRunes, paddingRunes int) [][]st
 		rowRunes += strRunes
 	}
 	return rows
+}
+
+func ChunkSlice[T any](slice []T, size int) [][]T {
+	chunks := make([][]T, 0, len(slice)/size+1)
+
+	for i := 0; i < len(slice); i += size {
+		end := i + size
+		if end > len(slice) {
+			end = len(slice)
+		}
+		chunks = append(chunks, slice[i:end])
+	}
+	return chunks
 }

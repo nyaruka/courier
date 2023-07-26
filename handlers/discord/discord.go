@@ -37,16 +37,16 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
 
 	sentHandler := h.buildStatusHandler("sent")
-	s.AddHandlerRoute(h, http.MethodPost, "sent", sentHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "sent", courier.ChannelLogTypeMsgStatus, sentHandler)
 
 	deliveredHandler := h.buildStatusHandler("delivered")
-	s.AddHandlerRoute(h, http.MethodPost, "delivered", deliveredHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "delivered", courier.ChannelLogTypeMsgStatus, deliveredHandler)
 
 	failedHandler := h.buildStatusHandler("failed")
-	s.AddHandlerRoute(h, http.MethodPost, "failed", failedHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "failed", courier.ChannelLogTypeMsgStatus, failedHandler)
 
 	return nil
 }
@@ -138,7 +138,7 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.ID), msgStatus, clog)
+	status := h.Backend().NewMsgStatusForID(channel, courier.MsgID(form.ID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -174,7 +174,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		ID:           msg.ID().String(),
 		Text:         msg.Text(),
 		To:           msg.URN().Path(),
-		Channel:      msg.Channel().UUID().String(),
+		Channel:      string(msg.Channel().UUID()),
 		Attachments:  attachmentURLs,
 		QuickReplies: msg.QuickReplies(),
 	}

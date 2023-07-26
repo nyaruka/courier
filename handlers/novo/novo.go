@@ -40,7 +40,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
 
@@ -51,7 +51,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	if secret != "" {
 		authorization := r.Header.Get("Authorization")
 		if authorization != secret {
-			return nil, courier.WriteAndLogUnauthorized(ctx, w, r, c, fmt.Errorf("invalid Authorization header"))
+			return nil, courier.WriteAndLogUnauthorized(w, r, c, fmt.Errorf("invalid Authorization header"))
 		}
 	}
 
@@ -122,7 +122,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			status.SetStatus(courier.MsgWired)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			clog.Error(fmt.Errorf("received invalid response"))
+			clog.RawError(fmt.Errorf("received invalid response"))
 			break
 		}
 	}

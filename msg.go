@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/nyaruka/null"
-
-	"github.com/gofrs/uuid"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
+	"github.com/nyaruka/null/v2"
 )
 
 // ErrMsgNotFound is returned when trying to queue the status for a Msg that doesn't exit
@@ -20,68 +20,63 @@ var ErrMsgNotFound = errors.New("message not found")
 var ErrWrongIncomingMsgStatus = errors.New("incoming messages can only be PENDING or HANDLED")
 
 // MsgID is our typing of the db int type
-type MsgID null.Int
-
-// NewMsgID creates a new MsgID for the passed in int64
-func NewMsgID(id int64) MsgID {
-	return MsgID(id)
-}
-
-// String satisfies the Stringer interface
-func (i MsgID) String() string {
-	if i != NilMsgID {
-		return strconv.FormatInt(int64(i), 10)
-	}
-	return "null"
-}
-
-// MarshalJSON marshals into JSON. 0 values will become null
-func (i MsgID) MarshalJSON() ([]byte, error) {
-	return null.Int(i).MarshalJSON()
-}
-
-// UnmarshalJSON unmarshals from JSON. null values become 0
-func (i *MsgID) UnmarshalJSON(b []byte) error {
-	return null.UnmarshalInt(b, (*null.Int)(i))
-}
-
-// Value returns the db value, null is returned for 0
-func (i MsgID) Value() (driver.Value, error) {
-	return null.Int(i).Value()
-}
-
-// Scan scans from the db value. null values become 0
-func (i *MsgID) Scan(value interface{}) error {
-	return null.ScanInt(value, (*null.Int)(i))
-}
+type MsgID null.Int64
 
 // NilMsgID is our nil value for MsgID
 var NilMsgID = MsgID(0)
 
+// String satisfies the Stringer interface
+func (i MsgID) String() string { return strconv.FormatInt(int64(i), 10) }
+
+func (i *MsgID) Scan(value any) error         { return null.ScanInt(value, i) }
+func (i MsgID) Value() (driver.Value, error)  { return null.IntValue(i) }
+func (i *MsgID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
+func (i MsgID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
+
 // MsgUUID is the UUID of a message which has been received
-type MsgUUID struct {
-	uuid.UUID
-}
+type MsgUUID uuids.UUID
 
 // NilMsgUUID is a "zero value" message UUID
-var NilMsgUUID = MsgUUID{uuid.Nil}
-
-// NewMsgUUID creates a new unique message UUID
-func NewMsgUUID() MsgUUID {
-	u, _ := uuid.NewV4()
-	return MsgUUID{u}
-}
-
-// NewMsgUUIDFromString creates a new message UUID for the passed in string
-func NewMsgUUIDFromString(uuidString string) MsgUUID {
-	uuid, _ := uuid.FromString(uuidString)
-	return MsgUUID{uuid}
-}
+const NilMsgUUID = MsgUUID("")
 
 type FlowReference struct {
 	UUID string `json:"uuid" validate:"uuid4"`
 	Name string `json:"name"`
 }
+
+type MsgOrigin string
+
+const (
+	MsgOriginFlow      MsgOrigin = "flow"
+	MsgOriginBroadcast MsgOrigin = "broadcast"
+	MsgOriginTicket    MsgOrigin = "ticket"
+	MsgOriginChat      MsgOrigin = "chat"
+)
+
+//-----------------------------------------------------------------------------
+// Locale
+//-----------------------------------------------------------------------------
+
+// Locale is the combination of a language and optional country, e.g. US English, Brazilian Portuguese, encoded as the
+// language code followed by the country code, e.g. eng-US, por-BR
+type Locale string
+
+func (l Locale) ToParts() (string, string) {
+	if l == NilLocale || len(l) < 3 {
+		return "", ""
+	}
+
+	parts := strings.SplitN(string(l), "-", 2)
+	lang := parts[0]
+	country := ""
+	if len(parts) > 1 {
+		country = parts[1]
+	}
+
+	return lang, country
+}
+
+var NilLocale = Locale("")
 
 //-----------------------------------------------------------------------------
 // Msg interface
@@ -93,11 +88,14 @@ type Msg interface {
 	UUID() MsgUUID
 	Text() string
 	Attachments() []string
+	Locale() Locale
 	ExternalID() string
 	URN() urns.URN
 	URNAuth() string
 	ContactName() string
 	QuickReplies() []string
+	Origin() MsgOrigin
+	ContactLastSeenOn() *time.Time
 	Topic() string
 	Metadata() json.RawMessage
 	ResponseToExternalID() string
@@ -120,6 +118,7 @@ type Msg interface {
 	WithID(id MsgID) Msg
 	WithUUID(uuid MsgUUID) Msg
 	WithAttachment(url string) Msg
+	WithLocale(Locale) Msg
 	WithURNAuth(auth string) Msg
 	WithMetadata(metadata json.RawMessage) Msg
 	WithFlow(flow *FlowReference) Msg

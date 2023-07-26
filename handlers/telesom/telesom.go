@@ -33,8 +33,8 @@ func newHandler() courier.ChannelHandler {
 
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodGet, "receive", h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodGet, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
 
@@ -122,7 +122,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		if strings.Contains(string(respBody), "Success") {
 			status.SetStatus(courier.MsgWired)
 		} else {
-			clog.Error(fmt.Errorf("Received invalid response content: %s", string(respBody)))
+			clog.RawError(fmt.Errorf("Received invalid response content: %s", string(respBody)))
 		}
 	}
 	return status, nil

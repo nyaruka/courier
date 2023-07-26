@@ -15,7 +15,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 var (
@@ -38,8 +37,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodPost, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	s.AddHandlerRoute(h, http.MethodPost, "status", courier.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.receiveStatus))
 	return nil
 }
 
@@ -65,14 +64,7 @@ var statusMapping = map[int]courier.MsgStatusValue{
 }
 
 // receiveStatus is our HTTP handler function for status updates
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
-	payload := &statusPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
-
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if payload.MessageID == "" || payload.StatusCode == 0 {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
 			fmt.Errorf("missing one of 'messageId' or 'statusCode' in request parameters"))
@@ -99,14 +91,7 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
-	payload := &moPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
-
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if payload.FromNumber == "" || payload.MessageID == "" || payload.Text == "" || payload.Timestamp == 0 {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r,
 			fmt.Errorf("missing one of 'messageId', 'fromNumber', 'text' or 'timestamp' in request body"))
@@ -143,7 +128,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text), clog).WithReceivedOn(date.UTC()).WithExternalID(payload.MessageID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date.UTC()).WithExternalID(payload.MessageID)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
@@ -203,7 +188,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// try to read out our message id, if we can't then this was a failure
 		externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "apiMessageId")
 		if err != nil {
-			clog.Error(err)
+			clog.Error(courier.ErrorResponseValueMissing("apiMessageId"))
 		} else {
 			status.SetStatus(courier.MsgWired)
 			status.SetExternalID(externalID)

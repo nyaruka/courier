@@ -11,9 +11,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
-	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
@@ -53,7 +53,7 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	return nil
 }
 
@@ -110,16 +110,10 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, err
-	}
-
-	payload := &moPayload{}
-	err = handlers.DecodeAndValidateJSON(payload, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	msgs := []courier.Msg{}
@@ -181,8 +175,8 @@ func buildMediaURL(mediaID string) string {
 	return mediaURL.String()
 }
 
-// BuildDownloadMediaRequest to download media for message attachment with Bearer token set
-func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string) (*http.Request, error) {
+// BuildAttachmentRequest to download media for message attachment with Bearer token set
+func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend, channel courier.Channel, attachmentURL string, clog *courier.ChannelLog) (*http.Request, error) {
 	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
 	if token == "" {
 		return nil, fmt.Errorf("missing token for LN channel")
@@ -193,6 +187,8 @@ func (h *handler) BuildDownloadMediaRequest(ctx context.Context, b courier.Backe
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	return req, nil
 }
+
+var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
 func (h *handler) validateSignature(channel courier.Channel, r *http.Request) error {
 	actual := r.Header.Get(signatureHeader)
@@ -282,6 +278,10 @@ type mtPayload struct {
 	Messages   json.RawMessage `json:"messages"`
 }
 
+type mtResponse struct {
+	Message string `json:"message"`
+}
+
 // Send sends the given message, logging any HTTP calls or errors
 func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
@@ -361,25 +361,42 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			}
 
 			resp, respBody, err := handlers.RequestHTTP(req, clog)
+
 			if err == nil && resp.StatusCode/100 == 2 {
 				batch = []string{}
 				batchCount = 0
 				continue
 			}
 
-			// retry without the reply token if it's invalid
-			errMsg, err := jsonparser.GetString(respBody, "message")
-			if err == nil && errMsg == "Invalid reply token" {
+			respPayload := &mtResponse{}
+			err = json.Unmarshal(respBody, respPayload)
+			if err != nil {
+				clog.Error(courier.ErrorResponseUnparseable("JSON"))
+				return status, nil
+			}
+
+			errMsg := respPayload.Message
+			if errMsg == "Invalid reply token" {
 				req, err = buildSendMsgRequest(authToken, msg.URN().Path(), "", batch)
 				if err != nil {
 					return status, err
 				}
 
-				resp, _, err := handlers.RequestHTTP(req, clog)
-				if err != nil || resp.StatusCode/100 != 2 {
+				resp, respBody, _ := handlers.RequestHTTP(req, clog)
+
+				respPayload := &mtResponse{}
+				err = json.Unmarshal(respBody, respPayload)
+				if err != nil {
+					clog.Error(courier.ErrorResponseUnparseable("JSON"))
+					return status, nil
+				}
+
+				if resp.StatusCode/100 != 2 {
+					clog.Error(courier.ErrorExternal(strconv.Itoa(resp.StatusCode), respPayload.Message))
 					return status, nil
 				}
 			} else {
+				clog.Error(courier.ErrorExternal(strconv.Itoa(resp.StatusCode), respPayload.Message))
 				return status, err
 			}
 		}

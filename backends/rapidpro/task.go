@@ -1,31 +1,30 @@
 package rapidpro
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/gocommon/jsonx"
 )
 
 func queueMsgHandling(rc redis.Conn, c *DBContact, m *DBMsg) error {
 	channel := m.Channel().(*DBChannel)
 
 	// queue to mailroom
-	body := map[string]interface{}{
+	body := map[string]any{
 		"contact_id":      c.ID_,
 		"org_id":          channel.OrgID_,
 		"channel_id":      channel.ID_,
 		"msg_id":          m.ID_,
-		"msg_uuid":        m.UUID_.String(),
+		"msg_uuid":        m.UUID(),
 		"msg_external_id": m.ExternalID(),
 		"urn":             m.URN().String(),
 		"urn_id":          m.ContactURNID_,
 		"text":            m.Text(),
 		"attachments":     m.Attachments(),
 		"new_contact":     c.IsNew_,
-		"created_on":      m.CreatedOn_,
 	}
 
 	return queueMailroomTask(rc, "msg_event", m.OrgID_, m.ContactID_, body)
@@ -86,32 +85,20 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 // channel event tasks through the same ordered queue.
 func queueMailroomTask(rc redis.Conn, taskType string, orgID OrgID, contactID ContactID, body map[string]interface{}) (err error) {
 	// create our event task
-	eventTask := mrTask{
+	eventJSON := jsonx.MustMarshal(mrTask{
 		Type:     taskType,
 		OrgID:    orgID,
 		Task:     body,
 		QueuedOn: time.Now(),
-	}
-
-	eventJSON, err := json.Marshal(eventTask)
-	if err != nil {
-		return err
-	}
+	})
 
 	// create our org task
-	contactTask := mrTask{
-		Type:  "handle_contact_event",
-		OrgID: orgID,
-		Task: mrContactTask{
-			ContactID: contactID,
-		},
+	contactJSON := jsonx.MustMarshal(mrTask{
+		Type:     "handle_contact_event",
+		OrgID:    orgID,
+		Task:     mrContactTask{ContactID: contactID},
 		QueuedOn: time.Now(),
-	}
-
-	contactJSON, err := json.Marshal(contactTask)
-	if err != nil {
-		return err
-	}
+	})
 
 	now := time.Now().UTC()
 	epochFloat := float64(now.UnixNano()) / float64(time.Second)

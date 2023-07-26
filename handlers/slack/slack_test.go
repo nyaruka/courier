@@ -206,7 +206,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"Hello"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("invalid_auth", "")},
+		ExpectedErrors:      []*courier.ChannelError{courier.NewChannelError("", "", "invalid_auth")},
 		SendPrep:            setSendUrl,
 	},
 }

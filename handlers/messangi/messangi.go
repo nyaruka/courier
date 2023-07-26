@@ -42,7 +42,7 @@ func newHandler() courier.ChannelHandler {
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	receiveHandler := handlers.NewTelReceiveHandler(h, "mobile", "mo")
-	s.AddHandlerRoute(h, http.MethodPost, "receive", receiveHandler)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, receiveHandler)
 	return nil
 }
 
@@ -105,7 +105,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		response := &mtResponse{}
 		err = xml.Unmarshal(respBody, response)
 		if err != nil {
-			clog.Error(err)
+			clog.Error(courier.ErrorResponseUnparseable("XML"))
 			break
 		}
 
@@ -114,7 +114,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			status.SetStatus(courier.MsgWired)
 		} else {
 			status.SetStatus(courier.MsgFailed)
-			clog.Error(fmt.Errorf("Received invalid response description: %s", response.Description))
+			clog.Error(courier.ErrorResponseValueUnexpected("status", "OK"))
 			break
 		}
 	}

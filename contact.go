@@ -1,27 +1,14 @@
 package courier
 
 import (
-	"strings"
-
-	"github.com/gofrs/uuid"
+	"github.com/nyaruka/gocommon/uuids"
 )
 
 // ContactUUID is our typing of a contact's UUID
-type ContactUUID struct {
-	uuid.UUID
-}
+type ContactUUID uuids.UUID
 
 // NilContactUUID is our nil value for contact UUIDs
-var NilContactUUID = ContactUUID{uuid.Nil}
-
-// NewContactUUID creates a new ContactUUID for the passed in string
-func NewContactUUID(u string) (ContactUUID, error) {
-	contactUUID, err := uuid.FromString(strings.ToLower(u))
-	if err != nil {
-		return NilContactUUID, err
-	}
-	return ContactUUID{contactUUID}, nil
-}
+var NilContactUUID = ContactUUID("")
 
 //-----------------------------------------------------------------------------
 // Contact Interface

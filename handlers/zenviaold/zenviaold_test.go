@@ -199,7 +199,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		},
 		ExpectedRequestBody: `{"sendSmsRequest":{"to":"250788383383","schedule":"","msg":"No External ID","callbackOption":"FINAL","id":"10","aggregateId":""}}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []courier.ChannelError{courier.NewChannelError("received non-success response: '05'", "")},
+		ExpectedErrors:      []*courier.ChannelError{courier.NewChannelError("", "", "received non-success response: '05'")},
 		SendPrep:            setSendURL},
 	{
 		Label:               "Error Sending",

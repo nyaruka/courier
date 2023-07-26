@@ -5,26 +5,26 @@ INSERT INTO orgs_org("id", "name", "language", "is_anon", "config")
 
 /* Channel with id 10, 11, 12 */
 DELETE FROM channels_channel;
-INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "config")
-                      VALUES('10', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c95d', 'KN', '2500', 1, 'RW', 'SR', '{ "encoding": "smart", "use_national": true, "max_length_int": 320, "max_length_str": "320" }');
+INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "log_policy", "config")
+                      VALUES('10', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c95d', 'KN', '2500', 1, 'RW', 'SR', 'A', '{ "encoding": "smart", "use_national": true, "max_length_int": 320, "max_length_str": "320" }');
 
-INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "config")
-                      VALUES('11', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c96a', 'TW', '4500', 1, 'US', 'SR', NULL);
+INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "log_policy", "config")
+                      VALUES('11', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c96a', 'TW', '4500', 1, 'US', 'SR', 'A', '{}');
 
-INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "config")
-                      VALUES('12', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c97a', 'DM', '4500', 1, 'US', 'SR', NULL);
+INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "log_policy", "config")
+                      VALUES('12', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c97a', 'DM', '4500', 1, 'US', 'SR', 'A', '{}');
 
-INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "config")
-                      VALUES('13', '{"telegram"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c98a', 'TG', 'courierbot', 1, NULL, 'SR', NULL);
+INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "log_policy", "config")
+                      VALUES('13', '{"telegram"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c98a', 'TG', 'courierbot', 1, NULL, 'SR', 'A', '{}');
 
-INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "config")
-                      VALUES('14', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c99a', 'KN', NULL, 1, 'US', 'SR', NULL);
+INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "log_policy", "config")
+                      VALUES('14', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327c99a', 'KN', NULL, 1, 'US', 'SR', 'A', '{}');
 
-INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "config")
-                      VALUES('15', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327100a', 'EX', NULL, 1, 'US', 'R', NULL);
+INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "log_policy", "config")
+                      VALUES('15', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327100a', 'EX', NULL, 1, 'US', 'R', 'A', '{}');
 
-INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "config")
-                      VALUES('16', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327222a', 'EX', NULL, 1, 'US', '', NULL);
+INSERT INTO channels_channel("id", "schemes", "is_active", "created_on", "modified_on", "uuid", "channel_type", "address", "org_id", "country", "role", "log_policy", "config")
+                      VALUES('16', '{"tel"}', 'Y', NOW(), NOW(), 'dbc126ed-66bc-4e28-b67b-81dc3327222a', 'EX', NULL, 1, 'US', '', 'A', '{}');
 
 /* Contacts with ids 100, 101 */
 DELETE FROM contacts_contact;
@@ -38,19 +38,19 @@ INSERT INTO contacts_contacturn("id", "identity", "path", "scheme", "priority", 
 
 /** Msg with id 10,000 */
 DELETE from msgs_msg;
-INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility",
+INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility", "msg_type",
                         "msg_count", "error_count", "next_attempt", "external_id", "channel_id", "contact_id", "contact_urn_id", "org_id")
-              VALUES(10000, 'test message', True, now(), now(), now(), now(), 'O', 'W', 'V',
+              VALUES(10000, 'test message', True, now(), now(), now(), now(), 'O', 'W', 'V', 'T',
                      1, 0, now(), 'ext1', 10, 100, 1000, 1);
 
-INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility",
+INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility", "msg_type",
                         "msg_count", "error_count", "next_attempt", "external_id", "channel_id", "contact_id", "contact_urn_id", "org_id")
-              VALUES(10001, 'test message without external', True, now(), now(), now(), now(), 'O', 'W', 'V',
+              VALUES(10001, 'test message without external', True, now(), now(), now(), now(), 'O', 'W', 'V', 'T',
                      1, 0, now(), '', 10, 100, 1000, 1);
 
-INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility",
+INSERT INTO msgs_msg("id", "text", "high_priority", "created_on", "modified_on", "sent_on", "queued_on", "direction", "status", "visibility", "msg_type",
                         "msg_count", "error_count", "next_attempt", "external_id", "channel_id", "contact_id", "contact_urn_id", "org_id")
-              VALUES(10002, 'test message incoming', True, now(), now(), now(), now(), 'I', 'P', 'V',
+              VALUES(10002, 'test message incoming', True, now(), now(), now(), now(), 'I', 'P', 'V', 'T',
                      1, 0, now(), 'ext2', 10, 100, 1000, 1);
 
 INSERT INTO msgs_media("id", "uuid", "org_id", "content_type", "url", "path", "size", "duration", "width", "height", "original_id")

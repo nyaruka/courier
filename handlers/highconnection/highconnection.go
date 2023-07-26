@@ -10,7 +10,6 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 )
 
 var (
@@ -33,8 +32,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
-	s.AddHandlerRoute(h, http.MethodGet, "status", h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodGet, "status", courier.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil
 }
 
@@ -74,7 +73,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	text, _ = new(mime.WordDecoder).DecodeHeader(text)
 
 	// build our Message
-	msg := h.Backend().NewIncomingMsg(channel, urn, utils.CleanString(text), clog).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date.UTC())
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
@@ -111,7 +110,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.NewMsgID(form.RetID), msgStatus, clog)
+	status := h.Backend().NewMsgStatusForID(channel, courier.MsgID(form.RetID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 

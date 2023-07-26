@@ -161,7 +161,7 @@ func (w *Sender) sendMessage(msg Msg) {
 	sendCTX, cancel := context.WithTimeout(context.Background(), time.Second*35)
 	defer cancel()
 
-	log = log.WithField("msg_id", msg.ID().String()).WithField("msg_text", msg.Text()).WithField("msg_urn", msg.URN().Identity())
+	log = log.WithField("msg_id", msg.ID()).WithField("msg_text", msg.Text()).WithField("msg_urn", msg.URN().Identity())
 	if len(msg.Attachments()) > 0 {
 		log = log.WithField("attachments", msg.Attachments())
 	}
@@ -214,7 +214,11 @@ func (w *Sender) sendMessage(msg Msg) {
 
 		if err != nil {
 			log.WithError(err).WithField("elapsed", duration).Error("error sending message")
-			clog.Error(err)
+
+			// handlers should log errors implicitly with user friendly messages.. but if not.. add what we have
+			if len(clog.Errors()) == 0 {
+				clog.RawError(err)
+			}
 
 			// possible for handlers to only return an error in which case we construct an error status
 			if status == nil {

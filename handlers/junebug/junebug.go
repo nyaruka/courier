@@ -12,7 +12,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/httpx"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -34,8 +33,8 @@ func newHandler() courier.ChannelHandler {
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "event", h.receiveEvent)
-	s.AddHandlerRoute(h, http.MethodPost, "inbound", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "event", courier.ChannelLogTypeEventReceive, handlers.JSONPayload(h, h.receiveEvent))
+	s.AddHandlerRoute(h, http.MethodPost, "inbound", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	return nil
 }
 
@@ -57,19 +56,13 @@ type moPayload struct {
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
-func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
-	payload := &moPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
-	}
-
+func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// check authentication
 	secret := c.StringConfigForKey(courier.ConfigSecret, "")
 	if secret != "" {
 		authorization := r.Header.Get("Authorization")
 		if authorization != fmt.Sprintf("Token %s", secret) {
-			return nil, courier.WriteAndLogUnauthorized(ctx, w, r, c, fmt.Errorf("invalid Authorization header"))
+			return nil, courier.WriteAndLogUnauthorized(w, r, c, fmt.Errorf("invalid Authorization header"))
 		}
 	}
 
@@ -109,19 +102,13 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 // receiveEvent is our HTTP handler function for incoming events
-func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
-	payload := &eventPayload{}
-	err := handlers.DecodeAndValidateJSON(payload, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
-	}
-
+func (h *handler) receiveEvent(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *eventPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	// check authentication
 	secret := c.StringConfigForKey(courier.ConfigSecret, "")
 	if secret != "" {
 		authorization := r.Header.Get("Authorization")
 		if authorization != fmt.Sprintf("Token %s", secret) {
-			return nil, courier.WriteAndLogUnauthorized(ctx, w, r, c, fmt.Errorf("invalid Authorization header"))
+			return nil, courier.WriteAndLogUnauthorized(w, r, c, fmt.Errorf("invalid Authorization header"))
 		}
 	}
 
@@ -205,7 +192,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		externalID, err := jsonparser.GetString(respBody, "result", "message_id")
 		if err != nil {
-			clog.Error(errors.Errorf("unable to get result.message_id from body"))
+			clog.Error(courier.ErrorResponseValueMissing("message_id"))
 			return status, nil
 		}
 
