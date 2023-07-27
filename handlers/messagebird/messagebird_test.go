@@ -11,8 +11,7 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MBD", "18665551212", "US", map[string]interface{}{
-		"username":   "18665551212", 							//sending number
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MBD", "18005551212", "US", map[string]interface{}{
 		"secret":     "my_super_secret",                            // secret key to sign for sig
 		"auth_token": "authtoken",                            //API bearer token
 	}),
@@ -21,9 +20,9 @@ var testChannels = []courier.Channel{
 const (
 
 	receiveURL       = "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-	validSignature   = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJNZXNzYWdlQmlyZCIsIm5iZiI6MTY5MDMwNTEzOCwianRpIjoiZjRlZDgzN2UtYWM0Ni00ZWY3LThhYjItYWExY2YzMTE4MGJkIiwicGF5bG9hZF9oYXNoIjoiYWM3OTA3NTk3Mjc4ZDdjY2VkOTU0NmYyY2E3ZmFmYWFjNmY1MjU4YzQxN2VjYTkyNDkwNjVkZDM4NDU3M2RmYyJ9.FrhoATZOt5G7teacfeP-r-PNaGuwE1GZcxZHO8w1No0`
-	validReceive     = `{"body":"Test 3","createdDatetime":"2023-07-25T17:31:42+00:00","date":"1690273902","date_utc":"1690306302","flowId":"21303270-85f5-4661-997d-8f406dec1932","flowRevisionId":"ffacb840-3381-4737-8017-9c0819a01c53","id":"22e6af2f764143e0b3e86b34084cc925","incomingMessage":"Test 3","invocationId":"d9ea9694-22d5-48aa-9b90-7363a2849ec2","message":"Test 3","messageBirdRequestId":"201412c7-2b11-11ee-b1e4-4a1a51e3ad83","message_id":"587c623091d84f228a0eda05b50bc0d3","originator":"188885551515","payload":"Test 3","receivedSMSDateTime":"2023-07-25T17:31:42+00:00","receiver":"18005551515","recipient":"18005551515","reference":"1","sender":"188885551515"}`
-	invalidSignature = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJNZXNzYWdlQmlyZCIsIm5iZiI6MTY5MDMwNTEzOCwianRpIjoiZjRlZDgzN2UtYWM0Ni00ZWY3LThhYjItYWExY2YzMTE4MGJkIiwicGF5bG9hZF9oYXNoIjoiYWM3OTA3NTk3Mjc4ZDdjY2VkOTU0NmYyY2E3ZmFmYWFjNmY1MjU4YzQxN2VjYTkyNDkwNjVkZDM4NDU3M2RmYyJ9.V4_HH1ExRl625Vpl2bNDRGXK-OC8J70dRfNIVejBJDU`
+	validSignature   = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJNZXNzYWdlQmlyZCIsIm5iZiI6MTY5MDMwNjMwNSwianRpIjoiZTkyY2YwNzktMzYyZC00ODEzLWFiNDAtYmJkZDkzOGJkYzZkIiwidXJsX2hhc2giOiI4NGNiMWEwOThlZTY2OGRmNTBmNzQ5Y2M2OThlZDBjZmIwN2FmMzllODBiZDgyZjIzNzFiNTY0NzViNTQ5N2EwIiwicGF5bG9hZF9oYXNoIjoiMjhjZTBiYTE5MDg3ZmE3ODgwZWMwOGQyYmFiMWM3ZDVmM2U2NWMzYjZhZTA5M2EwYjI2MTA4NDY3MTc4MDMzOSJ9.hR6TQQRkPLWFxCe0bcCWM0XdnTgNOlxUTcEzLWJuFkI"
+	validReceive     = `{"receiver":"18005551515","sender":"188885551515","message":"Test again","date":1690386569,"date_utc":1690418969,"reference":"1","id":"b6aae1b5dfb2427a8f7ea6a717ba31a9","message_id":"3b53c137369242138120d6b0b2122607","recipient":"18005551515","originator":"188885551515","body":"Test 3","createdDatetime":"2023-07-27T00:49:29+00:00","mms":false}`
+	invalidSignature = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJNZXNzYWdlQmlyZCIsIm5iZiI6MTY5MDMwNjMwNSwianRpIjoiZTkyY2YwNzktMzYyZC00ODEzLWFiNDAtYmJkZDkzOGJkYzZkIiwidXJsX2hhc2giOiI4NGNiMWEwOThlZTY2OGRmNTBmNzQ5Y2M2OThlZDBjZmIwN2FmMzllODBiZDgyZjIzNzFiNTY0NzViNTQ5N2EwIiwicGF5bG9hZF9oYXNoIjoiMDdhZTVjNmE5NjE2MGFlYjJlMGRkOGIwZWEwNTYxZDM2NzRiNjRhNWE3NTFiNmUxNWM0MDQ1MmY1NjFjYjcyZSJ9.jUUzDg2-e8fH7sghmxNC1cuuxRq-qYQgezZ52hPLL1A`
 )
 
 var sigtestCases = []ChannelHandleTestCase{
@@ -36,7 +35,7 @@ var sigtestCases = []ChannelHandleTestCase{
 		ExpectedBodyContains: "Message Accepted",
 		ExpectedMsgText:      Sp("Test 3"),
 		ExpectedURN:          "tel:188885551515",
-		ExpectedDate:         time.Date(2019, 6, 21, 17, 43, 20, 866000000, time.UTC),
+		ExpectedDate:         time.Date(2023, time.July, 26, 20, 49, 29, 0, time.Local),
 	},
 	{
 		Label:                "Bad Signature",
@@ -44,7 +43,7 @@ var sigtestCases = []ChannelHandleTestCase{
 		URL:                  receiveURL,
 		Data:                 validReceive,
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: `{"message":"Error","data":[{"type":"error","error":"unable to verify signature, crypto/rsa: verification error"}]}`,
+		ExpectedBodyContains: `{"message":"Error","data":[{"type":"error","error":"invalid request signature, signature expected: 28ce0ba19087fa7880ec08d2bab1c7d5f3e65c3b6ae093a0b261084671780339 got: 07ae5c6a96160aeb2e0dd8b0ea0561d3674b64a5a751b6e15c40452f561cb72e for body: '{\"receiver\":\"18005551515\",\"sender\":\"188885551515\",\"message\":\"Test again\",\"date\":1690386569,\"date_utc\":1690418969,\"reference\":\"1\",\"id\":\"b6aae1b5dfb2427a8f7ea6a717ba31a9\",\"message_id\":\"3b53c137369242138120d6b0b2122607\",\"recipient\":\"18005551515\",\"originator\":\"188885551515\",\"body\":\"Test 3\",\"createdDatetime\":\"2023-07-27T00:49:29+00:00\",\"mms\":false}'"}]}`,
 	},
 }
 
@@ -58,7 +57,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedBodyContains: "Message Accepted",
 		ExpectedMsgText:      Sp("Test 3"),
 		ExpectedURN:          "tel:188885551515",
-		ExpectedDate:         time.Date(2019, 6, 21, 17, 43, 20, 866000000, time.UTC),
+		ExpectedDate:         time.Date(2023, time.July, 26, 20, 49, 29, 0, time.Local),
 	},
 	{
 		Label:                "Bad JSON",
@@ -79,8 +78,12 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler("MBD", "Messagebird", false), testCases)
 }
 
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+func setSmsSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
 	smsURL = s.URL
+}
+
+func setMmsSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+	mmsURL = s.URL
 }
 
 var defaultSendTestCases = []ChannelSendTestCase{
@@ -90,11 +93,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgURN:              "tel:188885551515",
 		MockResponseBody:    "",
 		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="},
-		ExpectedRequestBody: `{"messages":[{"message_parts":[{"text":{"content":"Simple Message ☺"}}],"actor_id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606","actor_type":"agent"}],"channel_id":"0534f78-b6e9-4f79-8853-11cedfc1f35b","users":[{"id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606"}]}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+		ExpectedRequestBody: `{"recipients":["188885551515"],"originator":"18005551212","body":"Simple Message ☺"}`,
 		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "",
-		SendPrep:            setSendURL,
+		SendPrep:            setSmsSendURL,
 	},
 	{
 		Label:               "Send with text and image",
@@ -103,11 +106,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgAttachments:      []string{"image:https://foo.bar/image.jpg"},
 		MockResponseBody:    "",
 		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="},
-		ExpectedRequestBody: `{"messages":[{"message_parts":[{"text":{"content":"Simple Message ☺"}},{"image":{"url":"https://foo.bar/image.jpg"}}],"actor_id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606","actor_type":"agent"}],"channel_id":"0534f78-b6e9-4f79-8853-11cedfc1f35b","users":[{"id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606"}]}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+		ExpectedRequestBody: `{"recipients":["188885551515"],"originator":"18005551212","body":"Simple Message ☺","mediaUrls":["https://foo.bar/image.jpg"]}`,
 		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "",
-		SendPrep:            setSendURL,
+		SendPrep:            setMmsSendURL,
 	},
 	{
 		Label:               "Send with image only",
@@ -115,17 +118,16 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		MsgAttachments:      []string{"image/jpg:https://foo.bar/image.jpg"},
 		MockResponseBody:    "",
 		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="},
-		ExpectedRequestBody: `{"messages":[{"message_parts":[{"image":{"url":"https://foo.bar/image.jpg"}}],"actor_id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606","actor_type":"agent"}],"channel_id":"0534f78-b6e9-4f79-8853-11cedfc1f35b","users":[{"id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606"}]}`,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+		ExpectedRequestBody: `{"recipients":["188885551515"],"originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg"]}`,
 		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "",
-		SendPrep:            setSendURL,
+		SendPrep:            setMmsSendURL,
 	},
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MBD", "2020", "US", map[string]interface{}{
-		"username":   "18665551212", 							//sending number
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MBD", "18005551212", "US", map[string]interface{}{
 		"secret":     "my_super_secret",                            // secret key to sign for sig
 		"auth_token": "authtoken",  
 	})

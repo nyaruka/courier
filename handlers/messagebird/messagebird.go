@@ -61,7 +61,6 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	payload := &ReceivedMessage{}
-	fmt.Printf("%+v", payload)
 	err = handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -98,7 +97,6 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
 
-	sendingNumber := msg.Channel().Address()
 
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if authToken == "" {
@@ -111,7 +109,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	// create base payload
 	payload := &Message{
 		Recipients: []string{user},
-		Originator: sendingNumber,
+		Originator: msg.Channel().Address(),
 	}
 	// build message payload
 
@@ -128,16 +126,17 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		mediaType, mediaURL := handlers.SplitAttachment(attachment)
 		switch strings.Split(mediaType, "/")[0] {
 		case "image":
-			payload.MediaUrls = append([]string{mediaURL})
+			payload.MediaUrls = append(payload.MediaUrls, mediaURL)
 		default:
 			clog.Error(courier.ErrorMediaUnsupported(mediaType))
 		}
 	}
-
+	
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
 	}
+
 
 	req, err := http.NewRequest(http.MethodPost, sendUrl, bytes.NewReader(jsonBody))
 
@@ -157,12 +156,6 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	status.SetStatus(courier.MsgWired)
 
 	return status, nil
-}
-
-func CalculateSignature(appSecret string, body []byte) (string, error) {
-	mac := sha256.Sum256(body)
-
-	return hex.EncodeToString(mac[:]), nil
 }
 
 func verifyToken(tokenString string, secret string) (string, error) {
@@ -220,12 +213,10 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 		return fmt.Errorf("missing config 'secret' for Messagebird channel")
 	}
 
-	expectedSignature, err := CalculateSignature(key, body)
-	if err != nil {
-		return err
-	}
+	preHashSignature := sha256.Sum256(body)
+	expectedSignature := hex.EncodeToString(preHashSignature[:])
 	if !hmac.Equal([]byte(expectedSignature), []byte(payloadHash)) {
-		return fmt.Errorf("invalid request signature, jwt was: %s signature expected: %s got: %s for body: '%s'", headerSignature, expectedSignature, payloadHash, string(body))
+		return fmt.Errorf("invalid request signature, signature expected: %s got: %s for body: '%s'", expectedSignature, payloadHash, string(body))
 	}
 	return nil
 }
