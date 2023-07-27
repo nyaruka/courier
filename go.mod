@@ -9,6 +9,7 @@ require (
 	github.com/dghubble/oauth1 v0.7.2
 	github.com/evalphobia/logrus_sentry v0.8.2
 	github.com/go-chi/chi v4.1.2+incompatible
+	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/gomodule/redigo v1.8.9
 	github.com/gorilla/schema v1.2.0
 	github.com/jmoiron/sqlx v1.3.5
@@ -34,7 +35,6 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/getsentry/raven-go v0.2.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
-	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.14.1 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
