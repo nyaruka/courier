@@ -84,180 +84,6 @@ const sqlUpdateMsgByID = `
 UPDATE msgs_msg SET 
 	status = CASE 
 		WHEN 
-			:status = 'E' 
-		THEN CASE 
-			WHEN 
-				error_count >= 2 OR status = 'F' 
-			THEN 
-				'F' 
-			ELSE 
-				'E' 
-			END 
-		ELSE 
-			:status 
-		END,
-	error_count = CASE 
-		WHEN 
-			:status = 'E' 
-		THEN 
-			error_count + 1 
-		ELSE 
-			error_count 
-		END,
-	next_attempt = CASE 
-		WHEN 
-			:status = 'E' 
-		THEN 
-			NOW() + (5 * (error_count+1) * interval '1 minutes') 
-		ELSE 
-			next_attempt 
-		END,
-	failed_reason = CASE
-		WHEN
-			error_count >= 2
-		THEN
-			'E'
-		ELSE
-			failed_reason
-	    END,
-	sent_on = CASE 
-		WHEN
-			:status IN ('W', 'S', 'D')
-		THEN
-			COALESCE(sent_on, NOW())
-		ELSE
-			NULL
-		END,
-	external_id = CASE
-		WHEN 
-			:external_id != ''
-		THEN
-			:external_id
-		ELSE
-			external_id
-		END,
-	modified_on = :modified_on,
-	log_uuids = array_append(log_uuids, :log_uuid)
-WHERE 
-	msgs_msg.id = :msg_id AND
-	msgs_msg.channel_id = :channel_id AND 
-	msgs_msg.direction = 'O'
-RETURNING 
-	msgs_msg.id
-`
-
-const sqlUpdateMsgByExternalID = `
-UPDATE msgs_msg SET 
-	status = CASE 
-		WHEN 
-			:status = 'E' 
-		THEN CASE 
-			WHEN 
-				error_count >= 2 OR status = 'F' 
-			THEN 
-				'F' 
-			ELSE 
-				'E' 
-			END 
-		ELSE 
-			:status 
-		END,
-	error_count = CASE 
-		WHEN 
-			:status = 'E' 
-		THEN 
-			error_count + 1 
-		ELSE 
-			error_count 
-		END,
-	next_attempt = CASE 
-		WHEN 
-			:status = 'E' 
-		THEN 
-			NOW() + (5 * (error_count+1) * interval '1 minutes') 
-		ELSE 
-			next_attempt 
-		END,
-	failed_reason = CASE
-		WHEN
-			error_count >= 2
-		THEN
-			'E'
-		ELSE
-			failed_reason
-	    END,
-	sent_on = CASE 
-		WHEN
-			:status IN ('W', 'S', 'D')
-		THEN
-			COALESCE(sent_on, NOW())
-		ELSE
-			NULL
-		END,
-	modified_on = :modified_on,
-	log_uuids = array_append(log_uuids, :log_uuid)
-WHERE 
-	msgs_msg.id = (SELECT msgs_msg.id FROM msgs_msg WHERE msgs_msg.external_id = :external_id AND msgs_msg.channel_id = :channel_id AND msgs_msg.direction = 'O' LIMIT 1)
-RETURNING 
-	msgs_msg.id
-`
-
-// writeMsgStatusToDB writes the passed in msg status to our db
-func writeMsgStatusToDB(ctx context.Context, b *backend, status *DBMsgStatus) error {
-	var rows *sqlx.Rows
-	var err error
-
-	if status.ID() != courier.NilMsgID {
-		rows, err = b.db.NamedQueryContext(ctx, sqlUpdateMsgByID, status)
-	} else if status.ExternalID() != "" {
-		rows, err = b.db.NamedQueryContext(ctx, sqlUpdateMsgByExternalID, status)
-	} else {
-		return fmt.Errorf("attempt to update msg status without id or external id")
-	}
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	// scan and read the id of the msg that was updated
-	if rows.Next() {
-		rows.Scan(&status.ID_)
-	} else {
-		return courier.ErrMsgNotFound
-	}
-
-	return nil
-}
-
-func (b *backend) flushStatusFile(filename string, contents []byte) error {
-	status := &DBMsgStatus{}
-	err := json.Unmarshal(contents, status)
-	if err != nil {
-		log.Printf("ERROR unmarshalling spool file '%s', renaming: %s\n", filename, err)
-		os.Rename(filename, fmt.Sprintf("%s.error", filename))
-		return nil
-	}
-
-	// try to flush to our db
-	err = writeMsgStatusToDB(context.Background(), b, status)
-
-	// not finding the message is ok for status updates
-	if err == courier.ErrMsgNotFound {
-		return nil
-	}
-
-	// Ignore wrong status update for incoming messages
-	if err == courier.ErrWrongIncomingMsgStatus {
-		return nil
-	}
-
-	return err
-}
-
-const sqlUpdateMsgStatus = `
-UPDATE msgs_msg SET 
-	status = CASE 
-		WHEN 
 			s.status = 'E' 
 		THEN CASE 
 			WHEN 
@@ -321,6 +147,117 @@ WHERE
 	msgs_msg.channel_id = s.channel_id::int AND 
 	msgs_msg.direction = 'O'
 `
+
+const sqlUpdateMsgByExternalID = `
+UPDATE msgs_msg SET 
+	status = CASE 
+		WHEN 
+			:status = 'E' 
+		THEN CASE 
+			WHEN 
+				error_count >= 2 OR status = 'F' 
+			THEN 
+				'F' 
+			ELSE 
+				'E' 
+			END 
+		ELSE 
+			:status 
+		END,
+	error_count = CASE 
+		WHEN 
+			:status = 'E' 
+		THEN 
+			error_count + 1 
+		ELSE 
+			error_count 
+		END,
+	next_attempt = CASE 
+		WHEN 
+			:status = 'E' 
+		THEN 
+			NOW() + (5 * (error_count+1) * interval '1 minutes') 
+		ELSE 
+			next_attempt 
+		END,
+	failed_reason = CASE
+		WHEN
+			error_count >= 2
+		THEN
+			'E'
+		ELSE
+			failed_reason
+	    END,
+	sent_on = CASE 
+		WHEN
+			:status IN ('W', 'S', 'D')
+		THEN
+			COALESCE(sent_on, NOW())
+		ELSE
+			NULL
+		END,
+	modified_on = :modified_on,
+	log_uuids = array_append(log_uuids, :log_uuid)
+WHERE 
+	msgs_msg.id = (SELECT msgs_msg.id FROM msgs_msg WHERE msgs_msg.external_id = :external_id AND msgs_msg.channel_id = :channel_id AND msgs_msg.direction = 'O' LIMIT 1)
+RETURNING 
+	msgs_msg.id
+`
+
+// writeMsgStatusToDB writes the passed in msg status to our db
+func writeMsgStatusToDB(ctx context.Context, b *backend, status *DBMsgStatus) error {
+	if status.ID() == courier.NilMsgID && status.ExternalID() == "" {
+		return fmt.Errorf("attempt to update msg status without id or external id")
+	}
+
+	var rows *sqlx.Rows
+	var err error
+
+	if status.ID() != courier.NilMsgID {
+		err = dbutil.BulkQuery(context.Background(), b.db, sqlUpdateMsgByID, []*DBMsgStatus{status})
+		return err
+	}
+
+	rows, err = b.db.NamedQueryContext(ctx, sqlUpdateMsgByExternalID, status)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	// scan and read the id of the msg that was updated
+	if rows.Next() {
+		rows.Scan(&status.ID_)
+	} else {
+		return courier.ErrMsgNotFound
+	}
+
+	return nil
+}
+
+func (b *backend) flushStatusFile(filename string, contents []byte) error {
+	status := &DBMsgStatus{}
+	err := json.Unmarshal(contents, status)
+	if err != nil {
+		log.Printf("ERROR unmarshalling spool file '%s', renaming: %s\n", filename, err)
+		os.Rename(filename, fmt.Sprintf("%s.error", filename))
+		return nil
+	}
+
+	// try to flush to our db
+	err = writeMsgStatusToDB(context.Background(), b, status)
+
+	// not finding the message is ok for status updates
+	if err == courier.ErrMsgNotFound {
+		return nil
+	}
+
+	// Ignore wrong status update for incoming messages
+	if err == courier.ErrWrongIncomingMsgStatus {
+		return nil
+	}
+
+	return err
+}
 
 //-----------------------------------------------------------------------------
 // MsgStatusUpdate implementation
@@ -403,12 +340,12 @@ func NewStatusWriter(db *sqlx.DB, spoolDir string, wg *sync.WaitGroup) *StatusWr
 
 func writeMsgStatuses(ctx context.Context, db *sqlx.DB, spoolDir string, statuses []*DBMsgStatus) {
 	for _, batch := range utils.ChunkSlice(statuses, 1000) {
-		err := dbutil.BulkQuery(ctx, db, sqlUpdateMsgStatus, batch)
+		err := dbutil.BulkQuery(ctx, db, sqlUpdateMsgByID, batch)
 
 		// if we received an error, try again one at a time (in case it is one value hanging us up)
 		if err != nil {
 			for _, s := range batch {
-				err = dbutil.BulkQuery(ctx, db, sqlUpdateMsgStatus, []*DBMsgStatus{s})
+				err = dbutil.BulkQuery(ctx, db, sqlUpdateMsgByID, []*DBMsgStatus{s})
 				if err != nil {
 					log := logrus.WithField("comp", "status writer").WithField("msg_id", s.ID())
 
