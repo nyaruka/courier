@@ -25,13 +25,10 @@ import (
 )
 
 var (
-	smsURL = "https://rest.messagebird.com/messages"
-	mmsURL = "https://rest.messagebird.com/mms"
-	signatureHeader = "Messagebird-Signature-Jwt"
+	smsURL                    = "https://rest.messagebird.com/messages"
+	mmsURL                    = "https://rest.messagebird.com/mms"
+	signatureHeader           = "Messagebird-Signature-Jwt"
 	maxRequestBodyBytes int64 = 1024 * 1024
-
-	// max for the body
-	maxMsgLength = 1000
 )
 
 func init() {
@@ -67,7 +64,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// no message? ignore this
-	if payload.Body == ""  && !payload.Mms {
+	if payload.Body == "" && !payload.Mms {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 	}
 
@@ -86,17 +83,16 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// process any attached media
 	if payload.Mms {
-	for i := 0; i < len(payload.MediaUrls); i++ {
-		msg.WithAttachment(payload.MediaUrls[i])
-		println("this is the media url", payload.MediaUrls[i])
-	}
+		for i := 0; i < len(payload.MediaUrls); i++ {
+			msg.WithAttachment(payload.MediaUrls[i])
+			println("this is the media url", payload.MediaUrls[i])
+		}
 	}
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
-
 
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if authToken == "" {
@@ -137,7 +133,6 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, err
 	}
 
-
 	req, err := http.NewRequest(http.MethodPost, sendUrl, bytes.NewReader(jsonBody))
 
 	if err != nil {
@@ -158,10 +153,12 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return status, nil
 }
 
-func verifyToken(tokenString string, secret string) (string, error) {
+func verifyToken(tokenString string, secret string) (jwt.MapClaims, error) {
 	// Parse the token with the provided secret to get the claims
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Validate the signing method
+		// We only allow HS256
+		// ref: https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
@@ -170,23 +167,17 @@ func verifyToken(tokenString string, secret string) (string, error) {
 	})
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Check if the token is valid
 	if token.Valid {
-		// Extract the "payload_hash" claim value
-		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			if payloadHash, ok := claims["payload_hash"].(string); ok {
-				return payloadHash, nil
-			}
-		}
+		tokenClaims := token.Claims.(jwt.MapClaims)
+		return tokenClaims, nil
 	}
 
-	return "", fmt.Errorf("Invalid token or missing payload_hash claim")
+	return nil, fmt.Errorf("Invalid token or missing payload_hash claim")
 }
-
-
 
 func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if !h.validateSignatures {
@@ -196,21 +187,19 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if headerSignature == "" {
 		return fmt.Errorf("missing request signature")
 	}
-	configsecret :=  c.StringConfigForKey(courier.ConfigSecret, "")
+	configsecret := c.StringConfigForKey(courier.ConfigSecret, "")
 	if configsecret == "" {
 		return fmt.Errorf("missing configsecret")
 	}
-	payloadHash, err := verifyToken(headerSignature, configsecret)
+	verifiedToken, err := verifyToken(headerSignature, configsecret)
 	if err != nil {
 		return err
 	}
+	payloadHash := verifiedToken["payload_hash"].(string)
+
 	body, err := handlers.ReadBody(r, maxRequestBodyBytes)
 	if err != nil {
 		return fmt.Errorf("unable to read request body: %s", err)
-	}
-	key := c.StringConfigForKey(courier.ConfigSecret, "")
-	if key == "" {
-		return fmt.Errorf("missing config 'secret' for Messagebird channel")
 	}
 
 	preHashSignature := sha256.Sum256(body)
@@ -220,9 +209,6 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	}
 	return nil
 }
-
-
-
 
 type Message struct {
 	Recipients []string `json:"recipients"`

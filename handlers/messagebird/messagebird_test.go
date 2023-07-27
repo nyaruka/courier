@@ -12,13 +12,12 @@ import (
 
 var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MBD", "18005551212", "US", map[string]interface{}{
-		"secret":     "my_super_secret",                            // secret key to sign for sig
-		"auth_token": "authtoken",                            //API bearer token
+		"secret":     "my_super_secret", // secret key to sign for sig
+		"auth_token": "authtoken",       //API bearer token
 	}),
 }
 
 const (
-
 	receiveURL       = "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	validSignature   = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJNZXNzYWdlQmlyZCIsIm5iZiI6MTY5MDMwNjMwNSwianRpIjoiZTkyY2YwNzktMzYyZC00ODEzLWFiNDAtYmJkZDkzOGJkYzZkIiwidXJsX2hhc2giOiI4NGNiMWEwOThlZTY2OGRmNTBmNzQ5Y2M2OThlZDBjZmIwN2FmMzllODBiZDgyZjIzNzFiNTY0NzViNTQ5N2EwIiwicGF5bG9hZF9oYXNoIjoiMjhjZTBiYTE5MDg3ZmE3ODgwZWMwOGQyYmFiMWM3ZDVmM2U2NWMzYjZhZTA5M2EwYjI2MTA4NDY3MTc4MDMzOSJ9.hR6TQQRkPLWFxCe0bcCWM0XdnTgNOlxUTcEzLWJuFkI"
 	validReceive     = `{"receiver":"18005551515","sender":"188885551515","message":"Test again","date":1690386569,"date_utc":1690418969,"reference":"1","id":"b6aae1b5dfb2427a8f7ea6a717ba31a9","message_id":"3b53c137369242138120d6b0b2122607","recipient":"18005551515","originator":"188885551515","body":"Test 3","createdDatetime":"2023-07-27T00:49:29+00:00","mms":false}`
@@ -128,8 +127,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 
 func TestSending(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MBD", "18005551212", "US", map[string]interface{}{
-		"secret":     "my_super_secret",                            // secret key to sign for sig
-		"auth_token": "authtoken",  
+		"secret":     "my_super_secret", // secret key to sign for sig
+		"auth_token": "authtoken",
 	})
 	RunChannelSendTestCases(t, defaultChannel, newHandler("MBD", "Messagebird", false), defaultSendTestCases, []string{"my_super_secret", "authtoken"}, nil)
 }
