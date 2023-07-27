@@ -2,6 +2,7 @@ package rapidpro
 
 import (
 	"context"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -1525,4 +1526,27 @@ func readMsgFromDB(b *backend, id courier.MsgID) *DBMsg {
 
 	m.channel = ch
 	return m
+}
+
+const selectMsgIDForID = `
+SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (m."id" = $1 AND c."uuid" = $2 AND m."direction" = 'O')`
+
+const selectMsgIDForExternalID = `
+SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (m."external_id" = $1 AND c."uuid" = $2 AND m."direction" = 'O')`
+
+func checkMsgExists(b *backend, status courier.MsgStatus) (err error) {
+	var id int64
+
+	if status.ID() != courier.NilMsgID {
+		err = b.db.QueryRow(selectMsgIDForID, status.ID(), status.ChannelUUID()).Scan(&id)
+	} else if status.ExternalID() != "" {
+		err = b.db.QueryRow(selectMsgIDForExternalID, status.ExternalID(), status.ChannelUUID()).Scan(&id)
+	} else {
+		return fmt.Errorf("no id or external id for status update")
+	}
+
+	if err == sql.ErrNoRows {
+		return courier.ErrMsgNotFound
+	}
+	return err
 }
