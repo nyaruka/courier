@@ -1,7 +1,7 @@
 package messagebird
 
 /*
- * Handler for FreshChat
+ * Handler for MessageBird
  */
 import (
 	"bytes"
