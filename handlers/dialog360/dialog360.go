@@ -217,7 +217,8 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 	// the list of data we will return in our response
 	data := make([]interface{}, 0, 2)
 
-	var contactNames = make(map[string]string)
+	seenMsgIDs := make(map[string]bool)
+	contactNames := make(map[string]string)
 
 	// for each entry
 	for _, entry := range payload.Entry {
@@ -232,6 +233,10 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 			}
 
 			for _, msg := range change.Value.Messages {
+				if seenMsgIDs[msg.ID] {
+					continue
+				}
+
 				// create our date from the timestamp
 				ts, err := strconv.ParseInt(msg.Timestamp, 10, 64)
 				if err != nil {
@@ -301,6 +306,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 
 				events = append(events, event)
 				data = append(data, courier.NewMsgReceiveData(event))
+				seenMsgIDs[msg.ID] = true
 			}
 
 			for _, status := range change.Value.Statuses {

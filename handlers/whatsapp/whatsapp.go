@@ -177,6 +177,8 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 	// the list of data we will return in our response
 	data := make([]interface{}, 0, 2)
 
+	seenMsgIDs := make(map[string]bool, 2)
+
 	var contactNames = make(map[string]string)
 	for _, contact := range payload.Contacts {
 		contactNames[contact.WaID] = contact.Profile.Name
@@ -184,6 +186,10 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 
 	// first deal with any received messages
 	for _, msg := range payload.Messages {
+		if seenMsgIDs[msg.ID] {
+			continue
+		}
+
 		// create our date from the timestamp
 		ts, err := strconv.ParseInt(msg.Timestamp, 10, 64)
 		if err != nil {
@@ -248,6 +254,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 
 		events = append(events, event)
 		data = append(data, courier.NewMsgReceiveData(event))
+		seenMsgIDs[msg.ID] = true
 	}
 
 	// now with any status updates
