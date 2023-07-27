@@ -47,17 +47,16 @@ func newHandler(channelType courier.ChannelType, name string, validateSignatures
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
 	return nil
 }
 
-func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *ReceivedMessage, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	payload := &ReceivedMessage{}
 	err = handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -83,9 +82,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// process any attached media
 	if payload.Mms {
-		for i := 0; i < len(payload.MediaUrls); i++ {
-			msg.WithAttachment(payload.MediaUrls[i])
-			println("this is the media url", payload.MediaUrls[i])
+		for i := 0; i < len(payload.MediaURLs); i++ {
+			msg.WithAttachment(payload.MediaURLs[i])
 		}
 	}
 	// and finally write our message
@@ -122,7 +120,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		mediaType, mediaURL := handlers.SplitAttachment(attachment)
 		switch strings.Split(mediaType, "/")[0] {
 		case "image":
-			payload.MediaUrls = append(payload.MediaUrls, mediaURL)
+			payload.MediaURLs = append(payload.MediaURLs, mediaURL)
 		default:
 			clog.Error(courier.ErrorMediaUnsupported(mediaType))
 		}
@@ -179,6 +177,11 @@ func verifyToken(tokenString string, secret string) (jwt.MapClaims, error) {
 	return nil, fmt.Errorf("Invalid token or missing payload_hash claim")
 }
 
+func calculateSignature(body []byte) string {
+	preHashSignature := sha256.Sum256(body)
+	return hex.EncodeToString(preHashSignature[:])
+}
+
 func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if !h.validateSignatures {
 		return nil
@@ -202,10 +205,9 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 		return fmt.Errorf("unable to read request body: %s", err)
 	}
 
-	preHashSignature := sha256.Sum256(body)
-	expectedSignature := hex.EncodeToString(preHashSignature[:])
+	expectedSignature := calculateSignature(body)
 	if !hmac.Equal([]byte(expectedSignature), []byte(payloadHash)) {
-		return fmt.Errorf("invalid request signature, signature expected: %s got: %s for body: '%s'", expectedSignature, payloadHash, string(body))
+		return fmt.Errorf("invalid request signature, signature doesn't match expected signature for body.")
 	}
 	return nil
 }
@@ -215,7 +217,7 @@ type Message struct {
 	Originator string   `json:"originator"`
 	Subject    string   `json:"subject,omitempty"`
 	Body       string   `json:"body,omitempty"`
-	MediaUrls  []string `json:"mediaUrls,omitempty"`
+	MediaURLs  []string `json:"mediaUrls,omitempty"`
 }
 
 type ReceivedMessage struct {
@@ -223,7 +225,7 @@ type ReceivedMessage struct {
 	Sender            string    `json:"sender"`
 	Message           string    `json:"message"`
 	Date              int       `json:"date"`
-	DateUtc           int       `json:"date_utc"`
+	DateUTC           int       `json:"date_utc"`
 	Reference         string    `json:"reference"`
 	ID                string    `json:"id"`
 	MessageID         string    `json:"message_id"`
@@ -231,7 +233,7 @@ type ReceivedMessage struct {
 	Originator        string    `json:"originator"`
 	Body              string    `json:"body"`
 	CreatedDatetime   time.Time `json:"createdDatetime"`
-	MediaUrls         []string  `json:"mediaUrls"`
+	MediaURLs         []string  `json:"mediaUrls"`
 	MediaContentTypes []string  `json:"mediaContentTypes"`
 	Subject           string    `json:"subject"`
 	Mms               bool      `json:"mms"`
