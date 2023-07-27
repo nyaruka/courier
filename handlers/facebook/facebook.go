@@ -385,8 +385,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			}
 
 			// create our message
-			ev := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(msg.Message.MID).WithReceivedOn(date)
-			event := h.Backend().CheckExternalIDSeen(ev)
+			event := h.Backend().NewIncomingMsg(channel, urn, text, msg.Message.MID, clog).WithReceivedOn(date)
 
 			// add any attachment URL found
 			for _, attURL := range attachmentURLs {
@@ -397,8 +396,6 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			if err != nil {
 				return nil, err
 			}
-
-			h.Backend().WriteExternalIDSeen(event)
 
 			events = append(events, event)
 			data = append(data, courier.NewMsgReceiveData(event))

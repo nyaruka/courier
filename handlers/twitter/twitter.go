@@ -185,7 +185,7 @@ func (h *handler) receiveEvents(ctx context.Context, c courier.Channel, w http.R
 		text := strings.Replace(entry.MessageCreate.MessageData.Text, "&amp;", "&", -1)
 
 		// create our message
-		msg := h.Backend().NewIncomingMsg(c, urn, text, clog).WithExternalID(entry.ID).WithReceivedOn(date).WithContactName(user.Name)
+		msg := h.Backend().NewIncomingMsg(c, urn, text, entry.ID, clog).WithReceivedOn(date).WithContactName(user.Name)
 
 		// if we have an attachment, add that as well
 		if entry.MessageCreate.MessageData.Attachment != nil {

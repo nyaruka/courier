@@ -89,7 +89,6 @@ func (m *mockMsg) WiredOn() *time.Time           { return m.wiredOn }
 func (m *mockMsg) WithContactName(name string) courier.Msg   { m.contactName = name; return m }
 func (m *mockMsg) WithURNAuth(auth string) courier.Msg       { m.urnAuth = auth; return m }
 func (m *mockMsg) WithReceivedOn(date time.Time) courier.Msg { m.receivedOn = &date; return m }
-func (m *mockMsg) WithExternalID(id string) courier.Msg      { m.externalID = id; return m }
 func (m *mockMsg) WithID(id courier.MsgID) courier.Msg       { m.id = id; return m }
 func (m *mockMsg) WithUUID(uuid courier.MsgUUID) courier.Msg { m.uuid = uuid; return m }
 func (m *mockMsg) WithAttachment(url string) courier.Msg {

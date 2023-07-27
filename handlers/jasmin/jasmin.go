@@ -94,7 +94,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(c, urn, text, clog).WithExternalID(form.ID).WithReceivedOn(time.Now().UTC())
+	msg := h.Backend().NewIncomingMsg(c, urn, text, form.ID, clog).WithReceivedOn(time.Now().UTC())
 
 	// and finally queue our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)

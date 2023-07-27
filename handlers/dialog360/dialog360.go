@@ -283,8 +283,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 				}
 
 				// create our message
-				ev := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(msg.ID).WithContactName(contactNames[msg.From])
-				event := h.Backend().CheckExternalIDSeen(ev)
+				event := h.Backend().NewIncomingMsg(channel, urn, text, msg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[msg.From])
 
 				// we had an error downloading media
 				if err != nil {
@@ -300,11 +299,8 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					return nil, nil, err
 				}
 
-				h.Backend().WriteExternalIDSeen(event)
-
 				events = append(events, event)
 				data = append(data, courier.NewMsgReceiveData(event))
-
 			}
 
 			for _, status := range change.Value.Statuses {

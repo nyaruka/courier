@@ -42,7 +42,7 @@ type Backend interface {
 	DeleteMsgWithExternalID(ctx context.Context, channel Channel, externalID string) error
 
 	// NewIncomingMsg creates a new message from the given params
-	NewIncomingMsg(Channel, urns.URN, string, *ChannelLog) Msg
+	NewIncomingMsg(Channel, urns.URN, string, string, *ChannelLog) Msg
 
 	// WriteMsg writes the passed in message to our backend
 	WriteMsg(context.Context, Msg, *ChannelLog) error
@@ -81,12 +81,6 @@ type Backend interface {
 	// of errors during sending as it will manage the number of active workers per channel. The optional status parameter can be
 	// used to determine any sort of deduping of msg sends
 	MarkOutgoingMsgComplete(context.Context, Msg, MsgStatus)
-
-	// Check if external ID has been seen in a period
-	CheckExternalIDSeen(Msg) Msg
-
-	// Mark a external ID as seen for a period
-	WriteExternalIDSeen(Msg)
 
 	// SaveAttachment saves an attachment to backend storage
 	SaveAttachment(context.Context, Channel, string, []byte, string) (string, error)
