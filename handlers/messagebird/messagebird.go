@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
@@ -34,7 +35,7 @@ var (
 )
 
 func init() {
-	courier.RegisterHandler(newHandler(true))
+	courier.RegisterHandler(newHandler("MBD", "Messagebird", true))
 }
 
 type handler struct {
@@ -42,29 +43,32 @@ type handler struct {
 	validateSignatures bool
 }
 
-func newHandler(validateSignatures bool) courier.ChannelHandler {
+func newHandler(channelType courier.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("MBD"), "Messagebird"), validateSignatures}
 }
 
 // Initialize is called by the engine once everything is loaded
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
-	s.AddHandlerRoute(h, http.MethodPost, "receive", h.receiveMessage)
+	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, h.receiveMessage)
 	return nil
 }
+
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(channel, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
+
 	payload := &ReceivedMessage{}
+	fmt.Printf("%+v", payload)
 	err = handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
 	// no message? ignore this
-	if payload.Body == ""  && payload.MediaUrls == nil {
+	if payload.Body == ""  && !payload.Mms {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 	}
 
@@ -82,9 +86,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(payload.ID)
 
 	// process any attached media
+	if payload.Mms {
 	for i := 0; i < len(payload.MediaUrls); i++ {
-		mediaURL := payload.MediaUrls[i]
-		msg.WithAttachment(mediaURL)
+		msg.WithAttachment(payload.MediaUrls[i])
+		println("this is the media url", payload.MediaUrls[i])
+	}
 	}
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
@@ -124,7 +130,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		case "image":
 			payload.MediaUrls = append([]string{mediaURL})
 		default:
-			clog.Error(fmt.Errorf("unknown media type: %s", mediaType))
+			clog.Error(courier.ErrorMediaUnsupported(mediaType))
 		}
 	}
 
@@ -236,26 +242,20 @@ type Message struct {
 }
 
 type ReceivedMessage struct {
-	Body                 string    `json:"body"`
-	CreatedDatetime      time.Time `json:"createdDatetime"`
-	Date                 string    `json:"date"`
-	DateUtc              string    `json:"date_utc"`
-	FlowID               string    `json:"flowId"`
-	FlowRevisionID       string    `json:"flowRevisionId"`
-	ID                   string    `json:"id"`
-	IncomingMessage      string    `json:"incomingMessage"`
-	InvocationID         string    `json:"invocationId"`
-	MediaContentTypes   []string    `json:"mediaContentTypes"`
-	MediaUrls           []string    `json:"mediaUrls"`
-	Message              string    `json:"message"`
-	MessageBirdRequestID string    `json:"messageBirdRequestId"`
-	MessageID            string    `json:"message_id"`
-	Originator           string    `json:"originator"`
-	Payload              string    `json:"payload"`
-	ReceivedSMSDateTime  time.Time `json:"receivedSMSDateTime"`
-	Receiver             string    `json:"receiver"`
-	Recipient            string    `json:"recipient"`
-	Reference            string    `json:"reference"`
-	Sender               string    `json:"sender"`
-	Subject              string    `json:"subject"`
+	Receiver          string    `json:"receiver"`
+	Sender            string    `json:"sender"`
+	Message           string    `json:"message"`
+	Date              int       `json:"date"`
+	DateUtc           int       `json:"date_utc"`
+	Reference         string    `json:"reference"`
+	ID                string    `json:"id"`
+	MessageID         string    `json:"message_id"`
+	Recipient         string    `json:"recipient"`
+	Originator        string    `json:"originator"`
+	Body              string    `json:"body"`
+	CreatedDatetime   time.Time `json:"createdDatetime"`
+	MediaUrls         []string  `json:"mediaUrls"`
+	MediaContentTypes []string  `json:"mediaContentTypes"`
+	Subject           string    `json:"subject"`
+	Mms               bool      `json:"mms"`
 }

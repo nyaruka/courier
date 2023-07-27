@@ -11,7 +11,7 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MBD", "2020", "US", map[string]interface{}{
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MBD", "18665551212", "US", map[string]interface{}{
 		"username":   "18665551212", 							//sending number
 		"secret":     "my_super_secret",                            // secret key to sign for sig
 		"auth_token": "authtoken",                            //API bearer token
@@ -20,7 +20,7 @@ var testChannels = []courier.Channel{
 
 const (
 
-	receiveURL       = "/c/fc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
+	receiveURL       = "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	validSignature   = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJNZXNzYWdlQmlyZCIsIm5iZiI6MTY5MDMwNTEzOCwianRpIjoiZjRlZDgzN2UtYWM0Ni00ZWY3LThhYjItYWExY2YzMTE4MGJkIiwicGF5bG9hZF9oYXNoIjoiYWM3OTA3NTk3Mjc4ZDdjY2VkOTU0NmYyY2E3ZmFmYWFjNmY1MjU4YzQxN2VjYTkyNDkwNjVkZDM4NDU3M2RmYyJ9.FrhoATZOt5G7teacfeP-r-PNaGuwE1GZcxZHO8w1No0`
 	validReceive     = `{"body":"Test 3","createdDatetime":"2023-07-25T17:31:42+00:00","date":"1690273902","date_utc":"1690306302","flowId":"21303270-85f5-4661-997d-8f406dec1932","flowRevisionId":"ffacb840-3381-4737-8017-9c0819a01c53","id":"22e6af2f764143e0b3e86b34084cc925","incomingMessage":"Test 3","invocationId":"d9ea9694-22d5-48aa-9b90-7363a2849ec2","message":"Test 3","messageBirdRequestId":"201412c7-2b11-11ee-b1e4-4a1a51e3ad83","message_id":"587c623091d84f228a0eda05b50bc0d3","originator":"188885551515","payload":"Test 3","receivedSMSDateTime":"2023-07-25T17:31:42+00:00","receiver":"18005551515","recipient":"18005551515","reference":"1","sender":"188885551515"}`
 	invalidSignature = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJNZXNzYWdlQmlyZCIsIm5iZiI6MTY5MDMwNTEzOCwianRpIjoiZjRlZDgzN2UtYWM0Ni00ZWY3LThhYjItYWExY2YzMTE4MGJkIiwicGF5bG9hZF9oYXNoIjoiYWM3OTA3NTk3Mjc4ZDdjY2VkOTU0NmYyY2E3ZmFmYWFjNmY1MjU4YzQxN2VjYTkyNDkwNjVkZDM4NDU3M2RmYyJ9.V4_HH1ExRl625Vpl2bNDRGXK-OC8J70dRfNIVejBJDU`
