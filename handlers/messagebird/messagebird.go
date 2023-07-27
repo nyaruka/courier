@@ -15,7 +15,6 @@ import (
 	"fmt"
 
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -76,8 +75,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// process any attached media
 	if payload.MMS {
-		for i := 0; i < len(payload.MediaURLs); i++ {
-			msg.WithAttachment(payload.MediaURLs[i])
+		for _, mediaURL := range payload.MediaURLs {
+			msg.WithAttachment(mediaURL)
 		}
 	}
 	// and finally write our message
@@ -112,8 +111,46 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 	for _, attachment := range msg.Attachments() {
 		mediaType, mediaURL := handlers.SplitAttachment(attachment)
-		switch strings.Split(mediaType, "/")[0] {
-		case "image":
+		switch mediaType {
+		// Supported media types
+		// https://developers.messagebird.com/api/mms-messaging/#media-attachments
+		case "audio/basic",
+			"audio/L24",
+			"audio/mp4",
+			"audio/mpeg",
+			"audio/ogg",
+			"audio/vorbis",
+			"audio/vnd.rn-realaudio",
+			"audio/vnd.wave",
+			"audio/3gpp",
+			"audio/3gpp2",
+			"audio/ac3",
+			"audio/webm",
+			"audio/amr-nb",
+			"audio/amr",
+			"video/mpeg",
+			"video/mp4",
+			"video/quicktime",
+			"video/webm",
+			"video/3gpp",
+			"video/3gpp2",
+			"video/3gpp-tt",
+			"video/H261",
+			"video/H263",
+			"video/H263-1998",
+			"video/H263-2000",
+			"video/H264",
+			"image/jpeg",
+			"image/jpg",
+			"image/gif",
+			"image/png",
+			"image/bmp",
+			"text/vcard",
+			"text/csv",
+			"text/rtf",
+			"text/richtext",
+			"text/calendar",
+			"application/pdf":
 			payload.MediaURLs = append(payload.MediaURLs, mediaURL)
 		default:
 			clog.Error(courier.ErrorMediaUnsupported(mediaType))

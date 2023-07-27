@@ -21,10 +21,11 @@ var testChannels = []courier.Channel{
 }
 
 const (
-	receiveURL    = "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
-	validReceive  = `{"receiver":"18005551515","sender":"188885551515","message":"Test again","date":1690386569,"date_utc":1690418969,"reference":"1","id":"b6aae1b5dfb2427a8f7ea6a717ba31a9","message_id":"3b53c137369242138120d6b0b2122607","recipient":"18005551515","originator":"188885551515","body":"Test 3","createdDatetime":"2023-07-27T00:49:29+00:00","mms":false}`
-	validSecret   = "my_super_secret"
-	invalidSecret = "bad_secret"
+	receiveURL      = "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
+	validReceive    = `{"receiver":"18005551515","sender":"188885551515","message":"Test again","date":1690386569,"date_utc":1690418969,"reference":"1","id":"b6aae1b5dfb2427a8f7ea6a717ba31a9","message_id":"3b53c137369242138120d6b0b2122607","recipient":"18005551515","originator":"188885551515","body":"Test 3","createdDatetime":"2023-07-27T00:49:29+00:00","mms":false}`
+	validReceiveMMS = `{"receiver":"18005551515","sender":"188885551515","message":"Test again","date":1690386569,"date_utc":1690418969,"reference":"1","id":"b6aae1b5dfb2427a8f7ea6a717ba31a9","message_id":"3b53c137369242138120d6b0b2122607","recipient":"18005551515","originator":"188885551515","mediaURLs":["https://foo.bar/image.jpg"],"createdDatetime":"2023-07-27T00:49:29+00:00","mms":true}`
+	validSecret     = "my_super_secret"
+	invalidSecret   = "bad_secret"
 )
 
 func addValidSignature(r *http.Request) {
@@ -77,13 +78,25 @@ func addInvalidBodyHash(r *http.Request) {
 
 var sigtestCases = []ChannelHandleTestCase{
 	{
-		Label:                "Receive Valid w Signature",
+		Label:                "Receive Valid text w Signature",
 		Headers:              map[string]string{"Content-Type": "application/json"},
 		URL:                  receiveURL,
 		Data:                 validReceive,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Message Accepted",
 		ExpectedMsgText:      Sp("Test 3"),
+		ExpectedURN:          "tel:188885551515",
+		ExpectedDate:         time.Date(2023, time.July, 27, 00, 49, 29, 0, time.UTC),
+		PrepRequest:          addValidSignature,
+	},
+	{
+		Label:                "Receive Valid w image w Signature",
+		Headers:              map[string]string{"Content-Type": "application/json"},
+		URL:                  receiveURL,
+		Data:                 validReceiveMMS,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Message Accepted",
+		ExpectedAttachments:  []string{"https://foo.bar/image.jpg"},
 		ExpectedURN:          "tel:188885551515",
 		ExpectedDate:         time.Date(2023, time.July, 27, 00, 49, 29, 0, time.UTC),
 		PrepRequest:          addValidSignature,
@@ -150,7 +163,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		Label:               "Send with text and image",
 		MsgText:             "Simple Message ☺",
 		MsgURN:              "tel:188885551515",
-		MsgAttachments:      []string{"image:https://foo.bar/image.jpg"},
+		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:    "",
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
@@ -162,11 +175,47 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	{
 		Label:               "Send with image only",
 		MsgURN:              "tel:188885551515",
-		MsgAttachments:      []string{"image/jpg:https://foo.bar/image.jpg"},
+		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:    "",
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
 		ExpectedRequestBody: `{"recipients":["188885551515"],"originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg"]}`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "",
+		SendPrep:            setMmsSendURL,
+	},
+	{
+		Label:               "Send with two images",
+		MsgURN:              "tel:188885551515",
+		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg", "image/jpeg:https://foo.bar/image2.jpg"},
+		MockResponseBody:    "",
+		MockResponseStatus:  200,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+		ExpectedRequestBody: `{"recipients":["188885551515"],"originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg","https://foo.bar/image2.jpg"]}`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "",
+		SendPrep:            setMmsSendURL,
+	},
+	{
+		Label:               "Send with video only",
+		MsgURN:              "tel:188885551515",
+		MsgAttachments:      []string{"video/mp4:https://foo.bar/movie.mp4"},
+		MockResponseBody:    "",
+		MockResponseStatus:  200,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+		ExpectedRequestBody: `{"recipients":["188885551515"],"originator":"18005551212","mediaUrls":["https://foo.bar/movie.mp4"]}`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "",
+		SendPrep:            setMmsSendURL,
+	},
+	{
+		Label:               "Send with pdf",
+		MsgURN:              "tel:188885551515",
+		MsgAttachments:      []string{"application/pdf:https://foo.bar/document.pdf"},
+		MockResponseBody:    "",
+		MockResponseStatus:  200,
+		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+		ExpectedRequestBody: `{"recipients":["188885551515"],"originator":"18005551212","mediaUrls":["https://foo.bar/document.pdf"]}`,
 		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "",
 		SendPrep:            setMmsSendURL,
