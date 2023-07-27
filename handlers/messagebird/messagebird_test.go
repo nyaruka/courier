@@ -35,7 +35,7 @@ var sigtestCases = []ChannelHandleTestCase{
 		ExpectedBodyContains: "Message Accepted",
 		ExpectedMsgText:      Sp("Test 3"),
 		ExpectedURN:          "tel:188885551515",
-		ExpectedDate:         time.Date(2023, time.July, 26, 20, 49, 29, 0, time.Local),
+		ExpectedDate:         time.Date(2023, time.July, 27, 00, 49, 29, 0, time.UTC),
 	},
 	{
 		Label:                "Bad Signature",
@@ -57,7 +57,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedBodyContains: "Message Accepted",
 		ExpectedMsgText:      Sp("Test 3"),
 		ExpectedURN:          "tel:188885551515",
-		ExpectedDate:         time.Date(2023, time.July, 26, 20, 49, 29, 0, time.Local),
+		ExpectedDate:         time.Date(2023, time.July, 27, 00, 49, 29, 0, time.UTC),
 	},
 	{
 		Label:                "Bad JSON",

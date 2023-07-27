@@ -82,7 +82,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	text := payload.Body
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(payload.ID)
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date.UTC()).WithExternalID(payload.ID)
 
 	// process any attached media
 	if payload.Mms {
@@ -131,7 +131,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			clog.Error(courier.ErrorMediaUnsupported(mediaType))
 		}
 	}
-	
+
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
