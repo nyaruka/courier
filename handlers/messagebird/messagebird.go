@@ -21,7 +21,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/gocommon/urns"
 )
 
 var (
@@ -66,7 +65,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	date := payload.CreatedDatetime
 
 	// create our URN
-	urn, err := urns.NewTelURNForCountry(payload.Originator, "US")
+	urn, err := handlers.StrictTelForCountry(payload.Originator, channel.Country())
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
