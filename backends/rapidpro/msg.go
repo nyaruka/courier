@@ -2,7 +2,9 @@ package rapidpro
 
 import (
 	"context"
+	"crypto/md5"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -272,10 +274,13 @@ func (b *backend) checkMsgSeen(msg *DBMsg) courier.MsgUUID {
 
 	// if so, test whether the text it the same
 	if uuidAndText != "" {
-		prevText := uuidAndText[37:]
+		prevAttachmentAndText := uuidAndText[37:]
+
+		attachmentsHash := md5.Sum([]byte(strings.Join(msg.Attachments(), ",")))
+		msgAttachmentAndText := fmt.Sprintf("%s|%s", hex.EncodeToString(attachmentsHash[:]), msg.Text())
 
 		// if it is the same, return the UUID
-		if prevText == msg.Text() {
+		if prevAttachmentAndText == msgAttachmentAndText {
 			return courier.MsgUUID(uuidAndText[:36])
 		}
 	}
@@ -288,7 +293,9 @@ func (b *backend) writeMsgSeen(msg *DBMsg) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	b.seenMsgs.Set(rc, msg.fingerprint(false), fmt.Sprintf("%s|%s", msg.UUID(), msg.Text()))
+	attachmentsHash := md5.Sum([]byte(strings.Join(msg.Attachments(), ",")))
+
+	b.seenMsgs.Set(rc, msg.fingerprint(false), fmt.Sprintf("%s|%s|%s", msg.UUID(), hex.EncodeToString(attachmentsHash[:]), msg.Text()))
 }
 
 // clearMsgSeen clears our seen incoming messages for the passed in channel and URN
@@ -304,10 +311,13 @@ func (b *backend) checkExternalIDSeen(msg *DBMsg) courier.MsgUUID {
 
 	// if so, test whether the text it the same
 	if uuidAndText != "" {
-		prevText := uuidAndText[37:]
+		prevAttachmentAndText := uuidAndText[37:]
+
+		attachmentsHash := md5.Sum([]byte(strings.Join(msg.Attachments(), ",")))
+		msgAttachmentAndText := fmt.Sprintf("%s|%s", hex.EncodeToString(attachmentsHash[:]), msg.Text())
 
 		// if it is the same, return the UUID
-		if prevText == msg.Text() {
+		if prevAttachmentAndText == msgAttachmentAndText {
 			return courier.MsgUUID(uuidAndText[:36])
 		}
 	}
@@ -318,7 +328,9 @@ func (b *backend) writeExternalIDSeen(msg *DBMsg) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	b.seenExternalIDs.Set(rc, msg.fingerprint(true), fmt.Sprintf("%s|%s", msg.UUID(), msg.Text()))
+	attachmentsHash := md5.Sum([]byte(strings.Join(msg.Attachments(), ",")))
+
+	b.seenExternalIDs.Set(rc, msg.fingerprint(true), fmt.Sprintf("%s|%s|%s", msg.UUID(), hex.EncodeToString(attachmentsHash[:]), msg.Text()))
 }
 
 //-----------------------------------------------------------------------------

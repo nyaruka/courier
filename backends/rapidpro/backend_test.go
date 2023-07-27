@@ -809,6 +809,14 @@ func (ts *BackendTestSuite) TestExternalIDDupes() {
 	checkedMsg = ts.b.CheckExternalIDSeen(msg)
 	m2 := checkedMsg.(*DBMsg)
 	ts.True(m2.alreadyWritten)
+
+	msg1 := newMsg(MsgIncoming, knChannel, urn, "ping", clog)
+	msg1.WithAttachment("http://example.com/test.jpg")
+
+	checkedMsg = ts.b.CheckExternalIDSeen(msg1)
+	m3 := checkedMsg.(*DBMsg)
+	ts.False(m3.alreadyWritten)
+
 }
 
 func (ts *BackendTestSuite) TestStatus() {
