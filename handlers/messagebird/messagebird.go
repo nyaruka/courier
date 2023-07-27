@@ -57,13 +57,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	err = handlers.DecodeAndValidateJSON(payload, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
-	}
-
 	// no message? ignore this
-	if payload.Body == "" && !payload.Mms {
+	if payload.Body == "" && !payload.MMS {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 	}
 
@@ -81,7 +76,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date.UTC()).WithExternalID(payload.ID)
 
 	// process any attached media
-	if payload.Mms {
+	if payload.MMS {
 		for i := 0; i < len(payload.MediaURLs); i++ {
 			msg.WithAttachment(payload.MediaURLs[i])
 		}
@@ -236,5 +231,5 @@ type ReceivedMessage struct {
 	MediaURLs         []string  `json:"mediaUrls"`
 	MediaContentTypes []string  `json:"mediaContentTypes"`
 	Subject           string    `json:"subject"`
-	Mms               bool      `json:"mms"`
+	MMS               bool      `json:"mms"`
 }
