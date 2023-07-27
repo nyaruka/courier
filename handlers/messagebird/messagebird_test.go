@@ -59,7 +59,8 @@ func addInvalidSignature(r *http.Request) {
 
 func addInvalidBodyHash(r *http.Request) {
 	body, _ := ReadBody(r, maxRequestBodyBytes)
-	body = body + []byte("bad")
+	bad_bytes := []byte("bad")
+	body = append(body, bad_bytes[:]...)
 	preHashSignature := sha256.Sum256(body)
 	sig := hex.EncodeToString(preHashSignature[:])
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256,
@@ -101,11 +102,8 @@ var sigtestCases = []ChannelHandleTestCase{
 		Headers:              map[string]string{"Content-Type": "application/json"},
 		URL:                  receiveURL,
 		Data:                 validReceive,
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Message Accepted",
-		ExpectedMsgText:      Sp("Test 3"),
-		ExpectedURN:          "tel:188885551515",
-		ExpectedDate:         time.Date(2023, time.July, 27, 00, 49, 29, 0, time.UTC),
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: `{"message":"Error","data":[{"type":"error","error":"invalid request signature, signature doesn't match expected signature for body."}]}`,
 		PrepRequest:          addInvalidBodyHash,
 	},
 	{
