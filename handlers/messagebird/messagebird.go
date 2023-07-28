@@ -89,18 +89,11 @@ func newHandler(channelType courier.ChannelType, name string, validateSignatures
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
-	s.AddHandlerRoute(h, http.MethodGet, "status", courier.ChannelLogTypeMsgStatus, h.receiveStatus)
+	s.AddHandlerRoute(h, http.MethodGet, "status", courier.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.receiveStatus))
 	return nil
 }
 
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
-
-	// get our params
-	receivedStatus := &ReceivedStatus{}
-	err := handlers.DecodeAndValidateForm(receivedStatus, r)
-	if err != nil {
-		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no msg status, ignoring")
-	}
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, receivedStatus *ReceivedStatus, clog *courier.ChannelLog) ([]courier.Event, error) {
 
 	msgStatus, found := statusMapping[receivedStatus.Status]
 	if !found {
@@ -134,7 +127,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		if err != nil {
 			return nil, err
 		}
-		clog.Error(courier.ErrorExternal(fmt.Sprint(receivedStatus.StatusErrorCode), "EC_SUBSCRIBER_OPTEDOUT"))
+		clog.Error(courier.ErrorExternal(fmt.Sprint(receivedStatus.StatusErrorCode), "Subscriber has sent 'stop'"))
 	}
 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
