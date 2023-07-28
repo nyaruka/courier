@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
@@ -32,6 +33,44 @@ var (
 	// error code messagebird returns when a contact has sent "stop"
 	errorStopped = 103
 )
+
+type Message struct {
+	Recipients []string `json:"recipients"`
+	Reference  string   `json:"reference,omitempty"`
+	Originator string   `json:"originator"`
+	Subject    string   `json:"subject,omitempty"`
+	Body       string   `json:"body,omitempty"`
+	MediaURLs  []string `json:"mediaUrls,omitempty"`
+}
+
+type ReceivedStatus struct {
+	ID              string
+	Reference       string
+	Recipient       string
+	Status          string
+	StatusReason    string
+	StatusDatetime  time.Time
+	StatusErrorCode int
+}
+
+var statusMapping = map[string]courier.MsgStatusValue{
+	"scheduled":       courier.MsgSent,
+	"delivery_failed": courier.MsgFailed,
+	"sent":            courier.MsgSent,
+	"buffered":        courier.MsgSent,
+	"delivered":       courier.MsgDelivered,
+	"expired":         courier.MsgFailed,
+}
+
+type ReceivedMessage struct {
+	ID              string    `json:"id"`
+	Recipient       string    `json:"recipient"`
+	Originator      string    `json:"originator"`
+	Body            string    `json:"body"`
+	CreatedDatetime time.Time `json:"createdDatetime"`
+	MediaURLs       []string  `json:"mediaUrls"`
+	MMS             bool      `json:"mms"`
+}
 
 func init() {
 	courier.RegisterHandler(newHandler("MBD", "Messagebird", true))
@@ -187,13 +226,13 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return status, nil
 	}
 	status.SetStatus(courier.MsgWired)
-	sendStatus := &ReceivedMessage{}
-	err = json.Unmarshal(respBody, sendStatus)
+
+	externalID, err := jsonparser.GetString(respBody, "id")
 	if err != nil {
 		clog.Error(courier.ErrorResponseUnparseable("JSON"))
 		return status, nil
 	}
-	status.SetExternalID(sendStatus.ID)
+	status.SetExternalID(externalID)
 	return status, nil
 }
 
@@ -267,42 +306,4 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	}
 
 	return nil
-}
-
-type Message struct {
-	Recipients []string `json:"recipients"`
-	Reference  string   `json:"reference,omitempty"`
-	Originator string   `json:"originator"`
-	Subject    string   `json:"subject,omitempty"`
-	Body       string   `json:"body,omitempty"`
-	MediaURLs  []string `json:"mediaUrls,omitempty"`
-}
-
-type ReceivedStatus struct {
-	ID              string
-	Reference       string
-	Recipient       string
-	Status          string
-	StatusReason    string
-	StatusDatetime  time.Time
-	StatusErrorCode int
-}
-
-var statusMapping = map[string]courier.MsgStatusValue{
-	"scheduled":       courier.MsgSent,
-	"delivery_failed": courier.MsgFailed,
-	"sent":            courier.MsgSent,
-	"buffered":        courier.MsgSent,
-	"delivered":       courier.MsgDelivered,
-	"expired":         courier.MsgFailed,
-}
-
-type ReceivedMessage struct {
-	ID              string    `json:"id"`
-	Recipient       string    `json:"recipient"`
-	Originator      string    `json:"originator"`
-	Body            string    `json:"body"`
-	CreatedDatetime time.Time `json:"createdDatetime"`
-	MediaURLs       []string  `json:"mediaUrls"`
-	MMS             bool      `json:"mms"`
 }
