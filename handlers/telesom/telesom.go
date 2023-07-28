@@ -57,7 +57,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Message, clog)
+	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Message, "", clog)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r, clog)

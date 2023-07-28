@@ -114,7 +114,6 @@ type Msg interface {
 
 	WithContactName(name string) Msg
 	WithReceivedOn(date time.Time) Msg
-	WithExternalID(id string) Msg
 	WithID(id MsgID) Msg
 	WithUUID(uuid MsgUUID) Msg
 	WithAttachment(url string) Msg

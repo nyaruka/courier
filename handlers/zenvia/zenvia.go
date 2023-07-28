@@ -118,7 +118,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// build our msg
-		msg := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(payload.Message.ID).WithReceivedOn(date.UTC()).WithContactName(contactName)
+		msg := h.Backend().NewIncomingMsg(channel, urn, text, payload.Message.ID, clog).WithReceivedOn(date.UTC()).WithContactName(contactName)
 		if mediaURL != "" {
 			msg.WithAttachment(mediaURL)
 		}

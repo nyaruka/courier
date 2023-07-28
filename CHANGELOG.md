@@ -1,3 +1,8 @@
+v8.1.33 (2023-07-28)
+-------------------------
+ * Rework deduping of incoming messages to ignore message content if message has id we can use
+ * Use bulk SQL operation for msg status flushing
+
 v8.1.32 (2023-07-26)
 -------------------------
  * Fix setting of log type of channel logs and add additional types
