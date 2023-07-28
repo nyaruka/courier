@@ -9,8 +9,8 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-
 	"encoding/json"
+	"strconv"
 
 	"fmt"
 
@@ -20,6 +20,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/urns"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -27,6 +29,8 @@ var (
 	mmsURL                    = "https://rest.messagebird.com/mms"
 	signatureHeader           = "Messagebird-Signature-Jwt"
 	maxRequestBodyBytes int64 = 1024 * 1024
+	// error code messagebird returns when a contact has sent "stop"
+	errorStopped = 103
 )
 
 func init() {
@@ -46,7 +50,55 @@ func newHandler(channelType courier.ChannelType, name string, validateSignatures
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
+	s.AddHandlerRoute(h, http.MethodGet, "status", courier.ChannelLogTypeMsgStatus, h.receiveStatus)
 	return nil
+}
+
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+
+	// get our params
+	receivedStatus := &ReceivedStatus{}
+	err := handlers.DecodeAndValidateForm(receivedStatus, r)
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no msg status, ignoring")
+	}
+
+	msgStatus, found := statusMapping[receivedStatus.Status]
+	if !found {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", receivedStatus.Status))
+	}
+
+	// if the message id was passed explicitely, use that
+	var status courier.MsgStatus
+	if receivedStatus.Reference != "" {
+		msgID, err := strconv.ParseInt(receivedStatus.Reference, 10, 64)
+		if err != nil {
+			logrus.WithError(err).WithField("id", receivedStatus.Reference).Error("error converting Messagebird status id to integer")
+		} else {
+			status = h.Backend().NewMsgStatusForID(channel, courier.MsgID(msgID), msgStatus, clog)
+		}
+	}
+
+	// if we have no status, then build it from the external (twilio) id
+	if status == nil {
+		status = h.Backend().NewMsgStatusForExternalID(channel, receivedStatus.ID, msgStatus, clog)
+	}
+
+	if receivedStatus.StatusErrorCode == errorStopped {
+		urn, err := urns.NewTelURNForCountry(receivedStatus.Recipient, "")
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		}
+		// create a stop channel event
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
+		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
+		if err != nil {
+			return nil, err
+		}
+	}
+	clog.Error(courier.ErrorExternal(fmt.Sprint(receivedStatus.StatusErrorCode), "EC_SUBSCRIBER_OPTEDOUT"))
+
+	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *ReceivedMessage, clog *courier.ChannelLog) ([]courier.Event, error) {
@@ -97,6 +149,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	payload := &Message{
 		Recipients: []string{user},
 		Originator: msg.Channel().Address(),
+		Reference:  msg.ID().String(),
 	}
 	// build message payload
 
@@ -110,51 +163,8 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		sendUrl = smsURL
 	}
 	for _, attachment := range msg.Attachments() {
-		mediaType, mediaURL := handlers.SplitAttachment(attachment)
-		switch mediaType {
-		// Supported media types
-		// https://developers.messagebird.com/api/mms-messaging/#media-attachments
-		case "audio/basic",
-			"audio/L24",
-			"audio/mp4",
-			"audio/mpeg",
-			"audio/ogg",
-			"audio/vorbis",
-			"audio/vnd.rn-realaudio",
-			"audio/vnd.wave",
-			"audio/3gpp",
-			"audio/3gpp2",
-			"audio/ac3",
-			"audio/webm",
-			"audio/amr-nb",
-			"audio/amr",
-			"video/mpeg",
-			"video/mp4",
-			"video/quicktime",
-			"video/webm",
-			"video/3gpp",
-			"video/3gpp2",
-			"video/3gpp-tt",
-			"video/H261",
-			"video/H263",
-			"video/H263-1998",
-			"video/H263-2000",
-			"video/H264",
-			"image/jpeg",
-			"image/jpg",
-			"image/gif",
-			"image/png",
-			"image/bmp",
-			"text/vcard",
-			"text/csv",
-			"text/rtf",
-			"text/richtext",
-			"text/calendar",
-			"application/pdf":
-			payload.MediaURLs = append(payload.MediaURLs, mediaURL)
-		default:
-			clog.Error(courier.ErrorMediaUnsupported(mediaType))
-		}
+		_, mediaURL := handlers.SplitAttachment(attachment)
+		payload.MediaURLs = append(payload.MediaURLs, mediaURL)
 	}
 
 	jsonBody, err := json.Marshal(payload)
@@ -172,13 +182,18 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	var bearer = "AccessKey " + authToken
 	req.Header.Set("Authorization", bearer)
 
-	resp, _, err := handlers.RequestHTTP(req, clog)
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}
-
 	status.SetStatus(courier.MsgWired)
-
+	sendStatus := &ReceivedMessage{}
+	err = json.Unmarshal(respBody, sendStatus)
+	if err != nil {
+		clog.Error(courier.ErrorResponseUnparseable("JSON"))
+		return status, nil
+	}
+	status.SetExternalID(sendStatus.ID)
 	return status, nil
 }
 
@@ -229,43 +244,65 @@ func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	payloadHash := verifiedToken["payload_hash"].(string)
+	CalledURL := fmt.Sprintf("https://%s%s", c.CallbackDomain(h.Server().Config().Domain), r.URL.Path)
+	expectedURLHash := calculateSignature([]byte(CalledURL))
+	URLHash := verifiedToken["url_hash"].(string)
 
-	body, err := handlers.ReadBody(r, maxRequestBodyBytes)
-	if err != nil {
-		return fmt.Errorf("unable to read request body: %s", err)
+	if !hmac.Equal([]byte(expectedURLHash), []byte(URLHash)) {
+		return fmt.Errorf("invalid request signature, signature doesn't match expected signature for URL.")
 	}
 
-	expectedSignature := calculateSignature(body)
-	if !hmac.Equal([]byte(expectedSignature), []byte(payloadHash)) {
-		return fmt.Errorf("invalid request signature, signature doesn't match expected signature for body.")
+	if verifiedToken["payload_hash"] != nil {
+		payloadHash := verifiedToken["payload_hash"].(string)
+
+		body, err := handlers.ReadBody(r, maxRequestBodyBytes)
+		if err != nil {
+			return fmt.Errorf("unable to read request body: %s", err)
+		}
+
+		expectedSignature := calculateSignature(body)
+		if !hmac.Equal([]byte(expectedSignature), []byte(payloadHash)) {
+			return fmt.Errorf("invalid request signature, signature doesn't match expected signature for body.")
+		}
 	}
+
 	return nil
 }
 
 type Message struct {
 	Recipients []string `json:"recipients"`
+	Reference  string   `json:"reference,omitempty"`
 	Originator string   `json:"originator"`
 	Subject    string   `json:"subject,omitempty"`
 	Body       string   `json:"body,omitempty"`
 	MediaURLs  []string `json:"mediaUrls,omitempty"`
 }
 
+type ReceivedStatus struct {
+	ID              string
+	Reference       string
+	Recipient       string
+	Status          string
+	StatusReason    string
+	StatusDatetime  time.Time
+	StatusErrorCode int
+}
+
+var statusMapping = map[string]courier.MsgStatusValue{
+	"scheduled":       courier.MsgSent,
+	"delivery_failed": courier.MsgFailed,
+	"sent":            courier.MsgSent,
+	"buffered":        courier.MsgSent,
+	"delivered":       courier.MsgDelivered,
+	"expired":         courier.MsgFailed,
+}
+
 type ReceivedMessage struct {
-	Receiver          string    `json:"receiver"`
-	Sender            string    `json:"sender"`
-	Message           string    `json:"message"`
-	Date              int       `json:"date"`
-	DateUTC           int       `json:"date_utc"`
-	Reference         string    `json:"reference"`
-	ID                string    `json:"id"`
-	MessageID         string    `json:"message_id"`
-	Recipient         string    `json:"recipient"`
-	Originator        string    `json:"originator"`
-	Body              string    `json:"body"`
-	CreatedDatetime   time.Time `json:"createdDatetime"`
-	MediaURLs         []string  `json:"mediaUrls"`
-	MediaContentTypes []string  `json:"mediaContentTypes"`
-	Subject           string    `json:"subject"`
-	MMS               bool      `json:"mms"`
+	ID              string    `json:"id"`
+	Recipient       string    `json:"recipient"`
+	Originator      string    `json:"originator"`
+	Body            string    `json:"body"`
+	CreatedDatetime time.Time `json:"createdDatetime"`
+	MediaURLs       []string  `json:"mediaUrls"`
+	MMS             bool      `json:"mms"`
 }
