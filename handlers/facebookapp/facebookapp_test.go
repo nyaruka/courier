@@ -634,6 +634,21 @@ var testCasesWAC = []IncomingTestCase{
 		PrepRequest:           addValidSignature,
 	},
 	{
+		Label:                 "Receive Valid Sticker Message",
+		URL:                   wacReceiveURL,
+		Data:                  string(test.ReadFile("./testdata/wac/stickerWAC.json")),
+		ExpectedRespStatus:    200,
+		ExpectedBodyContains:  "Handled",
+		NoQueueErrorCheck:     true,
+		NoInvalidChannelCheck: true,
+		ExpectedMsgText:       Sp(""),
+		ExpectedURN:           "whatsapp:5678",
+		ExpectedExternalID:    "external_id",
+		ExpectedAttachments:   []string{"https://foo.bar/attachmentURL_Sticker"},
+		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+		PrepRequest:           addValidSignature,
+	},
+	{
 		Label:                 "Receive Valid Video Message",
 		URL:                   wacReceiveURL,
 		Data:                  string(test.ReadFile("./testdata/wac/videoWAC.json")),
@@ -832,6 +847,11 @@ func TestIncoming(t *testing.T) {
 
 		if strings.HasSuffix(r.URL.Path, "document") {
 			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Document"}`))
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "sticker") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Sticker"}`))
 			return
 		}
 
@@ -1323,6 +1343,19 @@ var SendTestCasesWAC = []OutgoingTestCase{
 		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
 		MockResponseStatus:  201,
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg","caption":"image caption"}}`,
+		ExpectedRequestPath: "/12345_ID/messages",
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "157b5e14568e8",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Sticker Send",
+		MsgText:             "sticker caption",
+		MsgURN:              "whatsapp:250788123123",
+		MsgAttachments:      []string{"image/webp:https://foo.bar/sticker.webp"},
+		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
+		MockResponseStatus:  201,
+		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"sticker","sticker":{"link":"https://foo.bar/sticker.webp","caption":"sticker caption"}}`,
 		ExpectedRequestPath: "/12345_ID/messages",
 		ExpectedMsgStatus:   "W",
 		ExpectedExternalID:  "157b5e14568e8",
