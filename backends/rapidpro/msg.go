@@ -94,13 +94,15 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 	if err != nil {
 		err = courier.WriteToSpool(b.config.SpoolDir, "msgs", m)
 	}
+
 	// mark this msg as having been seen
 	b.writeMsgSeen(m)
+
 	return err
 }
 
 // newMsg creates a new DBMsg object with the passed in parameters
-func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text string, clog *courier.ChannelLog) *DBMsg {
+func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) *DBMsg {
 	now := time.Now()
 	dbChannel := channel.(*DBChannel)
 
@@ -112,6 +114,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 		Visibility_:   MsgVisible,
 		HighPriority_: false,
 		Text_:         text,
+		ExternalID_:   null.String(extID),
 
 		ChannelID_:   dbChannel.ID(),
 		ChannelUUID_: dbChannel.UUID(),
@@ -262,63 +265,61 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 // Deduping utility methods
 //-----------------------------------------------------------------------------
 
-// checkMsgSeen tries to look up whether a msg with the fingerprint passed in was seen in window or prevWindow. If
-// found returns the UUID of that msg, if not returns empty string
+// checks to see if this message has already been seen and if so returns its UUID
 func (b *backend) checkMsgSeen(msg *DBMsg) courier.MsgUUID {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	uuidAndText, _ := b.seenMsgs.Get(rc, msg.fingerprint(false))
+	// if we have an external id use that
+	if msg.ExternalID_ != "" {
+		fingerprint := fmt.Sprintf("%s|%s|%s", msg.Channel().UUID(), msg.URN().Identity(), msg.ExternalID())
 
-	// if so, test whether the text it the same
-	if uuidAndText != "" {
-		prevText := uuidAndText[37:]
+		uuid, _ := b.seenExternalIDs.Get(rc, fingerprint)
 
-		// if it is the same, return the UUID
-		if prevText == msg.Text() {
-			return courier.MsgUUID(uuidAndText[:36])
+		if uuid != "" {
+			return courier.MsgUUID(uuid)
+		}
+	} else {
+		// otherwise de-dup based on text received from that channel+urn since last send
+		fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
+
+		uuidAndText, _ := b.seenMsgs.Get(rc, fingerprint)
+
+		// if we have seen a message from this channel+urn check text too
+		if uuidAndText != "" {
+			prevText := uuidAndText[37:]
+
+			// if it is the same, return the UUID
+			if prevText == msg.Text() {
+				return courier.MsgUUID(uuidAndText[:36])
+			}
 		}
 	}
+
 	return courier.NilMsgUUID
 }
 
-// writeMsgSeen writes that the message with the passed in fingerprint and UUID was seen in the
-// passed in window
+// writeMsgSeen records that the given message has been seen and written to the database
 func (b *backend) writeMsgSeen(msg *DBMsg) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	b.seenMsgs.Set(rc, msg.fingerprint(false), fmt.Sprintf("%s|%s", msg.UUID(), msg.Text()))
+	if msg.ExternalID_ != "" {
+		fingerprint := fmt.Sprintf("%s|%s|%s", msg.Channel().UUID(), msg.URN().Identity(), msg.ExternalID())
+
+		b.seenExternalIDs.Set(rc, fingerprint, string(msg.UUID()))
+	} else {
+		fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
+
+		b.seenMsgs.Set(rc, fingerprint, fmt.Sprintf("%s|%s", msg.UUID(), msg.Text()))
+	}
 }
 
 // clearMsgSeen clears our seen incoming messages for the passed in channel and URN
 func (b *backend) clearMsgSeen(rc redis.Conn, msg *DBMsg) {
-	b.seenMsgs.Remove(rc, msg.fingerprint(false))
-}
+	fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
 
-func (b *backend) checkExternalIDSeen(msg *DBMsg) courier.MsgUUID {
-	rc := b.redisPool.Get()
-	defer rc.Close()
-
-	uuidAndText, _ := b.seenExternalIDs.Get(rc, msg.fingerprint(true))
-
-	// if so, test whether the text it the same
-	if uuidAndText != "" {
-		prevText := uuidAndText[37:]
-
-		// if it is the same, return the UUID
-		if prevText == msg.Text() {
-			return courier.MsgUUID(uuidAndText[:36])
-		}
-	}
-	return courier.NilMsgUUID
-}
-
-func (b *backend) writeExternalIDSeen(msg *DBMsg) {
-	rc := b.redisPool.Get()
-	defer rc.Close()
-
-	b.seenExternalIDs.Set(rc, msg.fingerprint(true), fmt.Sprintf("%s|%s", msg.UUID(), msg.Text()))
+	b.seenMsgs.Remove(rc, fingerprint)
 }
 
 //-----------------------------------------------------------------------------
@@ -427,22 +428,11 @@ func (m *DBMsg) Metadata() json.RawMessage {
 	return m.Metadata_
 }
 
-// fingerprint returns a fingerprint for this msg, suitable for figuring out if this is a dupe
-func (m *DBMsg) fingerprint(withExtID bool) string {
-	if withExtID {
-		return fmt.Sprintf("%s:%s|%s", m.Channel().UUID(), m.URN().Identity(), m.ExternalID())
-	}
-	return fmt.Sprintf("%s:%s", m.ChannelUUID_, m.URN_.Identity())
-}
-
 // WithContactName can be used to set the contact name on a msg
 func (m *DBMsg) WithContactName(name string) courier.Msg { m.contactName = name; return m }
 
 // WithReceivedOn can be used to set sent_on on a msg in a chained call
 func (m *DBMsg) WithReceivedOn(date time.Time) courier.Msg { m.SentOn_ = &date; return m }
-
-// WithExternalID can be used to set the external id on a msg in a chained call
-func (m *DBMsg) WithExternalID(id string) courier.Msg { m.ExternalID_ = null.String(id); return m }
 
 // WithID can be used to set the id on a msg in a chained call
 func (m *DBMsg) WithID(id courier.MsgID) courier.Msg { m.ID_ = id; return m }

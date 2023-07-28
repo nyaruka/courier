@@ -138,7 +138,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our message
-	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Content, clog).WithExternalID(payload.MsgID).WithReceivedOn(date)
+	msg := h.Backend().NewIncomingMsg(channel, urn, payload.Content, payload.MsgID, clog).WithReceivedOn(date)
 	if payload.MsgType == "image" || payload.MsgType == "video" || payload.MsgType == "voice" {
 		mediaURL := buildMediaURL(payload.MediaID)
 		msg.WithAttachment(mediaURL)

@@ -52,7 +52,7 @@ type MockBackend struct {
 	lastMsgID       courier.MsgID
 	lastContactName string
 	sentMsgs        map[courier.MsgID]bool
-	seenExternalIDs []string
+	seenExternalIDs map[string]courier.MsgUUID
 }
 
 // NewMockBackend returns a new mock backend suitable for testing
@@ -85,6 +85,7 @@ func NewMockBackend() *MockBackend {
 		contacts:          make(map[urns.URN]courier.Contact),
 		media:             make(map[string]courier.Media),
 		sentMsgs:          make(map[courier.MsgID]bool),
+		seenExternalIDs:   make(map[string]courier.MsgUUID),
 		redisPool:         redisPool,
 	}
 }
@@ -95,8 +96,18 @@ func (mb *MockBackend) DeleteMsgWithExternalID(ctx context.Context, channel cour
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, clog *courier.ChannelLog) courier.Msg {
-	return &mockMsg{channel: channel, urn: urn, text: text}
+func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.Msg {
+	m := &mockMsg{
+		channel: channel, urn: urn, text: text, externalID: extID,
+	}
+
+	uuid := mb.seenExternalIDs[fmt.Sprintf("%s|%s", m.Channel().UUID(), m.ExternalID())]
+	if uuid != "" {
+		m.uuid = uuid
+		m.alreadyWritten = true
+	}
+
+	return m
 }
 
 // NewOutgoingMsg creates a new outgoing message from the given params
@@ -195,6 +206,11 @@ func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.Msg, clog *courie
 
 	mb.writtenMsgs = append(mb.writtenMsgs, m)
 	mb.lastContactName = m.(*mockMsg).contactName
+
+	if m.ExternalID() != "" {
+		mb.seenExternalIDs[fmt.Sprintf("%s|%s", m.Channel().UUID(), m.ExternalID())] = m.UUID()
+	}
+
 	return nil
 }
 
@@ -298,24 +314,6 @@ func (mb *MockBackend) Stop() error { return nil }
 // Cleanup cleans up any connections that are open
 func (mb *MockBackend) Cleanup() error { return nil }
 
-// CheckExternalIDSeen checks if external ID has been seen in a period
-func (mb *MockBackend) CheckExternalIDSeen(msg courier.Msg) courier.Msg {
-	m := msg.(*mockMsg)
-
-	for _, b := range mb.seenExternalIDs {
-		if b == msg.ExternalID() {
-			m.alreadyWritten = true
-			return m
-		}
-	}
-	return m
-}
-
-// WriteExternalIDSeen marks a external ID as seen for a period
-func (mb *MockBackend) WriteExternalIDSeen(msg courier.Msg) {
-	mb.seenExternalIDs = append(mb.seenExternalIDs, msg.ExternalID())
-}
-
 // SaveAttachment saves an attachment to backend storage
 func (mb *MockBackend) SaveAttachment(ctx context.Context, ch courier.Channel, contentType string, data []byte, extension string) (string, error) {
 	if mb.storageError != nil {
@@ -396,7 +394,7 @@ func (mb *MockBackend) ClearChannels() {
 // Reset clears our queued messages, seen external IDs, and channel logs
 func (mb *MockBackend) Reset() {
 	mb.lastMsgID = courier.NilMsgID
-	mb.seenExternalIDs = nil
+	mb.seenExternalIDs = make(map[string]courier.MsgUUID)
 
 	mb.writtenMsgs = nil
 	mb.writtenMsgStatuses = nil

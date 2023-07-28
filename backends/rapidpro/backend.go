@@ -143,22 +143,21 @@ func (b *backend) DeleteMsgWithExternalID(ctx context.Context, channel courier.C
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, clog *courier.ChannelLog) courier.Msg {
+func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.Msg {
+	// strip out invalid UTF8 and NULL chars
 	urn = urns.URN(dbutil.ToValidUTF8(string(urn)))
-	text = dbutil.ToValidUTF8(text) // strip out invalid UTF8 and NULL chars
+	text = dbutil.ToValidUTF8(text)
+	extID = dbutil.ToValidUTF8(extID)
 
-	msg := newMsg(MsgIncoming, channel, urn, text, clog)
-
-	// set received on to now
+	msg := newMsg(MsgIncoming, channel, urn, text, extID, clog)
 	msg.WithReceivedOn(time.Now().UTC())
 
-	// have we seen this msg in the past period?
-	prevUUID := b.checkMsgSeen(msg)
-	if prevUUID != courier.NilMsgUUID {
-		// if so, use its UUID and that we've been written
+	// check if this message could be a duplicate and if so use the original's UUID
+	if prevUUID := b.checkMsgSeen(msg); prevUUID != courier.NilMsgUUID {
 		msg.UUID_ = prevUUID
 		msg.alreadyWritten = true
 	}
+
 	return msg
 }
 
@@ -403,23 +402,6 @@ func (b *backend) WriteChannelLog(ctx context.Context, clog *courier.ChannelLog)
 	queueChannelLog(timeout, b, clog)
 
 	return nil
-}
-
-// Check if external ID has been seen in a period
-func (b *backend) CheckExternalIDSeen(msg courier.Msg) courier.Msg {
-	m := msg.(*DBMsg)
-	var prevUUID = b.checkExternalIDSeen(m)
-	if prevUUID != courier.NilMsgUUID {
-		// if so, use its UUID and that we've been written
-		m.UUID_ = prevUUID
-		m.alreadyWritten = true
-	}
-	return m
-}
-
-// Mark a external ID as seen for a period
-func (b *backend) WriteExternalIDSeen(msg courier.Msg) {
-	b.writeExternalIDSeen(msg.(*DBMsg))
 }
 
 // SaveAttachment saves an attachment to backend storage

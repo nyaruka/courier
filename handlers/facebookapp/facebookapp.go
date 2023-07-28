@@ -414,7 +414,8 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 
 	token := h.Server().Config().WhatsappAdminSystemUserToken
 
-	var contactNames = make(map[string]string)
+	seenMsgIDs := make(map[string]bool, 2)
+	contactNames := make(map[string]string)
 
 	// for each entry
 	for _, entry := range payload.Entry {
@@ -429,6 +430,10 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 			}
 
 			for _, msg := range change.Value.Messages {
+				if seenMsgIDs[msg.ID] {
+					continue
+				}
+
 				// create our date from the timestamp
 				ts, err := strconv.ParseInt(msg.Timestamp, 10, 64)
 				if err != nil {
@@ -480,8 +485,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 				}
 
 				// create our message
-				ev := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithReceivedOn(date).WithExternalID(msg.ID).WithContactName(contactNames[msg.From])
-				event := h.Backend().CheckExternalIDSeen(ev)
+				event := h.Backend().NewIncomingMsg(channel, urn, text, msg.ID, clog).WithReceivedOn(date).WithContactName(contactNames[msg.From])
 
 				// we had an error downloading media
 				if err != nil {
@@ -497,11 +501,9 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					return nil, nil, err
 				}
 
-				h.Backend().WriteExternalIDSeen(event)
-
 				events = append(events, event)
 				data = append(data, courier.NewMsgReceiveData(event))
-
+				seenMsgIDs[msg.ID] = true
 			}
 
 			for _, status := range change.Value.Statuses {
@@ -556,6 +558,8 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 	// the list of data we will return in our response
 	data := make([]interface{}, 0, 2)
+
+	seenMsgIDs := make(map[string]bool, 2)
 
 	// for each entry
 	for _, entry := range payload.Entry {
@@ -691,6 +695,9 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 		} else if msg.Message != nil {
 			// this is an incoming message
+			if seenMsgIDs[msg.Message.MID] {
+				continue
+			}
 
 			// ignore echos
 			if msg.Message.IsEcho {
@@ -738,8 +745,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			}
 
 			// create our message
-			ev := h.Backend().NewIncomingMsg(channel, urn, text, clog).WithExternalID(msg.Message.MID).WithReceivedOn(date)
-			event := h.Backend().CheckExternalIDSeen(ev)
+			event := h.Backend().NewIncomingMsg(channel, urn, text, msg.Message.MID, clog).WithReceivedOn(date)
 
 			// add any attachment URL found
 			for _, attURL := range attachmentURLs {
@@ -751,10 +757,9 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 				return nil, nil, err
 			}
 
-			h.Backend().WriteExternalIDSeen(event)
-
 			events = append(events, event)
 			data = append(data, courier.NewMsgReceiveData(event))
+			seenMsgIDs[msg.Message.MID] = true
 
 		} else if msg.Delivery != nil {
 			// this is a delivery report
