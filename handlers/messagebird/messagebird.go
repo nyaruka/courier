@@ -102,7 +102,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no msg status, ignoring")
 	}
-	fmt.Printf("receivedStatus: %+v\n", receivedStatus)
+
 	msgStatus, found := statusMapping[receivedStatus.Status]
 	if !found {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", receivedStatus.Status))
@@ -119,7 +119,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		}
 	}
 
-	// if we have no status, then build it from the external (twilio) id
+	// if we have no status, then build it from the external (messagebird) id
 	if status == nil {
 		status = h.Backend().NewMsgStatusForExternalID(channel, receivedStatus.ID, msgStatus, clog)
 	}

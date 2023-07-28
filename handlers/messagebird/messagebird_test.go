@@ -24,7 +24,7 @@ const (
 	validReceiveMMS = `{"receiver":"18005551515","sender":"188885551515","message":"Test again","date":1690386569,"date_utc":1690418969,"reference":"1","id":"b6aae1b5dfb2427a8f7ea6a717ba31a9","message_id":"3b53c137369242138120d6b0b2122607","recipient":"18005551515","originator":"188885551515","mediaURLs":["https://foo.bar/image.jpg"],"createdDatetime":"2023-07-27T00:49:29+00:00","mms":true}`
 	statusBaseURL   = "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?datacoding=plain&id=b6aae1b5dfb2427a8f7ea6a717ba31a9&mccmnc=310010&messageLength=4&messagePartCount=1&ported=0&price%5Bamount%5D=0.000&price%5Bcurrency%5D=USD&recipient=17174484057&reference=26&statusDatetime=2023-07-28T17%3A57%3A12%2B00%3A00"
 	validSecret     = "my_super_secret"
-	validResponse   = `{"id":"efa6405d518d4c0c88cce11f7db775fb","href":"https://rest.messagebird.com/mms/efa6405d518d4c0c88cce11f7db775fb","direction":"mt","originator":"+31207009850","subject":"Great logo","body":"Hi! Please have a look at this very nice logo of this cool company.","reference":"the-customers-reference","mediaUrls":["https://www.messagebird.com/assets/images/og/messagebird.gif"],"scheduledDatetime":null,"createdDatetime":"2017-09-01T10:00:00+00:00","recipients":{"totalCount":1,"totalSentCount":1,"totalDeliveredCount":0,"totalDeliveryFailedCount":0,"items":[{"recipient":31612345678,"status":"sent","statusDatetime":"2017-09-01T10:00:00+00:00"}]}}`
+	validResponse   = `{"id":"efa6405d518d4c0c88cce11f7db775fb","href":"https://rest.messagebird.com/mms/efa6405d518d4c0c88cce11f7db775fb","direction":"mt","originator":"+188885551515","subject":"Great logo","body":"Hi! Please have a look at this very nice logo of this cool company.","reference":"the-customers-reference","mediaUrls":["https://www.messagebird.com/assets/images/og/messagebird.gif"],"scheduledDatetime":null,"createdDatetime":"2017-09-01T10:00:00+00:00","recipients":{"totalCount":1,"totalSentCount":1,"totalDeliveredCount":0,"totalDeliveryFailedCount":0,"items":[{"recipient":18005551515,"status":"sent","statusDatetime":"2017-09-01T10:00:00+00:00"}]}}`
 	invalidSecret   = "bad_secret"
 )
 
@@ -132,6 +132,18 @@ var defaultReceiveTestCases = []ChannelHandleTestCase{
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: `{"message":"Error","data":[{"type":"error","error":"unable to parse request JSON: invalid character 'e' looking for beginning of value"}]}`,
 		PrepRequest:          addValidSignature,
+	},
+	{
+		Label:              "Status Valid",
+		URL:                statusBaseURL + "&status=sent",
+		ExpectedRespStatus: 200,
+		ExpectedMsgStatus:  "S",
+	},
+	{
+		Label:                "Receive Invalid Status",
+		URL:                  statusBaseURL + "&status=expiryttd",
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: `{"message":"Error","data":[{"type":"error","error":"unknown status 'expiryttd', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'"}]}`,
 	},
 }
 
