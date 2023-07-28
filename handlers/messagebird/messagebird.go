@@ -134,8 +134,8 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		if err != nil {
 			return nil, err
 		}
+		clog.Error(courier.ErrorExternal(fmt.Sprint(receivedStatus.StatusErrorCode), "EC_SUBSCRIBER_OPTEDOUT"))
 	}
-	clog.Error(courier.ErrorExternal(fmt.Sprint(receivedStatus.StatusErrorCode), "EC_SUBSCRIBER_OPTEDOUT"))
 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
