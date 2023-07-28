@@ -44,13 +44,13 @@ type Message struct {
 }
 
 type ReceivedStatus struct {
-	ID              string
-	Reference       string
-	Recipient       string
-	Status          string
-	StatusReason    string
-	StatusDatetime  time.Time
-	StatusErrorCode int
+	ID              string    `schema:"id"`
+	Reference       string    `schema:"reference"`
+	Recipient       string    `schema:"recipient,required"`
+	Status          string    `schema:"status,required"`
+	StatusReason    string    `schema:"statusReason"`
+	StatusDatetime  time.Time `schema:"statusDatetime"`
+	StatusErrorCode int       `schema:"statusErrorCode"`
 }
 
 var statusMapping = map[string]courier.MsgStatusValue{
@@ -89,12 +89,20 @@ func newHandler(channelType courier.ChannelType, name string, validateSignatures
 func (h *handler) Initialize(s courier.Server) error {
 	h.SetServer(s)
 	s.AddHandlerRoute(h, http.MethodPost, "receive", courier.ChannelLogTypeMsgReceive, handlers.JSONPayload(h, h.receiveMessage))
-	s.AddHandlerRoute(h, http.MethodGet, "status", courier.ChannelLogTypeMsgStatus, handlers.JSONPayload(h, h.receiveStatus))
+	s.AddHandlerRoute(h, http.MethodGet, "status", courier.ChannelLogTypeMsgStatus, h.receiveStatus)
+
 	return nil
 }
 
-func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, receivedStatus *ReceivedStatus, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 
+	// get our params
+	receivedStatus := &ReceivedStatus{}
+	err := handlers.DecodeAndValidateForm(receivedStatus, r)
+	if err != nil {
+		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no msg status, ignoring")
+	}
+	fmt.Printf("receivedStatus: %+v\n", receivedStatus)
 	msgStatus, found := statusMapping[receivedStatus.Status]
 	if !found {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status '%s', must be one of 'queued', 'failed', 'sent', 'delivered', or 'undelivered'", receivedStatus.Status))
