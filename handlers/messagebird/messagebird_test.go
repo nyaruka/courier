@@ -116,6 +116,14 @@ var defaultReceiveTestCases = []ChannelHandleTestCase{
 		PrepRequest:          addInvalidSignature,
 	},
 	{
+		Label:                "Missing JWT Signature Header",
+		Headers:              map[string]string{"Content-Type": "application/json"},
+		URL:                  receiveURL,
+		Data:                 validReceive,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: `{"message":"Error","data":[{"type":"error","error":"missing request signature"}]}`,
+	},
+	{
 		Label:                "Receive Valid w Signature but non-matching body hash",
 		Headers:              map[string]string{"Content-Type": "application/json"},
 		URL:                  receiveURL,
