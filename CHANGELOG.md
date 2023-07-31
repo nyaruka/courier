@@ -1,3 +1,7 @@
+v8.2.0 (2023-07-31)
+-------------------------
+ * Add docker file for dev
+
 v8.1.33 (2023-07-28)
 -------------------------
  * Rework deduping of incoming messages to ignore message content if message has id we can use
