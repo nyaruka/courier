@@ -135,7 +135,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		if err != nil {
 			return nil, err
 		}
-		clog.Error(courier.ErrorExternal(fmt.Sprint(receivedStatus.StatusErrorCode), "Subscriber has sent 'stop'"))
+		clog.Error(courier.ErrorExternal(fmt.Sprint(receivedStatus.StatusErrorCode), "Contact has sent 'stop'"))
 	}
 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
