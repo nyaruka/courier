@@ -19,13 +19,14 @@ var testChannels = []courier.Channel{
 }
 
 const (
-	receiveURL      = "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
-	validReceive    = `{"receiver":"18005551515","sender":"188885551515","message":"Test again","date":1690386569,"date_utc":1690418969,"reference":"1","id":"b6aae1b5dfb2427a8f7ea6a717ba31a9","message_id":"3b53c137369242138120d6b0b2122607","recipient":"18005551515","originator":"188885551515","body":"Test 3","createdDatetime":"2023-07-27T00:49:29+00:00","mms":false}`
-	validReceiveMMS = `{"receiver":"18005551515","sender":"188885551515","message":"Test again","date":1690386569,"date_utc":1690418969,"reference":"1","id":"b6aae1b5dfb2427a8f7ea6a717ba31a9","message_id":"3b53c137369242138120d6b0b2122607","recipient":"18005551515","originator":"188885551515","mediaURLs":["https://foo.bar/image.jpg"],"createdDatetime":"2023-07-27T00:49:29+00:00","mms":true}`
-	statusBaseURL   = "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?datacoding=plain&id=b6aae1b5dfb2427a8f7ea6a717ba31a9&mccmnc=310010&messageLength=4&messagePartCount=1&ported=0&price%5Bamount%5D=0.000&price%5Bcurrency%5D=USD&recipient=188885551515&reference=26&statusDatetime=2023-07-28T17%3A57%3A12%2B00%3A00"
-	validSecret     = "my_super_secret"
-	validResponse   = `{"id":"efa6405d518d4c0c88cce11f7db775fb","href":"https://rest.messagebird.com/mms/efa6405d518d4c0c88cce11f7db775fb","direction":"mt","originator":"+188885551515","subject":"Great logo","body":"Hi! Please have a look at this very nice logo of this cool company.","reference":"the-customers-reference","mediaUrls":["https://www.messagebird.com/assets/images/og/messagebird.gif"],"scheduledDatetime":null,"createdDatetime":"2017-09-01T10:00:00+00:00","recipients":{"totalCount":1,"totalSentCount":1,"totalDeliveredCount":0,"totalDeliveryFailedCount":0,"items":[{"recipient":18005551515,"status":"sent","statusDatetime":"2017-09-01T10:00:00+00:00"}]}}`
-	invalidSecret   = "bad_secret"
+	receiveURL            = "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
+	validReceive          = `{"receiver":"18005551515","sender":"188885551515","message":"Test again","date":1690386569,"date_utc":1690418969,"reference":"1","id":"b6aae1b5dfb2427a8f7ea6a717ba31a9","message_id":"3b53c137369242138120d6b0b2122607","recipient":"18005551515","originator":"188885551515","body":"Test 3","createdDatetime":"2023-07-27T00:49:29+00:00","mms":false}`
+	validReceiveShortCode = `{"receiver":"18005551515","sender":"188885551515","message":"Test again","date":1690386569,"date_utc":1690418969,"reference":"1","id":"b6aae1b5dfb2427a8f7ea6a717ba31a9","message_id":"3b53c137369242138120d6b0b2122607","recipient":"18005551515","originator":"188885551515","body":"Test 3","createdDatetime":"20230727004929","mms":false}`
+	validReceiveMMS       = `{"receiver":"18005551515","sender":"188885551515","message":"Test again","date":1690386569,"date_utc":1690418969,"reference":"1","id":"b6aae1b5dfb2427a8f7ea6a717ba31a9","message_id":"3b53c137369242138120d6b0b2122607","recipient":"18005551515","originator":"188885551515","mediaURLs":["https://foo.bar/image.jpg"],"createdDatetime":"2023-07-27T00:49:29+00:00","mms":true}`
+	statusBaseURL         = "/c/mbd/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?datacoding=plain&id=b6aae1b5dfb2427a8f7ea6a717ba31a9&mccmnc=310010&messageLength=4&messagePartCount=1&ported=0&price%5Bamount%5D=0.000&price%5Bcurrency%5D=USD&recipient=188885551515&reference=26&statusDatetime=2023-07-28T17%3A57%3A12%2B00%3A00"
+	validSecret           = "my_super_secret"
+	validResponse         = `{"id":"efa6405d518d4c0c88cce11f7db775fb","href":"https://rest.messagebird.com/mms/efa6405d518d4c0c88cce11f7db775fb","direction":"mt","originator":"+188885551515","subject":"Great logo","body":"Hi! Please have a look at this very nice logo of this cool company.","reference":"the-customers-reference","mediaUrls":["https://www.messagebird.com/assets/images/og/messagebird.gif"],"scheduledDatetime":null,"createdDatetime":"2017-09-01T10:00:00+00:00","recipients":{"totalCount":1,"totalSentCount":1,"totalDeliveredCount":0,"totalDeliveryFailedCount":0,"items":[{"recipient":18005551515,"status":"sent","statusDatetime":"2017-09-01T10:00:00+00:00"}]}}`
+	invalidSecret         = "bad_secret"
 )
 
 func addValidSignature(r *http.Request) {
@@ -87,6 +88,18 @@ var defaultReceiveTestCases = []ChannelHandleTestCase{
 		Headers:              map[string]string{"Content-Type": "application/json"},
 		URL:                  receiveURL,
 		Data:                 validReceive,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Message Accepted",
+		ExpectedMsgText:      Sp("Test 3"),
+		ExpectedURN:          "tel:188885551515",
+		ExpectedDate:         time.Date(2023, time.July, 27, 00, 49, 29, 0, time.UTC),
+		PrepRequest:          addValidSignature,
+	},
+	{
+		Label:                "Receive Valid text w shortcode date",
+		Headers:              map[string]string{"Content-Type": "application/json"},
+		URL:                  receiveURL,
+		Data:                 validReceiveShortCode,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Message Accepted",
 		ExpectedMsgText:      Sp("Test 3"),

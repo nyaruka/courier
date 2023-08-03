@@ -63,13 +63,13 @@ var statusMapping = map[string]courier.MsgStatusValue{
 }
 
 type ReceivedMessage struct {
-	ID              string    `json:"id"`
-	Recipient       string    `json:"recipient"`
-	Originator      string    `json:"originator"`
-	Body            string    `json:"body"`
-	CreatedDatetime time.Time `json:"createdDatetime"`
-	MediaURLs       []string  `json:"mediaUrls"`
-	MMS             bool      `json:"mms"`
+	ID              string   `json:"id"`
+	Recipient       string   `json:"recipient"`
+	Originator      string   `json:"originator"`
+	Body            string   `json:"body"`
+	CreatedDatetime string   `json:"createdDatetime"`
+	MediaURLs       []string `json:"mediaUrls"`
+	MMS             bool     `json:"mms"`
 }
 
 func init() {
@@ -153,7 +153,16 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our date from the timestamp
-	date := payload.CreatedDatetime
+	standardDateLayout := "2006-01-02T15:04:05+00:00"
+	date, err := time.Parse(standardDateLayout, payload.CreatedDatetime)
+	if err != nil {
+		//try shortcode format
+		shortCodeDateLayout := "20060102150405"
+		date, err = time.Parse(shortCodeDateLayout, payload.CreatedDatetime)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse date '%s': %v", payload.CreatedDatetime, err)
+		}
+	}
 
 	// create our URN
 	urn, err := handlers.StrictTelForCountry(payload.Originator, channel.Country())
