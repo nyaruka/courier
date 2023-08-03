@@ -1,3 +1,7 @@
+v8.2.1 (2023-08-03)
+-------------------------
+ * Always save http_logs as [] rather than null
+
 v8.2.0 (2023-07-31)
 -------------------------
  * Add docker file for dev
