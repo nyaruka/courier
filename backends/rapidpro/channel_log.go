@@ -60,6 +60,12 @@ type channelError struct {
 func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) {
 	dbChan := clog.Channel().(*DBChannel)
 
+	// so that we don't save null
+	logs := clog.HTTPLogs()
+	if logs == nil {
+		logs = []*httpx.Log{}
+	}
+
 	errors := make([]channelError, len(clog.Errors()))
 	for i, e := range clog.Errors() {
 		errors[i] = channelError{Code: e.Code(), ExtCode: e.ExtCode(), Message: e.Message()}
@@ -76,7 +82,7 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 		v := &stChannelLog{
 			UUID:        clog.UUID(),
 			Type:        clog.Type(),
-			HTTPLogs:    clog.HTTPLogs(),
+			HTTPLogs:    logs,
 			Errors:      errors,
 			ElapsedMS:   int(clog.Elapsed() / time.Millisecond),
 			CreatedOn:   clog.CreatedOn(),
@@ -91,7 +97,7 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 			UUID:      clog.UUID(),
 			Type:      clog.Type(),
 			ChannelID: dbChan.ID(),
-			HTTPLogs:  jsonx.MustMarshal(clog.HTTPLogs()),
+			HTTPLogs:  jsonx.MustMarshal(logs),
 			Errors:    jsonx.MustMarshal(errors),
 			IsError:   isError,
 			CreatedOn: clog.CreatedOn(),
