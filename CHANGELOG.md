@@ -1,3 +1,9 @@
+v8.3.0 (2023-08-09)
+-------------------------
+ * Update to go 1.20
+ * Update deps
+ * Add Messagebird channel type
+
 v8.2.1 (2023-08-03)
 -------------------------
  * Always save http_logs as [] rather than null
