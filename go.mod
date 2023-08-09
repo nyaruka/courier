@@ -1,6 +1,6 @@
 module github.com/nyaruka/courier
 
-go 1.19
+go 1.20
 
 require (
 	github.com/antchfx/xmlquery v1.3.17
