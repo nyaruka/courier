@@ -1,3 +1,7 @@
+v8.3.2 (2023-08-16)
+-------------------------
+ * Fix retrieve media files for D3C
+
 v8.3.1 (2023-08-09)
 -------------------------
  * Revert validator dep upgrade
