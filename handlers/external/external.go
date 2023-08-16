@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/antchfx/xmlquery"
+	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
@@ -27,6 +28,8 @@ const (
 
 	configFromXPath = "from_xpath"
 	configTextXPath = "text_xpath"
+
+	configMOBody = "mo_body_content_type"
 
 	configMOFromField = "mo_from_field"
 	configMOTextField = "mo_text_field"
@@ -148,6 +151,8 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	fromXPath := channel.StringConfigForKey(configFromXPath, "")
 	textXPath := channel.StringConfigForKey(configTextXPath, "")
 
+	moBody := channel.StringConfigForKey(configMOBody, "")
+
 	if fromXPath != "" && textXPath != "" {
 		// we are reading from an XML body, pull out our fields
 		body, err := io.ReadAll(io.LimitReader(r.Body, 100000))
@@ -168,6 +173,24 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 		from = fromNode.InnerText()
 		text = textNode.InnerText()
+	} else if moBody == "json" {
+		// we are reading from an JSON body, pull out our fields
+		body, err := io.ReadAll(io.LimitReader(r.Body, 100000))
+		defer r.Body.Close()
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to read request body: %s", err))
+		}
+
+		from, err = jsonparser.GetString(body, channel.StringConfigForKey(configMOFromField, "from"))
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to find field 'from' in request body: %s", err))
+		}
+
+		text, err = jsonparser.GetString(body, channel.StringConfigForKey(configMOTextField, "text"))
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unable to find field 'text' in request body: %s", err))
+		}
+		dateString, _ = jsonparser.GetString(body, channel.StringConfigForKey(configMODateField, "date"))
 	} else {
 		// parse our form
 		contentType := r.Header.Get("Content-Type")

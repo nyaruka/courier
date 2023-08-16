@@ -43,6 +43,7 @@ var handleTestCases = []ChannelHandleTestCase{
 		ExpectedMsgText:      Sp("Join"),
 		ExpectedURN:          "tel:+2349067554729",
 	},
+
 	{
 		Label:                "Receive Valid Post multipart form",
 		URL:                  receiveURL,
@@ -264,11 +265,48 @@ var customTestCases = []ChannelHandleTestCase{
 	},
 }
 
+var MOJSONChannels = []courier.Channel{
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
+		map[string]interface{}{
+			configMOFromField: "from_number",
+			configMOTextField: "messageText",
+			configMOBody:      "json",
+		},
+	),
+}
+
+var MOJSONTextCases = []ChannelHandleTestCase{
+	{
+		Label:                "Receive Valid Post JSON body",
+		URL:                  receiveURL,
+		Data:                 `{"from_number":"2349067554729", "messageText": "Join"}`,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "tel:+2349067554729",
+	},
+	{
+		Label:                "Receive missing field JSON body",
+		URL:                  receiveURL,
+		Data:                 `{"old":"2349067554729", "new": "Join"}`,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "unable to find field 'from' in request body",
+	},
+	{
+		Label:                "Receive invalid Post JSON body",
+		URL:                  receiveURL,
+		Data:                 `not_valid`,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "unable to find field 'from' in request body",
+	},
+}
+
 func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
 	RunChannelTestCases(t, testSOAPReceiveChannels, newHandler(), handleSOAPReceiveTestCases)
 	RunChannelTestCases(t, gmChannels, newHandler(), gmTestCases)
 	RunChannelTestCases(t, customChannels, newHandler(), customTestCases)
+	RunChannelTestCases(t, MOJSONChannels, newHandler(), MOJSONTextCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
