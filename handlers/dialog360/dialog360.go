@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
@@ -375,16 +376,35 @@ func resolveMediaURL(channel courier.Channel, mediaID string, clog *courier.Chan
 		return "", nil
 	}
 
+	token := channel.StringConfigForKey(courier.ConfigAuthToken, "")
+	if token == "" {
+		return "", fmt.Errorf("missing token for D3C channel")
+	}
+
 	urlStr := channel.StringConfigForKey(courier.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
 	if err != nil {
 		return "", fmt.Errorf("invalid base url set for D3C channel: %s", err)
 	}
 
-	mediaPath, _ := url.Parse("/whatsapp_business/attachments/")
-	mediaEndpoint := url.ResolveReference(mediaPath).String()
+	mediaPath, _ := url.Parse(mediaID)
+	mediaURL := url.ResolveReference(mediaPath).String()
 
-	fileURL := fmt.Sprintf("%s?mid=%s", mediaEndpoint, mediaID)
+	req, _ := http.NewRequest(http.MethodGet, mediaURL, nil)
+	req.Header.Set("User-Agent", utils.HTTPUserAgent)
+	req.Header.Set(d3AuthorizationKey, token)
+
+	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 != 2 {
+		return "", fmt.Errorf("failed to request media URL for D3C channel: %s", err)
+	}
+
+	fbFileURL, err := jsonparser.GetString(respBody, "url")
+	if err != nil {
+		return "", fmt.Errorf("missing url field in response for D3C media: %s", err)
+	}
+
+	fileURL := strings.ReplaceAll(fbFileURL, "https://lookaside.fbsbx.com", urlStr)
 
 	return fileURL, nil
 }

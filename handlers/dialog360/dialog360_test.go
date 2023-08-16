@@ -3,7 +3,10 @@ package dialog360
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -252,11 +255,54 @@ var testCasesD3C = []ChannelHandleTestCase{
 	},
 }
 
+func buildMockD3MediaService(testChannels []courier.Channel, testCases []ChannelHandleTestCase) *httptest.Server {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fileURL := ""
+
+		if strings.HasSuffix(r.URL.Path, "id_voice") {
+			fileURL = "https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=id_voice"
+		}
+		if strings.HasSuffix(r.URL.Path, "id_document") {
+			fileURL = "https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=id_document"
+		}
+		if strings.HasSuffix(r.URL.Path, "id_image") {
+			fileURL = "https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=id_image"
+		}
+		if strings.HasSuffix(r.URL.Path, "id_video") {
+			fileURL = "https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=id_video"
+		}
+		if strings.HasSuffix(r.URL.Path, "id_audio") {
+			fileURL = "https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=id_audio"
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(fmt.Sprintf(`{ "url": "%s" }`, fileURL)))
+	}))
+	testChannels[0].(*test.MockChannel).SetConfig("base_url", server.URL)
+
+	// update our tests media urls
+	for _, tc := range testCases {
+		for i := range tc.ExpectedAttachments {
+			if !strings.HasPrefix(tc.ExpectedAttachments[i], "geo:") {
+				tc.ExpectedAttachments[i] = strings.ReplaceAll(tc.ExpectedAttachments[i], "https://waba-v2.360dialog.io", server.URL)
+			}
+		}
+	}
+
+	return server
+}
+
 func TestHandler(t *testing.T) {
+
+	d3MediaService := buildMockD3MediaService(testChannels, testCasesD3C)
+	defer d3MediaService.Close()
+
 	RunChannelTestCases(t, testChannels, newWAHandler(courier.ChannelType("D3C"), "360Dialog"), testCasesD3C)
 }
 
 func BenchmarkHandler(b *testing.B) {
+	d3MediaService := buildMockD3MediaService(testChannels, testCasesD3C)
+	defer d3MediaService.Close()
 	RunChannelBenchmarks(b, testChannels, newWAHandler(courier.ChannelType("D3C"), "360Dialog"), testCasesD3C)
 }
 
