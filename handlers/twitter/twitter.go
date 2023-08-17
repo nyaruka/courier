@@ -45,7 +45,6 @@ const (
 
 func init() {
 	courier.RegisterHandler(newHandler("TWT", "Twitter Activity"))
-	courier.RegisterHandler(newHandler("TT", "Twitter"))
 }
 
 type handler struct {
