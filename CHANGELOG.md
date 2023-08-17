@@ -1,3 +1,8 @@
+v8.3.3 (2023-08-17)
+-------------------------
+ * Remove Legacy Twitter (TT) type registration
+ * Remove Blackmyna, Junebug, old Zenvia channel type handlers
+
 v8.3.2 (2023-08-16)
 -------------------------
  * Fix retrieve media files for D3C
