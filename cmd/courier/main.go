@@ -14,7 +14,6 @@ import (
 	_ "github.com/nyaruka/courier/handlers/africastalking"
 	_ "github.com/nyaruka/courier/handlers/arabiacell"
 	_ "github.com/nyaruka/courier/handlers/bandwidth"
-	_ "github.com/nyaruka/courier/handlers/blackmyna"
 	_ "github.com/nyaruka/courier/handlers/bongolive"
 	_ "github.com/nyaruka/courier/handlers/burstsms"
 	_ "github.com/nyaruka/courier/handlers/clickatell"
@@ -37,7 +36,6 @@ import (
 	_ "github.com/nyaruka/courier/handlers/infobip"
 	_ "github.com/nyaruka/courier/handlers/jasmin"
 	_ "github.com/nyaruka/courier/handlers/jiochat"
-	_ "github.com/nyaruka/courier/handlers/junebug"
 	_ "github.com/nyaruka/courier/handlers/justcall"
 	_ "github.com/nyaruka/courier/handlers/kaleyra"
 	_ "github.com/nyaruka/courier/handlers/kannel"
@@ -71,7 +69,6 @@ import (
 	_ "github.com/nyaruka/courier/handlers/whatsapp"
 	_ "github.com/nyaruka/courier/handlers/yo"
 	_ "github.com/nyaruka/courier/handlers/zenvia"
-	_ "github.com/nyaruka/courier/handlers/zenviaold"
 
 	// load available backends
 	_ "github.com/nyaruka/courier/backends/rapidpro"
