@@ -56,9 +56,10 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type moForm struct {
-	Message  string `name:"message"`
-	Original string `name:"original"`
-	SendTo   string `name:"sendto"`
+	Message   string `name:"message"`
+	Original  string `name:"original"`
+	SendTo    string `name:"sendto"`
+	MessageID string `name:"messageid"`
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
@@ -83,7 +84,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// build our msg
-	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message, "", clog)
+	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message, form.MessageID, clog)
 
 	// and finally queue our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)

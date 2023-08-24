@@ -6,6 +6,7 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/nyaruka/courier"
@@ -38,6 +39,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type moForm struct {
+	ID          int64  `name:"ID"`
 	To          string `name:"TO"              validate:"required"`
 	From        string `name:"FROM"            validate:"required"`
 	Message     string `name:"MESSAGE"`
@@ -72,8 +74,13 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	text = mime.BEncoding.Encode("ISO-8859-1", text)
 	text, _ = new(mime.WordDecoder).DecodeHeader(text)
 
+	msgID := ""
+	if form.ID != 0 {
+		msgID = strconv.FormatInt(form.ID, 10)
+	}
+
 	// build our Message
-	msg := h.Backend().NewIncomingMsg(channel, urn, text, "", clog).WithReceivedOn(date.UTC())
+	msg := h.Backend().NewIncomingMsg(channel, urn, text, msgID, clog).WithReceivedOn(date.UTC())
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)

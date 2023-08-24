@@ -21,19 +21,21 @@ const (
 var daTestCases = []ChannelHandleTestCase{
 	{
 		Label:                "Receive Valid",
-		URL:                  receiveURL + "?userid=testusr&password=test&original=6289881134560&sendto=2020&message=Msg",
+		URL:                  receiveURL + "?userid=testusr&password=test&original=6289881134560&sendto=2020&message=Msg&messageid=foo",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "000",
 		ExpectedMsgText:      Sp("Msg"),
 		ExpectedURN:          "tel:+6289881134560",
+		ExpectedExternalID:   "foo",
 	},
 	{
 		Label:                "Receive Valid",
-		URL:                  receiveURL + "?userid=testusr&password=test&original=cmp-oodddqddwdwdcd&sendto=2020&message=Msg",
+		URL:                  receiveURL + "?userid=testusr&password=test&original=cmp-oodddqddwdwdcd&sendto=2020&message=Msg&messageid=bar",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "000",
 		ExpectedMsgText:      Sp("Msg"),
 		ExpectedURN:          "ext:cmp-oodddqddwdwdcd",
+		ExpectedExternalID:   "bar",
 	},
 	{
 		Label:                "Receive Invalid",
