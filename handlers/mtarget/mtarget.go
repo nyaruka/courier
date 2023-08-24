@@ -61,6 +61,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 	text := r.Form.Get("Content")
 	from := r.Form.Get("Msisdn")
 	keyword := r.Form.Get("Keyword")
+	msgID := r.Form.Get("MsgId")
 
 	if from == "" {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required field 'Msisdn'"))
@@ -142,7 +143,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 	}
 
 	// otherwise, create and write the message
-	msg := h.Backend().NewIncomingMsg(c, urn, text, "", clog).WithReceivedOn(time.Now().UTC())
+	msg := h.Backend().NewIncomingMsg(c, urn, text, msgID, clog).WithReceivedOn(time.Now().UTC())
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 

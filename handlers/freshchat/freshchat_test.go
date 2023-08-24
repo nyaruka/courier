@@ -39,6 +39,7 @@ var sigtestCases = []ChannelHandleTestCase{
 		ExpectedMsgText:      Sp("Test 2"),
 		ExpectedURN:          "freshchat:c8fddfaf-622a-4a0e-b060-4f3ccbeab606/882f3926-b292-414b-a411-96380db373cd",
 		ExpectedDate:         time.Date(2019, 6, 21, 17, 43, 20, 866000000, time.UTC),
+		ExpectedExternalID:   "7a454fde-c720-4c97-a61d-0ffe70449eb6",
 	},
 	{
 		Label:                "Bad Signature",

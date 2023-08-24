@@ -82,6 +82,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedMsgText:      Sp("Hello World"),
 		ExpectedURN:          "tel:+250788123123",
 		ExpectedDate:         time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC),
+		ExpectedExternalID:   "msg1",
 	},
 	{
 		Label:                "Receive Valid Encoded",
@@ -92,6 +93,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedMsgText:      Sp("Кохання"),
 		ExpectedURN:          "tel:+380501529999",
 		ExpectedDate:         time.Date(2015, 12, 18, 15, 02, 54, 0, time.UTC),
+		ExpectedExternalID:   "43473486",
 	},
 	{
 		Label:                "Receive Valid with empty Text",
@@ -101,6 +103,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedBodyContains: "<state>Accepted</state>",
 		ExpectedMsgText:      Sp(""),
 		ExpectedURN:          "tel:+250788123123",
+		ExpectedExternalID:   "msg1",
 	},
 	{
 		Label:                "Receive Valid missing body",

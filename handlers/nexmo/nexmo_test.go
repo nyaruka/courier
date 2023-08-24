@@ -26,6 +26,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedBodyContains: "Accepted",
 		ExpectedMsgText:      Sp("Join"),
 		ExpectedURN:          "tel:+2349067554729",
+		ExpectedExternalID:   "external1",
 	},
 	{
 		Label:                "Invalid URN",
@@ -41,6 +42,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 "to=2020&msisdn=2349067554729&text=Join&messageId=external1",
 		ExpectedMsgText:      Sp("Join"),
 		ExpectedURN:          "tel:+2349067554729",
+		ExpectedExternalID:   "external1",
 	},
 	{
 		Label:                "Receive URL check",

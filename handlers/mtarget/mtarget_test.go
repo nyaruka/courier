@@ -12,7 +12,7 @@ import (
 var (
 	receiveURL = "/c/mt/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 
-	receiveValidMessage = "Msisdn=+923161909799&Content=hello+world&Keyword=Default"
+	receiveValidMessage = "Msisdn=+923161909799&Content=hello+world&Keyword=Default&MsgId=foo"
 	receiveInvalidURN   = "Msisdn=MTN&Content=hello+world&Keyword=Default"
 	receiveStop         = "Msisdn=+923161909799&Content=Stop&Keyword=Stop"
 	receiveMissingFrom  = "Content=hello&Keyword=Default"
@@ -33,7 +33,7 @@ var testChannels = []courier.Channel{
 
 var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
-		ExpectedMsgText: Sp("hello world"), ExpectedURN: "tel:+923161909799"},
+		ExpectedMsgText: Sp("hello world"), ExpectedURN: "tel:+923161909799", ExpectedExternalID: "foo"},
 	{Label: "Invalid URN", URL: receiveURL, Data: receiveInvalidURN, ExpectedRespStatus: 400, ExpectedBodyContains: "phone number supplied is not a number"},
 	{Label: "Receive Stop", URL: receiveURL, Data: receiveStop, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedURN: "tel:+923161909799", ExpectedEvent: courier.StopContact},
