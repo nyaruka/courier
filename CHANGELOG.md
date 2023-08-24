@@ -1,3 +1,8 @@
+v8.3.4 (2023-08-24)
+-------------------------
+ * Update channel type to save external ID for MO messages if we can, so we can dedupe by that
+ * Test with PostgreSQL 15
+
 v8.3.3 (2023-08-17)
 -------------------------
  * Remove Legacy Twitter (TT) type registration
