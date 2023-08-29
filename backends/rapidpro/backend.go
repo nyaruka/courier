@@ -292,23 +292,14 @@ func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID 
 
 // WriteMsgStatus writes the passed in MsgStatus to our store
 func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) error {
-	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
-	defer cancel()
+	if status.ID() == courier.NilMsgID && status.ExternalID() == "" {
+		return errors.New("message status with no id or external id")
+	}
 
 	if status.HasUpdatedURN() {
 		err := b.updateContactURN(ctx, status)
 		if err != nil {
 			return errors.Wrap(err, "error updating contact URN")
-		}
-	}
-	// if we have an ID, we can have our batch commit for us
-	if status.ID() != courier.NilMsgID {
-		b.statusWriter.Queue(status.(*DBMsgStatus))
-	} else {
-		// otherwise, write normally (synchronously)
-		err := writeMsgStatus(timeout, b, status)
-		if err != nil {
-			return err
 		}
 	}
 
@@ -319,6 +310,9 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 			logrus.WithError(err).WithField("msg", status.ID()).Error("error clearing sent flags")
 		}
 	}
+
+	// queue the status to written by the batch writer
+	b.statusWriter.Queue(status.(*DBMsgStatus))
 
 	return nil
 }

@@ -606,19 +606,9 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.Equal(courier.MsgDelivered, m.Status_)
 	ts.NotNil(m.SentOn_)
 
-	// no such external id for outgoing message
-	status := ts.b.NewMsgStatusForExternalID(channel, "ext2", courier.MsgSent, clog6)
-	err := ts.b.WriteMsgStatus(ctx, status)
-	ts.Error(err)
-
-	// no such external id
-	status = ts.b.NewMsgStatusForExternalID(channel, "ext3", courier.MsgSent, clog6)
-	err = ts.b.WriteMsgStatus(ctx, status)
-	ts.Error(err)
-
 	// reset our status to sent
-	status = ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgSent, clog6)
-	err = ts.b.WriteMsgStatus(ctx, status)
+	status := ts.b.NewMsgStatusForExternalID(channel, "ext1", courier.MsgSent, clog6)
+	err := ts.b.WriteMsgStatus(ctx, status)
 	ts.NoError(err)
 	time.Sleep(time.Second)
 
