@@ -181,53 +181,6 @@ func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg, clog *courier.Chann
 	return nil
 }
 
-const sqlSelectMsg = `
-SELECT
-	org_id,
-	direction,
-	text,
-	attachments,
-	quick_replies,
-	msg_count,
-	error_count,
-	failed_reason,
-	high_priority,
-	status,
-	visibility,
-	external_id,
-	channel_id,
-	contact_id,
-	contact_urn_id,
-	created_on,
-	modified_on,
-	next_attempt,
-	queued_on,
-	sent_on,
-	log_uuids
-FROM
-	msgs_msg
-WHERE
-	id = $1`
-
-const selectChannelSQL = `
-SELECT
-	org_id,
-	ch.id as id,
-	ch.uuid as uuid,
-	ch.name as name,
-	channel_type, schemes,
-	address, role,
-	ch.country as country,
-	ch.config as config,
-	org.config as org_config,
-	org.is_anon as org_is_anon
-FROM
-	channels_channel ch
-	JOIN orgs_org org on ch.org_id = org.id
-WHERE
-    ch.id = $1
-`
-
 //-----------------------------------------------------------------------------
 // Msg flusher for flushing failed writes
 //-----------------------------------------------------------------------------
