@@ -359,6 +359,16 @@ SELECT id, channel_id, external_id
 // resolveStatusMsgIDs tries to resolve msg IDs for the given statuses - if there's no matching channel/external ID pair
 // found for a status, that status will be left with a nil msg ID.
 func resolveStatusMsgIDs(ctx context.Context, db *sqlx.DB, statuses []*DBMsgStatus) error {
+	// create a mapping of channel id + external id -> status
+	type ext struct {
+		channelID  courier.ChannelID
+		externalID string
+	}
+	statusesByExt := make(map[ext]*DBMsgStatus, len(statuses))
+	for _, s := range statuses {
+		statusesByExt[ext{s.ChannelID_, s.ExternalID_}] = s
+	}
+
 	sql, params, err := dbutil.BulkSQL(db, sqlResolveStatusMsgIDs, statuses)
 	if err != nil {
 		return err
@@ -380,11 +390,8 @@ func resolveStatusMsgIDs(ctx context.Context, db *sqlx.DB, statuses []*DBMsgStat
 		}
 
 		// find the status with this channel ID and external ID and update its msg ID
-		for _, s := range statuses {
-			if s.ChannelID_ == channelID && s.ExternalID_ == externalID {
-				s.ID_ = msgID
-			}
-		}
+		s := statusesByExt[ext{channelID, externalID}]
+		s.ID_ = msgID
 	}
 
 	return rows.Err()
