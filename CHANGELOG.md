@@ -1,3 +1,7 @@
+v8.3.6 (2023-08-30)
+-------------------------
+ * Rework writing msg statuses to always use id resolving
+
 v8.3.5 (2023-08-30)
 -------------------------
  * Rework writing status updates so that updates by external id also use the batcher
