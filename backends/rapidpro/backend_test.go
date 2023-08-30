@@ -2,7 +2,6 @@ package rapidpro
 
 import (
 	"context"
-	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -167,36 +166,6 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Nil(msg.Flow())
 	ts.Equal("", msg.FlowName())
 	ts.Equal("", msg.FlowUUID())
-}
-
-func (ts *BackendTestSuite) TestCheckMsgExists() {
-	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, knChannel, nil)
-
-	// check with invalid message id
-	err := checkMsgExists(ts.b, ts.b.NewMsgStatusForID(knChannel, -1, courier.MsgStatusValue("S"), clog))
-	ts.Equal(err, courier.ErrMsgNotFound)
-
-	// check with valid message id
-	err = checkMsgExists(ts.b, ts.b.NewMsgStatusForID(knChannel, 10000, courier.MsgStatusValue("S"), clog))
-	ts.Nil(err)
-
-	// only outgoing messages are matched
-	err = checkMsgExists(ts.b, ts.b.NewMsgStatusForID(knChannel, 10002, courier.MsgStatusValue("S"), clog))
-	ts.Equal(err, courier.ErrMsgNotFound)
-
-	// check with invalid external id
-	err = checkMsgExists(ts.b, ts.b.NewMsgStatusForExternalID(knChannel, "ext-invalid", courier.MsgStatusValue("S"), clog))
-	ts.Equal(err, courier.ErrMsgNotFound)
-
-	// only outgoing messages are matched
-	err = checkMsgExists(ts.b, ts.b.NewMsgStatusForExternalID(knChannel, "ext2", courier.MsgStatusValue("S"), clog))
-	ts.Equal(err, courier.ErrMsgNotFound)
-
-	// check with valid external id
-	status := ts.b.NewMsgStatusForExternalID(knChannel, "ext1", courier.MsgStatusValue("S"), clog)
-	err = checkMsgExists(ts.b, status)
-	ts.Nil(err)
 }
 
 func (ts *BackendTestSuite) TestDeleteMsgWithExternalID() {
@@ -1510,29 +1479,6 @@ func readMsgFromDB(b *backend, id courier.MsgID) *DBMsg {
 
 	m.channel = ch
 	return m
-}
-
-const selectMsgIDForID = `
-SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (m."id" = $1 AND c."uuid" = $2 AND m."direction" = 'O')`
-
-const selectMsgIDForExternalID = `
-SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (m."external_id" = $1 AND c."uuid" = $2 AND m."direction" = 'O')`
-
-func checkMsgExists(b *backend, status courier.MsgStatus) (err error) {
-	var id int64
-
-	if status.ID() != courier.NilMsgID {
-		err = b.db.QueryRow(selectMsgIDForID, status.ID(), status.ChannelUUID()).Scan(&id)
-	} else if status.ExternalID() != "" {
-		err = b.db.QueryRow(selectMsgIDForExternalID, status.ExternalID(), status.ChannelUUID()).Scan(&id)
-	} else {
-		return fmt.Errorf("no id or external id for status update")
-	}
-
-	if err == sql.ErrNoRows {
-		return courier.ErrMsgNotFound
-	}
-	return err
 }
 
 const sqlSelectMsg = `

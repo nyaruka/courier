@@ -70,11 +70,6 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 		// write our status
 		status := h.Backend().NewMsgStatusForExternalID(channel, s.MessageID, msgStatus, clog)
 		err := h.Backend().WriteMsgStatus(ctx, status)
-		if err == courier.ErrMsgNotFound {
-			data = append(data, courier.NewInfoData(fmt.Sprintf("ignoring status update message id: %s, not found", s.MessageID)))
-			continue
-		}
-
 		if err != nil {
 			return nil, err
 		}

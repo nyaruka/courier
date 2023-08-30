@@ -271,13 +271,6 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 
 		event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus, clog)
 		err := h.Backend().WriteMsgStatus(ctx, event)
-
-		// we don't know about this message, just tell them we ignored it
-		if err == courier.ErrMsgNotFound {
-			data = append(data, courier.NewInfoData(fmt.Sprintf("message id: %s not found, ignored", status.ID)))
-			continue
-		}
-
 		if err != nil {
 			return nil, err
 		}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"sync"
@@ -106,114 +105,18 @@ WHERE
 	msgs_msg.direction = 'O'
 `
 
-const sqlUpdateMsgByExternalID = `
-UPDATE msgs_msg SET 
-	status = CASE 
-		WHEN 
-			:status = 'E' 
-		THEN CASE 
-			WHEN 
-				error_count >= 2 OR status = 'F' 
-			THEN 
-				'F' 
-			ELSE 
-				'E' 
-			END 
-		ELSE 
-			:status 
-		END,
-	error_count = CASE 
-		WHEN 
-			:status = 'E' 
-		THEN 
-			error_count + 1 
-		ELSE 
-			error_count 
-		END,
-	next_attempt = CASE 
-		WHEN 
-			:status = 'E' 
-		THEN 
-			NOW() + (5 * (error_count+1) * interval '1 minutes') 
-		ELSE 
-			next_attempt 
-		END,
-	failed_reason = CASE
-		WHEN
-			error_count >= 2
-		THEN
-			'E'
-		ELSE
-			failed_reason
-	    END,
-	sent_on = CASE 
-		WHEN
-			:status IN ('W', 'S', 'D')
-		THEN
-			COALESCE(sent_on, NOW())
-		ELSE
-			NULL
-		END,
-	modified_on = :modified_on,
-	log_uuids = array_append(log_uuids, :log_uuid)
-WHERE 
-	msgs_msg.id = (SELECT msgs_msg.id FROM msgs_msg WHERE msgs_msg.external_id = :external_id AND msgs_msg.channel_id = :channel_id AND msgs_msg.direction = 'O' LIMIT 1)
-RETURNING 
-	msgs_msg.id
-`
-
-// writeMsgStatusToDB writes the passed in msg status to our db
-func writeMsgStatusToDB(ctx context.Context, b *backend, status *DBMsgStatus) error {
-	if status.ID() == courier.NilMsgID && status.ExternalID() == "" {
-		return fmt.Errorf("attempt to update msg status without id or external id")
-	}
-
-	var rows *sqlx.Rows
-	var err error
-
-	if status.ID() != courier.NilMsgID {
-		err = dbutil.BulkQuery(context.Background(), b.db, sqlUpdateMsgByID, []*DBMsgStatus{status})
-		return err
-	}
-
-	rows, err = b.db.NamedQueryContext(ctx, sqlUpdateMsgByExternalID, status)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	// scan and read the id of the msg that was updated
-	if rows.Next() {
-		rows.Scan(&status.ID_)
-	} else {
-		return courier.ErrMsgNotFound
-	}
-
-	return nil
-}
-
 func (b *backend) flushStatusFile(filename string, contents []byte) error {
+	ctx := context.Background()
 	status := &DBMsgStatus{}
 	err := json.Unmarshal(contents, status)
 	if err != nil {
-		log.Printf("ERROR unmarshalling spool file '%s', renaming: %s\n", filename, err)
+		logrus.Printf("ERROR unmarshalling spool file '%s', renaming: %s\n", filename, err)
 		os.Rename(filename, fmt.Sprintf("%s.error", filename))
 		return nil
 	}
 
 	// try to flush to our db
-	err = writeMsgStatusToDB(context.Background(), b, status)
-
-	// not finding the message is ok for status updates
-	if err == courier.ErrMsgNotFound {
-		return nil
-	}
-
-	// Ignore wrong status update for incoming messages
-	if err == courier.ErrWrongIncomingMsgStatus {
-		return nil
-	}
-
+	_, err = writeMsgStatusesToDB(ctx, b.db, []*DBMsgStatus{status})
 	return err
 }
 
@@ -296,41 +199,17 @@ func NewStatusWriter(db *sqlx.DB, spoolDir string, wg *sync.WaitGroup) *StatusWr
 	}
 }
 
+// tries to write all the message statuses to the database and spools those that fail
 func writeMsgStatuses(ctx context.Context, db *sqlx.DB, spoolDir string, statuses []*DBMsgStatus) {
 	log := logrus.WithField("comp", "status writer")
 
-	// get the statuses which have external ID instead of a message ID
-	missingID := make([]*DBMsgStatus, 0, 500)
-	for _, s := range statuses {
-		if s.ID_ == courier.NilMsgID {
-			missingID = append(missingID, s)
-		}
-	}
-
-	// try to resolve channel ID + external ID to message IDs
-	for _, batch := range utils.ChunkSlice(missingID, 1000) {
-		if err := resolveStatusMsgIDs(ctx, db, batch); err != nil {
-			log.WithError(err).Error("error resolving msg ids")
-		}
-	}
-
-	resolved := make([]*DBMsgStatus, 0, 500)
-
-	for _, s := range statuses {
-		if s.ID_ != courier.NilMsgID {
-			resolved = append(resolved, s)
-		} else {
-			log.Warnf("unable to find message with channel_id=%d and external_id=%s", s.ChannelID_, s.ExternalID_)
-		}
-	}
-
-	for _, batch := range utils.ChunkSlice(resolved, 1000) {
-		err := dbutil.BulkQuery(ctx, db, sqlUpdateMsgByID, batch)
+	for _, batch := range utils.ChunkSlice(statuses, 1000) {
+		unresolved, err := writeMsgStatusesToDB(ctx, db, batch)
 
 		// if we received an error, try again one at a time (in case it is one value hanging us up)
 		if err != nil {
 			for _, s := range batch {
-				err = dbutil.BulkQuery(ctx, db, sqlUpdateMsgByID, []*DBMsgStatus{s})
+				_, err = writeMsgStatusesToDB(ctx, db, []*DBMsgStatus{s})
 				if err != nil {
 					log := log.WithField("msg_id", s.ID())
 
@@ -341,14 +220,55 @@ func writeMsgStatuses(ctx context.Context, db *sqlx.DB, spoolDir string, statuse
 
 					log.WithError(err).Error("error writing msg status")
 
-					err = courier.WriteToSpool(spoolDir, "statuses", s)
+					err := courier.WriteToSpool(spoolDir, "statuses", s)
 					if err != nil {
-						logrus.WithField("comp", "status committer").WithError(err).Error("error writing status to spool")
+						log.WithError(err).Error("error writing status to spool") // just have to log and move on
 					}
 				}
 			}
+		} else {
+			for _, s := range unresolved {
+				log.Warnf("unable to find message with channel_id=%d and external_id=%s", s.ChannelID_, s.ExternalID_)
+			}
 		}
 	}
+}
+
+// writes a batch of msg statuses to the database - messages that can't be resolved are returned and aren't considered
+// an error
+func writeMsgStatusesToDB(ctx context.Context, db *sqlx.DB, statuses []*DBMsgStatus) ([]*DBMsgStatus, error) {
+	// get the statuses which have external ID instead of a message ID
+	missingID := make([]*DBMsgStatus, 0, 500)
+	for _, s := range statuses {
+		if s.ID_ == courier.NilMsgID {
+			missingID = append(missingID, s)
+		}
+	}
+
+	// try to resolve channel ID + external ID to message IDs
+	if len(missingID) > 0 {
+		if err := resolveStatusMsgIDs(ctx, db, missingID); err != nil {
+			return nil, err
+		}
+	}
+
+	resolved := make([]*DBMsgStatus, 0, len(statuses))
+	unresolved := make([]*DBMsgStatus, 0, len(statuses))
+
+	for _, s := range statuses {
+		if s.ID_ != courier.NilMsgID {
+			resolved = append(resolved, s)
+		} else {
+			unresolved = append(unresolved, s)
+		}
+	}
+
+	err := dbutil.BulkQuery(ctx, db, sqlUpdateMsgByID, resolved)
+	if err != nil {
+		return nil, errors.Wrap(err, "error updating status")
+	}
+
+	return unresolved, nil
 }
 
 const sqlResolveStatusMsgIDs = `

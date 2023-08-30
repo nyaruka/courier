@@ -524,13 +524,6 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 
 				event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus, clog)
 				err := h.Backend().WriteMsgStatus(ctx, event)
-
-				// we don't know about this message, just tell them we ignored it
-				if err == courier.ErrMsgNotFound {
-					data = append(data, courier.NewInfoData(fmt.Sprintf("message id: %s not found, ignored", status.ID)))
-					continue
-				}
-
 				if err != nil {
 					return nil, nil, err
 				}
@@ -766,13 +759,6 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			for _, mid := range msg.Delivery.MIDs {
 				event := h.Backend().NewMsgStatusForExternalID(channel, mid, courier.MsgDelivered, clog)
 				err := h.Backend().WriteMsgStatus(ctx, event)
-
-				// we don't know about this message, just tell them we ignored it
-				if err == courier.ErrMsgNotFound {
-					data = append(data, courier.NewInfoData("message not found, ignored"))
-					continue
-				}
-
 				if err != nil {
 					return nil, nil, err
 				}
