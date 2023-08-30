@@ -83,7 +83,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
 		return nil, fmt.Errorf("missing send_url for SQ channel")
@@ -113,13 +113,13 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	resp, _, err := handlers.RequestHTTPInsecure(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}
 
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 	return status, nil
 }

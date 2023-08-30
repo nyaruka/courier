@@ -217,7 +217,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 validStatusSent,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedMsgStatus:    courier.MsgSent,
+		ExpectedMsgStatus:    courier.MsgStatusSent,
 	},
 	{
 		Label:                "Status delivered",
@@ -225,7 +225,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 validStatusDelivered,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgDelivered,
+		ExpectedMsgStatus:    courier.MsgStatusDelivered,
 	},
 	{
 		Label:                "Status delivered",
@@ -234,7 +234,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedErrors:       []*courier.ChannelError{courier.ErrorExternal("4432", "forbidden to country")},
-		ExpectedMsgStatus:    courier.MsgFailed,
+		ExpectedMsgStatus:    courier.MsgStatusFailed,
 	},
 }
 

@@ -110,7 +110,7 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 		OrgID_:        dbChannel.OrgID(),
 		UUID_:         courier.MsgUUID(uuids.New()),
 		Direction_:    direction,
-		Status_:       courier.MsgPending,
+		Status_:       courier.MsgStatusPending,
 		Visibility_:   MsgVisible,
 		HighPriority_: false,
 		Text_:         text,
@@ -281,19 +281,19 @@ func (b *backend) clearMsgSeen(rc redis.Conn, msg *DBMsg) {
 
 // DBMsg is our base struct to represent msgs both in our JSON and db representations
 type DBMsg struct {
-	OrgID_        OrgID                  `json:"org_id"          db:"org_id"`
-	ID_           courier.MsgID          `json:"id"              db:"id"`
-	UUID_         courier.MsgUUID        `json:"uuid"            db:"uuid"`
-	Direction_    MsgDirection           `                       db:"direction"`
-	Status_       courier.MsgStatusValue `                       db:"status"`
-	Visibility_   MsgVisibility          `                       db:"visibility"`
-	HighPriority_ bool                   `json:"high_priority"   db:"high_priority"`
-	Text_         string                 `json:"text"            db:"text"`
-	Attachments_  pq.StringArray         `json:"attachments"     db:"attachments"`
-	QuickReplies_ pq.StringArray         `json:"quick_replies"   db:"quick_replies"`
-	Locale_       null.String            `json:"locale"          db:"locale"`
-	ExternalID_   null.String            `                       db:"external_id"`
-	Metadata_     json.RawMessage        `json:"metadata"        db:"metadata"`
+	OrgID_        OrgID             `json:"org_id"          db:"org_id"`
+	ID_           courier.MsgID     `json:"id"              db:"id"`
+	UUID_         courier.MsgUUID   `json:"uuid"            db:"uuid"`
+	Direction_    MsgDirection      `                       db:"direction"`
+	Status_       courier.MsgStatus `                       db:"status"`
+	Visibility_   MsgVisibility     `                       db:"visibility"`
+	HighPriority_ bool              `json:"high_priority"   db:"high_priority"`
+	Text_         string            `json:"text"            db:"text"`
+	Attachments_  pq.StringArray    `json:"attachments"     db:"attachments"`
+	QuickReplies_ pq.StringArray    `json:"quick_replies"   db:"quick_replies"`
+	Locale_       null.String       `json:"locale"          db:"locale"`
+	ExternalID_   null.String       `                       db:"external_id"`
+	Metadata_     json.RawMessage   `json:"metadata"        db:"metadata"`
 
 	ChannelID_    courier.ChannelID `                       db:"channel_id"`
 	ContactID_    ContactID         `json:"contact_id"      db:"contact_id"`

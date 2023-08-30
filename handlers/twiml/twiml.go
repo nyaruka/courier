@@ -102,13 +102,13 @@ type statusForm struct {
 	To            string
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"queued":      courier.MsgSent,
-	"failed":      courier.MsgFailed,
-	"sent":        courier.MsgSent,
-	"delivered":   courier.MsgDelivered,
-	"read":        courier.MsgDelivered,
-	"undelivered": courier.MsgFailed,
+var statusMapping = map[string]courier.MsgStatus{
+	"queued":      courier.MsgStatusSent,
+	"failed":      courier.MsgStatusFailed,
+	"sent":        courier.MsgStatusSent,
+	"delivered":   courier.MsgStatusDelivered,
+	"read":        courier.MsgStatusDelivered,
+	"undelivered": courier.MsgStatusFailed,
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
@@ -171,25 +171,25 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on
-	if channel.BoolConfigForKey(configIgnoreDLRs, false) && msgStatus != courier.MsgFailed {
+	if channel.BoolConfigForKey(configIgnoreDLRs, false) && msgStatus != courier.MsgStatusFailed {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring non error delivery report")
 	}
 
 	// if the message id was passed explicitely, use that
-	var status courier.MsgStatus
+	var status courier.StatusUpdate
 	idString := r.URL.Query().Get("id")
 	if idString != "" {
 		msgID, err := strconv.ParseInt(idString, 10, 64)
 		if err != nil {
 			logrus.WithError(err).WithField("id", idString).Error("error converting twilio callback id to integer")
 		} else {
-			status = h.Backend().NewMsgStatusForID(channel, courier.MsgID(msgID), msgStatus, clog)
+			status = h.Backend().NewStatusUpdate(channel, courier.MsgID(msgID), msgStatus, clog)
 		}
 	}
 
 	// if we have no status, then build it from the external (twilio) id
 	if status == nil {
-		status = h.Backend().NewMsgStatusForExternalID(channel, form.MessageSID, msgStatus, clog)
+		status = h.Backend().NewStatusUpdateByExternalID(channel, form.MessageSID, msgStatus, clog)
 	}
 
 	errorCode, _ := strconv.ParseInt(form.ErrorCode, 10, 64)
@@ -214,7 +214,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	// build our callback URL
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?id=%d&action=callback", callbackDomain, strings.ToLower(h.ChannelType().String()), msg.Channel().UUID(), msg.ID())
@@ -236,7 +236,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, errors.Wrap(err, "error resolving attachments")
 	}
 
-	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(channel, msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	for i, part := range parts {
 		// build our request
@@ -296,7 +296,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			errorCode, _ := jsonparser.GetInt(respBody, "code")
 			if errorCode != 0 {
 				if errorCode == errorStopped {
-					status.SetStatus(courier.MsgFailed)
+					status.SetStatus(courier.MsgStatusFailed)
 
 					// create a stop channel event
 					channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN(), clog)
@@ -317,7 +317,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, nil
 		}
 
-		status.SetStatus(courier.MsgWired)
+		status.SetStatus(courier.MsgStatusWired)
 
 		// only save the first external id
 		if i == 0 {

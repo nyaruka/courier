@@ -47,20 +47,20 @@ type statusPayload struct {
 	StatusCode int    `name:"statusCode"`
 }
 
-var statusMapping = map[int]courier.MsgStatusValue{
-	1:  courier.MsgFailed, // incorrect msg id
-	2:  courier.MsgWired,  // queued
-	3:  courier.MsgSent,   // delivered to upstream gateway
-	4:  courier.MsgSent,   // delivered to upstream gateway
-	5:  courier.MsgFailed, // error in message
-	6:  courier.MsgFailed, // terminated by user
-	7:  courier.MsgFailed, // error delivering
-	8:  courier.MsgWired,  // msg received
-	9:  courier.MsgFailed, // error routing
-	10: courier.MsgFailed, // expired
-	11: courier.MsgWired,  // delayed but queued
-	12: courier.MsgFailed, // out of credit
-	14: courier.MsgFailed, // too long
+var statusMapping = map[int]courier.MsgStatus{
+	1:  courier.MsgStatusFailed, // incorrect msg id
+	2:  courier.MsgStatusWired,  // queued
+	3:  courier.MsgStatusSent,   // delivered to upstream gateway
+	4:  courier.MsgStatusSent,   // delivered to upstream gateway
+	5:  courier.MsgStatusFailed, // error in message
+	6:  courier.MsgStatusFailed, // terminated by user
+	7:  courier.MsgStatusFailed, // error delivering
+	8:  courier.MsgStatusWired,  // msg received
+	9:  courier.MsgStatusFailed, // error routing
+	10: courier.MsgStatusFailed, // expired
+	11: courier.MsgStatusWired,  // delayed but queued
+	12: courier.MsgStatusFailed, // out of credit
+	14: courier.MsgStatusFailed, // too long
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -77,7 +77,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, payload.MessageID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdateByExternalID(channel, payload.MessageID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -154,13 +154,13 @@ func decodeUTF16BE(b []byte) (string, error) {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	apiKey := msg.Channel().StringConfigForKey(courier.ConfigAPIKey, "")
 	if apiKey == "" {
 		return nil, fmt.Errorf("no api_key set for CT channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
@@ -190,7 +190,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		if err != nil {
 			clog.Error(courier.ErrorResponseValueMissing("apiMessageId"))
 		} else {
-			status.SetStatus(courier.MsgWired)
+			status.SetStatus(courier.MsgStatusWired)
 			status.SetExternalID(externalID)
 		}
 	}

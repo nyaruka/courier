@@ -106,7 +106,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 validSentStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Status Update Accepted",
-		ExpectedMsgStatus:    courier.MsgSent,
+		ExpectedMsgStatus:    courier.MsgStatusSent,
 	},
 	{
 		Label:                "Unknown Sent Status Valid",
@@ -135,7 +135,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 validDeliveredStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Status Update Accepted",
-		ExpectedMsgStatus:    courier.MsgDelivered,
+		ExpectedMsgStatus:    courier.MsgStatusDelivered,
 	},
 	{
 		Label:                "Unknown Delivered Status Valid",

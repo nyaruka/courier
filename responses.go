@@ -58,7 +58,7 @@ func WriteMsgSuccess(w http.ResponseWriter, msgs []Msg) error {
 }
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
-func WriteStatusSuccess(w http.ResponseWriter, statuses []MsgStatus) error {
+func WriteStatusSuccess(w http.ResponseWriter, statuses []StatusUpdate) error {
 	data := []interface{}{}
 	for _, status := range statuses {
 		data = append(data, NewStatusData(status))
@@ -122,15 +122,15 @@ func NewEventReceiveData(event ChannelEvent) EventReceiveData {
 
 // StatusData is our response payload for a status update
 type StatusData struct {
-	Type        string         `json:"type"`
-	ChannelUUID ChannelUUID    `json:"channel_uuid"`
-	Status      MsgStatusValue `json:"status"`
-	MsgID       MsgID          `json:"msg_id,omitempty"`
-	ExternalID  string         `json:"external_id,omitempty"`
+	Type        string      `json:"type"`
+	ChannelUUID ChannelUUID `json:"channel_uuid"`
+	Status      MsgStatus   `json:"status"`
+	MsgID       MsgID       `json:"msg_id,omitempty"`
+	ExternalID  string      `json:"external_id,omitempty"`
 }
 
 // NewStatusData creates a new status data object for the passed in status
-func NewStatusData(status MsgStatus) StatusData {
+func NewStatusData(status StatusUpdate) StatusData {
 	return StatusData{
 		"status",
 		status.ChannelUUID(),

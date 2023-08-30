@@ -36,7 +36,7 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	if username == "" || password == "" {
@@ -44,7 +44,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	text := handlers.GetTextAndAttachments(msg)
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	form := url.Values{
 		"LoginName":         []string{username},
 		"Password":          []string{password},
@@ -78,7 +78,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	// all went well, set ourselves to wired
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 
 	return status, nil
 }

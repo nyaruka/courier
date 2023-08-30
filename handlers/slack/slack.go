@@ -145,13 +145,13 @@ func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file
 	return filePath, nil
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	botToken := msg.Channel().StringConfigForKey(configBotToken, "")
 	if botToken == "" {
 		return nil, fmt.Errorf("missing bot token for SL/slack channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	for _, attachment := range msg.Attachments() {
 		fileAttachment, err := parseAttachmentToFileParams(msg, attachment, clog)
@@ -177,7 +177,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		}
 	}
 
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 	return status, nil
 }
 

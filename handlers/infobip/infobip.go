@@ -39,12 +39,12 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"PENDING":       courier.MsgSent,
-	"EXPIRED":       courier.MsgSent,
-	"DELIVERED":     courier.MsgDelivered,
-	"REJECTED":      courier.MsgFailed,
-	"UNDELIVERABLE": courier.MsgFailed,
+var statusMapping = map[string]courier.MsgStatus{
+	"PENDING":       courier.MsgStatusSent,
+	"EXPIRED":       courier.MsgStatusSent,
+	"DELIVERED":     courier.MsgStatusDelivered,
+	"REJECTED":      courier.MsgStatusFailed,
+	"UNDELIVERABLE": courier.MsgStatusFailed,
 }
 
 type statusPayload struct {
@@ -68,8 +68,8 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForExternalID(channel, s.MessageID, msgStatus, clog)
-		err := h.Backend().WriteMsgStatus(ctx, status)
+		status := h.Backend().NewStatusUpdateByExternalID(channel, s.MessageID, msgStatus, clog)
+		err := h.Backend().WriteStatusUpdate(ctx, status)
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +159,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for IB channel")
@@ -209,7 +209,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(username, password)
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
@@ -227,7 +227,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		status.SetExternalID(externalID)
 	}
 
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 	return status, nil
 }
 

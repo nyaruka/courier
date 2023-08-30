@@ -112,13 +112,13 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("parsing failed: status '%s' is not an integer", form.Status))
 	}
 
-	msgStatus := courier.MsgSent
+	msgStatus := courier.MsgStatusSent
 	if statusInt >= 10 && statusInt <= 12 {
-		msgStatus = courier.MsgDelivered
+		msgStatus = courier.MsgStatusDelivered
 	}
 
 	if statusInt > 20 {
-		msgStatus = courier.MsgFailed
+		msgStatus = courier.MsgStatusFailed
 	}
 
 	msgID, err := strconv.ParseInt(strings.Split(form.MessageID, ".")[0], 10, 64)
@@ -127,12 +127,12 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.MsgID(msgID), msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, courier.MsgID(msgID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // DartMedia expects "000" from a message receive request
-func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.MsgStatus) error {
+func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.StatusUpdate) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "000")
 	return err
@@ -146,7 +146,7 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for %s channel", msg.Channel().ChannelType())
@@ -157,7 +157,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no password set for %s channel", msg.Channel().ChannelType())
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), h.maxLength)
 	for i, part := range parts {
 		form := url.Values{
@@ -197,7 +197,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, nil
 		}
 
-		status.SetStatus(courier.MsgWired)
+		status.SetStatus(courier.MsgStatusWired)
 
 	}
 	return status, nil

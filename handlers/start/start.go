@@ -121,7 +121,7 @@ type mtResponse struct {
 	State   string   `xml:"state"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for ST channel: %s", msg.Channel().UUID())
@@ -132,7 +132,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no password set for ST channel: %s", msg.Channel().UUID())
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for i, part := range parts {
 
@@ -172,7 +172,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		response := &mtResponse{}
 		err = xml.Unmarshal(respBody, response)
 		if err == nil {
-			status.SetStatus(courier.MsgWired)
+			status.SetStatus(courier.MsgStatusWired)
 			if i == 0 {
 				status.SetExternalID(response.ID)
 			}

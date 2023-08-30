@@ -50,13 +50,13 @@ type eventPayload struct {
 	ReceivedAt string `json:"received_at"`
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"Delivered":  courier.MsgDelivered,
-	"Dispatched": courier.MsgSent,
-	"Aborted":    courier.MsgFailed,
-	"Rejected":   courier.MsgFailed,
-	"Failed":     courier.MsgFailed,
-	"Expired":    courier.MsgFailed,
+var statusMapping = map[string]courier.MsgStatus{
+	"Delivered":  courier.MsgStatusDelivered,
+	"Dispatched": courier.MsgStatusSent,
+	"Aborted":    courier.MsgStatusFailed,
+	"Rejected":   courier.MsgStatusFailed,
+	"Failed":     courier.MsgStatusFailed,
+	"Expired":    courier.MsgStatusFailed,
 }
 
 // receiveEvent is our HTTP handler function for incoming messages
@@ -74,7 +74,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForExternalID(channel, payload.BatchID, msgStatus, clog)
+		status := h.Backend().NewStatusUpdateByExternalID(channel, payload.BatchID, msgStatus, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 	} else if payload.Type == "mo_text" {
@@ -113,14 +113,14 @@ type mtPayload struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	if username == "" || password == "" {
 		return nil, fmt.Errorf("Missing username or password for MB channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		payload := &mtPayload{}
@@ -151,7 +151,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, fmt.Errorf("unable to parse response body from MBlox")
 		}
 
-		status.SetStatus(courier.MsgWired)
+		status.SetStatus(courier.MsgStatusWired)
 		status.SetExternalID(externalID)
 	}
 

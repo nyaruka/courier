@@ -88,7 +88,7 @@ func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.
 }
 
 // WriteStatusSuccessResponse writes a success response for the statuses
-func (h *BaseHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.MsgStatus) error {
+func (h *BaseHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.StatusUpdate) error {
 	return courier.WriteStatusSuccess(w, statuses)
 }
 

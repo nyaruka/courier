@@ -103,11 +103,11 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"0":         courier.MsgFailed,
-	"sent":      courier.MsgWired,
-	"delivered": courier.MsgDelivered,
-	"read":      courier.MsgDelivered,
+var statusMapping = map[string]courier.MsgStatus{
+	"0":         courier.MsgStatusFailed,
+	"sent":      courier.MsgStatusWired,
+	"delivered": courier.MsgStatusDelivered,
+	"read":      courier.MsgStatusDelivered,
 }
 
 // receiveStatus is our HTTP handler function for outgoing messages statuses
@@ -125,7 +125,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// msg not found? ignore this
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdateByExternalID(channel, form.ID, msgStatus, clog)
 	if status == nil {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("ignoring request, message %s not found", form.ID))
 	}
@@ -135,7 +135,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
 	apiKey := msg.Channel().StringConfigForKey(configApiKey, "")
 
@@ -143,7 +143,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, errors.New("no account_sid or api_key config")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	sendURL := fmt.Sprintf("%s/v1/%s/messages", baseURL, accountSID)
 	var kwaResp *http.Response
@@ -223,7 +223,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	if kwaErr != nil || kwaResp.StatusCode/100 != 2 {
-		status.SetStatus(courier.MsgFailed)
+		status.SetStatus(courier.MsgStatusFailed)
 		return status, nil
 	}
 
@@ -233,7 +233,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		status.SetExternalID(externalID)
 	}
 
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 	return status, nil
 }
 

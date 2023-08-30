@@ -53,11 +53,11 @@ type statusForm struct {
 	Status string `name:"status" validate:"required"`
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"ACCEPTED":    courier.MsgSent,
-	"DELIVERED":   courier.MsgDelivered,
-	"UNDELIVERED": courier.MsgFailed,
-	"PROCESSING":  courier.MsgWired,
+var statusMapping = map[string]courier.MsgStatus{
+	"ACCEPTED":    courier.MsgStatusSent,
+	"DELIVERED":   courier.MsgStatusDelivered,
+	"UNDELIVERED": courier.MsgStatusFailed,
+	"PROCESSING":  courier.MsgStatusWired,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -73,7 +73,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("ignoring unknown status '%s'", form.Status))
 	}
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.MsgID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdateByExternalID(channel, form.MsgID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 
 }
@@ -150,7 +150,7 @@ type mtPayload struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	servID := msg.Channel().StringConfigForKey(configMacrokioskServiceID, "")
@@ -166,7 +166,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		encoding = "5"
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), text, maxMsgLength)
 	for i, part := range parts {
 		payload := &mtPayload{
@@ -204,6 +204,6 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			status.SetExternalID(externalID)
 		}
 	}
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 	return status, nil
 }

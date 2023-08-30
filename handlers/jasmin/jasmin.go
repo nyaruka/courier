@@ -53,14 +53,14 @@ func (h *handler) receiveStatus(ctx context.Context, c courier.Channel, w http.R
 	// should have either delivered or err
 	reqStatus := courier.NilMsgStatus
 	if form.Delivered == 1 {
-		reqStatus = courier.MsgDelivered
+		reqStatus = courier.MsgStatusDelivered
 	} else if form.Err == 1 {
-		reqStatus = courier.MsgFailed
+		reqStatus = courier.MsgStatusFailed
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("must have either dlvrd or err set to 1"))
 	}
 
-	status := h.Backend().NewMsgStatusForExternalID(c, form.ID, reqStatus, clog)
+	status := h.Backend().NewStatusUpdateByExternalID(c, form.ID, reqStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 }
 
@@ -104,7 +104,7 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 	return writeJasminACK(w)
 }
 
-func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.MsgStatus) error {
+func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.StatusUpdate) error {
 	return writeJasminACK(w)
 }
 
@@ -119,7 +119,7 @@ func writeJasminACK(w http.ResponseWriter) error {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for JS channel")
@@ -160,14 +160,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, err
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	resp, respBody, err := handlers.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}
 
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 
 	// try to read our external id out
 	matches := idRegex.FindSubmatch(respBody)

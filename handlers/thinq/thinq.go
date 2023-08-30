@@ -99,13 +99,13 @@ type statusForm struct {
 	Status string `validate:"required" name:"status"`
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"DELIVRD": courier.MsgDelivered,
-	"EXPIRED": courier.MsgErrored,
-	"DELETED": courier.MsgFailed,
-	"UNDELIV": courier.MsgFailed,
-	"UNKNOWN": courier.MsgFailed,
-	"REJECTD": courier.MsgFailed,
+var statusMapping = map[string]courier.MsgStatus{
+	"DELIVRD": courier.MsgStatusDelivered,
+	"EXPIRED": courier.MsgStatusErrored,
+	"DELETED": courier.MsgStatusFailed,
+	"UNDELIV": courier.MsgStatusFailed,
+	"UNKNOWN": courier.MsgStatusFailed,
+	"REJECTD": courier.MsgStatusFailed,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -124,7 +124,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.GUID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdateByExternalID(channel, form.GUID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -135,7 +135,7 @@ type mtMessage struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	accountID := msg.Channel().StringConfigForKey(configAccountID, "")
 	if accountID == "" {
 		return nil, fmt.Errorf("no account id set for TQ channel")
@@ -151,7 +151,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no token set for TQ channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	// we send attachments first so that text appears below
 	for _, a := range msg.Attachments() {
@@ -183,7 +183,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			clog.Error(courier.ErrorResponseValueMissing("guid"))
 			return status, nil
 		}
-		status.SetStatus(courier.MsgWired)
+		status.SetStatus(courier.MsgStatusWired)
 		status.SetExternalID(externalID)
 	}
 
@@ -217,7 +217,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				return status, nil
 			}
 
-			status.SetStatus(courier.MsgWired)
+			status.SetStatus(courier.MsgStatusWired)
 			status.SetExternalID(externalID)
 		}
 	}

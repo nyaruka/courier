@@ -244,7 +244,7 @@ func (b *backend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
 }
 
 // MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel
-func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, status courier.MsgStatus) {
+func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, status courier.StatusUpdate) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
@@ -253,7 +253,7 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 	queue.MarkComplete(rc, msgQueueName, dbMsg.workerToken)
 
 	// mark as sent in redis as well if this was actually wired or sent
-	if status != nil && (status.Status() == courier.MsgSent || status.Status() == courier.MsgWired) {
+	if status != nil && (status.Status() == courier.MsgStatusSent || status.Status() == courier.MsgStatusWired) {
 		dateKey := fmt.Sprintf(sentSetName, time.Now().UTC().Format("2006_01_02"))
 		rc.Send("sadd", dateKey, msg.ID().String())
 		rc.Send("expire", dateKey, 60*60*24*2)
@@ -281,17 +281,17 @@ func (b *backend) WriteMsg(ctx context.Context, m courier.Msg, clog *courier.Cha
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewMsgStatusForID(channel courier.Channel, id courier.MsgID, status courier.MsgStatusValue, clog *courier.ChannelLog) courier.MsgStatus {
-	return newMsgStatus(channel, id, "", status, clog)
+func (b *backend) NewStatusUpdate(channel courier.Channel, id courier.MsgID, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+	return newStatusUpdate(channel, id, "", status, clog)
 }
 
 // NewStatusUpdateForID creates a new Status object for the given message id
-func (b *backend) NewMsgStatusForExternalID(channel courier.Channel, externalID string, status courier.MsgStatusValue, clog *courier.ChannelLog) courier.MsgStatus {
-	return newMsgStatus(channel, courier.NilMsgID, externalID, status, clog)
+func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
+	return newStatusUpdate(channel, courier.NilMsgID, externalID, status, clog)
 }
 
-// WriteMsgStatus writes the passed in MsgStatus to our store
-func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) error {
+// WriteStatusUpdate writes the passed in MsgStatus to our store
+func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUpdate) error {
 	if status.ID() == courier.NilMsgID && status.ExternalID() == "" {
 		return errors.New("message status with no id or external id")
 	}
@@ -304,7 +304,7 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 	}
 
 	// if we have an id and are marking an outgoing msg as errored, then clear our sent flag
-	if status.ID() != courier.NilMsgID && status.Status() == courier.MsgErrored {
+	if status.ID() != courier.NilMsgID && status.Status() == courier.MsgStatusErrored {
 		err := b.ClearMsgSent(ctx, status.ID())
 		if err != nil {
 			logrus.WithError(err).WithField("msg", status.ID()).Error("error clearing sent flags")
@@ -312,13 +312,13 @@ func (b *backend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) 
 	}
 
 	// queue the status to written by the batch writer
-	b.statusWriter.Queue(status.(*DBMsgStatus))
+	b.statusWriter.Queue(status.(*StatusUpdate))
 
 	return nil
 }
 
 // updateContactURN updates contact URN according to the old/new URNs from status
-func (b *backend) updateContactURN(ctx context.Context, status courier.MsgStatus) error {
+func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpdate) error {
 	old, new := status.UpdatedURN()
 
 	// retrieve channel

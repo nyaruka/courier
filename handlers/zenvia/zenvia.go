@@ -129,12 +129,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, msgs, w, r, clog)
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"REJECTED":      courier.MsgFailed,
-	"NOT_DELIVERED": courier.MsgFailed,
-	"SENT":          courier.MsgSent,
-	"DELIVERED":     courier.MsgDelivered,
-	"READ":          courier.MsgDelivered,
+var statusMapping = map[string]courier.MsgStatus{
+	"REJECTED":      courier.MsgStatusFailed,
+	"NOT_DELIVERED": courier.MsgStatusFailed,
+	"SENT":          courier.MsgStatusSent,
+	"DELIVERED":     courier.MsgStatusDelivered,
+	"READ":          courier.MsgStatusDelivered,
 }
 
 type statusPayload struct {
@@ -155,11 +155,11 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 
 	msgStatus, found := statusMapping[strings.ToUpper(payload.MessageStatus.Code)]
 	if !found {
-		msgStatus = courier.MsgErrored
+		msgStatus = courier.MsgStatusErrored
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, payload.MessageID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdateByExternalID(channel, payload.MessageID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -179,7 +179,7 @@ type mtPayload struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	channel := msg.Channel()
 
 	token := channel.StringConfigForKey(courier.ConfigAPIKey, "")
@@ -192,7 +192,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		To:   strings.TrimLeft(msg.URN().Path(), "+"),
 	}
 
-	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(channel, msg.ID(), courier.MsgStatusErrored, clog)
 
 	text := ""
 	if channel.ChannelType() == "ZVW" {
@@ -254,6 +254,6 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	status.SetExternalID(externalID)
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 	return status, nil
 }

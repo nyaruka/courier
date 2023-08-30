@@ -47,11 +47,11 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-var waStatusMapping = map[string]courier.MsgStatusValue{
-	"sent":      courier.MsgSent,
-	"delivered": courier.MsgDelivered,
-	"read":      courier.MsgDelivered,
-	"failed":    courier.MsgFailed,
+var waStatusMapping = map[string]courier.MsgStatus{
+	"sent":      courier.MsgStatusSent,
+	"delivered": courier.MsgStatusDelivered,
+	"read":      courier.MsgStatusDelivered,
+	"failed":    courier.MsgStatusFailed,
 }
 
 var waIgnoreStatuses = map[string]bool{
@@ -326,8 +326,8 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					clog.Error(courier.ErrorExternal(strconv.Itoa(statusError.Code), statusError.Title))
 				}
 
-				event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus, clog)
-				err := h.Backend().WriteMsgStatus(ctx, event)
+				event := h.Backend().NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
+				err := h.Backend().WriteStatusUpdate(ctx, event)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -507,7 +507,7 @@ type wacMTResponse struct {
 }
 
 // Send implements courier.ChannelHandler
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	conn := h.Backend().RedisPool().Get()
 	defer conn.Close()
 
@@ -525,7 +525,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 	sendURL, _ := url.Parse("/messages")
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	hasCaption := false
 
@@ -805,7 +805,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return status, nil
 }
 
-func requestD3C(payload wacMTPayload, accessToken string, status courier.MsgStatus, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func requestD3C(payload wacMTPayload, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
 		return status, err
@@ -838,7 +838,7 @@ func requestD3C(payload wacMTPayload, accessToken string, status courier.MsgStat
 		status.SetExternalID(externalID)
 	}
 	// this was wired successfully
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 	return status, nil
 }
 

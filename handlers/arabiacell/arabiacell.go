@@ -56,7 +56,7 @@ type mtResponse struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for AC channel")
@@ -77,7 +77,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no charging_level set for AC channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		form := url.Values{
 			"userName":      []string{username},
@@ -111,10 +111,10 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		// we always get 204 on success
 		if response.Code == "204" {
-			status.SetStatus(courier.MsgWired)
+			status.SetStatus(courier.MsgStatusWired)
 			status.SetExternalID(response.MessageID)
 		} else {
-			status.SetStatus(courier.MsgFailed)
+			status.SetStatus(courier.MsgStatusFailed)
 			clog.Error(courier.ErrorResponseStatusCode())
 			break
 		}

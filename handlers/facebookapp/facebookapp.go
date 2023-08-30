@@ -59,11 +59,11 @@ const (
 	payloadKey    = "payload"
 )
 
-var waStatusMapping = map[string]courier.MsgStatusValue{
-	"sent":      courier.MsgSent,
-	"delivered": courier.MsgDelivered,
-	"read":      courier.MsgDelivered,
-	"failed":    courier.MsgFailed,
+var waStatusMapping = map[string]courier.MsgStatus{
+	"sent":      courier.MsgStatusSent,
+	"delivered": courier.MsgStatusDelivered,
+	"read":      courier.MsgStatusDelivered,
+	"failed":    courier.MsgStatusFailed,
 }
 
 var waIgnoreStatuses = map[string]bool{
@@ -522,8 +522,8 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 					clog.Error(courier.ErrorExternal(strconv.Itoa(statusError.Code), statusError.Title))
 				}
 
-				event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus, clog)
-				err := h.Backend().WriteMsgStatus(ctx, event)
+				event := h.Backend().NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
+				err := h.Backend().WriteStatusUpdate(ctx, event)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -757,8 +757,8 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 		} else if msg.Delivery != nil {
 			// this is a delivery report
 			for _, mid := range msg.Delivery.MIDs {
-				event := h.Backend().NewMsgStatusForExternalID(channel, mid, courier.MsgDelivered, clog)
-				err := h.Backend().WriteMsgStatus(ctx, event)
+				event := h.Backend().NewStatusUpdateByExternalID(channel, mid, courier.MsgStatusDelivered, clog)
+				err := h.Backend().WriteStatusUpdate(ctx, event)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -819,7 +819,7 @@ type mtQuickReply struct {
 	ContentType string `json:"content_type"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	if msg.Channel().ChannelType() == "FBA" || msg.Channel().ChannelType() == "IG" {
 		return h.sendFacebookInstagramMsg(ctx, msg, clog)
 	} else if msg.Channel().ChannelType() == "WAC" {
@@ -838,7 +838,7 @@ type fbaMTResponse struct {
 	} `json:"error"`
 }
 
-func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	// can't do anything without an access token
 	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if accessToken == "" {
@@ -877,7 +877,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 	query.Set("access_token", accessToken)
 	msgURL.RawQuery = query.Encode()
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
@@ -988,7 +988,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 		}
 
 		// this was wired successfully
-		status.SetStatus(courier.MsgWired)
+		status.SetStatus(courier.MsgStatusWired)
 	}
 
 	return status, nil
@@ -1098,7 +1098,7 @@ type wacMTResponse struct {
 	} `json:"error"`
 }
 
-func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	// can't do anything without an access token
 	accessToken := h.Server().Config().WhatsappAdminSystemUserToken
 
@@ -1106,7 +1106,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 	path, _ := url.Parse(fmt.Sprintf("/%s/messages", msg.Channel().Address()))
 	wacPhoneURL := base.ResolveReference(path)
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	hasCaption := false
 
@@ -1386,7 +1386,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 	return status, nil
 }
 
-func requestWAC(payload wacMTPayload, accessToken string, status courier.MsgStatus, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func requestWAC(payload wacMTPayload, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
 		return status, err
@@ -1419,7 +1419,7 @@ func requestWAC(payload wacMTPayload, accessToken string, status courier.MsgStat
 		status.SetExternalID(externalID)
 	}
 	// this was wired successfully
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 	return status, nil
 }
 

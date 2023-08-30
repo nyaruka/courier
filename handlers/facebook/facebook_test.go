@@ -547,7 +547,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 dlr,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
-		ExpectedMsgStatus:    courier.MsgDelivered,
+		ExpectedMsgStatus:    courier.MsgStatusDelivered,
 		ExpectedExternalID:   "mid.1458668856218:ed81099e15d3f4f233",
 	},
 	{

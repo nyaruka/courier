@@ -248,7 +248,7 @@ type mtAttachment struct {
 	} `json:"media"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	apiKey := msg.Channel().StringConfigForKey(configAPIKey, "")
 	apiSecret := msg.Channel().StringConfigForKey(configAPISecret, "")
 	accessToken := msg.Channel().StringConfigForKey(configAccessToken, "")
@@ -262,7 +262,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	token := oauth1.NewToken(accessToken, accessSecret)
 	client := config.Client(ctx, token)
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	// we build these as needed since our unit tests manipulate apiURL
 	sendURL := sendDomain + "/1.1/direct_messages/events/new.json"
@@ -349,7 +349,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		if err == nil {
 			// this was wired successfully
-			status.SetStatus(courier.MsgWired)
+			status.SetStatus(courier.MsgStatusWired)
 		}
 	}
 

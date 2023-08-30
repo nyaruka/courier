@@ -246,7 +246,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 validStatusDelivered,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgDelivered,
+		ExpectedMsgStatus:    courier.MsgStatusDelivered,
 	},
 	{
 		Label:                "Status rejected",
@@ -254,7 +254,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 validStatusRejected,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedMsgStatus:    courier.MsgFailed,
+		ExpectedMsgStatus:    courier.MsgStatusFailed,
 	},
 	{
 		Label:                "Status undeliverable",
@@ -262,7 +262,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 validStatusUndeliverable,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedMsgStatus:    courier.MsgFailed,
+		ExpectedMsgStatus:    courier.MsgStatusFailed,
 	},
 	{
 		Label:                "Status pending",
@@ -270,7 +270,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 validStatusPending,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedMsgStatus:    courier.MsgSent,
+		ExpectedMsgStatus:    courier.MsgStatusSent,
 	},
 	{
 		Label:                "Status expired",
@@ -278,7 +278,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 validStatusExpired,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedMsgStatus:    courier.MsgSent,
+		ExpectedMsgStatus:    courier.MsgStatusSent,
 	},
 	{
 		Label:                "Status group name unexpected",

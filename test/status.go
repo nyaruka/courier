@@ -13,7 +13,7 @@ type mockMsgStatus struct {
 	oldURN     urns.URN
 	newURN     urns.URN
 	externalID string
-	status     courier.MsgStatusValue
+	status     courier.MsgStatus
 	createdOn  time.Time
 }
 
@@ -39,5 +39,5 @@ func (m *mockMsgStatus) HasUpdatedURN() bool {
 func (m *mockMsgStatus) ExternalID() string      { return m.externalID }
 func (m *mockMsgStatus) SetExternalID(id string) { m.externalID = id }
 
-func (m *mockMsgStatus) Status() courier.MsgStatusValue          { return m.status }
-func (m *mockMsgStatus) SetStatus(status courier.MsgStatusValue) { m.status = status }
+func (m *mockMsgStatus) Status() courier.MsgStatus          { return m.status }
+func (m *mockMsgStatus) SetStatus(status courier.MsgStatus) { m.status = status }

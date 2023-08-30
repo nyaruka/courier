@@ -124,11 +124,11 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"delivered":   courier.MsgDelivered,
-	"sent":        courier.MsgSent,
-	"undelivered": courier.MsgErrored,
-	"failed":      courier.MsgFailed,
+var statusMapping = map[string]courier.MsgStatus{
+	"delivered":   courier.MsgStatusDelivered,
+	"sent":        courier.MsgStatusSent,
+	"undelivered": courier.MsgStatusErrored,
+	"failed":      courier.MsgStatusFailed,
 }
 
 func (h *handler) statusMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *moPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
@@ -141,7 +141,7 @@ func (h *handler) statusMessage(ctx context.Context, c courier.Channel, w http.R
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("unknown status '%s', must be one of send, delivered, undelivered, failed", payload.Data.Status))
 	}
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(c, fmt.Sprint(payload.Data.MessageID), msgStatus, clog)
+	status := h.Backend().NewStatusUpdateByExternalID(c, fmt.Sprint(payload.Data.MessageID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, c, status, w, r)
 }
 
@@ -153,7 +153,7 @@ type mtPayload struct {
 }
 
 // Send implements courier.ChannelHandler
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	apiKey := msg.Channel().StringConfigForKey(courier.ConfigAPIKey, "")
 	if apiKey == "" {
 		return nil, fmt.Errorf("no API key set for JCL channel")
@@ -164,7 +164,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no API secret set for JCL channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	mediaURLs := make([]string, 0, 5)
 	text := msg.Text()
 
@@ -215,7 +215,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		status.SetExternalID(fmt.Sprintf("%d", externalID))
 	}
 
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 	return status, nil
 
 }

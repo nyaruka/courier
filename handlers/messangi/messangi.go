@@ -60,7 +60,7 @@ type mtResponse struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	publicKey := msg.Channel().StringConfigForKey(configPublicKey, "")
 	if publicKey == "" {
 		return nil, fmt.Errorf("no public_key set for MG channel")
@@ -81,7 +81,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no carrier_id set for MG channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		shortcode := strings.TrimPrefix(msg.Channel().Address(), "+")
@@ -111,9 +111,9 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 		// we always get 204 on success
 		if response.Status == "OK" {
-			status.SetStatus(courier.MsgWired)
+			status.SetStatus(courier.MsgStatusWired)
 		} else {
-			status.SetStatus(courier.MsgFailed)
+			status.SetStatus(courier.MsgStatusFailed)
 			clog.Error(courier.ErrorResponseValueUnexpected("status", "OK"))
 			break
 		}

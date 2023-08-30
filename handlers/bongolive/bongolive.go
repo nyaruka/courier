@@ -39,18 +39,18 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-var statusMapping = map[int]courier.MsgStatusValue{
-	1:  courier.MsgDelivered,
-	2:  courier.MsgSent,
-	3:  courier.MsgErrored,
-	4:  courier.MsgErrored,
-	5:  courier.MsgErrored,
-	6:  courier.MsgErrored,
-	7:  courier.MsgErrored,
-	8:  courier.MsgSent,
-	9:  courier.MsgErrored,
-	10: courier.MsgErrored,
-	11: courier.MsgErrored,
+var statusMapping = map[int]courier.MsgStatus{
+	1:  courier.MsgStatusDelivered,
+	2:  courier.MsgStatusSent,
+	3:  courier.MsgStatusErrored,
+	4:  courier.MsgStatusErrored,
+	5:  courier.MsgStatusErrored,
+	6:  courier.MsgStatusErrored,
+	7:  courier.MsgStatusErrored,
+	8:  courier.MsgStatusSent,
+	9:  courier.MsgStatusErrored,
+	10: courier.MsgStatusErrored,
+	11: courier.MsgStatusErrored,
 }
 
 type moForm struct {
@@ -85,7 +85,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForExternalID(channel, form.DLRID, msgStatus, clog)
+		status := h.Backend().NewStatusUpdateByExternalID(channel, form.DLRID, msgStatus, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 	}
 
@@ -109,7 +109,7 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 	return writeBongoLiveResponse(w)
 }
 
-func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.MsgStatus) error {
+func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.StatusUpdate) error {
 	return writeBongoLiveResponse(w)
 }
 
@@ -126,7 +126,7 @@ func writeBongoLiveResponse(w http.ResponseWriter) error {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for %s channel", msg.Channel().ChannelType())
@@ -137,7 +137,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no password set for %s channel", msg.Channel().ChannelType())
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
@@ -173,12 +173,12 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// was this request successful?
 		msgStatus, _ := jsonparser.GetString(respBody, "results", "[0]", "status")
 		if msgStatus != "0" {
-			status.SetStatus(courier.MsgErrored)
+			status.SetStatus(courier.MsgStatusErrored)
 			return status, nil
 		}
 		// grab the external id if we can
 		externalID, _ := jsonparser.GetString(respBody, "results", "[0]", "msgid")
-		status.SetStatus(courier.MsgWired)
+		status.SetStatus(courier.MsgStatusWired)
 		status.SetExternalID(externalID)
 
 	}

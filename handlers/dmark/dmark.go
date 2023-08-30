@@ -78,12 +78,12 @@ type statusForm struct {
 	Status string `validate:"required" name:"status"`
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"1":  courier.MsgDelivered,
-	"2":  courier.MsgErrored,
-	"4":  courier.MsgSent,
-	"8":  courier.MsgSent,
-	"16": courier.MsgErrored,
+var statusMapping = map[string]courier.MsgStatus{
+	"1":  courier.MsgStatusDelivered,
+	"2":  courier.MsgStatusErrored,
+	"4":  courier.MsgStatusSent,
+	"8":  courier.MsgStatusSent,
+	"16": courier.MsgStatusErrored,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -101,12 +101,12 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdateByExternalID(channel, form.ID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	// get our authentication token
 	auth := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if auth == "" {
@@ -116,7 +116,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	dlrURL := fmt.Sprintf("https://%s%s%s/status?id=%s&status=%%s", callbackDomain, "/c/dk/", msg.Channel().UUID(), msg.ID().String())
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	for i, part := range parts {
 		form := url.Values{
@@ -152,7 +152,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		}
 
 		// this was wired successfully
-		status.SetStatus(courier.MsgWired)
+		status.SetStatus(courier.MsgStatusWired)
 	}
 
 	return status, nil

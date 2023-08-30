@@ -47,14 +47,14 @@ type Backend interface {
 	// WriteMsg writes the passed in message to our backend
 	WriteMsg(context.Context, Msg, *ChannelLog) error
 
-	// NewMsgStatusForID creates a new Status object for the given message id
-	NewMsgStatusForID(Channel, MsgID, MsgStatusValue, *ChannelLog) MsgStatus
+	// NewStatusUpdate creates a new status update for the given message id
+	NewStatusUpdate(Channel, MsgID, MsgStatus, *ChannelLog) StatusUpdate
 
-	// NewMsgStatusForExternalID creates a new Status object for the given external id
-	NewMsgStatusForExternalID(Channel, string, MsgStatusValue, *ChannelLog) MsgStatus
+	// NewStatusUpdateByExternalID creates a new status update for the given external id
+	NewStatusUpdateByExternalID(Channel, string, MsgStatus, *ChannelLog) StatusUpdate
 
-	// WriteMsgStatus writes the passed in status update to our backend
-	WriteMsgStatus(context.Context, MsgStatus) error
+	// WriteStatusUpdate writes the passed in status update to our backend
+	WriteStatusUpdate(context.Context, StatusUpdate) error
 
 	// NewChannelEvent creates a new channel event for the given channel and event type
 	NewChannelEvent(Channel, ChannelEventType, urns.URN, *ChannelLog) ChannelEvent
@@ -80,7 +80,7 @@ type Backend interface {
 	// MarkOutgoingMsgComplete marks the passed in message as having been processed. Note this should be called even in the case
 	// of errors during sending as it will manage the number of active workers per channel. The optional status parameter can be
 	// used to determine any sort of deduping of msg sends
-	MarkOutgoingMsgComplete(context.Context, Msg, MsgStatus)
+	MarkOutgoingMsgComplete(context.Context, Msg, StatusUpdate)
 
 	// SaveAttachment saves an attachment to backend storage
 	SaveAttachment(context.Context, Channel, string, []byte, string) (string, error)

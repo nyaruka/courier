@@ -47,7 +47,7 @@ type ChannelHandleTestCase struct {
 	ExpectedURNAuth      string
 	ExpectedAttachments  []string
 	ExpectedDate         time.Time
-	ExpectedMsgStatus    courier.MsgStatusValue
+	ExpectedMsgStatus    courier.MsgStatus
 	ExpectedExternalID   string
 	ExpectedMsgID        int64
 	ExpectedEvent        courier.ChannelEventType
@@ -281,7 +281,7 @@ type ChannelSendTestCase struct {
 	ExpectedPostForm    url.Values
 	ExpectedRequestBody string
 	ExpectedHeaders     map[string]string
-	ExpectedMsgStatus   courier.MsgStatusValue
+	ExpectedMsgStatus   courier.MsgStatus
 	ExpectedExternalID  string
 	ExpectedErrors      []*courier.ChannelError
 	ExpectedStopEvent   bool

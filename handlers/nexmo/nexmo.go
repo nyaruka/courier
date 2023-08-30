@@ -109,14 +109,14 @@ type statusForm struct {
 	ErrCode   int    `name:"err-code"`
 }
 
-var statusMappings = map[string]courier.MsgStatusValue{
-	"failed":    courier.MsgFailed,
-	"expired":   courier.MsgFailed,
-	"rejected":  courier.MsgFailed,
-	"buffered":  courier.MsgSent,
-	"accepted":  courier.MsgSent,
-	"unknown":   courier.MsgWired,
-	"delivered": courier.MsgDelivered,
+var statusMappings = map[string]courier.MsgStatus{
+	"failed":    courier.MsgStatusFailed,
+	"expired":   courier.MsgStatusFailed,
+	"rejected":  courier.MsgStatusFailed,
+	"buffered":  courier.MsgStatusSent,
+	"accepted":  courier.MsgStatusSent,
+	"unknown":   courier.MsgStatusWired,
+	"delivered": courier.MsgStatusDelivered,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -137,7 +137,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 		clog.Error(courier.ErrorExternal("dlr:"+strconv.Itoa(form.ErrCode), dlrErrorCodes[form.ErrCode]))
 	}
 
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.MessageID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdateByExternalID(channel, form.MessageID, msgStatus, clog)
 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
@@ -170,7 +170,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	nexmoAPIKey := msg.Channel().StringConfigForKey(configNexmoAPIKey, "")
 	if nexmoAPIKey == "" {
 		return nil, fmt.Errorf("no nexmo API key set for NX channel")
@@ -191,7 +191,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		textType = "unicode"
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), text, maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
@@ -244,6 +244,6 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		}
 
 	}
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 	return status, nil
 }

@@ -53,7 +53,7 @@ func TestHandling(t *testing.T) {
 	// message should have failed because we don't have a registered handler
 	assert.Equal(1, len(mb.WrittenMsgStatuses()))
 	assert.Equal(msg.ID(), mb.WrittenMsgStatuses()[0].ID())
-	assert.Equal(courier.MsgFailed, mb.WrittenMsgStatuses()[0].Status())
+	assert.Equal(courier.MsgStatusFailed, mb.WrittenMsgStatuses()[0].Status())
 	assert.Equal(1, len(mb.WrittenChannelLogs()))
 
 	mb.Reset()
@@ -69,7 +69,7 @@ func TestHandling(t *testing.T) {
 	assert.Len(mb.WrittenMsgStatuses(), 1)
 	status := mb.WrittenMsgStatuses()[0]
 	assert.Equal(msg.ID(), status.ID())
-	assert.Equal(courier.MsgSent, status.Status())
+	assert.Equal(courier.MsgStatusSent, status.Status())
 
 	assert.Len(mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
@@ -90,7 +90,7 @@ func TestHandling(t *testing.T) {
 	// message should be marked as wired
 	assert.Equal(1, len(mb.WrittenMsgStatuses()))
 	assert.Equal(msg.ID(), mb.WrittenMsgStatuses()[0].ID())
-	assert.Equal(courier.MsgWired, mb.WrittenMsgStatuses()[0].Status())
+	assert.Equal(courier.MsgStatusWired, mb.WrittenMsgStatuses()[0].Status())
 
 	// try to receive a message instead
 	resp, err := http.Get("http://localhost:8080/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive")

@@ -22,13 +22,13 @@ func WriteMsgsAndResponse(ctx context.Context, h courier.ChannelHandler, msgs []
 }
 
 // WriteMsgStatusAndResponse write the passed in status to our backend
-func WriteMsgStatusAndResponse(ctx context.Context, h courier.ChannelHandler, channel courier.Channel, status courier.MsgStatus, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
-	err := h.Server().Backend().WriteMsgStatus(ctx, status)
+func WriteMsgStatusAndResponse(ctx context.Context, h courier.ChannelHandler, channel courier.Channel, status courier.StatusUpdate, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
+	err := h.Server().Backend().WriteStatusUpdate(ctx, status)
 	if err != nil {
 		return nil, err
 	}
 
-	return []courier.Event{status}, h.WriteStatusSuccessResponse(ctx, w, []courier.MsgStatus{status})
+	return []courier.Event{status}, h.WriteStatusSuccessResponse(ctx, w, []courier.StatusUpdate{status})
 }
 
 // WriteAndLogRequestError logs the passed in error and writes the response to the response writer

@@ -36,8 +36,8 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Invalid Address Params", URL: receiveURL, Data: invalidAddress, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid to number [1515], expecting [2020]"},
 	{Label: "Missing Params", URL: receiveURL, Data: missingParams, ExpectedRespStatus: 400, ExpectedBodyContains: "Field validation for 'To' failed"},
 
-	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgDelivered},
-	{Label: "Sent Status", URL: statusURL, Data: validSentStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"S"`, ExpectedMsgStatus: courier.MsgSent},
+	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered},
+	{Label: "Sent Status", URL: statusURL, Data: validSentStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"S"`, ExpectedMsgStatus: courier.MsgStatusSent},
 	{Label: "Invalid Status Address", URL: statusURL, Data: invalidStatusAddress, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid to number [1515], expecting [2020]"},
 	{Label: "Unkown Status", URL: statusURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `ignoring unknown status 'UNKNOWN'`},
 }

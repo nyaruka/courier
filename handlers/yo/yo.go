@@ -97,7 +97,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for YO channel")
@@ -108,7 +108,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no password set for YO channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	var err error
 
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
@@ -140,7 +140,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			// check whether we were blacklisted
 			createMessage := responseQS["ybs_autocreate_message"]
 			if len(createMessage) > 0 && strings.Contains(createMessage[0], "BLACKLISTED") {
-				status.SetStatus(courier.MsgFailed)
+				status.SetStatus(courier.MsgStatusFailed)
 
 				// create a stop channel event
 				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN(), clog)
@@ -155,7 +155,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			// finally check that we were sent
 			createStatus := responseQS["ybs_autocreate_status"]
 			if len(createStatus) > 0 && createStatus[0] == "OK" {
-				status.SetStatus(courier.MsgWired)
+				status.SetStatus(courier.MsgStatusWired)
 				return status, nil
 			}
 		}

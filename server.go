@@ -334,7 +334,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 					clog.SetMsgID(e.ID())
 					analytics.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
 					LogMsgReceived(r, e)
-				case MsgStatus:
+				case StatusUpdate:
 					clog.SetMsgID(e.ID())
 					analytics.Gauge(fmt.Sprintf("courier.msg_status_%s", channel.ChannelType()), secondDuration)
 					LogMsgStatusReceived(r, e)

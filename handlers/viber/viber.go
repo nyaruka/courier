@@ -200,7 +200,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	case "failed":
 		clog.SetType(courier.ChannelLogTypeMsgStatus)
 
-		msgStatus := h.Backend().NewMsgStatusForExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), courier.MsgFailed, clog)
+		msgStatus := h.Backend().NewStatusUpdateByExternalID(channel, fmt.Sprintf("%d", payload.MessageToken), courier.MsgStatusFailed, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, msgStatus, w, r)
 
 	case "delivered":
@@ -349,13 +349,13 @@ type mtResponse struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if authToken == "" {
 		return nil, fmt.Errorf("missing auth token in config")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	// figure out whether we have a keyboard to send as well
 	qrs := msg.QuickReplies()
@@ -473,7 +473,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, nil
 		}
 
-		status.SetStatus(courier.MsgWired)
+		status.SetStatus(courier.MsgStatusWired)
 		keyboard = nil
 	}
 	return status, nil

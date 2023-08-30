@@ -191,7 +191,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 `{"messageId": "msg1", "statusCode": 5}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedMsgStatus:    courier.MsgFailed,
+		ExpectedMsgStatus:    courier.MsgStatusFailed,
 	},
 	{
 		Label:                "Valid Delivered status report",
@@ -199,7 +199,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 `{"messageId": "msg1", "statusCode": 4}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedMsgStatus:    courier.MsgSent,
+		ExpectedMsgStatus:    courier.MsgStatusSent,
 	},
 	{
 		Label:                "Unexpected status report",

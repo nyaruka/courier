@@ -49,17 +49,17 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"DELIVRD":             courier.MsgDelivered,
-	"DeliveredToTerminal": courier.MsgDelivered,
-	"DeliveryUncertain":   courier.MsgSent,
-	"EXPIRED":             courier.MsgFailed,
-	"DeliveryImpossible":  courier.MsgErrored,
-	"DeliveredToNetwork":  courier.MsgSent,
+var statusMapping = map[string]courier.MsgStatus{
+	"DELIVRD":             courier.MsgStatusDelivered,
+	"DeliveredToTerminal": courier.MsgStatusDelivered,
+	"DeliveryUncertain":   courier.MsgStatusSent,
+	"EXPIRED":             courier.MsgStatusFailed,
+	"DeliveryImpossible":  courier.MsgStatusErrored,
+	"DeliveredToNetwork":  courier.MsgStatusSent,
 
 	// no changes
-	"MessageWaiting":                   courier.MsgWired,
-	"DeliveryNotificationNotSupported": courier.MsgWired,
+	"MessageWaiting":                   courier.MsgStatusWired,
+	"DeliveryNotificationNotSupported": courier.MsgStatusWired,
 }
 
 type moPayload struct {
@@ -102,12 +102,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 				fmt.Errorf("unknown status '%s'", payload.DeliveryStatus))
 		}
 
-		if msgStatus == courier.MsgWired {
+		if msgStatus == courier.MsgStatusWired {
 			return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "no status changed, ignored")
 		}
 
 		// write our status
-		status := h.Backend().NewMsgStatusForExternalID(channel, payload.TransactionID, msgStatus, clog)
+		status := h.Backend().NewStatusUpdateByExternalID(channel, payload.TransactionID, msgStatus, clog)
 		return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 	}
 }
@@ -121,7 +121,7 @@ type mtPayload struct {
 }
 
 // Send implements courier.ChannelHandler
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	accessToken, err := h.getAccessToken(ctx, msg.Channel(), clog)
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	cpAddress := msg.Channel().StringConfigForKey(configCPAddress, "")
 	partSendURL, _ := url.Parse(fmt.Sprintf("%s/%s", baseURL, "v2/messages/sms/outbound"))
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	mtMsg := &mtPayload{}
 	mtMsg.From = strings.TrimPrefix(msg.Channel().Address(), "+")
@@ -168,7 +168,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	// if this is our first message, record the external id
 
 	status.SetExternalID(externalID)
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 
 	return status, nil
 }

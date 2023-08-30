@@ -45,8 +45,8 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Invalid Params", URL: receiveURL, Data: invalidParamsReceive, ExpectedRespStatus: 400, ExpectedBodyContains: "missing shortcode, longcode, from or msisdn parameters"},
 	{Label: "Invalid Address Params", URL: receiveURL, Data: invalidAddress, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid to number [1515], expecting [2020]"},
 
-	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"S"`, ExpectedMsgStatus: courier.MsgSent},
-	{Label: "Wired Status", URL: statusURL, Data: processingStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"W"`, ExpectedMsgStatus: courier.MsgWired},
+	{Label: "Valid Status", URL: statusURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"S"`, ExpectedMsgStatus: courier.MsgStatusSent},
+	{Label: "Wired Status", URL: statusURL, Data: processingStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"W"`, ExpectedMsgStatus: courier.MsgStatusWired},
 	{Label: "Unknown Status", URL: statusURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `ignoring unknown status 'UNKNOWN'`},
 }
 

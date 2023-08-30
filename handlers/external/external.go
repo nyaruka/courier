@@ -245,10 +245,10 @@ type statusForm struct {
 	ID int64 `name:"id" validate:"required"`
 }
 
-var statusMappings = map[string]courier.MsgStatusValue{
-	"failed":    courier.MsgFailed,
-	"sent":      courier.MsgSent,
-	"delivered": courier.MsgDelivered,
+var statusMappings = map[string]courier.MsgStatus{
+	"failed":    courier.MsgStatusFailed,
+	"sent":      courier.MsgStatusSent,
+	"delivered": courier.MsgStatusDelivered,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -266,12 +266,12 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.MsgID(form.ID), msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, courier.MsgID(form.ID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	channel := msg.Channel()
 
 	sendURL := channel.StringConfigForKey(courier.ConfigSendURL, "")
@@ -291,7 +291,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		contentTypeHeader = contentType
 	}
 
-	status := h.Backend().NewMsgStatusForID(channel, msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(channel, msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(channel, handlers.GetTextAndAttachments(msg), sendMaxLength)
 	for i, part := range parts {
 		// build our request
@@ -370,7 +370,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		}
 
 		if responseCheck == "" || strings.Contains(string(respBody), responseCheck) {
-			status.SetStatus(courier.MsgWired)
+			status.SetStatus(courier.MsgStatusWired)
 		} else {
 			clog.Error(courier.ErrorResponseUnexpected(responseCheck))
 		}

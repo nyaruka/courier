@@ -66,7 +66,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedExternalID:   "1234",
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgDelivered,
+		ExpectedMsgStatus:    courier.MsgStatusDelivered,
 	},
 	{
 		Label:                "Status Invalid",

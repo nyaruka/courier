@@ -103,7 +103,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 validStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgDelivered,
+		ExpectedMsgStatus:    courier.MsgStatusDelivered,
 		ExpectedExternalID:   "rrt-58503",
 	},
 	{
@@ -112,7 +112,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 validDeliveredStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgDelivered,
+		ExpectedMsgStatus:    courier.MsgStatusDelivered,
 		ExpectedExternalID:   "rrt-58503",
 	},
 	{
@@ -138,7 +138,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 expiredStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedMsgStatus:    courier.MsgFailed,
+		ExpectedMsgStatus:    courier.MsgStatusFailed,
 		ExpectedExternalID:   "rrt-58503",
 	},
 	{

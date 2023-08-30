@@ -506,7 +506,7 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Receive invalid Message Type", URL: receiveURL, Data: receiveInvalidMessageType, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown message type",
 		PrepRequest: addValidSignature},
 	{Label: "Webhook validation", URL: receiveURL, Data: webhookCheck, ExpectedRespStatus: 200, ExpectedBodyContains: "webhook valid", PrepRequest: addValidSignature},
-	{Label: "Failed Status Report", URL: receiveURL, Data: failedStatusReport, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"F"`, ExpectedMsgStatus: courier.MsgFailed, PrepRequest: addValidSignature},
+	{Label: "Failed Status Report", URL: receiveURL, Data: failedStatusReport, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"F"`, ExpectedMsgStatus: courier.MsgStatusFailed, PrepRequest: addValidSignature},
 	{Label: "Delivered Status Report", URL: receiveURL, Data: deliveredStatusReport, ExpectedRespStatus: 200, ExpectedBodyContains: `Ignored`, PrepRequest: addValidSignature},
 	{Label: "Subcribe", URL: receiveURL, Data: validSubscribed, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted", ExpectedEvent: "new_conversation", ExpectedURN: "viber:01234567890A=", PrepRequest: addValidSignature},
 	{Label: "Subcribe Invalid URN", URL: receiveURL, Data: invalidURNSubscribed, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid viber id", PrepRequest: addValidSignature},

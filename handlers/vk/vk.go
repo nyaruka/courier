@@ -374,8 +374,8 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 	return ""
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	params := buildApiBaseParams(msg.Channel())
 	params.Set(paramUserId, msg.URN().Path())
@@ -410,7 +410,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return status, errors.Errorf("no '%s' value in response", responseOutgoingMessageKey)
 	}
 	status.SetExternalID(strconv.FormatInt(externalMsgId, 10))
-	status.SetStatus(courier.MsgSent)
+	status.SetStatus(courier.MsgStatusSent)
 
 	return status, nil
 }

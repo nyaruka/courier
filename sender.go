@@ -187,7 +187,7 @@ func (w *Sender) sendMessage(msg Msg) {
 		log.WithError(err).Error("error looking up msg was sent")
 	}
 
-	var status MsgStatus
+	var status StatusUpdate
 	var redactValues []string
 	handler := server.GetHandler(msg.Channel())
 	if handler != nil {
@@ -198,12 +198,12 @@ func (w *Sender) sendMessage(msg Msg) {
 
 	if handler == nil {
 		// if there's no handler, create a FAILED status for it
-		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgFailed, clog)
+		status = backend.NewStatusUpdate(msg.Channel(), msg.ID(), MsgStatusFailed, clog)
 		log.Errorf("unable to find handler for channel type: %s", msg.Channel().ChannelType())
 
 	} else if sent {
 		// if this message was already sent, create a WIRED status for it
-		status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgWired, clog)
+		status = backend.NewStatusUpdate(msg.Channel(), msg.ID(), MsgStatusWired, clog)
 		log.Warning("duplicate send, marking as wired")
 
 	} else {
@@ -222,12 +222,12 @@ func (w *Sender) sendMessage(msg Msg) {
 
 			// possible for handlers to only return an error in which case we construct an error status
 			if status == nil {
-				status = backend.NewMsgStatusForID(msg.Channel(), msg.ID(), MsgErrored, clog)
+				status = backend.NewStatusUpdate(msg.Channel(), msg.ID(), MsgStatusErrored, clog)
 			}
 		}
 
 		// report to librato and log locally
-		if status.Status() == MsgErrored || status.Status() == MsgFailed {
+		if status.Status() == MsgStatusErrored || status.Status() == MsgStatusFailed {
 			log.WithField("elapsed", duration).Warning("msg errored")
 			analytics.Gauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
 		} else {
@@ -240,7 +240,7 @@ func (w *Sender) sendMessage(msg Msg) {
 	writeCTX, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	err = backend.WriteMsgStatus(writeCTX, status)
+	err = backend.WriteStatusUpdate(writeCTX, status)
 	if err != nil {
 		log.WithError(err).Info("error writing msg status")
 	}

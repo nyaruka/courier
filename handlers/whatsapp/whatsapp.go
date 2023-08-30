@@ -269,8 +269,8 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			continue
 		}
 
-		event := h.Backend().NewMsgStatusForExternalID(channel, status.ID, msgStatus, clog)
-		err := h.Backend().WriteMsgStatus(ctx, event)
+		event := h.Backend().NewStatusUpdateByExternalID(channel, status.ID, msgStatus, clog)
+		err := h.Backend().WriteStatusUpdate(ctx, event)
 		if err != nil {
 			return nil, err
 		}
@@ -318,12 +318,12 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
-var waStatusMapping = map[string]courier.MsgStatusValue{
-	"sending":   courier.MsgWired,
-	"sent":      courier.MsgSent,
-	"delivered": courier.MsgDelivered,
-	"read":      courier.MsgDelivered,
-	"failed":    courier.MsgFailed,
+var waStatusMapping = map[string]courier.MsgStatus{
+	"sending":   courier.MsgStatusWired,
+	"sent":      courier.MsgStatusSent,
+	"delivered": courier.MsgStatusDelivered,
+	"read":      courier.MsgStatusDelivered,
+	"failed":    courier.MsgStatusFailed,
 }
 
 var waIgnoreStatuses = map[string]bool{
@@ -492,7 +492,7 @@ type mtErrorPayload struct {
 const maxMsgLength = 4096
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	conn := h.Backend().RedisPool().Get()
 	defer conn.Close()
 
@@ -509,7 +509,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 	sendPath, _ := url.Parse("/v1/messages")
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	var wppID string
 
@@ -544,7 +544,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				clog.RawError(err)
 			}
 		}
-		status.SetStatus(courier.MsgWired)
+		status.SetStatus(courier.MsgStatusWired)
 	}
 
 	return status, nil

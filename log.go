@@ -8,7 +8,7 @@ import (
 )
 
 // LogMsgStatusReceived logs our that we received a new MsgStatus
-func LogMsgStatusReceived(r *http.Request, status MsgStatus) {
+func LogMsgStatusReceived(r *http.Request, status StatusUpdate) {
 	log := logrus.WithFields(logrus.Fields{
 		"channel_uuid": status.ChannelUUID(),
 		"url":          r.Context().Value(contextRequestURL),

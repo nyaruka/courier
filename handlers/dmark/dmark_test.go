@@ -78,7 +78,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 "id=12345&status=1",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgDelivered,
+		ExpectedMsgStatus:    courier.MsgStatusDelivered,
 	},
 }
 

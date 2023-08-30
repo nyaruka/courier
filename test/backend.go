@@ -43,7 +43,7 @@ type MockBackend struct {
 	redisPool *redis.Pool
 
 	writtenMsgs          []courier.Msg
-	writtenMsgStatuses   []courier.MsgStatus
+	writtenMsgStatuses   []courier.StatusUpdate
 	writtenChannelEvents []courier.ChannelEvent
 	writtenChannelLogs   []*courier.ChannelLog
 	savedAttachments     []*SavedAttachment
@@ -167,7 +167,7 @@ func (mb *MockBackend) ClearMsgSent(ctx context.Context, id courier.MsgID) error
 }
 
 // MarkOutgoingMsgComplete marks the passed msg as having been dealt with
-func (mb *MockBackend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, s courier.MsgStatus) {
+func (mb *MockBackend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, s courier.StatusUpdate) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -214,8 +214,8 @@ func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.Msg, clog *courie
 	return nil
 }
 
-// NewMsgStatusForID creates a new Status object for the given message id
-func (mb *MockBackend) NewMsgStatusForID(channel courier.Channel, id courier.MsgID, status courier.MsgStatusValue, clog *courier.ChannelLog) courier.MsgStatus {
+// NewStatusUpdate creates a new Status object for the given message id
+func (mb *MockBackend) NewStatusUpdate(channel courier.Channel, id courier.MsgID, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return &mockMsgStatus{
 		channel:   channel,
 		id:        id,
@@ -224,8 +224,8 @@ func (mb *MockBackend) NewMsgStatusForID(channel courier.Channel, id courier.Msg
 	}
 }
 
-// NewMsgStatusForExternalID creates a new Status object for the given external id
-func (mb *MockBackend) NewMsgStatusForExternalID(channel courier.Channel, externalID string, status courier.MsgStatusValue, clog *courier.ChannelLog) courier.MsgStatus {
+// NewStatusUpdateByExternalID creates a new Status object for the given external id
+func (mb *MockBackend) NewStatusUpdateByExternalID(channel courier.Channel, externalID string, status courier.MsgStatus, clog *courier.ChannelLog) courier.StatusUpdate {
 	return &mockMsgStatus{
 		channel:    channel,
 		externalID: externalID,
@@ -234,8 +234,8 @@ func (mb *MockBackend) NewMsgStatusForExternalID(channel courier.Channel, extern
 	}
 }
 
-// WriteMsgStatus writes the status update to our queue
-func (mb *MockBackend) WriteMsgStatus(ctx context.Context, status courier.MsgStatus) error {
+// WriteStatusUpdate writes the status update to our queue
+func (mb *MockBackend) WriteStatusUpdate(ctx context.Context, status courier.StatusUpdate) error {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -364,7 +364,7 @@ func (mb *MockBackend) RedisPool() *redis.Pool {
 ////////////////////////////////////////////////////////////////////////////////
 
 func (mb *MockBackend) WrittenMsgs() []courier.Msg                   { return mb.writtenMsgs }
-func (mb *MockBackend) WrittenMsgStatuses() []courier.MsgStatus      { return mb.writtenMsgStatuses }
+func (mb *MockBackend) WrittenMsgStatuses() []courier.StatusUpdate   { return mb.writtenMsgStatuses }
 func (mb *MockBackend) WrittenChannelEvents() []courier.ChannelEvent { return mb.writtenChannelEvents }
 func (mb *MockBackend) WrittenChannelLogs() []*courier.ChannelLog    { return mb.writtenChannelLogs }
 func (mb *MockBackend) SavedAttachments() []*SavedAttachment         { return mb.savedAttachments }

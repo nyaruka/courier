@@ -32,13 +32,13 @@ func newHandler() courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(courier.ChannelType("MT"), "Mtarget")}
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"0": courier.MsgWired,
-	"1": courier.MsgWired,
-	"2": courier.MsgSent,
-	"3": courier.MsgDelivered,
-	"4": courier.MsgFailed,
-	"6": courier.MsgFailed,
+var statusMapping = map[string]courier.MsgStatus{
+	"0": courier.MsgStatusWired,
+	"1": courier.MsgStatusWired,
+	"2": courier.MsgStatusSent,
+	"3": courier.MsgStatusDelivered,
+	"4": courier.MsgStatusFailed,
+	"6": courier.MsgStatusFailed,
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -148,7 +148,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for MT channel")
@@ -160,7 +160,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	// send our message
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		// build our request
 		params := url.Values{
@@ -198,10 +198,10 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		externalID, _ := jsonparser.GetString(respBody, "results", "[0]", "ticket")
 		if code == "0" && externalID != "" {
 			// all went well, set ourselves to wired
-			status.SetStatus(courier.MsgWired)
+			status.SetStatus(courier.MsgStatusWired)
 			status.SetExternalID(externalID)
 		} else {
-			status.SetStatus(courier.MsgFailed)
+			status.SetStatus(courier.MsgStatusFailed)
 			clog.RawError(fmt.Errorf("Error status code, failing permanently"))
 			break
 		}

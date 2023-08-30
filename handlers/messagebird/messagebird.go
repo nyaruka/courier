@@ -53,13 +53,13 @@ type ReceivedStatus struct {
 	StatusErrorCode int       `schema:"statusErrorCode"`
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"scheduled":       courier.MsgSent,
-	"delivery_failed": courier.MsgFailed,
-	"sent":            courier.MsgSent,
-	"buffered":        courier.MsgSent,
-	"delivered":       courier.MsgDelivered,
-	"expired":         courier.MsgFailed,
+var statusMapping = map[string]courier.MsgStatus{
+	"scheduled":       courier.MsgStatusSent,
+	"delivery_failed": courier.MsgStatusFailed,
+	"sent":            courier.MsgStatusSent,
+	"buffered":        courier.MsgStatusSent,
+	"delivered":       courier.MsgStatusDelivered,
+	"expired":         courier.MsgStatusFailed,
 }
 
 type ReceivedMessage struct {
@@ -109,19 +109,19 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// if the message id was passed explicitely, use that
-	var status courier.MsgStatus
+	var status courier.StatusUpdate
 	if receivedStatus.Reference != "" {
 		msgID, err := strconv.ParseInt(receivedStatus.Reference, 10, 64)
 		if err != nil {
 			logrus.WithError(err).WithField("id", receivedStatus.Reference).Error("error converting Messagebird status id to integer")
 		} else {
-			status = h.Backend().NewMsgStatusForID(channel, courier.MsgID(msgID), msgStatus, clog)
+			status = h.Backend().NewStatusUpdate(channel, courier.MsgID(msgID), msgStatus, clog)
 		}
 	}
 
 	// if we have no status, then build it from the external (messagebird) id
 	if status == nil {
-		status = h.Backend().NewMsgStatusForExternalID(channel, receivedStatus.ID, msgStatus, clog)
+		status = h.Backend().NewStatusUpdateByExternalID(channel, receivedStatus.ID, msgStatus, clog)
 	}
 
 	if receivedStatus.StatusErrorCode == errorStopped {
@@ -184,7 +184,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if authToken == "" {
@@ -192,7 +192,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	user := msg.URN().Path()
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	// create base payload
 	payload := &Message{
@@ -235,7 +235,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 
 	externalID, err := jsonparser.GetString(respBody, "id")
 	if err != nil {

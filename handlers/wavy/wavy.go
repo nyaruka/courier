@@ -39,20 +39,20 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-var statusMapping = map[int]courier.MsgStatusValue{
-	2:   courier.MsgSent,
-	4:   courier.MsgDelivered,
-	101: courier.MsgFailed,
-	102: courier.MsgFailed,
-	103: courier.MsgFailed,
-	104: courier.MsgSent,
-	201: courier.MsgFailed,
-	202: courier.MsgFailed,
-	203: courier.MsgFailed,
-	204: courier.MsgFailed,
-	205: courier.MsgFailed,
-	207: courier.MsgFailed,
-	301: courier.MsgErrored,
+var statusMapping = map[int]courier.MsgStatus{
+	2:   courier.MsgStatusSent,
+	4:   courier.MsgStatusDelivered,
+	101: courier.MsgStatusFailed,
+	102: courier.MsgStatusFailed,
+	103: courier.MsgStatusFailed,
+	104: courier.MsgStatusSent,
+	201: courier.MsgStatusFailed,
+	202: courier.MsgStatusFailed,
+	203: courier.MsgStatusFailed,
+	204: courier.MsgStatusFailed,
+	205: courier.MsgStatusFailed,
+	207: courier.MsgStatusFailed,
+	301: courier.MsgStatusErrored,
 }
 
 type sentStatusPayload struct {
@@ -68,7 +68,7 @@ func (h *handler) sentStatusMessage(ctx context.Context, channel courier.Channel
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CollerationID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdateByExternalID(channel, payload.CollerationID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -85,7 +85,7 @@ func (h *handler) deliveredStatusMessage(ctx context.Context, channel courier.Ch
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, payload.CollerationID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdateByExternalID(channel, payload.CollerationID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -120,7 +120,7 @@ type mtPayload struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for %s channel", msg.Channel().ChannelType())
@@ -131,7 +131,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no token set for %s channel", msg.Channel().ChannelType())
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	payload := mtPayload{}
 	payload.Destination = strings.TrimPrefix(msg.URN().Path(), "+")
@@ -161,6 +161,6 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		status.SetExternalID(externalID)
 	}
 
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 	return status, nil
 }

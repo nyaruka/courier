@@ -105,13 +105,13 @@ type mtPayload struct {
 	Attachments []Attachment `json:"attachments,omitempty"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	baseURL := msg.Channel().StringConfigForKey(configBaseURL, "")
 	secret := msg.Channel().StringConfigForKey(configSecret, "")
 	botUsername := msg.Channel().StringConfigForKey(configBotUsername, "")
 
 	// the status that will be written for this message
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	payload := &mtPayload{
 		UserURN:     msg.URN().Path(),
@@ -145,6 +145,6 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		status.SetExternalID(msgID)
 	}
 
-	status.SetStatus(courier.MsgSent)
+	status.SetStatus(courier.MsgStatusSent)
 	return status, nil
 }

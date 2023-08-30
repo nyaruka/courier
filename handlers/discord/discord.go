@@ -117,10 +117,10 @@ type statusForm struct {
 	ID int64 `name:"id" validate:"required"`
 }
 
-var statusMappings = map[string]courier.MsgStatusValue{
-	"failed":    courier.MsgFailed,
-	"sent":      courier.MsgSent,
-	"delivered": courier.MsgDelivered,
+var statusMappings = map[string]courier.MsgStatus{
+	"failed":    courier.MsgStatusFailed,
+	"sent":      courier.MsgStatusSent,
+	"delivered": courier.MsgStatusDelivered,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -138,12 +138,12 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, courier.MsgID(form.ID), msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, courier.MsgID(form.ID), msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
 		return nil, fmt.Errorf("no send url set for DS channel")
@@ -154,7 +154,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	// sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
 	contentTypeHeader := jsonMimeTypeType
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	attachmentURLs := []string{}
 	for _, attachment := range msg.Attachments() {
 		_, attachmentURL := handlers.SplitAttachment(attachment)
@@ -203,7 +203,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	}
 
 	// If we don't have an error, set the message as wired and move on
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 
 	return status, nil
 }

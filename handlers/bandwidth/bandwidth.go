@@ -113,10 +113,10 @@ type moStatusData struct {
 	} `json:"message" validate:"required"`
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"message-sending":   courier.MsgSent,
-	"message-delivered": courier.MsgDelivered,
-	"message-failed":    courier.MsgFailed,
+var statusMapping = map[string]courier.MsgStatus{
+	"message-sending":   courier.MsgStatusSent,
+	"message-delivered": courier.MsgStatusDelivered,
+	"message-failed":    courier.MsgStatusFailed,
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
@@ -153,7 +153,7 @@ func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, statusPayload.Message.ID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdateByExternalID(channel, statusPayload.Message.ID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
@@ -172,7 +172,7 @@ type mtResponse struct {
 }
 
 // Send implements courier.ChannelHandler
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for BW channel")
@@ -193,7 +193,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no application ID set for BW channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
@@ -239,7 +239,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			return status, nil
 		}
 
-		status.SetStatus(courier.MsgWired)
+		status.SetStatus(courier.MsgStatusWired)
 		if response.ID == "" {
 			clog.Error(courier.ErrorResponseValueMissing("id"))
 		} else {

@@ -80,12 +80,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
 }
 
-var statusMapping = map[int]courier.MsgStatusValue{
-	1:  courier.MsgDelivered,
-	2:  courier.MsgErrored,
-	4:  courier.MsgSent,
-	8:  courier.MsgSent,
-	16: courier.MsgErrored,
+var statusMapping = map[int]courier.MsgStatus{
+	1:  courier.MsgStatusDelivered,
+	2:  courier.MsgStatusErrored,
+	4:  courier.MsgStatusSent,
+	8:  courier.MsgStatusSent,
+	16: courier.MsgStatusErrored,
 }
 
 type statusForm struct {
@@ -108,17 +108,17 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// if we are ignoring delivery reports and this isn't failed then move on
-	if channel.BoolConfigForKey(configIgnoreSent, false) && msgStatus == courier.MsgSent {
+	if channel.BoolConfigForKey(configIgnoreSent, false) && msgStatus == courier.MsgStatusSent {
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring sent report (message aready wired)")
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForID(channel, form.ID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdate(channel, form.ID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for KN channel")
@@ -206,14 +206,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		resp, _, err = handlers.RequestHTTPInsecure(req, clog)
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	if err == nil && resp.StatusCode/100 == 2 {
-		status.SetStatus(courier.MsgWired)
+		status.SetStatus(courier.MsgStatusWired)
 	}
 
 	// kannel will respond with a 403 for non-routable numbers, fail permanently in these cases
 	if resp != nil && resp.StatusCode == 403 {
-		status.SetStatus(courier.MsgFailed)
+		status.SetStatus(courier.MsgStatusFailed)
 	}
 
 	return status, nil

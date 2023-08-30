@@ -84,13 +84,13 @@ type statusForm struct {
 	Status string `validate:"required" name:"status"`
 }
 
-var statusMapping = map[string]courier.MsgStatusValue{
-	"Success":  courier.MsgDelivered,
-	"Sent":     courier.MsgSent,
-	"Buffered": courier.MsgSent,
-	"Rejected": courier.MsgFailed,
-	"Failed":   courier.MsgFailed,
-	"Expired":  courier.MsgFailed,
+var statusMapping = map[string]courier.MsgStatus{
+	"Success":  courier.MsgStatusDelivered,
+	"Sent":     courier.MsgStatusSent,
+	"Buffered": courier.MsgStatusSent,
+	"Rejected": courier.MsgStatusFailed,
+	"Failed":   courier.MsgStatusFailed,
+	"Expired":  courier.MsgStatusFailed,
 }
 
 // receiveStatus is our HTTP handler function for status updates
@@ -109,12 +109,12 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	// write our status
-	status := h.Backend().NewMsgStatusForExternalID(channel, form.ID, msgStatus, clog)
+	status := h.Backend().NewStatusUpdateByExternalID(channel, form.ID, msgStatus, clog)
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.MsgStatus, error) {
+func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	isSharedStr := msg.Channel().ConfigForKey(configIsShared, false)
 	isShared, _ := isSharedStr.(bool)
 
@@ -128,7 +128,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		return nil, fmt.Errorf("no API key set for AT channel")
 	}
 
-	status := h.Backend().NewMsgStatusForID(msg.Channel(), msg.ID(), courier.MsgErrored, clog)
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	// build our request
 	form := url.Values{
@@ -158,13 +158,13 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	// was this request successful?
 	msgStatus, _ := jsonparser.GetString(respBody, "SMSMessageData", "Recipients", "[0]", "status")
 	if msgStatus != "Success" {
-		status.SetStatus(courier.MsgErrored)
+		status.SetStatus(courier.MsgStatusErrored)
 		return status, nil
 	}
 
 	// grab the external id if we can
 	externalID, _ := jsonparser.GetString(respBody, "SMSMessageData", "Recipients", "[0]", "messageId")
-	status.SetStatus(courier.MsgWired)
+	status.SetStatus(courier.MsgStatusWired)
 	status.SetExternalID(externalID)
 
 	return status, nil
