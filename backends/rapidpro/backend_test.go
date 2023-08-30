@@ -74,11 +74,7 @@ func (ts *BackendTestSuite) SetupSuite() {
 	}
 	ts.b.db.MustExec(string(sql))
 
-	// clear redis
-	r := ts.b.redisPool.Get()
-	defer r.Close()
-	_, err = r.Do("FLUSHDB")
-	ts.Require().NoError(err)
+	ts.clearRedis()
 }
 
 func (ts *BackendTestSuite) TearDownSuite() {
@@ -88,6 +84,14 @@ func (ts *BackendTestSuite) TearDownSuite() {
 	if err := os.RemoveAll(storageDir); err != nil {
 		panic(err)
 	}
+}
+
+func (ts *BackendTestSuite) clearRedis() {
+	// clear redis
+	r := ts.b.redisPool.Get()
+	defer r.Close()
+	_, err := r.Do("FLUSHDB")
+	ts.Require().NoError(err)
 }
 
 func (ts *BackendTestSuite) getChannel(cType string, cUUID string) *DBChannel {
@@ -168,33 +172,27 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal("", msg.FlowUUID())
 }
 
-func (ts *BackendTestSuite) TestDeleteMsgWithExternalID() {
+func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
-
 	ctx := context.Background()
 
-	// no error for invalid external ID
-	err := ts.b.DeleteMsgWithExternalID(ctx, knChannel, "ext-invalid")
+	ts.clearRedis()
+
+	// noop for invalid external ID
+	err := ts.b.DeleteMsgByExternalID(ctx, knChannel, "ext-invalid")
 	ts.Nil(err)
 
-	// cannot change out going messages
-	err = ts.b.DeleteMsgWithExternalID(ctx, knChannel, "ext1")
+	// noop for external ID of outgoing message
+	err = ts.b.DeleteMsgByExternalID(ctx, knChannel, "ext1")
 	ts.Nil(err)
 
-	m := readMsgFromDB(ts.b, 10000)
-	ts.Equal(m.Text_, "test message")
-	ts.Equal(len(m.Attachments()), 0)
-	ts.Equal(m.Visibility_, MsgVisibility("V"))
+	ts.assertNoQueuedContactTask(ContactID(100))
 
-	// for incoming messages mark them deleted by sender and readact their text and clear their attachments
-	err = ts.b.DeleteMsgWithExternalID(ctx, knChannel, "ext2")
+	// a valid external id becomes a queued task
+	err = ts.b.DeleteMsgByExternalID(ctx, knChannel, "ext2")
 	ts.Nil(err)
 
-	m = readMsgFromDB(ts.b, 10002)
-	ts.Equal(m.Text_, "")
-	ts.Equal(len(m.Attachments()), 0)
-	ts.Equal(m.Visibility_, MsgVisibility("X"))
-
+	ts.assertQueuedContactTask(ContactID(100), "msg_deleted", map[string]any{"org_id": float64(1), "msg_id": float64(10002)})
 }
 
 func (ts *BackendTestSuite) TestContact() {
@@ -1119,35 +1117,14 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	err = writeMsgToDB(ctx, ts.b, msg, clog)
 	ts.NoError(err)
 
-	// check that our mailroom queue has an item
-	rc := ts.b.redisPool.Get()
-	defer rc.Close()
-	rc.Do("DEL", "handler:1", "handler:active", fmt.Sprintf("c:1:%d", msg.ContactID_))
+	ts.clearRedis()
 
+	// check that our mailroom queue has an item
 	msg = ts.b.NewIncomingMsg(knChannel, urn, "hello 1 2 3", "", clog).(*DBMsg)
 	err = writeMsgToDB(ctx, ts.b, msg, clog)
 	ts.NoError(err)
 
-	count, err := redis.Int(rc.Do("ZCARD", "handler:1"))
-	ts.NoError(err)
-	ts.Equal(1, count)
-
-	count, err = redis.Int(rc.Do("ZCARD", "handler:active"))
-	ts.NoError(err)
-	ts.Equal(1, count)
-
-	count, err = redis.Int(rc.Do("LLEN", fmt.Sprintf("c:1:%d", msg.ContactID_)))
-	ts.NoError(err)
-	ts.Equal(1, count)
-
-	data, err := redis.Bytes(rc.Do("LPOP", fmt.Sprintf("c:1:%d", contact.ID_)))
-	ts.NoError(err)
-
-	var body map[string]interface{}
-	err = json.Unmarshal(data, &body)
-	ts.NoError(err)
-	ts.Equal("msg_event", body["type"])
-	ts.Equal(map[string]interface{}{
+	ts.assertQueuedContactTask(msg.ContactID_, "msg_event", map[string]any{
 		"contact_id":      float64(contact.ID_),
 		"org_id":          float64(1),
 		"channel_id":      float64(10),
@@ -1159,7 +1136,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 		"text":            msg.Text(),
 		"attachments":     nil,
 		"new_contact":     contact.IsNew_,
-	}, body["task"])
+	})
 }
 
 func (ts *BackendTestSuite) TestWriteMsgWithAttachments() {
@@ -1279,9 +1256,7 @@ func (ts *BackendTestSuite) TestSessionTimeout() {
 func (ts *BackendTestSuite) TestMailroomEvents() {
 	ctx := context.Background()
 
-	rc := ts.b.redisPool.Get()
-	defer rc.Close()
-	rc.Do("FLUSHDB")
+	ts.clearRedis()
 
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
@@ -1305,26 +1280,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	ts.Equal(contact.ID_, dbE.ContactID_)
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 
-	count, err := redis.Int(rc.Do("ZCARD", "handler:1"))
-	ts.NoError(err)
-	ts.Equal(1, count)
-
-	count, err = redis.Int(rc.Do("ZCARD", "handler:active"))
-	ts.NoError(err)
-	ts.Equal(1, count)
-
-	count, err = redis.Int(rc.Do("LLEN", fmt.Sprintf("c:1:%d", contact.ID_)))
-	ts.NoError(err)
-	ts.Equal(1, count)
-
-	data, err := redis.Bytes(rc.Do("LPOP", fmt.Sprintf("c:1:%d", contact.ID_)))
-	ts.NoError(err)
-
-	var body map[string]interface{}
-	err = json.Unmarshal(data, &body)
-	ts.NoError(err)
-	ts.Equal("referral", body["type"])
-	ts.Equal(map[string]interface{}{
+	ts.assertQueuedContactTask(contact.ID_, "referral", map[string]any{
 		"channel_id":  float64(10),
 		"contact_id":  float64(contact.ID_),
 		"extra":       map[string]interface{}{"ref_id": "12345"},
@@ -1332,7 +1288,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 		"occurred_on": "2020-08-05T13:30:00.123456789Z",
 		"org_id":      float64(1),
 		"urn_id":      float64(contact.URNID_),
-	}, body["task"])
+	})
 }
 
 func (ts *BackendTestSuite) TestResolveMedia() {
@@ -1424,6 +1380,30 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 
 	// check we've cached 3 media lookups
 	assertredis.HLen(ts.T(), ts.b.redisPool, fmt.Sprintf("media-lookups:%s", time.Now().In(time.UTC).Format("2006-01-02")), 3)
+}
+
+func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID ContactID) {
+	assertredis.ZCard(ts.T(), ts.b.redisPool, "handler:1", 0)
+	assertredis.ZCard(ts.T(), ts.b.redisPool, "handler:active", 0)
+	assertredis.LLen(ts.T(), ts.b.redisPool, fmt.Sprintf("c:1:%d", contactID), 0)
+}
+
+func (ts *BackendTestSuite) assertQueuedContactTask(contactID ContactID, expectedType string, expectedBody map[string]any) {
+	assertredis.ZCard(ts.T(), ts.b.redisPool, "handler:1", 1)
+	assertredis.ZCard(ts.T(), ts.b.redisPool, "handler:active", 1)
+	assertredis.LLen(ts.T(), ts.b.redisPool, fmt.Sprintf("c:1:%d", contactID), 1)
+
+	rc := ts.b.redisPool.Get()
+	defer rc.Close()
+
+	data, err := redis.Bytes(rc.Do("LPOP", fmt.Sprintf("c:1:%d", contactID)))
+	ts.NoError(err)
+
+	var body map[string]any
+	err = json.Unmarshal(data, &body)
+	ts.NoError(err)
+	ts.Equal(expectedType, body["type"])
+	ts.Equal(expectedBody, body["task"])
 }
 
 func TestMsgSuite(t *testing.T) {

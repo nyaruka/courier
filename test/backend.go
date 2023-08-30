@@ -90,8 +90,8 @@ func NewMockBackend() *MockBackend {
 	}
 }
 
-// DeleteMsgWithExternalID delete a message we receive an event that it should be deleted
-func (mb *MockBackend) DeleteMsgWithExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
+// DeleteMsgByExternalID delete a message we receive an event that it should be deleted
+func (mb *MockBackend) DeleteMsgByExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
 	return nil
 }
 

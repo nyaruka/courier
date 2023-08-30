@@ -699,7 +699,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			}
 
 			if msg.Message.IsDeleted {
-				h.Backend().DeleteMsgWithExternalID(ctx, channel, msg.Message.MID)
+				h.Backend().DeleteMsgByExternalID(ctx, channel, msg.Message.MID)
 				data = append(data, courier.NewInfoData("msg deleted"))
 				continue
 			}
