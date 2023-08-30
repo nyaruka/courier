@@ -1,3 +1,7 @@
+v8.3.5 (2023-08-30)
+-------------------------
+ * Rework writing status updates so that updates by external id also use the batcher
+
 v8.3.4 (2023-08-24)
 -------------------------
  * Update channel type to save external ID for MO messages if we can, so we can dedupe by that
