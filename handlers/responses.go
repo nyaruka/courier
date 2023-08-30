@@ -24,10 +24,6 @@ func WriteMsgsAndResponse(ctx context.Context, h courier.ChannelHandler, msgs []
 // WriteMsgStatusAndResponse write the passed in status to our backend
 func WriteMsgStatusAndResponse(ctx context.Context, h courier.ChannelHandler, channel courier.Channel, status courier.MsgStatus, w http.ResponseWriter, r *http.Request) ([]courier.Event, error) {
 	err := h.Server().Backend().WriteMsgStatus(ctx, status)
-	if err == courier.ErrMsgNotFound {
-		return nil, WriteAndLogRequestIgnored(ctx, h, channel, w, r, "msg not found, ignored")
-	}
-
 	if err != nil {
 		return nil, err
 	}
