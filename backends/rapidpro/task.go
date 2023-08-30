@@ -81,6 +81,10 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 	}
 }
 
+func queueMsgDeleted(rc redis.Conn, ch *DBChannel, msgID courier.MsgID, contactID ContactID) error {
+	return queueMailroomTask(rc, "msg_deleted", ch.OrgID_, contactID, map[string]any{"org_id": ch.OrgID_, "msg_id": msgID})
+}
+
 // queueMailroomTask queues the passed in task to mailroom. Mailroom processes both messages and
 // channel event tasks through the same ordered queue.
 func queueMailroomTask(rc redis.Conn, taskType string, orgID OrgID, contactID ContactID, body map[string]interface{}) (err error) {

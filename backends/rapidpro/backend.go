@@ -120,25 +120,26 @@ func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, c
 	return urn, nil
 }
 
-const updateMsgVisibilityDeletedBySender = `
-UPDATE
-	msgs_msg
-SET
-	visibility = 'X',
-	text = '',
-	attachments = '{}'
-WHERE
-	msgs_msg.id = (SELECT m."id" FROM "msgs_msg" m INNER JOIN "channels_channel" c ON (m."channel_id" = c."id") WHERE (c."uuid" = $1 AND m."external_id" = $2 AND m."direction" = 'I'))
-RETURNING
-	msgs_msg.id
-`
+// DeleteMsgByExternalID resolves a message external id and quees a task to mailroom to delete it
+func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
+	ch := channel.(*DBChannel)
+	row := b.db.QueryRowContext(ctx, `SELECT id, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_id = $2 AND direction = 'I'`, ch.ID(), externalID)
 
-// DeleteMsgWithExternalID delete a message we receive an event that it should be deleted
-func (b *backend) DeleteMsgWithExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
-	_, err := b.db.ExecContext(ctx, updateMsgVisibilityDeletedBySender, string(channel.UUID()), externalID)
-	if err != nil {
-		return err
+	var msgID courier.MsgID
+	var contactID ContactID
+	if err := row.Scan(&msgID, &contactID); err != nil && err != sql.ErrNoRows {
+		return errors.Wrap(err, "error querying deleted msg")
 	}
+
+	if msgID != courier.NilMsgID && contactID != NilContactID {
+		rc := b.redisPool.Get()
+		defer rc.Close()
+
+		if err := queueMsgDeleted(rc, ch, msgID, contactID); err != nil {
+			return errors.Wrap(err, "error queuing message deleted task")
+		}
+	}
+
 	return nil
 }
 
