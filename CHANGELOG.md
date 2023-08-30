@@ -1,3 +1,7 @@
+v8.3.7 (2023-08-30)
+-------------------------
+ * Sender deletion handled by mailroom task
+
 v8.3.6 (2023-08-30)
 -------------------------
  * Rework writing msg statuses to always use id resolving
