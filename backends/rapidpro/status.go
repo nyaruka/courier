@@ -3,7 +3,6 @@ package rapidpro
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -17,6 +16,7 @@ import (
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,24 +35,6 @@ func newMsgStatus(channel courier.Channel, id courier.MsgID, externalID string, 
 		ModifiedOn_:  time.Now().In(time.UTC),
 		LogUUID:      clog.UUID(),
 	}
-}
-
-// writeMsgStatus writes the passed in status to the database, queueing it to our spool in case the database is down
-func writeMsgStatus(ctx context.Context, b *backend, status courier.MsgStatus) error {
-	dbStatus := status.(*DBMsgStatus)
-
-	err := writeMsgStatusToDB(ctx, b, dbStatus)
-
-	if err == courier.ErrMsgNotFound {
-		return err
-	}
-
-	// failed writing, write to our spool instead
-	if err != nil {
-		err = courier.WriteToSpool(b.config.SpoolDir, "statuses", dbStatus)
-	}
-
-	return err
 }
 
 // the craziness below lets us update our status to 'F' and schedule retries without knowing anything about the message
@@ -315,7 +297,34 @@ func NewStatusWriter(db *sqlx.DB, spoolDir string, wg *sync.WaitGroup) *StatusWr
 }
 
 func writeMsgStatuses(ctx context.Context, db *sqlx.DB, spoolDir string, statuses []*DBMsgStatus) {
-	for _, batch := range utils.ChunkSlice(statuses, 1000) {
+	log := logrus.WithField("comp", "status writer")
+
+	// get the statuses which have external ID instead of a message ID
+	missingID := make([]*DBMsgStatus, 0, 500)
+	for _, s := range statuses {
+		if s.ID_ == courier.NilMsgID {
+			missingID = append(missingID, s)
+		}
+	}
+
+	// try to resolve channel ID + external ID to message IDs
+	for _, batch := range utils.ChunkSlice(missingID, 1000) {
+		if err := resolveStatusMsgIDs(ctx, db, batch); err != nil {
+			log.WithError(err).Error("error resolving msg ids")
+		}
+	}
+
+	resolved := make([]*DBMsgStatus, 0, 500)
+
+	for _, s := range statuses {
+		if s.ID_ != courier.NilMsgID {
+			resolved = append(resolved, s)
+		} else {
+			log.Warnf("unable to find message with channel_id=%d and external_id=%s", s.ChannelID_, s.ExternalID_)
+		}
+	}
+
+	for _, batch := range utils.ChunkSlice(resolved, 1000) {
 		err := dbutil.BulkQuery(ctx, db, sqlUpdateMsgByID, batch)
 
 		// if we received an error, try again one at a time (in case it is one value hanging us up)
@@ -323,7 +332,7 @@ func writeMsgStatuses(ctx context.Context, db *sqlx.DB, spoolDir string, statuse
 			for _, s := range batch {
 				err = dbutil.BulkQuery(ctx, db, sqlUpdateMsgByID, []*DBMsgStatus{s})
 				if err != nil {
-					log := logrus.WithField("comp", "status writer").WithField("msg_id", s.ID())
+					log := log.WithField("msg_id", s.ID())
 
 					if qerr := dbutil.AsQueryError(err); qerr != nil {
 						query, params := qerr.Query()
@@ -340,4 +349,50 @@ func writeMsgStatuses(ctx context.Context, db *sqlx.DB, spoolDir string, statuse
 			}
 		}
 	}
+}
+
+const sqlResolveStatusMsgIDs = `
+SELECT id, channel_id, external_id 
+  FROM msgs_msg 
+ WHERE (channel_id, external_id) IN (VALUES(CAST(:channel_id AS int), :external_id))`
+
+// resolveStatusMsgIDs tries to resolve msg IDs for the given statuses - if there's no matching channel/external ID pair
+// found for a status, that status will be left with a nil msg ID.
+func resolveStatusMsgIDs(ctx context.Context, db *sqlx.DB, statuses []*DBMsgStatus) error {
+	// create a mapping of channel id + external id -> status
+	type ext struct {
+		channelID  courier.ChannelID
+		externalID string
+	}
+	statusesByExt := make(map[ext]*DBMsgStatus, len(statuses))
+	for _, s := range statuses {
+		statusesByExt[ext{s.ChannelID_, s.ExternalID_}] = s
+	}
+
+	sql, params, err := dbutil.BulkSQL(db, sqlResolveStatusMsgIDs, statuses)
+	if err != nil {
+		return err
+	}
+
+	rows, err := db.QueryContext(ctx, sql, params...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var msgID courier.MsgID
+	var channelID courier.ChannelID
+	var externalID string
+
+	for rows.Next() {
+		if err := rows.Scan(&msgID, &channelID, &externalID); err != nil {
+			return errors.Wrap(err, "error scanning rows")
+		}
+
+		// find the status with this channel ID and external ID and update its msg ID
+		s := statusesByExt[ext{channelID, externalID}]
+		s.ID_ = msgID
+	}
+
+	return rows.Err()
 }
