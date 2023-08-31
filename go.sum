@@ -2,8 +2,6 @@ github.com/antchfx/xmlquery v1.3.17 h1:d0qWjPp/D+vtRw7ivCwT5ApH/3CkQU8JOeo3245Pp
 github.com/antchfx/xmlquery v1.3.17/go.mod h1:Afkq4JIeXut75taLSuI31ISJ/zeq+3jG7TunF7noreA=
 github.com/antchfx/xpath v1.2.4 h1:dW1HB/JxKvGtJ9WyVGJ0sIoEcqftV3SqIstujI+B9XY=
 github.com/antchfx/xpath v1.2.4/go.mod h1:i54GszH55fYfBmoZXapTHN8T8tkcHfRgLyVwwqzXNcs=
-github.com/aws/aws-sdk-go v1.44.319 h1:cwynvM8DBwWGzlINTZ6XLkGy5O99wZIS0197j3B61Fs=
-github.com/aws/aws-sdk-go v1.44.319/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/aws/aws-sdk-go v1.45.0 h1:qoVOQHuLacxJMO71T49KeE70zm+Tk3vtrl7XO4VUPZc=
 github.com/aws/aws-sdk-go v1.45.0/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
@@ -80,8 +78,8 @@ github.com/nyaruka/null/v2 v2.0.3 h1:rdmMRQyVzrOF3Jff/gpU/7BDR9mQX0lcLl4yImsA3kw
 github.com/nyaruka/null/v2 v2.0.3/go.mod h1:OCVeCkCXwrg5/qE6RU0c1oUVZBy+ZDrT+xYg1XSaIWA=
 github.com/nyaruka/phonenumbers v1.1.8 h1:mjFu85FeoH2Wy18aOMUvxqi1GgAqiQSJsa/cCC5yu2s=
 github.com/nyaruka/phonenumbers v1.1.8/go.mod h1:DC7jZd321FqUe+qWSNcHi10tyIyGNXGcNbfkPvdp1Vs=
-github.com/nyaruka/redisx v0.3.1 h1:vnq1tHQwDh+7oG9BANyEVkqGjacgu8wpPxKBOx/exiw=
-github.com/nyaruka/redisx v0.3.1/go.mod h1:v3PY8t0gyf/0E7S0Cxb1RpCCxYo9GUFAIQdF/RufsVw=
+github.com/nyaruka/redisx v0.4.0 h1:DZpbNPjflOZzeR7OQArcwgKx4OTt1vpNOJjT+aBSe7U=
+github.com/nyaruka/redisx v0.4.0/go.mod h1:v3PY8t0gyf/0E7S0Cxb1RpCCxYo9GUFAIQdF/RufsVw=
 github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=
 github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTKqZju1ZixQ/KpMGzzAfe6+WQ=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
