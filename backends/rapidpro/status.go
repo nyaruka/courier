@@ -277,6 +277,9 @@ SELECT id, channel_id, external_id
 // resolveStatusUpdateMsgIDs tries to resolve msg IDs for the given statuses - if there's no matching channel id + external id pair
 // found for a status, that status will be left with a nil msg ID.
 func resolveStatusUpdateMsgIDs(ctx context.Context, db *sqlx.DB, statuses []*StatusUpdate) error {
+
+	// TODO look for msg ids in redis
+
 	// create a mapping of channel id + external id -> status
 	type ext struct {
 		channelID  courier.ChannelID
