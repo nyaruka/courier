@@ -195,7 +195,7 @@ func NewStatusWriter(db *sqlx.DB, spoolDir string, wg *sync.WaitGroup) *StatusWr
 			defer cancel()
 
 			writeStatuseUpdates(ctx, db, spoolDir, batch)
-		}, time.Millisecond*500, 1000, wg),
+		}, 1000, time.Millisecond*500, 1000, wg),
 	}
 }
 
