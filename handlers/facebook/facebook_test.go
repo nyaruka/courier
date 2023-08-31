@@ -18,7 +18,7 @@ import (
 
 var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FB", "1234", "",
-		map[string]interface{}{courier.ConfigAuthToken: "a123", courier.ConfigSecret: "mysecret"}),
+		map[string]any{courier.ConfigAuthToken: "a123", courier.ConfigSecret: "mysecret"}),
 }
 
 const (
@@ -484,7 +484,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedURN:          "facebook:ref:optin_user_ref",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]interface{}{"referrer_id": "optin_ref"},
+		ExpectedEventExtra:   map[string]any{"referrer_id": "optin_ref"},
 	},
 	{
 		Label:                "Receive OptIn",
@@ -495,7 +495,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]interface{}{"referrer_id": "optin_ref"},
+		ExpectedEventExtra:   map[string]any{"referrer_id": "optin_ref"},
 	},
 	{
 		Label:                "Receive Get Started",
@@ -506,7 +506,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.NewConversation,
-		ExpectedEventExtra:   map[string]interface{}{"title": "postback title", "payload": "get_started"},
+		ExpectedEventExtra:   map[string]any{"title": "postback title", "payload": "get_started"},
 	},
 	{
 		Label:                "Receive Referral Postback",
@@ -517,7 +517,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]interface{}{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"},
+		ExpectedEventExtra:   map[string]any{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"},
 	},
 	{
 		Label:                "Receive Referral",
@@ -528,7 +528,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"},
+		ExpectedEventExtra:   map[string]any{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"},
 	},
 	{
 		Label:                "Receive Referral",
@@ -539,7 +539,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]interface{}{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"},
+		ExpectedEventExtra:   map[string]any{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"},
 	},
 	{
 		Label:                "Receive DLR",
@@ -860,7 +860,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FB", "2020", "US", map[string]interface{}{courier.ConfigAuthToken: "access_token"})
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FB", "2020", "US", map[string]any{courier.ConfigAuthToken: "access_token"})
 
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"access_token"}, nil)
 }

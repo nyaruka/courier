@@ -14,7 +14,7 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "TG", "2020", "US", map[string]interface{}{"auth_token": "a123"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "TG", "2020", "US", map[string]any{"auth_token": "a123"}),
 }
 
 var helloMsg = `{
@@ -941,7 +941,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 
 func TestSending(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US",
-		map[string]interface{}{courier.ConfigAuthToken: "auth_token"})
+		map[string]any{courier.ConfigAuthToken: "auth_token"})
 
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"auth_token"}, nil)
 }

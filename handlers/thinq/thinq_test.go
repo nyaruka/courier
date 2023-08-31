@@ -156,7 +156,7 @@ var sendTestCases = []ChannelSendTestCase{
 
 func TestSending(t *testing.T) {
 	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TQ", "+12065551212", "US",
-		map[string]interface{}{
+		map[string]any{
 			configAccountID:    "1234",
 			configAPITokenUser: "user1",
 			configAPIToken:     "sesame",

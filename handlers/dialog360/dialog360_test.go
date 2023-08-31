@@ -23,7 +23,7 @@ var testChannels = []courier.Channel{
 		"D3C",
 		"250788383383",
 		"RW",
-		map[string]interface{}{
+		map[string]any{
 			"auth_token": "the-auth-token",
 			"base_url":   "https://waba-v2.360dialog.io",
 		}),
@@ -606,7 +606,7 @@ func TestSending(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
 
-	var ChannelWAC = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "D3C", "12345_ID", "", map[string]interface{}{
+	var ChannelWAC = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "D3C", "12345_ID", "", map[string]any{
 		"auth_token": "the-auth-token",
 		"base_url":   "https://waba-v2.360dialog.io",
 	})

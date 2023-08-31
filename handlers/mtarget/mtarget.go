@@ -108,7 +108,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 
 		// we have all our parts, grab them and put them together
 		// build up the list of keys we are looking up
-		keys := make([]interface{}, longCount+1)
+		keys := make([]any, longCount+1)
 		keys[0] = mapKey
 		for i := 1; i < longCount+1; i++ {
 			keys[i] = fmt.Sprintf("%d", i)

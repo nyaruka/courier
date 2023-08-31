@@ -215,7 +215,7 @@ var sendTestCases = []ChannelSendTestCase{
 
 func TestSending(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "GL", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"app_id":     "12345",
 			"app_secret": "mysecret",
 			"passphrase": "opensesame",

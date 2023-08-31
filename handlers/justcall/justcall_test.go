@@ -11,7 +11,7 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JCL", "2020", "US", map[string]interface{}{courier.ConfigAPIKey: "api_key", courier.ConfigSecret: "api_secret"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JCL", "2020", "US", map[string]any{courier.ConfigAPIKey: "api_key", courier.ConfigSecret: "api_secret"}),
 }
 
 var (
@@ -323,7 +323,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JCL", "2020", "US", map[string]interface{}{courier.ConfigAPIKey: "api_key", courier.ConfigSecret: "api_secret"})
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JCL", "2020", "US", map[string]any{courier.ConfigAPIKey: "api_key", courier.ConfigSecret: "api_secret"})
 
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"api_key", "api_secret"}, nil)
 }

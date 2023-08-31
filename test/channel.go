@@ -17,8 +17,8 @@ type MockChannel struct {
 	address     courier.ChannelAddress
 	country     string
 	role        string
-	config      map[string]interface{}
-	orgConfig   map[string]interface{}
+	config      map[string]any
+	orgConfig   map[string]any
 }
 
 // UUID returns the uuid for this channel
@@ -51,7 +51,7 @@ func (c *MockChannel) ChannelAddress() courier.ChannelAddress { return c.address
 func (c *MockChannel) Country() string { return c.country }
 
 // SetConfig sets the passed in config parameter
-func (c *MockChannel) SetConfig(key string, value interface{}) {
+func (c *MockChannel) SetConfig(key string, value any) {
 	c.config[key] = value
 }
 
@@ -65,7 +65,7 @@ func (c *MockChannel) CallbackDomain(fallbackDomain string) string {
 }
 
 // ConfigForKey returns the config value for the passed in key
-func (c *MockChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
+func (c *MockChannel) ConfigForKey(key string, defaultValue any) any {
 	value, found := c.config[key]
 	if !found {
 		return defaultValue
@@ -120,7 +120,7 @@ func (c *MockChannel) IntConfigForKey(key string, defaultValue int) int {
 }
 
 // OrgConfigForKey returns the org config value for the passed in key
-func (c *MockChannel) OrgConfigForKey(key string, defaultValue interface{}) interface{} {
+func (c *MockChannel) OrgConfigForKey(key string, defaultValue any) any {
 	value, found := c.orgConfig[key]
 	if !found {
 		return defaultValue
@@ -153,7 +153,7 @@ func (c *MockChannel) HasRole(role courier.ChannelRole) bool {
 }
 
 // NewMockChannel creates a new mock channel for the passed in type, address, country and config
-func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]interface{}) *MockChannel {
+func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]any) *MockChannel {
 	return &MockChannel{
 		uuid:        courier.ChannelUUID(uuid),
 		channelType: courier.ChannelType(channelType),
@@ -162,6 +162,6 @@ func NewMockChannel(uuid string, channelType string, address string, country str
 		country:     country,
 		config:      config,
 		role:        "SR",
-		orgConfig:   map[string]interface{}{},
+		orgConfig:   map[string]any{},
 	}
 }

@@ -139,9 +139,9 @@ type Channel interface {
 	// CallbackDomain returns the domain that should be used for any callbacks the channel registers
 	CallbackDomain(fallbackDomain string) string
 
-	ConfigForKey(key string, defaultValue interface{}) interface{}
+	ConfigForKey(key string, defaultValue any) any
 	StringConfigForKey(key string, defaultValue string) string
 	BoolConfigForKey(key string, defaultValue bool) bool
 	IntConfigForKey(key string, defaultValue int) int
-	OrgConfigForKey(key string, defaultValue interface{}) interface{}
+	OrgConfigForKey(key string, defaultValue any) any
 }

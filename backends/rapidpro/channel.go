@@ -359,7 +359,7 @@ func (c *DBChannel) HasRole(role courier.ChannelRole) bool {
 }
 
 // ConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
-func (c *DBChannel) ConfigForKey(key string, defaultValue interface{}) interface{} {
+func (c *DBChannel) ConfigForKey(key string, defaultValue any) any {
 	value, found := c.Config_[key]
 	if !found {
 		return defaultValue
@@ -368,7 +368,7 @@ func (c *DBChannel) ConfigForKey(key string, defaultValue interface{}) interface
 }
 
 // OrgConfigForKey returns the org config value for the passed in key, or defaultValue if it isn't found
-func (c *DBChannel) OrgConfigForKey(key string, defaultValue interface{}) interface{} {
+func (c *DBChannel) OrgConfigForKey(key string, defaultValue any) any {
 	value, found := c.OrgConfig_[key]
 	if !found {
 		return defaultValue

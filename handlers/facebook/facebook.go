@@ -229,7 +229,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 	events := make([]courier.Event, 0, 2)
 
 	// the list of data we will return in our response
-	data := make([]interface{}, 0, 2)
+	data := make([]any, 0, 2)
 
 	seenMsgIDs := make(map[string]bool, 2)
 
@@ -273,7 +273,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
-			extra := map[string]interface{}{
+			extra := map[string]any{
 				referrerIDKey: msg.OptIn.Ref,
 			}
 			event = event.WithExtra(extra)
@@ -295,7 +295,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			event := h.Backend().NewChannelEvent(channel, eventType, urn, clog).WithOccurredOn(date)
 
 			// build our extra
-			extra := map[string]interface{}{
+			extra := map[string]any{
 				titleKey:   msg.Postback.Title,
 				payloadKey: msg.Postback.Payload,
 			}
@@ -326,7 +326,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
-			extra := map[string]interface{}{
+			extra := map[string]any{
 				sourceKey: msg.Referral.Source,
 				typeKey:   msg.Referral.Type,
 			}

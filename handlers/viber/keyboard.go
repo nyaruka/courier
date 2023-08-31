@@ -36,7 +36,7 @@ const (
 var textSizes = map[string]bool{"small": true, "regular": true, "large": true}
 
 // NewKeyboardFromReplies create a keyboard from the given quick replies
-func NewKeyboardFromReplies(replies []string, buttonConfig map[string]interface{}) *Keyboard {
+func NewKeyboardFromReplies(replies []string, buttonConfig map[string]any) *Keyboard {
 	rows := StringsToRows(replies, maxColumns, maxRowRunes, paddingRunes)
 	buttons := []KeyboardButton{}
 
@@ -60,8 +60,8 @@ func NewKeyboardFromReplies(replies []string, buttonConfig map[string]interface{
 	return &Keyboard{"keyboard", false, buttons}
 }
 
-//ApplyConfig apply the configs from the channel to KeyboardButton
-func (b *KeyboardButton) ApplyConfig(buttonConfig map[string]interface{}) {
+// ApplyConfig apply the configs from the channel to KeyboardButton
+func (b *KeyboardButton) ApplyConfig(buttonConfig map[string]any) {
 	bgColor := strings.TrimSpace(fmt.Sprint(buttonConfig["bg_color"]))
 	textStyle := strings.TrimSpace(fmt.Sprint(buttonConfig["text"]))
 	textSize := strings.TrimSpace(fmt.Sprint(buttonConfig["text_size"]))

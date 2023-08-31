@@ -389,7 +389,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 	}
 
 	var events []courier.Event
-	var data []interface{}
+	var data []any
 
 	if channel.ChannelType() == "FBA" || channel.ChannelType() == "IG" {
 		events, data, err = h.processFacebookInstagramPayload(ctx, channel, payload, w, r, clog)
@@ -405,12 +405,12 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
-func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []interface{}, error) {
+func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
 	// the list of events we deal with
 	events := make([]courier.Event, 0, 2)
 
 	// the list of data we will return in our response
-	data := make([]interface{}, 0, 2)
+	data := make([]any, 0, 2)
 
 	token := h.Server().Config().WhatsappAdminSystemUserToken
 
@@ -543,14 +543,14 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 	return events, data, nil
 }
 
-func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []interface{}, error) {
+func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
 	var err error
 
 	// the list of events we deal with
 	events := make([]courier.Event, 0, 2)
 
 	// the list of data we will return in our response
-	data := make([]interface{}, 0, 2)
+	data := make([]any, 0, 2)
 
 	seenMsgIDs := make(map[string]bool, 2)
 
@@ -609,7 +609,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
-			extra := map[string]interface{}{
+			extra := map[string]any{
 				referrerIDKey: msg.OptIn.Ref,
 			}
 			event = event.WithExtra(extra)
@@ -631,7 +631,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			event := h.Backend().NewChannelEvent(channel, eventType, urn, clog).WithOccurredOn(date)
 
 			// build our extra
-			extra := map[string]interface{}{
+			extra := map[string]any{
 				titleKey:   msg.Postback.Title,
 				payloadKey: msg.Postback.Payload,
 			}
@@ -662,7 +662,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
-			extra := map[string]interface{}{
+			extra := map[string]any{
 				sourceKey: msg.Referral.Source,
 				typeKey:   msg.Referral.Type,
 			}

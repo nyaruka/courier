@@ -359,7 +359,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			req.Header.Set("Authorization", authorization)
 		}
 
-		headers := channel.ConfigForKey(courier.ConfigSendHeaders, map[string]interface{}{}).(map[string]interface{})
+		headers := channel.ConfigForKey(courier.ConfigSendHeaders, map[string]any{}).(map[string]any)
 		for hKey, hValue := range headers {
 			req.Header.Set(hKey, fmt.Sprint(hValue))
 		}

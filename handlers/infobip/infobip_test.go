@@ -404,7 +404,7 @@ var transSendTestCases = []ChannelSendTestCase{
 
 func TestSending(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			courier.ConfigPassword: "Password",
 			courier.ConfigUsername: "Username",
 		})
@@ -412,7 +412,7 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)
 
 	var transChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IB", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			courier.ConfigPassword: "Password",
 			courier.ConfigUsername: "Username",
 			configTransliteration:  "COLOMBIAN",

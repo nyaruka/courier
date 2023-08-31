@@ -248,7 +248,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 func verifyToken(tokenString string, secret string) (jwt.MapClaims, error) {
 	// Parse the token with the provided secret to get the claims
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
 		// Validate the signing method
 		// We only allow HS256
 		// ref: https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/

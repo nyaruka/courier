@@ -194,7 +194,7 @@ var handleTestCases = []ChannelHandleTestCase{
 
 var testSOAPReceiveChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			configTextXPath:             "//content",
 			configFromXPath:             "//source",
 			configMOResponse:            "<?xml version=“1.0”?><return>0</return>",
@@ -236,7 +236,7 @@ var gmTestCases = []ChannelHandleTestCase{
 
 var customChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			configMOFromField: "from_number",
 			configMODateField: "timestamp",
 			configMOTextField: "messageText",
@@ -670,47 +670,47 @@ var nationalGetSendTestCases = []ChannelSendTestCase{
 
 func TestSending(t *testing.T) {
 	var getChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			courier.ConfigSendMethod: http.MethodGet})
 
 	var getSmartChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			configEncoding:           encodingSmart,
 			courier.ConfigSendMethod: http.MethodGet})
 
 	var postChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"send_path":              "",
 			courier.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			courier.ConfigSendMethod: http.MethodPost})
 
 	var postChannelCustomContentType = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"send_path":               "",
 			courier.ConfigSendBody:    "to={{to_no_plus}}&text={{text}}&from={{from_no_plus}}{{quick_replies}}",
 			courier.ConfigContentType: "application/x-www-form-urlencoded; charset=utf-8",
 			courier.ConfigSendMethod:  http.MethodPost})
 
 	var postSmartChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"send_path":              "",
 			courier.ConfigSendBody:   "to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			configEncoding:           encodingSmart,
 			courier.ConfigSendMethod: http.MethodPost})
 
 	var jsonChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"send_path":               "",
 			courier.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
 			courier.ConfigContentType: contentJSON,
 			courier.ConfigSendMethod:  http.MethodPost,
-			courier.ConfigSendHeaders: map[string]interface{}{"Authorization": "Token ABCDEF", "foo": "bar"},
+			courier.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
 	var xmlChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"send_path":               "",
 			courier.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
 			courier.ConfigContentType: contentXML,
@@ -718,7 +718,7 @@ func TestSending(t *testing.T) {
 		})
 
 	var xmlChannelWithResponseContent = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"send_path":               "",
 			courier.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
 			configMTResponseCheck:     "<return>0</return>",
@@ -738,35 +738,35 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, xmlChannelWithResponseContent, newHandler(), xmlSendWithResponseContentTestCases, nil, nil)
 
 	var getChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"max_length":             30,
 			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			courier.ConfigSendMethod: http.MethodGet})
 
 	var getChannel30StrLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"max_length":             "30",
 			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			courier.ConfigSendMethod: http.MethodGet})
 
 	var jsonChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"send_path":               "",
 			"max_length":              30,
 			courier.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
 			courier.ConfigContentType: contentJSON,
 			courier.ConfigSendMethod:  http.MethodPost,
-			courier.ConfigSendHeaders: map[string]interface{}{"Authorization": "Token ABCDEF", "foo": "bar"},
+			courier.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
 	var xmlChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"send_path":               "",
 			"max_length":              30,
 			courier.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
 			courier.ConfigContentType: contentXML,
 			courier.ConfigSendMethod:  http.MethodPost,
-			courier.ConfigSendHeaders: map[string]interface{}{"Authorization": "Token ABCDEF", "foo": "bar"},
+			courier.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
 	RunChannelSendTestCases(t, getChannel30IntLength, newHandler(), longSendTestCases, nil, nil)
@@ -775,7 +775,7 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, xmlChannel30IntLength, newHandler(), xmlLongSendTestCases, nil, nil)
 
 	var nationalChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			"use_national":           true,
 			courier.ConfigSendMethod: http.MethodGet})
@@ -783,7 +783,7 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalGetSendTestCases, nil, nil)
 
 	var jsonChannelWithSendAuthorization = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"send_path":                     "",
 			courier.ConfigSendBody:          `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
 			courier.ConfigContentType:       contentJSON,

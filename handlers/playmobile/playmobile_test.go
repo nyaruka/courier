@@ -11,7 +11,7 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PM", "1122", "UZ", map[string]interface{}{
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PM", "1122", "UZ", map[string]any{
 		"incoming_prefixes": []string{"abc", "DE"},
 	}),
 }
@@ -180,7 +180,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 
 func TestSending(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PM", "1122", "UZ",
-		map[string]interface{}{
+		map[string]any{
 			"password":  "Password",
 			"username":  "Username",
 			"shortcode": "1122",

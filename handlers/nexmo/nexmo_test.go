@@ -211,7 +211,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NX", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			configNexmoAPIKey:        "nexmo-api-key",
 			configNexmoAPISecret:     "nexmo-api-secret",
 			configNexmoAppID:         "nexmo-app-id",

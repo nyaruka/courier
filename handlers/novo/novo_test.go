@@ -10,7 +10,7 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NV", "2020", "TT", map[string]interface{}{
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NV", "2020", "TT", map[string]any{
 		"merchant_id":     "my-merchant-id",
 		"merchant_secret": "my-merchant-secret",
 		"secret":          "sesame",
@@ -118,7 +118,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "NV", "2020", "TT",
-		map[string]interface{}{
+		map[string]any{
 			"merchant_id":     "my-merchant-id",
 			"merchant_secret": "my-merchant-secret",
 			"secret":          "sesame",

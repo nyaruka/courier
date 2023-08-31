@@ -44,7 +44,7 @@ func QueueEmptyTask(rc redis.Conn, queueName string, taskName string) error {
 
 	task := Task{
 		Body: body,
-		Headers: map[string]interface{}{
+		Headers: map[string]any{
 			"root_id":    taskUUID,
 			"id":         taskUUID,
 			"lang":       "py",
@@ -84,11 +84,11 @@ func QueueEmptyTask(rc redis.Conn, queueName string, taskName string) error {
 
 // Task is the outer struct for a celery task
 type Task struct {
-	Body            string                 `json:"body"`
-	Headers         map[string]interface{} `json:"headers"`
-	ContentType     string                 `json:"content-type"`
-	Properties      TaskProperties         `json:"properties"`
-	ContentEncoding string                 `json:"content-encoding"`
+	Body            string         `json:"body"`
+	Headers         map[string]any `json:"headers"`
+	ContentType     string         `json:"content-type"`
+	Properties      TaskProperties `json:"properties"`
+	ContentEncoding string         `json:"content-encoding"`
 }
 
 // TaskProperties is the struct for a task's properties

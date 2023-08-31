@@ -20,7 +20,7 @@ const (
 
 var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "KWA", "250788383383", "",
-		map[string]interface{}{
+		map[string]any{
 			configAccountSID: "SID",
 			configApiKey:     "123456",
 		},

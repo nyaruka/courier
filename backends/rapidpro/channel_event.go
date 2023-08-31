@@ -183,7 +183,7 @@ func (e *DBChannelEvent) ChannelID() courier.ChannelID        { return e.Channel
 func (e *DBChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.ChannelUUID_ }
 func (e *DBChannelEvent) ContactName() string                 { return e.ContactName_ }
 func (e *DBChannelEvent) URN() urns.URN                       { return e.URN_ }
-func (e *DBChannelEvent) Extra() map[string]interface{}       { return e.Extra_ }
+func (e *DBChannelEvent) Extra() map[string]any               { return e.Extra_ }
 func (e *DBChannelEvent) EventType() courier.ChannelEventType { return e.EventType_ }
 func (e *DBChannelEvent) OccurredOn() time.Time               { return e.OccurredOn_ }
 func (e *DBChannelEvent) CreatedOn() time.Time                { return e.CreatedOn_ }
@@ -193,7 +193,7 @@ func (e *DBChannelEvent) WithContactName(name string) courier.ChannelEvent {
 	e.ContactName_ = name
 	return e
 }
-func (e *DBChannelEvent) WithExtra(extra map[string]interface{}) courier.ChannelEvent {
+func (e *DBChannelEvent) WithExtra(extra map[string]any) courier.ChannelEvent {
 	e.Extra_ = null.Map(extra)
 	return e
 }

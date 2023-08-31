@@ -25,7 +25,7 @@ const (
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel(channelUUID, "SL", "2022", "US", map[string]interface{}{"bot_token": "xoxb-abc123", "verification_token": "one-long-verification-token"}),
+	test.NewMockChannel(channelUUID, "SL", "2022", "US", map[string]any{"bot_token": "xoxb-abc123", "verification_token": "one-long-verification-token"}),
 }
 
 const helloMsg = `{

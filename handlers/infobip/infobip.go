@@ -59,7 +59,7 @@ type ibStatus struct {
 
 // statusMessage is our HTTP handler function for status updates
 func (h *handler) statusMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *statusPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
-	data := make([]interface{}, len(payload.Results))
+	data := make([]any, len(payload.Results))
 	statuses := make([]courier.Event, len(payload.Results))
 	for _, s := range payload.Results {
 		msgStatus, found := statusMapping[s.Status.GroupName]

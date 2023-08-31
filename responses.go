@@ -20,7 +20,7 @@ func writeAndLogRequestError(ctx context.Context, h ChannelHandler, w http.Respo
 
 // WriteError writes a JSON response for the passed in error
 func WriteError(w http.ResponseWriter, statusCode int, err error) error {
-	errors := []interface{}{NewErrorData(err.Error())}
+	errors := []any{NewErrorData(err.Error())}
 
 	vErrs, isValidation := err.(validator.ValidationErrors)
 	if isValidation {
@@ -33,23 +33,23 @@ func WriteError(w http.ResponseWriter, statusCode int, err error) error {
 
 // WriteIgnored writes a JSON response indicating that we ignored the request
 func WriteIgnored(w http.ResponseWriter, details string) error {
-	return WriteDataResponse(w, http.StatusOK, "Ignored", []interface{}{NewInfoData(details)})
+	return WriteDataResponse(w, http.StatusOK, "Ignored", []any{NewInfoData(details)})
 }
 
 // WriteAndLogUnauthorized writes a JSON response for the passed in message and logs an info message
 func WriteAndLogUnauthorized(w http.ResponseWriter, r *http.Request, c Channel, err error) error {
 	LogRequestError(r, c, err)
-	return WriteDataResponse(w, http.StatusUnauthorized, "Unauthorized", []interface{}{NewErrorData(err.Error())})
+	return WriteDataResponse(w, http.StatusUnauthorized, "Unauthorized", []any{NewErrorData(err.Error())})
 }
 
 // WriteChannelEventSuccess writes a JSON response for the passed in event indicating we handled it
 func WriteChannelEventSuccess(w http.ResponseWriter, event ChannelEvent) error {
-	return WriteDataResponse(w, http.StatusOK, "Event Accepted", []interface{}{NewEventReceiveData(event)})
+	return WriteDataResponse(w, http.StatusOK, "Event Accepted", []any{NewEventReceiveData(event)})
 }
 
 // WriteMsgSuccess writes a JSON response for the passed in msg indicating we handled it
 func WriteMsgSuccess(w http.ResponseWriter, msgs []Msg) error {
-	data := []interface{}{}
+	data := []any{}
 	for _, msg := range msgs {
 		data = append(data, NewMsgReceiveData(msg))
 	}
@@ -59,7 +59,7 @@ func WriteMsgSuccess(w http.ResponseWriter, msgs []Msg) error {
 
 // WriteStatusSuccess writes a JSON response for the passed in status update indicating we handled it
 func WriteStatusSuccess(w http.ResponseWriter, statuses []StatusUpdate) error {
-	data := []interface{}{}
+	data := []any{}
 	for _, status := range statuses {
 		data = append(data, NewStatusData(status))
 	}
@@ -68,7 +68,7 @@ func WriteStatusSuccess(w http.ResponseWriter, statuses []StatusUpdate) error {
 }
 
 // WriteDataResponse writes a JSON formatted response with the passed in status code, message and data
-func WriteDataResponse(w http.ResponseWriter, statusCode int, message string, data []interface{}) error {
+func WriteDataResponse(w http.ResponseWriter, statusCode int, message string, data []any) error {
 	return writeJSONResponse(w, statusCode, &dataResponse{message, data})
 }
 
@@ -100,12 +100,12 @@ func NewMsgReceiveData(msg Msg) MsgReceiveData {
 
 // EventReceiveData is our response payload for a channel event
 type EventReceiveData struct {
-	Type        string                 `json:"type"`
-	ChannelUUID ChannelUUID            `json:"channel_uuid"`
-	EventType   ChannelEventType       `json:"event_type"`
-	URN         urns.URN               `json:"urn"`
-	ReceivedOn  time.Time              `json:"received_on"`
-	Extra       map[string]interface{} `json:"extra,omitempty"`
+	Type        string           `json:"type"`
+	ChannelUUID ChannelUUID      `json:"channel_uuid"`
+	EventType   ChannelEventType `json:"event_type"`
+	URN         urns.URN         `json:"urn"`
+	ReceivedOn  time.Time        `json:"received_on"`
+	Extra       map[string]any   `json:"extra,omitempty"`
 }
 
 // NewEventReceiveData creates a new receive data for the passed in event
@@ -163,11 +163,11 @@ func NewInfoData(info string) InfoData {
 }
 
 type dataResponse struct {
-	Message string        `json:"message"`
-	Data    []interface{} `json:"data"`
+	Message string `json:"message"`
+	Data    []any  `json:"data"`
 }
 
-func writeJSONResponse(w http.ResponseWriter, statusCode int, response interface{}) error {
+func writeJSONResponse(w http.ResponseWriter, statusCode int, response any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	return json.NewEncoder(w).Encode(response)

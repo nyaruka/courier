@@ -1,18 +1,19 @@
 package messagebird
 
 import (
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/nyaruka/courier"
-	. "github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/test"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/nyaruka/courier"
+	. "github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/test"
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MBD", "18005551212", "US", map[string]interface{}{
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MBD", "18005551212", "US", map[string]any{
 		"secret":     "my_super_secret", // secret key to sign for sig
 		"auth_token": "authtoken",       //API bearer token
 	}),
@@ -294,7 +295,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MBD", "18005551212", "US", map[string]interface{}{
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MBD", "18005551212", "US", map[string]any{
 		"secret":     "my_super_secret", // secret key to sign for sig
 		"auth_token": "authtoken",
 	})

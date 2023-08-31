@@ -362,7 +362,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	var keyboard *Keyboard
 
 	if len(qrs) > 0 {
-		buttonLayout := msg.Channel().ConfigForKey("button_layout", map[string]interface{}{}).(map[string]interface{})
+		buttonLayout := msg.Channel().ConfigForKey("button_layout", map[string]any{}).(map[string]any)
 		keyboard = NewKeyboardFromReplies(qrs, buttonLayout)
 	}
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)

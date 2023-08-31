@@ -19,15 +19,15 @@ import (
 )
 
 var testChannelsFBA = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FBA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FBA", "12345", "", map[string]any{courier.ConfigAuthToken: "a123"}),
 }
 
 var testChannelsIG = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "IG", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "IG", "12345", "", map[string]any{courier.ConfigAuthToken: "a123"}),
 }
 
 var testChannelsWAC = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "WAC", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "WAC", "12345", "", map[string]any{courier.ConfigAuthToken: "a123"}),
 }
 
 var testCasesFBA = []ChannelHandleTestCase{
@@ -112,7 +112,7 @@ var testCasesFBA = []ChannelHandleTestCase{
 		ExpectedURN:          "facebook:ref:optin_user_ref",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]interface{}{"referrer_id": "optin_ref"},
+		ExpectedEventExtra:   map[string]any{"referrer_id": "optin_ref"},
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -124,7 +124,7 @@ var testCasesFBA = []ChannelHandleTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]interface{}{"referrer_id": "optin_ref"},
+		ExpectedEventExtra:   map[string]any{"referrer_id": "optin_ref"},
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -136,7 +136,7 @@ var testCasesFBA = []ChannelHandleTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.NewConversation,
-		ExpectedEventExtra:   map[string]interface{}{"title": "postback title", "payload": "get_started"},
+		ExpectedEventExtra:   map[string]any{"title": "postback title", "payload": "get_started"},
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -148,7 +148,7 @@ var testCasesFBA = []ChannelHandleTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]interface{}{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"},
+		ExpectedEventExtra:   map[string]any{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"},
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -160,7 +160,7 @@ var testCasesFBA = []ChannelHandleTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]interface{}{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"},
+		ExpectedEventExtra:   map[string]any{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"},
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -172,7 +172,7 @@ var testCasesFBA = []ChannelHandleTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]interface{}{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"},
+		ExpectedEventExtra:   map[string]any{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"},
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -320,7 +320,7 @@ var testCasesIG = []ChannelHandleTestCase{
 		ExpectedURN:          "instagram:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.NewConversation,
-		ExpectedEventExtra:   map[string]interface{}{"title": "icebreaker question", "payload": "get_started"},
+		ExpectedEventExtra:   map[string]any{"title": "icebreaker question", "payload": "get_started"},
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -1524,9 +1524,9 @@ func TestSending(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
 
-	var ChannelFBA = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"})
-	var ChannelIG = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IG", "12345", "", map[string]interface{}{courier.ConfigAuthToken: "a123"})
-	var ChannelWAC = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WAC", "12345_ID", "", map[string]interface{}{courier.ConfigAuthToken: "a123"})
+	var ChannelFBA = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", map[string]any{courier.ConfigAuthToken: "a123"})
+	var ChannelIG = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "IG", "12345", "", map[string]any{courier.ConfigAuthToken: "a123"})
+	var ChannelWAC = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WAC", "12345_ID", "", map[string]any{courier.ConfigAuthToken: "a123"})
 
 	checkRedacted := []string{"wac_admin_system_user_token", "missing_facebook_app_secret", "missing_facebook_webhook_secret", "a123"}
 

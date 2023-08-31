@@ -732,7 +732,7 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	dbMsg.ChannelUUID_ = knChannel.UUID()
 	dbMsg.Text_ = "test"
 
-	msgJSON, err := json.Marshal([]interface{}{dbMsg})
+	msgJSON, err := json.Marshal([]any{dbMsg})
 	ts.NoError(err)
 	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
 	ts.NoError(err)
@@ -776,7 +776,7 @@ func (ts *BackendTestSuite) TestStatus() {
 	ts.NotNil(dbMsg)
 
 	// serialize our message
-	msgJSON, err := json.Marshal([]interface{}{dbMsg})
+	msgJSON, err := json.Marshal([]any{dbMsg})
 	ts.NoError(err)
 
 	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
@@ -797,7 +797,7 @@ func (ts *BackendTestSuite) TestOutgoingQueue() {
 	ts.NotNil(dbMsg)
 
 	// serialize our message
-	msgJSON, err := json.Marshal([]interface{}{dbMsg})
+	msgJSON, err := json.Marshal([]any{dbMsg})
 	ts.NoError(err)
 
 	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
@@ -970,7 +970,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	assertdb.Query(ts.T(), ts.b.db, `SELECT count(*) FROM channels_channellog`).Returns(1)
 	assertdb.Query(ts.T(), ts.b.db, `SELECT channel_id, http_logs->0->>'url' AS url, errors->0->>'message' AS err FROM channels_channellog`).
-		Columns(map[string]interface{}{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json", "err": "Unexpected response status code."})
+		Columns(map[string]any{"channel_id": int64(channel.ID()), "url": "https://api.messages.com/send.json", "err": "Unexpected response status code."})
 
 	clog2 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog2.HTTP(trace)
@@ -1222,7 +1222,7 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
 	urn, _ := urns.NewTelURNForCountry("12065551616", channel.Country())
 
-	event := ts.b.NewChannelEvent(channel, courier.Referral, urn, clog).WithExtra(map[string]interface{}{"ref_id": "12345"}).WithContactName("kermit frog")
+	event := ts.b.NewChannelEvent(channel, courier.Referral, urn, clog).WithExtra(map[string]any{"ref_id": "12345"}).WithContactName("kermit frog")
 	err := ts.b.WriteChannelEvent(ctx, event, clog)
 	ts.NoError(err)
 
@@ -1234,7 +1234,7 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	dbE, err = readChannelEventFromDB(ts.b, dbE.ID_)
 	ts.NoError(err)
 	ts.Equal(dbE.EventType_, courier.Referral)
-	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra())
+	ts.Equal(map[string]any{"ref_id": "12345"}, dbE.Extra())
 	ts.Equal(contact.ID_, dbE.ContactID_)
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 }
@@ -1262,7 +1262,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
 	urn, _ := urns.NewTelURNForCountry("12065551616", channel.Country())
 
-	event := ts.b.NewChannelEvent(channel, courier.Referral, urn, clog).WithExtra(map[string]interface{}{"ref_id": "12345"}).
+	event := ts.b.NewChannelEvent(channel, courier.Referral, urn, clog).WithExtra(map[string]any{"ref_id": "12345"}).
 		WithContactName("kermit frog").
 		WithOccurredOn(time.Date(2020, 8, 5, 13, 30, 0, 123456789, time.UTC))
 	err := ts.b.WriteChannelEvent(ctx, event, clog)
@@ -1276,14 +1276,14 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	dbE, err = readChannelEventFromDB(ts.b, dbE.ID_)
 	ts.NoError(err)
 	ts.Equal(dbE.EventType_, courier.Referral)
-	ts.Equal(map[string]interface{}{"ref_id": "12345"}, dbE.Extra())
+	ts.Equal(map[string]any{"ref_id": "12345"}, dbE.Extra())
 	ts.Equal(contact.ID_, dbE.ContactID_)
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 
 	ts.assertQueuedContactTask(contact.ID_, "referral", map[string]any{
 		"channel_id":  float64(10),
 		"contact_id":  float64(contact.ID_),
-		"extra":       map[string]interface{}{"ref_id": "12345"},
+		"extra":       map[string]any{"ref_id": "12345"},
 		"new_contact": contact.IsNew_,
 		"occurred_on": "2020-08-05T13:30:00.123456789Z",
 		"org_id":      float64(1),

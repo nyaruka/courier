@@ -22,7 +22,7 @@ var testChannels = []courier.Channel{
 		"WA",
 		"250788383383",
 		"RW",
-		map[string]interface{}{
+		map[string]any{
 			"auth_token": "the-auth-token",
 			"base_url":   "https://foo.bar/",
 		}),
@@ -31,7 +31,7 @@ var testChannels = []courier.Channel{
 		"D3",
 		"250788383383",
 		"RW",
-		map[string]interface{}{
+		map[string]any{
 			"auth_token": "the-auth-token",
 			"base_url":   "https://foo.bar/",
 		}),
@@ -40,7 +40,7 @@ var testChannels = []courier.Channel{
 		"TXW",
 		"250788383383",
 		"RW",
-		map[string]interface{}{
+		map[string]any{
 			"auth_token": "the-auth-token",
 			"base_url":   "https://foo.bar/",
 		}),
@@ -1099,7 +1099,7 @@ func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTes
 
 func TestSending(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WA", "250788383383", "US",
-		map[string]interface{}{
+		map[string]any{
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",
 			"fb_namespace": "waba_namespace",
@@ -1107,7 +1107,7 @@ func TestSending(t *testing.T) {
 		})
 
 	var hsmSupportChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WA", "250788383383", "US",
-		map[string]interface{}{
+		map[string]any{
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",
 			"fb_namespace": "waba_namespace",
@@ -1116,7 +1116,7 @@ func TestSending(t *testing.T) {
 		})
 
 	var d3Channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "D3", "250788383383", "US",
-		map[string]interface{}{
+		map[string]any{
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",
 			"fb_namespace": "waba_namespace",
@@ -1124,7 +1124,7 @@ func TestSending(t *testing.T) {
 		})
 
 	var txwChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TXW", "250788383383", "US",
-		map[string]interface{}{
+		map[string]any{
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",
 			"fb_namespace": "waba_namespace",

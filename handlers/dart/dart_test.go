@@ -168,7 +168,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	var defaultDAChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DA", "2020", "ID",
-		map[string]interface{}{
+		map[string]any{
 			courier.ConfigUsername: "Username",
 			courier.ConfigPassword: "Password",
 		})

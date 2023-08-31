@@ -18,19 +18,19 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US", map[string]any{"auth_token": "6789"}),
 }
 
 var tmsTestChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TMS", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TMS", "2020", "US", map[string]any{"auth_token": "6789"}),
 }
 
 var twTestChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TW", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TW", "2020", "US", map[string]any{"auth_token": "6789"}),
 }
 
 var swTestChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US", map[string]interface{}{"auth_token": "6789"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US", map[string]any{"auth_token": "6789"}),
 }
 
 var (
@@ -301,7 +301,7 @@ func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, swTestChannels, newTWIMLHandler("SW", "SignalWire", false), swTestCases)
 
 	waChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
-		map[string]interface{}{
+		map[string]any{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "6789",
 		},
@@ -310,7 +310,7 @@ func TestHandler(t *testing.T) {
 	RunChannelTestCases(t, []courier.Channel{waChannel}, newTWIMLHandler("T", "TwilioWhatsApp", true), waTestCases)
 
 	twaChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
-		map[string]interface{}{
+		map[string]any{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "6789",
 		},
@@ -729,25 +729,25 @@ var twaSendTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken"})
 
 	var tmsDefaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56cd", "TMS", "2021", "US",
-		map[string]interface{}{
+		map[string]any{
 			configMessagingServiceSID: "messageServiceSID",
 			configAccountSID:          "accountSID",
 			courier.ConfigAuthToken:   "authToken"})
 
 	var twDefaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TW", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken",
 			configSendURL:           "SEND_URL",
 		})
 
 	var swChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken",
 			configSendURL:           "BASE_URL",
@@ -759,7 +759,7 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, swChannel, newTWIMLHandler("SW", "SignalWire", false), swSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 
 	waChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
-		map[string]interface{}{
+		map[string]any{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken",
 		},
@@ -769,7 +769,7 @@ func TestSending(t *testing.T) {
 	RunChannelSendTestCases(t, waChannel, newTWIMLHandler("T", "Twilio Whatsapp", true), waSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 
 	twaChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
-		map[string]interface{}{
+		map[string]any{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken",
 		},
@@ -783,7 +783,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken"})
 
@@ -793,7 +793,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 	assert.Equal(t, "Basic YWNjb3VudFNJRDphdXRoVG9rZW4=", req.Header.Get("Authorization"))
 
 	var swChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken",
 			configSendURL:           "BASE_URL",

@@ -31,7 +31,7 @@ func (h *mockHandler) UseChannelRouteUUID() bool             { return true }
 func (h *mockHandler) RedactValues(courier.Channel) []string { return []string{"sesame"} }
 
 func (h *mockHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
-	dmChannel := NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", map[string]interface{}{})
+	dmChannel := NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", map[string]any{})
 	return dmChannel, nil
 }
 

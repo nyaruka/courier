@@ -215,16 +215,16 @@ func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	descriptionMaxLength = 10
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
-		map[string]interface{}{
+		map[string]any{
 			courier.ConfigAuthToken: "Token",
 		})
 	var invalidTokenChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
-		map[string]interface{}{},
+		map[string]any{},
 	)
 	var buttonLayoutChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2021", "",
-		map[string]interface{}{
+		map[string]any{
 			courier.ConfigAuthToken: "Token",
-			"button_layout":         map[string]interface{}{"bg_color": "#f7bb3f", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
+			"button_layout":         map[string]any{"bg_color": "#f7bb3f", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
 		})
 	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Token"}, nil)
 	RunChannelSendTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases, []string{"Token"}, nil)
@@ -232,13 +232,13 @@ func TestSending(t *testing.T) {
 }
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]any{
 		courier.ConfigAuthToken: "Token",
 	}),
 }
 
 var testChannelsWithWelcomeMessage = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]interface{}{
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]any{
 		courier.ConfigAuthToken:   "Token",
 		configViberWelcomeMessage: "Welcome to VP, Please subscribe here for more.",
 	}),

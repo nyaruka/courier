@@ -22,7 +22,7 @@ var (
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "YO", "2020", "US", map[string]interface{}{"username": "yo-username", "password": "yo-password"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "YO", "2020", "US", map[string]any{"username": "yo-username", "password": "yo-password"}),
 }
 
 var handleTestCases = []ChannelHandleTestCase{
@@ -99,7 +99,7 @@ var getSendTestCases = []ChannelSendTestCase{
 }
 
 func TestSending(t *testing.T) {
-	var getChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "YO", "2020", "US", map[string]interface{}{"username": "yo-username", "password": "yo-password"})
+	var getChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "YO", "2020", "US", map[string]any{"username": "yo-username", "password": "yo-password"})
 
 	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, []string{"yo-password"}, nil)
 }

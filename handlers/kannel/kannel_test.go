@@ -15,7 +15,7 @@ var testChannels = []courier.Channel{
 }
 
 var ignoreChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US", map[string]interface{}{"ignore_sent": true}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US", map[string]any{"ignore_sent": true}),
 }
 
 var handleTestCases = []ChannelHandleTestCase{
@@ -240,12 +240,12 @@ var nationalSendTestCases = []ChannelSendTestCase{
 
 func TestSending(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"password": "Password",
 			"username": "Username"})
 
 	var nationalChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"password":     "Password",
 			"username":     "Username",
 			"use_national": true,

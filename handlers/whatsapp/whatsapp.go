@@ -175,7 +175,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 	events := make([]courier.Event, 0, 2)
 
 	// the list of data we will return in our response
-	data := make([]interface{}, 0, 2)
+	data := make([]any, 0, 2)
 
 	seenMsgIDs := make(map[string]bool, 2)
 
@@ -555,8 +555,8 @@ func (h *handler) WriteRequestError(ctx context.Context, w http.ResponseWriter, 
 	return courier.WriteError(w, http.StatusOK, err)
 }
 
-func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]interface{}, error) {
-	var payloads []interface{}
+func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]any, error) {
+	var payloads []any
 	var err error
 
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
@@ -907,7 +907,7 @@ func (h *handler) fetchMediaID(msg courier.Msg, mimeType, mediaURL string, clog 
 	return mediaID, nil
 }
 
-func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload interface{}, clog *courier.ChannelLog) (string, string, error) {
+func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload any, clog *courier.ChannelLog) (string, string, error) {
 	jsonBody, err := json.Marshal(payload)
 
 	if err != nil {
@@ -967,7 +967,7 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.Msg, sendPath *url.URL, payload 
 		wppID, err := jsonparser.GetString(checkResp, "contacts", "[0]", "wa_id")
 
 		if err == nil {
-			var updatedPayload interface{}
+			var updatedPayload any
 
 			// handle msg type casting
 			switch v := payload.(type) {

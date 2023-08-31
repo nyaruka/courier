@@ -97,7 +97,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 
 func TestSending(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "M3", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"password": "Password",
 			"username": "Username",
 		},

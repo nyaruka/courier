@@ -94,7 +94,7 @@ func TestFetchAttachment(t *testing.T) {
 	config.AuthToken = "sesame"
 
 	mb := test.NewMockBackend()
-	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", map[string]interface{}{})
+	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", map[string]any{})
 	mb.AddChannel(mockChannel)
 
 	server := courier.NewServerWithLogger(config, mb, logger)

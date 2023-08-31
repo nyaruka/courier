@@ -23,7 +23,7 @@ func RegisterFlusher(directory string, flusherFunc FlusherFunc) {
 }
 
 // WriteToSpool writes the passed in object to the passed in subdir
-func WriteToSpool(spoolDir string, subdir string, contents interface{}) error {
+func WriteToSpool(spoolDir string, subdir string, contents any) error {
 	contentBytes, err := json.MarshalIndent(contents, "", "  ")
 	if err != nil {
 		return err

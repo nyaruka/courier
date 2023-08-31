@@ -143,7 +143,7 @@ func TestSending(t *testing.T) {
 	tokenURL = server.URL + "?valid=true"
 
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "HM", "2020", "US",
-		map[string]interface{}{
+		map[string]any{
 			"username": "foo@bar.com",
 			"password": "sesame",
 		},

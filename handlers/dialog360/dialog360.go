@@ -201,7 +201,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	}
 
 	var events []courier.Event
-	var data []interface{}
+	var data []any
 
 	events, data, err := h.processCloudWhatsAppPayload(ctx, channel, payload, w, r, clog)
 	if err != nil {
@@ -211,12 +211,12 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
-func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []interface{}, error) {
+func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *moPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
 	// the list of events we deal with
 	events := make([]courier.Event, 0, 2)
 
 	// the list of data we will return in our response
-	data := make([]interface{}, 0, 2)
+	data := make([]any, 0, 2)
 
 	seenMsgIDs := make(map[string]bool)
 	contactNames := make(map[string]string)

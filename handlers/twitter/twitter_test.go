@@ -17,7 +17,7 @@ import (
 
 var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "TWT", "tweeter", "",
-		map[string]interface{}{
+		map[string]any{
 			configHandleID:          "835740314006511618",
 			configAPIKey:            "apiKey",
 			configAPISecret:         "apiSecret",

@@ -99,7 +99,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 func TestSending(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MG", "2020", "JM",
-		map[string]interface{}{
+		map[string]any{
 			"public_key":  "my-public-key",
 			"private_key": "my-private-key",
 			"instance_id": 7,

@@ -26,12 +26,12 @@ type ChannelEvent interface {
 	ChannelUUID() ChannelUUID
 	URN() urns.URN
 	EventType() ChannelEventType
-	Extra() map[string]interface{}
+	Extra() map[string]any
 	CreatedOn() time.Time
 	OccurredOn() time.Time
 
 	WithContactName(name string) ChannelEvent
-	WithExtra(extra map[string]interface{}) ChannelEvent
+	WithExtra(extra map[string]any) ChannelEvent
 	WithOccurredOn(time.Time) ChannelEvent
 
 	EventID() int64

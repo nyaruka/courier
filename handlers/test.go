@@ -51,7 +51,7 @@ type ChannelHandleTestCase struct {
 	ExpectedExternalID   string
 	ExpectedMsgID        int64
 	ExpectedEvent        courier.ChannelEventType
-	ExpectedEventExtra   map[string]interface{}
+	ExpectedEventExtra   map[string]any
 	ExpectedErrors       []*courier.ChannelError
 }
 
