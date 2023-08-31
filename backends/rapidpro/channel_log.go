@@ -10,7 +10,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -120,28 +119,26 @@ func NewDBLogWriter(db *sqlx.DB, wg *sync.WaitGroup) *DBLogWriter {
 			defer cancel()
 
 			writeDBChannelLogs(ctx, db, batch)
-		}, time.Millisecond*500, 1000, wg),
+		}, 1000, time.Millisecond*500, 1000, wg),
 	}
 }
 
-func writeDBChannelLogs(ctx context.Context, db *sqlx.DB, logs []*dbChannelLog) {
-	for _, batch := range utils.ChunkSlice(logs, 1000) {
-		err := dbutil.BulkQuery(ctx, db, sqlInsertChannelLog, batch)
+func writeDBChannelLogs(ctx context.Context, db *sqlx.DB, batch []*dbChannelLog) {
+	err := dbutil.BulkQuery(ctx, db, sqlInsertChannelLog, batch)
 
-		// if we received an error, try again one at a time (in case it is one value hanging us up)
-		if err != nil {
-			for _, v := range batch {
-				err = dbutil.BulkQuery(ctx, db, sqlInsertChannelLog, []*dbChannelLog{v})
-				if err != nil {
-					log := logrus.WithField("comp", "log writer").WithField("log_uuid", v.UUID)
+	// if we received an error, try again one at a time (in case it is one value hanging us up)
+	if err != nil {
+		for _, v := range batch {
+			err = dbutil.BulkQuery(ctx, db, sqlInsertChannelLog, []*dbChannelLog{v})
+			if err != nil {
+				log := logrus.WithField("comp", "log writer").WithField("log_uuid", v.UUID)
 
-					if qerr := dbutil.AsQueryError(err); qerr != nil {
-						query, params := qerr.Query()
-						log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
-					}
-
-					log.WithError(err).Error("error writing channel log")
+				if qerr := dbutil.AsQueryError(err); qerr != nil {
+					query, params := qerr.Query()
+					log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
 				}
+
+				log.WithError(err).Error("error writing channel log")
 			}
 		}
 	}
@@ -158,13 +155,13 @@ func NewStorageLogWriter(st storage.Storage, wg *sync.WaitGroup) *StorageLogWrit
 			defer cancel()
 
 			writeStorageChannelLogs(ctx, st, batch)
-		}, time.Millisecond*500, 1000, wg),
+		}, 1000, time.Millisecond*500, 1000, wg),
 	}
 }
 
-func writeStorageChannelLogs(ctx context.Context, st storage.Storage, logs []*stChannelLog) {
-	uploads := make([]*storage.Upload, len(logs))
-	for i, l := range logs {
+func writeStorageChannelLogs(ctx context.Context, st storage.Storage, batch []*stChannelLog) {
+	uploads := make([]*storage.Upload, len(batch))
+	for i, l := range batch {
 		uploads[i] = &storage.Upload{
 			Path:        l.path(),
 			ContentType: "application/json",
