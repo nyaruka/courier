@@ -11,7 +11,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
@@ -195,41 +194,40 @@ func NewStatusWriter(db *sqlx.DB, spoolDir string, wg *sync.WaitGroup) *StatusWr
 			defer cancel()
 
 			writeStatuseUpdates(ctx, db, spoolDir, batch)
-		}, time.Millisecond*500, 1000, wg),
+
+		}, 1000, time.Millisecond*500, 1000, wg),
 	}
 }
 
-// tries to write all the message statuses to the database and spools those that fail
-func writeStatuseUpdates(ctx context.Context, db *sqlx.DB, spoolDir string, statuses []*StatusUpdate) {
+// tries to write a batch of message statuses to the database and spools those that fail
+func writeStatuseUpdates(ctx context.Context, db *sqlx.DB, spoolDir string, batch []*StatusUpdate) {
 	log := logrus.WithField("comp", "status writer")
 
-	for _, batch := range utils.ChunkSlice(statuses, 1000) {
-		unresolved, err := writeStatusUpdatesToDB(ctx, db, batch)
+	unresolved, err := writeStatusUpdatesToDB(ctx, db, batch)
 
-		// if we received an error, try again one at a time (in case it is one value hanging us up)
-		if err != nil {
-			for _, s := range batch {
-				_, err = writeStatusUpdatesToDB(ctx, db, []*StatusUpdate{s})
+	// if we received an error, try again one at a time (in case it is one value hanging us up)
+	if err != nil {
+		for _, s := range batch {
+			_, err = writeStatusUpdatesToDB(ctx, db, []*StatusUpdate{s})
+			if err != nil {
+				log := log.WithField("msg_id", s.ID())
+
+				if qerr := dbutil.AsQueryError(err); qerr != nil {
+					query, params := qerr.Query()
+					log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
+				}
+
+				log.WithError(err).Error("error writing msg status")
+
+				err := courier.WriteToSpool(spoolDir, "statuses", s)
 				if err != nil {
-					log := log.WithField("msg_id", s.ID())
-
-					if qerr := dbutil.AsQueryError(err); qerr != nil {
-						query, params := qerr.Query()
-						log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
-					}
-
-					log.WithError(err).Error("error writing msg status")
-
-					err := courier.WriteToSpool(spoolDir, "statuses", s)
-					if err != nil {
-						log.WithError(err).Error("error writing status to spool") // just have to log and move on
-					}
+					log.WithError(err).Error("error writing status to spool") // just have to log and move on
 				}
 			}
-		} else {
-			for _, s := range unresolved {
-				log.Warnf("unable to find message with channel_id=%d and external_id=%s", s.ChannelID_, s.ExternalID_)
-			}
+		}
+	} else {
+		for _, s := range unresolved {
+			log.Warnf("unable to find message with channel_id=%d and external_id=%s", s.ChannelID_, s.ExternalID_)
 		}
 	}
 }
