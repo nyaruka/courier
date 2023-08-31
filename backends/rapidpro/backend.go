@@ -69,8 +69,9 @@ type backend struct {
 	mediaCache   *redisx.IntervalHash
 	mediaMutexes syncx.HashMutex
 
-	seenMsgs        *redisx.IntervalHash
-	seenExternalIDs *redisx.IntervalHash
+	// tracking of recent messages received to avoid creating duplicates
+	receivedExternalIDs *redisx.IntervalHash // using external id
+	receivedMsgs        *redisx.IntervalHash // using content hash
 
 	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments
 	dbWaitDuration    time.Duration
@@ -92,8 +93,8 @@ func newBackend(cfg *courier.Config) courier.Backend {
 		mediaCache:   redisx.NewIntervalHash("media-lookups", time.Hour*24, 2),
 		mediaMutexes: *syncx.NewHashMutex(8),
 
-		seenMsgs:        redisx.NewIntervalHash("seen-msgs", time.Second*2, 2),
-		seenExternalIDs: redisx.NewIntervalHash("seen-external-ids", time.Hour*24, 2),
+		receivedMsgs:        redisx.NewIntervalHash("seen-msgs", time.Second*2, 2),
+		receivedExternalIDs: redisx.NewIntervalHash("seen-external-ids", time.Hour*24, 2),
 	}
 }
 
@@ -385,7 +386,7 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text str
 	msg.WithReceivedOn(time.Now().UTC())
 
 	// check if this message could be a duplicate and if so use the original's UUID
-	if prevUUID := b.checkMsgSeen(msg); prevUUID != courier.NilMsgUUID {
+	if prevUUID := b.checkMsgAlreadyReceived(msg); prevUUID != courier.NilMsgUUID {
 		msg.UUID_ = prevUUID
 		msg.alreadyWritten = true
 	}

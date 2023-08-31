@@ -2,7 +2,9 @@ package rapidpro
 
 import (
 	"context"
+	"crypto/sha1"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -96,7 +98,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.Ch
 	}
 
 	// mark this msg as having been seen
-	b.writeMsgSeen(m)
+	b.recordMsgReceived(m)
 
 	return err
 }
@@ -218,8 +220,8 @@ func (b *backend) flushMsgFile(filename string, contents []byte) error {
 // Deduping utility methods
 //-----------------------------------------------------------------------------
 
-// checks to see if this message has already been seen and if so returns its UUID
-func (b *backend) checkMsgSeen(msg *DBMsg) courier.MsgUUID {
+// checks to see if this message has already been received and if so returns its UUID
+func (b *backend) checkMsgAlreadyReceived(msg *DBMsg) courier.MsgUUID {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
@@ -227,24 +229,20 @@ func (b *backend) checkMsgSeen(msg *DBMsg) courier.MsgUUID {
 	if msg.ExternalID_ != "" {
 		fingerprint := fmt.Sprintf("%s|%s|%s", msg.Channel().UUID(), msg.URN().Identity(), msg.ExternalID())
 
-		uuid, _ := b.seenExternalIDs.Get(rc, fingerprint)
-
-		if uuid != "" {
+		if uuid, _ := b.receivedExternalIDs.Get(rc, fingerprint); uuid != "" {
 			return courier.MsgUUID(uuid)
 		}
 	} else {
 		// otherwise de-dup based on text received from that channel+urn since last send
 		fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
 
-		uuidAndText, _ := b.seenMsgs.Get(rc, fingerprint)
+		if uuidAndHash, _ := b.receivedMsgs.Get(rc, fingerprint); uuidAndHash != "" {
+			prevUUID := uuidAndHash[:36]
+			prevHash := uuidAndHash[37:]
 
-		// if we have seen a message from this channel+urn check text too
-		if uuidAndText != "" {
-			prevText := uuidAndText[37:]
-
-			// if it is the same, return the UUID
-			if prevText == msg.Text() {
-				return courier.MsgUUID(uuidAndText[:36])
+			// if it is the same hash, return the UUID
+			if prevHash == msg.hash() {
+				return courier.MsgUUID(prevUUID)
 			}
 		}
 	}
@@ -252,19 +250,19 @@ func (b *backend) checkMsgSeen(msg *DBMsg) courier.MsgUUID {
 	return courier.NilMsgUUID
 }
 
-// writeMsgSeen records that the given message has been seen and written to the database
-func (b *backend) writeMsgSeen(msg *DBMsg) {
+// records that the given message has been received and written to the database
+func (b *backend) recordMsgReceived(msg *DBMsg) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
 	if msg.ExternalID_ != "" {
 		fingerprint := fmt.Sprintf("%s|%s|%s", msg.Channel().UUID(), msg.URN().Identity(), msg.ExternalID())
 
-		b.seenExternalIDs.Set(rc, fingerprint, string(msg.UUID()))
+		b.receivedExternalIDs.Set(rc, fingerprint, string(msg.UUID()))
 	} else {
 		fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
 
-		b.seenMsgs.Set(rc, fingerprint, fmt.Sprintf("%s|%s", msg.UUID(), msg.Text()))
+		b.receivedMsgs.Set(rc, fingerprint, fmt.Sprintf("%s|%s", msg.UUID(), msg.hash()))
 	}
 }
 
@@ -272,7 +270,7 @@ func (b *backend) writeMsgSeen(msg *DBMsg) {
 func (b *backend) clearMsgSeen(rc redis.Conn, msg *DBMsg) {
 	fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
 
-	b.seenMsgs.Remove(rc, fingerprint)
+	b.receivedMsgs.Remove(rc, fingerprint)
 }
 
 //-----------------------------------------------------------------------------
@@ -379,6 +377,11 @@ func (m *DBMsg) Topic() string {
 // Metadata returns the metadata for this message
 func (m *DBMsg) Metadata() json.RawMessage {
 	return m.Metadata_
+}
+
+func (m *DBMsg) hash() string {
+	hash := sha1.Sum([]byte(m.Text_ + "|" + strings.Join(m.Attachments_, "|")))
+	return hex.EncodeToString(hash[:])
 }
 
 // WithContactName can be used to set the contact name on a msg
