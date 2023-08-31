@@ -120,7 +120,7 @@ func NewDBLogWriter(db *sqlx.DB, wg *sync.WaitGroup) *DBLogWriter {
 			defer cancel()
 
 			writeDBChannelLogs(ctx, db, batch)
-		}, 1000, time.Millisecond*500, 1000, wg),
+		}, time.Millisecond*500, 1000, wg),
 	}
 }
 
@@ -158,7 +158,7 @@ func NewStorageLogWriter(st storage.Storage, wg *sync.WaitGroup) *StorageLogWrit
 			defer cancel()
 
 			writeStorageChannelLogs(ctx, st, batch)
-		}, 1000, time.Millisecond*500, 1000, wg),
+		}, time.Millisecond*500, 1000, wg),
 	}
 }
 
