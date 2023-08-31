@@ -1,3 +1,8 @@
+v8.3.8 (2023-08-31)
+-------------------------
+ * Update to latest redisx which fixes accuracy for sub-minute interval hashes
+ * Update to new batchers in gocommon which are more efficient
+
 v8.3.7 (2023-08-30)
 -------------------------
  * Sender deletion handled by mailroom task
