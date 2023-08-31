@@ -715,6 +715,13 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	msg1 := createAndWriteMsg(knChannel, urn, "ping", "")
 	ts.False(msg1.alreadyWritten)
 
+	keys, err := redis.Strings(r.Do("KEYS", "seen-msgs:*"))
+	ts.NoError(err)
+	ts.Len(keys, 1)
+	assertredis.HGetAll(ts.T(), ts.b.redisPool, keys[0], map[string]string{
+		"dbc126ed-66bc-4e28-b67b-81dc3327c95d|tel:+12065551215": string(msg1.UUID()) + "|fb826459f96c6e3ee563238d158a24702afbdd78",
+	})
+
 	// trying again should lead to same UUID
 	msg2 := createAndWriteMsg(knChannel, urn, "ping", "")
 	ts.Equal(msg1.UUID(), msg2.UUID())
