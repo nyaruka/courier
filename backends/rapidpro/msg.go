@@ -270,7 +270,7 @@ func (b *backend) recordMsgReceived(msg *DBMsg) {
 func (b *backend) clearMsgSeen(rc redis.Conn, msg *DBMsg) {
 	fingerprint := fmt.Sprintf("%s|%s", msg.Channel().UUID(), msg.URN().Identity())
 
-	b.receivedMsgs.Remove(rc, fingerprint)
+	b.receivedMsgs.Del(rc, fingerprint)
 }
 
 //-----------------------------------------------------------------------------
