@@ -96,10 +96,9 @@ func newBackend(cfg *courier.Config) courier.Backend {
 		mediaCache:   redisx.NewIntervalHash("media-lookups", time.Hour*24, 2),
 		mediaMutexes: *syncx.NewHashMutex(8),
 
-		receivedMsgs:        redisx.NewIntervalHash("seen-msgs", time.Second*2, 2),
-		receivedExternalIDs: redisx.NewIntervalHash("seen-external-ids", time.Hour*24, 2),
-
-		sentExternalIDs: redisx.NewIntervalHash("sent-external-ids", time.Hour, 2),
+		receivedMsgs:        redisx.NewIntervalHash("seen-msgs", time.Second*2, 2),        // 2 - 4 seconds
+		receivedExternalIDs: redisx.NewIntervalHash("seen-external-ids", time.Hour*24, 2), // 24 - 48 hours
+		sentExternalIDs:     redisx.NewIntervalHash("sent-external-ids", time.Hour, 2),    // 1 - 2 hours
 	}
 }
 
@@ -247,7 +246,7 @@ func (b *backend) Start() error {
 	}
 
 	// create our batched writers and start them
-	b.statusWriter = NewStatusWriter(b.db, b.config.SpoolDir, b.writerWG)
+	b.statusWriter = NewStatusWriter(b, b.config.SpoolDir, b.writerWG)
 	b.statusWriter.Start()
 
 	b.dbLogWriter = NewDBLogWriter(b.db, b.writerWG)
@@ -530,6 +529,8 @@ func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalI
 
 // WriteStatusUpdate writes the passed in MsgStatus to our store
 func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUpdate) error {
+	su := status.(*StatusUpdate)
+
 	if status.ID() == courier.NilMsgID && status.ExternalID() == "" {
 		return errors.New("message status with no id or external id")
 	}
@@ -547,7 +548,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 			rc := b.redisPool.Get()
 			defer rc.Close()
 
-			err := b.sentExternalIDs.Set(rc, fmt.Sprintf("%s|%s", status.ChannelUUID(), status.ExternalID()), fmt.Sprintf("%d", status.ID()))
+			err := b.sentExternalIDs.Set(rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalID_), fmt.Sprintf("%d", status.ID()))
 			if err != nil {
 				logrus.WithError(err).WithField("msg", status.ID()).Error("error recording external id")
 			}

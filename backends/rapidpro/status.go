@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/syncx"
@@ -115,7 +114,7 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 	}
 
 	// try to flush to our db
-	_, err = writeStatusUpdatesToDB(ctx, b.db, []*StatusUpdate{status})
+	_, err = b.writeStatusUpdatesToDB(ctx, []*StatusUpdate{status})
 	return err
 }
 
@@ -187,28 +186,28 @@ type StatusWriter struct {
 	*syncx.Batcher[*StatusUpdate]
 }
 
-func NewStatusWriter(db *sqlx.DB, spoolDir string, wg *sync.WaitGroup) *StatusWriter {
+func NewStatusWriter(b *backend, spoolDir string, wg *sync.WaitGroup) *StatusWriter {
 	return &StatusWriter{
 		Batcher: syncx.NewBatcher[*StatusUpdate](func(batch []*StatusUpdate) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel()
 
-			writeStatuseUpdates(ctx, db, spoolDir, batch)
+			b.writeStatuseUpdates(ctx, spoolDir, batch)
 
 		}, 1000, time.Millisecond*500, 1000, wg),
 	}
 }
 
 // tries to write a batch of message statuses to the database and spools those that fail
-func writeStatuseUpdates(ctx context.Context, db *sqlx.DB, spoolDir string, batch []*StatusUpdate) {
+func (b *backend) writeStatuseUpdates(ctx context.Context, spoolDir string, batch []*StatusUpdate) {
 	log := logrus.WithField("comp", "status writer")
 
-	unresolved, err := writeStatusUpdatesToDB(ctx, db, batch)
+	unresolved, err := b.writeStatusUpdatesToDB(ctx, batch)
 
 	// if we received an error, try again one at a time (in case it is one value hanging us up)
 	if err != nil {
 		for _, s := range batch {
-			_, err = writeStatusUpdatesToDB(ctx, db, []*StatusUpdate{s})
+			_, err = b.writeStatusUpdatesToDB(ctx, []*StatusUpdate{s})
 			if err != nil {
 				log := log.WithField("msg_id", s.ID())
 
@@ -234,7 +233,7 @@ func writeStatuseUpdates(ctx context.Context, db *sqlx.DB, spoolDir string, batc
 
 // writes a batch of msg status updates to the database - messages that can't be resolved are returned and aren't
 // considered an error
-func writeStatusUpdatesToDB(ctx context.Context, db *sqlx.DB, statuses []*StatusUpdate) ([]*StatusUpdate, error) {
+func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*StatusUpdate) ([]*StatusUpdate, error) {
 	// get the statuses which have external ID instead of a message ID
 	missingID := make([]*StatusUpdate, 0, 500)
 	for _, s := range statuses {
@@ -245,7 +244,7 @@ func writeStatusUpdatesToDB(ctx context.Context, db *sqlx.DB, statuses []*Status
 
 	// try to resolve channel ID + external ID to message IDs
 	if len(missingID) > 0 {
-		if err := resolveStatusUpdateMsgIDs(ctx, db, missingID); err != nil {
+		if err := b.resolveStatusUpdateMsgIDs(ctx, missingID); err != nil {
 			return nil, err
 		}
 	}
@@ -261,7 +260,7 @@ func writeStatusUpdatesToDB(ctx context.Context, db *sqlx.DB, statuses []*Status
 		}
 	}
 
-	err := dbutil.BulkQuery(ctx, db, sqlUpdateMsgByID, resolved)
+	err := dbutil.BulkQuery(ctx, b.db, sqlUpdateMsgByID, resolved)
 	if err != nil {
 		return nil, errors.Wrap(err, "error updating status")
 	}
@@ -276,26 +275,47 @@ SELECT id, channel_id, external_id
 
 // resolveStatusUpdateMsgIDs tries to resolve msg IDs for the given statuses - if there's no matching channel id + external id pair
 // found for a status, that status will be left with a nil msg ID.
-func resolveStatusUpdateMsgIDs(ctx context.Context, db *sqlx.DB, statuses []*StatusUpdate) error {
+func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*StatusUpdate) error {
+	rc := b.redisPool.Get()
+	defer rc.Close()
 
-	// TODO look for msg ids in redis
+	chAndExtKeys := make([]string, len(statuses))
+	for i, s := range statuses {
+		chAndExtKeys[i] = fmt.Sprintf("%d|%s", s.ChannelID_, s.ExternalID_)
+	}
+	cachedIDs, err := b.sentExternalIDs.MGet(rc, chAndExtKeys...)
+	if err != nil {
+		// log error but we continue and try to get ids from the database
+		logrus.WithError(err).Error("error looking up sent message ids in redis")
+	}
+
+	// collect the statuses that couldn't be resolved from cache, update the ones that could
+	notInCache := make([]*StatusUpdate, 0, len(statuses))
+	for i := range cachedIDs {
+		id, err := strconv.Atoi(cachedIDs[i])
+		if err != nil {
+			notInCache = append(notInCache, statuses[i])
+		} else {
+			statuses[i].ID_ = courier.MsgID(id)
+		}
+	}
 
 	// create a mapping of channel id + external id -> status
 	type ext struct {
 		channelID  courier.ChannelID
 		externalID string
 	}
-	statusesByExt := make(map[ext]*StatusUpdate, len(statuses))
+	statusesByExt := make(map[ext]*StatusUpdate, len(notInCache))
 	for _, s := range statuses {
 		statusesByExt[ext{s.ChannelID_, s.ExternalID_}] = s
 	}
 
-	sql, params, err := dbutil.BulkSQL(db, sqlResolveStatusMsgIDs, statuses)
+	sql, params, err := dbutil.BulkSQL(b.db, sqlResolveStatusMsgIDs, notInCache)
 	if err != nil {
 		return err
 	}
 
-	rows, err := db.QueryContext(ctx, sql, params...)
+	rows, err := b.db.QueryContext(ctx, sql, params...)
 	if err != nil {
 		return err
 	}

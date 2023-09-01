@@ -684,6 +684,43 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.NoError(tx.Commit())
 }
 
+func (ts *BackendTestSuite) TestSentExternalIDCaching() {
+	r := ts.b.redisPool.Get()
+	defer r.Close()
+
+	ctx := context.Background()
+	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
+	clog := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
+
+	ts.clearRedis()
+
+	// create a status update from a send which will have id and external id
+	status1 := ts.b.NewStatusUpdate(channel, 10000, courier.MsgStatusSent, clog)
+	status1.SetExternalID("ex457")
+	err := ts.b.WriteStatusUpdate(ctx, status1)
+	ts.NoError(err)
+
+	keys, err := redis.Strings(r.Do("KEYS", "sent-external-ids:*"))
+	ts.NoError(err)
+	ts.Len(keys, 1)
+	assertredis.HGetAll(ts.T(), ts.b.redisPool, keys[0], map[string]string{"10|ex457": "10000"})
+
+	// mimic a delay in that status being written by reverting the db changes
+	ts.b.db.MustExec(`UPDATE msgs_msg SET status = 'W', external_id = NULL WHERE id = 10000`)
+
+	// create a callback status update which only has external id
+	status2 := ts.b.NewStatusUpdateByExternalID(channel, "ex457", courier.MsgStatusDelivered, clog)
+
+	err = ts.b.WriteStatusUpdate(ctx, status2)
+	ts.NoError(err)
+
+	// give batcher time to write it
+	time.Sleep(time.Millisecond * 700)
+
+	// msg status successfully updated in the database
+	assertdb.Query(ts.T(), ts.b.db, `SELECT status FROM msgs_msg WHERE id = 10000`).Returns("D")
+}
+
 func (ts *BackendTestSuite) TestHealth() {
 	// all should be well in test land
 	ts.Equal(ts.b.Health(), "")
