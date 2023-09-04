@@ -73,6 +73,9 @@ type backend struct {
 	receivedExternalIDs *redisx.IntervalHash // using external id
 	receivedMsgs        *redisx.IntervalHash // using content hash
 
+	// tracking of external ids of messages we've sent in case we need one before its status update has been written
+	sentExternalIDs *redisx.IntervalHash
+
 	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments
 	dbWaitDuration    time.Duration
 	dbWaitCount       int64
@@ -93,8 +96,9 @@ func newBackend(cfg *courier.Config) courier.Backend {
 		mediaCache:   redisx.NewIntervalHash("media-lookups", time.Hour*24, 2),
 		mediaMutexes: *syncx.NewHashMutex(8),
 
-		receivedMsgs:        redisx.NewIntervalHash("seen-msgs", time.Second*2, 2),
-		receivedExternalIDs: redisx.NewIntervalHash("seen-external-ids", time.Hour*24, 2),
+		receivedMsgs:        redisx.NewIntervalHash("seen-msgs", time.Second*2, 2),        // 2 - 4 seconds
+		receivedExternalIDs: redisx.NewIntervalHash("seen-external-ids", time.Hour*24, 2), // 24 - 48 hours
+		sentExternalIDs:     redisx.NewIntervalHash("sent-external-ids", time.Hour, 2),    // 1 - 2 hours
 	}
 }
 
@@ -242,7 +246,7 @@ func (b *backend) Start() error {
 	}
 
 	// create our batched writers and start them
-	b.statusWriter = NewStatusWriter(b.db, b.config.SpoolDir, b.writerWG)
+	b.statusWriter = NewStatusWriter(b, b.config.SpoolDir, b.writerWG)
 	b.statusWriter.Start()
 
 	b.dbLogWriter = NewDBLogWriter(b.db, b.writerWG)
@@ -525,6 +529,8 @@ func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalI
 
 // WriteStatusUpdate writes the passed in MsgStatus to our store
 func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUpdate) error {
+	su := status.(*StatusUpdate)
+
 	if status.ID() == courier.NilMsgID && status.ExternalID() == "" {
 		return errors.New("message status with no id or external id")
 	}
@@ -536,11 +542,24 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 		}
 	}
 
-	// if we have an id and are marking an outgoing msg as errored, then clear our sent flag
-	if status.ID() != courier.NilMsgID && status.Status() == courier.MsgStatusErrored {
-		err := b.ClearMsgSent(ctx, status.ID())
-		if err != nil {
-			logrus.WithError(err).WithField("msg", status.ID()).Error("error clearing sent flags")
+	if status.ID() != courier.NilMsgID {
+		// this is a message we've just sent and were given an external id for
+		if status.ExternalID() != "" {
+			rc := b.redisPool.Get()
+			defer rc.Close()
+
+			err := b.sentExternalIDs.Set(rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalID_), fmt.Sprintf("%d", status.ID()))
+			if err != nil {
+				logrus.WithError(err).WithField("msg", status.ID()).Error("error recording external id")
+			}
+		}
+
+		// we sent a message that errored so clear our sent flag to allow it to be retried
+		if status.Status() == courier.MsgStatusErrored {
+			err := b.ClearMsgSent(ctx, status.ID())
+			if err != nil {
+				logrus.WithError(err).WithField("msg", status.ID()).Error("error clearing sent flags")
+			}
 		}
 	}
 
