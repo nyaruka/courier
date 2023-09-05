@@ -1,3 +1,8 @@
+v8.3.9 (2023-09-05)
+-------------------------
+ * Try to resolve sent external ids from redis
+ * For received messages without external id, de-dupe by hash of text+attachments instead of just text
+
 v8.3.8 (2023-08-31)
 -------------------------
  * Update to latest redisx which fixes accuracy for sub-minute interval hashes
