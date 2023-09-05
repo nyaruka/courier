@@ -46,8 +46,8 @@ var testCases = []ChannelHandleTestCase{
 	{
 		Label:                "Status No params",
 		URL:                  receiveURL,
-		Data:                 "",
-		ExpectedRespStatus:   405,
+		Data:                 "&",
+		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "",
 	},
 	{

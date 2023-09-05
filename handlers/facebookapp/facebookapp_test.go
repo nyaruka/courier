@@ -207,6 +207,7 @@ var testCasesFBA = []ChannelHandleTestCase{
 		Data:                 string(test.ReadFile("./testdata/fba/notPage.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "object expected 'page', 'instagram' or 'whatsapp_business_account', found notpage",
+		NoLogsExpected:       true,
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -215,6 +216,7 @@ var testCasesFBA = []ChannelHandleTestCase{
 		Data:                 string(test.ReadFile("./testdata/fba/noEntriesFBA.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "no entries found",
+		NoLogsExpected:       true,
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -239,6 +241,7 @@ var testCasesFBA = []ChannelHandleTestCase{
 		Data:                 "not JSON",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to parse request JSON",
+		NoLogsExpected:       true,
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -345,6 +348,7 @@ var testCasesIG = []ChannelHandleTestCase{
 		Data:                 string(test.ReadFile("./testdata/ig/noEntriesIG.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "no entries found",
+		NoLogsExpected:       true,
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -353,6 +357,7 @@ var testCasesIG = []ChannelHandleTestCase{
 		Data:                 string(test.ReadFile("./testdata/ig/notInstagram.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "object expected 'page', 'instagram' or 'whatsapp_business_account', found notinstagram",
+		NoLogsExpected:       true,
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -377,6 +382,7 @@ var testCasesIG = []ChannelHandleTestCase{
 		Data:                 "not JSON",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to parse request JSON",
+		NoLogsExpected:       true,
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -676,10 +682,11 @@ var testCasesWAC = []ChannelHandleTestCase{
 		Data:                 "not json",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to parse",
+		NoLogsExpected:       true,
 		PrepRequest:          addValidSignature,
 	},
 	{
-		Label:                "Receive Invalid JSON",
+		Label:                "Receive Invalid From",
 		URL:                  wacReceiveURL,
 		Data:                 string(test.ReadFile("./testdata/wac/invalidFrom.json")),
 		ExpectedRespStatus:   200,
@@ -687,7 +694,7 @@ var testCasesWAC = []ChannelHandleTestCase{
 		PrepRequest:          addValidSignature,
 	},
 	{
-		Label:                "Receive Invalid JSON",
+		Label:                "Receive Invalid Timestamp",
 		URL:                  wacReceiveURL,
 		Data:                 string(test.ReadFile("./testdata/wac/invalidTimestamp.json")),
 		ExpectedRespStatus:   200,
@@ -799,7 +806,7 @@ func TestHandler(t *testing.T) {
 		// invalid auth token
 		if accessToken != "Bearer a123" && accessToken != "Bearer wac_admin_system_user_token" {
 			fmt.Printf("Access token: %s\n", accessToken)
-			http.Error(w, "invalid auth token", 403)
+			http.Error(w, "invalid auth token", http.StatusForbidden)
 			return
 		}
 
@@ -858,6 +865,7 @@ func TestVerify(t *testing.T) {
 			URL:                   "/c/fba/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge",
 			ExpectedRespStatus:    200,
 			ExpectedBodyContains:  "yarchallenge",
+			NoLogsExpected:        true,
 			NoQueueErrorCheck:     true,
 			NoInvalidChannelCheck: true,
 		},
@@ -866,24 +874,28 @@ func TestVerify(t *testing.T) {
 			URL:                  "/c/fba/receive",
 			ExpectedRespStatus:   200,
 			ExpectedBodyContains: "unknown request",
+			NoLogsExpected:       true,
 		},
 		{
 			Label:                "Verify No Secret",
 			URL:                  "/c/fba/receive?hub.mode=subscribe",
 			ExpectedRespStatus:   200,
 			ExpectedBodyContains: "token does not match secret",
+			NoLogsExpected:       true,
 		},
 		{
 			Label:                "Invalid Secret",
 			URL:                  "/c/fba/receive?hub.mode=subscribe&hub.verify_token=blah",
 			ExpectedRespStatus:   200,
 			ExpectedBodyContains: "token does not match secret",
+			NoLogsExpected:       true,
 		},
 		{
 			Label:                "Valid Secret",
 			URL:                  "/c/fba/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge",
 			ExpectedRespStatus:   200,
 			ExpectedBodyContains: "yarchallenge",
+			NoLogsExpected:       true,
 		},
 	})
 
@@ -893,6 +905,7 @@ func TestVerify(t *testing.T) {
 			URL:                   "/c/ig/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge",
 			ExpectedRespStatus:    200,
 			ExpectedBodyContains:  "yarchallenge",
+			NoLogsExpected:        true,
 			NoQueueErrorCheck:     true,
 			NoInvalidChannelCheck: true,
 		},
@@ -901,24 +914,28 @@ func TestVerify(t *testing.T) {
 			URL:                  "/c/ig/receive",
 			ExpectedRespStatus:   200,
 			ExpectedBodyContains: "unknown request",
+			NoLogsExpected:       true,
 		},
 		{
 			Label:                "Verify No Secret",
 			URL:                  "/c/ig/receive?hub.mode=subscribe",
 			ExpectedRespStatus:   200,
 			ExpectedBodyContains: "token does not match secret",
+			NoLogsExpected:       true,
 		},
 		{
 			Label:                "Invalid Secret",
 			URL:                  "/c/ig/receive?hub.mode=subscribe&hub.verify_token=blah",
 			ExpectedRespStatus:   200,
 			ExpectedBodyContains: "token does not match secret",
+			NoLogsExpected:       true,
 		},
 		{
 			Label:                "Valid Secret",
 			URL:                  "/c/ig/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge",
 			ExpectedRespStatus:   200,
 			ExpectedBodyContains: "yarchallenge",
+			NoLogsExpected:       true,
 		},
 	})
 }
