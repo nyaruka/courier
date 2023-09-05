@@ -19,7 +19,7 @@ const (
 	statusURL  = "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 )
 
-var testCases = []ChannelHandleTestCase{
+var incomingTestCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid",
 		URL:                  receiveURL,
@@ -102,12 +102,12 @@ var testCases = []ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), incomingTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
+	RunChannelBenchmarks(b, testChannels, newHandler(), incomingTestCases)
 }
 
 // setSendURL takes care of setting the sendURL to call
@@ -115,7 +115,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var outgoingTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
@@ -162,7 +162,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var sharedSendTestCases = []ChannelSendTestCase{
+var sharedSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Shared Send",
 		MsgText:            "Simple Message ☺",
@@ -177,7 +177,7 @@ var sharedSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AT", "2020", "US",
 		map[string]any{
 			courier.ConfigUsername: "Username",
@@ -190,6 +190,6 @@ func TestSending(t *testing.T) {
 			configIsShared:         true,
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"KEY"}, nil)
-	RunChannelSendTestCases(t, sharedChannel, newHandler(), sharedSendTestCases, []string{"KEY"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingTestCases, []string{"KEY"}, nil)
+	RunOutgoingTestCases(t, sharedChannel, newHandler(), sharedSendTestCases, []string{"KEY"}, nil)
 }

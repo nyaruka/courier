@@ -43,7 +43,7 @@ var testChannels = []courier.Channel{
 		}),
 }
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Message",
 		URL:                  receiveURL,
@@ -86,8 +86,8 @@ var testCases = []ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -99,7 +99,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL
 }
 
-var notificationSendTestCases = []ChannelSendTestCase{
+var notificationSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -115,7 +115,7 @@ var notificationSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var sendTestCases = []ChannelSendTestCase{
+var sendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -191,7 +191,7 @@ var sendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"FCMKey"}, nil)
-	RunChannelSendTestCases(t, testChannels[1], newHandler(), notificationSendTestCases, []string{"FCMKey"}, nil)
+func TestOutgoing(t *testing.T) {
+	RunOutgoingTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"FCMKey"}, nil)
+	RunOutgoingTestCases(t, testChannels[1], newHandler(), notificationSendTestCases, []string{"FCMKey"}, nil)
 }

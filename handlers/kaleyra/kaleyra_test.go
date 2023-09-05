@@ -27,7 +27,7 @@ var testChannels = []courier.Channel{
 	),
 }
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{
 		Label:                "Receive Msg",
 		URL:                  receiveMsgURL + "?created_at=1603914166&type=text&from=14133881111&name=John%20Cruz&body=Hello%20World",
@@ -102,8 +102,8 @@ var testCases = []ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -114,7 +114,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	baseURL = s.URL
 }
 
-var sendTestCases = []ChannelSendTestCase{
+var sendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -209,8 +209,8 @@ var sendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTestCase) []ChannelSendTestCase {
-	casesWithMockedUrls := make([]ChannelSendTestCase, len(testCases))
+func mockAttachmentURLs(mediaServer *httptest.Server, testCases []OutgoingTestCase) []OutgoingTestCase {
+	casesWithMockedUrls := make([]OutgoingTestCase, len(testCases))
 
 	for i, testCase := range testCases {
 		mockedCase := testCase
@@ -223,7 +223,7 @@ func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTes
 	return casesWithMockedUrls
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	mediaServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
 		res.WriteHeader(200)
@@ -239,5 +239,5 @@ func TestSending(t *testing.T) {
 	}))
 	mockedSendTestCases := mockAttachmentURLs(mediaServer, sendTestCases)
 
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, []string{"123456"}, nil)
+	RunOutgoingTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, []string{"123456"}, nil)
 }

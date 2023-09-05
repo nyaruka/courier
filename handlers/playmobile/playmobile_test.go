@@ -71,7 +71,7 @@ var (
 	}`
 )
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid",
 		URL:                  receiveURL,
@@ -120,8 +120,8 @@ var testCases = []ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -132,7 +132,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL + "?%s"
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{Label: "Plain Send",
 		MsgText:             "Simple Message",
 		MsgURN:              "tel:99999999999",
@@ -176,7 +176,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:           setSendURL},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PM", "1122", "UZ",
 		map[string]any{
 			"password":  "Password",
@@ -185,5 +185,5 @@ func TestSending(t *testing.T) {
 			"base_url":  "http://91.204.239.42",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)
 }

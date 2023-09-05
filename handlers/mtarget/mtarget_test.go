@@ -31,7 +31,7 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MT", "2020", "FR", nil),
 }
 
-var handleTestCases = []ChannelHandleTestCase{
+var handleTestCases = []IncomingTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("hello world"), ExpectedURN: "tel:+923161909799", ExpectedExternalID: "foo"},
 	{Label: "Invalid URN", URL: receiveURL, Data: receiveInvalidURN, ExpectedRespStatus: 400, ExpectedBodyContains: "phone number supplied is not a number"},
@@ -50,8 +50,8 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Status Missing ID", URL: statusURL, Data: statusMissingID, ExpectedRespStatus: 400, ExpectedBodyContains: "missing required field 'MsgId'"},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -63,7 +63,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message",
@@ -123,7 +123,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MT", "2020", "FR",
 		map[string]any{
 			"password": "Password",
@@ -131,5 +131,5 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
 }

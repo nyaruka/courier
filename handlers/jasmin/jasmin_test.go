@@ -19,7 +19,7 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JS", "2020", "US", nil),
 }
 
-var handleTestCases = []ChannelHandleTestCase{
+var handleTestCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Message",
 		URL:                  receiveURL,
@@ -78,8 +78,8 @@ var handleTestCases = []ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -91,7 +91,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	c.(*test.MockChannel).SetConfig("send_url", s.URL)
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message",
@@ -157,12 +157,12 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JS", "2020", "US",
 		map[string]any{
 			"password": "Password",
 			"username": "Username",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
 }

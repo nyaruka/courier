@@ -515,7 +515,7 @@ var contactMsg = `
     }
 }`
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{
 
 		Label:                "Receive Valid Message",
@@ -712,7 +712,7 @@ var testCases = []ChannelHandleTestCase{
 	},
 }
 
-func buildMockTelegramService(testCases []ChannelHandleTestCase) *httptest.Server {
+func buildMockTelegramService(testCases []IncomingTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fileID := r.FormValue("file_id")
 		defer r.Body.Close()
@@ -768,11 +768,11 @@ func buildMockTelegramService(testCases []ChannelHandleTestCase) *httptest.Serve
 	return server
 }
 
-func TestHandler(t *testing.T) {
+func TestIncoming(t *testing.T) {
 	telegramService := buildMockTelegramService(testCases)
 	defer telegramService.Close()
 
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -787,7 +787,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	apiURL = s.URL
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message",
@@ -940,9 +940,9 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US",
 		map[string]any{courier.ConfigAuthToken: "auth_token"})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"auth_token"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"auth_token"}, nil)
 }

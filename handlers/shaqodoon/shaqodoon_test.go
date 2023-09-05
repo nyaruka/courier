@@ -26,7 +26,7 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SQ", "2020", "US", nil),
 }
 
-var handleTestCases = []ChannelHandleTestCase{
+var handleTestCases = []IncomingTestCase{
 	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "empty", ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729"},
 	{Label: "Receive Badly Escaped", URL: receiveBadlyEscaped, Data: "empty", ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
@@ -43,8 +43,8 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "empty", ExpectedRespStatus: 400, ExpectedBodyContains: "invalid date format, must be RFC 3339"},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -55,7 +55,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	c.(*test.MockChannel).SetConfig(courier.ConfigSendURL, s.URL)
 }
 
-var getSendTestCases = []ChannelSendTestCase{
+var getSendTestCases = []OutgoingTestCase{
 	{Label: "Plain Send",
 		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
 		ExpectedMsgStatus: "W",
@@ -82,12 +82,12 @@ var getSendTestCases = []ChannelSendTestCase{
 		SendPrep:          setSendURL},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	var getChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SQ", "2020", "US",
 		map[string]any{
 			courier.ConfigSendURL:  "SendURL",
 			courier.ConfigPassword: "Password",
 			courier.ConfigUsername: "Username"})
 
-	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, getChannel, newHandler(), getSendTestCases, []string{"Password"}, nil)
 }

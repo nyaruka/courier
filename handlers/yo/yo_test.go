@@ -25,7 +25,7 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "YO", "2020", "US", map[string]any{"username": "yo-username", "password": "yo-password"}),
 }
 
-var handleTestCases = []ChannelHandleTestCase{
+var handleTestCases = []IncomingTestCase{
 	{Label: "Receive Valid Message", URL: receiveValidMessage, Data: "", ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729"},
 	{Label: "Receive Valid From", URL: receiveValidMessageFrom, Data: "", ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
@@ -40,8 +40,8 @@ var handleTestCases = []ChannelHandleTestCase{
 	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "", ExpectedRespStatus: 400, ExpectedBodyContains: "invalid date format, must be RFC 3339"},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -53,7 +53,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURLs = []string{s.URL}
 }
 
-var getSendTestCases = []ChannelSendTestCase{
+var getSendTestCases = []OutgoingTestCase{
 	{Label: "Plain Send",
 		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
 		ExpectedMsgStatus: "W",
@@ -98,8 +98,8 @@ var getSendTestCases = []ChannelSendTestCase{
 		SendPrep:          setSendURL},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	var getChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "YO", "2020", "US", map[string]any{"username": "yo-username", "password": "yo-password"})
 
-	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, []string{"yo-password"}, nil)
+	RunOutgoingTestCases(t, getChannel, newHandler(), getSendTestCases, []string{"yo-password"}, nil)
 }

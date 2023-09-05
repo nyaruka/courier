@@ -141,7 +141,7 @@ func addInvalidSignature(r *http.Request) {
 	r.URL.RawQuery = query.Encode()
 }
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{
 		Label:                "Receive Message",
 		URL:                  receiveURL,
@@ -218,8 +218,8 @@ var testCases = []ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -227,7 +227,7 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 // mocks the call to the Jiochat API
-func buildMockJCAPI(testCases []ChannelHandleTestCase) *httptest.Server {
+func buildMockJCAPI(testCases []IncomingTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authorizationHeader := r.Header.Get("Authorization")
 		defer r.Body.Close()
@@ -348,7 +348,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
@@ -412,9 +412,9 @@ func setupBackend(mb *test.MockBackend) {
 	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]any{configAppSecret: "secret123", configAppID: "app-id"})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret123"}, setupBackend)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret123"}, setupBackend)
 }

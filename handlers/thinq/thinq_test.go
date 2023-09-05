@@ -24,7 +24,7 @@ const (
 
 var testJpgBase64 = base64.StdEncoding.EncodeToString(test.ReadFile("../../test/testdata/test.jpg"))
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid",
 		URL:                  receiveURL,
@@ -86,8 +86,8 @@ var testCases = []ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
@@ -95,7 +95,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendMMSURL = s.URL + "?account_id=%s"
 }
 
-var sendTestCases = []ChannelSendTestCase{
+var sendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message ☺",
@@ -154,12 +154,12 @@ var sendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TQ", "+12065551212", "US",
 		map[string]any{
 			configAccountID:    "1234",
 			configAPITokenUser: "user1",
 			configAPIToken:     "sesame",
 		})
-	RunChannelSendTestCases(t, channel, newHandler(), sendTestCases, []string{httpx.BasicAuth("user1", "sesame")}, nil)
+	RunOutgoingTestCases(t, channel, newHandler(), sendTestCases, []string{httpx.BasicAuth("user1", "sesame")}, nil)
 }

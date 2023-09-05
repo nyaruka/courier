@@ -20,7 +20,7 @@ func setSendURL(server *httptest.Server, h courier.ChannelHandler, channel couri
 	sendURL = server.URL
 }
 
-func buildMockAttachmentService(testCases []ChannelSendTestCase) *httptest.Server {
+func buildMockAttachmentService(testCases []OutgoingTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		headers := w.Header()
 		if r.Method == http.MethodHead {
@@ -44,7 +44,7 @@ func buildMockAttachmentService(testCases []ChannelSendTestCase) *httptest.Serve
 	return server
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -187,14 +187,14 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var invalidTokenSendTestCases = []ChannelSendTestCase{
+var invalidTokenSendTestCases = []OutgoingTestCase{
 	{
 		Label:          "Invalid token",
 		ExpectedErrors: []*courier.ChannelError{courier.NewChannelError("", "", "missing auth token in config")},
 	},
 }
 
-var buttonLayoutSendTestCases = []ChannelSendTestCase{
+var buttonLayoutSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Quick Reply With Layout With Column, Row and BgColor definitions",
 		MsgText:             "Select a, b, c or d.",
@@ -208,7 +208,7 @@ var buttonLayoutSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	attachmentService := buildMockAttachmentService(defaultSendTestCases)
 	defer attachmentService.Close()
 
@@ -226,9 +226,9 @@ func TestSending(t *testing.T) {
 			courier.ConfigAuthToken: "Token",
 			"button_layout":         map[string]any{"bg_color": "#f7bb3f", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
 		})
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Token"}, nil)
-	RunChannelSendTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases, []string{"Token"}, nil)
-	RunChannelSendTestCases(t, buttonLayoutChannel, newHandler(), buttonLayoutSendTestCases, []string{"Token"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Token"}, nil)
+	RunOutgoingTestCases(t, invalidTokenChannel, newHandler(), invalidTokenSendTestCases, []string{"Token"}, nil)
+	RunOutgoingTestCases(t, buttonLayoutChannel, newHandler(), buttonLayoutSendTestCases, []string{"Token"}, nil)
 }
 
 var testChannels = []courier.Channel{
@@ -493,7 +493,7 @@ var (
 	}`
 )
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("incoming msg"), ExpectedURN: "viber:xy5/5y6O81+/kbWHpLhBoA==", ExpectedExternalID: "4987381189870374000",
 		PrepRequest: addValidSignature},
@@ -534,7 +534,7 @@ var testCases = []ChannelHandleTestCase{
 		ExpectedAttachments: []string{"https://viber.github.io/docs/img/stickers/40133.png"}, PrepRequest: addValidSignature},
 }
 
-var testWelcomeMessageCases = []ChannelHandleTestCase{
+var testWelcomeMessageCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid",
 		URL:                  receiveURL,
@@ -579,9 +579,9 @@ func addInvalidSignature(r *http.Request) {
 	r.Header.Set(viberSignatureHeader, "invalidsig")
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
-	RunChannelTestCases(t, testChannelsWithWelcomeMessage, newHandler(), testWelcomeMessageCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	RunIncomingTestCases(t, testChannelsWithWelcomeMessage, newHandler(), testWelcomeMessageCases)
 }
 
 func BenchmarkHandler(b *testing.B) {

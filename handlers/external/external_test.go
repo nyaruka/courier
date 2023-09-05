@@ -24,7 +24,7 @@ var gmChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "GM", nil),
 }
 
-var handleTestCases = []ChannelHandleTestCase{
+var handleTestCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Message",
 		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join",
@@ -204,7 +204,7 @@ var testSOAPReceiveChannels = []courier.Channel{
 	),
 }
 
-var handleSOAPReceiveTestCases = []ChannelHandleTestCase{
+var handleSOAPReceiveTestCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Post SOAP",
 		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
@@ -223,7 +223,7 @@ var handleSOAPReceiveTestCases = []ChannelHandleTestCase{
 	},
 }
 
-var gmTestCases = []ChannelHandleTestCase{
+var gmTestCases = []IncomingTestCase{
 	{
 		Label:                "Receive Non Plus Message",
 		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?sender=2207222333&text=Join",
@@ -245,7 +245,7 @@ var customChannels = []courier.Channel{
 	),
 }
 
-var customTestCases = []ChannelHandleTestCase{
+var customTestCases = []IncomingTestCase{
 	{
 		Label:                "Receive Custom Message",
 		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?from_number=12067799192&messageText=Join&timestamp=2017-06-23T12:30:00Z",
@@ -265,11 +265,11 @@ var customTestCases = []ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
-	RunChannelTestCases(t, testSOAPReceiveChannels, newHandler(), handleSOAPReceiveTestCases)
-	RunChannelTestCases(t, gmChannels, newHandler(), gmTestCases)
-	RunChannelTestCases(t, customChannels, newHandler(), customTestCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
+	RunIncomingTestCases(t, testSOAPReceiveChannels, newHandler(), handleSOAPReceiveTestCases)
+	RunIncomingTestCases(t, gmChannels, newHandler(), gmTestCases)
+	RunIncomingTestCases(t, customChannels, newHandler(), customTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -285,7 +285,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	c.(*test.MockChannel).SetConfig(courier.ConfigSendURL, sendURL)
 }
 
-var longSendTestCases = []ChannelSendTestCase{
+var longSendTestCases = []OutgoingTestCase{
 	{
 		Label:   "Long Send",
 		MsgText: "This is a long message that will be longer than 30....... characters", MsgURN: "tel:+250788383383",
@@ -298,7 +298,7 @@ var longSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var getSendSmartEncodingTestCases = []ChannelSendTestCase{
+var getSendSmartEncodingTestCases = []OutgoingTestCase{
 	{
 		Label:              "Smart Encoding",
 		MsgText:            "Fancy “Smart” Quotes",
@@ -312,7 +312,7 @@ var getSendSmartEncodingTestCases = []ChannelSendTestCase{
 	},
 }
 
-var postSendSmartEncodingTestCases = []ChannelSendTestCase{
+var postSendSmartEncodingTestCases = []OutgoingTestCase{
 	{
 		Label:              "Smart Encoding",
 		MsgText:            "Fancy “Smart” Quotes",
@@ -326,7 +326,7 @@ var postSendSmartEncodingTestCases = []ChannelSendTestCase{
 	},
 }
 
-var getSendTestCases = []ChannelSendTestCase{
+var getSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message",
@@ -373,7 +373,7 @@ var getSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var postSendTestCases = []ChannelSendTestCase{
+var postSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message",
@@ -420,7 +420,7 @@ var postSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var postSendCustomContentTypeTestCases = []ChannelSendTestCase{
+var postSendCustomContentTypeTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message",
@@ -434,7 +434,7 @@ var postSendCustomContentTypeTestCases = []ChannelSendTestCase{
 	},
 }
 
-var jsonSendTestCases = []ChannelSendTestCase{
+var jsonSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -493,7 +493,7 @@ var jsonSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var jsonLongSendTestCases = []ChannelSendTestCase{
+var jsonLongSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Send Quick Replies",
 		MsgText:             "This is a long message that will be longer than 30....... characters",
@@ -508,7 +508,7 @@ var jsonLongSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var xmlSendTestCases = []ChannelSendTestCase{
+var xmlSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -568,7 +568,7 @@ var xmlSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var xmlLongSendTestCases = []ChannelSendTestCase{
+var xmlLongSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Send Quick Replies",
 		MsgText:             "This is a long message that will be longer than 30....... characters",
@@ -583,7 +583,7 @@ var xmlLongSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var xmlSendWithResponseContentTestCases = []ChannelSendTestCase{
+var xmlSendWithResponseContentTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -655,7 +655,7 @@ var xmlSendWithResponseContentTestCases = []ChannelSendTestCase{
 	},
 }
 
-var nationalGetSendTestCases = []ChannelSendTestCase{
+var nationalGetSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message",
@@ -669,7 +669,7 @@ var nationalGetSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	var getChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]any{
 			"send_path":              "?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
@@ -727,16 +727,16 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendMethod:  http.MethodPut,
 		})
 
-	RunChannelSendTestCases(t, getChannel, newHandler(), getSendTestCases, nil, nil)
-	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil, nil)
-	RunChannelSendTestCases(t, getSmartChannel, newHandler(), getSendSmartEncodingTestCases, nil, nil)
-	RunChannelSendTestCases(t, postChannel, newHandler(), postSendTestCases, nil, nil)
-	RunChannelSendTestCases(t, postChannelCustomContentType, newHandler(), postSendCustomContentTypeTestCases, nil, nil)
-	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendTestCases, nil, nil)
-	RunChannelSendTestCases(t, postSmartChannel, newHandler(), postSendSmartEncodingTestCases, nil, nil)
-	RunChannelSendTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil, nil)
-	RunChannelSendTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil, nil)
-	RunChannelSendTestCases(t, xmlChannelWithResponseContent, newHandler(), xmlSendWithResponseContentTestCases, nil, nil)
+	RunOutgoingTestCases(t, getChannel, newHandler(), getSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, getSmartChannel, newHandler(), getSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, getSmartChannel, newHandler(), getSendSmartEncodingTestCases, nil, nil)
+	RunOutgoingTestCases(t, postChannel, newHandler(), postSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, postChannelCustomContentType, newHandler(), postSendCustomContentTypeTestCases, nil, nil)
+	RunOutgoingTestCases(t, postSmartChannel, newHandler(), postSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, postSmartChannel, newHandler(), postSendSmartEncodingTestCases, nil, nil)
+	RunOutgoingTestCases(t, jsonChannel, newHandler(), jsonSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, xmlChannel, newHandler(), xmlSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, xmlChannelWithResponseContent, newHandler(), xmlSendWithResponseContentTestCases, nil, nil)
 
 	var getChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]any{
@@ -770,10 +770,10 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendHeaders: map[string]any{"Authorization": "Token ABCDEF", "foo": "bar"},
 		})
 
-	RunChannelSendTestCases(t, getChannel30IntLength, newHandler(), longSendTestCases, nil, nil)
-	RunChannelSendTestCases(t, getChannel30StrLength, newHandler(), longSendTestCases, nil, nil)
-	RunChannelSendTestCases(t, jsonChannel30IntLength, newHandler(), jsonLongSendTestCases, nil, nil)
-	RunChannelSendTestCases(t, xmlChannel30IntLength, newHandler(), xmlLongSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, getChannel30IntLength, newHandler(), longSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, getChannel30StrLength, newHandler(), longSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, jsonChannel30IntLength, newHandler(), jsonLongSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, xmlChannel30IntLength, newHandler(), xmlLongSendTestCases, nil, nil)
 
 	var nationalChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]any{
@@ -781,7 +781,7 @@ func TestSending(t *testing.T) {
 			"use_national":           true,
 			courier.ConfigSendMethod: http.MethodGet})
 
-	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalGetSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, nationalChannel, newHandler(), nationalGetSendTestCases, nil, nil)
 
 	var jsonChannelWithSendAuthorization = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]any{
@@ -791,6 +791,6 @@ func TestSending(t *testing.T) {
 			courier.ConfigSendMethod:        http.MethodPost,
 			courier.ConfigSendAuthorization: "Token ABCDEF",
 		})
-	RunChannelSendTestCases(t, jsonChannelWithSendAuthorization, newHandler(), jsonSendTestCases, []string{"Token ABCDEF"}, nil)
+	RunOutgoingTestCases(t, jsonChannelWithSendAuthorization, newHandler(), jsonSendTestCases, []string{"Token ABCDEF"}, nil)
 
 }

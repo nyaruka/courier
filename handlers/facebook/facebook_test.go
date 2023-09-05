@@ -417,7 +417,7 @@ var unkownMessagingEntry = `{
 	}]
 }`
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{
 		Label:                "Receive Message",
 		URL:                  receiveURL,
@@ -609,7 +609,7 @@ var testCases = []ChannelHandleTestCase{
 }
 
 // mocks the call to the Facebook graph API
-func buildMockFBGraph(testCases []ChannelHandleTestCase) *httptest.Server {
+func buildMockFBGraph(testCases []IncomingTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		accessToken := r.URL.Query().Get("access_token")
 		defer r.Body.Close()
@@ -658,8 +658,8 @@ func TestDescribeURN(t *testing.T) {
 	AssertChannelLogRedaction(t, clog, []string{"a123", "mysecret"})
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -691,7 +691,7 @@ func TestVerify(t *testing.T) {
 	subscribeURL = server.URL
 	subscribeTimeout = time.Millisecond
 
-	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
+	RunIncomingTestCases(t, testChannels, newHandler(), []IncomingTestCase{
 		{
 			Label:              "Receive Message",
 			URL:                receiveURL,
@@ -739,7 +739,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -862,5 +862,5 @@ func TestSending(t *testing.T) {
 	maxMsgLength = 100
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FB", "2020", "US", map[string]any{courier.ConfigAuthToken: "access_token"})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"access_token"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"access_token"}, nil)
 }

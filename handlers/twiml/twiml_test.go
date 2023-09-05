@@ -79,7 +79,7 @@ var (
 	waReceivePrefixlessURN = "ToCountry=US&ToState=CA&SmsMessageSid=SM681a1f26d9ec591431ce406e8f399525&NumMedia=0&ToCity=&FromZip=60625&SmsSid=SM681a1f26d9ec591431ce406e8f399525&FromState=IL&SmsStatus=received&FromCity=CHICAGO&Body=Msg&FromCountry=US&To=%2B12028831111&ToZip=&NumSegments=1&MessageSid=SM681a1f26d9ec591431ce406e8f399525&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
 )
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: receiveValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
@@ -126,7 +126,7 @@ var testCases = []ChannelHandleTestCase{
 		PrepRequest: addValidSignature},
 }
 
-var tmsTestCases = []ChannelHandleTestCase{
+var tmsTestCases = []IncomingTestCase{
 	{Label: "Receive Valid", URL: tmsReceiveURL, Data: receiveValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
@@ -173,7 +173,7 @@ var tmsTestCases = []ChannelHandleTestCase{
 		PrepRequest: addValidSignature},
 }
 
-var twTestCases = []ChannelHandleTestCase{
+var twTestCases = []IncomingTestCase{
 	{Label: "Receive Valid", URL: twReceiveURL, Data: receiveValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
@@ -220,7 +220,7 @@ var twTestCases = []ChannelHandleTestCase{
 		PrepRequest: addValidSignature},
 }
 
-var swTestCases = []ChannelHandleTestCase{
+var swTestCases = []IncomingTestCase{
 	{Label: "Receive Valid", URL: swReceiveURL, Data: receiveValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b"},
 	{Label: "Receive No Params", URL: swReceiveURL, Data: " ", ExpectedRespStatus: 400, ExpectedBodyContains: "field 'messagesid' required"},
@@ -249,13 +249,13 @@ var swTestCases = []ChannelHandleTestCase{
 	{Label: "Status ID Invalid", URL: swStatusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b"},
 }
 
-var waTestCases = []ChannelHandleTestCase{
+var waTestCases = []IncomingTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: waReceiveValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "whatsapp:14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
 }
 
-var twaTestCases = []ChannelHandleTestCase{
+var twaTestCases = []IncomingTestCase{
 	{Label: "Receive Valid", URL: twaReceiveURL, Data: waReceiveValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "whatsapp:14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
 		PrepRequest: addValidSignature},
@@ -294,11 +294,11 @@ func addInvalidSignature(r *http.Request) {
 	r.Header.Set(signatureHeader, "invalidsig")
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newTWIMLHandler("T", "Twilio", true), testCases)
-	RunChannelTestCases(t, tmsTestChannels, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsTestCases)
-	RunChannelTestCases(t, twTestChannels, newTWIMLHandler("TW", "TwiML API", true), twTestCases)
-	RunChannelTestCases(t, swTestChannels, newTWIMLHandler("SW", "SignalWire", false), swTestCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newTWIMLHandler("T", "Twilio", true), testCases)
+	RunIncomingTestCases(t, tmsTestChannels, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsTestCases)
+	RunIncomingTestCases(t, twTestChannels, newTWIMLHandler("TW", "TwiML API", true), twTestCases)
+	RunIncomingTestCases(t, swTestChannels, newTWIMLHandler("SW", "SignalWire", false), swTestCases)
 
 	waChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
 		map[string]any{
@@ -307,7 +307,7 @@ func TestHandler(t *testing.T) {
 		},
 	)
 	waChannel.SetScheme(urns.WhatsAppScheme)
-	RunChannelTestCases(t, []courier.Channel{waChannel}, newTWIMLHandler("T", "TwilioWhatsApp", true), waTestCases)
+	RunIncomingTestCases(t, []courier.Channel{waChannel}, newTWIMLHandler("T", "TwilioWhatsApp", true), waTestCases)
 
 	twaChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
 		map[string]any{
@@ -316,7 +316,7 @@ func TestHandler(t *testing.T) {
 		},
 	)
 	twaChannel.SetScheme(urns.WhatsAppScheme)
-	RunChannelTestCases(t, []courier.Channel{twaChannel}, newTWIMLHandler("TWA", "Twilio WhatsApp", true), twaTestCases)
+	RunIncomingTestCases(t, []courier.Channel{twaChannel}, newTWIMLHandler("TWA", "Twilio WhatsApp", true), twaTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -334,7 +334,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	}
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message ☺",
@@ -441,7 +441,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var tmsDefaultSendTestCases = []ChannelSendTestCase{
+var tmsDefaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message ☺",
@@ -526,7 +526,7 @@ var tmsDefaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var twDefaultSendTestCases = []ChannelSendTestCase{
+var twDefaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message ☺",
@@ -611,7 +611,7 @@ var twDefaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var swSendTestCases = []ChannelSendTestCase{
+var swSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message ☺",
@@ -696,7 +696,7 @@ var swSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var waSendTestCases = []ChannelSendTestCase{
+var waSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
@@ -711,7 +711,7 @@ var waSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var twaSendTestCases = []ChannelSendTestCase{
+var twaSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
@@ -726,7 +726,7 @@ var twaSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "T", "2020", "US",
 		map[string]any{
@@ -753,10 +753,10 @@ func TestSending(t *testing.T) {
 			configSendURL:           "BASE_URL",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newTWIMLHandler("T", "Twilio", true), defaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
-	RunChannelSendTestCases(t, tmsDefaultChannel, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsDefaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
-	RunChannelSendTestCases(t, twDefaultChannel, newTWIMLHandler("TW", "TwiML", true), twDefaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
-	RunChannelSendTestCases(t, swChannel, newTWIMLHandler("SW", "SignalWire", false), swSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newTWIMLHandler("T", "Twilio", true), defaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunOutgoingTestCases(t, tmsDefaultChannel, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsDefaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunOutgoingTestCases(t, twDefaultChannel, newTWIMLHandler("TW", "TwiML", true), twDefaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunOutgoingTestCases(t, swChannel, newTWIMLHandler("SW", "SignalWire", false), swSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 
 	waChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
 		map[string]any{
@@ -766,7 +766,7 @@ func TestSending(t *testing.T) {
 	)
 	waChannel.SetScheme(urns.WhatsAppScheme)
 
-	RunChannelSendTestCases(t, waChannel, newTWIMLHandler("T", "Twilio Whatsapp", true), waSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunOutgoingTestCases(t, waChannel, newTWIMLHandler("T", "Twilio Whatsapp", true), waSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 
 	twaChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
 		map[string]any{
@@ -776,7 +776,7 @@ func TestSending(t *testing.T) {
 	)
 	twaChannel.SetScheme(urns.WhatsAppScheme)
 
-	RunChannelSendTestCases(t, twaChannel, newTWIMLHandler("TWA", "Twilio Whatsapp", true), twaSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunOutgoingTestCases(t, twaChannel, newTWIMLHandler("TWA", "Twilio Whatsapp", true), twaSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {

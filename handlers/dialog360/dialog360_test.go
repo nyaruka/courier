@@ -33,7 +33,7 @@ var (
 	d3CReceiveURL = "/c/d3c/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive"
 )
 
-var testCasesD3C = []ChannelHandleTestCase{
+var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                 "Receive Message WAC",
 		URL:                   d3CReceiveURL,
@@ -255,7 +255,7 @@ var testCasesD3C = []ChannelHandleTestCase{
 	},
 }
 
-func buildMockD3MediaService(testChannels []courier.Channel, testCases []ChannelHandleTestCase) *httptest.Server {
+func buildMockD3MediaService(testChannels []courier.Channel, testCases []IncomingTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fileURL := ""
 
@@ -292,12 +292,12 @@ func buildMockD3MediaService(testChannels []courier.Channel, testCases []Channel
 	return server
 }
 
-func TestHandler(t *testing.T) {
+func TestIncoming(t *testing.T) {
 
 	d3MediaService := buildMockD3MediaService(testChannels, testCasesD3C)
 	defer d3MediaService.Close()
 
-	RunChannelTestCases(t, testChannels, newWAHandler(courier.ChannelType("D3C"), "360Dialog"), testCasesD3C)
+	RunIncomingTestCases(t, testChannels, newWAHandler(courier.ChannelType("D3C"), "360Dialog"), testCasesD3C)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -321,7 +321,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	c.(*test.MockChannel).SetConfig("base_url", s.URL)
 }
 
-var SendTestCasesD3C = []ChannelSendTestCase{
+var SendTestCasesD3C = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -602,7 +602,7 @@ var SendTestCasesD3C = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
 
@@ -612,7 +612,7 @@ func TestSending(t *testing.T) {
 	})
 	checkRedacted := []string{"the-auth-token"}
 
-	RunChannelSendTestCases(t, ChannelWAC, newWAHandler(courier.ChannelType("D3C"), "360Dialog"), SendTestCasesD3C, checkRedacted, nil)
+	RunOutgoingTestCases(t, ChannelWAC, newWAHandler(courier.ChannelType("D3C"), "360Dialog"), SendTestCasesD3C, checkRedacted, nil)
 }
 func TestGetSupportedLanguage(t *testing.T) {
 	assert.Equal(t, languageInfo{"en", "Menu"}, getSupportedLanguage(courier.NilLocale))

@@ -27,8 +27,8 @@ import (
 // RequestPrepFunc is our type for a hook for tests to use before a request is fired in a test
 type RequestPrepFunc func(*http.Request)
 
-// ChannelHandleTestCase defines the test values for a particular test case
-type ChannelHandleTestCase struct {
+// IncomingTestCase defines the test values for a particular test case
+type IncomingTestCase struct {
 	Label                 string
 	NoQueueErrorCheck     bool
 	NoInvalidChannelCheck bool
@@ -145,8 +145,8 @@ func newServer(backend courier.Backend) courier.Server {
 
 }
 
-// RunChannelTestCases runs all the passed in tests cases for the passed in channel configurations
-func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelHandleTestCase) {
+// RunIncomingTestCases runs all the passed in tests cases for the passed in channel configurations
+func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler courier.ChannelHandler, testCases []IncomingTestCase) {
 	mb := test.NewMockBackend()
 	s := newServer(mb)
 
@@ -254,8 +254,8 @@ func RunChannelTestCases(t *testing.T, channels []courier.Channel, handler couri
 // SendPrepFunc allows test cases to modify the channel, msg or server before a message is sent
 type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, courier.Channel, courier.Msg)
 
-// ChannelSendTestCase defines the test values for a particular test case
-type ChannelSendTestCase struct {
+// OutgoingTestCase defines the test values for a particular test case
+type OutgoingTestCase struct {
 	Label    string
 	SendPrep SendPrepFunc
 
@@ -291,8 +291,8 @@ type ChannelSendTestCase struct {
 	ExpectedNewURN      string
 }
 
-// RunChannelSendTestCases runs all the passed in test cases against the channel
-func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler courier.ChannelHandler, testCases []ChannelSendTestCase, checkRedacted []string, setupBackend func(*test.MockBackend)) {
+// RunOutgoingTestCases runs all the passed in test cases against the channel
+func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier.ChannelHandler, testCases []OutgoingTestCase, checkRedacted []string, setupBackend func(*test.MockBackend)) {
 	mb := test.NewMockBackend()
 	if setupBackend != nil {
 		setupBackend(mb)
@@ -455,7 +455,7 @@ func RunChannelSendTestCases(t *testing.T, channel courier.Channel, handler cour
 }
 
 // RunChannelBenchmarks runs all the passed in test cases for the passed in channels
-func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler courier.ChannelHandler, testCases []ChannelHandleTestCase) {
+func RunChannelBenchmarks(b *testing.B, channels []courier.Channel, handler courier.ChannelHandler, testCases []IncomingTestCase) {
 	mb := test.NewMockBackend()
 	s := newServer(mb)
 

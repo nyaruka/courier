@@ -162,7 +162,7 @@ var missingFieldsReceive = `{
 	}
 }`
 
-var testWhatappCases = []ChannelHandleTestCase{
+var testWhatappCases = []IncomingTestCase{
 	{Label: "Receive Valid", URL: receiveWhatsappURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "Message Accepted",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "whatsapp:254791541111", ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
@@ -183,7 +183,7 @@ var testWhatappCases = []ChannelHandleTestCase{
 	{Label: "Wrong JSON schema", URL: statusWhatsppURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedBodyContains: "request JSON doesn't match required schema"},
 }
 
-var testSMSCases = []ChannelHandleTestCase{
+var testSMSCases = []IncomingTestCase{
 	{Label: "Receive Valid", URL: receiveSMSURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "Message Accepted",
 		ExpectedMsgText: Sp("Msg"), ExpectedURN: "whatsapp:254791541111", ExpectedDate: time.Date(2017, 5, 3, 03, 04, 45, 0, time.UTC)},
 
@@ -204,9 +204,9 @@ var testSMSCases = []ChannelHandleTestCase{
 	{Label: "Wrong JSON schema", URL: statusSMSURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedBodyContains: "request JSON doesn't match required schema"},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testWhatsappChannels, newHandler("ZVW", "Zenvia WhatsApp"), testWhatappCases)
-	RunChannelTestCases(t, testSMSChannels, newHandler("ZVS", "Zenvia SMS"), testSMSCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testWhatsappChannels, newHandler("ZVW", "Zenvia WhatsApp"), testWhatappCases)
+	RunIncomingTestCases(t, testSMSChannels, newHandler("ZVS", "Zenvia SMS"), testSMSCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -220,7 +220,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	smsSendURL = s.URL
 }
 
-var defaultWhatsappSendTestCases = []ChannelSendTestCase{
+var defaultWhatsappSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
@@ -298,7 +298,7 @@ var defaultWhatsappSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var defaultSMSSendTestCases = []ChannelSendTestCase{
+var defaultSMSSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
@@ -374,11 +374,11 @@ var defaultSMSSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	var defaultWhatsappChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVW", "2020", "BR", map[string]any{"api_key": "zv-api-token"})
-	RunChannelSendTestCases(t, defaultWhatsappChannel, newHandler("ZVW", "Zenvia WhatsApp"), defaultWhatsappSendTestCases, []string{"zv-api-token"}, nil)
+	RunOutgoingTestCases(t, defaultWhatsappChannel, newHandler("ZVW", "Zenvia WhatsApp"), defaultWhatsappSendTestCases, []string{"zv-api-token"}, nil)
 
 	var defaultSMSChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", map[string]any{"api_key": "zv-api-token"})
-	RunChannelSendTestCases(t, defaultSMSChannel, newHandler("ZVS", "Zenvia SMS"), defaultSMSSendTestCases, []string{"zv-api-token"}, nil)
+	RunOutgoingTestCases(t, defaultSMSChannel, newHandler("ZVS", "Zenvia SMS"), defaultSMSSendTestCases, []string{"zv-api-token"}, nil)
 }

@@ -18,7 +18,7 @@ var ignoreChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US", map[string]any{"ignore_sent": true}),
 }
 
-var handleTestCases = []ChannelHandleTestCase{
+var handleTestCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Message",
 		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B2349067554729&message=Join&ts=1493735509&id=asdf-asdf&to=24453",
@@ -86,7 +86,7 @@ var handleTestCases = []ChannelHandleTestCase{
 	},
 }
 
-var ignoreTestCases = []ChannelHandleTestCase{
+var ignoreTestCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Message",
 		URL:                  "/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?backend=NIG_MTN&sender=%2B2349067554729&message=Join&ts=1493735509&id=asdf-asdf&to=24453",
@@ -119,9 +119,9 @@ var ignoreTestCases = []ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
-	RunChannelTestCases(t, ignoreChannels, newHandler(), ignoreTestCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
+	RunIncomingTestCases(t, ignoreChannels, newHandler(), ignoreTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -138,7 +138,7 @@ func setSendURLWithQuery(s *httptest.Server, h courier.ChannelHandler, c courier
 	c.(*test.MockChannel).SetConfig("send_url", s.URL+"?auth=foo")
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message",
@@ -224,7 +224,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var nationalSendTestCases = []ChannelSendTestCase{
+var nationalSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "National Send",
 		MsgText:            "success",
@@ -238,7 +238,7 @@ var nationalSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		map[string]any{
 			"password": "Password",
@@ -253,6 +253,6 @@ func TestSending(t *testing.T) {
 			"dlr_mask":     "3",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
-	RunChannelSendTestCases(t, nationalChannel, newHandler(), nationalSendTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, nationalChannel, newHandler(), nationalSendTestCases, []string{"Password"}, nil)
 }

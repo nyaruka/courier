@@ -215,7 +215,7 @@ const msgKeyboard = `{
 
 const keyboardJson = `{"one_time":true,"buttons":[[{"action":{"type":"text","label":"A","payload":"\"A\""},"color":"primary"},{"action":{"type":"text","label":"B","payload":"\"B\""},"color":"primary"},{"action":{"type":"text","label":"C","payload":"\"C\""},"color":"primary"},{"action":{"type":"text","label":"D","payload":"\"D\""},"color":"primary"},{"action":{"type":"text","label":"E","payload":"\"E\""},"color":"primary"}]],"inline":false}`
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{
 		Label:                "Receive Message",
 		URL:                  receiveURL,
@@ -344,11 +344,11 @@ var testCases = []ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
-func buildMockVKService(testCases []ChannelHandleTestCase) *httptest.Server {
+func buildMockVKService(testCases []IncomingTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, actionGetUser) {
 			userId := r.URL.Query()["user_ids"][0]
@@ -365,7 +365,7 @@ func buildMockVKService(testCases []ChannelHandleTestCase) *httptest.Server {
 }
 
 func TestDescribeURN(t *testing.T) {
-	server := buildMockVKService([]ChannelHandleTestCase{})
+	server := buildMockVKService([]IncomingTestCase{})
 	defer server.Close()
 
 	handler := newHandler()
@@ -386,7 +386,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	URLPhotoUploadServer = s.URL + "/upload/photo"
 }
 
-var sendTestCases = []ChannelSendTestCase{
+var sendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Send simple message",
 		MsgText:            "Simple message",
@@ -472,8 +472,8 @@ var sendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTestCase) []ChannelSendTestCase {
-	casesWithMockedUrls := make([]ChannelSendTestCase, len(testCases))
+func mockAttachmentURLs(mediaServer *httptest.Server, testCases []OutgoingTestCase) []OutgoingTestCase {
+	casesWithMockedUrls := make([]OutgoingTestCase, len(testCases))
 
 	for i, testCase := range testCases {
 		mockedCase := testCase
@@ -497,5 +497,5 @@ func TestSend(t *testing.T) {
 		res.Write([]byte("media body"))
 	}))
 	mockedSendTestCases := mockAttachmentURLs(mediaServer, sendTestCases)
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, []string{"token123xyz", "abc123xyz"}, nil)
+	RunOutgoingTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, []string{"token123xyz", "abc123xyz"}, nil)
 }

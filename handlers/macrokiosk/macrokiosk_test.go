@@ -30,7 +30,7 @@ var (
 	unknownStatus    = "msgid=12345&status=UNKNOWN"
 )
 
-var testCases = []ChannelHandleTestCase{
+var incomingTestCases = []IncomingTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "-1",
 		ExpectedMsgText: Sp("Hello"), ExpectedURN: "tel:+60124361111", ExpectedDate: time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC),
 		ExpectedExternalID: "abc1234"},
@@ -50,12 +50,8 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Unknown Status", URL: statusURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `ignoring unknown status 'UNKNOWN'`},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
-}
-
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), incomingTestCases)
 }
 
 // setSendURL takes care of setting the send_url to our test server host
@@ -63,8 +59,9 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
-	{Label: "Plain Send",
+var outgoingTestCases = []OutgoingTestCase{
+	{
+		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "tel:+250788383383",
 		ExpectedMsgStatus:  "W",
@@ -76,8 +73,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":       "application/json",
 		},
 		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"Simple Message ☺","from":"macro","servid":"service-id","type":"5"}`,
-		SendPrep:            setSendURL},
-	{Label: "Long Send",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Long Send",
 		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
 		MsgURN:             "tel:+250788383383",
 		ExpectedMsgStatus:  "W",
@@ -89,8 +88,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":       "application/json",
 		},
 		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"I need to keep adding more things to make it work","from":"macro","servid":"service-id","type":"0"}`,
-		SendPrep:            setSendURL},
-	{Label: "Send Attachment",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
 		MsgText:            "My pic!",
 		MsgURN:             "tel:+250788383383",
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
@@ -103,8 +104,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":       "application/json",
 		},
 		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"My pic!\nhttps://foo.bar/image.jpg","from":"macro","servid":"service-id","type":"0"}`,
-		SendPrep:            setSendURL},
-	{Label: "No External Id",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "No External Id",
 		MsgText:            "No External ID",
 		MsgURN:             "tel:+250788383383",
 		ExpectedMsgStatus:  "E",
@@ -116,18 +119,21 @@ var defaultSendTestCases = []ChannelSendTestCase{
 			"Accept":       "application/json",
 		},
 		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"No External ID","from":"macro","servid":"service-id","type":"0"}`,
-		SendPrep:            setSendURL},
-	{Label: "Error Sending",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Error Sending",
 		MsgText:             "Error Message",
 		MsgURN:              "tel:+250788383383",
 		ExpectedMsgStatus:   "E",
 		MockResponseBody:    `{ "error": "failed" }`,
 		MockResponseStatus:  401,
 		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"Error Message","from":"macro","servid":"service-id","type":"0"}`,
-		SendPrep:            setSendURL},
+		SendPrep:            setSendURL,
+	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MK", "2020", "US",
 		map[string]any{
@@ -138,5 +144,5 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingTestCases, []string{"Password"}, nil)
 }

@@ -257,7 +257,7 @@ var testChannels = []courier.Channel{
 		}),
 }
 
-var handleTestCases = []ChannelHandleTestCase{
+var handleTestCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Message",
 		URL:                  receiveURL,
@@ -383,8 +383,8 @@ func addInvalidSignature(r *http.Request) {
 	r.Header.Set(signatureHeader, "invalidsig")
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -408,7 +408,7 @@ Ut tincidunt massa eu purus lacinia sodales a volutpat neque. Cras dolor quam, e
 Vivamus justo dolor, gravida at quam eu, hendrerit rutrum justo. Sed hendrerit nisi vitae nisl ornare tristique.
 Proin vulputate id justo non aliquet.`
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -604,7 +604,7 @@ func setupMedia(mb *test.MockBackend) {
 	mb.MockMedia(filePDF)
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US",
@@ -613,7 +613,7 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"AccessToken"}, setupMedia)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"AccessToken"}, setupMedia)
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {

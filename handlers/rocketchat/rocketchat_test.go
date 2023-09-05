@@ -49,7 +49,7 @@ const attachmentMsg = `{
 	"attachments": [{"type": "image/jpg", "url": "https://link.to/image.jpg"}]
 }`
 
-var testCases = []handlers.ChannelHandleTestCase{
+var testCases = []handlers.IncomingTestCase{
 	{
 		Label: "Receive Hello Msg",
 		URL:   receiveURL,
@@ -96,8 +96,8 @@ var testCases = []handlers.ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
-	handlers.RunChannelTestCases(t, testChannels, newHandler(), testCases)
+func TestIncoming(t *testing.T) {
+	handlers.RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -108,7 +108,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	c.(*test.MockChannel).SetConfig(configBaseURL, s.URL)
 }
 
-var sendTestCases = []handlers.ChannelSendTestCase{
+var sendTestCases = []handlers.OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -145,6 +145,6 @@ var sendTestCases = []handlers.ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
-	handlers.RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"123456789"}, nil)
+func TestOutgoing(t *testing.T) {
+	handlers.RunOutgoingTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"123456789"}, nil)
 }

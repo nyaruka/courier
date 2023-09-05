@@ -166,7 +166,7 @@ var attachment = `{
 
 var notJSON = `blargh`
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{Label: "Receive Message", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: helloMsg, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedContactName: Sp("Nicolas Pottier"), ExpectedURN: "twitterid:272953809#nicpottier",
 		ExpectedMsgText: Sp("Hello World & good wishes."), ExpectedExternalID: "958501034212564996", ExpectedDate: time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC)},
@@ -180,8 +180,8 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Webhook Verification Error", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", ExpectedRespStatus: 400, ExpectedBodyContains: "missing required 'crc_token'"},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler("TWT", "Twitter Activity"), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler("TWT", "Twitter Activity"), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -194,7 +194,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	uploadDomain = s.URL
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -370,8 +370,8 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTestCase) []ChannelSendTestCase {
-	casesWithMockedUrls := make([]ChannelSendTestCase, len(testCases))
+func mockAttachmentURLs(mediaServer *httptest.Server, testCases []OutgoingTestCase) []OutgoingTestCase {
+	casesWithMockedUrls := make([]OutgoingTestCase, len(testCases))
 	for i, testCase := range testCases {
 		mockedCase := testCase
 		for j, attachment := range testCase.MsgAttachments {
@@ -385,7 +385,7 @@ func mockAttachmentURLs(mediaServer *httptest.Server, testCases []ChannelSendTes
 	}
 	return casesWithMockedUrls
 }
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	// fake media server that just replies with 200 and "media body" for content
 	mediaServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
@@ -394,5 +394,5 @@ func TestSending(t *testing.T) {
 	}))
 
 	attachmentMockedSendTestCase := mockAttachmentURLs(mediaServer, defaultSendTestCases)
-	RunChannelSendTestCases(t, testChannels[0], newHandler("TWT", "Twitter Activity"), attachmentMockedSendTestCase, []string{"apiSecret", "accessTokenSecret"}, nil)
+	RunOutgoingTestCases(t, testChannels[0], newHandler("TWT", "Twitter Activity"), attachmentMockedSendTestCase, []string{"apiSecret", "accessTokenSecret"}, nil)
 }

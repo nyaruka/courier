@@ -83,7 +83,7 @@ func addInvalidBodyHash(r *http.Request) {
 	r.Header.Set("Messagebird-Signature-Jwt", signedJWT)
 }
 
-var defaultReceiveTestCases = []ChannelHandleTestCase{
+var defaultReceiveTestCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid text w Signature",
 		Headers:              map[string]string{"Content-Type": "application/json"},
@@ -179,7 +179,7 @@ var defaultReceiveTestCases = []ChannelHandleTestCase{
 }
 
 func TestReceiving(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler("MBD", "Messagebird", true), defaultReceiveTestCases)
+	RunIncomingTestCases(t, testChannels, newHandler("MBD", "Messagebird", true), defaultReceiveTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -194,7 +194,7 @@ func setMmsSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Chann
 	mmsURL = s.URL
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message ☺",
@@ -294,10 +294,10 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MBD", "18005551212", "US", map[string]any{
 		"secret":     "my_super_secret", // secret key to sign for sig
 		"auth_token": "authtoken",
 	})
-	RunChannelSendTestCases(t, defaultChannel, newHandler("MBD", "Messagebird", false), defaultSendTestCases, []string{"my_super_secret", "authtoken"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler("MBD", "Messagebird", false), defaultSendTestCases, []string{"my_super_secret", "authtoken"}, nil)
 }

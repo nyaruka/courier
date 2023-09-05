@@ -29,7 +29,7 @@ var (
 	unknownStatus        = "MessageUUID=12345&status=UNKNOWN&To=%2B60124361111&From=2020"
 )
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "Message Accepted",
 		ExpectedMsgText: Sp("Hello"), ExpectedURN: "tel:+60124361111", ExpectedExternalID: "abc1234"},
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedBodyContains: "phone number supplied is not a number"},
@@ -42,8 +42,8 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Unkown Status", URL: statusURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `ignoring unknown status 'UNKNOWN'`},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -55,7 +55,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL + "/%s/"
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{Label: "Plain Send",
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "tel:+250788383383",
@@ -123,7 +123,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:            setSendURL},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "PL", "2020", "US",
 		map[string]any{
@@ -133,5 +133,5 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("AuthID", "AuthToken")}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("AuthID", "AuthToken")}, nil)
 }

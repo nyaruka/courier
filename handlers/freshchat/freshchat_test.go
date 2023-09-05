@@ -28,7 +28,7 @@ const (
 	invalidSignature = `f7wMD1BBhcj60U0z3dCY519qmxQ8qfVUU212Dapw9vpZfRBfjjmukUK2GwbAb0Nc+TGQHxN4iP4WD+Y/mSx6f4bmkBsvCy3l4OCQ/FEK0y5R7f+GLLDhgbTh90MwuLDHhvxB5dxIeu59leL+4yO+l/8M3Tm48aQurVBi9IAlzFsMtc1S1CiRxsDUb/rD6IRekPa0pUAbkno9qJ/CGXh0kZMdsYzRkzZmKCs79OWrvU94ha0ptyt5wArfmD1oSzY3PjeL2w8LWDc0QV21H/Hvj42azIUqebiNRtZ2E+f34AfQsyfcPuy1k/6qLuYGOdU1uZidPuPcGpeSIm0GW6k9HQ==`
 )
 
-var sigtestCases = []ChannelHandleTestCase{
+var sigtestCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid w Signature",
 		Headers:              map[string]string{"Content-Type": "application/json", "X-FreshChat-Signature": validSignature},
@@ -51,7 +51,7 @@ var sigtestCases = []ChannelHandleTestCase{
 	},
 }
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid w Sig",
 		Headers:              map[string]string{"Content-Type": "application/json", "X-FreshChat-Signature": validSignature},
@@ -73,9 +73,9 @@ var testCases = []ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler("FC", "FreshChat", true), sigtestCases)
-	RunChannelTestCases(t, testChannels, newHandler("FC", "FreshChat", false), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler("FC", "FreshChat", true), sigtestCases)
+	RunIncomingTestCases(t, testChannels, newHandler("FC", "FreshChat", false), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -86,7 +86,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	apiURL = s.URL
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message ☺",
@@ -126,11 +126,11 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FC", "2020", "US", map[string]any{
 		"username":   "c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
 		"secret":     cert,
 		"auth_token": "enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",
 	})
-	RunChannelSendTestCases(t, defaultChannel, newHandler("FC", "FreshChat", false), defaultSendTestCases, []string{cert, "enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler("FC", "FreshChat", false), defaultSendTestCases, []string{cert, "enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="}, nil)
 }

@@ -10,8 +10,8 @@ import (
 	"github.com/nyaruka/courier/utils"
 )
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -22,7 +22,7 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("bac782c2-7aeb-4389-92f5-97887744f573", "DS", "discord", "US", map[string]any{courier.ConfigSendAuthorization: "sesame"}),
 }
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{
 		Label:              "Recieve Message",
 		URL:                "/c/ds/bac782c2-7aeb-4389-92f5-97887744f573/receive",
@@ -77,7 +77,7 @@ var testCases = []ChannelHandleTestCase{
 	},
 }
 
-var sendTestCases = []ChannelSendTestCase{
+var sendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Simple Send",
 		MsgText:             "Hello World",
@@ -118,6 +118,6 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	c.(*test.MockChannel).SetConfig(courier.ConfigSendURL, sendURL)
 }
 
-func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"sesame"}, nil)
+func TestOutgoing(t *testing.T) {
+	RunOutgoingTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"sesame"}, nil)
 }

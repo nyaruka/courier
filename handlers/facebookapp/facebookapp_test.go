@@ -30,7 +30,7 @@ var testChannelsWAC = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "WAC", "12345", "", map[string]any{courier.ConfigAuthToken: "a123"}),
 }
 
-var testCasesFBA = []ChannelHandleTestCase{
+var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                 "Receive Message FBA",
 		URL:                   "/c/fba/receive",
@@ -254,7 +254,7 @@ var testCasesFBA = []ChannelHandleTestCase{
 	},
 }
 
-var testCasesIG = []ChannelHandleTestCase{
+var testCasesIG = []IncomingTestCase{
 	{
 		Label:                 "Receive Message",
 		URL:                   "/c/ig/receive",
@@ -422,7 +422,7 @@ func addInvalidSignature(r *http.Request) {
 }
 
 // mocks the call to the Facebook graph API
-func buildMockFBGraphFBA(testCases []ChannelHandleTestCase) *httptest.Server {
+func buildMockFBGraphFBA(testCases []IncomingTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		accessToken := r.URL.Query().Get("access_token")
 		defer r.Body.Close()
@@ -446,7 +446,7 @@ func buildMockFBGraphFBA(testCases []ChannelHandleTestCase) *httptest.Server {
 }
 
 // mocks the call to the Facebook graph API
-func buildMockFBGraphIG(testCases []ChannelHandleTestCase) *httptest.Server {
+func buildMockFBGraphIG(testCases []IncomingTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		accessToken := r.URL.Query().Get("access_token")
 		defer r.Body.Close()
@@ -545,7 +545,7 @@ func TestDescribeURNForWAC(t *testing.T) {
 
 var wacReceiveURL = "/c/wac/receive"
 
-var testCasesWAC = []ChannelHandleTestCase{
+var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                 "Receive Message WAC",
 		URL:                   wacReceiveURL,
@@ -798,7 +798,7 @@ var testCasesWAC = []ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
+func TestIncoming(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		accessToken := r.Header.Get("Authorization")
 		defer r.Body.Close()
@@ -841,9 +841,9 @@ func TestHandler(t *testing.T) {
 	}))
 	graphURL = server.URL
 
-	RunChannelTestCases(t, testChannelsWAC, newHandler("WAC", "Cloud API WhatsApp", false), testCasesWAC)
-	RunChannelTestCases(t, testChannelsFBA, newHandler("FBA", "Facebook", false), testCasesFBA)
-	RunChannelTestCases(t, testChannelsIG, newHandler("IG", "Instagram", false), testCasesIG)
+	RunIncomingTestCases(t, testChannelsWAC, newHandler("WAC", "Cloud API WhatsApp", false), testCasesWAC)
+	RunIncomingTestCases(t, testChannelsFBA, newHandler("FBA", "Facebook", false), testCasesFBA)
+	RunIncomingTestCases(t, testChannelsIG, newHandler("IG", "Instagram", false), testCasesIG)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -859,7 +859,7 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 func TestVerify(t *testing.T) {
-	RunChannelTestCases(t, testChannelsFBA, newHandler("FBA", "Facebook", false), []ChannelHandleTestCase{
+	RunIncomingTestCases(t, testChannelsFBA, newHandler("FBA", "Facebook", false), []IncomingTestCase{
 		{
 			Label:                 "Valid Secret",
 			URL:                   "/c/fba/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge",
@@ -899,7 +899,7 @@ func TestVerify(t *testing.T) {
 		},
 	})
 
-	RunChannelTestCases(t, testChannelsIG, newHandler("IG", "Instagram", false), []ChannelHandleTestCase{
+	RunIncomingTestCases(t, testChannelsIG, newHandler("IG", "Instagram", false), []IncomingTestCase{
 		{
 			Label:                 "Valid Secret",
 			URL:                   "/c/ig/receive?hub.mode=subscribe&hub.verify_token=fb_webhook_secret&hub.challenge=yarchallenge",
@@ -946,7 +946,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	graphURL = s.URL
 }
 
-var SendTestCasesFBA = []ChannelSendTestCase{
+var SendTestCasesFBA = []OutgoingTestCase{
 	{
 		Label:               "Text only chat message",
 		MsgText:             "Simple Message",
@@ -1102,7 +1102,7 @@ var SendTestCasesFBA = []ChannelSendTestCase{
 	},
 }
 
-var SendTestCasesIG = []ChannelSendTestCase{
+var SendTestCasesIG = []OutgoingTestCase{
 	{
 		Label:               "Text only chat message",
 		MsgText:             "Simple Message",
@@ -1256,7 +1256,7 @@ var SendTestCasesIG = []ChannelSendTestCase{
 	},
 }
 
-var SendTestCasesWAC = []ChannelSendTestCase{
+var SendTestCasesWAC = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -1537,7 +1537,7 @@ var SendTestCasesWAC = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
 
@@ -1547,9 +1547,9 @@ func TestSending(t *testing.T) {
 
 	checkRedacted := []string{"wac_admin_system_user_token", "missing_facebook_app_secret", "missing_facebook_webhook_secret", "a123"}
 
-	RunChannelSendTestCases(t, ChannelFBA, newHandler("FBA", "Facebook", false), SendTestCasesFBA, checkRedacted, nil)
-	RunChannelSendTestCases(t, ChannelIG, newHandler("IG", "Instagram", false), SendTestCasesIG, checkRedacted, nil)
-	RunChannelSendTestCases(t, ChannelWAC, newHandler("WAC", "Cloud API WhatsApp", false), SendTestCasesWAC, checkRedacted, nil)
+	RunOutgoingTestCases(t, ChannelFBA, newHandler("FBA", "Facebook", false), SendTestCasesFBA, checkRedacted, nil)
+	RunOutgoingTestCases(t, ChannelIG, newHandler("IG", "Instagram", false), SendTestCasesIG, checkRedacted, nil)
+	RunOutgoingTestCases(t, ChannelWAC, newHandler("WAC", "Cloud API WhatsApp", false), SendTestCasesWAC, checkRedacted, nil)
 }
 
 func TestSigning(t *testing.T) {

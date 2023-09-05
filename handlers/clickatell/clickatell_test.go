@@ -18,7 +18,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 var successSendResponse = `{"messages":[{"apiMessageId":"id1002","accepted":true,"to":"12067799299","error":null}],"error":null}`
 var failSendResponse = `{"messages":[],"error":"Two-Way integration error - From number is not related to integration"}`
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message",
@@ -76,14 +76,14 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CT", "2020", "US",
 		map[string]any{
 			courier.ConfigAPIKey: "API-KEY",
 		})
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"API-KEY"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"API-KEY"}, nil)
 }
 
 var testChannels = []courier.Channel{
@@ -130,7 +130,7 @@ const (
 	}`
 )
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{
 		Label:                "Valid Receive",
 		URL:                  receiveURL,
@@ -224,8 +224,8 @@ var testCases = []ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {

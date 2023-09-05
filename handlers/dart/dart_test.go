@@ -18,7 +18,7 @@ const (
 	statusURL  = "/c/da/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered/"
 )
 
-var daTestCases = []ChannelHandleTestCase{
+var daTestCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid",
 		URL:                  receiveURL + "?userid=testusr&password=test&original=6289881134560&sendto=2020&message=Msg&messageid=foo",
@@ -85,8 +85,8 @@ var daTestCases = []ChannelHandleTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, daTestChannels, NewHandler("DA", "DartMedia", sendURL, maxMsgLength), daTestCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, daTestChannels, NewHandler("DA", "DartMedia", sendURL, maxMsgLength), daTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -99,7 +99,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	daHandler.sendURL = s.URL
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message",
@@ -165,7 +165,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	var defaultDAChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "DA", "2020", "ID",
 		map[string]any{
@@ -173,5 +173,5 @@ func TestSending(t *testing.T) {
 			courier.ConfigPassword: "Password",
 		})
 
-	RunChannelSendTestCases(t, defaultDAChannel, NewHandler("DA", "Dartmedia", sendURL, maxMsgLength), defaultSendTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, defaultDAChannel, NewHandler("DA", "Dartmedia", sendURL, maxMsgLength), defaultSendTestCases, []string{"Password"}, nil)
 }

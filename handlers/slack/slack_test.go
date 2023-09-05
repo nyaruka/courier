@@ -128,7 +128,7 @@ func setSendUrl(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	apiURL = s.URL
 }
 
-var handleTestCases = []ChannelHandleTestCase{
+var handleTestCases = []IncomingTestCase{
 	{
 		Label:                "Receive Hello Msg",
 		URL:                  receiveURL,
@@ -177,7 +177,7 @@ var handleTestCases = []ChannelHandleTestCase{
 	},
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -211,7 +211,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var fileSendTestCases = []ChannelSendTestCase{
+var fileSendTestCases = []OutgoingTestCase{
 	{
 		Label:          "Send Image",
 		MsgText:        "",
@@ -244,15 +244,15 @@ var fileSendTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestHandler(t *testing.T) {
+func TestIncoming(t *testing.T) {
 	slackServiceMock := buildMockSlackService(handleTestCases)
 	defer slackServiceMock.Close()
 
-	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
+	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
-func TestSending(t *testing.T) {
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), defaultSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
+func TestOutgoing(t *testing.T) {
+	RunOutgoingTestCases(t, testChannels[0], newHandler(), defaultSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
 }
 
 func TestSendFiles(t *testing.T) {
@@ -260,11 +260,11 @@ func TestSendFiles(t *testing.T) {
 	defer fileServer.Close()
 	fileSendTestCases := mockAttachmentURLs(fileServer, fileSendTestCases)
 
-	RunChannelSendTestCases(t, testChannels[0], newHandler(), fileSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
+	RunOutgoingTestCases(t, testChannels[0], newHandler(), fileSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
 }
 
 func TestVerification(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), []ChannelHandleTestCase{
+	RunIncomingTestCases(t, testChannels, newHandler(), []IncomingTestCase{
 		{Label: "Valid token", URL: receiveURL, ExpectedRespStatus: 200,
 			Data:                 `{"token":"one-long-verification-token","challenge":"challenge123","type":"url_verification"}`,
 			Headers:              map[string]string{"content-type": "text/plain"},
@@ -285,7 +285,7 @@ func buildMockAttachmentFileServer() *httptest.Server {
 	}))
 }
 
-func buildMockSlackService(testCases []ChannelHandleTestCase) *httptest.Server {
+func buildMockSlackService(testCases []IncomingTestCase) *httptest.Server {
 
 	files := make(map[string]File)
 
@@ -342,8 +342,8 @@ func buildMockSlackService(testCases []ChannelHandleTestCase) *httptest.Server {
 	return server
 }
 
-func mockAttachmentURLs(fileServer *httptest.Server, testCases []ChannelSendTestCase) []ChannelSendTestCase {
-	casesWithMockedUrls := make([]ChannelSendTestCase, len(testCases))
+func mockAttachmentURLs(fileServer *httptest.Server, testCases []OutgoingTestCase) []OutgoingTestCase {
+	casesWithMockedUrls := make([]OutgoingTestCase, len(testCases))
 
 	for i, testCase := range testCases {
 		mockedCase := testCase
@@ -356,7 +356,7 @@ func mockAttachmentURLs(fileServer *httptest.Server, testCases []ChannelSendTest
 }
 
 func TestDescribeURN(t *testing.T) {
-	server := buildMockSlackService([]ChannelHandleTestCase{})
+	server := buildMockSlackService([]IncomingTestCase{})
 	defer server.Close()
 
 	handler := newHandler()

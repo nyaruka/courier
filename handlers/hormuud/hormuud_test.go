@@ -24,7 +24,7 @@ var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "HM", "2020", "US", nil),
 }
 
-var handleTestCases = []ChannelHandleTestCase{
+var handleTestCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Message",
 		URL:                  receiveValidMessage,
@@ -62,8 +62,8 @@ var handleTestCases = []ChannelHandleTestCase{
 	//	{Label: "Status Valid", URL: statusValid, Status: 200, Response: `"status":"S"`},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), handleTestCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
 // setSendURL takes care of setting the send_url to our test server host
@@ -71,7 +71,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL
 }
 
-var sendTestCases = []ChannelSendTestCase{
+var sendTestCases = []OutgoingTestCase{
 	{
 		Label:               "Plain Send",
 		MsgText:             "Simple Message",
@@ -117,7 +117,7 @@ var sendTestCases = []ChannelSendTestCase{
 	},
 }
 
-var tokenTestCases = []ChannelSendTestCase{
+var tokenTestCases = []OutgoingTestCase{
 	{
 		Label:             "Plain Send",
 		MsgText:           "Simple Message",
@@ -127,7 +127,7 @@ var tokenTestCases = []ChannelSendTestCase{
 	},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	// set up a token server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("valid") == "true" {
@@ -149,9 +149,9 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), sendTestCases, []string{"sesame"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), sendTestCases, []string{"sesame"}, nil)
 
 	tokenURL = server.URL + "?invalid=true"
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), tokenTestCases, []string{"sesame"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), tokenTestCases, []string{"sesame"}, nil)
 }

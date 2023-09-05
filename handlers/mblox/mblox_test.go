@@ -61,7 +61,7 @@ var (
 	}`
 )
 
-var testCases = []ChannelHandleTestCase{
+var testCases = []IncomingTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "Message Accepted",
 		ExpectedMsgText: Sp("Hello World"), ExpectedURN: "tel:+12067799294", ExpectedDate: time.Date(2016, 3, 30, 19, 33, 06, 643000000, time.UTC),
 		ExpectedExternalID: "OzQ5UqIOdoY8"},
@@ -74,8 +74,8 @@ var testCases = []ChannelHandleTestCase{
 	{Label: "Status Missing Batch ID", URL: receiveURL, Data: missingBatchID, ExpectedRespStatus: 400, ExpectedBodyContains: "missing one of 'batch_id' or 'status' in request body"},
 }
 
-func TestHandler(t *testing.T) {
-	RunChannelTestCases(t, testChannels, newHandler(), testCases)
+func TestIncoming(t *testing.T) {
+	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
@@ -87,7 +87,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL
 }
 
-var defaultSendTestCases = []ChannelSendTestCase{
+var defaultSendTestCases = []OutgoingTestCase{
 	{Label: "Plain Send",
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "tel:+250788383383",
@@ -155,7 +155,7 @@ var defaultSendTestCases = []ChannelSendTestCase{
 		SendPrep:            setSendURL},
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MB", "2020", "US",
 		map[string]any{
@@ -164,5 +164,5 @@ func TestSending(t *testing.T) {
 		},
 	)
 
-	RunChannelSendTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
 }
