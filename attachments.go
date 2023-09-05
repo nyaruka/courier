@@ -57,7 +57,7 @@ func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAtt
 		return nil, errors.Wrap(err, "error getting channel")
 	}
 
-	clog := NewChannelLogForAttachmentFetch(ch, fa.MsgID, GetHandler(ch.ChannelType()).RedactValues(ch))
+	clog := NewChannelLogForAttachmentFetch(ch, GetHandler(ch.ChannelType()).RedactValues(ch))
 
 	attachment, err := FetchAndStoreAttachment(ctx, b, ch, fa.URL, clog)
 

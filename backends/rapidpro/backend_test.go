@@ -1018,7 +1018,7 @@ func (ts *BackendTestSuite) TestWriteChanneLog() {
 
 	clog2 := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, channel, nil)
 	clog2.HTTP(trace)
-	clog2.SetMsgID(1234)
+	clog2.SetAttached(true)
 
 	// log is attached to a message so will be written to storage
 	err = ts.b.WriteChannelLog(ctx, clog2)
