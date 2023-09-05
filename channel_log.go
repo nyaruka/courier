@@ -100,12 +100,12 @@ type ChannelLog struct {
 	uuid      ChannelLogUUID
 	type_     ChannelLogType
 	channel   Channel
-	msgID     MsgID
 	httpLogs  []*httpx.Log
 	errors    []*ChannelError
 	createdOn time.Time
 	elapsed   time.Duration
 
+	attached bool
 	recorder *httpx.Recorder
 	redactor stringsx.Redactor
 }
@@ -113,30 +113,29 @@ type ChannelLog struct {
 // NewChannelLogForIncoming creates a new channel log for an incoming request, the type of which won't be known
 // until the handler completes.
 func NewChannelLogForIncoming(logType ChannelLogType, ch Channel, r *httpx.Recorder, redactVals []string) *ChannelLog {
-	return newChannelLog(logType, ch, r, NilMsgID, redactVals)
+	return newChannelLog(logType, ch, r, false, redactVals)
 }
 
 // NewChannelLogForSend creates a new channel log for a message send
 func NewChannelLogForSend(msg Msg, redactVals []string) *ChannelLog {
-	return newChannelLog(ChannelLogTypeMsgSend, msg.Channel(), nil, msg.ID(), redactVals)
+	return newChannelLog(ChannelLogTypeMsgSend, msg.Channel(), nil, true, redactVals)
 }
 
 // NewChannelLogForSend creates a new channel log for an attachment fetch
-func NewChannelLogForAttachmentFetch(ch Channel, msgID MsgID, redactVals []string) *ChannelLog {
-	return newChannelLog(ChannelLogTypeAttachmentFetch, ch, nil, msgID, redactVals)
+func NewChannelLogForAttachmentFetch(ch Channel, redactVals []string) *ChannelLog {
+	return newChannelLog(ChannelLogTypeAttachmentFetch, ch, nil, true, redactVals)
 }
 
 // NewChannelLog creates a new channel log with the given type and channel
 func NewChannelLog(t ChannelLogType, ch Channel, redactVals []string) *ChannelLog {
-	return newChannelLog(t, ch, nil, NilMsgID, redactVals)
+	return newChannelLog(t, ch, nil, false, redactVals)
 }
 
-func newChannelLog(t ChannelLogType, ch Channel, r *httpx.Recorder, mid MsgID, redactVals []string) *ChannelLog {
+func newChannelLog(t ChannelLogType, ch Channel, r *httpx.Recorder, attached bool, redactVals []string) *ChannelLog {
 	return &ChannelLog{
 		uuid:      ChannelLogUUID(uuids.New()),
 		type_:     t,
 		channel:   ch,
-		msgID:     mid,
 		recorder:  r,
 		createdOn: dates.Now(),
 
@@ -183,12 +182,12 @@ func (l *ChannelLog) Channel() Channel {
 	return l.channel
 }
 
-func (l *ChannelLog) MsgID() MsgID {
-	return l.msgID
+func (l *ChannelLog) Attached() bool {
+	return l.attached
 }
 
-func (l *ChannelLog) SetMsgID(id MsgID) {
-	l.msgID = id
+func (l *ChannelLog) SetAttached(a bool) {
+	l.attached = a
 }
 
 func (l *ChannelLog) HTTPLogs() []*httpx.Log {

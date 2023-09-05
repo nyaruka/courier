@@ -48,7 +48,7 @@ func TestChannelLog(t *testing.T) {
 	assert.Equal(t, courier.ChannelLogUUID("c00e5d67-c275-4389-aded-7d8b151cbd5b"), clog.UUID())
 	assert.Equal(t, courier.ChannelLogTypeTokenRefresh, clog.Type())
 	assert.Equal(t, channel, clog.Channel())
-	assert.Equal(t, courier.NilMsgID, clog.MsgID())
+	assert.False(t, clog.Attached())
 	assert.Equal(t, 2, len(clog.HTTPLogs()))
 	assert.Equal(t, 2, len(clog.Errors()))
 	assert.False(t, clog.CreatedOn().IsZero())
@@ -74,10 +74,10 @@ func TestChannelLog(t *testing.T) {
 	assert.Equal(t, "this is an error", err2.Message())
 	assert.Equal(t, "", err2.Code())
 
-	clog.SetMsgID(123)
+	clog.SetAttached(true)
 	clog.SetType(courier.ChannelLogTypeEventReceive)
 
-	assert.Equal(t, courier.MsgID(123), clog.MsgID())
+	assert.True(t, clog.Attached())
 	assert.Equal(t, courier.ChannelLogTypeEventReceive, clog.Type())
 }
 

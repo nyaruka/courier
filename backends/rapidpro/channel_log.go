@@ -77,7 +77,7 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 	}
 
 	// if log is attached to a call or message, only write to storage
-	if clog.MsgID() != courier.NilMsgID {
+	if clog.Attached() {
 		v := &stChannelLog{
 			UUID:        clog.UUID(),
 			Type:        clog.Type(),
