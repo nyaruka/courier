@@ -27,8 +27,6 @@ var (
 	<content type="text/plain">SMS Response Accepted</content>
 	</message></sms-request>`
 
-	invalidXML = ``
-
 	noMessages = `<sms-request></sms-request>`
 
 	receiveWithPrefix = `<sms-request><message id="1107962" msisdn="998999999999" submit-date="2016-11-22 15:10:32">
@@ -100,9 +98,9 @@ var testCases = []ChannelHandleTestCase{
 	{
 		Label:                "Invalid XML",
 		URL:                  receiveURL,
-		Data:                 invalidXML,
+		Data:                 `<>`,
 		ExpectedBodyContains: "",
-		ExpectedRespStatus:   405,
+		ExpectedRespStatus:   400,
 	},
 	{
 		Label:                "Receive With Prefix",

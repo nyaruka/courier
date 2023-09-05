@@ -671,6 +671,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 invalidFileID,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to resolve file",
+		ExpectedErrors:       []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
 	},
 	{
 		Label:                "Receive NoOk FileID",
@@ -693,7 +694,7 @@ var testCases = []ChannelHandleTestCase{
 		Data:                 errorFile,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "unable to resolve file",
-		ExpectedErrors:       []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
+		ExpectedErrors:       []*courier.ChannelError{courier.ErrorExternal("500", "error loading file")},
 	},
 	{
 		Label:                "Receive NotOk FileID",
