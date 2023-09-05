@@ -1,3 +1,8 @@
+v8.3.10 (2023-09-05)
+-------------------------
+ * Don't rely on knowing msg id to determine if a log is attached
+ * Rework handler tests so that test cases must explicitly say if they don't generate a channel log
+
 v8.3.9 (2023-09-05)
 -------------------------
  * Try to resolve sent external ids from redis
