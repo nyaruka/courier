@@ -1,3 +1,8 @@
+v8.3.11 (2023-09-06)
+-------------------------
+ * Add logging of requests with no associated channel
+ * No need to try making DB queries when all msg IDs got resolved from redis
+
 v8.3.10 (2023-09-05)
 -------------------------
  * Don't rely on knowing msg id to determine if a log is attached
