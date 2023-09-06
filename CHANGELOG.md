@@ -1,3 +1,8 @@
+v8.3.13 (2023-09-06)
+-------------------------
+ * Start writing ContactURN.auth_tokens
+ * Update to latest null library and use Map[string] for channel event extra
+
 v8.3.12 (2023-09-06)
 -------------------------
  * Do more debug logging and less info logging
