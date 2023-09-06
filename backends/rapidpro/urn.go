@@ -28,14 +28,15 @@ func (i ContactURNID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i)
 // NewDBContactURN returns a new ContactURN object for the passed in org, contact and string urn, this is not saved to the DB yet
 func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN, auth string) *DBContactURN {
 	return &DBContactURN{
-		OrgID:     org,
-		ChannelID: channelID,
-		ContactID: contactID,
-		Identity:  string(urn.Identity()),
-		Scheme:    urn.Scheme(),
-		Path:      urn.Path(),
-		Display:   null.String(urn.Display()),
-		Auth:      null.String(auth),
+		OrgID:      org,
+		ChannelID:  channelID,
+		ContactID:  contactID,
+		Identity:   string(urn.Identity()),
+		Scheme:     urn.Scheme(),
+		Path:       urn.Path(),
+		Display:    null.String(urn.Display()),
+		Auth:       null.String(auth),
+		AuthTokens: null.Map[string]{"default": auth},
 	}
 }
 
@@ -112,6 +113,7 @@ func setDefaultURN(db *sqlx.Tx, channel *DBChannel, contact *DBContact, urn urns
 
 			if auth != "" {
 				contactURNs[0].Auth = null.String(auth)
+				contactURNs[0].AuthTokens = null.Map[string]{"default": auth}
 			}
 			return updateContactURN(db, contactURNs[0])
 		}
@@ -134,6 +136,7 @@ func setDefaultURN(db *sqlx.Tx, channel *DBChannel, contact *DBContact, urn urns
 
 			if auth != "" {
 				existing.Auth = null.String(auth)
+				existing.AuthTokens = null.Map[string]{"default": auth}
 			}
 		} else {
 			existing.Priority = currPriority
@@ -225,6 +228,8 @@ func contactURNForURN(db *sqlx.Tx, channel *DBChannel, contactID ContactID, urn 
 	// update our auth if we have a value set
 	if auth != "" && auth != string(contactURN.Auth) {
 		contactURN.Auth = null.String(auth)
+		contactURN.AuthTokens = null.Map[string]{"default": auth}
+
 		err = updateContactURN(db, contactURN)
 	}
 
@@ -233,8 +238,8 @@ func contactURNForURN(db *sqlx.Tx, channel *DBChannel, contactID ContactID, urn 
 
 const insertURN = `
 INSERT INTO 
-	contacts_contacturn(org_id, identity, path, scheme, display, auth, priority, channel_id, contact_id)
-                 VALUES(:org_id, :identity, :path, :scheme, :display, :auth, :priority, :channel_id, :contact_id)
+	contacts_contacturn(org_id, identity, path, scheme, display, auth, auth_tokens, priority, channel_id, contact_id)
+                 VALUES(:org_id, :identity, :path, :scheme, :display, :auth, :auth_tokens, :priority, :channel_id, :contact_id)
 RETURNING id
 `
 
@@ -260,6 +265,7 @@ SET
 	contact_id = :contact_id, 
 	display = :display, 
 	auth = :auth, 
+	auth_tokens = :auth_tokens, 
 	priority = :priority
 WHERE 
 	id = :id
@@ -273,7 +279,8 @@ SET
 	identity = :identity, 
 	path = :path, 
 	display = :display, 
-	auth = :auth, 
+	auth = :auth,
+	auth_tokens = :auth_tokens,  
 	priority = :priority
 WHERE 
 	id = :id
@@ -318,6 +325,7 @@ type DBContactURN struct {
 	Path          string            `db:"path"`
 	Display       null.String       `db:"display"`
 	Auth          null.String       `db:"auth"`
+	AuthTokens    null.Map[string]  `db:"auth_tokens"`
 	Priority      int               `db:"priority"`
 	ChannelID     courier.ChannelID `db:"channel_id"`
 	ContactID     ContactID         `db:"contact_id"`
