@@ -349,6 +349,10 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 			if err := s.backend.WriteChannelLog(ctx, clog); err != nil {
 				logrus.WithError(err).Error("error writing channel log")
 			}
+		} else {
+			logrus.WithError(err).WithFields(
+				logrus.Fields{"channel_type": handler.ChannelType(), "request": string(recorder.Trace.RequestTrace), "status": recorder.Trace.Response.StatusCode},
+			).Info("non-channel specific request")
 		}
 	}
 }
