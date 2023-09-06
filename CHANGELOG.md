@@ -1,3 +1,7 @@
+v8.3.12 (2023-09-06)
+-------------------------
+ * Do more debug logging and less info logging
+
 v8.3.11 (2023-09-06)
 -------------------------
  * Add logging of requests with no associated channel
