@@ -700,6 +700,9 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	err := ts.b.WriteStatusUpdate(ctx, status1)
 	ts.NoError(err)
 
+	// give batcher time to write it
+	time.Sleep(time.Millisecond * 600)
+
 	keys, err := redis.Strings(r.Do("KEYS", "sent-external-ids:*"))
 	ts.NoError(err)
 	ts.Len(keys, 1)

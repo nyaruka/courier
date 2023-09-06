@@ -300,6 +300,10 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*Sta
 		}
 	}
 
+	if len(notInCache) == 0 {
+		return nil
+	}
+
 	// create a mapping of channel id + external id -> status
 	type ext struct {
 		channelID  courier.ChannelID
