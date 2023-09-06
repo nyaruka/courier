@@ -112,7 +112,7 @@ var testCasesFBA = []IncomingTestCase{
 		ExpectedURN:          "facebook:ref:optin_user_ref",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]any{"referrer_id": "optin_ref"},
+		ExpectedEventExtra:   map[string]string{"referrer_id": "optin_ref"},
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -124,7 +124,7 @@ var testCasesFBA = []IncomingTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]any{"referrer_id": "optin_ref"},
+		ExpectedEventExtra:   map[string]string{"referrer_id": "optin_ref"},
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -136,7 +136,7 @@ var testCasesFBA = []IncomingTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.NewConversation,
-		ExpectedEventExtra:   map[string]any{"title": "postback title", "payload": "get_started"},
+		ExpectedEventExtra:   map[string]string{"title": "postback title", "payload": "get_started"},
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -148,7 +148,7 @@ var testCasesFBA = []IncomingTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]any{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"},
+		ExpectedEventExtra:   map[string]string{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"},
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -160,7 +160,7 @@ var testCasesFBA = []IncomingTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]any{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"},
+		ExpectedEventExtra:   map[string]string{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"},
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -172,7 +172,7 @@ var testCasesFBA = []IncomingTestCase{
 		ExpectedURN:          "facebook:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]any{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"},
+		ExpectedEventExtra:   map[string]string{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"},
 		PrepRequest:          addValidSignature,
 	},
 	{
@@ -323,7 +323,7 @@ var testCasesIG = []IncomingTestCase{
 		ExpectedURN:          "instagram:5678",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
 		ExpectedEvent:        courier.NewConversation,
-		ExpectedEventExtra:   map[string]any{"title": "icebreaker question", "payload": "get_started"},
+		ExpectedEventExtra:   map[string]string{"title": "icebreaker question", "payload": "get_started"},
 		PrepRequest:          addValidSignature,
 	},
 	{

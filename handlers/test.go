@@ -51,7 +51,7 @@ type IncomingTestCase struct {
 	ExpectedExternalID   string
 	ExpectedMsgID        int64
 	ExpectedEvent        courier.ChannelEventType
-	ExpectedEventExtra   map[string]any
+	ExpectedEventExtra   map[string]string
 	ExpectedErrors       []*courier.ChannelError
 	NoLogsExpected       bool
 }

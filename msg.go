@@ -9,7 +9,7 @@ import (
 
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
-	"github.com/nyaruka/null/v2"
+	"github.com/nyaruka/null/v3"
 )
 
 // MsgID is our typing of the db int type
