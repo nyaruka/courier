@@ -57,6 +57,7 @@ type channelError struct {
 
 // queues the passed in channel log to a writer
 func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) {
+	log := logrus.WithFields(logrus.Fields{"log_uuid": clog.UUID(), "log_type": clog.Type(), "channel_uuid": clog.Channel().UUID()})
 	dbChan := clog.Channel().(*DBChannel)
 
 	// so that we don't save null
@@ -78,6 +79,7 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 
 	// if log is attached to a call or message, only write to storage
 	if clog.Attached() {
+		log = log.WithField("storage", "s3")
 		v := &stChannelLog{
 			UUID:        clog.UUID(),
 			Type:        clog.Type(),
@@ -88,10 +90,11 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 			ChannelUUID: clog.Channel().UUID(),
 		}
 		if b.stLogWriter.Queue(v) <= 0 {
-			logrus.Error("channel log storage writer buffer full")
+			log.Error("channel log writer buffer full")
 		}
 	} else {
 		// otherwise write to database so it's retrievable
+		log = log.WithField("storage", "db")
 		v := &dbChannelLog{
 			UUID:      clog.UUID(),
 			Type:      clog.Type(),
@@ -103,9 +106,11 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 			ElapsedMS: int(clog.Elapsed() / time.Millisecond),
 		}
 		if b.dbLogWriter.Queue(v) <= 0 {
-			logrus.Error("channel log db writer buffer full")
+			log.Error("channel log writer buffer full")
 		}
 	}
+
+	log.Debug("channel log queued")
 }
 
 type DBLogWriter struct {

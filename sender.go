@@ -231,7 +231,7 @@ func (w *Sender) sendMessage(msg Msg) {
 			log.WithField("elapsed", duration).Warning("msg errored")
 			analytics.Gauge(fmt.Sprintf("courier.msg_send_error_%s", msg.Channel().ChannelType()), secondDuration)
 		} else {
-			log.WithField("elapsed", duration).Info("msg sent")
+			log.WithField("elapsed", duration).Debug("msg sent")
 			analytics.Gauge(fmt.Sprintf("courier.msg_send_%s", msg.Channel().ChannelType()), secondDuration)
 		}
 	}
