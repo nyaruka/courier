@@ -55,15 +55,11 @@ const (
 	ConfigSendHeaders = "headers"
 )
 
-// ChannelType is our typing of the two char channel types
+// ChannelType is the 1-3 letter code used for channel types in the database
 type ChannelType string
 
 // AnyChannelType is our empty channel type used when doing lookups without channel type assertions
-var AnyChannelType = ChannelType("")
-
-func (ct ChannelType) String() string {
-	return string(ct)
-}
+const AnyChannelType = ChannelType("")
 
 // ChannelRole is a role that a channel can perform
 type ChannelRole string

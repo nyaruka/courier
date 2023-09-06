@@ -857,7 +857,7 @@ func (b *backend) Status() string {
 		channel, err := getChannel(context.Background(), b.db, courier.AnyChannelType, channelUUID)
 		channelType := "!!"
 		if err == nil {
-			channelType = channel.ChannelType().String()
+			channelType = string(channel.ChannelType())
 		}
 
 		// get # of items in our normal queue
