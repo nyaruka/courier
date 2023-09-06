@@ -70,6 +70,15 @@ var waIgnoreStatuses = map[string]bool{
 	"deleted": true,
 }
 
+// see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media#supported-media-types
+var wacMediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{
+	handlers.MediaType("image/webp"): {Types: []string{"image/webp"}, MaxBytes: 100 * 1024, MaxWidth: 512, MaxHeight: 512},
+	handlers.MediaTypeImage:          {Types: []string{"image/jpeg", "image/png"}, MaxBytes: 5 * 1024 * 1024},
+	handlers.MediaTypeAudio:          {Types: []string{"audio/aac", "audio/mp4", "audio/mpeg", "audio/amr", "audio/ogg"}, MaxBytes: 16 * 1024 * 1024},
+	handlers.MediaTypeVideo:          {Types: []string{"video/mp4", "video/3gp"}, MaxBytes: 16 * 1024 * 1024},
+	handlers.MediaTypeApplication:    {MaxBytes: 100 * 1024 * 1024},
+}
+
 func newHandler(channelType courier.ChannelType, name string, useUUIDRoutes bool) courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, useUUIDRoutes, []string{courier.ConfigAuthToken})}
 }
@@ -1129,12 +1138,17 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 	qrs := msg.QuickReplies()
 	lang := getSupportedLanguage(msg.Locale())
 
+	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), wacMediaSupport, false)
+	if err != nil {
+		return nil, errors.Wrap(err, "error resolving attachments")
+	}
+
 	var payloadAudio wacMTPayload
 
-	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
+	for i := 0; i < len(msgParts)+len(attachments); i++ {
 		payload := wacMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
 
-		if len(msg.Attachments()) == 0 {
+		if len(attachments) == 0 {
 			// do we have a template?
 			templating, err := h.getTemplating(msg)
 			if err != nil {
@@ -1155,14 +1169,14 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 				template.Components = append(payload.Template.Components, component)
 
 			} else {
-				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
+				if i < (len(msgParts) + len(attachments) - 1) {
 					// this is still a msg part
 					text := &wacText{PreviewURL: false}
 					payload.Type = "text"
-					if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+					if strings.Contains(msgParts[i-len(attachments)], "https://") || strings.Contains(msgParts[i-len(attachments)], "http://") {
 						text.PreviewURL = true
 					}
-					text.Body = msgParts[i-len(msg.Attachments())]
+					text.Body = msgParts[i-len(attachments)]
 					payload.Text = text
 				} else {
 					if len(qrs) > 0 {
@@ -1171,7 +1185,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 						if len(qrs) <= 3 {
 							interactive := wacInteractive{Type: "button", Body: struct {
 								Text string "json:\"text\""
-							}{Text: msgParts[i-len(msg.Attachments())]}}
+							}{Text: msgParts[i-len(attachments)]}}
 
 							btns := make([]wacMTButton, len(qrs))
 							for i, qr := range qrs {
@@ -1190,7 +1204,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 						} else if len(qrs) <= 10 {
 							interactive := wacInteractive{Type: "list", Body: struct {
 								Text string "json:\"text\""
-							}{Text: msgParts[i-len(msg.Attachments())]}}
+							}{Text: msgParts[i-len(attachments)]}}
 
 							section := wacMTSection{
 								Rows: make([]wacMTSectionRow, len(qrs)),
@@ -1218,20 +1232,19 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 						// this is still a msg part
 						text := &wacText{PreviewURL: false}
 						payload.Type = "text"
-						if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+						if strings.Contains(msgParts[i-len(attachments)], "https://") || strings.Contains(msgParts[i-len(attachments)], "http://") {
 							text.PreviewURL = true
 						}
-						text.Body = msgParts[i-len(msg.Attachments())]
+						text.Body = msgParts[i-len(attachments)]
 						payload.Text = text
 					}
 				}
 			}
 
-		} else if i < len(msg.Attachments()) && (len(qrs) == 0 || len(qrs) > 3) {
-			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
-			splitedAttType := strings.Split(attType, "/")
-			attType = splitedAttType[0]
-			attFormat := splitedAttType[1]
+		} else if i < len(attachments) && (len(qrs) == 0 || len(qrs) > 3) {
+			attURL := attachments[i].Media.URL()
+			attType := string(attachments[i].Type)
+			attContentType := attachments[i].Media.ContentType()
 
 			if attType == "application" {
 				attType = "document"
@@ -1239,13 +1252,13 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 			payload.Type = attType
 			media := wacMTMedia{Link: attURL}
 
-			if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(msg.QuickReplies()) == 0 {
+			if len(msgParts) == 1 && attType != "audio" && len(attachments) == 1 && len(msg.QuickReplies()) == 0 {
 				media.Caption = msgParts[i]
 				hasCaption = true
 			}
 
 			if attType == "image" {
-				if attFormat == "webp" {
+				if attContentType == "image/webp" {
 					payload.Type = "sticker"
 					payload.Sticker = &media
 				} else {
@@ -1276,8 +1289,8 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 
 					if len(msg.Attachments()) > 0 {
 						hasCaption = true
-						attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
-						attType = strings.Split(attType, "/")[0]
+						attURL := attachments[i].Media.URL()
+						attType := string(attachments[i].Type)
 						if attType == "application" {
 							attType = "document"
 						}
@@ -1353,7 +1366,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 				} else if len(qrs) <= 10 {
 					interactive := wacInteractive{Type: "list", Body: struct {
 						Text string "json:\"text\""
-					}{Text: msgParts[i-len(msg.Attachments())]}}
+					}{Text: msgParts[i-len(attachments)]}}
 
 					section := wacMTSection{
 						Rows: make([]wacMTSectionRow, len(qrs)),
@@ -1381,10 +1394,10 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 				// this is still a msg part
 				text := &wacText{PreviewURL: false}
 				payload.Type = "text"
-				if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+				if strings.Contains(msgParts[i-len(attachments)], "https://") || strings.Contains(msgParts[i-len(attachments)], "http://") {
 					text.PreviewURL = true
 				}
-				text.Body = msgParts[i-len(msg.Attachments())]
+				text.Body = msgParts[i-len(attachments)]
 				payload.Text = text
 			}
 		}
