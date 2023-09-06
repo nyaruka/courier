@@ -529,6 +529,7 @@ func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalI
 
 // WriteStatusUpdate writes the passed in MsgStatus to our store
 func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUpdate) error {
+	log := logrus.WithFields(logrus.Fields{"msg_id": status.ID(), "msg_external_id": status.ExternalID(), "status": status.Status()})
 	su := status.(*StatusUpdate)
 
 	if status.ID() == courier.NilMsgID && status.ExternalID() == "" {
@@ -550,7 +551,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 
 			err := b.sentExternalIDs.Set(rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalID_), fmt.Sprintf("%d", status.ID()))
 			if err != nil {
-				logrus.WithError(err).WithField("msg", status.ID()).Error("error recording external id")
+				log.WithError(err).Error("error recording external id")
 			}
 		}
 
@@ -558,13 +559,14 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 		if status.Status() == courier.MsgStatusErrored {
 			err := b.ClearMsgSent(ctx, status.ID())
 			if err != nil {
-				logrus.WithError(err).WithField("msg", status.ID()).Error("error clearing sent flags")
+				log.WithError(err).Error("error clearing sent flags")
 			}
 		}
 	}
 
 	// queue the status to written by the batch writer
 	b.statusWriter.Queue(status.(*StatusUpdate))
+	log.Debug("status update queued")
 
 	return nil
 }
