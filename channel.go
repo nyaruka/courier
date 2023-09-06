@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/nyaruka/gocommon/uuids"
-	"github.com/nyaruka/null/v2"
+	"github.com/nyaruka/null/v3"
 )
 
 const (

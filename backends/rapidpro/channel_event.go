@@ -13,7 +13,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/null/v2"
+	"github.com/nyaruka/null/v3"
 	"github.com/sirupsen/logrus"
 )
 
@@ -166,7 +166,7 @@ type DBChannelEvent struct {
 	ChannelID_   courier.ChannelID        `json:"channel_id"              db:"channel_id"`
 	URN_         urns.URN                 `json:"urn"                     db:"urn"`
 	EventType_   courier.ChannelEventType `json:"event_type"              db:"event_type"`
-	Extra_       null.Map                 `json:"extra"                   db:"extra"`
+	Extra_       null.Map[string]         `json:"extra"                   db:"extra"`
 	OccurredOn_  time.Time                `json:"occurred_on"             db:"occurred_on"`
 	CreatedOn_   time.Time                `json:"created_on"              db:"created_on"`
 	LogUUIDs     pq.StringArray           `json:"log_uuids"               db:"log_uuids"`
@@ -183,7 +183,7 @@ func (e *DBChannelEvent) ChannelID() courier.ChannelID        { return e.Channel
 func (e *DBChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.ChannelUUID_ }
 func (e *DBChannelEvent) ContactName() string                 { return e.ContactName_ }
 func (e *DBChannelEvent) URN() urns.URN                       { return e.URN_ }
-func (e *DBChannelEvent) Extra() map[string]any               { return e.Extra_ }
+func (e *DBChannelEvent) Extra() map[string]string            { return e.Extra_ }
 func (e *DBChannelEvent) EventType() courier.ChannelEventType { return e.EventType_ }
 func (e *DBChannelEvent) OccurredOn() time.Time               { return e.OccurredOn_ }
 func (e *DBChannelEvent) CreatedOn() time.Time                { return e.CreatedOn_ }
@@ -193,8 +193,8 @@ func (e *DBChannelEvent) WithContactName(name string) courier.ChannelEvent {
 	e.ContactName_ = name
 	return e
 }
-func (e *DBChannelEvent) WithExtra(extra map[string]any) courier.ChannelEvent {
-	e.Extra_ = null.Map(extra)
+func (e *DBChannelEvent) WithExtra(extra map[string]string) courier.ChannelEvent {
+	e.Extra_ = null.Map[string](extra)
 	return e
 }
 

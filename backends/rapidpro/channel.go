@@ -12,7 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/null/v2"
+	"github.com/nyaruka/null/v3"
 )
 
 type LogPolicy string
@@ -288,12 +288,12 @@ type DBChannel struct {
 	Name_        sql.NullString      `db:"name"`
 	Address_     sql.NullString      `db:"address"`
 	Country_     sql.NullString      `db:"country"`
-	Config_      null.Map            `db:"config"`
+	Config_      null.Map[any]       `db:"config"`
 	Role_        string              `db:"role"`
 	LogPolicy    LogPolicy           `db:"log_policy"`
 
-	OrgConfig_ null.Map `db:"org_config"`
-	OrgIsAnon_ bool     `db:"org_is_anon"`
+	OrgConfig_ null.Map[any] `db:"org_config"`
+	OrgIsAnon_ bool          `db:"org_is_anon"`
 
 	expiration time.Time
 }
