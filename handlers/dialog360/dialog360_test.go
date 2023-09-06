@@ -657,7 +657,7 @@ func setupMedia(mb *test.MockBackend) {
 	mb.MockMedia(stickerWEBP)
 }
 
-func TestSending(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
 
@@ -667,7 +667,7 @@ func TestSending(t *testing.T) {
 	})
 	checkRedacted := []string{"the-auth-token"}
 
-	RunChannelSendTestCases(t, ChannelWAC, newWAHandler(courier.ChannelType("D3C"), "360Dialog"), SendTestCasesD3C, checkRedacted, setupMedia)
+	RunOutgoingTestCases(t, ChannelWAC, newWAHandler(courier.ChannelType("D3C"), "360Dialog"), SendTestCasesD3C, checkRedacted, setupMedia)
 }
 func TestGetSupportedLanguage(t *testing.T) {
 	assert.Equal(t, languageInfo{"en", "Menu"}, getSupportedLanguage(courier.NilLocale))
