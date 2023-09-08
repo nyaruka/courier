@@ -14,7 +14,6 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
-	"github.com/nyaruka/gocommon/i18n"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -614,15 +613,4 @@ func TestOutgoing(t *testing.T) {
 	checkRedacted := []string{"the-auth-token"}
 
 	RunOutgoingTestCases(t, ChannelWAC, newWAHandler(courier.ChannelType("D3C"), "360Dialog"), SendTestCasesD3C, checkRedacted, nil)
-}
-func TestGetSupportedLanguage(t *testing.T) {
-	assert.Equal(t, languageInfo{"en", "Menu"}, getSupportedLanguage(i18n.NilLocale))
-	assert.Equal(t, languageInfo{"en", "Menu"}, getSupportedLanguage(i18n.Locale("eng")))
-	assert.Equal(t, languageInfo{"en_US", "Menu"}, getSupportedLanguage(i18n.Locale("eng-US")))
-	assert.Equal(t, languageInfo{"pt_PT", "Menu"}, getSupportedLanguage(i18n.Locale("por")))
-	assert.Equal(t, languageInfo{"pt_PT", "Menu"}, getSupportedLanguage(i18n.Locale("por-PT")))
-	assert.Equal(t, languageInfo{"pt_BR", "Menu"}, getSupportedLanguage(i18n.Locale("por-BR")))
-	assert.Equal(t, languageInfo{"fil", "Menu"}, getSupportedLanguage(i18n.Locale("fil")))
-	assert.Equal(t, languageInfo{"fr", "Menu"}, getSupportedLanguage(i18n.Locale("fra-CA")))
-	assert.Equal(t, languageInfo{"en", "Menu"}, getSupportedLanguage(i18n.Locale("run")))
 }
