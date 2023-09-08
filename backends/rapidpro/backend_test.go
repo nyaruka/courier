@@ -334,14 +334,14 @@ func (ts *BackendTestSuite) TestContactURN() {
 
 	contactURNs, err := contactURNsForContact(tx, contact.ID_)
 	ts.NoError(err)
-	ts.Equal(null.String("chestnut"), contactURNs[0].Auth)
+	ts.Equal(null.Map[string]{"default": "chestnut"}, contactURNs[0].AuthTokens)
 
 	// now build a URN for our number with the kannel channel
 	knURN, err := contactURNForURN(tx, knChannel, contact.ID_, urn, "sesame")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(knURN.OrgID, knChannel.OrgID_)
-	ts.Equal(null.String("sesame"), knURN.Auth)
+	ts.Equal(null.Map[string]{"default": "sesame"}, knURN.AuthTokens)
 
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
@@ -361,7 +361,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.Equal(twURN.ChannelID, twChannel.ID())
 
 	// auth should be unchanged
-	ts.Equal(null.String("sesame"), twURN.Auth)
+	ts.Equal(null.Map[string]{"default": "sesame"}, twURN.AuthTokens)
 
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
@@ -370,7 +370,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	twURN, err = contactURNForURN(tx, twChannel, contact.ID_, urn, "peanut")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
-	ts.Equal(null.String("peanut"), twURN.Auth)
+	ts.Equal(null.Map[string]{"default": "peanut"}, twURN.AuthTokens)
 
 	// test that we don't use display when looking up URNs
 	tgChannel := ts.getChannel("TG", "dbc126ed-66bc-4e28-b67b-81dc3327c98a")
