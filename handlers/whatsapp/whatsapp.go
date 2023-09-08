@@ -17,6 +17,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/redisx"
 	"github.com/patrickmn/go-cache"
@@ -1147,16 +1148,16 @@ type MsgTemplating struct {
 	Variables []string `json:"variables"`
 }
 
-func getSupportedLanguage(lc courier.Locale) string {
+func getSupportedLanguage(lc i18n.Locale) string {
 	// look for exact match
 	if lang := supportedLanguages[lc]; lang != "" {
 		return lang
 	}
 
 	// if we have a country, strip that off and look again for a match
-	l, c := lc.ToParts()
+	l, c := lc.Split()
 	if c != "" {
-		if lang := supportedLanguages[courier.Locale(l)]; lang != "" {
+		if lang := supportedLanguages[i18n.Locale(l)]; lang != "" {
 			return lang
 		}
 	}
@@ -1164,7 +1165,7 @@ func getSupportedLanguage(lc courier.Locale) string {
 }
 
 // Mapping from engine locales to supported languages, see https://developers.facebook.com/docs/whatsapp/api/messages/message-templates/
-var supportedLanguages = map[courier.Locale]string{
+var supportedLanguages = map[i18n.Locale]string{
 	"afr":    "af",    // Afrikaans
 	"sqi":    "sq",    // Albanian
 	"ara":    "ar",    // Arabic

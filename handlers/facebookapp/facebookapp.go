@@ -18,6 +18,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
@@ -1564,16 +1565,16 @@ type MsgTemplating struct {
 	Variables []string `json:"variables"`
 }
 
-func getSupportedLanguage(lc courier.Locale) languageInfo {
+func getSupportedLanguage(lc i18n.Locale) languageInfo {
 	// look for exact match
 	if lang := supportedLanguages[lc]; lang.code != "" {
 		return lang
 	}
 
 	// if we have a country, strip that off and look again for a match
-	l, c := lc.ToParts()
+	l, c := lc.Split()
 	if c != "" {
-		if lang := supportedLanguages[courier.Locale(l)]; lang.code != "" {
+		if lang := supportedLanguages[i18n.Locale(l)]; lang.code != "" {
 			return lang
 		}
 	}
@@ -1587,7 +1588,7 @@ type languageInfo struct {
 
 // Mapping from engine locales to supported languages. Note that these are not all valid BCP47 codes, e.g. fil
 // see https://developers.facebook.com/docs/whatsapp/api/messages/message-templates/
-var supportedLanguages = map[courier.Locale]languageInfo{
+var supportedLanguages = map[i18n.Locale]languageInfo{
 	"afr":    {code: "af", menu: "Kieslys"},   // Afrikaans
 	"sqi":    {code: "sq", menu: "Menu"},      // Albanian
 	"ara":    {code: "ar", menu: "قائمة"},     // Arabic

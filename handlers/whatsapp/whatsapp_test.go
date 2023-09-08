@@ -13,6 +13,7 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/i18n"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -1148,13 +1149,13 @@ func TestOutgoing(t *testing.T) {
 }
 
 func TestGetSupportedLanguage(t *testing.T) {
-	assert.Equal(t, "en", getSupportedLanguage(courier.NilLocale))
-	assert.Equal(t, "en", getSupportedLanguage(courier.Locale("eng")))
-	assert.Equal(t, "en_US", getSupportedLanguage(courier.Locale("eng-US")))
-	assert.Equal(t, "pt_PT", getSupportedLanguage(courier.Locale("por")))
-	assert.Equal(t, "pt_PT", getSupportedLanguage(courier.Locale("por-PT")))
-	assert.Equal(t, "pt_BR", getSupportedLanguage(courier.Locale("por-BR")))
-	assert.Equal(t, "fil", getSupportedLanguage(courier.Locale("fil")))
-	assert.Equal(t, "fr", getSupportedLanguage(courier.Locale("fra-CA")))
-	assert.Equal(t, "en", getSupportedLanguage(courier.Locale("run")))
+	assert.Equal(t, "en", getSupportedLanguage(i18n.NilLocale))
+	assert.Equal(t, "en", getSupportedLanguage(i18n.Locale("eng")))
+	assert.Equal(t, "en_US", getSupportedLanguage(i18n.Locale("eng-US")))
+	assert.Equal(t, "pt_PT", getSupportedLanguage(i18n.Locale("por")))
+	assert.Equal(t, "pt_PT", getSupportedLanguage(i18n.Locale("por-PT")))
+	assert.Equal(t, "pt_BR", getSupportedLanguage(i18n.Locale("por-BR")))
+	assert.Equal(t, "fil", getSupportedLanguage(i18n.Locale("fil")))
+	assert.Equal(t, "fr", getSupportedLanguage(i18n.Locale("fra-CA")))
+	assert.Equal(t, "en", getSupportedLanguage(i18n.Locale("run")))
 }
