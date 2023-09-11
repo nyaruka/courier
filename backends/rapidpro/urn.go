@@ -35,7 +35,7 @@ func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID
 		Scheme:     urn.Scheme(),
 		Path:       urn.Path(),
 		Display:    null.String(urn.Display()),
-		Auth:       null.String(auth),
+		Auth:       null.String(auth), // TODO remove
 		AuthTokens: null.Map[string]{"default": auth},
 	}
 }
@@ -47,6 +47,7 @@ SELECT
 	scheme, 
 	display, 
 	auth, 
+	auth_tokens,
 	priority, 
 	contact_id, 
 	channel_id
@@ -104,7 +105,7 @@ func setDefaultURN(db *sqlx.Tx, channel *DBChannel, contact *DBContact, urn urns
 		display := urn.Display()
 
 		// if display, channel id or auth changed, update them
-		if string(contactURNs[0].Display) != display || contactURNs[0].ChannelID != channel.ID() || (auth != "" && string(contactURNs[0].Auth) != auth) {
+		if string(contactURNs[0].Display) != display || contactURNs[0].ChannelID != channel.ID() || (auth != "" && contactURNs[0].AuthTokens["default"] != auth) {
 			contactURNs[0].Display = null.String(display)
 
 			if channel.HasRole(courier.ChannelRoleSend) {
@@ -112,7 +113,7 @@ func setDefaultURN(db *sqlx.Tx, channel *DBChannel, contact *DBContact, urn urns
 			}
 
 			if auth != "" {
-				contactURNs[0].Auth = null.String(auth)
+				contactURNs[0].Auth = null.String(auth) // TODO remove
 				contactURNs[0].AuthTokens = null.Map[string]{"default": auth}
 			}
 			return updateContactURN(db, contactURNs[0])
@@ -135,7 +136,7 @@ func setDefaultURN(db *sqlx.Tx, channel *DBChannel, contact *DBContact, urn urns
 			}
 
 			if auth != "" {
-				existing.Auth = null.String(auth)
+				existing.Auth = null.String(auth) // TODO remove
 				existing.AuthTokens = null.Map[string]{"default": auth}
 			}
 		} else {
@@ -165,6 +166,7 @@ SELECT
 	path, 
 	display, 
 	auth, 
+	auth_tokens,
 	priority, 
 	channel_id, 
 	contact_id 
@@ -226,8 +228,8 @@ func contactURNForURN(db *sqlx.Tx, channel *DBChannel, contactID ContactID, urn 
 	}
 
 	// update our auth if we have a value set
-	if auth != "" && auth != string(contactURN.Auth) {
-		contactURN.Auth = null.String(auth)
+	if auth != "" && auth != contactURN.AuthTokens["default"] {
+		contactURN.Auth = null.String(auth) // TODO remove
 		contactURN.AuthTokens = null.Map[string]{"default": auth}
 
 		err = updateContactURN(db, contactURN)
