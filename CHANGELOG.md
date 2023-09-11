@@ -1,3 +1,9 @@
+v8.3.14 (2023-09-11)
+-------------------------
+ * Move whatsapp language matching into own util package and use i18n.BCP47Matcher
+ * Update to latest gocommon and use i18n.Locale
+ * Read from ContactURN.auth_tokens instead of .auth
+
 v8.3.13 (2023-09-06)
 -------------------------
  * Start writing ContactURN.auth_tokens
