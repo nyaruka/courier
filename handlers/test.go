@@ -18,6 +18,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -264,7 +265,7 @@ type OutgoingTestCase struct {
 	MsgURNAuth              string
 	MsgAttachments          []string
 	MsgQuickReplies         []string
-	MsgLocale               courier.Locale
+	MsgLocale               i18n.Locale
 	MsgTopic                string
 	MsgHighPriority         bool
 	MsgResponseToExternalID string

@@ -16,6 +16,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/courier/utils/whatsapp"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/redisx"
@@ -562,7 +563,7 @@ func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]any
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 
 	qrs := msg.QuickReplies()
-	langCode := getSupportedLanguage(msg.Locale())
+	langCode := whatsapp.GetSupportedLanguage(msg.Locale())
 	wppVersion := msg.Channel().ConfigForKey("version", "0").(string)
 	isInteractiveMsgCompatible := semver.Compare(wppVersion, interactiveMsgMinSupVersion)
 	isInteractiveMsg := (isInteractiveMsgCompatible >= 0) && (len(qrs) > 0)
@@ -1145,97 +1146,4 @@ type MsgTemplating struct {
 	} `json:"template" validate:"required,dive"`
 	Namespace string   `json:"namespace"`
 	Variables []string `json:"variables"`
-}
-
-func getSupportedLanguage(lc courier.Locale) string {
-	// look for exact match
-	if lang := supportedLanguages[lc]; lang != "" {
-		return lang
-	}
-
-	// if we have a country, strip that off and look again for a match
-	l, c := lc.ToParts()
-	if c != "" {
-		if lang := supportedLanguages[courier.Locale(l)]; lang != "" {
-			return lang
-		}
-	}
-	return "en" // fallback to English
-}
-
-// Mapping from engine locales to supported languages, see https://developers.facebook.com/docs/whatsapp/api/messages/message-templates/
-var supportedLanguages = map[courier.Locale]string{
-	"afr":    "af",    // Afrikaans
-	"sqi":    "sq",    // Albanian
-	"ara":    "ar",    // Arabic
-	"aze":    "az",    // Azerbaijani
-	"ben":    "bn",    // Bengali
-	"bul":    "bg",    // Bulgarian
-	"cat":    "ca",    // Catalan
-	"zho":    "zh_CN", // Chinese
-	"zho-CN": "zh_CN", // Chinese (CHN)
-	"zho-HK": "zh_HK", // Chinese (HKG)
-	"zho-TW": "zh_TW", // Chinese (TAI)
-	"hrv":    "hr",    // Croatian
-	"ces":    "cs",    // Czech
-	"dah":    "da",    // Danish
-	"nld":    "nl",    // Dutch
-	"eng":    "en",    // English
-	"eng-GB": "en_GB", // English (UK)
-	"eng-US": "en_US", // English (US)
-	"est":    "et",    // Estonian
-	"fil":    "fil",   // Filipino
-	"fin":    "fi",    // Finnish
-	"fra":    "fr",    // French
-	"kat":    "ka",    // Georgian
-	"deu":    "de",    // German
-	"ell":    "el",    // Greek
-	"guj":    "gu",    // Gujarati
-	"hau":    "ha",    // Hausa
-	"enb":    "he",    // Hebrew
-	"hin":    "hi",    // Hindi
-	"hun":    "hu",    // Hungarian
-	"ind":    "id",    // Indonesian
-	"gle":    "ga",    // Irish
-	"ita":    "it",    // Italian
-	"jpn":    "ja",    // Japanese
-	"kan":    "kn",    // Kannada
-	"kaz":    "kk",    // Kazakh
-	"kin":    "rw_RW", // Kinyarwanda
-	"kor":    "ko",    // Korean
-	"kir":    "ky_KG", // Kyrgyzstan
-	"lao":    "lo",    // Lao
-	"lav":    "lv",    // Latvian
-	"lit":    "lt",    // Lithuanian
-	"mal":    "ml",    // Malayalam
-	"mkd":    "mk",    // Macedonian
-	"msa":    "ms",    // Malay
-	"mar":    "mr",    // Marathi
-	"nob":    "nb",    // Norwegian
-	"fas":    "fa",    // Persian
-	"pol":    "pl",    // Polish
-	"por":    "pt_PT", // Portuguese
-	"por-BR": "pt_BR", // Portuguese (BR)
-	"por-PT": "pt_PT", // Portuguese (POR)
-	"pan":    "pa",    // Punjabi
-	"ron":    "ro",    // Romanian
-	"rus":    "ru",    // Russian
-	"srp":    "sr",    // Serbian
-	"slk":    "sk",    // Slovak
-	"slv":    "sl",    // Slovenian
-	"spa":    "es",    // Spanish
-	"spa-AR": "es_AR", // Spanish (ARG)
-	"spa-ES": "es_ES", // Spanish (SPA)
-	"spa-MX": "es_MX", // Spanish (MEX)
-	"swa":    "sw",    // Swahili
-	"swe":    "sv",    // Swedish
-	"tam":    "ta",    // Tamil
-	"tel":    "te",    // Telugu
-	"tha":    "th",    // Thai
-	"tur":    "tr",    // Turkish
-	"ukr":    "uk",    // Ukrainian
-	"urd":    "ur",    // Urdu
-	"uzb":    "uz",    // Uzbek
-	"vie":    "vi",    // Vietnamese
-	"zul":    "zu",    // Zulu
 }

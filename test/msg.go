@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -16,7 +17,7 @@ type mockMsg struct {
 	urnAuth              string
 	text                 string
 	attachments          []string
-	locale               courier.Locale
+	locale               i18n.Locale
 	externalID           string
 	contactName          string
 	highPriority         bool
@@ -69,7 +70,7 @@ func (m *mockMsg) EventID() int64                { return int64(m.id) }
 func (m *mockMsg) UUID() courier.MsgUUID         { return m.uuid }
 func (m *mockMsg) Text() string                  { return m.text }
 func (m *mockMsg) Attachments() []string         { return m.attachments }
-func (m *mockMsg) Locale() courier.Locale        { return m.locale }
+func (m *mockMsg) Locale() i18n.Locale           { return m.locale }
 func (m *mockMsg) ExternalID() string            { return m.externalID }
 func (m *mockMsg) URN() urns.URN                 { return m.urn }
 func (m *mockMsg) URNAuth() string               { return m.urnAuth }
@@ -95,7 +96,7 @@ func (m *mockMsg) WithAttachment(url string) courier.Msg {
 	m.attachments = append(m.attachments, url)
 	return m
 }
-func (m *mockMsg) WithLocale(lc courier.Locale) courier.Msg          { m.locale = lc; return m }
+func (m *mockMsg) WithLocale(lc i18n.Locale) courier.Msg             { m.locale = lc; return m }
 func (m *mockMsg) WithMetadata(metadata json.RawMessage) courier.Msg { m.metadata = metadata; return m }
 
 func (m *mockMsg) WithFlow(flow *courier.FlowReference) courier.Msg { m.flow = flow; return m }
