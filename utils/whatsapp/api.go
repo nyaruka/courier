@@ -1,6 +1,20 @@
 package whatsapp
 
-type WACMsgTemplating struct {
+import "github.com/nyaruka/courier"
+
+// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples#message-status-updates
+var StatusMapping = map[string]courier.MsgStatus{
+	"sent":      courier.MsgStatusSent,
+	"delivered": courier.MsgStatusDelivered,
+	"read":      courier.MsgStatusDelivered,
+	"failed":    courier.MsgStatusFailed,
+}
+
+var IgnoreStatuses = map[string]bool{
+	"deleted": true,
+}
+
+type MsgTemplating struct {
 	Template struct {
 		Name string `json:"name" validate:"required"`
 		UUID string `json:"uuid" validate:"required"`
@@ -9,14 +23,17 @@ type WACMsgTemplating struct {
 	Variables []string `json:"variables"`
 }
 
-type WACMOMedia struct {
+// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media#example-2
+type MOMedia struct {
 	Caption  string `json:"caption"`
 	Filename string `json:"filename"`
 	ID       string `json:"id"`
 	Mimetype string `json:"mime_type"`
 	SHA256   string `json:"sha256"`
 }
-type WACMOPayload struct {
+
+// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components#notification-payload-object
+type MOPayload struct {
 	Object string `json:"object"`
 	Entry  []struct {
 		ID      string `json:"id"`
@@ -49,11 +66,11 @@ type WACMOPayload struct {
 					Text struct {
 						Body string `json:"body"`
 					} `json:"text"`
-					Image    *WACMOMedia `json:"image"`
-					Audio    *WACMOMedia `json:"audio"`
-					Video    *WACMOMedia `json:"video"`
-					Document *WACMOMedia `json:"document"`
-					Voice    *WACMOMedia `json:"voice"`
+					Image    *MOMedia `json:"image"`
+					Audio    *MOMedia `json:"audio"`
+					Video    *MOMedia `json:"video"`
+					Document *MOMedia `json:"document"`
+					Voice    *MOMedia `json:"voice"`
 					Location *struct {
 						Latitude  float64 `json:"latitude"`
 						Longitude float64 `json:"longitude"`
@@ -168,25 +185,26 @@ type WACMOPayload struct {
 	} `json:"entry"`
 }
 
-type WACMTMedia struct {
+// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages#media-messages
+type MTMedia struct {
 	ID       string `json:"id,omitempty"`
 	Link     string `json:"link,omitempty"`
 	Caption  string `json:"caption,omitempty"`
 	Filename string `json:"filename,omitempty"`
 }
 
-type WACMTSection struct {
-	Title string            `json:"title,omitempty"`
-	Rows  []WACMTSectionRow `json:"rows" validate:"required"`
+type Section struct {
+	Title string       `json:"title,omitempty"`
+	Rows  []SectionRow `json:"rows" validate:"required"`
 }
 
-type WACMTSectionRow struct {
+type SectionRow struct {
 	ID          string `json:"id" validate:"required"`
 	Title       string `json:"title,omitempty"`
 	Description string `json:"description,omitempty"`
 }
 
-type WACMTButton struct {
+type Button struct {
 	Type  string `json:"type" validate:"required"`
 	Reply struct {
 		ID    string `json:"id" validate:"required"`
@@ -194,42 +212,46 @@ type WACMTButton struct {
 	} `json:"reply" validate:"required"`
 }
 
-type WACParam struct {
+type Param struct {
 	Type string `json:"type"`
 	Text string `json:"text"`
 }
 
-type WACComponent struct {
-	Type    string      `json:"type"`
-	SubType string      `json:"sub_type"`
-	Index   string      `json:"index"`
-	Params  []*WACParam `json:"parameters"`
+type Component struct {
+	Type    string   `json:"type"`
+	SubType string   `json:"sub_type"`
+	Index   string   `json:"index"`
+	Params  []*Param `json:"parameters"`
 }
 
-type WACText struct {
+type Text struct {
 	Body       string `json:"body"`
 	PreviewURL bool   `json:"preview_url"`
 }
 
-type WACLanguage struct {
+type Language struct {
 	Policy string `json:"policy"`
 	Code   string `json:"code"`
 }
 
-type WACTemplate struct {
-	Name       string          `json:"name"`
-	Language   *WACLanguage    `json:"language"`
-	Components []*WACComponent `json:"components"`
+// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#template-object
+// Example https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#template-messages
+type Template struct {
+	Name       string       `json:"name"`
+	Language   *Language    `json:"language"`
+	Components []*Component `json:"components"`
 }
 
-type WACInteractive struct {
+// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#interactive-object
+// Example https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#interactive-messages
+type Interactive struct {
 	Type   string `json:"type"`
 	Header *struct {
-		Type     string      `json:"type"`
-		Text     string      `json:"text,omitempty"`
-		Video    *WACMTMedia `json:"video,omitempty"`
-		Image    *WACMTMedia `json:"image,omitempty"`
-		Document *WACMTMedia `json:"document,omitempty"`
+		Type     string   `json:"type"`
+		Text     string   `json:"text,omitempty"`
+		Video    *MTMedia `json:"video,omitempty"`
+		Image    *MTMedia `json:"image,omitempty"`
+		Document *MTMedia `json:"document,omitempty"`
 	} `json:"header,omitempty"`
 	Body struct {
 		Text string `json:"text"`
@@ -238,31 +260,35 @@ type WACInteractive struct {
 		Text string `json:"text"`
 	} `json:"footer,omitempty"`
 	Action *struct {
-		Button   string         `json:"button,omitempty"`
-		Sections []WACMTSection `json:"sections,omitempty"`
-		Buttons  []WACMTButton  `json:"buttons,omitempty"`
+		Button   string    `json:"button,omitempty"`
+		Sections []Section `json:"sections,omitempty"`
+		Buttons  []Button  `json:"buttons,omitempty"`
 	} `json:"action,omitempty"`
 }
 
-type WACMTPayload struct {
+// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages#request-syntax
+// Example https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#message-object
+type MTPayload struct {
 	MessagingProduct string `json:"messaging_product"`
 	RecipientType    string `json:"recipient_type"`
 	To               string `json:"to"`
 	Type             string `json:"type"`
 
-	Text *WACText `json:"text,omitempty"`
+	Text *Text `json:"text,omitempty"`
 
-	Document *WACMTMedia `json:"document,omitempty"`
-	Image    *WACMTMedia `json:"image,omitempty"`
-	Audio    *WACMTMedia `json:"audio,omitempty"`
-	Video    *WACMTMedia `json:"video,omitempty"`
+	Document *MTMedia `json:"document,omitempty"`
+	Image    *MTMedia `json:"image,omitempty"`
+	Audio    *MTMedia `json:"audio,omitempty"`
+	Video    *MTMedia `json:"video,omitempty"`
 
-	Interactive *WACInteractive `json:"interactive,omitempty"`
+	Interactive *Interactive `json:"interactive,omitempty"`
 
-	Template *WACTemplate `json:"template,omitempty"`
+	Template *Template `json:"template,omitempty"`
 }
 
-type WACMTResponse struct {
+// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages#response-syntax
+// Example https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#successful-response
+type MTResponse struct {
 	Messages []*struct {
 		ID string `json:"id"`
 	} `json:"messages"`

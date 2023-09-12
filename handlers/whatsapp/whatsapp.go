@@ -260,9 +260,9 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 
 	// now with any status updates
 	for _, status := range payload.Statuses {
-		msgStatus, found := whatsapp.WACStatusMapping[status.Status]
+		msgStatus, found := waStatusMapping[status.Status]
 		if !found {
-			if whatsapp.WACIgnoreStatuses[status.Status] {
+			if waIgnoreStatuses[status.Status] {
 				data = append(data, courier.NewInfoData(fmt.Sprintf("ignoring status: %s", status.Status)))
 			} else {
 				handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown status: %s", status.Status))
@@ -318,6 +318,18 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 }
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
+
+var waStatusMapping = map[string]courier.MsgStatus{
+	"sending":   courier.MsgStatusWired,
+	"sent":      courier.MsgStatusSent,
+	"delivered": courier.MsgStatusDelivered,
+	"read":      courier.MsgStatusDelivered,
+	"failed":    courier.MsgStatusFailed,
+}
+
+var waIgnoreStatuses = map[string]bool{
+	"deleted": true,
+}
 
 // {
 //   "to": "16315555555",

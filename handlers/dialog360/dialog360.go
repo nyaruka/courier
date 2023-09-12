@@ -67,7 +67,7 @@ func (h *handler) Initialize(s courier.Server) error {
 // }
 
 // receiveEvent is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *whatsapp.WACMOPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *whatsapp.MOPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 
 	// is not a 'whatsapp_business_account' object? ignore it
 	if payload.Object != "whatsapp_business_account" {
@@ -90,7 +90,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
-func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *whatsapp.WACMOPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
+func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *whatsapp.MOPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
 	// the list of events we deal with
 	events := make([]courier.Event, 0, 2)
 
@@ -191,9 +191,9 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 
 			for _, status := range change.Value.Statuses {
 
-				msgStatus, found := whatsapp.WACStatusMapping[status.Status]
+				msgStatus, found := whatsapp.StatusMapping[status.Status]
 				if !found {
-					if whatsapp.WACIgnoreStatuses[status.Status] {
+					if whatsapp.IgnoreStatuses[status.Status] {
 						data = append(data, courier.NewInfoData(fmt.Sprintf("ignoring status: %s", status.Status)))
 					} else {
 						handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, fmt.Sprintf("unknown status: %s", status.Status))
@@ -312,10 +312,10 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	lang := whatsapp.GetSupportedLanguage(msg.Locale())
 	menuButton := whatsapp.GetMenuButton(lang)
 
-	var payloadAudio whatsapp.WACMTPayload
+	var payloadAudio whatsapp.MTPayload
 
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
-		payload := whatsapp.WACMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
+		payload := whatsapp.MTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
 
 		if len(msg.Attachments()) == 0 {
 			// do we have a template?
@@ -327,20 +327,20 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 				payload.Type = "template"
 
-				template := whatsapp.WACTemplate{Name: templating.Template.Name, Language: &whatsapp.WACLanguage{Policy: "deterministic", Code: lang}}
+				template := whatsapp.Template{Name: templating.Template.Name, Language: &whatsapp.Language{Policy: "deterministic", Code: lang}}
 				payload.Template = &template
 
-				component := &whatsapp.WACComponent{Type: "body"}
+				component := &whatsapp.Component{Type: "body"}
 
 				for _, v := range templating.Variables {
-					component.Params = append(component.Params, &whatsapp.WACParam{Type: "text", Text: v})
+					component.Params = append(component.Params, &whatsapp.Param{Type: "text", Text: v})
 				}
 				template.Components = append(payload.Template.Components, component)
 
 			} else {
 				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 					// this is still a msg part
-					text := &whatsapp.WACText{PreviewURL: false}
+					text := &whatsapp.Text{PreviewURL: false}
 					payload.Type = "text"
 					if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
 						text.PreviewURL = true
@@ -352,44 +352,44 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						payload.Type = "interactive"
 						// We can use buttons
 						if len(qrs) <= 3 {
-							interactive := whatsapp.WACInteractive{Type: "button", Body: struct {
+							interactive := whatsapp.Interactive{Type: "button", Body: struct {
 								Text string "json:\"text\""
 							}{Text: msgParts[i-len(msg.Attachments())]}}
 
-							btns := make([]whatsapp.WACMTButton, len(qrs))
+							btns := make([]whatsapp.Button, len(qrs))
 							for i, qr := range qrs {
-								btns[i] = whatsapp.WACMTButton{
+								btns[i] = whatsapp.Button{
 									Type: "reply",
 								}
 								btns[i].Reply.ID = fmt.Sprint(i)
 								btns[i].Reply.Title = qr
 							}
 							interactive.Action = &struct {
-								Button   string                  "json:\"button,omitempty\""
-								Sections []whatsapp.WACMTSection "json:\"sections,omitempty\""
-								Buttons  []whatsapp.WACMTButton  "json:\"buttons,omitempty\""
+								Button   string             "json:\"button,omitempty\""
+								Sections []whatsapp.Section "json:\"sections,omitempty\""
+								Buttons  []whatsapp.Button  "json:\"buttons,omitempty\""
 							}{Buttons: btns}
 							payload.Interactive = &interactive
 						} else if len(qrs) <= 10 {
-							interactive := whatsapp.WACInteractive{Type: "list", Body: struct {
+							interactive := whatsapp.Interactive{Type: "list", Body: struct {
 								Text string "json:\"text\""
 							}{Text: msgParts[i-len(msg.Attachments())]}}
 
-							section := whatsapp.WACMTSection{
-								Rows: make([]whatsapp.WACMTSectionRow, len(qrs)),
+							section := whatsapp.Section{
+								Rows: make([]whatsapp.SectionRow, len(qrs)),
 							}
 							for i, qr := range qrs {
-								section.Rows[i] = whatsapp.WACMTSectionRow{
+								section.Rows[i] = whatsapp.SectionRow{
 									ID:    fmt.Sprint(i),
 									Title: qr,
 								}
 							}
 
 							interactive.Action = &struct {
-								Button   string                  "json:\"button,omitempty\""
-								Sections []whatsapp.WACMTSection "json:\"sections,omitempty\""
-								Buttons  []whatsapp.WACMTButton  "json:\"buttons,omitempty\""
-							}{Button: menuButton, Sections: []whatsapp.WACMTSection{
+								Button   string             "json:\"button,omitempty\""
+								Sections []whatsapp.Section "json:\"sections,omitempty\""
+								Buttons  []whatsapp.Button  "json:\"buttons,omitempty\""
+							}{Button: menuButton, Sections: []whatsapp.Section{
 								section,
 							}}
 
@@ -399,7 +399,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						}
 					} else {
 						// this is still a msg part
-						text := &whatsapp.WACText{PreviewURL: false}
+						text := &whatsapp.Text{PreviewURL: false}
 						payload.Type = "text"
 						if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
 							text.PreviewURL = true
@@ -417,7 +417,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				attType = "document"
 			}
 			payload.Type = attType
-			media := whatsapp.WACMTMedia{Link: attURL}
+			media := whatsapp.MTMedia{Link: attURL}
 
 			if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(msg.QuickReplies()) == 0 {
 				media.Caption = msgParts[i]
@@ -445,7 +445,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				payload.Type = "interactive"
 				// We can use buttons
 				if len(qrs) <= 3 {
-					interactive := whatsapp.WACInteractive{Type: "button", Body: struct {
+					interactive := whatsapp.Interactive{Type: "button", Body: struct {
 						Text string "json:\"text\""
 					}{Text: msgParts[i]}}
 
@@ -457,49 +457,49 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 							attType = "document"
 						}
 						if attType == "image" {
-							image := whatsapp.WACMTMedia{
+							image := whatsapp.MTMedia{
 								Link: attURL,
 							}
 							interactive.Header = &struct {
-								Type     string               "json:\"type\""
-								Text     string               "json:\"text,omitempty\""
-								Video    *whatsapp.WACMTMedia "json:\"video,omitempty\""
-								Image    *whatsapp.WACMTMedia "json:\"image,omitempty\""
-								Document *whatsapp.WACMTMedia "json:\"document,omitempty\""
+								Type     string            "json:\"type\""
+								Text     string            "json:\"text,omitempty\""
+								Video    *whatsapp.MTMedia "json:\"video,omitempty\""
+								Image    *whatsapp.MTMedia "json:\"image,omitempty\""
+								Document *whatsapp.MTMedia "json:\"document,omitempty\""
 							}{Type: "image", Image: &image}
 						} else if attType == "video" {
-							video := whatsapp.WACMTMedia{
+							video := whatsapp.MTMedia{
 								Link: attURL,
 							}
 							interactive.Header = &struct {
-								Type     string               "json:\"type\""
-								Text     string               "json:\"text,omitempty\""
-								Video    *whatsapp.WACMTMedia "json:\"video,omitempty\""
-								Image    *whatsapp.WACMTMedia "json:\"image,omitempty\""
-								Document *whatsapp.WACMTMedia "json:\"document,omitempty\""
+								Type     string            "json:\"type\""
+								Text     string            "json:\"text,omitempty\""
+								Video    *whatsapp.MTMedia "json:\"video,omitempty\""
+								Image    *whatsapp.MTMedia "json:\"image,omitempty\""
+								Document *whatsapp.MTMedia "json:\"document,omitempty\""
 							}{Type: "video", Video: &video}
 						} else if attType == "document" {
 							filename, err := utils.BasePathForURL(attURL)
 							if err != nil {
 								return nil, err
 							}
-							document := whatsapp.WACMTMedia{
+							document := whatsapp.MTMedia{
 								Link:     attURL,
 								Filename: filename,
 							}
 							interactive.Header = &struct {
-								Type     string               "json:\"type\""
-								Text     string               "json:\"text,omitempty\""
-								Video    *whatsapp.WACMTMedia "json:\"video,omitempty\""
-								Image    *whatsapp.WACMTMedia "json:\"image,omitempty\""
-								Document *whatsapp.WACMTMedia "json:\"document,omitempty\""
+								Type     string            "json:\"type\""
+								Text     string            "json:\"text,omitempty\""
+								Video    *whatsapp.MTMedia "json:\"video,omitempty\""
+								Image    *whatsapp.MTMedia "json:\"image,omitempty\""
+								Document *whatsapp.MTMedia "json:\"document,omitempty\""
 							}{Type: "document", Document: &document}
 						} else if attType == "audio" {
 							var zeroIndex bool
 							if i == 0 {
 								zeroIndex = true
 							}
-							payloadAudio = whatsapp.WACMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &whatsapp.WACMTMedia{Link: attURL}}
+							payloadAudio = whatsapp.MTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &whatsapp.MTMedia{Link: attURL}}
 							status, err := requestD3C(payloadAudio, accessToken, status, sendURL, zeroIndex, clog)
 							if err != nil {
 								return status, nil
@@ -510,41 +510,41 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						}
 					}
 
-					btns := make([]whatsapp.WACMTButton, len(qrs))
+					btns := make([]whatsapp.Button, len(qrs))
 					for i, qr := range qrs {
-						btns[i] = whatsapp.WACMTButton{
+						btns[i] = whatsapp.Button{
 							Type: "reply",
 						}
 						btns[i].Reply.ID = fmt.Sprint(i)
 						btns[i].Reply.Title = qr
 					}
 					interactive.Action = &struct {
-						Button   string                  "json:\"button,omitempty\""
-						Sections []whatsapp.WACMTSection "json:\"sections,omitempty\""
-						Buttons  []whatsapp.WACMTButton  "json:\"buttons,omitempty\""
+						Button   string             "json:\"button,omitempty\""
+						Sections []whatsapp.Section "json:\"sections,omitempty\""
+						Buttons  []whatsapp.Button  "json:\"buttons,omitempty\""
 					}{Buttons: btns}
 					payload.Interactive = &interactive
 
 				} else if len(qrs) <= 10 {
-					interactive := whatsapp.WACInteractive{Type: "list", Body: struct {
+					interactive := whatsapp.Interactive{Type: "list", Body: struct {
 						Text string "json:\"text\""
 					}{Text: msgParts[i-len(msg.Attachments())]}}
 
-					section := whatsapp.WACMTSection{
-						Rows: make([]whatsapp.WACMTSectionRow, len(qrs)),
+					section := whatsapp.Section{
+						Rows: make([]whatsapp.SectionRow, len(qrs)),
 					}
 					for i, qr := range qrs {
-						section.Rows[i] = whatsapp.WACMTSectionRow{
+						section.Rows[i] = whatsapp.SectionRow{
 							ID:    fmt.Sprint(i),
 							Title: qr,
 						}
 					}
 
 					interactive.Action = &struct {
-						Button   string                  "json:\"button,omitempty\""
-						Sections []whatsapp.WACMTSection "json:\"sections,omitempty\""
-						Buttons  []whatsapp.WACMTButton  "json:\"buttons,omitempty\""
-					}{Button: menuButton, Sections: []whatsapp.WACMTSection{
+						Button   string             "json:\"button,omitempty\""
+						Sections []whatsapp.Section "json:\"sections,omitempty\""
+						Buttons  []whatsapp.Button  "json:\"buttons,omitempty\""
+					}{Button: menuButton, Sections: []whatsapp.Section{
 						section,
 					}}
 
@@ -554,7 +554,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				}
 			} else {
 				// this is still a msg part
-				text := &whatsapp.WACText{PreviewURL: false}
+				text := &whatsapp.Text{PreviewURL: false}
 				payload.Type = "text"
 				if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
 					text.PreviewURL = true
@@ -581,7 +581,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return status, nil
 }
 
-func requestD3C(payload whatsapp.WACMTPayload, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func requestD3C(payload whatsapp.MTPayload, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
 		return status, err
@@ -597,7 +597,7 @@ func requestD3C(payload whatsapp.WACMTPayload, accessToken string, status courie
 	req.Header.Set("Accept", "application/json")
 
 	_, respBody, _ := handlers.RequestHTTP(req, clog)
-	respPayload := &whatsapp.WACMTResponse{}
+	respPayload := &whatsapp.MTResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
 		clog.Error(courier.ErrorResponseUnparseable("JSON"))
@@ -618,13 +618,13 @@ func requestD3C(payload whatsapp.WACMTPayload, accessToken string, status courie
 	return status, nil
 }
 
-func (h *handler) getTemplating(msg courier.Msg) (*whatsapp.WACMsgTemplating, error) {
+func (h *handler) getTemplating(msg courier.Msg) (*whatsapp.MsgTemplating, error) {
 	if len(msg.Metadata()) == 0 {
 		return nil, nil
 	}
 
 	metadata := &struct {
-		Templating *whatsapp.WACMsgTemplating `json:"templating"`
+		Templating *whatsapp.MsgTemplating `json:"templating"`
 	}{}
 	if err := json.Unmarshal(msg.Metadata(), metadata); err != nil {
 		return nil, err
