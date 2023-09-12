@@ -1,3 +1,7 @@
+v8.3.15 (2023-09-12)
+-------------------------
+ * Stop reading from ContactURN.auth and remove from model
+
 v8.3.14 (2023-09-11)
 -------------------------
  * Move whatsapp language matching into own util package and use i18n.BCP47Matcher
