@@ -1,4 +1,4 @@
-package facebook
+package facebook_legacy
 
 import (
 	"bytes"
