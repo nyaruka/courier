@@ -168,7 +168,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	// associate our URN
 	// If we've inserted a duplicate URN then we'll get a uniqueness violation.
 	// That means this contact URN was written by someone else after we tried to look it up.
-	contactURN, err := contactURNForURN(tx, channel, contact.ID_, urn, auth)
+	contactURN, err := getOrCreateContactURN(tx, channel, contact.ID_, urn, auth)
 	if err != nil {
 		tx.Rollback()
 

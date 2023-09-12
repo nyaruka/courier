@@ -334,7 +334,7 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 	}
 	dbChannel := c.(*DBChannel)
 	dbContact := contact.(*DBContact)
-	_, err = contactURNForURN(tx, dbChannel, dbContact.ID_, urn, "")
+	_, err = getOrCreateContactURN(tx, dbChannel, dbContact.ID_, urn, "")
 	if err != nil {
 		return urns.NilURN, err
 	}
@@ -586,12 +586,12 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 		return err
 	}
 	// retrieve the old URN
-	oldContactURN, err := selectContactURN(tx, dbChannel.OrgID(), old)
+	oldContactURN, err := getContactURNByIdentity(tx, dbChannel.OrgID(), old)
 	if err != nil {
 		return errors.Wrap(err, "error retrieving old contact URN")
 	}
 	// retrieve the new URN
-	newContactURN, err := selectContactURN(tx, dbChannel.OrgID(), new)
+	newContactURN, err := getContactURNByIdentity(tx, dbChannel.OrgID(), new)
 	if err != nil {
 		// only update the old URN path if the new URN doesn't exist
 		if err == sql.ErrNoRows {

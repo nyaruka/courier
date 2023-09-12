@@ -286,7 +286,7 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
 
-	contactURNs, err := contactURNsForContact(tx, contact.ID_)
+	contactURNs, err := getURNsForContact(tx, contact.ID_)
 	ts.NoError(err)
 	ts.Equal(len(contactURNs), 1)
 
@@ -298,7 +298,7 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
 
-	contactURNs, err = contactURNsForContact(tx, contact.ID_)
+	contactURNs, err = getURNsForContact(tx, contact.ID_)
 	ts.NoError(err)
 	ts.Equal(len(contactURNs), 2)
 
@@ -308,7 +308,7 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
-	contactURNs, err = contactURNsForContact(tx, contact.ID_)
+	contactURNs, err = getURNsForContact(tx, contact.ID_)
 	ts.NoError(err)
 	ts.Equal(len(contactURNs), 1)
 }
@@ -332,12 +332,12 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.NoError(err)
 	ts.NotNil(contact)
 
-	contactURNs, err := contactURNsForContact(tx, contact.ID_)
+	contactURNs, err := getURNsForContact(tx, contact.ID_)
 	ts.NoError(err)
 	ts.Equal(null.Map[string]{"default": "chestnut"}, contactURNs[0].AuthTokens)
 
 	// now build a URN for our number with the kannel channel
-	knURN, err := contactURNForURN(tx, knChannel, contact.ID_, urn, "sesame")
+	knURN, err := getOrCreateContactURN(tx, knChannel, contact.ID_, urn, "sesame")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(knURN.OrgID, knChannel.OrgID_)
@@ -347,7 +347,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.NoError(err)
 
 	// then with our twilio channel
-	twURN, err := contactURNForURN(tx, twChannel, contact.ID_, urn, "")
+	twURN, err := getOrCreateContactURN(tx, twChannel, contact.ID_, urn, "")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
@@ -367,7 +367,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.NoError(err)
 
 	// again with different auth
-	twURN, err = contactURNForURN(tx, twChannel, contact.ID_, urn, "peanut")
+	twURN, err = getOrCreateContactURN(tx, twChannel, contact.ID_, urn, "peanut")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(null.Map[string]{"default": "peanut"}, twURN.AuthTokens)
@@ -389,7 +389,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
 
-	tgContactURN, err := contactURNForURN(tx, tgChannel, tgContact.ID_, tgURNDisplay, "")
+	tgContactURN, err := getOrCreateContactURN(tx, tgChannel, tgContact.ID_, tgURNDisplay, "")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(tgContact.URNID_, tgContactURN.ID)
@@ -434,7 +434,7 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
 
-	_, err = contactURNForURN(tx, twChannel, knContact.ID_, twURN, "")
+	_, err = getOrCreateContactURN(tx, twChannel, knContact.ID_, twURN, "")
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
@@ -449,7 +449,7 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
 
-	urns, err := contactURNsForContact(tx, twContact.ID_)
+	urns, err := getURNsForContact(tx, twContact.ID_)
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
@@ -622,7 +622,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update URN when the new doesn't exist
 	tx, _ := ts.b.db.BeginTxx(ctx, nil)
 	oldURN, _ := urns.NewWhatsAppURN("55988776655")
-	_ = insertContactURN(tx, newDBContactURN(channel.OrgID_, channel.ID_, NilContactID, oldURN, ""))
+	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, NilContactID, oldURN, ""))
 
 	ts.NoError(tx.Commit())
 
@@ -633,7 +633,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
 
 	tx, _ = ts.b.db.BeginTxx(ctx, nil)
-	contactURN, err := selectContactURN(tx, channel.OrgID_, newURN)
+	contactURN, err := getContactURNByIdentity(tx, channel.OrgID_, newURN)
 
 	ts.NoError(err)
 	ts.Equal(contactURN.Identity, newURN.Identity().String())
@@ -644,7 +644,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	newURN, _ = urns.NewWhatsAppURN("5599887766")
 	tx, _ = ts.b.db.BeginTxx(ctx, nil)
 	contact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, "", "", clog6)
-	_ = insertContactURN(tx, newDBContactURN(channel.OrgID_, channel.ID_, NilContactID, newURN, ""))
+	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, NilContactID, newURN, ""))
 
 	ts.NoError(tx.Commit())
 
@@ -654,8 +654,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
 
 	tx, _ = ts.b.db.BeginTxx(ctx, nil)
-	newContactURN, _ := selectContactURN(tx, channel.OrgID_, newURN)
-	oldContactURN, _ := selectContactURN(tx, channel.OrgID_, oldURN)
+	newContactURN, _ := getContactURNByIdentity(tx, channel.OrgID_, newURN)
+	oldContactURN, _ := getContactURNByIdentity(tx, channel.OrgID_, oldURN)
 
 	ts.Equal(newContactURN.ContactID, contact.ID_)
 	ts.Equal(oldContactURN.ContactID, NilContactID)
@@ -676,8 +676,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
 
 	tx, _ = ts.b.db.BeginTxx(ctx, nil)
-	oldContactURN, _ = selectContactURN(tx, channel.OrgID_, oldURN)
-	newContactURN, _ = selectContactURN(tx, channel.OrgID_, newURN)
+	oldContactURN, _ = getContactURNByIdentity(tx, channel.OrgID_, oldURN)
+	newContactURN, _ = getContactURNByIdentity(tx, channel.OrgID_, newURN)
 
 	ts.Equal(oldContactURN.ContactID, NilContactID)
 	ts.Equal(newContactURN.ContactID, otherContact.ID_)
@@ -1115,7 +1115,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.NoError(err)
 
 	// load our URN
-	contactURN, err := contactURNForURN(tx, m.channel, m.ContactID_, urn, "")
+	contactURN, err := getOrCreateContactURN(tx, m.channel, m.ContactID_, urn, "")
 	if !ts.NoError(err) || !ts.NoError(tx.Commit()) {
 		ts.FailNow("failed writing contact urn")
 	}
@@ -1255,7 +1255,7 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 	ts.NoError(err)
 
 	// load our URN
-	exContactURN, err := contactURNForURN(tx, m.channel, m.ContactID_, urn, "")
+	exContactURN, err := getOrCreateContactURN(tx, m.channel, m.ContactID_, urn, "")
 	if !ts.NoError(err) || !ts.NoError(tx.Commit()) {
 		ts.FailNow("failed writing contact urn")
 	}
