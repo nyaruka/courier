@@ -7,6 +7,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null/v3"
 	"github.com/pkg/errors"
@@ -40,7 +41,7 @@ type ContactURN struct {
 }
 
 // returns a new ContactURN object for the passed in org, contact and string URN
-func newContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN, auth string) *ContactURN {
+func newContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID, urn urns.URN, authTokens map[string]string) *ContactURN {
 	return &ContactURN{
 		OrgID:      org,
 		ChannelID:  channelID,
@@ -49,7 +50,7 @@ func newContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID, 
 		Scheme:     urn.Scheme(),
 		Path:       urn.Path(),
 		Display:    null.String(urn.Display()),
-		AuthTokens: null.Map[string]{"default": auth},
+		AuthTokens: null.Map[string](authTokens),
 	}
 }
 
@@ -93,7 +94,7 @@ func getURNsForContact(db *sqlx.Tx, contactID ContactID) ([]*ContactURN, error) 
 // that the passed in channel is the default one for that URN
 //
 // Note that the URN must be one of the contact's URN before calling this method
-func setDefaultURN(db *sqlx.Tx, channel *DBChannel, contact *DBContact, urn urns.URN, auth string) error {
+func setDefaultURN(db *sqlx.Tx, channel *DBChannel, contact *DBContact, urn urns.URN, authTokens map[string]string) error {
 	scheme := urn.Scheme()
 	contactURNs, err := getURNsForContact(db, contact.ID_)
 	if err != nil {
@@ -110,17 +111,18 @@ func setDefaultURN(db *sqlx.Tx, channel *DBChannel, contact *DBContact, urn urns
 	if contactURNs[0].Identity == string(urn.Identity()) {
 		display := urn.Display()
 
-		// if display, channel id or auth changed, update them
-		if string(contactURNs[0].Display) != display || contactURNs[0].ChannelID != channel.ID() || (auth != "" && contactURNs[0].AuthTokens["default"] != auth) {
+		// if display, channel id or auth tokens changed, update them
+		if string(contactURNs[0].Display) != display || contactURNs[0].ChannelID != channel.ID() || (authTokens != nil && !utils.MapContains(contactURNs[0].AuthTokens, authTokens)) {
 			contactURNs[0].Display = null.String(display)
 
 			if channel.HasRole(courier.ChannelRoleSend) {
 				contactURNs[0].ChannelID = channel.ID()
 			}
 
-			if auth != "" {
-				contactURNs[0].AuthTokens = null.Map[string]{"default": auth}
+			for k, v := range authTokens {
+				contactURNs[0].AuthTokens[k] = v
 			}
+
 			return updateContactURN(db, contactURNs[0])
 		}
 		return nil
@@ -140,8 +142,8 @@ func setDefaultURN(db *sqlx.Tx, channel *DBChannel, contact *DBContact, urn urns
 				existing.ChannelID = channel.ID()
 			}
 
-			if auth != "" {
-				existing.AuthTokens = null.Map[string]{"default": auth}
+			for k, v := range authTokens {
+				contactURNs[0].AuthTokens[k] = v
 			}
 		} else {
 			existing.Priority = currPriority
@@ -163,7 +165,7 @@ func setDefaultURN(db *sqlx.Tx, channel *DBChannel, contact *DBContact, urn urns
 
 // getContactURNByIdentity returns the ContactURN for the passed in org and identity
 func getContactURNByIdentity(db *sqlx.Tx, org OrgID, urn urns.URN) (*ContactURN, error) {
-	contactURN := newContactURN(org, courier.NilChannelID, NilContactID, urn, "")
+	contactURN := newContactURN(org, courier.NilChannelID, NilContactID, urn, map[string]string{})
 	err := db.Get(contactURN, sqlSelectURNByIdentity, org, urn.Identity())
 	if err != nil {
 		return nil, err
@@ -173,8 +175,8 @@ func getContactURNByIdentity(db *sqlx.Tx, org OrgID, urn urns.URN) (*ContactURN,
 
 // getOrCreateContactURN returns the ContactURN for the passed in org and URN, creating and associating
 // it with the passed in contact if necessary
-func getOrCreateContactURN(db *sqlx.Tx, channel *DBChannel, contactID ContactID, urn urns.URN, auth string) (*ContactURN, error) {
-	contactURN := newContactURN(channel.OrgID(), courier.NilChannelID, contactID, urn, auth)
+func getOrCreateContactURN(db *sqlx.Tx, channel *DBChannel, contactID ContactID, urn urns.URN, authTokens map[string]string) (*ContactURN, error) {
+	contactURN := newContactURN(channel.OrgID(), courier.NilChannelID, contactID, urn, authTokens)
 	if channel.HasRole(courier.ChannelRoleSend) {
 		contactURN.ChannelID = channel.ID()
 	}
@@ -208,8 +210,10 @@ func getOrCreateContactURN(db *sqlx.Tx, channel *DBChannel, contactID ContactID,
 	}
 
 	// update our auth if we have a value set
-	if auth != "" && auth != contactURN.AuthTokens["default"] {
-		contactURN.AuthTokens = null.Map[string]{"default": auth}
+	if authTokens != nil {
+		for k, v := range authTokens {
+			contactURN.AuthTokens[k] = v
+		}
 
 		err = updateContactURN(db, contactURN)
 	}

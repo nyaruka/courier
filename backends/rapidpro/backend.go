@@ -321,20 +321,20 @@ func (b *backend) GetChannelByAddress(ctx context.Context, ct courier.ChannelTyp
 }
 
 // GetContact returns the contact for the passed in channel and URN
-func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, auth string, name string, clog *courier.ChannelLog) (courier.Contact, error) {
+func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, authTokens map[string]string, name string, clog *courier.ChannelLog) (courier.Contact, error) {
 	dbChannel := c.(*DBChannel)
-	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, auth, name, clog)
+	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, authTokens, name, clog)
 }
 
 // AddURNtoContact adds a URN to the passed in contact
-func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
+func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error) {
 	tx, err := b.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return urns.NilURN, err
 	}
 	dbChannel := c.(*DBChannel)
 	dbContact := contact.(*DBContact)
-	_, err = getOrCreateContactURN(tx, dbChannel, dbContact.ID_, urn, "")
+	_, err = getOrCreateContactURN(tx, dbChannel, dbContact.ID_, urn, authTokens)
 	if err != nil {
 		return urns.NilURN, err
 	}

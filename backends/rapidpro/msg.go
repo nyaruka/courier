@@ -146,8 +146,7 @@ INSERT INTO
 RETURNING id`
 
 func writeMsgToDB(ctx context.Context, b *backend, m *DBMsg, clog *courier.ChannelLog) error {
-	// grab the contact for this msg
-	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuth_, m.contactName, clog)
+	contact, err := contactForURN(ctx, b, m.OrgID_, m.channel, m.URN_, m.URNAuthTokens_, m.ContactName_, clog)
 
 	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {
@@ -325,33 +324,35 @@ type DBMsg struct {
 	SessionWaitStartedOn_ *time.Time `json:"session_wait_started_on"`
 	SessionStatus_        string     `json:"session_status"`
 
-	contactName    string
+	ContactName_   string            `json:"contact_name"`
+	URNAuthTokens_ map[string]string `json:"auth_tokens"`
 	channel        *DBChannel
 	workerToken    queue.WorkerToken
 	alreadyWritten bool
 }
 
-func (m *DBMsg) ID() courier.MsgID             { return m.ID_ }
-func (m *DBMsg) EventID() int64                { return int64(m.ID_) }
-func (m *DBMsg) UUID() courier.MsgUUID         { return m.UUID_ }
-func (m *DBMsg) Text() string                  { return m.Text_ }
-func (m *DBMsg) Attachments() []string         { return m.Attachments_ }
-func (m *DBMsg) QuickReplies() []string        { return m.QuickReplies_ }
-func (m *DBMsg) Locale() i18n.Locale           { return i18n.Locale(string(m.Locale_)) }
-func (m *DBMsg) ExternalID() string            { return string(m.ExternalID_) }
-func (m *DBMsg) URN() urns.URN                 { return m.URN_ }
-func (m *DBMsg) URNAuth() string               { return m.URNAuth_ }
-func (m *DBMsg) ContactName() string           { return m.contactName }
-func (m *DBMsg) HighPriority() bool            { return m.HighPriority_ }
-func (m *DBMsg) ReceivedOn() *time.Time        { return m.SentOn_ }
-func (m *DBMsg) SentOn() *time.Time            { return m.SentOn_ }
-func (m *DBMsg) ResponseToExternalID() string  { return m.ResponseToExternalID_ }
-func (m *DBMsg) IsResend() bool                { return m.IsResend_ }
-func (m *DBMsg) Channel() courier.Channel      { return m.channel }
-func (m *DBMsg) SessionStatus() string         { return m.SessionStatus_ }
-func (m *DBMsg) Flow() *courier.FlowReference  { return m.Flow_ }
-func (m *DBMsg) Origin() courier.MsgOrigin     { return m.Origin_ }
-func (m *DBMsg) ContactLastSeenOn() *time.Time { return m.ContactLastSeenOn_ }
+func (m *DBMsg) ID() courier.MsgID                { return m.ID_ }
+func (m *DBMsg) EventID() int64                   { return int64(m.ID_) }
+func (m *DBMsg) UUID() courier.MsgUUID            { return m.UUID_ }
+func (m *DBMsg) Text() string                     { return m.Text_ }
+func (m *DBMsg) Attachments() []string            { return m.Attachments_ }
+func (m *DBMsg) QuickReplies() []string           { return m.QuickReplies_ }
+func (m *DBMsg) Locale() i18n.Locale              { return i18n.Locale(string(m.Locale_)) }
+func (m *DBMsg) ExternalID() string               { return string(m.ExternalID_) }
+func (m *DBMsg) URN() urns.URN                    { return m.URN_ }
+func (m *DBMsg) URNAuth() string                  { return m.URNAuth_ }
+func (m *DBMsg) URNAuthTokens() map[string]string { return m.URNAuthTokens_ }
+func (m *DBMsg) ContactName() string              { return m.ContactName_ }
+func (m *DBMsg) HighPriority() bool               { return m.HighPriority_ }
+func (m *DBMsg) ReceivedOn() *time.Time           { return m.SentOn_ }
+func (m *DBMsg) SentOn() *time.Time               { return m.SentOn_ }
+func (m *DBMsg) ResponseToExternalID() string     { return m.ResponseToExternalID_ }
+func (m *DBMsg) IsResend() bool                   { return m.IsResend_ }
+func (m *DBMsg) Channel() courier.Channel         { return m.channel }
+func (m *DBMsg) SessionStatus() string            { return m.SessionStatus_ }
+func (m *DBMsg) Flow() *courier.FlowReference     { return m.Flow_ }
+func (m *DBMsg) Origin() courier.MsgOrigin        { return m.Origin_ }
+func (m *DBMsg) ContactLastSeenOn() *time.Time    { return m.ContactLastSeenOn_ }
 
 func (m *DBMsg) FlowName() string {
 	if m.Flow_ == nil {
@@ -386,7 +387,7 @@ func (m *DBMsg) hash() string {
 }
 
 // WithContactName can be used to set the contact name on a msg
-func (m *DBMsg) WithContactName(name string) courier.Msg { m.contactName = name; return m }
+func (m *DBMsg) WithContactName(name string) courier.Msg { m.ContactName_ = name; return m }
 
 // WithReceivedOn can be used to set sent_on on a msg in a chained call
 func (m *DBMsg) WithReceivedOn(date time.Time) courier.Msg { m.SentOn_ = &date; return m }
@@ -411,8 +412,14 @@ func (m *DBMsg) WithAttachment(url string) courier.Msg {
 
 func (m *DBMsg) WithLocale(lc i18n.Locale) courier.Msg { m.Locale_ = null.String(lc); return m }
 
-// WithURNAuth can be used to add a URN auth setting to a message
-func (m *DBMsg) WithURNAuth(auth string) courier.Msg {
-	m.URNAuth_ = auth
+// WithURNAuth sets the URN auth to be used for sending (only used to create messages in tests)
+func (m *DBMsg) WithURNAuth(token string) courier.Msg {
+	m.URNAuth_ = token
+	return m
+}
+
+// WithURNAuthTokens can be used to save URN auth tokens from an incoming message
+func (m *DBMsg) WithURNAuthTokens(tokens map[string]string) courier.Msg {
+	m.URNAuthTokens_ = tokens
 	return m
 }

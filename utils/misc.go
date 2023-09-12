@@ -133,3 +133,14 @@ func ChunkSlice[T any](slice []T, size int) [][]T {
 	}
 	return chunks
 }
+
+// MapContains returns whether m1 contains all the key value pairs in m2
+func MapContains[K comparable, V comparable, M ~map[K]V](m1 M, m2 M) bool {
+	for k, v2 := range m2 {
+		v1, ok := m1[k]
+		if !ok || v1 != v2 {
+			return false
+		}
+	}
+	return true
+}

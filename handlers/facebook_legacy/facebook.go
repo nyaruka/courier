@@ -581,11 +581,11 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 					clog.RawError(errors.Errorf("unable to make facebook urn from %s", recipientID))
 				}
 
-				contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), "", "", clog)
+				contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), nil, "", clog)
 				if err != nil {
 					clog.RawError(errors.Errorf("unable to get contact for %s", msg.URN().String()))
 				}
-				realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN)
+				realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN, nil)
 				if err != nil {
 					clog.RawError(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
 				}
@@ -593,7 +593,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				if err != nil {
 					clog.RawError(errors.Errorf("unable to make ext urn from %s", referralID))
 				}
-				extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN)
+				extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN, nil)
 				if err != nil {
 					clog.RawError(errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
 				}

@@ -181,7 +181,7 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 					assert.Equal(t, tc.ExpectedExternalID, msg.ExternalID())
 				}
 				assert.Equal(t, tc.ExpectedURN, msg.URN())
-				assert.Equal(t, tc.ExpectedURNAuth, msg.URNAuth())
+				assert.Equal(t, tc.ExpectedURNAuth, msg.URNAuthTokens()["default"])
 			} else {
 				assert.Empty(t, mb.WrittenMsgs(), "unexpected msg written")
 			}
@@ -431,7 +431,7 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			if tc.ExpectedContactURNs != nil {
 				var contactUUID courier.ContactUUID
 				for urn, shouldBePresent := range tc.ExpectedContactURNs {
-					contact, _ := mb.GetContact(ctx, channel, urns.URN(urn), "", "", clog)
+					contact, _ := mb.GetContact(ctx, channel, urns.URN(urn), nil, "", clog)
 					if contactUUID == courier.NilContactUUID && shouldBePresent {
 						contactUUID = contact.UUID()
 					}

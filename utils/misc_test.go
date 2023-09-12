@@ -103,3 +103,11 @@ func TestStringsToRows(t *testing.T) {
 		assert.Equal(t, tc.expected, rows, "rows mismatch for replies %v", tc.replies)
 	}
 }
+
+func TestMapContains(t *testing.T) {
+	assert.True(t, utils.MapContains(map[string]string{}, map[string]string{}))
+	assert.True(t, utils.MapContains(map[string]string{"a": "1", "b": "2", "c": "3"}, map[string]string{"a": "1"}))
+	assert.True(t, utils.MapContains(map[string]string{"a": "1", "b": "2", "c": "3"}, map[string]string{"b": "2", "c": "3"}))
+	assert.False(t, utils.MapContains(map[string]string{"a": "1", "b": "2"}, map[string]string{"c": "3"}))
+	assert.False(t, utils.MapContains(map[string]string{"a": "1", "b": "2"}, map[string]string{"a": "4"}))
+}

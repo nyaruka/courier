@@ -74,8 +74,14 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
+	// if a new auth token was provided, record that
+	var authTokens map[string]string
+	if form.FCMToken != "" {
+		authTokens = map[string]string{"default": form.FCMToken}
+	}
+
 	// build our msg
-	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Msg, "", clog).WithReceivedOn(date).WithContactName(form.Name).WithURNAuth(form.FCMToken)
+	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Msg, "", clog).WithReceivedOn(date).WithContactName(form.Name).WithURNAuthTokens(authTokens)
 
 	// and finally write our message
 	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r, clog)
@@ -102,7 +108,7 @@ func (h *handler) registerContact(ctx context.Context, channel courier.Channel, 
 	}
 
 	// create our contact
-	contact, err := h.Backend().GetContact(ctx, channel, urn, form.FCMToken, form.Name, clog)
+	contact, err := h.Backend().GetContact(ctx, channel, urn, map[string]string{"default": form.FCMToken}, form.Name, clog)
 	if err != nil {
 		return nil, err
 	}
