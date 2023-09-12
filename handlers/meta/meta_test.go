@@ -1,4 +1,4 @@
-package facebookapp
+package meta
 
 import (
 	"context"

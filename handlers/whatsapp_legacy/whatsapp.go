@@ -1,4 +1,4 @@
-package whatsapp
+package whatsapp_legacy
 
 import (
 	"bytes"
