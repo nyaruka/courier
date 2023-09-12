@@ -5,12 +5,11 @@ import (
 	"database/sql/driver"
 	"fmt"
 
-	"github.com/nyaruka/null/v3"
-	"github.com/pkg/errors"
-
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/null/v3"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,7 +34,6 @@ func newDBContactURN(org OrgID, channelID courier.ChannelID, contactID ContactID
 		Scheme:     urn.Scheme(),
 		Path:       urn.Path(),
 		Display:    null.String(urn.Display()),
-		Auth:       null.String(auth), // TODO remove
 		AuthTokens: null.Map[string]{"default": auth},
 	}
 }
@@ -45,8 +43,7 @@ SELECT
 	id, 
 	identity, 
 	scheme, 
-	display, 
-	auth, 
+	display,
 	auth_tokens,
 	priority, 
 	contact_id, 
@@ -113,7 +110,6 @@ func setDefaultURN(db *sqlx.Tx, channel *DBChannel, contact *DBContact, urn urns
 			}
 
 			if auth != "" {
-				contactURNs[0].Auth = null.String(auth) // TODO remove
 				contactURNs[0].AuthTokens = null.Map[string]{"default": auth}
 			}
 			return updateContactURN(db, contactURNs[0])
@@ -136,7 +132,6 @@ func setDefaultURN(db *sqlx.Tx, channel *DBChannel, contact *DBContact, urn urns
 			}
 
 			if auth != "" {
-				existing.Auth = null.String(auth) // TODO remove
 				existing.AuthTokens = null.Map[string]{"default": auth}
 			}
 		} else {
@@ -165,7 +160,6 @@ SELECT
 	scheme, 
 	path, 
 	display, 
-	auth, 
 	auth_tokens,
 	priority, 
 	channel_id, 
@@ -229,7 +223,6 @@ func contactURNForURN(db *sqlx.Tx, channel *DBChannel, contactID ContactID, urn 
 
 	// update our auth if we have a value set
 	if auth != "" && auth != contactURN.AuthTokens["default"] {
-		contactURN.Auth = null.String(auth) // TODO remove
 		contactURN.AuthTokens = null.Map[string]{"default": auth}
 
 		err = updateContactURN(db, contactURN)
@@ -240,8 +233,8 @@ func contactURNForURN(db *sqlx.Tx, channel *DBChannel, contactID ContactID, urn 
 
 const insertURN = `
 INSERT INTO 
-	contacts_contacturn(org_id, identity, path, scheme, display, auth, auth_tokens, priority, channel_id, contact_id)
-                 VALUES(:org_id, :identity, :path, :scheme, :display, :auth, :auth_tokens, :priority, :channel_id, :contact_id)
+	contacts_contacturn(org_id, identity, path, scheme, display, auth_tokens, priority, channel_id, contact_id)
+                 VALUES(:org_id, :identity, :path, :scheme, :display, :auth_tokens, :priority, :channel_id, :contact_id)
 RETURNING id
 `
 
@@ -266,7 +259,6 @@ SET
 	channel_id = :channel_id, 
 	contact_id = :contact_id, 
 	display = :display, 
-	auth = :auth, 
 	auth_tokens = :auth_tokens, 
 	priority = :priority
 WHERE 
@@ -281,7 +273,6 @@ SET
 	identity = :identity, 
 	path = :path, 
 	display = :display, 
-	auth = :auth,
 	auth_tokens = :auth_tokens,  
 	priority = :priority
 WHERE 
@@ -326,7 +317,6 @@ type DBContactURN struct {
 	Scheme        string            `db:"scheme"`
 	Path          string            `db:"path"`
 	Display       null.String       `db:"display"`
-	Auth          null.String       `db:"auth"`
 	AuthTokens    null.Map[string]  `db:"auth_tokens"`
 	Priority      int               `db:"priority"`
 	ChannelID     courier.ChannelID `db:"channel_id"`
