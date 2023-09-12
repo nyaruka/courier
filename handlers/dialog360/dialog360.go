@@ -29,6 +29,15 @@ var (
 	maxMsgLength = 1000
 )
 
+// see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media#supported-media-types
+var mediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{
+	handlers.MediaType("image/webp"): {Types: []string{"image/webp"}, MaxBytes: 100 * 1024, MaxWidth: 512, MaxHeight: 512},
+	handlers.MediaTypeImage:          {Types: []string{"image/jpeg", "image/png"}, MaxBytes: 5 * 1024 * 1024},
+	handlers.MediaTypeAudio:          {Types: []string{"audio/aac", "audio/mp4", "audio/mpeg", "audio/amr", "audio/ogg"}, MaxBytes: 16 * 1024 * 1024},
+	handlers.MediaTypeVideo:          {Types: []string{"video/mp4", "video/3gp"}, MaxBytes: 16 * 1024 * 1024},
+	handlers.MediaTypeApplication:    {MaxBytes: 100 * 1024 * 1024},
+}
+
 func init() {
 	courier.RegisterHandler(newWAHandler(courier.ChannelType("D3C"), "360Dialog"))
 }
@@ -93,6 +102,13 @@ type wacMedia struct {
 	Mimetype string `json:"mime_type"`
 	SHA256   string `json:"sha256"`
 }
+
+type wacSticker struct {
+	Animated bool   `json:"animated"`
+	ID       string `json:"id"`
+	Mimetype string `json:"mime_type"`
+	SHA256   string `json:"sha256"`
+}
 type moPayload struct {
 	Object string `json:"object"`
 	Entry  []struct {
@@ -126,11 +142,12 @@ type moPayload struct {
 					Text struct {
 						Body string `json:"body"`
 					} `json:"text"`
-					Image    *wacMedia `json:"image"`
-					Audio    *wacMedia `json:"audio"`
-					Video    *wacMedia `json:"video"`
-					Document *wacMedia `json:"document"`
-					Voice    *wacMedia `json:"voice"`
+					Image    *wacMedia   `json:"image"`
+					Audio    *wacMedia   `json:"audio"`
+					Video    *wacMedia   `json:"video"`
+					Document *wacMedia   `json:"document"`
+					Voice    *wacMedia   `json:"voice"`
+					Sticker  *wacSticker `json:"sticker"`
 					Location *struct {
 						Latitude  float64 `json:"latitude"`
 						Longitude float64 `json:"longitude"`
@@ -274,6 +291,8 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 				} else if msg.Type == "image" && msg.Image != nil {
 					text = msg.Image.Caption
 					mediaURL, err = resolveMediaURL(channel, msg.Image.ID, clog)
+				} else if msg.Type == "sticker" && msg.Sticker != nil {
+					mediaURL, err = resolveMediaURL(channel, msg.Sticker.ID, clog)
 				} else if msg.Type == "video" && msg.Video != nil {
 					text = msg.Video.Caption
 					mediaURL, err = resolveMediaURL(channel, msg.Video.ID, clog)
@@ -491,6 +510,7 @@ type wacMTPayload struct {
 	Image    *wacMTMedia `json:"image,omitempty"`
 	Audio    *wacMTMedia `json:"audio,omitempty"`
 	Video    *wacMTMedia `json:"video,omitempty"`
+	Sticker  *wacMTMedia `json:"sticker,omitempty"`
 
 	Interactive *wacInteractive `json:"interactive,omitempty"`
 
@@ -540,10 +560,15 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	var payloadAudio wacMTPayload
 
-	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
+	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, false)
+	if err != nil {
+		return nil, errors.Wrap(err, "error resolving attachments")
+	}
+
+	for i := 0; i < len(msgParts)+len(attachments); i++ {
 		payload := wacMTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
 
-		if len(msg.Attachments()) == 0 {
+		if len(attachments) == 0 {
 			// do we have a template?
 			templating, err := h.getTemplating(msg)
 			if err != nil {
@@ -564,14 +589,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				template.Components = append(payload.Template.Components, component)
 
 			} else {
-				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
+				if i < (len(msgParts) + len(attachments) - 1) {
 					// this is still a msg part
 					text := &wacText{PreviewURL: false}
 					payload.Type = "text"
-					if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+					if strings.Contains(msgParts[i-len(attachments)], "https://") || strings.Contains(msgParts[i-len(attachments)], "http://") {
 						text.PreviewURL = true
 					}
-					text.Body = msgParts[i-len(msg.Attachments())]
+					text.Body = msgParts[i-len(attachments)]
 					payload.Text = text
 				} else {
 					if len(qrs) > 0 {
@@ -580,7 +605,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						if len(qrs) <= 3 {
 							interactive := wacInteractive{Type: "button", Body: struct {
 								Text string "json:\"text\""
-							}{Text: msgParts[i-len(msg.Attachments())]}}
+							}{Text: msgParts[i-len(attachments)]}}
 
 							btns := make([]wacMTButton, len(qrs))
 							for i, qr := range qrs {
@@ -599,7 +624,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						} else if len(qrs) <= 10 {
 							interactive := wacInteractive{Type: "list", Body: struct {
 								Text string "json:\"text\""
-							}{Text: msgParts[i-len(msg.Attachments())]}}
+							}{Text: msgParts[i-len(attachments)]}}
 
 							section := wacMTSection{
 								Rows: make([]wacMTSectionRow, len(qrs)),
@@ -627,31 +652,38 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						// this is still a msg part
 						text := &wacText{PreviewURL: false}
 						payload.Type = "text"
-						if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+						if strings.Contains(msgParts[i-len(attachments)], "https://") || strings.Contains(msgParts[i-len(attachments)], "http://") {
 							text.PreviewURL = true
 						}
-						text.Body = msgParts[i-len(msg.Attachments())]
+						text.Body = msgParts[i-len(attachments)]
 						payload.Text = text
 					}
 				}
 			}
 
-		} else if i < len(msg.Attachments()) && (len(qrs) == 0 || len(qrs) > 3) {
-			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
-			attType = strings.Split(attType, "/")[0]
+		} else if i < len(attachments) && (len(qrs) == 0 || len(qrs) > 3) {
+			attURL := attachments[i].Media.URL()
+			attType := attachments[i].Type
+			attContentType := attachments[i].Media.ContentType()
 			if attType == "application" {
 				attType = "document"
 			}
-			payload.Type = attType
+			payload.Type = string(attType)
 			media := wacMTMedia{Link: attURL}
 
-			if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(msg.QuickReplies()) == 0 {
+			if len(msgParts) == 1 && attType != "audio" && len(attachments) == 1 && len(msg.QuickReplies()) == 0 {
 				media.Caption = msgParts[i]
 				hasCaption = true
 			}
 
 			if attType == "image" {
-				payload.Image = &media
+				if attContentType == "image/webp" {
+					payload.Type = "sticker"
+					payload.Sticker = &media
+				} else {
+					payload.Image = &media
+				}
+
 			} else if attType == "audio" {
 				payload.Audio = &media
 			} else if attType == "video" {
@@ -675,10 +707,10 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 						Text string "json:\"text\""
 					}{Text: msgParts[i]}}
 
-					if len(msg.Attachments()) > 0 {
+					if len(attachments) > 0 {
 						hasCaption = true
-						attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
-						attType = strings.Split(attType, "/")[0]
+						attURL := attachments[i].Media.URL()
+						attType := attachments[i].Type
 						if attType == "application" {
 							attType = "document"
 						}
@@ -782,10 +814,10 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				// this is still a msg part
 				text := &wacText{PreviewURL: false}
 				payload.Type = "text"
-				if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+				if strings.Contains(msgParts[i-len(attachments)], "https://") || strings.Contains(msgParts[i-len(attachments)], "http://") {
 					text.PreviewURL = true
 				}
-				text.Body = msgParts[i-len(msg.Attachments())]
+				text.Body = msgParts[i-len(attachments)]
 				payload.Text = text
 			}
 		}
