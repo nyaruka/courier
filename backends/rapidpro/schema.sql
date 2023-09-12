@@ -52,7 +52,6 @@ CREATE TABLE contacts_contacturn (
     channel_id integer references channels_channel(id) on delete cascade,
     contact_id integer references contacts_contact(id) on delete cascade,
     org_id integer NOT NULL references orgs_org(id) on delete cascade,
-    auth text,
     auth_tokens jsonb,
     UNIQUE (org_id, identity)
 );
