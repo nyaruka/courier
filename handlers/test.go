@@ -197,7 +197,7 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 					assert.Equal(t, tc.ExpectedExternalID, status.ExternalID())
 				}
 				if tc.ExpectedMsgID != 0 {
-					assert.Equal(t, tc.ExpectedMsgID, int64(status.ID()))
+					assert.Equal(t, tc.ExpectedMsgID, int64(status.MsgID()))
 				}
 			} else {
 				assert.Empty(t, mb.WrittenMsgStatuses(), "unexpected msg status written")
@@ -445,7 +445,7 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			}
 
 			if tc.ExpectedNewURN != "" {
-				old, new := status.UpdatedURN()
+				old, new := status.URNUpdate()
 				require.Equal(urns.URN(tc.MsgURN), old)
 				require.Equal(urns.URN(tc.ExpectedNewURN), new)
 			}

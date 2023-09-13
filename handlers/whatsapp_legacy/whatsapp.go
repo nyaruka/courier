@@ -539,7 +539,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 		// so update contact URN if wppID != ""
 		if wppID != "" {
 			newURN, _ := urns.NewWhatsAppURN(wppID)
-			err = status.SetUpdatedURN(msg.URN(), newURN)
+			err = status.SetURNUpdate(msg.URN(), newURN)
 
 			if err != nil {
 				clog.RawError(err)

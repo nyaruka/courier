@@ -23,6 +23,8 @@ const (
 
 // ChannelEvent represents an event on a channel, such as a follow, new conversation or referral
 type ChannelEvent interface {
+	Event
+
 	ChannelUUID() ChannelUUID
 	URN() urns.URN
 	EventType() ChannelEventType
@@ -34,6 +36,4 @@ type ChannelEvent interface {
 	WithURNAuthTokens(tokens map[string]string) ChannelEvent
 	WithExtra(extra map[string]string) ChannelEvent
 	WithOccurredOn(time.Time) ChannelEvent
-
-	EventID() int64
 }

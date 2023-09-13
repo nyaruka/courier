@@ -15,7 +15,7 @@ func LogMsgStatusReceived(r *http.Request, status StatusUpdate) {
 			"url":             r.Context().Value(contextRequestURL),
 			"elapsed_ms":      getElapsedMS(r),
 			"status":          status.Status(),
-			"msg_id":          status.ID(),
+			"msg_id":          status.MsgID(),
 			"msg_external_id": status.ExternalID(),
 		}).Debug("status updated")
 	}
