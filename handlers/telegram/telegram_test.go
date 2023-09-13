@@ -537,9 +537,9 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedContactName:  Sp("Nic Pottier"),
-		ExpectedEvent:        courier.NewConversation,
-		ExpectedURN:          "telegram:3527065#nicpottier",
-		ExpectedDate:         time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+		ExpectedEvents: []ExpectedEvent{
+			{Type: courier.NewConversation, URN: "telegram:3527065#nicpottier", Time: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
+		},
 	},
 	{
 		Label:                "Receive No Params",
