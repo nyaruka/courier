@@ -5,7 +5,7 @@ import (
 
 	"github.com/nyaruka/courier/utils/whatsapp"
 	"github.com/nyaruka/gocommon/i18n"
-	"gopkg.in/go-playground/assert.v1"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetSupportedLanguage(t *testing.T) {
