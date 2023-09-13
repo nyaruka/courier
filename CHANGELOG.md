@@ -1,3 +1,10 @@
+v8.3.16 (2023-09-13)
+-------------------------
+ * Simplify interfaces that handlers have access to
+ * Allow handlers to create arbitrary auth tokens with messages and channel events
+ * Rename legacy FB and WA handlers
+ * Refactor whatsapp handlers to be more DRY
+
 v8.3.15 (2023-09-12)
 -------------------------
  * Stop reading from ContactURN.auth and remove from model
