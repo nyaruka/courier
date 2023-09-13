@@ -48,23 +48,8 @@ func NewMockMsg(id courier.MsgID, uuid courier.MsgUUID, channel courier.Channel,
 	}
 }
 
-func (m *mockMsg) SessionStatus() string        { return "" }
-func (m *mockMsg) Flow() *courier.FlowReference { return m.flow }
-
-func (m *mockMsg) FlowName() string {
-	if m.flow == nil {
-		return ""
-	}
-	return m.flow.Name
-}
-
-func (m *mockMsg) FlowUUID() string {
-	if m.flow == nil {
-		return ""
-	}
-	return m.flow.UUID
-}
-
+func (m *mockMsg) SessionStatus() string            { return "" }
+func (m *mockMsg) Flow() *courier.FlowReference     { return m.flow }
 func (m *mockMsg) Channel() courier.Channel         { return m.channel }
 func (m *mockMsg) ID() courier.MsgID                { return m.id }
 func (m *mockMsg) EventID() int64                   { return int64(m.id) }

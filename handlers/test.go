@@ -40,21 +40,21 @@ type IncomingTestCase struct {
 	Headers       map[string]string
 	MultipartForm map[string]string
 
-	ExpectedRespStatus   int
-	ExpectedBodyContains string
-	ExpectedContactName  *string
-	ExpectedMsgText      *string
-	ExpectedURN          urns.URN
-	ExpectedURNAuth      string
-	ExpectedAttachments  []string
-	ExpectedDate         time.Time
-	ExpectedMsgStatus    courier.MsgStatus
-	ExpectedExternalID   string
-	ExpectedMsgID        int64
-	ExpectedEvent        courier.ChannelEventType
-	ExpectedEventExtra   map[string]string
-	ExpectedErrors       []*courier.ChannelError
-	NoLogsExpected       bool
+	ExpectedRespStatus    int
+	ExpectedBodyContains  string
+	ExpectedContactName   *string
+	ExpectedMsgText       *string
+	ExpectedURN           urns.URN
+	ExpectedURNAuthTokens map[string]string
+	ExpectedAttachments   []string
+	ExpectedDate          time.Time
+	ExpectedMsgStatus     courier.MsgStatus
+	ExpectedExternalID    string
+	ExpectedMsgID         int64
+	ExpectedEvent         courier.ChannelEventType
+	ExpectedEventExtra    map[string]string
+	ExpectedErrors        []*courier.ChannelError
+	NoLogsExpected        bool
 }
 
 // MockedRequest is a fake HTTP request
@@ -181,7 +181,7 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 					assert.Equal(t, tc.ExpectedExternalID, msg.ExternalID())
 				}
 				assert.Equal(t, tc.ExpectedURN, msg.URN())
-				assert.Equal(t, tc.ExpectedURNAuth, msg.URNAuthTokens()["default"])
+				assert.Equal(t, tc.ExpectedURNAuthTokens, msg.URNAuthTokens())
 			} else {
 				assert.Empty(t, mb.WrittenMsgs(), "unexpected msg written")
 			}

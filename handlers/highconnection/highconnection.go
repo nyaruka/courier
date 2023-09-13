@@ -139,8 +139,13 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 
 	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
-	for _, part := range parts {
 
+	var flowName string
+	if msg.Flow() != nil {
+		flowName = msg.Flow().Name
+	}
+
+	for _, part := range parts {
 		form := url.Values{
 			"accountid":  []string{username},
 			"password":   []string{password},
@@ -148,7 +153,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 			"to":         []string{msg.URN().Path()},
 			"ret_id":     []string{msg.ID().String()},
 			"datacoding": []string{"8"},
-			"user_data":  []string{msg.FlowName()},
+			"user_data":  []string{flowName},
 			"ret_url":    []string{statusURL},
 			"ret_mo_url": []string{receiveURL},
 		}

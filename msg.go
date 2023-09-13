@@ -52,46 +52,46 @@ const (
 
 // Msg is our interface to represent an incoming or outgoing message
 type Msg interface {
+	Event
+
 	ID() MsgID
 	UUID() MsgUUID
+	ExternalID() string
 	Text() string
 	Attachments() []string
-	Locale() i18n.Locale
-	ExternalID() string
 	URN() urns.URN
-	URNAuth() string
-	URNAuthTokens() map[string]string
-	ContactName() string
+	Channel() Channel
+
+	// outgoing specific
 	QuickReplies() []string
+	Locale() i18n.Locale
+	URNAuth() string
 	Origin() MsgOrigin
 	ContactLastSeenOn() *time.Time
 	Topic() string
 	Metadata() json.RawMessage
 	ResponseToExternalID() string
-	IsResend() bool
-
-	Flow() *FlowReference
-	FlowName() string
-	FlowUUID() string
-
-	Channel() Channel
-
-	ReceivedOn() *time.Time
 	SentOn() *time.Time
-
+	IsResend() bool
+	Flow() *FlowReference
+	SessionStatus() string
 	HighPriority() bool
 
+	// incoming specific
+	URNAuthTokens() map[string]string
+	ContactName() string
+	ReceivedOn() *time.Time
+
+	WithAttachment(url string) Msg
 	WithContactName(name string) Msg
+	WithURNAuthTokens(tokens map[string]string) Msg
 	WithReceivedOn(date time.Time) Msg
+
+	// only used to create outgoing messages for testing
 	WithID(id MsgID) Msg
 	WithUUID(uuid MsgUUID) Msg
-	WithAttachment(url string) Msg
-	WithLocale(i18n.Locale) Msg
-	WithURNAuth(token string) Msg
-	WithURNAuthTokens(tokens map[string]string) Msg
 	WithMetadata(metadata json.RawMessage) Msg
 	WithFlow(flow *FlowReference) Msg
-
-	EventID() int64
-	SessionStatus() string
+	WithLocale(i18n.Locale) Msg
+	WithURNAuth(token string) Msg
 }

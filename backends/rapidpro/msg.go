@@ -354,20 +354,6 @@ func (m *DBMsg) Flow() *courier.FlowReference     { return m.Flow_ }
 func (m *DBMsg) Origin() courier.MsgOrigin        { return m.Origin_ }
 func (m *DBMsg) ContactLastSeenOn() *time.Time    { return m.ContactLastSeenOn_ }
 
-func (m *DBMsg) FlowName() string {
-	if m.Flow_ == nil {
-		return ""
-	}
-	return m.Flow_.Name
-}
-
-func (m *DBMsg) FlowUUID() string {
-	if m.Flow_ == nil {
-		return ""
-	}
-	return m.Flow_.UUID
-}
-
 func (m *DBMsg) Topic() string {
 	if m.Metadata_ == nil {
 		return ""

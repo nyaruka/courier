@@ -140,8 +140,6 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.True(msg.IsResend())
 	flow_ref := courier.FlowReference{UUID: "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", Name: "Favorites"}
 	ts.Equal(&flow_ref, msg.Flow())
-	ts.Equal("Favorites", msg.FlowName())
-	ts.Equal("9de3663f-c5c5-4c92-9f45-ecbc09abcc85", msg.FlowUUID())
 
 	msgJSONNoQR := `{
 		"text": "Test message 21",
@@ -168,8 +166,6 @@ func (ts *BackendTestSuite) TestMsgUnmarshal() {
 	ts.Equal("", msg.ResponseToExternalID())
 	ts.False(msg.IsResend())
 	ts.Nil(msg.Flow())
-	ts.Equal("", msg.FlowName())
-	ts.Equal("", msg.FlowUUID())
 }
 
 func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
