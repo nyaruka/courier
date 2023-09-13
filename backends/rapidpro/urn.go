@@ -94,7 +94,7 @@ func getURNsForContact(db *sqlx.Tx, contactID ContactID) ([]*ContactURN, error) 
 // that the passed in channel is the default one for that URN
 //
 // Note that the URN must be one of the contact's URN before calling this method
-func setDefaultURN(db *sqlx.Tx, channel *DBChannel, contact *DBContact, urn urns.URN, authTokens map[string]string) error {
+func setDefaultURN(db *sqlx.Tx, channel *Channel, contact *Contact, urn urns.URN, authTokens map[string]string) error {
 	scheme := urn.Scheme()
 	contactURNs, err := getURNsForContact(db, contact.ID_)
 	if err != nil {
@@ -175,7 +175,7 @@ func getContactURNByIdentity(db *sqlx.Tx, org OrgID, urn urns.URN) (*ContactURN,
 
 // getOrCreateContactURN returns the ContactURN for the passed in org and URN, creating and associating
 // it with the passed in contact if necessary
-func getOrCreateContactURN(db *sqlx.Tx, channel *DBChannel, contactID ContactID, urn urns.URN, authTokens map[string]string) (*ContactURN, error) {
+func getOrCreateContactURN(db *sqlx.Tx, channel *Channel, contactID ContactID, urn urns.URN, authTokens map[string]string) (*ContactURN, error) {
 	contactURN := newContactURN(channel.OrgID(), courier.NilChannelID, contactID, urn, authTokens)
 	if channel.HasRole(courier.ChannelRoleSend) {
 		contactURN.ChannelID = channel.ID()

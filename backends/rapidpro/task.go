@@ -9,8 +9,8 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 )
 
-func queueMsgHandling(rc redis.Conn, c *DBContact, m *DBMsg) error {
-	channel := m.Channel().(*DBChannel)
+func queueMsgHandling(rc redis.Conn, c *Contact, m *Msg) error {
+	channel := m.Channel().(*Channel)
 
 	// queue to mailroom
 	body := map[string]any{
@@ -30,7 +30,7 @@ func queueMsgHandling(rc redis.Conn, c *DBContact, m *DBMsg) error {
 	return queueMailroomTask(rc, "msg_event", m.OrgID_, m.ContactID_, body)
 }
 
-func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
+func queueChannelEvent(rc redis.Conn, c *Contact, e *ChannelEvent) error {
 	// queue to mailroom
 	switch e.EventType() {
 	case courier.StopContact:
@@ -81,7 +81,7 @@ func queueChannelEvent(rc redis.Conn, c *DBContact, e *DBChannelEvent) error {
 	}
 }
 
-func queueMsgDeleted(rc redis.Conn, ch *DBChannel, msgID courier.MsgID, contactID ContactID) error {
+func queueMsgDeleted(rc redis.Conn, ch *Channel, msgID courier.MsgID, contactID ContactID) error {
 	return queueMailroomTask(rc, "msg_deleted", ch.OrgID_, contactID, map[string]any{"org_id": ch.OrgID_, "msg_id": msgID})
 }
 

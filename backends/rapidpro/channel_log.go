@@ -58,7 +58,7 @@ type channelError struct {
 // queues the passed in channel log to a writer
 func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) {
 	log := logrus.WithFields(logrus.Fields{"log_uuid": clog.UUID(), "log_type": clog.Type(), "channel_uuid": clog.Channel().UUID()})
-	dbChan := clog.Channel().(*DBChannel)
+	dbChan := clog.Channel().(*Channel)
 
 	// so that we don't save null
 	logs := clog.HTTPLogs()

@@ -23,9 +23,137 @@ const (
 	LogPolicyAll    = "A"
 )
 
+// Channel is the RapidPro specific concrete type satisfying the courier.Channel interface
+type Channel struct {
+	OrgID_       OrgID               `db:"org_id"`
+	UUID_        courier.ChannelUUID `db:"uuid"`
+	ID_          courier.ChannelID   `db:"id"`
+	ChannelType_ courier.ChannelType `db:"channel_type"`
+	Schemes_     pq.StringArray      `db:"schemes"`
+	Name_        sql.NullString      `db:"name"`
+	Address_     sql.NullString      `db:"address"`
+	Country_     sql.NullString      `db:"country"`
+	Config_      null.Map[any]       `db:"config"`
+	Role_        string              `db:"role"`
+	LogPolicy    LogPolicy           `db:"log_policy"`
+
+	OrgConfig_ null.Map[any] `db:"org_config"`
+	OrgIsAnon_ bool          `db:"org_is_anon"`
+
+	expiration time.Time
+}
+
+func (c *Channel) ID() courier.ChannelID            { return c.ID_ }
+func (c *Channel) UUID() courier.ChannelUUID        { return c.UUID_ }
+func (c *Channel) OrgID() OrgID                     { return c.OrgID_ }
+func (c *Channel) OrgIsAnon() bool                  { return c.OrgIsAnon_ }
+func (c *Channel) ChannelType() courier.ChannelType { return c.ChannelType_ }
+func (c *Channel) Name() string                     { return c.Name_.String }
+func (c *Channel) Schemes() []string                { return []string(c.Schemes_) }
+func (c *Channel) Address() string                  { return c.Address_.String }
+
+// ChannelAddress returns the address of this channel
+func (c *Channel) ChannelAddress() courier.ChannelAddress {
+	if !c.Address_.Valid {
+		return courier.NilChannelAddress
+	}
+
+	return courier.ChannelAddress(c.Address_.String)
+}
+
+// Country returns the country code for this channel if any
+func (c *Channel) Country() string { return c.Country_.String }
+
+// IsScheme returns whether this channel serves only the passed in scheme
+func (c *Channel) IsScheme(scheme string) bool {
+	return len(c.Schemes_) == 1 && c.Schemes_[0] == scheme
+}
+
+// Roles returns the roles of this channel
+func (c *Channel) Roles() []courier.ChannelRole {
+	roles := []courier.ChannelRole{}
+	for _, char := range strings.Split(c.Role_, "") {
+		roles = append(roles, courier.ChannelRole(char))
+	}
+	return roles
+}
+
+// HasRole returns whether the passed in channel supports the passed role
+func (c *Channel) HasRole(role courier.ChannelRole) bool {
+	for _, r := range c.Roles() {
+		if r == role {
+			return true
+		}
+	}
+	return false
+}
+
+// ConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
+func (c *Channel) ConfigForKey(key string, defaultValue any) any {
+	value, found := c.Config_[key]
+	if !found {
+		return defaultValue
+	}
+	return value
+}
+
+// OrgConfigForKey returns the org config value for the passed in key, or defaultValue if it isn't found
+func (c *Channel) OrgConfigForKey(key string, defaultValue any) any {
+	value, found := c.OrgConfig_[key]
+	if !found {
+		return defaultValue
+	}
+	return value
+}
+
+// StringConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
+func (c *Channel) StringConfigForKey(key string, defaultValue string) string {
+	val := c.ConfigForKey(key, defaultValue)
+	str, isStr := val.(string)
+	if !isStr {
+		return defaultValue
+	}
+	return str
+}
+
+// BoolConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
+func (c *Channel) BoolConfigForKey(key string, defaultValue bool) bool {
+	val := c.ConfigForKey(key, defaultValue)
+	b, isBool := val.(bool)
+	if !isBool {
+		return defaultValue
+	}
+	return b
+}
+
+// IntConfigForKey returns the config value for the passed in key
+func (c *Channel) IntConfigForKey(key string, defaultValue int) int {
+	val := c.ConfigForKey(key, defaultValue)
+
+	// golang unmarshals number literals in JSON into float64s by default
+	f, isFloat := val.(float64)
+	if isFloat {
+		return int(f)
+	}
+
+	str, isStr := val.(string)
+	if isStr {
+		i, err := strconv.Atoi(str)
+		if err == nil {
+			return i
+		}
+	}
+	return defaultValue
+}
+
+// CallbackDomain is convenience utility to get the callback domain configured for this channel
+func (c *Channel) CallbackDomain(fallbackDomain string) string {
+	return c.StringConfigForKey(courier.ConfigCallbackDomain, fallbackDomain)
+}
+
 // getChannel will look up the channel with the passed in UUID and channel type.
 // It will return an error if the channel does not exist or is not active.
-func getChannel(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, channelUUID courier.ChannelUUID) (*DBChannel, error) {
+func getChannel(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, channelUUID courier.ChannelUUID) (*Channel, error) {
 	// look for the channel locally
 	cachedChannel, localErr := getCachedChannel(channelType, channelUUID)
 
@@ -78,8 +206,8 @@ SELECT
  WHERE c.uuid = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL`
 
 // ChannelForUUID attempts to look up the channel with the passed in UUID, returning it
-func loadChannelFromDB(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, uuid courier.ChannelUUID) (*DBChannel, error) {
-	channel := &DBChannel{UUID_: uuid}
+func loadChannelFromDB(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, uuid courier.ChannelUUID) (*Channel, error) {
+	channel := &Channel{UUID_: uuid}
 
 	// select just the fields we need
 	err := db.GetContext(ctx, channel, sqlLookupChannelFromUUID, uuid)
@@ -104,7 +232,7 @@ func loadChannelFromDB(ctx context.Context, db *sqlx.DB, channelType courier.Cha
 }
 
 // getCachedChannel returns a Channel object for the passed in type and UUID.
-func getCachedChannel(channelType courier.ChannelType, uuid courier.ChannelUUID) (*DBChannel, error) {
+func getCachedChannel(channelType courier.ChannelType, uuid courier.ChannelUUID) (*Channel, error) {
 	// first see if the channel exists in our local cache
 	cacheMutex.RLock()
 	channel, found := channelCache[uuid]
@@ -127,7 +255,7 @@ func getCachedChannel(channelType courier.ChannelType, uuid courier.ChannelUUID)
 	return nil, courier.ErrChannelNotFound
 }
 
-func cacheChannel(channel *DBChannel) {
+func cacheChannel(channel *Channel) {
 	channel.expiration = time.Now().Add(localTTL)
 
 	cacheMutex.Lock()
@@ -145,11 +273,11 @@ func clearLocalChannel(uuid courier.ChannelUUID) {
 const localTTL = 60 * time.Second
 
 var cacheMutex sync.RWMutex
-var channelCache = make(map[courier.ChannelUUID]*DBChannel)
+var channelCache = make(map[courier.ChannelUUID]*Channel)
 
 // getChannelByAddress will look up the channel with the passed in address and channel type.
 // It will return an error if the channel does not exist or is not active.
-func getChannelByAddress(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, address courier.ChannelAddress) (*DBChannel, error) {
+func getChannelByAddress(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, address courier.ChannelAddress) (*Channel, error) {
 	// look for the channel locally
 	cachedChannel, localErr := getCachedChannelByAddress(channelType, address)
 
@@ -202,8 +330,8 @@ SELECT
  WHERE c.address = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL`
 
 // loadChannelByAddressFromDB get the channel with the passed in channel type and address from the DB, returning it
-func loadChannelByAddressFromDB(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, address courier.ChannelAddress) (*DBChannel, error) {
-	channel := &DBChannel{Address_: sql.NullString{String: address.String(), Valid: address == courier.NilChannelAddress}}
+func loadChannelByAddressFromDB(ctx context.Context, db *sqlx.DB, channelType courier.ChannelType, address courier.ChannelAddress) (*Channel, error) {
+	channel := &Channel{Address_: sql.NullString{String: address.String(), Valid: address == courier.NilChannelAddress}}
 
 	// select just the fields we need
 	err := db.GetContext(ctx, channel, sqlLookupChannelFromAddress, address)
@@ -228,7 +356,7 @@ func loadChannelByAddressFromDB(ctx context.Context, db *sqlx.DB, channelType co
 }
 
 // getCachedChannelByAddress returns a Channel object for the passed in type and address.
-func getCachedChannelByAddress(channelType courier.ChannelType, address courier.ChannelAddress) (*DBChannel, error) {
+func getCachedChannelByAddress(channelType courier.ChannelType, address courier.ChannelAddress) (*Channel, error) {
 	// first see if the channel exists in our local cache
 	cacheByAddressMutex.RLock()
 	channel, found := channelByAddressCache[address]
@@ -252,7 +380,7 @@ func getCachedChannelByAddress(channelType courier.ChannelType, address courier.
 	return nil, courier.ErrChannelNotFound
 }
 
-func cacheChannelByAddress(channel *DBChannel) {
+func cacheChannelByAddress(channel *Channel) {
 	channel.expiration = time.Now().Add(localTTL)
 
 	// never cache if the address is nil or empty
@@ -272,151 +400,4 @@ func clearLocalChannelByAddress(address courier.ChannelAddress) {
 }
 
 var cacheByAddressMutex sync.RWMutex
-var channelByAddressCache = make(map[courier.ChannelAddress]*DBChannel)
-
-//-----------------------------------------------------------------------------
-// Channel Implementation
-//-----------------------------------------------------------------------------
-
-// DBChannel is the RapidPro specific concrete type satisfying the courier.Channel interface
-type DBChannel struct {
-	OrgID_       OrgID               `db:"org_id"`
-	UUID_        courier.ChannelUUID `db:"uuid"`
-	ID_          courier.ChannelID   `db:"id"`
-	ChannelType_ courier.ChannelType `db:"channel_type"`
-	Schemes_     pq.StringArray      `db:"schemes"`
-	Name_        sql.NullString      `db:"name"`
-	Address_     sql.NullString      `db:"address"`
-	Country_     sql.NullString      `db:"country"`
-	Config_      null.Map[any]       `db:"config"`
-	Role_        string              `db:"role"`
-	LogPolicy    LogPolicy           `db:"log_policy"`
-
-	OrgConfig_ null.Map[any] `db:"org_config"`
-	OrgIsAnon_ bool          `db:"org_is_anon"`
-
-	expiration time.Time
-}
-
-// OrgID returns the id of the org this channel is for
-func (c *DBChannel) OrgID() OrgID { return c.OrgID_ }
-
-// OrgIsAnon returns the org for this channel is anonymous
-func (c *DBChannel) OrgIsAnon() bool { return c.OrgIsAnon_ }
-
-// ChannelType returns the type of this channel
-func (c *DBChannel) ChannelType() courier.ChannelType { return c.ChannelType_ }
-
-// Name returns the name of this channel
-func (c *DBChannel) Name() string { return c.Name_.String }
-
-// Schemes returns the schemes this channels supports
-func (c *DBChannel) Schemes() []string { return []string(c.Schemes_) }
-
-// ID returns the id of this channel
-func (c *DBChannel) ID() courier.ChannelID { return c.ID_ }
-
-// UUID returns the UUID of this channel
-func (c *DBChannel) UUID() courier.ChannelUUID { return c.UUID_ }
-
-// Address returns the address of this channel as a string
-func (c *DBChannel) Address() string { return c.Address_.String }
-
-// ChannelAddress returns the address of this channel
-func (c *DBChannel) ChannelAddress() courier.ChannelAddress {
-	if !c.Address_.Valid {
-		return courier.NilChannelAddress
-	}
-
-	return courier.ChannelAddress(c.Address_.String)
-}
-
-// Country returns the country code for this channel if any
-func (c *DBChannel) Country() string { return c.Country_.String }
-
-// IsScheme returns whether this channel serves only the passed in scheme
-func (c *DBChannel) IsScheme(scheme string) bool {
-	return len(c.Schemes_) == 1 && c.Schemes_[0] == scheme
-}
-
-// Roles returns the roles of this channel
-func (c *DBChannel) Roles() []courier.ChannelRole {
-	roles := []courier.ChannelRole{}
-	for _, char := range strings.Split(c.Role_, "") {
-		roles = append(roles, courier.ChannelRole(char))
-	}
-	return roles
-}
-
-// HasRole returns whether the passed in channel supports the passed role
-func (c *DBChannel) HasRole(role courier.ChannelRole) bool {
-	for _, r := range c.Roles() {
-		if r == role {
-			return true
-		}
-	}
-	return false
-}
-
-// ConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
-func (c *DBChannel) ConfigForKey(key string, defaultValue any) any {
-	value, found := c.Config_[key]
-	if !found {
-		return defaultValue
-	}
-	return value
-}
-
-// OrgConfigForKey returns the org config value for the passed in key, or defaultValue if it isn't found
-func (c *DBChannel) OrgConfigForKey(key string, defaultValue any) any {
-	value, found := c.OrgConfig_[key]
-	if !found {
-		return defaultValue
-	}
-	return value
-}
-
-// StringConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
-func (c *DBChannel) StringConfigForKey(key string, defaultValue string) string {
-	val := c.ConfigForKey(key, defaultValue)
-	str, isStr := val.(string)
-	if !isStr {
-		return defaultValue
-	}
-	return str
-}
-
-// BoolConfigForKey returns the config value for the passed in key, or defaultValue if it isn't found
-func (c *DBChannel) BoolConfigForKey(key string, defaultValue bool) bool {
-	val := c.ConfigForKey(key, defaultValue)
-	b, isBool := val.(bool)
-	if !isBool {
-		return defaultValue
-	}
-	return b
-}
-
-// IntConfigForKey returns the config value for the passed in key
-func (c *DBChannel) IntConfigForKey(key string, defaultValue int) int {
-	val := c.ConfigForKey(key, defaultValue)
-
-	// golang unmarshals number literals in JSON into float64s by default
-	f, isFloat := val.(float64)
-	if isFloat {
-		return int(f)
-	}
-
-	str, isStr := val.(string)
-	if isStr {
-		i, err := strconv.Atoi(str)
-		if err == nil {
-			return i
-		}
-	}
-	return defaultValue
-}
-
-// CallbackDomain is convenience utility to get the callback domain configured for this channel
-func (c *DBChannel) CallbackDomain(fallbackDomain string) string {
-	return c.StringConfigForKey(courier.ConfigCallbackDomain, fallbackDomain)
-}
+var channelByAddressCache = make(map[courier.ChannelAddress]*Channel)

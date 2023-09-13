@@ -41,6 +41,27 @@ func (i ContactID) String() string {
 	return "null"
 }
 
+// Contact is our struct for a contact in the database
+type Contact struct {
+	OrgID_ OrgID               `db:"org_id"`
+	ID_    ContactID           `db:"id"`
+	UUID_  courier.ContactUUID `db:"uuid"`
+	Name_  null.String         `db:"name"`
+
+	URNID_ ContactURNID `db:"urn_id"`
+
+	CreatedOn_  time.Time `db:"created_on"`
+	ModifiedOn_ time.Time `db:"modified_on"`
+
+	CreatedBy_  int `db:"created_by_id"`
+	ModifiedBy_ int `db:"modified_by_id"`
+
+	IsNew_ bool
+}
+
+// UUID returns the UUID for this contact
+func (c *Contact) UUID() courier.ContactUUID { return c.UUID_ }
+
 const insertContactSQL = `
 INSERT INTO 
 	contacts_contact(org_id, is_active, status, uuid, created_on, modified_on, created_by_id, modified_by_id, name, ticket_count) 
@@ -49,7 +70,7 @@ RETURNING id
 `
 
 // insertContact inserts the passed in contact, the id field will be populated with the result on success
-func insertContact(tx *sqlx.Tx, contact *DBContact) error {
+func insertContact(tx *sqlx.Tx, contact *Contact) error {
 	rows, err := tx.NamedQuery(insertContactSQL, contact)
 	if err != nil {
 		return err
@@ -81,9 +102,9 @@ WHERE
 `
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
-func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChannel, urn urns.URN, authTokens map[string]string, name string, clog *courier.ChannelLog) (*DBContact, error) {
+func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel, urn urns.URN, authTokens map[string]string, name string, clog *courier.ChannelLog) (*Contact, error) {
 	// try to look up our contact by URN
-	contact := &DBContact{}
+	contact := &Contact{}
 	err := b.db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
 	if err != nil && err != sql.ErrNoRows {
 		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
@@ -200,24 +221,3 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *DBChanne
 	// and return it
 	return contact, nil
 }
-
-// DBContact is our struct for a contact in the database
-type DBContact struct {
-	OrgID_ OrgID               `db:"org_id"`
-	ID_    ContactID           `db:"id"`
-	UUID_  courier.ContactUUID `db:"uuid"`
-	Name_  null.String         `db:"name"`
-
-	URNID_ ContactURNID `db:"urn_id"`
-
-	CreatedOn_  time.Time `db:"created_on"`
-	ModifiedOn_ time.Time `db:"modified_on"`
-
-	CreatedBy_  int `db:"created_by_id"`
-	ModifiedBy_ int `db:"modified_by_id"`
-
-	IsNew_ bool
-}
-
-// UUID returns the UUID for this contact
-func (c *DBContact) UUID() courier.ContactUUID { return c.UUID_ }

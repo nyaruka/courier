@@ -322,7 +322,7 @@ func (b *backend) GetChannelByAddress(ctx context.Context, ct courier.ChannelTyp
 
 // GetContact returns the contact for the passed in channel and URN
 func (b *backend) GetContact(ctx context.Context, c courier.Channel, urn urns.URN, authTokens map[string]string, name string, clog *courier.ChannelLog) (courier.Contact, error) {
-	dbChannel := c.(*DBChannel)
+	dbChannel := c.(*Channel)
 	return contactForURN(ctx, b, dbChannel.OrgID_, dbChannel, urn, authTokens, name, clog)
 }
 
@@ -332,8 +332,8 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 	if err != nil {
 		return urns.NilURN, err
 	}
-	dbChannel := c.(*DBChannel)
-	dbContact := contact.(*DBContact)
+	dbChannel := c.(*Channel)
+	dbContact := contact.(*Contact)
 	_, err = getOrCreateContactURN(tx, dbChannel, dbContact.ID_, urn, authTokens)
 	if err != nil {
 		return urns.NilURN, err
@@ -348,7 +348,7 @@ func (b *backend) AddURNtoContact(ctx context.Context, c courier.Channel, contac
 
 // RemoveURNFromcontact removes a URN from the passed in contact
 func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
-	dbContact := contact.(*DBContact)
+	dbContact := contact.(*Contact)
 	_, err := b.db.ExecContext(ctx, `UPDATE contacts_contacturn SET contact_id = NULL WHERE contact_id = $1 AND identity = $2`, dbContact.ID_, urn.Identity().String())
 	if err != nil {
 		return urns.NilURN, err
@@ -358,7 +358,7 @@ func (b *backend) RemoveURNfromContact(ctx context.Context, c courier.Channel, c
 
 // DeleteMsgByExternalID resolves a message external id and quees a task to mailroom to delete it
 func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Channel, externalID string) error {
-	ch := channel.(*DBChannel)
+	ch := channel.(*Channel)
 	row := b.db.QueryRowContext(ctx, `SELECT id, contact_id FROM msgs_msg WHERE channel_id = $1 AND external_id = $2 AND direction = 'I'`, ch.ID(), externalID)
 
 	var msgID courier.MsgID
@@ -417,7 +417,7 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
 	}
 
 	if msgJSON != "" {
-		dbMsg := &DBMsg{}
+		dbMsg := &Msg{}
 		err = json.Unmarshal([]byte(msgJSON), dbMsg)
 		if err != nil {
 			queue.MarkComplete(rc, msgQueueName, token)
@@ -432,7 +432,7 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
 		}
 
 		dbMsg.Direction_ = MsgOutgoing
-		dbMsg.channel = channel.(*DBChannel)
+		dbMsg.channel = channel.(*Channel)
 		dbMsg.workerToken = token
 
 		// clear out our seen incoming messages
@@ -485,7 +485,7 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	dbMsg := msg.(*DBMsg)
+	dbMsg := msg.(*Msg)
 
 	queue.MarkComplete(rc, msgQueueName, dbMsg.workerToken)
 
@@ -582,7 +582,7 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 	if err != nil {
 		return errors.Wrap(err, "error retrieving channel")
 	}
-	dbChannel := channel.(*DBChannel)
+	dbChannel := channel.(*Channel)
 	tx, err := b.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
@@ -662,7 +662,7 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 		filename = fmt.Sprintf("%s.%s", filename, extension)
 	}
 
-	orgID := ch.(*DBChannel).OrgID()
+	orgID := ch.(*Channel).OrgID()
 
 	path := filepath.Join(b.config.S3AttachmentsPrefix, strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 
@@ -694,7 +694,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
-	var media *DBMedia
+	var media *Media
 	mediaJSON, err := b.mediaCache.Get(rc, mediaUUID)
 	if err != nil {
 		return nil, errors.Wrap(err, "error looking up cached media")
