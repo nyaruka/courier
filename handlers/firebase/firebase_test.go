@@ -45,16 +45,16 @@ var testChannels = []courier.Channel{
 
 var testCases = []IncomingTestCase{
 	{
-		Label:                "Receive Valid Message",
-		URL:                  receiveURL,
-		Data:                 "from=12345&date=2017-01-01T08:50:00.000&fcm_token=token&name=fred&msg=hello+world",
-		ExpectedRespStatus:   200,
-		ExpectedBodyContains: "Accepted",
-		ExpectedMsgText:      Sp("hello world"),
-		ExpectedURN:          "fcm:12345",
-		ExpectedDate:         time.Date(2017, 1, 1, 8, 50, 0, 0, time.UTC),
-		ExpectedURNAuth:      "token",
-		ExpectedContactName:  Sp("fred"),
+		Label:                 "Receive Valid Message",
+		URL:                   receiveURL,
+		Data:                  "from=12345&date=2017-01-01T08:50:00.000&fcm_token=token&name=fred&msg=hello+world",
+		ExpectedRespStatus:    200,
+		ExpectedBodyContains:  "Accepted",
+		ExpectedMsgText:       Sp("hello world"),
+		ExpectedURN:           "fcm:12345",
+		ExpectedDate:          time.Date(2017, 1, 1, 8, 50, 0, 0, time.UTC),
+		ExpectedURNAuthTokens: map[string]string{"default": "token"},
+		ExpectedContactName:   Sp("fred"),
 	},
 	{
 		Label:                "Receive Invalid Date",
