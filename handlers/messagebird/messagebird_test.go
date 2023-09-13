@@ -167,8 +167,9 @@ var defaultReceiveTestCases = []IncomingTestCase{
 		ExpectedRespStatus: 200,
 		ExpectedMsgStatus:  "F",
 		ExpectedErrors:     []*courier.ChannelError{courier.ErrorExternal("103", "Contact has sent 'stop'")},
-		ExpectedEvent:      "stop_contact",
-		ExpectedURN:        "tel:188885551515",
+		ExpectedEvents: []ExpectedEvent{
+			{Type: courier.StopContact, URN: "tel:188885551515"},
+		},
 	},
 	{
 		Label:                "Receive Invalid Status",

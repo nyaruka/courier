@@ -192,8 +192,9 @@ var testCases = []IncomingTestCase{
 		Data:                 subscribeEvent,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Event Accepted",
-		ExpectedEvent:        courier.NewConversation,
-		ExpectedURN:          "jiochat:1234",
+		ExpectedEvents: []ExpectedEvent{
+			{Type: courier.NewConversation, URN: "jiochat:1234"},
+		},
 	},
 	{
 		Label:                "Unsubscribe Event",
