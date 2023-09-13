@@ -119,9 +119,7 @@ func setDefaultURN(db *sqlx.Tx, channel *Channel, contact *Contact, urn urns.URN
 				contactURNs[0].ChannelID = channel.ID()
 			}
 
-			for k, v := range authTokens {
-				contactURNs[0].AuthTokens[k] = v
-			}
+			utils.MapUpdate(contactURNs[0].AuthTokens, authTokens)
 
 			return updateContactURN(db, contactURNs[0])
 		}
@@ -142,9 +140,7 @@ func setDefaultURN(db *sqlx.Tx, channel *Channel, contact *Contact, urn urns.URN
 				existing.ChannelID = channel.ID()
 			}
 
-			for k, v := range authTokens {
-				contactURNs[0].AuthTokens[k] = v
-			}
+			utils.MapUpdate(contactURNs[0].AuthTokens, authTokens)
 		} else {
 			existing.Priority = currPriority
 
@@ -209,11 +205,9 @@ func getOrCreateContactURN(db *sqlx.Tx, channel *Channel, contactID ContactID, u
 		}
 	}
 
-	// update our auth if we have a value set
+	// update our auth tokens if any provided
 	if authTokens != nil {
-		for k, v := range authTokens {
-			contactURN.AuthTokens[k] = v
-		}
+		utils.MapUpdate(contactURN.AuthTokens, authTokens)
 
 		err = updateContactURN(db, contactURN)
 	}

@@ -1,0 +1,30 @@
+{
+    "object": "page",
+    "entry": [
+        {
+            "id": "12345",
+            "time": 1459991487970,
+            "messaging": [
+                {
+                    "recipient": {
+                        "id": "12345"
+                    },
+                    "timestamp": 1459991487970,
+                    "sender": {
+                        "id": "5678"
+                    },
+                    "optin": {
+                        "type": "notification_messages",
+                        "payload": "bird-facts",
+                        "notification_messages_token": "12345678901234567890",
+                        "notification_messages_frequency": "DAILY",
+                        "token_expiry_timestamp": 2145916800000,
+                        "user_token_status": "NOT_REFRESHED",
+                        "notification_messages_status": "STOP_NOTIFICATIONS",
+                        "title": "Bird Facts"
+                    }
+                }
+            ]
+        }
+    ]
+}
