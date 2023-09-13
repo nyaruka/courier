@@ -97,7 +97,7 @@ func (mb *MockBackend) DeleteMsgByExternalID(ctx context.Context, channel courie
 
 // NewIncomingMsg creates a new message from the given params
 func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.Msg {
-	m := &mockMsg{
+	m := &MockMsg{
 		channel: channel, urn: urn, text: text, externalID: extID,
 	}
 
@@ -114,7 +114,7 @@ func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, tex
 func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, id courier.MsgID, urn urns.URN, text string, highPriority bool, quickReplies []string,
 	topic string, responseToExternalID string, origin courier.MsgOrigin, contactLastSeenOn *time.Time) courier.Msg {
 
-	return &mockMsg{
+	return &MockMsg{
 		channel:              channel,
 		id:                   id,
 		urn:                  urn,
@@ -190,7 +190,7 @@ func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 
 // WriteMsg queues the passed in message internally
 func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.Msg, clog *courier.ChannelLog) error {
-	mock := m.(*mockMsg)
+	mock := m.(*MockMsg)
 
 	// this msg has already been written (we received it twice), we are a no op
 	if mock.alreadyWritten {
@@ -205,7 +205,7 @@ func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.Msg, clog *courie
 	}
 
 	mb.writtenMsgs = append(mb.writtenMsgs, m)
-	mb.lastContactName = m.(*mockMsg).contactName
+	mb.lastContactName = m.(*MockMsg).contactName
 
 	if m.ExternalID() != "" {
 		mb.seenExternalIDs[fmt.Sprintf("%s|%s", m.Channel().UUID(), m.ExternalID())] = m.UUID()

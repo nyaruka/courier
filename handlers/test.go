@@ -166,7 +166,7 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 
 			if tc.ExpectedMsgText != nil || tc.ExpectedAttachments != nil {
 				require.Len(mb.WrittenMsgs(), 1, "expected a msg to be written")
-				msg := mb.WrittenMsgs()[0]
+				msg := mb.WrittenMsgs()[0].(*test.MockMsg)
 
 				if tc.ExpectedMsgText != nil {
 					assert.Equal(t, *tc.ExpectedMsgText, msg.Text())
@@ -314,7 +314,7 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 		t.Run(tc.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			msg := mb.NewOutgoingMsg(channel, 10, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgTopic, tc.MsgResponseToExternalID, msgOrigin, tc.MsgContactLastSeenOn)
+			msg := mb.NewOutgoingMsg(channel, 10, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgTopic, tc.MsgResponseToExternalID, msgOrigin, tc.MsgContactLastSeenOn).(*test.MockMsg)
 			msg.WithLocale(tc.MsgLocale)
 
 			for _, a := range tc.MsgAttachments {

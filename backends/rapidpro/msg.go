@@ -331,29 +331,21 @@ type DBMsg struct {
 	alreadyWritten bool
 }
 
-func (m *DBMsg) ID() courier.MsgID                { return m.ID_ }
-func (m *DBMsg) EventID() int64                   { return int64(m.ID_) }
-func (m *DBMsg) UUID() courier.MsgUUID            { return m.UUID_ }
-func (m *DBMsg) Text() string                     { return m.Text_ }
-func (m *DBMsg) Attachments() []string            { return m.Attachments_ }
-func (m *DBMsg) QuickReplies() []string           { return m.QuickReplies_ }
-func (m *DBMsg) Locale() i18n.Locale              { return i18n.Locale(string(m.Locale_)) }
-func (m *DBMsg) ExternalID() string               { return string(m.ExternalID_) }
-func (m *DBMsg) URN() urns.URN                    { return m.URN_ }
-func (m *DBMsg) URNAuth() string                  { return m.URNAuth_ }
-func (m *DBMsg) URNAuthTokens() map[string]string { return m.URNAuthTokens_ }
-func (m *DBMsg) ContactName() string              { return m.ContactName_ }
-func (m *DBMsg) HighPriority() bool               { return m.HighPriority_ }
-func (m *DBMsg) ReceivedOn() *time.Time           { return m.SentOn_ }
-func (m *DBMsg) SentOn() *time.Time               { return m.SentOn_ }
-func (m *DBMsg) ResponseToExternalID() string     { return m.ResponseToExternalID_ }
-func (m *DBMsg) IsResend() bool                   { return m.IsResend_ }
-func (m *DBMsg) Channel() courier.Channel         { return m.channel }
-func (m *DBMsg) SessionStatus() string            { return m.SessionStatus_ }
-func (m *DBMsg) Flow() *courier.FlowReference     { return m.Flow_ }
-func (m *DBMsg) Origin() courier.MsgOrigin        { return m.Origin_ }
-func (m *DBMsg) ContactLastSeenOn() *time.Time    { return m.ContactLastSeenOn_ }
+func (m *DBMsg) EventID() int64           { return int64(m.ID_) }
+func (m *DBMsg) ID() courier.MsgID        { return m.ID_ }
+func (m *DBMsg) UUID() courier.MsgUUID    { return m.UUID_ }
+func (m *DBMsg) ExternalID() string       { return string(m.ExternalID_) }
+func (m *DBMsg) Text() string             { return m.Text_ }
+func (m *DBMsg) Attachments() []string    { return m.Attachments_ }
+func (m *DBMsg) URN() urns.URN            { return m.URN_ }
+func (m *DBMsg) Channel() courier.Channel { return m.channel }
 
+// outgoing specific
+func (m *DBMsg) QuickReplies() []string        { return m.QuickReplies_ }
+func (m *DBMsg) Locale() i18n.Locale           { return i18n.Locale(string(m.Locale_)) }
+func (m *DBMsg) URNAuth() string               { return m.URNAuth_ }
+func (m *DBMsg) Origin() courier.MsgOrigin     { return m.Origin_ }
+func (m *DBMsg) ContactLastSeenOn() *time.Time { return m.ContactLastSeenOn_ }
 func (m *DBMsg) Topic() string {
 	if m.Metadata_ == nil {
 		return ""
@@ -361,51 +353,30 @@ func (m *DBMsg) Topic() string {
 	topic, _, _, _ := jsonparser.Get(m.Metadata_, "topic")
 	return string(topic)
 }
-
-// Metadata returns the metadata for this message
 func (m *DBMsg) Metadata() json.RawMessage {
 	return m.Metadata_
 }
+func (m *DBMsg) ResponseToExternalID() string { return m.ResponseToExternalID_ }
+func (m *DBMsg) SentOn() *time.Time           { return m.SentOn_ }
+func (m *DBMsg) IsResend() bool               { return m.IsResend_ }
+func (m *DBMsg) Flow() *courier.FlowReference { return m.Flow_ }
+func (m *DBMsg) SessionStatus() string        { return m.SessionStatus_ }
+func (m *DBMsg) HighPriority() bool           { return m.HighPriority_ }
 
-func (m *DBMsg) hash() string {
-	hash := sha1.Sum([]byte(m.Text_ + "|" + strings.Join(m.Attachments_, "|")))
-	return hex.EncodeToString(hash[:])
-}
-
-// WithContactName can be used to set the contact name on a msg
-func (m *DBMsg) WithContactName(name string) courier.Msg { m.ContactName_ = name; return m }
-
-// WithReceivedOn can be used to set sent_on on a msg in a chained call
-func (m *DBMsg) WithReceivedOn(date time.Time) courier.Msg { m.SentOn_ = &date; return m }
-
-// WithID can be used to set the id on a msg in a chained call
-func (m *DBMsg) WithID(id courier.MsgID) courier.Msg { m.ID_ = id; return m }
-
-// WithUUID can be used to set the id on a msg in a chained call
-func (m *DBMsg) WithUUID(uuid courier.MsgUUID) courier.Msg { m.UUID_ = uuid; return m }
-
-// WithMetadata can be used to add metadata to a Msg
-func (m *DBMsg) WithMetadata(metadata json.RawMessage) courier.Msg { m.Metadata_ = metadata; return m }
-
-// WithFlow can be used to add flow to a Msg
-func (m *DBMsg) WithFlow(flow *courier.FlowReference) courier.Msg { m.Flow_ = flow; return m }
-
-// WithAttachment can be used to append to the media urls for a message
+// incoming specific
+func (m *DBMsg) ReceivedOn() *time.Time { return m.SentOn_ }
 func (m *DBMsg) WithAttachment(url string) courier.Msg {
 	m.Attachments_ = append(m.Attachments_, url)
 	return m
 }
-
-func (m *DBMsg) WithLocale(lc i18n.Locale) courier.Msg { m.Locale_ = null.String(lc); return m }
-
-// WithURNAuth sets the URN auth to be used for sending (only used to create messages in tests)
-func (m *DBMsg) WithURNAuth(token string) courier.Msg {
-	m.URNAuth_ = token
-	return m
-}
-
-// WithURNAuthTokens can be used to save URN auth tokens from an incoming message
+func (m *DBMsg) WithContactName(name string) courier.Msg { m.ContactName_ = name; return m }
 func (m *DBMsg) WithURNAuthTokens(tokens map[string]string) courier.Msg {
 	m.URNAuthTokens_ = tokens
 	return m
+}
+func (m *DBMsg) WithReceivedOn(date time.Time) courier.Msg { m.SentOn_ = &date; return m }
+
+func (m *DBMsg) hash() string {
+	hash := sha1.Sum([]byte(m.Text_ + "|" + strings.Join(m.Attachments_, "|")))
+	return hex.EncodeToString(hash[:])
 }

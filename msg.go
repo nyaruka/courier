@@ -78,20 +78,9 @@ type Msg interface {
 	HighPriority() bool
 
 	// incoming specific
-	URNAuthTokens() map[string]string
-	ContactName() string
 	ReceivedOn() *time.Time
-
 	WithAttachment(url string) Msg
 	WithContactName(name string) Msg
 	WithURNAuthTokens(tokens map[string]string) Msg
 	WithReceivedOn(date time.Time) Msg
-
-	// only used to create outgoing messages for testing
-	WithID(id MsgID) Msg
-	WithUUID(uuid MsgUUID) Msg
-	WithMetadata(metadata json.RawMessage) Msg
-	WithFlow(flow *FlowReference) Msg
-	WithLocale(i18n.Locale) Msg
-	WithURNAuth(token string) Msg
 }
