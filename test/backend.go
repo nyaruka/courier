@@ -281,17 +281,17 @@ func (mb *MockBackend) GetChannelByAddress(ctx context.Context, cType courier.Ch
 }
 
 // GetContact creates a new contact with the passed in channel and URN
-func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, urn urns.URN, auth, name string, clog *courier.ChannelLog) (courier.Contact, error) {
+func (mb *MockBackend) GetContact(ctx context.Context, channel courier.Channel, urn urns.URN, authTokens map[string]string, name string, clog *courier.ChannelLog) (courier.Contact, error) {
 	contact, found := mb.contacts[urn]
 	if !found {
-		contact = &mockContact{channel, urn, auth, courier.ContactUUID(uuids.New())}
+		contact = &mockContact{channel, urn, authTokens, courier.ContactUUID(uuids.New())}
 		mb.contacts[urn] = contact
 	}
 	return contact, nil
 }
 
 // AddURNtoContact adds a URN to the passed in contact
-func (mb *MockBackend) AddURNtoContact(context context.Context, channel courier.Channel, contact courier.Contact, urn urns.URN) (urns.URN, error) {
+func (mb *MockBackend) AddURNtoContact(context context.Context, channel courier.Channel, contact courier.Contact, urn urns.URN, authTokens map[string]string) (urns.URN, error) {
 	mb.contacts[urn] = contact
 	return urn, nil
 }

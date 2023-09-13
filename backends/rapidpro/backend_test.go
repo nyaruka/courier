@@ -204,13 +204,13 @@ func (ts *BackendTestSuite) TestContact() {
 	now := time.Now()
 
 	// create our new contact
-	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Ryan Lewis", clog)
+	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, nil, "Ryan Lewis", clog)
 	ts.NoError(err)
 
 	now2 := time.Now()
 
 	// load this contact again by URN, should be same contact, name unchanged
-	contact2, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Other Name", clog)
+	contact2, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, nil, "Other Name", clog)
 	ts.NoError(err)
 
 	ts.Equal(contact.UUID_, contact2.UUID_)
@@ -224,7 +224,7 @@ func (ts *BackendTestSuite) TestContact() {
 
 	// load a contact by URN instead (this one is in our testdata)
 	cURN, _ := urns.NewTelURNForCountry("+12067799192", "US")
-	contact, err = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, cURN, "", "", clog)
+	contact, err = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, cURN, nil, "", clog)
 	ts.NoError(err)
 	ts.NotNil(contact)
 
@@ -236,7 +236,7 @@ func (ts *BackendTestSuite) TestContact() {
 	// long name are truncated
 
 	longName := "LongRandomNameHPGBRDjZvkz7y58jI2UPkio56IKGaMvaeDTvF74Q5SUkIHozFn1MLELfjX7vRrFto8YG2KPVaWzekgmFbkuxujIotFAgfhHqoHKW5c177FUtKf5YK9KbY8hp0x7PxIFY3MS5lMyMA5ELlqIgikThpr"
-	contact3, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", longName, clog)
+	contact3, err := contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, nil, longName, clog)
 	ts.NoError(err)
 
 	ts.Equal(null.String(longName[0:127]), contact3.Name_)
@@ -258,10 +258,10 @@ func (ts *BackendTestSuite) TestContactRace() {
 	var err1, err2 error
 
 	go func() {
-		contact1, err1 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Ryan Lewis", clog)
+		contact1, err1 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, nil, "Ryan Lewis", clog)
 	}()
 	go func() {
-		contact2, err2 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, "", "Ryan Lewis", clog)
+		contact2, err2 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn, nil, "Ryan Lewis", clog)
 	}()
 
 	time.Sleep(time.Second)
@@ -279,7 +279,7 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	cURN, err := urns.NewTelURNForCountry("+12067799192", "US")
 	ts.NoError(err)
 
-	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, cURN, "", "", clog)
+	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, cURN, nil, "", clog)
 	ts.NoError(err)
 	ts.NotNil(contact)
 
@@ -291,7 +291,7 @@ func (ts *BackendTestSuite) TestAddAndRemoveContactURN() {
 	ts.Equal(len(contactURNs), 1)
 
 	urn, _ := urns.NewTelURNForCountry("12065551518", "US")
-	addedURN, err := ts.b.AddURNtoContact(ctx, knChannel, contact, urn)
+	addedURN, err := ts.b.AddURNtoContact(ctx, knChannel, contact, urn, nil)
 	ts.NoError(err)
 	ts.NotNil(addedURN)
 
@@ -321,33 +321,33 @@ func (ts *BackendTestSuite) TestContactURN() {
 
 	ctx := context.Background()
 
-	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, urn, "", "", clog)
+	contact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, urn, nil, "", clog)
 	ts.NoError(err)
 	ts.NotNil(contact)
 
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
 
-	contact, err = contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, urn, "chestnut", "", clog)
+	contact, err = contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, urn, map[string]string{"token1": "chestnut"}, "", clog)
 	ts.NoError(err)
 	ts.NotNil(contact)
 
 	contactURNs, err := getURNsForContact(tx, contact.ID_)
 	ts.NoError(err)
-	ts.Equal(null.Map[string]{"default": "chestnut"}, contactURNs[0].AuthTokens)
+	ts.Equal(null.Map[string]{"token1": "chestnut"}, contactURNs[0].AuthTokens)
 
 	// now build a URN for our number with the kannel channel
-	knURN, err := getOrCreateContactURN(tx, knChannel, contact.ID_, urn, "sesame")
+	knURN, err := getOrCreateContactURN(tx, knChannel, contact.ID_, urn, map[string]string{"token2": "sesame"})
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(knURN.OrgID, knChannel.OrgID_)
-	ts.Equal(null.Map[string]{"default": "sesame"}, knURN.AuthTokens)
+	ts.Equal(null.Map[string]{"token1": "chestnut", "token2": "sesame"}, knURN.AuthTokens)
 
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
 
 	// then with our twilio channel
-	twURN, err := getOrCreateContactURN(tx, twChannel, contact.ID_, urn, "")
+	twURN, err := getOrCreateContactURN(tx, twChannel, contact.ID_, urn, nil)
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
@@ -361,26 +361,26 @@ func (ts *BackendTestSuite) TestContactURN() {
 	ts.Equal(twURN.ChannelID, twChannel.ID())
 
 	// auth should be unchanged
-	ts.Equal(null.Map[string]{"default": "sesame"}, twURN.AuthTokens)
+	ts.Equal(null.Map[string]{"token1": "chestnut", "token2": "sesame"}, twURN.AuthTokens)
 
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
 
 	// again with different auth
-	twURN, err = getOrCreateContactURN(tx, twChannel, contact.ID_, urn, "peanut")
+	twURN, err = getOrCreateContactURN(tx, twChannel, contact.ID_, urn, map[string]string{"token3": "peanut"})
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
-	ts.Equal(null.Map[string]{"default": "peanut"}, twURN.AuthTokens)
+	ts.Equal(null.Map[string]{"token1": "chestnut", "token2": "sesame", "token3": "peanut"}, twURN.AuthTokens)
 
 	// test that we don't use display when looking up URNs
 	tgChannel := ts.getChannel("TG", "dbc126ed-66bc-4e28-b67b-81dc3327c98a")
 	tgURN, _ := urns.NewTelegramURN(12345, "")
 
-	tgContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURN, "", "", clog)
+	tgContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURN, nil, "", clog)
 	ts.NoError(err)
 
 	tgURNDisplay, _ := urns.NewTelegramURN(12345, "Jane")
-	displayContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURNDisplay, "", "", clog)
+	displayContact, err := contactForURN(ctx, ts.b, tgChannel.OrgID_, tgChannel, tgURNDisplay, nil, "", clog)
 
 	ts.NoError(err)
 	ts.Equal(tgContact.URNID_, displayContact.URNID_)
@@ -389,7 +389,7 @@ func (ts *BackendTestSuite) TestContactURN() {
 	tx, err = ts.b.db.Beginx()
 	ts.NoError(err)
 
-	tgContactURN, err := getOrCreateContactURN(tx, tgChannel, tgContact.ID_, tgURNDisplay, "")
+	tgContactURN, err := getOrCreateContactURN(tx, tgChannel, tgContact.ID_, tgURNDisplay, nil)
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 	ts.Equal(tgContact.URNID_, tgContactURN.ID)
@@ -402,13 +402,13 @@ func (ts *BackendTestSuite) TestContactURN() {
 	wait.Add(2)
 	go func() {
 		var err2 error
-		contact2, err2 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn2, "", "", clog)
+		contact2, err2 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn2, nil, "", clog)
 		ts.NoError(err2)
 		wait.Done()
 	}()
 	go func() {
 		var err3 error
-		contact3, err3 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn2, "", "", clog)
+		contact3, err3 = contactForURN(ctx, ts.b, knChannel.OrgID(), knChannel, urn2, nil, "", clog)
 		ts.NoError(err3)
 		wait.Done()
 	}()
@@ -428,19 +428,19 @@ func (ts *BackendTestSuite) TestContactURNPriority() {
 
 	ctx := context.Background()
 
-	knContact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, knURN, "", "", clog)
+	knContact, err := contactForURN(ctx, ts.b, knChannel.OrgID_, knChannel, knURN, nil, "", clog)
 	ts.NoError(err)
 
 	tx, err := ts.b.db.Beginx()
 	ts.NoError(err)
 
-	_, err = getOrCreateContactURN(tx, twChannel, knContact.ID_, twURN, "")
+	_, err = getOrCreateContactURN(tx, twChannel, knContact.ID_, twURN, nil)
 	ts.NoError(err)
 	ts.NoError(tx.Commit())
 
 	// ok, now looking up our contact should reset our URNs and their affinity..
 	// TwitterURN should be first all all URNs should now use Twitter channel
-	twContact, err := contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, twURN, "", "", clog)
+	twContact, err := contactForURN(ctx, ts.b, twChannel.OrgID_, twChannel, twURN, nil, "", clog)
 	ts.NoError(err)
 
 	ts.Equal(twContact.ID_, knContact.ID_)
@@ -622,7 +622,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	// update URN when the new doesn't exist
 	tx, _ := ts.b.db.BeginTxx(ctx, nil)
 	oldURN, _ := urns.NewWhatsAppURN("55988776655")
-	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, NilContactID, oldURN, ""))
+	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, NilContactID, oldURN, nil))
 
 	ts.NoError(tx.Commit())
 
@@ -643,8 +643,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	oldURN, _ = urns.NewWhatsAppURN("55999887766")
 	newURN, _ = urns.NewWhatsAppURN("5599887766")
 	tx, _ = ts.b.db.BeginTxx(ctx, nil)
-	contact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, "", "", clog6)
-	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, NilContactID, newURN, ""))
+	contact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, nil, "", clog6)
+	_ = insertContactURN(tx, newContactURN(channel.OrgID_, channel.ID_, NilContactID, newURN, nil))
 
 	ts.NoError(tx.Commit())
 
@@ -665,8 +665,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	oldURN, _ = urns.NewWhatsAppURN("55988776655")
 	newURN, _ = urns.NewWhatsAppURN("5588776655")
 	tx, _ = ts.b.db.BeginTxx(ctx, nil)
-	_, _ = contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, "", "", clog6)
-	otherContact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, newURN, "", "", clog6)
+	_, _ = contactForURN(ctx, ts.b, channel.OrgID_, channel, oldURN, nil, "", clog6)
+	otherContact, _ := contactForURN(ctx, ts.b, channel.OrgID_, channel, newURN, nil, "", clog6)
 
 	ts.NoError(tx.Commit())
 
@@ -1115,7 +1115,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.NoError(err)
 
 	// load our URN
-	contactURN, err := getOrCreateContactURN(tx, m.channel, m.ContactID_, urn, "")
+	contactURN, err := getOrCreateContactURN(tx, m.channel, m.ContactID_, urn, nil)
 	if !ts.NoError(err) || !ts.NoError(tx.Commit()) {
 		ts.FailNow("failed writing contact urn")
 	}
@@ -1140,7 +1140,7 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.NotNil(m.ModifiedOn_)
 	ts.NotNil(m.QueuedOn_)
 
-	contact, err := contactForURN(ctx, ts.b, m.OrgID_, knChannel, urn, "", "", clog)
+	contact, err := contactForURN(ctx, ts.b, m.OrgID_, knChannel, urn, nil, "", clog)
 	ts.NoError(err)
 	ts.Equal(null.String("test contact"), contact.Name_)
 	ts.Equal(m.OrgID_, contact.OrgID_)
@@ -1255,7 +1255,7 @@ func (ts *BackendTestSuite) TestPreferredChannelCheckRole() {
 	ts.NoError(err)
 
 	// load our URN
-	exContactURN, err := getOrCreateContactURN(tx, m.channel, m.ContactID_, urn, "")
+	exContactURN, err := getOrCreateContactURN(tx, m.channel, m.ContactID_, urn, nil)
 	if !ts.NoError(err) || !ts.NoError(tx.Commit()) {
 		ts.FailNow("failed writing contact urn")
 	}
@@ -1273,7 +1273,7 @@ func (ts *BackendTestSuite) TestChannelEvent() {
 	err := ts.b.WriteChannelEvent(ctx, event, clog)
 	ts.NoError(err)
 
-	contact, err := contactForURN(ctx, ts.b, channel.OrgID_, channel, urn, "", "", clog)
+	contact, err := contactForURN(ctx, ts.b, channel.OrgID_, channel, urn, nil, "", clog)
 	ts.NoError(err)
 	ts.Equal(null.String("kermit frog"), contact.Name_)
 
@@ -1315,7 +1315,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	err := ts.b.WriteChannelEvent(ctx, event, clog)
 	ts.NoError(err)
 
-	contact, err := contactForURN(ctx, ts.b, channel.OrgID_, channel, urn, "", "", clog)
+	contact, err := contactForURN(ctx, ts.b, channel.OrgID_, channel, urn, nil, "", clog)
 	ts.NoError(err)
 	ts.Equal(null.String("kermit frog"), contact.Name_)
 

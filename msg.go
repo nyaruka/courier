@@ -60,6 +60,7 @@ type Msg interface {
 	ExternalID() string
 	URN() urns.URN
 	URNAuth() string
+	URNAuthTokens() map[string]string
 	ContactName() string
 	QuickReplies() []string
 	Origin() MsgOrigin
@@ -86,7 +87,8 @@ type Msg interface {
 	WithUUID(uuid MsgUUID) Msg
 	WithAttachment(url string) Msg
 	WithLocale(i18n.Locale) Msg
-	WithURNAuth(auth string) Msg
+	WithURNAuth(token string) Msg
+	WithURNAuthTokens(tokens map[string]string) Msg
 	WithMetadata(metadata json.RawMessage) Msg
 	WithFlow(flow *FlowReference) Msg
 

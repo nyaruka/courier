@@ -81,7 +81,7 @@ RETURNING id`
 // writeChannelEventToDB writes the passed in msg status to our db
 func writeChannelEventToDB(ctx context.Context, b *backend, e *DBChannelEvent, clog *courier.ChannelLog) error {
 	// grab the contact for this event
-	contact, err := contactForURN(ctx, b, e.OrgID_, e.channel, e.URN_, "", e.ContactName_, clog)
+	contact, err := contactForURN(ctx, b, e.OrgID_, e.channel, e.URN_, e.URNAuthTokens_, e.ContactName_, clog)
 	if err != nil {
 		return err
 	}
@@ -171,9 +171,12 @@ type DBChannelEvent struct {
 	CreatedOn_   time.Time                `json:"created_on"              db:"created_on"`
 	LogUUIDs     pq.StringArray           `json:"log_uuids"               db:"log_uuids"`
 
-	ContactName_  string       `json:"contact_name"`
 	ContactID_    ContactID    `json:"-"               db:"contact_id"`
 	ContactURNID_ ContactURNID `json:"-"               db:"contact_urn_id"`
+
+	// used to update contact
+	ContactName_   string            `json:"contact_name"`
+	URNAuthTokens_ map[string]string `json:"auth_tokens"`
 
 	channel *DBChannel
 }
@@ -182,6 +185,7 @@ func (e *DBChannelEvent) EventID() int64                      { return int64(e.I
 func (e *DBChannelEvent) ChannelID() courier.ChannelID        { return e.ChannelID_ }
 func (e *DBChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.ChannelUUID_ }
 func (e *DBChannelEvent) ContactName() string                 { return e.ContactName_ }
+func (e *DBChannelEvent) AuthTokens() map[string]string       { return e.URNAuthTokens_ }
 func (e *DBChannelEvent) URN() urns.URN                       { return e.URN_ }
 func (e *DBChannelEvent) Extra() map[string]string            { return e.Extra_ }
 func (e *DBChannelEvent) EventType() courier.ChannelEventType { return e.EventType_ }
@@ -193,6 +197,12 @@ func (e *DBChannelEvent) WithContactName(name string) courier.ChannelEvent {
 	e.ContactName_ = name
 	return e
 }
+
+func (e *DBChannelEvent) WithURNAuthTokens(tokens map[string]string) courier.ChannelEvent {
+	e.URNAuthTokens_ = tokens
+	return e
+}
+
 func (e *DBChannelEvent) WithExtra(extra map[string]string) courier.ChannelEvent {
 	e.Extra_ = null.Map[string](extra)
 	return e
