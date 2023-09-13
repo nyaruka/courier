@@ -7,9 +7,9 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-type mockMsgStatus struct {
+type MockStatusUpdate struct {
 	channel    courier.Channel
-	id         courier.MsgID
+	msgID      courier.MsgID
 	oldURN     urns.URN
 	newURN     urns.URN
 	externalID string
@@ -17,27 +17,21 @@ type mockMsgStatus struct {
 	createdOn  time.Time
 }
 
-func (m *mockMsgStatus) ChannelUUID() courier.ChannelUUID { return m.channel.UUID() }
-func (m *mockMsgStatus) ID() courier.MsgID                { return m.id }
-func (m *mockMsgStatus) EventID() int64                   { return int64(m.id) }
+func (m *MockStatusUpdate) EventID() int64                   { return int64(m.msgID) }
+func (m *MockStatusUpdate) ChannelUUID() courier.ChannelUUID { return m.channel.UUID() }
+func (m *MockStatusUpdate) MsgID() courier.MsgID             { return m.msgID }
 
-func (m *mockMsgStatus) SetUpdatedURN(old, new urns.URN) error {
+func (m *MockStatusUpdate) SetURNUpdate(old, new urns.URN) error {
 	m.oldURN = old
 	m.newURN = new
 	return nil
 }
-func (m *mockMsgStatus) UpdatedURN() (urns.URN, urns.URN) {
+func (m *MockStatusUpdate) URNUpdate() (urns.URN, urns.URN) {
 	return m.oldURN, m.newURN
 }
-func (m *mockMsgStatus) HasUpdatedURN() bool {
-	if m.oldURN != urns.NilURN && m.newURN != urns.NilURN {
-		return true
-	}
-	return false
-}
 
-func (m *mockMsgStatus) ExternalID() string      { return m.externalID }
-func (m *mockMsgStatus) SetExternalID(id string) { m.externalID = id }
+func (m *MockStatusUpdate) ExternalID() string      { return m.externalID }
+func (m *MockStatusUpdate) SetExternalID(id string) { m.externalID = id }
 
-func (m *mockMsgStatus) Status() courier.MsgStatus          { return m.status }
-func (m *mockMsgStatus) SetStatus(status courier.MsgStatus) { m.status = status }
+func (m *MockStatusUpdate) Status() courier.MsgStatus          { return m.status }
+func (m *MockStatusUpdate) SetStatus(status courier.MsgStatus) { m.status = status }

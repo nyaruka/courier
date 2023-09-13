@@ -52,7 +52,7 @@ func TestHandling(t *testing.T) {
 
 	// message should have failed because we don't have a registered handler
 	assert.Equal(1, len(mb.WrittenMsgStatuses()))
-	assert.Equal(msg.ID(), mb.WrittenMsgStatuses()[0].ID())
+	assert.Equal(msg.ID(), mb.WrittenMsgStatuses()[0].MsgID())
 	assert.Equal(courier.MsgStatusFailed, mb.WrittenMsgStatuses()[0].Status())
 	assert.Equal(1, len(mb.WrittenChannelLogs()))
 
@@ -68,7 +68,7 @@ func TestHandling(t *testing.T) {
 	// message should be marked as wired
 	assert.Len(mb.WrittenMsgStatuses(), 1)
 	status := mb.WrittenMsgStatuses()[0]
-	assert.Equal(msg.ID(), status.ID())
+	assert.Equal(msg.ID(), status.MsgID())
 	assert.Equal(courier.MsgStatusSent, status.Status())
 
 	assert.Len(mb.WrittenChannelLogs(), 1)
@@ -89,7 +89,7 @@ func TestHandling(t *testing.T) {
 
 	// message should be marked as wired
 	assert.Equal(1, len(mb.WrittenMsgStatuses()))
-	assert.Equal(msg.ID(), mb.WrittenMsgStatuses()[0].ID())
+	assert.Equal(msg.ID(), mb.WrittenMsgStatuses()[0].MsgID())
 	assert.Equal(courier.MsgStatusWired, mb.WrittenMsgStatuses()[0].Status())
 
 	// try to receive a message instead

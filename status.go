@@ -23,14 +23,13 @@ const (
 
 // StatusUpdate represents a status update on a message
 type StatusUpdate interface {
-	EventID() int64
+	Event
 
 	ChannelUUID() ChannelUUID
-	ID() MsgID
+	MsgID() MsgID
 
-	SetUpdatedURN(old, new urns.URN) error
-	UpdatedURN() (old, new urns.URN)
-	HasUpdatedURN() bool
+	SetURNUpdate(old, new urns.URN) error
+	URNUpdate() (old, new urns.URN)
 
 	ExternalID() string
 	SetExternalID(string)

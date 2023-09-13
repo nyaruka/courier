@@ -624,7 +624,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 
 	newURN, _ := urns.NewWhatsAppURN("5588776655")
 	status = ts.b.NewStatusUpdate(channel, courier.MsgID(10000), courier.MsgStatusSent, clog6)
-	status.SetUpdatedURN(oldURN, newURN)
+	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
 
@@ -645,7 +645,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.NoError(tx.Commit())
 
 	status = ts.b.NewStatusUpdate(channel, courier.MsgID(10007), courier.MsgStatusSent, clog6)
-	status.SetUpdatedURN(oldURN, newURN)
+	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
 
@@ -667,7 +667,7 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.NoError(tx.Commit())
 
 	status = ts.b.NewStatusUpdate(channel, courier.MsgID(10007), courier.MsgStatusSent, clog6)
-	status.SetUpdatedURN(oldURN, newURN)
+	status.SetURNUpdate(oldURN, newURN)
 
 	ts.NoError(ts.b.WriteStatusUpdate(ctx, status))
 

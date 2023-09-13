@@ -17,6 +17,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// StatusUpdate represents a status update on a message
+type StatusUpdate struct {
+	ChannelUUID_ courier.ChannelUUID    `json:"channel_uuid"             db:"channel_uuid"`
+	ChannelID_   courier.ChannelID      `json:"channel_id"               db:"channel_id"`
+	MsgID_       courier.MsgID          `json:"msg_id,omitempty"         db:"msg_id"`
+	OldURN_      urns.URN               `json:"old_urn"                  db:"old_urn"`
+	NewURN_      urns.URN               `json:"new_urn"                  db:"new_urn"`
+	ExternalID_  string                 `json:"external_id,omitempty"    db:"external_id"`
+	Status_      courier.MsgStatus      `json:"status"                   db:"status"`
+	ModifiedOn_  time.Time              `json:"modified_on"              db:"modified_on"`
+	LogUUID      courier.ChannelLogUUID `json:"log_uuid"                 db:"log_uuid"`
+}
+
 // creates a new message status update
 func newStatusUpdate(channel courier.Channel, id courier.MsgID, externalID string, status courier.MsgStatus, clog *courier.ChannelLog) *StatusUpdate {
 	dbChannel := channel.(*DBChannel)
@@ -24,7 +37,7 @@ func newStatusUpdate(channel courier.Channel, id courier.MsgID, externalID strin
 	return &StatusUpdate{
 		ChannelUUID_: channel.UUID(),
 		ChannelID_:   dbChannel.ID(),
-		ID_:          id,
+		MsgID_:       id,
 		OldURN_:      urns.NilURN,
 		NewURN_:      urns.NilURN,
 		ExternalID_:  externalID,
@@ -118,38 +131,11 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 	return err
 }
 
-//-----------------------------------------------------------------------------
-// StatusUpdate implementation
-//-----------------------------------------------------------------------------
-
-// StatusUpdate represents a status update on a message
-type StatusUpdate struct {
-	ChannelUUID_ courier.ChannelUUID    `json:"channel_uuid"             db:"channel_uuid"`
-	ChannelID_   courier.ChannelID      `json:"channel_id"               db:"channel_id"`
-	ID_          courier.MsgID          `json:"msg_id,omitempty"         db:"msg_id"`
-	OldURN_      urns.URN               `json:"old_urn"                  db:"old_urn"`
-	NewURN_      urns.URN               `json:"new_urn"                  db:"new_urn"`
-	ExternalID_  string                 `json:"external_id,omitempty"    db:"external_id"`
-	Status_      courier.MsgStatus      `json:"status"                   db:"status"`
-	ModifiedOn_  time.Time              `json:"modified_on"              db:"modified_on"`
-	LogUUID      courier.ChannelLogUUID `json:"log_uuid"                 db:"log_uuid"`
-}
-
-func (s *StatusUpdate) EventID() int64 { return int64(s.ID_) }
-
+func (s *StatusUpdate) EventID() int64                   { return int64(s.MsgID_) }
 func (s *StatusUpdate) ChannelUUID() courier.ChannelUUID { return s.ChannelUUID_ }
-func (s *StatusUpdate) ID() courier.MsgID                { return s.ID_ }
+func (s *StatusUpdate) MsgID() courier.MsgID             { return s.MsgID_ }
 
-func (s *StatusUpdate) RowID() string {
-	if s.ID_ != courier.NilMsgID {
-		return strconv.FormatInt(int64(s.ID_), 10)
-	} else if s.ExternalID_ != "" {
-		return s.ExternalID_
-	}
-	return ""
-}
-
-func (s *StatusUpdate) SetUpdatedURN(old, new urns.URN) error {
+func (s *StatusUpdate) SetURNUpdate(old, new urns.URN) error {
 	// check by nil URN
 	if old == urns.NilURN || new == urns.NilURN {
 		return errors.New("cannot update contact URN from/to nil URN")
@@ -166,14 +152,8 @@ func (s *StatusUpdate) SetUpdatedURN(old, new urns.URN) error {
 	s.NewURN_ = new
 	return nil
 }
-func (s *StatusUpdate) UpdatedURN() (urns.URN, urns.URN) {
+func (s *StatusUpdate) URNUpdate() (urns.URN, urns.URN) {
 	return s.OldURN_, s.NewURN_
-}
-func (s *StatusUpdate) HasUpdatedURN() bool {
-	if s.OldURN_ != urns.NilURN && s.NewURN_ != urns.NilURN {
-		return true
-	}
-	return false
 }
 
 func (s *StatusUpdate) ExternalID() string      { return s.ExternalID_ }
@@ -182,10 +162,12 @@ func (s *StatusUpdate) SetExternalID(id string) { s.ExternalID_ = id }
 func (s *StatusUpdate) Status() courier.MsgStatus          { return s.Status_ }
 func (s *StatusUpdate) SetStatus(status courier.MsgStatus) { s.Status_ = status }
 
+// StatusWriter handles batched writes of status updates to the database
 type StatusWriter struct {
 	*syncx.Batcher[*StatusUpdate]
 }
 
+// NewStatusWriter creates a new status update writer
 func NewStatusWriter(b *backend, spoolDir string, wg *sync.WaitGroup) *StatusWriter {
 	return &StatusWriter{
 		Batcher: syncx.NewBatcher[*StatusUpdate](func(batch []*StatusUpdate) {
@@ -209,7 +191,7 @@ func (b *backend) writeStatuseUpdates(ctx context.Context, spoolDir string, batc
 		for _, s := range batch {
 			_, err = b.writeStatusUpdatesToDB(ctx, []*StatusUpdate{s})
 			if err != nil {
-				log := log.WithField("msg_id", s.ID())
+				log := log.WithField("msg_id", s.MsgID())
 
 				if qerr := dbutil.AsQueryError(err); qerr != nil {
 					query, params := qerr.Query()
@@ -237,7 +219,7 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*Status
 	// get the statuses which have external ID instead of a message ID
 	missingID := make([]*StatusUpdate, 0, 500)
 	for _, s := range statuses {
-		if s.ID_ == courier.NilMsgID {
+		if s.MsgID_ == courier.NilMsgID {
 			missingID = append(missingID, s)
 		}
 	}
@@ -253,7 +235,7 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*Status
 	unresolved := make([]*StatusUpdate, 0, len(statuses))
 
 	for _, s := range statuses {
-		if s.ID_ != courier.NilMsgID {
+		if s.MsgID_ != courier.NilMsgID {
 			resolved = append(resolved, s)
 		} else {
 			unresolved = append(unresolved, s)
@@ -296,7 +278,7 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*Sta
 		if err != nil {
 			notInCache = append(notInCache, statuses[i])
 		} else {
-			statuses[i].ID_ = courier.MsgID(id)
+			statuses[i].MsgID_ = courier.MsgID(id)
 		}
 	}
 
@@ -336,7 +318,7 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*Sta
 
 		// find the status with this channel ID and external ID and update its msg ID
 		s := statusesByExt[ext{channelID, externalID}]
-		s.ID_ = msgID
+		s.MsgID_ = msgID
 	}
 
 	return rows.Err()

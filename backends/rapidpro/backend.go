@@ -529,27 +529,29 @@ func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalI
 
 // WriteStatusUpdate writes the passed in MsgStatus to our store
 func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUpdate) error {
-	log := logrus.WithFields(logrus.Fields{"msg_id": status.ID(), "msg_external_id": status.ExternalID(), "status": status.Status()})
+	log := logrus.WithFields(logrus.Fields{"msg_id": status.MsgID(), "msg_external_id": status.ExternalID(), "status": status.Status()})
 	su := status.(*StatusUpdate)
 
-	if status.ID() == courier.NilMsgID && status.ExternalID() == "" {
+	if status.MsgID() == courier.NilMsgID && status.ExternalID() == "" {
 		return errors.New("message status with no id or external id")
 	}
 
-	if status.HasUpdatedURN() {
+	// if we have a URN update, do that
+	oldURN, newURN := status.URNUpdate()
+	if oldURN != urns.NilURN && newURN != urns.NilURN {
 		err := b.updateContactURN(ctx, status)
 		if err != nil {
 			return errors.Wrap(err, "error updating contact URN")
 		}
 	}
 
-	if status.ID() != courier.NilMsgID {
+	if status.MsgID() != courier.NilMsgID {
 		// this is a message we've just sent and were given an external id for
 		if status.ExternalID() != "" {
 			rc := b.redisPool.Get()
 			defer rc.Close()
 
-			err := b.sentExternalIDs.Set(rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalID_), fmt.Sprintf("%d", status.ID()))
+			err := b.sentExternalIDs.Set(rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalID_), fmt.Sprintf("%d", status.MsgID()))
 			if err != nil {
 				log.WithError(err).Error("error recording external id")
 			}
@@ -557,7 +559,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 
 		// we sent a message that errored so clear our sent flag to allow it to be retried
 		if status.Status() == courier.MsgStatusErrored {
-			err := b.ClearMsgSent(ctx, status.ID())
+			err := b.ClearMsgSent(ctx, status.MsgID())
 			if err != nil {
 				log.WithError(err).Error("error clearing sent flags")
 			}
@@ -573,7 +575,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 
 // updateContactURN updates contact URN according to the old/new URNs from status
 func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpdate) error {
-	old, new := status.UpdatedURN()
+	old, new := status.URNUpdate()
 
 	// retrieve channel
 	channel, err := b.GetChannel(ctx, courier.AnyChannelType, status.ChannelUUID())

@@ -135,7 +135,7 @@ func NewStatusData(status StatusUpdate) StatusData {
 		"status",
 		status.ChannelUUID(),
 		status.Status(),
-		status.ID(),
+		status.MsgID(),
 		status.ExternalID(),
 	}
 }
