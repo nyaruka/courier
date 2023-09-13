@@ -538,7 +538,7 @@ var testCases = []IncomingTestCase{
 		ExpectedBodyContains: "Accepted",
 		ExpectedContactName:  Sp("Nic Pottier"),
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.NewConversation, URN: "telegram:3527065#nicpottier", Time: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
+			{Type: courier.EventTypeNewConversation, URN: "telegram:3527065#nicpottier", Time: time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC)},
 		},
 	},
 	{

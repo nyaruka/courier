@@ -168,7 +168,7 @@ var defaultReceiveTestCases = []IncomingTestCase{
 		ExpectedMsgStatus:  "F",
 		ExpectedErrors:     []*courier.ChannelError{courier.ErrorExternal("103", "Contact has sent 'stop'")},
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.StopContact, URN: "tel:188885551515"},
+			{Type: courier.EventTypeStopContact, URN: "tel:188885551515"},
 		},
 	},
 	{

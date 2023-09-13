@@ -134,7 +134,7 @@ func (h *handler) receiveMsg(ctx context.Context, c courier.Channel, w http.Resp
 
 	// if this a stop command, shortcut stopping that contact
 	if keyword == "Stop" {
-		stop := h.Backend().NewChannelEvent(c, courier.StopContact, urn, clog)
+		stop := h.Backend().NewChannelEvent(c, courier.EventTypeStopContact, urn, clog)
 		err := h.Backend().WriteChannelEvent(ctx, stop, clog)
 		if err != nil {
 			return nil, err

@@ -434,7 +434,7 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			if tc.ExpectedStopEvent {
 				require.Len(mb.WrittenChannelEvents(), 1)
 				event := mb.WrittenChannelEvents()[0]
-				require.Equal(courier.StopContact, event.EventType())
+				require.Equal(courier.EventTypeStopContact, event.EventType())
 			}
 
 			if tc.ExpectedContactURNs != nil {

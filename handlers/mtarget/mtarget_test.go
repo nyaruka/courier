@@ -42,7 +42,7 @@ var handleTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.StopContact, URN: "tel:+923161909799"},
+			{Type: courier.EventTypeStopContact, URN: "tel:+923161909799"},
 		},
 	},
 	{Label: "Receive Missing From", URL: receiveURL, Data: receiveMissingFrom, ExpectedRespStatus: 400, ExpectedBodyContains: "missing required field 'Msisdn'"},

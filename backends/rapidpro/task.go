@@ -33,7 +33,7 @@ func queueMsgHandling(rc redis.Conn, c *Contact, m *Msg) error {
 func queueChannelEvent(rc redis.Conn, c *Contact, e *ChannelEvent) error {
 	// queue to mailroom
 	switch e.EventType() {
-	case courier.StopContact:
+	case courier.EventTypeStopContact:
 		body := map[string]any{
 			"org_id":      e.OrgID_,
 			"contact_id":  e.ContactID_,
@@ -41,7 +41,7 @@ func queueChannelEvent(rc redis.Conn, c *Contact, e *ChannelEvent) error {
 		}
 		return queueMailroomTask(rc, "stop_event", e.OrgID_, e.ContactID_, body)
 
-	case courier.WelcomeMessage:
+	case courier.EventTypeWelcomeMessage:
 		body := map[string]any{
 			"org_id":      e.OrgID_,
 			"contact_id":  e.ContactID_,
@@ -52,7 +52,7 @@ func queueChannelEvent(rc redis.Conn, c *Contact, e *ChannelEvent) error {
 		}
 		return queueMailroomTask(rc, "welcome_message", e.OrgID_, e.ContactID_, body)
 
-	case courier.Referral:
+	case courier.EventTypeReferral:
 		body := map[string]any{
 			"org_id":      e.OrgID_,
 			"contact_id":  e.ContactID_,
@@ -64,7 +64,7 @@ func queueChannelEvent(rc redis.Conn, c *Contact, e *ChannelEvent) error {
 		}
 		return queueMailroomTask(rc, "referral", e.OrgID_, e.ContactID_, body)
 
-	case courier.NewConversation:
+	case courier.EventTypeNewConversation:
 		body := map[string]any{
 			"org_id":      e.OrgID_,
 			"contact_id":  e.ContactID_,

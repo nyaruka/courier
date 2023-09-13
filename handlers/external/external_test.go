@@ -167,7 +167,7 @@ var handleTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.StopContact, URN: "tel:+2349067554729"},
+			{Type: courier.EventTypeStopContact, URN: "tel:+2349067554729"},
 		},
 	},
 	{
@@ -177,7 +177,7 @@ var handleTestCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.StopContact, URN: "tel:+2349067554729"},
+			{Type: courier.EventTypeStopContact, URN: "tel:+2349067554729"},
 		},
 	},
 	{

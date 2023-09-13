@@ -515,7 +515,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.NewConversation, URN: "viber:01234567890A="},
+			{Type: courier.EventTypeNewConversation, URN: "viber:01234567890A="},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -534,7 +534,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.StopContact, URN: "viber:01234567890A="},
+			{Type: courier.EventTypeStopContact, URN: "viber:01234567890A="},
 		},
 		PrepRequest: addValidSignature,
 	},
@@ -579,7 +579,7 @@ var testWelcomeMessageCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `{"auth_token":"Token","text":"Welcome to VP, Please subscribe here for more.","type":"text","tracking_data":"0"}`,
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.WelcomeMessage, URN: "viber:xy5/5y6O81+/kbWHpLhBoA=="},
+			{Type: courier.EventTypeWelcomeMessage, URN: "viber:xy5/5y6O81+/kbWHpLhBoA=="},
 		},
 		PrepRequest: addValidSignature,
 	},

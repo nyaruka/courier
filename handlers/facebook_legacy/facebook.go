@@ -270,7 +270,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 				}
 			}
 
-			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn, clog).WithOccurredOn(date)
+			event := h.Backend().NewChannelEvent(channel, courier.EventTypeReferral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]string{
@@ -288,9 +288,9 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 
 		} else if msg.Postback != nil {
 			// by default postbacks are treated as new conversations, unless we have referral information
-			eventType := courier.NewConversation
+			eventType := courier.EventTypeNewConversation
 			if msg.Postback.Referral.Ref != "" {
-				eventType = courier.Referral
+				eventType = courier.EventTypeReferral
 			}
 			event := h.Backend().NewChannelEvent(channel, eventType, urn, clog).WithOccurredOn(date)
 
@@ -301,7 +301,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			}
 
 			// add in referral information if we have it
-			if eventType == courier.Referral {
+			if eventType == courier.EventTypeReferral {
 				extra[referrerIDKey] = msg.Postback.Referral.Ref
 				extra[sourceKey] = msg.Postback.Referral.Source
 				extra[typeKey] = msg.Postback.Referral.Type
@@ -323,7 +323,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 
 		} else if msg.Referral != nil {
 			// this is an incoming referral
-			event := h.Backend().NewChannelEvent(channel, courier.Referral, urn, clog).WithOccurredOn(date)
+			event := h.Backend().NewChannelEvent(channel, courier.EventTypeReferral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
 			extra := map[string]string{

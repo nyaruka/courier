@@ -201,7 +201,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 			}
 
 			// create a stop channel event
-			channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
+			channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeStopContact, urn, clog)
 			err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 			if err != nil {
 				return nil, err
@@ -299,7 +299,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 					status.SetStatus(courier.MsgStatusFailed)
 
 					// create a stop channel event
-					channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.StopContact, msg.URN(), clog)
+					channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.EventTypeStopContact, msg.URN(), clog)
 					err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 					if err != nil {
 						return nil, err

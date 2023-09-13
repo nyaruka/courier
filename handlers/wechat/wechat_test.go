@@ -158,7 +158,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Event Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.NewConversation, URN: "wechat:1234"},
+			{Type: courier.EventTypeNewConversation, URN: "wechat:1234"},
 		},
 	},
 

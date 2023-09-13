@@ -193,7 +193,7 @@ var testCases = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Event Accepted",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.NewConversation, URN: "jiochat:1234"},
+			{Type: courier.EventTypeNewConversation, URN: "jiochat:1234"},
 		},
 	},
 	{

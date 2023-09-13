@@ -108,7 +108,7 @@ var testCases = []IncomingTestCase{
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedMsgStatus:    courier.MsgStatusFailed,
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.StopContact, URN: "tel:+12028831111"},
+			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
 		ExpectedErrors: []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 		PrepRequest:    addValidSignature,
@@ -156,7 +156,7 @@ var tmsTestCases = []IncomingTestCase{
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedMsgStatus:    courier.MsgStatusFailed,
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.StopContact, URN: "tel:+12028831111"},
+			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
 		ExpectedErrors: []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 		PrepRequest:    addValidSignature,
@@ -206,7 +206,7 @@ var twTestCases = []IncomingTestCase{
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedMsgStatus:    courier.MsgStatusFailed,
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.StopContact, URN: "tel:+12028831111"},
+			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
 		ExpectedErrors: []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 		PrepRequest:    addValidSignature,
@@ -241,7 +241,7 @@ var swTestCases = []IncomingTestCase{
 		ExpectedBodyContains: `"status":"F"`,
 		ExpectedMsgStatus:    courier.MsgStatusFailed,
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.StopContact, URN: "tel:+12028831111"},
+			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
 		ExpectedErrors: []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 		PrepRequest:    addValidSignature,
