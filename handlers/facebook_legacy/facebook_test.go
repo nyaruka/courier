@@ -481,10 +481,9 @@ var testCases = []IncomingTestCase{
 		Data:                 optInUserRef,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
-		ExpectedURN:          "facebook:ref:optin_user_ref",
-		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
-		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]string{"referrer_id": "optin_ref"},
+		ExpectedEvents: []ExpectedEvent{
+			{Type: courier.EventTypeReferral, URN: "facebook:ref:optin_user_ref", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"referrer_id": "optin_ref"}},
+		},
 	},
 	{
 		Label:                "Receive OptIn",
@@ -492,10 +491,9 @@ var testCases = []IncomingTestCase{
 		Data:                 optIn,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
-		ExpectedURN:          "facebook:5678",
-		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
-		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]string{"referrer_id": "optin_ref"},
+		ExpectedEvents: []ExpectedEvent{
+			{Type: courier.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"referrer_id": "optin_ref"}},
+		},
 	},
 	{
 		Label:                "Receive Get Started",
@@ -503,10 +501,9 @@ var testCases = []IncomingTestCase{
 		Data:                 postbackGetStarted,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
-		ExpectedURN:          "facebook:5678",
-		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
-		ExpectedEvent:        courier.NewConversation,
-		ExpectedEventExtra:   map[string]string{"title": "postback title", "payload": "get_started"},
+		ExpectedEvents: []ExpectedEvent{
+			{Type: courier.EventTypeNewConversation, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "postback title", "payload": "get_started"}},
+		},
 	},
 	{
 		Label:                "Receive Referral Postback",
@@ -514,10 +511,9 @@ var testCases = []IncomingTestCase{
 		Data:                 postback,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
-		ExpectedURN:          "facebook:5678",
-		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
-		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]string{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"},
+		ExpectedEvents: []ExpectedEvent{
+			{Type: courier.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "postback title", "payload": "postback payload", "referrer_id": "postback ref", "source": "postback source", "type": "postback type"}},
+		},
 	},
 	{
 		Label:                "Receive Referral",
@@ -525,10 +521,9 @@ var testCases = []IncomingTestCase{
 		Data:                 postbackReferral,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
-		ExpectedURN:          "facebook:5678",
-		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
-		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]string{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"},
+		ExpectedEvents: []ExpectedEvent{
+			{Type: courier.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"title": "postback title", "payload": "get_started", "referrer_id": "postback ref", "source": "postback source", "type": "postback type", "ad_id": "ad id"}},
+		},
 	},
 	{
 		Label:                "Receive Referral",
@@ -536,10 +531,9 @@ var testCases = []IncomingTestCase{
 		Data:                 referral,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"referrer_id":"referral id"`,
-		ExpectedURN:          "facebook:5678",
-		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
-		ExpectedEvent:        courier.Referral,
-		ExpectedEventExtra:   map[string]string{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"},
+		ExpectedEvents: []ExpectedEvent{
+			{Type: courier.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"}},
+		},
 	},
 	{
 		Label:                "Receive DLR",

@@ -151,8 +151,16 @@ var testCases = []IncomingTestCase{
 		ExpectedAttachments: []string{"https://api.weixin.qq.com/cgi-bin/media/get?media_id=12"},
 		ExpectedDate:        time.Date(2018, 2, 16, 9, 47, 4, 438000000, time.UTC)},
 
-	{Label: "Subscribe Event", URL: receiveURL, Data: subscribeEvent, ExpectedRespStatus: 200, ExpectedBodyContains: "Event Accepted",
-		ExpectedEvent: courier.NewConversation, ExpectedURN: "wechat:1234"},
+	{
+		Label:                "Subscribe Event",
+		URL:                  receiveURL,
+		Data:                 subscribeEvent,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Event Accepted",
+		ExpectedEvents: []ExpectedEvent{
+			{Type: courier.EventTypeNewConversation, URN: "wechat:1234"},
+		},
+	},
 
 	{Label: "Unsubscribe Event", URL: receiveURL, Data: unsubscribeEvent, ExpectedRespStatus: 200, ExpectedBodyContains: "unknown event"},
 

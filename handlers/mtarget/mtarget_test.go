@@ -35,8 +35,16 @@ var handleTestCases = []IncomingTestCase{
 	{Label: "Receive Valid Message", URL: receiveURL, Data: receiveValidMessage, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("hello world"), ExpectedURN: "tel:+923161909799", ExpectedExternalID: "foo"},
 	{Label: "Invalid URN", URL: receiveURL, Data: receiveInvalidURN, ExpectedRespStatus: 400, ExpectedBodyContains: "phone number supplied is not a number"},
-	{Label: "Receive Stop", URL: receiveURL, Data: receiveStop, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
-		ExpectedURN: "tel:+923161909799", ExpectedEvent: courier.StopContact},
+	{
+		Label:                "Receive Stop",
+		URL:                  receiveURL,
+		Data:                 receiveStop,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedEvents: []ExpectedEvent{
+			{Type: courier.EventTypeStopContact, URN: "tel:+923161909799"},
+		},
+	},
 	{Label: "Receive Missing From", URL: receiveURL, Data: receiveMissingFrom, ExpectedRespStatus: 400, ExpectedBodyContains: "missing required field 'Msisdn'"},
 
 	{Label: "Receive Part 2", URL: receiveURL, Data: receivePart2, ExpectedRespStatus: 200, ExpectedBodyContains: "received"},

@@ -122,7 +122,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// subscribe event, trigger a new conversation
 	if payload.MsgType == "event" && payload.Event == "subscribe" {
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn, clog)
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeNewConversation, urn, clog)
 
 		err := h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {

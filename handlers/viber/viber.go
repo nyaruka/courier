@@ -146,7 +146,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 		// build the channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.WelcomeMessage, urn, clog).WithContactName(ContactName)
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeWelcomeMessage, urn, clog).WithContactName(ContactName)
 
 		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
@@ -168,7 +168,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// build the channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.NewConversation, urn, clog).WithContactName(ContactName)
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeNewConversation, urn, clog).WithContactName(ContactName)
 
 		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {
@@ -188,7 +188,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}
 		// build the channel event
-		channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
+		channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeStopContact, urn, clog)
 
 		err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 		if err != nil {

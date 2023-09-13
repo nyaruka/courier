@@ -28,6 +28,14 @@ import (
 // RequestPrepFunc is our type for a hook for tests to use before a request is fired in a test
 type RequestPrepFunc func(*http.Request)
 
+// ExpectedEvent is an expected channel event
+type ExpectedEvent struct {
+	Type  courier.ChannelEventType
+	URN   urns.URN
+	Time  time.Time
+	Extra map[string]string
+}
+
 // IncomingTestCase defines the test values for a particular test case
 type IncomingTestCase struct {
 	Label                 string
@@ -51,8 +59,7 @@ type IncomingTestCase struct {
 	ExpectedMsgStatus     courier.MsgStatus
 	ExpectedExternalID    string
 	ExpectedMsgID         int64
-	ExpectedEvent         courier.ChannelEventType
-	ExpectedEventExtra    map[string]string
+	ExpectedEvents        []ExpectedEvent
 	ExpectedErrors        []*courier.ChannelError
 	NoLogsExpected        bool
 }
@@ -202,19 +209,21 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 				assert.Empty(t, mb.WrittenMsgStatuses(), "unexpected msg status written")
 			}
 
-			if tc.ExpectedEvent != "" {
-				require.Len(mb.WrittenChannelEvents(), 1, "expected a channel event to be written")
-				event := mb.WrittenChannelEvents()[0]
-
-				assert.Equal(t, tc.ExpectedEvent, event.EventType())
-				assert.Equal(t, tc.ExpectedEventExtra, event.Extra())
-				assert.Equal(t, tc.ExpectedURN, event.URN())
-
-				if !tc.ExpectedDate.IsZero() {
-					assert.Equal(t, tc.ExpectedDate, event.OccurredOn())
+			actualEvents := mb.WrittenChannelEvents()
+			assert.Len(t, actualEvents, len(tc.ExpectedEvents), "unexpected number of events written")
+			for i, expectedEvent := range tc.ExpectedEvents {
+				if (len(actualEvents) - 1) < i {
+					break
 				}
-			} else {
-				assert.Empty(t, mb.WrittenChannelEvents(), "unexpected channel event written")
+				actualEvent := actualEvents[i]
+
+				assert.Equal(t, expectedEvent.Type, actualEvent.EventType(), "event type mismatch for event %d", i)
+				assert.Equal(t, expectedEvent.URN, actualEvent.URN(), "URN mismatch for event %d", i)
+				assert.Equal(t, expectedEvent.Extra, actualEvent.Extra(), "extra mismatch for event %d", i)
+
+				if !expectedEvent.Time.IsZero() {
+					assert.Equal(t, expectedEvent.Time, actualEvent.OccurredOn())
+				}
 			}
 
 			if tc.ExpectedContactName != nil {
@@ -426,7 +435,7 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			if tc.ExpectedStopEvent {
 				require.Len(mb.WrittenChannelEvents(), 1)
 				event := mb.WrittenChannelEvents()[0]
-				require.Equal(courier.StopContact, event.EventType())
+				require.Equal(courier.EventTypeStopContact, event.EventType())
 			}
 
 			if tc.ExpectedContactURNs != nil {

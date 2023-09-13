@@ -111,7 +111,7 @@ func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channe
 	urn = urn.Normalize("")
 
 	// create a stop channel event
-	channelEvent := h.Backend().NewChannelEvent(channel, courier.StopContact, urn, clog)
+	channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeStopContact, urn, clog)
 	err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
 	if err != nil {
 		return nil, err
