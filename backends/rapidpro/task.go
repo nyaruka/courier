@@ -39,7 +39,7 @@ func queueChannelEvent(rc redis.Conn, c *Contact, e *ChannelEvent) error {
 			"contact_id":  e.ContactID_,
 			"occurred_on": e.OccurredOn_,
 		}
-		return queueMailroomTask(rc, "stop_event", e.OrgID_, e.ContactID_, body)
+		return queueMailroomTask(rc, "stop_contact", e.OrgID_, e.ContactID_, body)
 
 	case courier.EventTypeWelcomeMessage:
 		body := map[string]any{
