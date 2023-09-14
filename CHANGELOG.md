@@ -1,3 +1,8 @@
+v8.3.17 (2023-09-14)
+-------------------------
+ * Fix stop contact event task names
+ * Add support for FB notificaiton messages optin and optout events
+
 v8.3.16 (2023-09-13)
 -------------------------
  * Simplify interfaces that handlers have access to
