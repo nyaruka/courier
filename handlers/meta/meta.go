@@ -101,14 +101,6 @@ func (h *handler) Initialize(s courier.Server) error {
 //   }]
 // }
 
-type wacMedia struct {
-	Caption  string `json:"caption"`
-	Filename string `json:"filename"`
-	ID       string `json:"id"`
-	Mimetype string `json:"mime_type"`
-	SHA256   string `json:"sha256"`
-}
-
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	vals := h.BaseHandler.RedactValues(ch)
 	vals = append(vals, h.Server().Config().FacebookApplicationSecret, h.Server().Config().FacebookWebhookSecret, h.Server().Config().WhatsappAdminSystemUserToken)

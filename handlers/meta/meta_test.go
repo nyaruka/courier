@@ -446,7 +446,7 @@ func buildMockFBGraphFBA(testCases []IncomingTestCase) *httptest.Server {
 
 		// invalid auth token
 		if accessToken != "a123" {
-			http.Error(w, "invalid auth token", 403)
+			http.Error(w, "invalid auth token", http.StatusForbidden)
 		}
 
 		// user has a name
@@ -470,7 +470,7 @@ func buildMockFBGraphIG(testCases []IncomingTestCase) *httptest.Server {
 
 		// invalid auth token
 		if accessToken != "a123" {
-			http.Error(w, "invalid auth token", 403)
+			http.Error(w, "invalid auth token", http.StatusForbidden)
 		}
 
 		// user has a name
