@@ -425,6 +425,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			if msg.OptIn.Type == "notification_messages" {
 				eventType := courier.EventTypeOptIn
 				optInName := msg.OptIn.Title
+				optInUUID := msg.OptIn.Payload
 				authToken := msg.OptIn.NotificationMessagesToken
 
 				if msg.OptIn.NotificationMessagesStatus == "STOP_NOTIFICATIONS" {
@@ -434,10 +435,8 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 				event = h.Backend().NewChannelEvent(channel, eventType, urn, clog).
 					WithOccurredOn(date).
-					WithExtra(map[string]string{
-						"optin_name": optInName,
-					}).
-					WithURNAuthTokens(map[string]string{fmt.Sprintf("optin:%s", optInName): authToken})
+					WithExtra(map[string]string{"optin_uuid": optInUUID, "optin_name": optInName}).
+					WithURNAuthTokens(map[string]string{fmt.Sprintf("optin:%s", optInUUID): authToken})
 			} else {
 
 				// this is an opt in, if we have a user_ref, use that as our URN (this is a checkbox plugin)
