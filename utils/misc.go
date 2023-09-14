@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"net/url"
 	"path"
+	"reflect"
 	"unicode/utf8"
 
 	validator "gopkg.in/go-playground/validator.v9"
@@ -143,4 +144,15 @@ func MapContains[K comparable, V comparable, M ~map[K]V](m1 M, m2 M) bool {
 		}
 	}
 	return true
+}
+
+// MapUpdate updates map m1 to contain the key value pairs in m2 - deleting any pairs in m1 which have zero values in m2.
+func MapUpdate[K comparable, V comparable, M ~map[K]V](m1 M, m2 M) {
+	for k, v := range m2 {
+		if reflect.ValueOf(v).IsZero() {
+			delete(m1, k)
+		} else {
+			m1[k] = v
+		}
+	}
 }

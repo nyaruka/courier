@@ -111,3 +111,37 @@ func TestMapContains(t *testing.T) {
 	assert.False(t, utils.MapContains(map[string]string{"a": "1", "b": "2"}, map[string]string{"c": "3"}))
 	assert.False(t, utils.MapContains(map[string]string{"a": "1", "b": "2"}, map[string]string{"a": "4"}))
 }
+
+func TestMapUpdate(t *testing.T) {
+	tcs := []struct {
+		m1      map[string]any
+		m2      map[string]any
+		updated map[string]any
+	}{
+		{
+			map[string]any{},
+			map[string]any{},
+			map[string]any{},
+		},
+		{
+			map[string]any{"a": "1", "b": "2"},
+			map[string]any{"b": 5, "c": "3"},
+			map[string]any{"a": "1", "b": 5, "c": "3"},
+		},
+		{
+			map[string]any{"a": "1", "b": "2", "c": "3"},
+			map[string]any{"b": 0, "c": ""}, // delete by zero value
+			map[string]any{"a": "1"},
+		},
+		{
+			map[string]any{"a": "1"},
+			map[string]any{"c": ""}, // delete but doesn't exist in m1 so noop
+			map[string]any{"a": "1"},
+		},
+	}
+
+	for _, tc := range tcs {
+		utils.MapUpdate(tc.m1, tc.m2)
+		assert.Equal(t, tc.updated, tc.m1)
+	}
+}

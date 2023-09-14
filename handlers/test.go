@@ -53,7 +53,7 @@ type IncomingTestCase struct {
 	ExpectedContactName   *string
 	ExpectedMsgText       *string
 	ExpectedURN           urns.URN
-	ExpectedURNAuthTokens map[string]string
+	ExpectedURNAuthTokens map[urns.URN]map[string]string
 	ExpectedAttachments   []string
 	ExpectedDate          time.Time
 	ExpectedMsgStatus     courier.MsgStatus
@@ -188,7 +188,6 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 					assert.Equal(t, tc.ExpectedExternalID, msg.ExternalID())
 				}
 				assert.Equal(t, tc.ExpectedURN, msg.URN())
-				assert.Equal(t, tc.ExpectedURNAuthTokens, msg.URNAuthTokens())
 			} else {
 				assert.Empty(t, mb.WrittenMsgs(), "unexpected msg written")
 			}
@@ -230,6 +229,8 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 			if tc.ExpectedContactName != nil {
 				require.Equal(*tc.ExpectedContactName, mb.LastContactName())
 			}
+
+			assert.Equal(t, tc.ExpectedURNAuthTokens, mb.URNAuthTokens())
 
 			// unless we know there won't be a log, check one was written
 			if !tc.NoLogsExpected {

@@ -8,6 +8,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 const (
@@ -53,7 +54,7 @@ var testCases = []IncomingTestCase{
 		ExpectedMsgText:       Sp("hello world"),
 		ExpectedURN:           "fcm:12345",
 		ExpectedDate:          time.Date(2017, 1, 1, 8, 50, 0, 0, time.UTC),
-		ExpectedURNAuthTokens: map[string]string{"default": "token"},
+		ExpectedURNAuthTokens: map[urns.URN]map[string]string{"fcm:12345": {"default": "token"}},
 		ExpectedContactName:   Sp("fred"),
 	},
 	{

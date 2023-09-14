@@ -126,6 +126,30 @@ var testCasesFBA = []IncomingTestCase{
 		PrepRequest: addValidSignature,
 	},
 	{
+		Label:                "Receive Notification Messages OptIn",
+		URL:                  "/c/fba/receive",
+		Data:                 string(test.ReadFile("./testdata/fba/notificationMessagesOptIn.json")),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Handled",
+		ExpectedEvents: []ExpectedEvent{
+			{Type: courier.EventTypeOptIn, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"optin_uuid": "2fad015d-2126-4ac2-a008-b5ac95c3906b", "optin_name": "Bird Facts"}},
+		},
+		ExpectedURNAuthTokens: map[urns.URN]map[string]string{"facebook:5678": {"optin:2fad015d-2126-4ac2-a008-b5ac95c3906b": "12345678901234567890"}},
+		PrepRequest:           addValidSignature,
+	},
+	{
+		Label:                "Receive Notification Messages OptOut",
+		URL:                  "/c/fba/receive",
+		Data:                 string(test.ReadFile("./testdata/fba/notificationMessagesOptOut.json")),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Handled",
+		ExpectedEvents: []ExpectedEvent{
+			{Type: courier.EventTypeOptOut, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]string{"optin_uuid": "2fad015d-2126-4ac2-a008-b5ac95c3906b", "optin_name": "Bird Facts"}},
+		},
+		ExpectedURNAuthTokens: map[urns.URN]map[string]string{"facebook:5678": {}},
+		PrepRequest:           addValidSignature,
+	},
+	{
 		Label:                "Receive Get Started",
 		URL:                  "/c/fba/receive",
 		Data:                 string(test.ReadFile("./testdata/fba/postbackGetStarted.json")),

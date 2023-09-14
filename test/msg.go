@@ -84,10 +84,6 @@ func (m *MockMsg) WithURNAuthTokens(tokens map[string]string) courier.Msg {
 }
 func (m *MockMsg) WithReceivedOn(date time.Time) courier.Msg { m.receivedOn = &date; return m }
 
-// used for testing created incoming messages
-func (m *MockMsg) URNAuthTokens() map[string]string { return m.urnAuthTokens }
-func (m *MockMsg) ContactName() string              { return m.contactName }
-
 // used to create outgoing messages for testing
 func (m *MockMsg) WithID(id courier.MsgID) courier.Msg               { m.id = id; return m }
 func (m *MockMsg) WithUUID(uuid courier.MsgUUID) courier.Msg         { m.uuid = uuid; return m }

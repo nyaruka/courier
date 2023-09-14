@@ -15,6 +15,8 @@ const (
 	EventTypeReferral        ChannelEventType = "referral"
 	EventTypeStopContact     ChannelEventType = "stop_contact"
 	EventTypeWelcomeMessage  ChannelEventType = "welcome_message"
+	EventTypeOptIn           ChannelEventType = "optin"
+	EventTypeOptOut          ChannelEventType = "optout"
 )
 
 //-----------------------------------------------------------------------------

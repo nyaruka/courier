@@ -136,6 +136,16 @@ type MOPayload struct {
 			Timestamp int64 `json:"timestamp"`
 
 			OptIn *struct {
+				Type                          string `json:"type"`
+				Payload                       string `json:"payload"`
+				NotificationMessagesToken     string `json:"notification_messages_token"`
+				NotificationMessagesTimezone  string `json:"notification_messages_timezone"`
+				NotificationMessagesFrequency string `json:"notification_messages_frequency"`
+				NotificationMessagesStatus    string `json:"notification_messages_status"`
+				TokenExpiryTimestamp          int64  `json:"token_expiry_timestamp"`
+				UserTokenStatus               string `json:"user_token_status"`
+				Title                         string `json:"title"`
+
 				Ref     string `json:"ref"`
 				UserRef string `json:"user_ref"`
 			} `json:"optin"`
