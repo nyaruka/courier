@@ -51,10 +51,26 @@ var handleTestCases = []IncomingTestCase{
 	{Label: "Receive Part 1", URL: receiveURL, Data: receivePart1, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("hello world"), ExpectedURN: "tel:+923161909799"},
 
-	{Label: "Status Delivered", URL: statusURL, Data: statusDelivered, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
-		ExpectedExternalID: "12a7ee90-50ce-11e7-80ae-00000a0a643c", ExpectedMsgStatus: "D"},
-	{Label: "Status Failed", URL: statusURL, Data: statusFailed, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
-		ExpectedExternalID: "12a7ee90-50ce-11e7-80ae-00000a0a643c", ExpectedMsgStatus: "F"},
+	{
+		Label:                "Status Delivered",
+		URL:                  statusURL,
+		Data:                 statusDelivered,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "12a7ee90-50ce-11e7-80ae-00000a0a643c", Status: courier.MsgStatusDelivered},
+		},
+	},
+	{
+		Label:                "Status Failed",
+		URL:                  statusURL,
+		Data:                 statusFailed,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "12a7ee90-50ce-11e7-80ae-00000a0a643c", Status: courier.MsgStatusFailed},
+		},
+	},
 	{Label: "Status Missing ID", URL: statusURL, Data: statusMissingID, ExpectedRespStatus: 400, ExpectedBodyContains: "missing required field 'MsgId'"},
 }
 

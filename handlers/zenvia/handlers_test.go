@@ -177,8 +177,22 @@ var testWhatappCases = []IncomingTestCase{
 	{Label: "Missing field", URL: receiveWhatsappURL, Data: missingFieldsReceive, ExpectedRespStatus: 400, ExpectedBodyContains: "validation for 'ID' failed on the 'required'"},
 	{Label: "Bad Date", URL: receiveWhatsappURL, Data: invalidDateReceive, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid date format"},
 
-	{Label: "Valid Status", URL: statusWhatsppURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `Accepted`, ExpectedMsgStatus: "S"},
-	{Label: "Unkown Status", URL: statusWhatsppURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted", ExpectedMsgStatus: "E"},
+	{
+		Label:                "Valid Status",
+		URL:                  statusWhatsppURL,
+		Data:                 validStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `Accepted`,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "hs765939216", Status: courier.MsgStatusSent}},
+	},
+	{
+		Label:                "Unkown Status",
+		URL:                  statusWhatsppURL,
+		Data:                 unknownStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "hs765939216", Status: courier.MsgStatusErrored}},
+	},
 	{Label: "Not JSON body", URL: statusWhatsppURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedBodyContains: "unable to parse request JSON"},
 	{Label: "Wrong JSON schema", URL: statusWhatsppURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedBodyContains: "request JSON doesn't match required schema"},
 }
@@ -198,8 +212,22 @@ var testSMSCases = []IncomingTestCase{
 	{Label: "Missing field", URL: receiveSMSURL, Data: missingFieldsReceive, ExpectedRespStatus: 400, ExpectedBodyContains: "validation for 'ID' failed on the 'required'"},
 	{Label: "Bad Date", URL: receiveSMSURL, Data: invalidDateReceive, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid date format"},
 
-	{Label: "Valid Status", URL: statusSMSURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `Accepted`, ExpectedMsgStatus: "S"},
-	{Label: "Unkown Status", URL: statusSMSURL, Data: unknownStatus, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted", ExpectedMsgStatus: "E"},
+	{
+		Label:                "Valid Status",
+		URL:                  statusSMSURL,
+		Data:                 validStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `Accepted`,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "hs765939216", Status: courier.MsgStatusSent}},
+	},
+	{
+		Label:                "Unknown Status",
+		URL:                  statusSMSURL,
+		Data:                 unknownStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "hs765939216", Status: courier.MsgStatusErrored}},
+	},
 	{Label: "Not JSON body", URL: statusSMSURL, Data: notJSON, ExpectedRespStatus: 400, ExpectedBodyContains: "unable to parse request JSON"},
 	{Label: "Wrong JSON schema", URL: statusSMSURL, Data: wrongJSONSchema, ExpectedRespStatus: 400, ExpectedBodyContains: "request JSON doesn't match required schema"},
 }

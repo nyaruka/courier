@@ -541,8 +541,7 @@ var testCases = []IncomingTestCase{
 		Data:                 dlr,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
-		ExpectedMsgStatus:    courier.MsgStatusDelivered,
-		ExpectedExternalID:   "mid.1458668856218:ed81099e15d3f4f233",
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "mid.1458668856218:ed81099e15d3f4f233", Status: courier.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Different Page",

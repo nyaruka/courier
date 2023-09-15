@@ -67,7 +67,7 @@ var testCases = []IncomingTestCase{
 		Data:                 `id=12345`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedMsgStatus:    courier.MsgStatusSent,
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusSent}},
 	},
 	{
 		Label:              "Message Sent Handler Garbage",

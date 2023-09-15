@@ -63,7 +63,7 @@ var testCases = []IncomingTestCase{
 		Data:                 "msgtype=5&dlrid=12345&status=1",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "",
-		ExpectedMsgStatus:    courier.MsgStatusDelivered,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Invalid Msg Type",

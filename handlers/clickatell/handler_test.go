@@ -191,7 +191,7 @@ var testCases = []IncomingTestCase{
 		Data:                 `{"messageId": "msg1", "statusCode": 5}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedMsgStatus:    courier.MsgStatusFailed,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "msg1", Status: courier.MsgStatusFailed}},
 	},
 	{
 		Label:                "Valid Delivered status report",
@@ -199,7 +199,7 @@ var testCases = []IncomingTestCase{
 		Data:                 `{"messageId": "msg1", "statusCode": 4}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedMsgStatus:    courier.MsgStatusSent,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "msg1", Status: courier.MsgStatusSent}},
 	},
 	{
 		Label:                "Unexpected status report",

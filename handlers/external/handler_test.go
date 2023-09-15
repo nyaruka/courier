@@ -128,7 +128,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/failed/?id=12345",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedMsgStatus:    courier.MsgStatusFailed,
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusFailed}},
 	},
 	{
 		Label:                "Invalid Status",
@@ -142,7 +142,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/sent/?id=12345",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedMsgStatus:    courier.MsgStatusSent,
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusSent}},
 	},
 	{
 		Label:                "Delivered Valid",
@@ -150,7 +150,7 @@ var handleTestCases = []IncomingTestCase{
 		Data:                 "nothing",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgStatusDelivered,
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Delivered Valid Post",
@@ -158,7 +158,7 @@ var handleTestCases = []IncomingTestCase{
 		Data:                 "id=12345",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgStatusDelivered,
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 12345, Status: courier.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Stopped Event",

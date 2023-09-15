@@ -241,8 +241,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
-		ExpectedMsgStatus:    "S",
-		ExpectedExternalID:   "26523491",
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "26523491", Status: courier.MsgStatusSent}},
 	},
 	{
 		Label:                "Receive invalid status direction",

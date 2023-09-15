@@ -90,7 +90,7 @@ var incomingTestCases = []IncomingTestCase{
 		Data:                 "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Success",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgStatusDelivered,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "ATXid_dda018a640edfcc5d2ce455de3e4a6e7", Status: courier.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Status Expired",
@@ -98,7 +98,7 @@ var incomingTestCases = []IncomingTestCase{
 		Data:                 "id=ATXid_dda018a640edfcc5d2ce455de3e4a6e7&status=Expired",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedMsgStatus:    courier.MsgStatusFailed,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "ATXid_dda018a640edfcc5d2ce455de3e4a6e7", Status: courier.MsgStatusFailed}},
 	},
 }
 

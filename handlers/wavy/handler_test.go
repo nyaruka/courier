@@ -106,7 +106,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validSentStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Status Update Accepted",
-		ExpectedMsgStatus:    courier.MsgStatusSent,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusSent}},
 	},
 	{
 		Label:                "Unknown Sent Status Valid",
@@ -135,7 +135,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validDeliveredStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Status Update Accepted",
-		ExpectedMsgStatus:    courier.MsgStatusDelivered,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Unknown Delivered Status Valid",
