@@ -60,14 +60,14 @@ const (
 	payloadKey    = "payload"
 )
 
-func newHandler(channelType courier.ChannelType, name string, useUUIDRoutes bool) courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, useUUIDRoutes, []string{courier.ConfigAuthToken})}
+func newHandler(channelType courier.ChannelType, name string) courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, false, []string{courier.ConfigAuthToken})}
 }
 
 func init() {
-	courier.RegisterHandler(newHandler("IG", "Instagram", false))
-	courier.RegisterHandler(newHandler("FBA", "Facebook", false))
-	courier.RegisterHandler(newHandler("WAC", "WhatsApp Cloud", false))
+	courier.RegisterHandler(newHandler("IG", "Instagram"))
+	courier.RegisterHandler(newHandler("FBA", "Facebook"))
+	courier.RegisterHandler(newHandler("WAC", "WhatsApp Cloud"))
 
 }
 
