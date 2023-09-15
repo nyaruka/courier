@@ -37,7 +37,7 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                 "Receive Message WAC",
 		URL:                   d3CReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/hello.json")),
+		Data:                  string(test.ReadFile("../meta/testdata/wac/hello.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -50,7 +50,7 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                 "Receive Duplicate Valid Message",
 		URL:                   d3CReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/duplicate.json")),
+		Data:                  string(test.ReadFile("../meta/testdata/wac/duplicate.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -63,7 +63,7 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Voice Message",
 		URL:                   d3CReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/voice.json")),
+		Data:                  string(test.ReadFile("../meta/testdata/wac/voice.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -77,7 +77,7 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Button Message",
 		URL:                   d3CReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/button.json")),
+		Data:                  string(test.ReadFile("../meta/testdata/wac/button.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -90,7 +90,7 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Document Message",
 		URL:                   d3CReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/document.json")),
+		Data:                  string(test.ReadFile("../meta/testdata/wac/document.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -104,7 +104,7 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Image Message",
 		URL:                   d3CReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/image.json")),
+		Data:                  string(test.ReadFile("../meta/testdata/wac/image.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -118,7 +118,7 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Video Message",
 		URL:                   d3CReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/video.json")),
+		Data:                  string(test.ReadFile("../meta/testdata/wac/video.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -132,7 +132,7 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Audio Message",
 		URL:                   d3CReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/audio.json")),
+		Data:                  string(test.ReadFile("../meta/testdata/wac/audio.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -146,7 +146,7 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Location Message",
 		URL:                  d3CReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/location.json")),
+		Data:                 string(test.ReadFile("../meta/testdata/wac/location.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText:      Sp(""),
@@ -165,21 +165,21 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                "Receive Invalid FROM",
 		URL:                  d3CReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/invalid_from.json")),
+		Data:                 string(test.ReadFile("../meta/testdata/wac/invalid_from.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "invalid whatsapp id",
 	},
 	{
 		Label:                "Receive Invalid timestamp JSON",
 		URL:                  d3CReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/invalid_timestamp.json")),
+		Data:                 string(test.ReadFile("../meta/testdata/wac/invalid_timestamp.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "invalid timestamp",
 	},
 	{
 		Label:                 "Receive Message WAC with error message",
 		URL:                   d3CReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/error_msg.json")),
+		Data:                  string(test.ReadFile("../meta/testdata/wac/error_msg.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		ExpectedErrors:        []*courier.ChannelError{courier.ErrorExternal("131051", "Unsupported message type")},
@@ -188,7 +188,7 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                 "Receive error message",
 		URL:                   d3CReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/error_errors.json")),
+		Data:                  string(test.ReadFile("../meta/testdata/wac/error_errors.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		ExpectedErrors:        []*courier.ChannelError{courier.ErrorExternal("0", "We were unable to authenticate the app user")},
@@ -197,7 +197,7 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Status",
 		URL:                  d3CReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/valid_status.json")),
+		Data:                 string(test.ReadFile("../meta/testdata/wac/valid_status.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
 		ExpectedMsgStatus:    "S",
@@ -206,7 +206,7 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Status with error message",
 		URL:                  d3CReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/error_status.json")),
+		Data:                 string(test.ReadFile("../meta/testdata/wac/error_status.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
 		ExpectedMsgStatus:    "F",
@@ -216,21 +216,21 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                "Receive Invalid Status",
 		URL:                  d3CReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/invalid_status.json")),
+		Data:                 string(test.ReadFile("../meta/testdata/wac/invalid_status.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"unknown status: in_orbit"`,
 	},
 	{
 		Label:                "Receive Ignore Status",
 		URL:                  d3CReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/ignore_status.json")),
+		Data:                 string(test.ReadFile("../meta/testdata/wac/ignore_status.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"ignoring status: deleted"`,
 	},
 	{
 		Label:                 "Receive Valid Interactive Button Reply Message",
 		URL:                   d3CReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/button_reply.json")),
+		Data:                  string(test.ReadFile("../meta/testdata/wac/button_reply.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -243,7 +243,7 @@ var testCasesD3C = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Interactive List Reply Message",
 		URL:                   d3CReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/list_reply.json")),
+		Data:                  string(test.ReadFile("../meta/testdata/wac/list_reply.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
