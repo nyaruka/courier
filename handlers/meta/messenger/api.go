@@ -52,3 +52,72 @@ type SendResponse struct {
 		Code    int    `json:"code"`
 	} `json:"error"`
 }
+
+// see https://developers.facebook.com/docs/messenger-platform/webhooks/#event-notifications
+type Messaging struct {
+	Sender *struct {
+		ID      string `json:"id"`
+		UserRef string `json:"user_ref,omitempty"`
+	} `json:"sender"`
+	Recipient *struct {
+		ID string `json:"id"`
+	} `json:"recipient"`
+	Timestamp int64 `json:"timestamp"`
+
+	OptIn *struct {
+		Type                          string `json:"type"`
+		Payload                       string `json:"payload"`
+		NotificationMessagesToken     string `json:"notification_messages_token"`
+		NotificationMessagesTimezone  string `json:"notification_messages_timezone"`
+		NotificationMessagesFrequency string `json:"notification_messages_frequency"`
+		NotificationMessagesStatus    string `json:"notification_messages_status"`
+		TokenExpiryTimestamp          int64  `json:"token_expiry_timestamp"`
+		UserTokenStatus               string `json:"user_token_status"`
+		Title                         string `json:"title"`
+
+		Ref     string `json:"ref"`
+		UserRef string `json:"user_ref"`
+	} `json:"optin"`
+
+	Referral *struct {
+		Ref    string `json:"ref"`
+		Source string `json:"source"`
+		Type   string `json:"type"`
+		AdID   string `json:"ad_id"`
+	} `json:"referral"`
+
+	Postback *struct {
+		MID      string `json:"mid"`
+		Title    string `json:"title"`
+		Payload  string `json:"payload"`
+		Referral struct {
+			Ref    string `json:"ref"`
+			Source string `json:"source"`
+			Type   string `json:"type"`
+			AdID   string `json:"ad_id"`
+		} `json:"referral"`
+	} `json:"postback"`
+
+	Message *struct {
+		IsEcho      bool   `json:"is_echo"`
+		MID         string `json:"mid"`
+		Text        string `json:"text"`
+		IsDeleted   bool   `json:"is_deleted"`
+		Attachments []struct {
+			Type    string `json:"type"`
+			Payload *struct {
+				URL         string `json:"url"`
+				StickerID   int64  `json:"sticker_id"`
+				Coordinates *struct {
+					Lat  float64 `json:"lat"`
+					Long float64 `json:"long"`
+				} `json:"coordinates"`
+			}
+		} `json:"attachments"`
+	} `json:"message"`
+
+	Delivery *struct {
+		MIDs      []string `json:"mids"`
+		Watermark int64    `json:"watermark"`
+	} `json:"delivery"`
+}

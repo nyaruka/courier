@@ -84,23 +84,34 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// {
-//   "object":"page",
-//   "entry":[{
-//     "id":"180005062406476",
-//     "time":1514924367082,
-//     "messaging":[{
-//       "sender":  {"id":"1630934236957797"},
-//       "recipient":{"id":"180005062406476"},
-//       "timestamp":1514924366807,
-//       "message":{
-//         "mid":"mid.$cAAD5QiNHkz1m6cyj11guxokwkhi2",
-//         "seq":33116,
-//         "text":"65863634"
-//       }
-//     }]
-//   }]
-// }
+// https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components#notification-payload-object
+//
+//	{
+//	  "object":"page",
+//	  "entry":[{
+//	    "id":"180005062406476",
+//	    "time":1514924367082,
+//	    "messaging":[{
+//	      "sender":  {"id":"1630934236957797"},
+//	      "recipient":{"id":"180005062406476"},
+//	      "timestamp":1514924366807,
+//	      "message":{
+//	        "mid":"mid.$cAAD5QiNHkz1m6cyj11guxokwkhi2",
+//	        "seq":33116,
+//	        "text":"65863634"
+//	      }
+//	    }]
+//	  }]
+//	}
+type Notifications struct {
+	Object string `json:"object"`
+	Entry  []struct {
+		ID        string                `json:"id"`
+		Time      int64                 `json:"time"`
+		Changes   []whatsapp.Change     `json:"changes"`   // used by WhatsApp
+		Messaging []messenger.Messaging `json:"messaging"` // used by Facebook and Instgram
+	} `json:"entry"`
+}
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	vals := h.BaseHandler.RedactValues(ch)
@@ -119,7 +130,7 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 		return nil, nil
 	}
 
-	payload := &whatsapp.Notifications{}
+	payload := &Notifications{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, err
@@ -200,7 +211,7 @@ func resolveMediaURL(mediaID string, token string, clog *courier.ChannelLog) (st
 }
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *whatsapp.Notifications, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *Notifications, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -222,7 +233,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 	if channel.ChannelType() == "FBA" || channel.ChannelType() == "IG" {
 		events, data, err = h.processFacebookInstagramPayload(ctx, channel, payload, w, r, clog)
 	} else {
-		events, data, err = h.processCloudWhatsAppPayload(ctx, channel, payload, w, r, clog)
+		events, data, err = h.processWhatsAppPayload(ctx, channel, payload, w, r, clog)
 
 	}
 
@@ -233,7 +244,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
-func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *whatsapp.Notifications, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
+func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
 	// the list of events we deal with
 	events := make([]courier.Event, 0, 2)
 
@@ -371,7 +382,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 	return events, data, nil
 }
 
-func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel courier.Channel, payload *whatsapp.Notifications, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
+func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel courier.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
 	var err error
 
 	// the list of events we deal with
