@@ -80,16 +80,44 @@ var (
 )
 
 var testCases = []IncomingTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: receiveValid, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
-		PrepRequest: addValidSignature},
-	{Label: "Receive Button Ignored", URL: receiveURL, Data: receiveButtonIgnored, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
-		ExpectedMsgText: Sp("Msg"), ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
-		PrepRequest: addValidSignature},
-	{Label: "Receive Invalid Signature", URL: receiveURL, Data: receiveValid, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid request signature",
-		PrepRequest: addInvalidSignature},
-	{Label: "Receive Missing Signature", URL: receiveURL, Data: receiveValid, ExpectedRespStatus: 400, ExpectedBodyContains: "missing request signature"},
-	{Label: "Receive No Params", URL: receiveURL, Data: " ", ExpectedRespStatus: 400, ExpectedBodyContains: "field 'messagesid' required",
+	{
+		Label:                "Receive Valid",
+		URL:                  receiveURL,
+		Data:                 receiveValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "<Response/>",
+		ExpectedMsgText:      Sp("Msg"),
+		ExpectedURN:          "tel:+14133881111",
+		ExpectedExternalID:   "SMe287d7109a5a925f182f0e07fe5b223b",
+		PrepRequest:          addValidSignature,
+	},
+	{
+		Label:                "Receive Button Ignored",
+		URL:                  receiveURL,
+		Data:                 receiveButtonIgnored,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "<Response/>",
+		ExpectedMsgText:      Sp("Msg"),
+		ExpectedURN:          "tel:+14133881111",
+		ExpectedExternalID:   "SMe287d7109a5a925f182f0e07fe5b223b",
+		PrepRequest:          addValidSignature,
+	},
+	{
+		Label:                "Receive Invalid Signature",
+		URL:                  receiveURL,
+		Data:                 receiveValid,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "invalid request signature",
+		PrepRequest:          addInvalidSignature,
+	},
+	{
+		Label:                "Receive Missing Signature",
+		URL:                  receiveURL,
+		Data:                 receiveValid,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "missing request signature"},
+	{
+		Label: "Receive No Params", URL: receiveURL, Data: " ", ExpectedRespStatus: 400, ExpectedBodyContains: "field 'messagesid' required",
 		PrepRequest: addValidSignature},
 	{Label: "Receive Media", URL: receiveURL, Data: receiveMedia, ExpectedRespStatus: 200, ExpectedBodyContains: "<Response/>",
 		ExpectedURN: "tel:+14133881111", ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", ExpectedAttachments: []string{"cat.jpg", "dog.jpg"},
@@ -106,25 +134,75 @@ var testCases = []IncomingTestCase{
 		Data:                 statusStop,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedMsgStatus:    courier.MsgStatusFailed,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusFailed},
+		},
 		ExpectedEvents: []ExpectedEvent{
 			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
 		ExpectedErrors: []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 		PrepRequest:    addValidSignature,
 	},
-	{Label: "Status No Params", URL: statusURL, Data: " ", ExpectedRespStatus: 200, ExpectedBodyContains: "no msg status, ignoring",
-		PrepRequest: addValidSignature},
-	{Label: "Status Invalid Status", URL: statusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown status 'huh'",
-		PrepRequest: addValidSignature},
-	{Label: "Status Valid", URL: statusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
-		PrepRequest: addValidSignature},
-	{Label: "Status Read", URL: statusURL, Data: statusRead, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
-		PrepRequest: addValidSignature},
-	{Label: "Status ID Valid", URL: statusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedMsgID: 12345,
-		PrepRequest: addValidSignature},
-	{Label: "Status ID Invalid", URL: statusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
-		PrepRequest: addValidSignature},
+	{
+		Label:                "Status No Params",
+		URL:                  statusURL,
+		Data:                 " ",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "no msg status, ignoring",
+		PrepRequest:          addValidSignature,
+	},
+	{
+		Label:                "Status Invalid Status",
+		URL:                  statusURL,
+		Data:                 statusInvalid,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "unknown status 'huh'",
+		PrepRequest:          addValidSignature,
+	},
+	{
+		Label:                "Status Valid",
+		URL:                  statusURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+		},
+		PrepRequest: addValidSignature,
+	},
+	{
+		Label:                "Status Read",
+		URL:                  statusURL,
+		Data:                 statusRead,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+		},
+		PrepRequest: addValidSignature,
+	},
+	{
+		Label:                "Status ID Valid",
+		URL:                  statusIDURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+		},
+		PrepRequest: addValidSignature,
+	},
+	{
+		Label:                "Status ID Invalid",
+		URL:                  statusInvalidIDURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+		},
+		PrepRequest: addValidSignature,
+	},
 }
 
 var tmsTestCases = []IncomingTestCase{
@@ -154,25 +232,75 @@ var tmsTestCases = []IncomingTestCase{
 		Data:                 statusStop,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedMsgStatus:    courier.MsgStatusFailed,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusFailed},
+		},
 		ExpectedEvents: []ExpectedEvent{
 			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
 		ExpectedErrors: []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 		PrepRequest:    addValidSignature,
 	},
-	{Label: "Status TMS extra", URL: tmsStatusURL, Data: tmsStatusExtra, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"S"`, ExpectedMsgStatus: courier.MsgStatusSent,
-		ExpectedExternalID: "SM0b6e2697aae04182a9f5b5c7a8994c7f", PrepRequest: addValidSignature},
-	{Label: "Status No Params", URL: tmsStatusURL, Data: " ", ExpectedRespStatus: 200, ExpectedBodyContains: "no msg status, ignoring",
-		PrepRequest: addValidSignature},
-	{Label: "Status Invalid Status", URL: tmsStatusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown status 'huh'",
-		PrepRequest: addValidSignature},
-	{Label: "Status Valid", URL: tmsStatusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
-		PrepRequest: addValidSignature},
-	{Label: "Status ID Valid", URL: tmsStatusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedMsgID: 12345,
-		PrepRequest: addValidSignature},
-	{Label: "Status ID Invalid", URL: tmsStatusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
-		PrepRequest: addValidSignature},
+	{
+		Label:                "Status TMS extra",
+		URL:                  tmsStatusURL,
+		Data:                 tmsStatusExtra,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"S"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SM0b6e2697aae04182a9f5b5c7a8994c7f", Status: courier.MsgStatusSent},
+		},
+		PrepRequest: addValidSignature,
+	},
+	{
+		Label:                "Status No Params",
+		URL:                  tmsStatusURL,
+		Data:                 " ",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "no msg status, ignoring",
+		PrepRequest:          addValidSignature,
+	},
+	{
+		Label:                "Status Invalid Status",
+		URL:                  tmsStatusURL,
+		Data:                 statusInvalid,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "unknown status 'huh'",
+		PrepRequest:          addValidSignature,
+	},
+	{
+		Label:                "Status Valid",
+		URL:                  tmsStatusURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+		},
+		PrepRequest: addValidSignature,
+	},
+	{
+		Label:                "Status ID Valid",
+		URL:                  tmsStatusIDURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+		},
+		PrepRequest: addValidSignature,
+	},
+	{
+		Label:                "Status ID Invalid",
+		URL:                  tmsStatusInvalidIDURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+		},
+		PrepRequest: addValidSignature,
+	},
 }
 
 var twTestCases = []IncomingTestCase{
@@ -204,7 +332,9 @@ var twTestCases = []IncomingTestCase{
 		Data:                 statusStop,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedMsgStatus:    courier.MsgStatusFailed,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusFailed},
+		},
 		ExpectedEvents: []ExpectedEvent{
 			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
@@ -215,12 +345,39 @@ var twTestCases = []IncomingTestCase{
 		PrepRequest: addValidSignature},
 	{Label: "Status Invalid Status", URL: twStatusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown status 'huh'",
 		PrepRequest: addValidSignature},
-	{Label: "Status Valid", URL: twStatusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
-		PrepRequest: addValidSignature},
-	{Label: "Status ID Valid", URL: twStatusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedMsgID: 12345,
-		PrepRequest: addValidSignature},
-	{Label: "Status ID Invalid", URL: twStatusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
-		PrepRequest: addValidSignature},
+	{
+		Label:                "Status Valid",
+		URL:                  twStatusURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+		},
+		PrepRequest: addValidSignature,
+	},
+	{
+		Label:                "Status ID Valid",
+		URL:                  twStatusIDURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+		},
+		PrepRequest: addValidSignature,
+	},
+	{
+		Label:                "Status ID Invalid",
+		URL:                  twStatusInvalidIDURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+		},
+		PrepRequest: addValidSignature,
+	},
 }
 
 var swTestCases = []IncomingTestCase{
@@ -239,7 +396,9 @@ var swTestCases = []IncomingTestCase{
 		Data:                 statusStop,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedMsgStatus:    courier.MsgStatusFailed,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusFailed},
+		},
 		ExpectedEvents: []ExpectedEvent{
 			{Type: courier.EventTypeStopContact, URN: "tel:+12028831111"},
 		},
@@ -248,9 +407,37 @@ var swTestCases = []IncomingTestCase{
 	},
 	{Label: "Status No Params", URL: swStatusURL, Data: " ", ExpectedRespStatus: 200, ExpectedBodyContains: "no msg status, ignoring"},
 	{Label: "Status Invalid Status", URL: swStatusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown status 'huh'"},
-	{Label: "Status Valid", URL: swStatusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b"},
-	{Label: "Status ID Valid", URL: swStatusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedMsgID: 12345},
-	{Label: "Status ID Invalid", URL: swStatusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b"},
+	{
+		Label:                "Status Valid",
+		URL:                  swStatusURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+		},
+		PrepRequest: addValidSignature,
+	},
+	{
+		Label:                "Status ID Valid",
+		URL:                  swStatusIDURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+		},
+	},
+	{
+		Label:                "Status ID Invalid",
+		URL:                  swStatusInvalidIDURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+		},
+	},
 }
 
 var waTestCases = []IncomingTestCase{
@@ -273,12 +460,39 @@ var twaTestCases = []IncomingTestCase{
 		PrepRequest: addValidSignature},
 	{Label: "Status Invalid Status", URL: twaStatusURL, Data: statusInvalid, ExpectedRespStatus: 400, ExpectedBodyContains: "unknown status 'huh'",
 		PrepRequest: addValidSignature},
-	{Label: "Status Valid", URL: twaStatusURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
-		PrepRequest: addValidSignature},
-	{Label: "Status ID Valid", URL: twaStatusIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedMsgID: 12345,
-		PrepRequest: addValidSignature},
-	{Label: "Status ID Invalid", URL: twaStatusInvalidIDURL, Data: statusValid, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered, ExpectedExternalID: "SMe287d7109a5a925f182f0e07fe5b223b",
-		PrepRequest: addValidSignature},
+	{
+		Label:                "Status Valid",
+		URL:                  twaStatusURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+		},
+		PrepRequest: addValidSignature,
+	},
+	{
+		Label:                "Status ID Valid",
+		URL:                  twaStatusIDURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{MsgID: 12345, Status: courier.MsgStatusDelivered},
+		},
+		PrepRequest: addValidSignature,
+	},
+	{
+		Label:                "Status ID Invalid",
+		URL:                  twaStatusInvalidIDURL,
+		Data:                 statusValid,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+		},
+		PrepRequest: addValidSignature,
+	},
 }
 
 func addValidSignature(r *http.Request) {

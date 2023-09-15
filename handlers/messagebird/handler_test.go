@@ -159,17 +159,17 @@ var defaultReceiveTestCases = []IncomingTestCase{
 		Label:              "Status Valid",
 		URL:                statusBaseURL + "&status=sent",
 		ExpectedRespStatus: 200,
-		ExpectedMsgStatus:  "S",
+		ExpectedStatuses:   []ExpectedStatus{{MsgID: 26, Status: courier.MsgStatusSent}},
 	},
 	{
 		Label:              "Status- Stop Received",
 		URL:                statusBaseURL + "&status=delivery_failed&statusErrorCode=103",
 		ExpectedRespStatus: 200,
-		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorExternal("103", "Contact has sent 'stop'")},
+		ExpectedStatuses:   []ExpectedStatus{{MsgID: 26, Status: courier.MsgStatusFailed}},
 		ExpectedEvents: []ExpectedEvent{
 			{Type: courier.EventTypeStopContact, URN: "tel:188885551515"},
 		},
+		ExpectedErrors: []*courier.ChannelError{courier.ErrorExternal("103", "Contact has sent 'stop'")},
 	},
 	{
 		Label:                "Receive Invalid Status",

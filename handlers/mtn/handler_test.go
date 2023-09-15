@@ -103,8 +103,9 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgStatusDelivered,
-		ExpectedExternalID:   "rrt-58503",
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "rrt-58503", Status: courier.MsgStatusDelivered},
+		},
 	},
 	{
 		Label:                "Receive Valid delivered Status",
@@ -112,8 +113,9 @@ var testCases = []IncomingTestCase{
 		Data:                 validDeliveredStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgStatusDelivered,
-		ExpectedExternalID:   "rrt-58503",
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "rrt-58503", Status: courier.MsgStatusDelivered},
+		},
 	},
 	{
 		Label:                "Receive ignored Status",
@@ -121,8 +123,6 @@ var testCases = []IncomingTestCase{
 		Data:                 ignoredStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `Ignored`,
-		ExpectedMsgStatus:    "",
-		ExpectedExternalID:   "rrt-58503",
 	},
 	{
 		Label:                "Receive ignored Status, missing transaction ID",
@@ -130,7 +130,6 @@ var testCases = []IncomingTestCase{
 		Data:                 missingTransactionID,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `Ignored`,
-		ExpectedMsgStatus:    "",
 	},
 	{
 		Label:                "Receive expired Status",
@@ -138,8 +137,9 @@ var testCases = []IncomingTestCase{
 		Data:                 expiredStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedMsgStatus:    courier.MsgStatusFailed,
-		ExpectedExternalID:   "rrt-58503",
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "rrt-58503", Status: courier.MsgStatusFailed},
+		},
 	},
 	{
 		Label:                "Receive uknown Status",

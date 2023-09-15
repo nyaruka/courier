@@ -50,8 +50,7 @@ var handleTestCases = []IncomingTestCase{
 		Data:                 "id=external1&dlvrd=1",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "ACK/Jasmin",
-		ExpectedMsgStatus:    "D",
-		ExpectedExternalID:   "external1",
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external1", Status: courier.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Status Failed",
@@ -59,8 +58,7 @@ var handleTestCases = []IncomingTestCase{
 		Data:                 "id=external1&err=1",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "ACK/Jasmin",
-		ExpectedMsgStatus:    "F",
-		ExpectedExternalID:   "external1",
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external1", Status: courier.MsgStatusFailed}},
 	},
 	{
 		Label:                "Status Missing",

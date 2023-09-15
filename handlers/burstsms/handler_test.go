@@ -39,8 +39,7 @@ var testCases = []IncomingTestCase{
 		URL:                  statusURL + "?message_id=12345&status=pending",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Status Update Accepted",
-		ExpectedExternalID:   "12345",
-		ExpectedMsgStatus:    "S",
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusSent}},
 	},
 	{
 		Label:                "Receive Invalid Status",

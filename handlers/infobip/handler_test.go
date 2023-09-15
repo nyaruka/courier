@@ -246,7 +246,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusDelivered,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgStatusDelivered,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Status rejected",
@@ -254,7 +254,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusRejected,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedMsgStatus:    courier.MsgStatusFailed,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusFailed}},
 	},
 	{
 		Label:                "Status undeliverable",
@@ -262,7 +262,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusUndeliverable,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
-		ExpectedMsgStatus:    courier.MsgStatusFailed,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusFailed}},
 	},
 	{
 		Label:                "Status pending",
@@ -270,7 +270,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusPending,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedMsgStatus:    courier.MsgStatusSent,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusSent}, {ExternalID: "12347", Status: courier.MsgStatusSent}},
 	},
 	{
 		Label:                "Status expired",
@@ -278,7 +278,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusExpired,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedMsgStatus:    courier.MsgStatusSent,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusSent}},
 	},
 	{
 		Label:                "Status group name unexpected",

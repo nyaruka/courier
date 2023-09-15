@@ -78,7 +78,7 @@ var testCases = []IncomingTestCase{
 		Data:                 "id=12345&status=1",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgStatusDelivered,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusDelivered}},
 	},
 }
 

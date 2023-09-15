@@ -200,8 +200,7 @@ var testCasesD3C = []IncomingTestCase{
 		Data:                 string(test.ReadFile("../meta/testdata/wac/valid_status.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
-		ExpectedMsgStatus:    "S",
-		ExpectedExternalID:   "external_id",
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external_id", Status: courier.MsgStatusSent}},
 	},
 	{
 		Label:                "Receive Valid Status with error message",
@@ -209,8 +208,7 @@ var testCasesD3C = []IncomingTestCase{
 		Data:                 string(test.ReadFile("../meta/testdata/wac/error_status.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
-		ExpectedMsgStatus:    "F",
-		ExpectedExternalID:   "external_id",
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "external_id", Status: courier.MsgStatusFailed}},
 		ExpectedErrors:       []*courier.ChannelError{courier.ErrorExternal("131014", "Request for url https://URL.jpg failed with error: 404 (Not Found)")},
 	},
 	{

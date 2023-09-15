@@ -83,10 +83,9 @@ var testCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Status",
 		URL:                  receiveStatusURL + "?id=58f86fab-85c5-4f7c-9b68-9c323248afc4%3A0&status=read",
-		ExpectedExternalID:   "58f86fab-85c5-4f7c-9b68-9c323248afc4:0",
-		ExpectedMsgStatus:    "D",
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "58f86fab-85c5-4f7c-9b68-9c323248afc4:0", Status: courier.MsgStatusDelivered}},
 	},
 	{
 		Label:                "Receive Invalid Status",

@@ -474,8 +474,9 @@ var waTestCases = []IncomingTestCase{
 		Data:                 validStatus,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
-		ExpectedMsgStatus:    "S",
-		ExpectedExternalID:   "9712A34B4A8B6AD50F",
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "9712A34B4A8B6AD50F", Status: courier.MsgStatusSent},
+		},
 	},
 	{
 		Label:                "Receive invalid JSON",

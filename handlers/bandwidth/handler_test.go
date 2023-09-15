@@ -217,7 +217,7 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusSent,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"S"`,
-		ExpectedMsgStatus:    courier.MsgStatusSent,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusSent}},
 	},
 	{
 		Label:                "Status delivered",
@@ -225,16 +225,16 @@ var testCases = []IncomingTestCase{
 		Data:                 validStatusDelivered,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgStatusDelivered,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusDelivered}},
 	},
 	{
-		Label:                "Status delivered",
+		Label:                "Status failed",
 		URL:                  statusURL,
 		Data:                 validStatusFailed,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"status":"F"`,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "14762070468292kw2fuqty55yp2b2", Status: courier.MsgStatusFailed}},
 		ExpectedErrors:       []*courier.ChannelError{courier.ErrorExternal("4432", "forbidden to country")},
-		ExpectedMsgStatus:    courier.MsgStatusFailed,
 	},
 }
 

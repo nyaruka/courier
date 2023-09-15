@@ -64,9 +64,10 @@ var testCases = []IncomingTestCase{
 		URL:                  statusURL,
 		Data:                 "guid=1234&status=DELIVRD",
 		ExpectedRespStatus:   200,
-		ExpectedExternalID:   "1234",
 		ExpectedBodyContains: `"status":"D"`,
-		ExpectedMsgStatus:    courier.MsgStatusDelivered,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "1234", Status: courier.MsgStatusDelivered},
+		},
 	},
 	{
 		Label:                "Status Invalid",

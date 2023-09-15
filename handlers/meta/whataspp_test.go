@@ -212,9 +212,10 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                 string(test.ReadFile("./testdata/wac/valid_status.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
-		ExpectedMsgStatus:    "S",
-		ExpectedExternalID:   "external_id",
-		PrepRequest:          addValidSignature,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "external_id", Status: courier.MsgStatusSent},
+		},
+		PrepRequest: addValidSignature,
 	},
 	{
 		Label:                "Receive Valid Status with error message",
@@ -222,10 +223,13 @@ var whatsappIncomingTests = []IncomingTestCase{
 		Data:                 string(test.ReadFile("./testdata/wac/error_status.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
-		ExpectedMsgStatus:    "F",
-		ExpectedExternalID:   "external_id",
-		ExpectedErrors:       []*courier.ChannelError{courier.ErrorExternal("131014", "Request for url https://URL.jpg failed with error: 404 (Not Found)")},
-		PrepRequest:          addValidSignature,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "external_id", Status: courier.MsgStatusFailed},
+		},
+		ExpectedErrors: []*courier.ChannelError{
+			courier.ErrorExternal("131014", "Request for url https://URL.jpg failed with error: 404 (Not Found)"),
+		},
+		PrepRequest: addValidSignature,
 	},
 	{
 		Label:                "Receive Invalid Status",

@@ -28,6 +28,13 @@ import (
 // RequestPrepFunc is our type for a hook for tests to use before a request is fired in a test
 type RequestPrepFunc func(*http.Request)
 
+// ExpectedStatus is an expected status update
+type ExpectedStatus struct {
+	MsgID      courier.MsgID
+	ExternalID string
+	Status     courier.MsgStatus
+}
+
 // ExpectedEvent is an expected channel event
 type ExpectedEvent struct {
 	Type  courier.ChannelEventType
@@ -56,9 +63,9 @@ type IncomingTestCase struct {
 	ExpectedURNAuthTokens map[urns.URN]map[string]string
 	ExpectedAttachments   []string
 	ExpectedDate          time.Time
-	ExpectedMsgStatus     courier.MsgStatus
 	ExpectedExternalID    string
 	ExpectedMsgID         int64
+	ExpectedStatuses      []ExpectedStatus
 	ExpectedEvents        []ExpectedEvent
 	ExpectedErrors        []*courier.ChannelError
 	NoLogsExpected        bool
@@ -192,21 +199,17 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 				assert.Empty(t, mb.WrittenMsgs(), "unexpected msg written")
 			}
 
-			if tc.ExpectedMsgStatus != "" {
-				// TODO find better way to test statuses because some channels (e.g. infobip) can create multiple statuses in one call
-				require.Greater(len(mb.WrittenMsgStatuses()), 0, "expected a msg status to be written")
-				status := mb.WrittenMsgStatuses()[len(mb.WrittenMsgStatuses())-1]
-
-				assert.Equal(t, tc.ExpectedMsgStatus, status.Status())
-
-				if tc.ExpectedExternalID != "" {
-					assert.Equal(t, tc.ExpectedExternalID, status.ExternalID())
+			actualStatuses := mb.WrittenMsgStatuses()
+			assert.Len(t, actualStatuses, len(tc.ExpectedStatuses), "unexpected number of status updates written")
+			for i, expectedStatus := range tc.ExpectedStatuses {
+				if (len(actualStatuses) - 1) < i {
+					break
 				}
-				if tc.ExpectedMsgID != 0 {
-					assert.Equal(t, tc.ExpectedMsgID, int64(status.MsgID()))
-				}
-			} else {
-				assert.Empty(t, mb.WrittenMsgStatuses(), "unexpected msg status written")
+				actualStatus := actualStatuses[i]
+
+				assert.Equal(t, expectedStatus.MsgID, actualStatus.MsgID(), "msg id mismatch for update %d", i)
+				assert.Equal(t, expectedStatus.ExternalID, actualStatus.ExternalID(), "external id mismatch for update %d", i)
+				assert.Equal(t, expectedStatus.Status, actualStatus.Status(), "status value mismatch for update %d", i)
 			}
 
 			actualEvents := mb.WrittenChannelEvents()

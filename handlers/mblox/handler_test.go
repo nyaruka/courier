@@ -69,7 +69,14 @@ var testCases = []IncomingTestCase{
 	{Label: "Receive Missing Params", URL: receiveURL, Data: missingParamsRecieve, ExpectedRespStatus: 400, ExpectedBodyContains: "missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"},
 	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedBodyContains: "phone number supplied is not a number"},
 
-	{Label: "Status Valid", URL: receiveURL, Data: validStatus, ExpectedRespStatus: 200, ExpectedBodyContains: `"status":"D"`, ExpectedMsgStatus: courier.MsgStatusDelivered},
+	{
+		Label:                "Status Valid",
+		URL:                  receiveURL,
+		Data:                 validStatus,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"D"`,
+		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusDelivered}},
+	},
 	{Label: "Status Unknown", URL: receiveURL, Data: unknownStatus, ExpectedRespStatus: 400, ExpectedBodyContains: `unknown status 'INVALID'`},
 	{Label: "Status Missing Batch ID", URL: receiveURL, Data: missingBatchID, ExpectedRespStatus: 400, ExpectedBodyContains: "missing one of 'batch_id' or 'status' in request body"},
 }
