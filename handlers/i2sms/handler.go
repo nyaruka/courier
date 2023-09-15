@@ -32,7 +32,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandlerWithParams(courier.ChannelType("I2"), "I2SMS", true, []string{courier.ConfigPassword, configChannelHash})}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("I2"), "I2SMS", handlers.WithRedactConfigKeys(courier.ConfigPassword, configChannelHash))}
 }
 
 // Initialize is called by the engine once everything is loaded

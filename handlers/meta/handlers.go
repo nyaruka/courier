@@ -62,7 +62,7 @@ const (
 )
 
 func newHandler(channelType courier.ChannelType, name string) courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, false, []string{courier.ConfigAuthToken})}
+	return &handler{handlers.NewBaseHandler(channelType, name, handlers.DisableUUIDRouting(), handlers.WithRedactConfigKeys(courier.ConfigAuthToken))}
 }
 
 func init() {

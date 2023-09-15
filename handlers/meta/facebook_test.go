@@ -534,7 +534,7 @@ func TestFacebookBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 	s := courier.NewServer(courier.NewConfig(), mb)
 
-	handler := &handler{NewBaseHandlerWithParams(courier.ChannelType("FBA"), "Facebook", false, nil)}
+	handler := &handler{NewBaseHandler(courier.ChannelType("FBA"), "Facebook", DisableUUIDRouting())}
 	handler.Initialize(s)
 	req, _ := handler.BuildAttachmentRequest(context.Background(), mb, facebookTestChannels[0], "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())

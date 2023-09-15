@@ -41,7 +41,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandlerWithParams(courier.ChannelType("SL"), "Slack", true, []string{configBotToken, configUserToken, configValidationToken})}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("SL"), "Slack", handlers.WithRedactConfigKeys(configBotToken, configUserToken, configValidationToken))}
 }
 
 func (h *handler) Initialize(s courier.Server) error {

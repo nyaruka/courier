@@ -34,7 +34,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandlerWithParams(courier.ChannelType("FCM"), "Firebase", true, []string{configKey})}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("FCM"), "Firebase", handlers.WithRedactConfigKeys(configKey))}
 }
 
 func (h *handler) Initialize(s courier.Server) error {

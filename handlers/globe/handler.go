@@ -33,7 +33,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandlerWithParams(courier.ChannelType("GL"), "Globe Labs", true, []string{configPassphrase, configAppSecret})}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("GL"), "Globe Labs", handlers.WithRedactConfigKeys(configPassphrase, configAppSecret))}
 }
 
 // Initialize is called by the engine once everything is loaded

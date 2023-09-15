@@ -12,26 +12,37 @@ var defaultRedactConfigKeys = []string{courier.ConfigAuthToken, courier.ConfigAP
 
 // BaseHandler is the base class for most handlers, it just stored the server, name and channel type for the handler
 type BaseHandler struct {
-	channelType         courier.ChannelType
-	name                string
-	server              courier.Server
-	backend             courier.Backend
-	useChannelRouteUUID bool
-	redactConfigKeys    []string
+	channelType        courier.ChannelType
+	name               string
+	server             courier.Server
+	backend            courier.Backend
+	uuidChannelRouting bool
+	redactConfigKeys   []string
 }
 
 // NewBaseHandler returns a newly constructed BaseHandler with the passed in parameters
-func NewBaseHandler(channelType courier.ChannelType, name string) BaseHandler {
-	return NewBaseHandlerWithParams(channelType, name, true, defaultRedactConfigKeys)
+func NewBaseHandler(channelType courier.ChannelType, name string, options ...func(*BaseHandler)) BaseHandler {
+	h := &BaseHandler{
+		channelType:        channelType,
+		name:               name,
+		uuidChannelRouting: true,
+		redactConfigKeys:   defaultRedactConfigKeys,
+	}
+	for _, o := range options {
+		o(h)
+	}
+	return *h
 }
 
-// NewBaseHandlerWithParams returns a newly constructed BaseHandler with the passed in parameters
-func NewBaseHandlerWithParams(channelType courier.ChannelType, name string, useChannelRouteUUID bool, redactConfigKeys []string) BaseHandler {
-	return BaseHandler{
-		channelType:         channelType,
-		name:                name,
-		useChannelRouteUUID: useChannelRouteUUID,
-		redactConfigKeys:    redactConfigKeys,
+func DisableUUIDRouting() func(*BaseHandler) {
+	return func(s *BaseHandler) {
+		s.uuidChannelRouting = false
+	}
+}
+
+func WithRedactConfigKeys(keys ...string) func(*BaseHandler) {
+	return func(s *BaseHandler) {
+		s.redactConfigKeys = keys
 	}
 }
 
@@ -63,7 +74,7 @@ func (h *BaseHandler) ChannelName() string {
 
 // UseChannelRouteUUID returns whether the router should use the channel UUID in the URL path
 func (h *BaseHandler) UseChannelRouteUUID() bool {
-	return h.useChannelRouteUUID
+	return h.uuidChannelRouting
 }
 
 func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
