@@ -17,8 +17,9 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/handlers/meta/messenger"
+	"github.com/nyaruka/courier/handlers/meta/whatsapp"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/courier/utils/whatsapp"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
@@ -60,14 +61,14 @@ const (
 	payloadKey    = "payload"
 )
 
-func newHandler(channelType courier.ChannelType, name string, useUUIDRoutes bool) courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, useUUIDRoutes, []string{courier.ConfigAuthToken})}
+func newHandler(channelType courier.ChannelType, name string) courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandlerWithParams(channelType, name, false, []string{courier.ConfigAuthToken})}
 }
 
 func init() {
-	courier.RegisterHandler(newHandler("IG", "Instagram", false))
-	courier.RegisterHandler(newHandler("FBA", "Facebook", false))
-	courier.RegisterHandler(newHandler("WAC", "WhatsApp Cloud", false))
+	courier.RegisterHandler(newHandler("IG", "Instagram"))
+	courier.RegisterHandler(newHandler("FBA", "Facebook"))
+	courier.RegisterHandler(newHandler("WAC", "WhatsApp Cloud"))
 
 }
 
@@ -83,23 +84,34 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-// {
-//   "object":"page",
-//   "entry":[{
-//     "id":"180005062406476",
-//     "time":1514924367082,
-//     "messaging":[{
-//       "sender":  {"id":"1630934236957797"},
-//       "recipient":{"id":"180005062406476"},
-//       "timestamp":1514924366807,
-//       "message":{
-//         "mid":"mid.$cAAD5QiNHkz1m6cyj11guxokwkhi2",
-//         "seq":33116,
-//         "text":"65863634"
-//       }
-//     }]
-//   }]
-// }
+// https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components#notification-payload-object
+//
+//	{
+//	  "object":"page",
+//	  "entry":[{
+//	    "id":"180005062406476",
+//	    "time":1514924367082,
+//	    "messaging":[{
+//	      "sender":  {"id":"1630934236957797"},
+//	      "recipient":{"id":"180005062406476"},
+//	      "timestamp":1514924366807,
+//	      "message":{
+//	        "mid":"mid.$cAAD5QiNHkz1m6cyj11guxokwkhi2",
+//	        "seq":33116,
+//	        "text":"65863634"
+//	      }
+//	    }]
+//	  }]
+//	}
+type Notifications struct {
+	Object string `json:"object"`
+	Entry  []struct {
+		ID        string                `json:"id"`
+		Time      int64                 `json:"time"`
+		Changes   []whatsapp.Change     `json:"changes"`   // used by WhatsApp
+		Messaging []messenger.Messaging `json:"messaging"` // used by Facebook and Instgram
+	} `json:"entry"`
+}
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
 	vals := h.BaseHandler.RedactValues(ch)
@@ -118,7 +130,7 @@ func (h *handler) GetChannel(ctx context.Context, r *http.Request) (courier.Chan
 		return nil, nil
 	}
 
-	payload := &whatsapp.MOPayload{}
+	payload := &Notifications{}
 	err := handlers.DecodeAndValidateJSON(payload, r)
 	if err != nil {
 		return nil, err
@@ -199,7 +211,7 @@ func resolveMediaURL(mediaID string, token string, clog *courier.ChannelLog) (st
 }
 
 // receiveEvents is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *whatsapp.MOPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *Notifications, clog *courier.ChannelLog) ([]courier.Event, error) {
 	err := h.validateSignature(r)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -221,7 +233,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 	if channel.ChannelType() == "FBA" || channel.ChannelType() == "IG" {
 		events, data, err = h.processFacebookInstagramPayload(ctx, channel, payload, w, r, clog)
 	} else {
-		events, data, err = h.processCloudWhatsAppPayload(ctx, channel, payload, w, r, clog)
+		events, data, err = h.processWhatsAppPayload(ctx, channel, payload, w, r, clog)
 
 	}
 
@@ -232,7 +244,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
-func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *whatsapp.MOPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
+func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
 	// the list of events we deal with
 	events := make([]courier.Event, 0, 2)
 
@@ -370,7 +382,7 @@ func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel couri
 	return events, data, nil
 }
 
-func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel courier.Channel, payload *whatsapp.MOPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
+func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel courier.Channel, payload *Notifications, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
 	var err error
 
 	// the list of events we deal with
@@ -620,67 +632,14 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 	return events, data, nil
 }
 
-//	{
-//	  "messaging_type": "<MESSAGING_TYPE>"
-//	  "recipient": {
-//	    "id":"<PSID>"
-//	  },
-//	  "message": {
-//	    "text":"hello, world!"
-//	    "attachment":{
-//	      "type":"image",
-//	      "payload":{
-//	        "url":"http://www.messenger-rocks.com/image.jpg",
-//	        "is_reusable":true
-//	      }
-//	    }
-//	  }
-//	}
-type mtPayload struct {
-	MessagingType string `json:"messaging_type"`
-	Tag           string `json:"tag,omitempty"`
-	Recipient     struct {
-		UserRef string `json:"user_ref,omitempty"`
-		ID      string `json:"id,omitempty"`
-	} `json:"recipient"`
-	Message struct {
-		Text         string         `json:"text,omitempty"`
-		QuickReplies []mtQuickReply `json:"quick_replies,omitempty"`
-		Attachment   *mtAttachment  `json:"attachment,omitempty"`
-	} `json:"message"`
-}
-
-type mtAttachment struct {
-	Type    string `json:"type"`
-	Payload struct {
-		URL        string `json:"url"`
-		IsReusable bool   `json:"is_reusable"`
-	} `json:"payload"`
-}
-
-type mtQuickReply struct {
-	Title       string `json:"title"`
-	Payload     string `json:"payload"`
-	ContentType string `json:"content_type"`
-}
-
 func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	if msg.Channel().ChannelType() == "FBA" || msg.Channel().ChannelType() == "IG" {
 		return h.sendFacebookInstagramMsg(ctx, msg, clog)
 	} else if msg.Channel().ChannelType() == "WAC" {
-		return h.sendCloudAPIWhatsappMsg(ctx, msg, clog)
+		return h.sendWhatsAppMsg(ctx, msg, clog)
 	}
 
 	return nil, fmt.Errorf("unssuported channel type")
-}
-
-type fbaMTResponse struct {
-	ExternalID  string `json:"message_id"`
-	RecipientID string `json:"recipient_id"`
-	Error       struct {
-		Message string `json:"message"`
-		Code    int    `json:"code"`
-	} `json:"error"`
 }
 
 func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
@@ -691,7 +650,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 	}
 
 	isHuman := msg.Origin() == courier.MsgOriginChat || msg.Origin() == courier.MsgOriginTicket
-	payload := mtPayload{}
+	payload := &messenger.SendRequest{}
 
 	if msg.Topic() != "" || isHuman {
 		payload.MessagingType = "MESSAGE_TAG"
@@ -734,7 +693,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
 		if i < len(msg.Attachments()) {
 			// this is an attachment
-			payload.Message.Attachment = &mtAttachment{}
+			payload.Message.Attachment = &messenger.Attachment{}
 			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
 			attType = strings.Split(attType, "/")[0]
 			if attType == "application" {
@@ -753,7 +712,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 		// include any quick replies on the last piece we send
 		if i == (len(msgParts)+len(msg.Attachments()))-1 {
 			for _, qr := range msg.QuickReplies() {
-				payload.Message.QuickReplies = append(payload.Message.QuickReplies, mtQuickReply{qr, qr, "text"})
+				payload.Message.QuickReplies = append(payload.Message.QuickReplies, messenger.QuickReply{qr, qr, "text"})
 			}
 		} else {
 			payload.Message.QuickReplies = nil
@@ -772,7 +731,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 		req.Header.Set("Accept", "application/json")
 
 		_, respBody, _ := handlers.RequestHTTP(req, clog)
-		respPayload := &fbaMTResponse{}
+		respPayload := &messenger.SendResponse{}
 		err = json.Unmarshal(respBody, respPayload)
 		if err != nil {
 			clog.Error(courier.ErrorResponseUnparseable("JSON"))
@@ -839,7 +798,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 	return status, nil
 }
 
-func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	// can't do anything without an access token
 	accessToken := h.Server().Config().WhatsappAdminSystemUserToken
 
@@ -859,14 +818,14 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 	lang := whatsapp.GetSupportedLanguage(msg.Locale())
 	menuButton := whatsapp.GetMenuButton(lang)
 
-	var payloadAudio whatsapp.MTPayload
+	var payloadAudio whatsapp.SendRequest
 
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
-		payload := whatsapp.MTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
+		payload := whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
 
 		if len(msg.Attachments()) == 0 {
 			// do we have a template?
-			templating, err := h.getTemplating(msg)
+			templating, err := whatsapp.GetTemplating(msg)
 			if err != nil {
 				return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
 			}
@@ -964,7 +923,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 				attType = "document"
 			}
 			payload.Type = attType
-			media := whatsapp.MTMedia{Link: attURL}
+			media := whatsapp.Media{Link: attURL}
 
 			if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(msg.QuickReplies()) == 0 {
 				media.Caption = msgParts[i]
@@ -1004,49 +963,49 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 							attType = "document"
 						}
 						if attType == "image" {
-							image := whatsapp.MTMedia{
+							image := whatsapp.Media{
 								Link: attURL,
 							}
 							interactive.Header = &struct {
-								Type     string            "json:\"type\""
-								Text     string            "json:\"text,omitempty\""
-								Video    *whatsapp.MTMedia "json:\"video,omitempty\""
-								Image    *whatsapp.MTMedia "json:\"image,omitempty\""
-								Document *whatsapp.MTMedia "json:\"document,omitempty\""
+								Type     string          "json:\"type\""
+								Text     string          "json:\"text,omitempty\""
+								Video    *whatsapp.Media "json:\"video,omitempty\""
+								Image    *whatsapp.Media "json:\"image,omitempty\""
+								Document *whatsapp.Media "json:\"document,omitempty\""
 							}{Type: "image", Image: &image}
 						} else if attType == "video" {
-							video := whatsapp.MTMedia{
+							video := whatsapp.Media{
 								Link: attURL,
 							}
 							interactive.Header = &struct {
-								Type     string            "json:\"type\""
-								Text     string            "json:\"text,omitempty\""
-								Video    *whatsapp.MTMedia "json:\"video,omitempty\""
-								Image    *whatsapp.MTMedia "json:\"image,omitempty\""
-								Document *whatsapp.MTMedia "json:\"document,omitempty\""
+								Type     string          "json:\"type\""
+								Text     string          "json:\"text,omitempty\""
+								Video    *whatsapp.Media "json:\"video,omitempty\""
+								Image    *whatsapp.Media "json:\"image,omitempty\""
+								Document *whatsapp.Media "json:\"document,omitempty\""
 							}{Type: "video", Video: &video}
 						} else if attType == "document" {
 							filename, err := utils.BasePathForURL(attURL)
 							if err != nil {
 								return nil, err
 							}
-							document := whatsapp.MTMedia{
+							document := whatsapp.Media{
 								Link:     attURL,
 								Filename: filename,
 							}
 							interactive.Header = &struct {
-								Type     string            "json:\"type\""
-								Text     string            "json:\"text,omitempty\""
-								Video    *whatsapp.MTMedia "json:\"video,omitempty\""
-								Image    *whatsapp.MTMedia "json:\"image,omitempty\""
-								Document *whatsapp.MTMedia "json:\"document,omitempty\""
+								Type     string          "json:\"type\""
+								Text     string          "json:\"text,omitempty\""
+								Video    *whatsapp.Media "json:\"video,omitempty\""
+								Image    *whatsapp.Media "json:\"image,omitempty\""
+								Document *whatsapp.Media "json:\"document,omitempty\""
 							}{Type: "document", Document: &document}
 						} else if attType == "audio" {
 							var zeroIndex bool
 							if i == 0 {
 								zeroIndex = true
 							}
-							payloadAudio = whatsapp.MTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &whatsapp.MTMedia{Link: attURL}}
+							payloadAudio = whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &whatsapp.Media{Link: attURL}}
 							status, err := requestWAC(payloadAudio, accessToken, status, wacPhoneURL, zeroIndex, clog)
 							if err != nil {
 								return status, nil
@@ -1128,7 +1087,7 @@ func (h *handler) sendCloudAPIWhatsappMsg(ctx context.Context, msg courier.Msg, 
 	return status, nil
 }
 
-func requestWAC(payload whatsapp.MTPayload, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func requestWAC(payload whatsapp.SendRequest, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
 		return status, err
@@ -1144,7 +1103,7 @@ func requestWAC(payload whatsapp.MTPayload, accessToken string, status courier.S
 	req.Header.Set("Accept", "application/json")
 
 	_, respBody, _ := handlers.RequestHTTP(req, clog)
-	respPayload := &whatsapp.MTResponse{}
+	respPayload := &whatsapp.SendResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
 		clog.Error(courier.ErrorResponseUnparseable("JSON"))
@@ -1254,29 +1213,6 @@ func fbCalculateSignature(appSecret string, body []byte) (string, error) {
 	mac.Write(buffer.Bytes())
 
 	return hex.EncodeToString(mac.Sum(nil)), nil
-}
-
-func (h *handler) getTemplating(msg courier.Msg) (*whatsapp.MsgTemplating, error) {
-	if len(msg.Metadata()) == 0 {
-		return nil, nil
-	}
-
-	metadata := &struct {
-		Templating *whatsapp.MsgTemplating `json:"templating"`
-	}{}
-	if err := json.Unmarshal(msg.Metadata(), metadata); err != nil {
-		return nil, err
-	}
-
-	if metadata.Templating == nil {
-		return nil, nil
-	}
-
-	if err := utils.Validate(metadata.Templating); err != nil {
-		return nil, errors.Wrapf(err, "invalid templating definition")
-	}
-
-	return metadata.Templating, nil
 }
 
 // BuildAttachmentRequest to download media for message attachment with Bearer token set
