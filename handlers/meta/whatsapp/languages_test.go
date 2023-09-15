@@ -3,7 +3,7 @@ package whatsapp_test
 import (
 	"testing"
 
-	"github.com/nyaruka/courier/utils/whatsapp"
+	"github.com/nyaruka/courier/handlers/meta/whatsapp"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/stretchr/testify/assert"
 )

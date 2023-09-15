@@ -14,8 +14,8 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/handlers/meta/whatsapp"
 	"github.com/nyaruka/courier/utils"
-	"github.com/nyaruka/courier/utils/whatsapp"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
@@ -67,7 +67,7 @@ func (h *handler) Initialize(s courier.Server) error {
 // }
 
 // receiveEvent is our HTTP handler function for incoming messages and status updates
-func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *whatsapp.MOPayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *whatsapp.Notifications, clog *courier.ChannelLog) ([]courier.Event, error) {
 
 	// is not a 'whatsapp_business_account' object? ignore it
 	if payload.Object != "whatsapp_business_account" {
@@ -82,7 +82,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	var events []courier.Event
 	var data []any
 
-	events, data, err := h.processCloudWhatsAppPayload(ctx, channel, payload, w, r, clog)
+	events, data, err := h.processWhatsAppPayload(ctx, channel, payload, w, r, clog)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
-func (h *handler) processCloudWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *whatsapp.MOPayload, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
+func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Channel, payload *whatsapp.Notifications, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, []any, error) {
 	// the list of events we deal with
 	events := make([]courier.Event, 0, 2)
 
@@ -312,14 +312,14 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	lang := whatsapp.GetSupportedLanguage(msg.Locale())
 	menuButton := whatsapp.GetMenuButton(lang)
 
-	var payloadAudio whatsapp.MTPayload
+	var payloadAudio whatsapp.SendRequest
 
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
-		payload := whatsapp.MTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
+		payload := whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
 
 		if len(msg.Attachments()) == 0 {
 			// do we have a template?
-			templating, err := h.getTemplating(msg)
+			templating, err := whatsapp.GetTemplating(msg)
 			if err != nil {
 				return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
 			}
@@ -417,7 +417,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 				attType = "document"
 			}
 			payload.Type = attType
-			media := whatsapp.MTMedia{Link: attURL}
+			media := whatsapp.Media{Link: attURL}
 
 			if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(msg.QuickReplies()) == 0 {
 				media.Caption = msgParts[i]
@@ -457,49 +457,49 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 							attType = "document"
 						}
 						if attType == "image" {
-							image := whatsapp.MTMedia{
+							image := whatsapp.Media{
 								Link: attURL,
 							}
 							interactive.Header = &struct {
-								Type     string            "json:\"type\""
-								Text     string            "json:\"text,omitempty\""
-								Video    *whatsapp.MTMedia "json:\"video,omitempty\""
-								Image    *whatsapp.MTMedia "json:\"image,omitempty\""
-								Document *whatsapp.MTMedia "json:\"document,omitempty\""
+								Type     string          "json:\"type\""
+								Text     string          "json:\"text,omitempty\""
+								Video    *whatsapp.Media "json:\"video,omitempty\""
+								Image    *whatsapp.Media "json:\"image,omitempty\""
+								Document *whatsapp.Media "json:\"document,omitempty\""
 							}{Type: "image", Image: &image}
 						} else if attType == "video" {
-							video := whatsapp.MTMedia{
+							video := whatsapp.Media{
 								Link: attURL,
 							}
 							interactive.Header = &struct {
-								Type     string            "json:\"type\""
-								Text     string            "json:\"text,omitempty\""
-								Video    *whatsapp.MTMedia "json:\"video,omitempty\""
-								Image    *whatsapp.MTMedia "json:\"image,omitempty\""
-								Document *whatsapp.MTMedia "json:\"document,omitempty\""
+								Type     string          "json:\"type\""
+								Text     string          "json:\"text,omitempty\""
+								Video    *whatsapp.Media "json:\"video,omitempty\""
+								Image    *whatsapp.Media "json:\"image,omitempty\""
+								Document *whatsapp.Media "json:\"document,omitempty\""
 							}{Type: "video", Video: &video}
 						} else if attType == "document" {
 							filename, err := utils.BasePathForURL(attURL)
 							if err != nil {
 								return nil, err
 							}
-							document := whatsapp.MTMedia{
+							document := whatsapp.Media{
 								Link:     attURL,
 								Filename: filename,
 							}
 							interactive.Header = &struct {
-								Type     string            "json:\"type\""
-								Text     string            "json:\"text,omitempty\""
-								Video    *whatsapp.MTMedia "json:\"video,omitempty\""
-								Image    *whatsapp.MTMedia "json:\"image,omitempty\""
-								Document *whatsapp.MTMedia "json:\"document,omitempty\""
+								Type     string          "json:\"type\""
+								Text     string          "json:\"text,omitempty\""
+								Video    *whatsapp.Media "json:\"video,omitempty\""
+								Image    *whatsapp.Media "json:\"image,omitempty\""
+								Document *whatsapp.Media "json:\"document,omitempty\""
 							}{Type: "document", Document: &document}
 						} else if attType == "audio" {
 							var zeroIndex bool
 							if i == 0 {
 								zeroIndex = true
 							}
-							payloadAudio = whatsapp.MTPayload{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &whatsapp.MTMedia{Link: attURL}}
+							payloadAudio = whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &whatsapp.Media{Link: attURL}}
 							status, err := requestD3C(payloadAudio, accessToken, status, sendURL, zeroIndex, clog)
 							if err != nil {
 								return status, nil
@@ -581,7 +581,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return status, nil
 }
 
-func requestD3C(payload whatsapp.MTPayload, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func requestD3C(payload whatsapp.SendRequest, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
 		return status, err
@@ -597,7 +597,7 @@ func requestD3C(payload whatsapp.MTPayload, accessToken string, status courier.S
 	req.Header.Set("Accept", "application/json")
 
 	_, respBody, _ := handlers.RequestHTTP(req, clog)
-	respPayload := &whatsapp.MTResponse{}
+	respPayload := &whatsapp.SendResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
 		clog.Error(courier.ErrorResponseUnparseable("JSON"))
@@ -616,27 +616,4 @@ func requestD3C(payload whatsapp.MTPayload, accessToken string, status courier.S
 	// this was wired successfully
 	status.SetStatus(courier.MsgStatusWired)
 	return status, nil
-}
-
-func (h *handler) getTemplating(msg courier.Msg) (*whatsapp.MsgTemplating, error) {
-	if len(msg.Metadata()) == 0 {
-		return nil, nil
-	}
-
-	metadata := &struct {
-		Templating *whatsapp.MsgTemplating `json:"templating"`
-	}{}
-	if err := json.Unmarshal(msg.Metadata(), metadata); err != nil {
-		return nil, err
-	}
-
-	if metadata.Templating == nil {
-		return nil, nil
-	}
-
-	if err := utils.Validate(metadata.Templating); err != nil {
-		return nil, errors.Wrapf(err, "invalid templating definition")
-	}
-
-	return metadata.Templating, nil
 }

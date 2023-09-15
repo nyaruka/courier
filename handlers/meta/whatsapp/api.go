@@ -2,7 +2,7 @@ package whatsapp
 
 import "github.com/nyaruka/courier"
 
-// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples#message-status-updates
+// see https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples#message-status-updates
 var StatusMapping = map[string]courier.MsgStatus{
 	"sent":      courier.MsgStatusSent,
 	"delivered": courier.MsgStatusDelivered,
@@ -14,16 +14,7 @@ var IgnoreStatuses = map[string]bool{
 	"deleted": true,
 }
 
-type MsgTemplating struct {
-	Template struct {
-		Name string `json:"name" validate:"required"`
-		UUID string `json:"uuid" validate:"required"`
-	} `json:"template" validate:"required,dive"`
-	Namespace string   `json:"namespace"`
-	Variables []string `json:"variables"`
-}
-
-// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media#example-2
+// see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media#example-2
 type MOMedia struct {
 	Caption  string `json:"caption"`
 	Filename string `json:"filename"`
@@ -33,7 +24,7 @@ type MOMedia struct {
 }
 
 // API docs https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components#notification-payload-object
-type MOPayload struct {
+type Notifications struct {
 	Object string `json:"object"`
 	Entry  []struct {
 		ID      string `json:"id"`
@@ -195,8 +186,8 @@ type MOPayload struct {
 	} `json:"entry"`
 }
 
-// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages#media-messages
-type MTMedia struct {
+// see https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages#media-messages
+type Media struct {
 	ID       string `json:"id,omitempty"`
 	Link     string `json:"link,omitempty"`
 	Caption  string `json:"caption,omitempty"`
@@ -244,24 +235,24 @@ type Language struct {
 	Code   string `json:"code"`
 }
 
-// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#template-object
-// Example https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#template-messages
+// see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#template-object
+// e.g. https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#template-messages
 type Template struct {
 	Name       string       `json:"name"`
 	Language   *Language    `json:"language"`
 	Components []*Component `json:"components"`
 }
 
-// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#interactive-object
-// Example https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#interactive-messages
+// see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#interactive-object
+// e.g. https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#interactive-messages
 type Interactive struct {
 	Type   string `json:"type"`
 	Header *struct {
-		Type     string   `json:"type"`
-		Text     string   `json:"text,omitempty"`
-		Video    *MTMedia `json:"video,omitempty"`
-		Image    *MTMedia `json:"image,omitempty"`
-		Document *MTMedia `json:"document,omitempty"`
+		Type     string `json:"type"`
+		Text     string `json:"text,omitempty"`
+		Video    *Media `json:"video,omitempty"`
+		Image    *Media `json:"image,omitempty"`
+		Document *Media `json:"document,omitempty"`
 	} `json:"header,omitempty"`
 	Body struct {
 		Text string `json:"text"`
@@ -276,9 +267,9 @@ type Interactive struct {
 	} `json:"action,omitempty"`
 }
 
-// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages#request-syntax
-// Example https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#message-object
-type MTPayload struct {
+// see https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages#request-syntax
+// e.g. https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#message-object
+type SendRequest struct {
 	MessagingProduct string `json:"messaging_product"`
 	RecipientType    string `json:"recipient_type"`
 	To               string `json:"to"`
@@ -286,19 +277,19 @@ type MTPayload struct {
 
 	Text *Text `json:"text,omitempty"`
 
-	Document *MTMedia `json:"document,omitempty"`
-	Image    *MTMedia `json:"image,omitempty"`
-	Audio    *MTMedia `json:"audio,omitempty"`
-	Video    *MTMedia `json:"video,omitempty"`
+	Document *Media `json:"document,omitempty"`
+	Image    *Media `json:"image,omitempty"`
+	Audio    *Media `json:"audio,omitempty"`
+	Video    *Media `json:"video,omitempty"`
 
 	Interactive *Interactive `json:"interactive,omitempty"`
 
 	Template *Template `json:"template,omitempty"`
 }
 
-// API docs https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages#response-syntax
-// Example https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#successful-response
-type MTResponse struct {
+// see https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages#response-syntax
+// e.g. https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#successful-response
+type SendResponse struct {
 	Messages []*struct {
 		ID string `json:"id"`
 	} `json:"messages"`
