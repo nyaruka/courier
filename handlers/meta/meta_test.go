@@ -34,7 +34,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                 "Receive Message FBA",
 		URL:                   "/c/fba/receive",
-		Data:                  string(test.ReadFile("./testdata/fba/helloMsgFBA.json")),
+		Data:                  string(test.ReadFile("./testdata/fba/hello_msg.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -48,7 +48,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Receive Invalid Signature",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/helloMsgFBA.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/hello_msg.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "invalid request signature",
 		PrepRequest:          addInvalidSignature,
@@ -56,7 +56,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "No Duplicate Receive Message",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/duplicateMsgFBA.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/duplicate_msg.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedMsgText:      Sp("Hello World"),
@@ -68,7 +68,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Receive Attachment",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/attachmentFBA.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/attachment.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedMsgText:      Sp(""),
@@ -81,7 +81,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Receive Location",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/locationAttachment.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/location_attachment.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedMsgText:      Sp(""),
@@ -94,7 +94,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Receive Thumbs Up",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/thumbsUp.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/thumbs_up.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedMsgText:      Sp("👍"),
@@ -106,7 +106,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Receive OptIn UserRef",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/optInUserRef.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/referral_optin_user_ref.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
@@ -117,7 +117,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Receive OptIn",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/optIn.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/referral_optin.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
@@ -128,7 +128,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Receive Notification Messages OptIn",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/notificationMessagesOptIn.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/notification_messages_optin.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
@@ -140,7 +140,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Receive Notification Messages OptOut",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/notificationMessagesOptOut.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/notification_messages_optout.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
@@ -152,7 +152,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Receive Get Started",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/postbackGetStarted.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/postback_get_started.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
@@ -174,7 +174,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Receive Referral",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/postbackReferral.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/postback_referral.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
@@ -206,7 +206,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Different Page",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/differentPageFBA.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/different_page.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"data":[]`,
 		PrepRequest:          addValidSignature,
@@ -214,7 +214,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Echo",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/echoFBA.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/echo.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `ignoring echo`,
 		PrepRequest:          addValidSignature,
@@ -222,7 +222,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Not Page",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/notPage.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/not_page.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "object expected 'page', 'instagram' or 'whatsapp_business_account', found notpage",
 		NoLogsExpected:       true,
@@ -231,7 +231,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "No Entries",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/noEntriesFBA.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/no_entries.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "no entries found",
 		NoLogsExpected:       true,
@@ -240,7 +240,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "No Messaging Entries",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/noMessagingEntriesFBA.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/no_messaging_entries.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		PrepRequest:          addValidSignature,
@@ -248,7 +248,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Unknown Messaging Entry",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/unknownMessagingEntryFBA.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/unknown_messaging_entry.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		PrepRequest:          addValidSignature,
@@ -265,7 +265,7 @@ var testCasesFBA = []IncomingTestCase{
 	{
 		Label:                "Invalid URN",
 		URL:                  "/c/fba/receive",
-		Data:                 string(test.ReadFile("./testdata/fba/invalidURNFBA.json")),
+		Data:                 string(test.ReadFile("./testdata/fba/invalid_urn.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "invalid facebook id",
 		PrepRequest:          addValidSignature,
@@ -276,7 +276,7 @@ var testCasesIG = []IncomingTestCase{
 	{
 		Label:                 "Receive Message",
 		URL:                   "/c/ig/receive",
-		Data:                  string(test.ReadFile("./testdata/ig/helloMsgIG.json")),
+		Data:                  string(test.ReadFile("./testdata/ig/hello_msg.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -290,7 +290,7 @@ var testCasesIG = []IncomingTestCase{
 	{
 		Label:                "Receive Invalid Signature",
 		URL:                  "/c/ig/receive",
-		Data:                 string(test.ReadFile("./testdata/ig/helloMsgIG.json")),
+		Data:                 string(test.ReadFile("./testdata/ig/hello_msg.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "invalid request signature",
 		PrepRequest:          addInvalidSignature,
@@ -298,7 +298,7 @@ var testCasesIG = []IncomingTestCase{
 	{
 		Label:                "No Duplicate Receive Message",
 		URL:                  "/c/ig/receive",
-		Data:                 string(test.ReadFile("./testdata/ig/duplicateMsgIG.json")),
+		Data:                 string(test.ReadFile("./testdata/ig/duplicate_msg.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedMsgText:      Sp("Hello World"),
@@ -310,7 +310,7 @@ var testCasesIG = []IncomingTestCase{
 	{
 		Label:                "Receive Attachment",
 		URL:                  "/c/ig/receive",
-		Data:                 string(test.ReadFile("./testdata/ig/attachmentIG.json")),
+		Data:                 string(test.ReadFile("./testdata/ig/attachment.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedMsgText:      Sp(""),
@@ -335,7 +335,7 @@ var testCasesIG = []IncomingTestCase{
 	{
 		Label:                "Receive Icebreaker Get Started",
 		URL:                  "/c/ig/receive",
-		Data:                 string(test.ReadFile("./testdata/ig/icebreakerGetStarted.json")),
+		Data:                 string(test.ReadFile("./testdata/ig/icebreaker_get_started.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
@@ -346,7 +346,7 @@ var testCasesIG = []IncomingTestCase{
 	{
 		Label:                "Different Page",
 		URL:                  "/c/ig/receive",
-		Data:                 string(test.ReadFile("./testdata/ig/differentPageIG.json")),
+		Data:                 string(test.ReadFile("./testdata/ig/different_page.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"data":[]`,
 		PrepRequest:          addValidSignature,
@@ -354,7 +354,7 @@ var testCasesIG = []IncomingTestCase{
 	{
 		Label:                "Echo",
 		URL:                  "/c/ig/receive",
-		Data:                 string(test.ReadFile("./testdata/ig/echoIG.json")),
+		Data:                 string(test.ReadFile("./testdata/ig/echo.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `ignoring echo`,
 		PrepRequest:          addValidSignature,
@@ -362,7 +362,7 @@ var testCasesIG = []IncomingTestCase{
 	{
 		Label:                "No Entries",
 		URL:                  "/c/ig/receive",
-		Data:                 string(test.ReadFile("./testdata/ig/noEntriesIG.json")),
+		Data:                 string(test.ReadFile("./testdata/ig/no_entries.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "no entries found",
 		NoLogsExpected:       true,
@@ -371,7 +371,7 @@ var testCasesIG = []IncomingTestCase{
 	{
 		Label:                "Not Instagram",
 		URL:                  "/c/ig/receive",
-		Data:                 string(test.ReadFile("./testdata/ig/notInstagram.json")),
+		Data:                 string(test.ReadFile("./testdata/ig/not_instagram.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "object expected 'page', 'instagram' or 'whatsapp_business_account', found notinstagram",
 		NoLogsExpected:       true,
@@ -380,7 +380,7 @@ var testCasesIG = []IncomingTestCase{
 	{
 		Label:                "No Messaging Entries",
 		URL:                  "/c/ig/receive",
-		Data:                 string(test.ReadFile("./testdata/ig/noMessagingEntriesIG.json")),
+		Data:                 string(test.ReadFile("./testdata/ig/no_messaging_entries.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		PrepRequest:          addValidSignature,
@@ -388,7 +388,7 @@ var testCasesIG = []IncomingTestCase{
 	{
 		Label:                "Unknown Messaging Entry",
 		URL:                  "/c/ig/receive",
-		Data:                 string(test.ReadFile("./testdata/ig/unknownMessagingEntryIG.json")),
+		Data:                 string(test.ReadFile("./testdata/ig/unknown_messaging_entry.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		PrepRequest:          addValidSignature,
@@ -405,7 +405,7 @@ var testCasesIG = []IncomingTestCase{
 	{
 		Label:                "Invalid URN",
 		URL:                  "/c/ig/receive",
-		Data:                 string(test.ReadFile("./testdata/ig/invalidURNIG.json")),
+		Data:                 string(test.ReadFile("./testdata/ig/invalid_urn.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "invalid instagram id",
 		PrepRequest:          addValidSignature,
@@ -413,7 +413,7 @@ var testCasesIG = []IncomingTestCase{
 	{
 		Label:                "Story Mention",
 		URL:                  "/c/ig/receive",
-		Data:                 string(test.ReadFile("./testdata/ig/storyMentionIG.json")),
+		Data:                 string(test.ReadFile("./testdata/ig/story_mention.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `ignoring story_mention`,
 		PrepRequest:          addValidSignature,
@@ -421,7 +421,7 @@ var testCasesIG = []IncomingTestCase{
 	{
 		Label:                "Message unsent",
 		URL:                  "/c/ig/receive",
-		Data:                 string(test.ReadFile("./testdata/ig/unsentMsgIG.json")),
+		Data:                 string(test.ReadFile("./testdata/ig/unsent_msg.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `msg deleted`,
 		PrepRequest:          addValidSignature,
@@ -566,7 +566,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                 "Receive Message WAC",
 		URL:                   wacReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/helloWAC.json")),
+		Data:                  string(test.ReadFile("./testdata/wac/hello.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -580,7 +580,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                 "Receive Duplicate Valid Message",
 		URL:                   wacReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/duplicateWAC.json")),
+		Data:                  string(test.ReadFile("./testdata/wac/duplicate.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -594,7 +594,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Voice Message",
 		URL:                   wacReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/voiceWAC.json")),
+		Data:                  string(test.ReadFile("./testdata/wac/voice.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -609,7 +609,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Button Message",
 		URL:                   wacReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/buttonWAC.json")),
+		Data:                  string(test.ReadFile("./testdata/wac/button.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -623,7 +623,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Document Message",
 		URL:                   wacReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/documentWAC.json")),
+		Data:                  string(test.ReadFile("./testdata/wac/document.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -638,7 +638,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Image Message",
 		URL:                   wacReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/imageWAC.json")),
+		Data:                  string(test.ReadFile("./testdata/wac/image.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -653,7 +653,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Video Message",
 		URL:                   wacReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/videoWAC.json")),
+		Data:                  string(test.ReadFile("./testdata/wac/video.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -668,7 +668,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Audio Message",
 		URL:                   wacReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/audioWAC.json")),
+		Data:                  string(test.ReadFile("./testdata/wac/audio.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -683,7 +683,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Location Message",
 		URL:                  wacReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/locationWAC.json")),
+		Data:                 string(test.ReadFile("./testdata/wac/location.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"msg"`,
 		ExpectedMsgText:      Sp(""),
@@ -705,7 +705,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                "Receive Invalid From",
 		URL:                  wacReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/invalidFrom.json")),
+		Data:                 string(test.ReadFile("./testdata/wac/invalid_from.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "invalid whatsapp id",
 		PrepRequest:          addValidSignature,
@@ -713,7 +713,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                "Receive Invalid Timestamp",
 		URL:                  wacReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/invalidTimestamp.json")),
+		Data:                 string(test.ReadFile("./testdata/wac/invalid_timestamp.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "invalid timestamp",
 		PrepRequest:          addValidSignature,
@@ -721,7 +721,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                 "Receive Message WAC invalid signature",
 		URL:                   wacReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/helloWAC.json")),
+		Data:                  string(test.ReadFile("./testdata/wac/hello.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "invalid request signature",
 		NoQueueErrorCheck:     true,
@@ -731,7 +731,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                 "Receive Message WAC with error message",
 		URL:                   wacReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/errorMsg.json")),
+		Data:                  string(test.ReadFile("./testdata/wac/error_msg.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		ExpectedErrors:        []*courier.ChannelError{courier.ErrorExternal("131051", "Unsupported message type")},
@@ -741,7 +741,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                 "Receive error message",
 		URL:                   wacReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/errorErrors.json")),
+		Data:                  string(test.ReadFile("./testdata/wac/error_errors.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		ExpectedErrors:        []*courier.ChannelError{courier.ErrorExternal("0", "We were unable to authenticate the app user")},
@@ -751,7 +751,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Status",
 		URL:                  wacReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/validStatusWAC.json")),
+		Data:                 string(test.ReadFile("./testdata/wac/valid_status.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
 		ExpectedMsgStatus:    "S",
@@ -761,7 +761,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Status with error message",
 		URL:                  wacReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/errorStatus.json")),
+		Data:                 string(test.ReadFile("./testdata/wac/error_status.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"type":"status"`,
 		ExpectedMsgStatus:    "F",
@@ -772,7 +772,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                "Receive Invalid Status",
 		URL:                  wacReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/invalidStatusWAC.json")),
+		Data:                 string(test.ReadFile("./testdata/wac/invalid_status.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"unknown status: in_orbit"`,
 		PrepRequest:          addValidSignature,
@@ -780,7 +780,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                "Receive Ignore Status",
 		URL:                  wacReceiveURL,
-		Data:                 string(test.ReadFile("./testdata/wac/ignoreStatusWAC.json")),
+		Data:                 string(test.ReadFile("./testdata/wac/ignore_status.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: `"ignoring status: deleted"`,
 		PrepRequest:          addValidSignature,
@@ -788,7 +788,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Interactive Button Reply Message",
 		URL:                   wacReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/buttonReplyWAC.json")),
+		Data:                  string(test.ReadFile("./testdata/wac/button_reply.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
@@ -802,7 +802,7 @@ var testCasesWAC = []IncomingTestCase{
 	{
 		Label:                 "Receive Valid Interactive List Reply Message",
 		URL:                   wacReceiveURL,
-		Data:                  string(test.ReadFile("./testdata/wac/listReplyWAC.json")),
+		Data:                  string(test.ReadFile("./testdata/wac/list_reply.json")),
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Handled",
 		NoQueueErrorCheck:     true,
