@@ -169,7 +169,7 @@ func (mb *MockBackend) ClearMsgSent(ctx context.Context, id courier.MsgID) error
 }
 
 // MarkOutgoingMsgComplete marks the passed msg as having been dealt with
-func (mb *MockBackend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, s courier.StatusUpdate) {
+func (mb *MockBackend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.MsgOut, s courier.StatusUpdate) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 

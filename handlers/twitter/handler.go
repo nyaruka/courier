@@ -363,7 +363,7 @@ func generateSignature(secret string, content string) string {
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
-func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType string, attachmentURL string, client *http.Client, clog *courier.ChannelLog) (string, error) {
+func uploadMediaToTwitter(msg courier.MsgOut, mediaUrl string, attachmentMimeType string, attachmentURL string, client *http.Client, clog *courier.ChannelLog) (string, error) {
 	// retrieve the media to be sent from S3
 	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
 

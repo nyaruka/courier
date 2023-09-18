@@ -481,7 +481,7 @@ func (b *backend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
 }
 
 // MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel
-func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, status courier.StatusUpdate) {
+func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.MsgOut, status courier.StatusUpdate) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 

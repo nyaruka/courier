@@ -80,7 +80,7 @@ type Backend interface {
 	// MarkOutgoingMsgComplete marks the passed in message as having been processed. Note this should be called even in the case
 	// of errors during sending as it will manage the number of active workers per channel. The optional status parameter can be
 	// used to determine any sort of deduping of msg sends
-	MarkOutgoingMsgComplete(context.Context, Msg, StatusUpdate)
+	MarkOutgoingMsgComplete(context.Context, MsgOut, StatusUpdate)
 
 	// SaveAttachment saves an attachment to backend storage
 	SaveAttachment(context.Context, Channel, string, []byte, string) (string, error)

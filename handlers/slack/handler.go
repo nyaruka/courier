@@ -181,7 +181,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 	return status, nil
 }
 
-func sendTextMsgPart(msg courier.Msg, token string, clog *courier.ChannelLog) error {
+func sendTextMsgPart(msg courier.MsgOut, token string, clog *courier.ChannelLog) error {
 	sendURL := apiURL + "/chat.postMessage"
 
 	msgPayload := &mtPayload{
@@ -221,7 +221,7 @@ func sendTextMsgPart(msg courier.Msg, token string, clog *courier.ChannelLog) er
 	return nil
 }
 
-func parseAttachmentToFileParams(msg courier.Msg, attachment string, clog *courier.ChannelLog) (*FileParams, error) {
+func parseAttachmentToFileParams(msg courier.MsgOut, attachment string, clog *courier.ChannelLog) (*FileParams, error) {
 	_, attURL := handlers.SplitAttachment(attachment)
 
 	req, err := http.NewRequest(http.MethodGet, attURL, nil)
@@ -241,7 +241,7 @@ func parseAttachmentToFileParams(msg courier.Msg, attachment string, clog *couri
 	return &FileParams{File: respBody, FileName: filename, Channels: msg.URN().Path()}, nil
 }
 
-func sendFilePart(msg courier.Msg, token string, fileParams *FileParams, clog *courier.ChannelLog) error {
+func sendFilePart(msg courier.MsgOut, token string, fileParams *FileParams, clog *courier.ChannelLog) error {
 	uploadURL := apiURL + "/files.upload"
 
 	body := &bytes.Buffer{}

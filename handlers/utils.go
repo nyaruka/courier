@@ -18,7 +18,7 @@ var (
 )
 
 // GetTextAndAttachments returns both the text of our message as well as any attachments, newline delimited
-func GetTextAndAttachments(m courier.Msg) string {
+func GetTextAndAttachments(m courier.MsgOut) string {
 	buf := bytes.NewBuffer([]byte(m.Text()))
 	for _, a := range m.Attachments() {
 		_, url := SplitAttachment(a)

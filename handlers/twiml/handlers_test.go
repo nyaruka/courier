@@ -544,7 +544,7 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 // setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
 	if c.ChannelType() == courier.ChannelType("TW") || c.ChannelType() == courier.ChannelType("SW") {
 		c.(*test.MockChannel).SetConfig("send_url", s.URL)
 	} else {

@@ -315,7 +315,7 @@ func TestBuildAttachmentRequest(t *testing.T) {
 }
 
 // setSendURL takes care of setting the base_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
 	c.(*test.MockChannel).SetConfig("base_url", s.URL)
 }
 
