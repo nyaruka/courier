@@ -73,16 +73,16 @@ func (m *MockMsg) HighPriority() bool            { return m.highPriority }
 
 // incoming specific
 func (m *MockMsg) ReceivedOn() *time.Time { return m.receivedOn }
-func (m *MockMsg) WithAttachment(url string) courier.Msg {
+func (m *MockMsg) WithAttachment(url string) courier.MsgIn {
 	m.attachments = append(m.attachments, url)
 	return m
 }
-func (m *MockMsg) WithContactName(name string) courier.Msg { m.contactName = name; return m }
-func (m *MockMsg) WithURNAuthTokens(tokens map[string]string) courier.Msg {
+func (m *MockMsg) WithContactName(name string) courier.MsgIn { m.contactName = name; return m }
+func (m *MockMsg) WithURNAuthTokens(tokens map[string]string) courier.MsgIn {
 	m.urnAuthTokens = tokens
 	return m
 }
-func (m *MockMsg) WithReceivedOn(date time.Time) courier.Msg { m.receivedOn = &date; return m }
+func (m *MockMsg) WithReceivedOn(date time.Time) courier.MsgIn { m.receivedOn = &date; return m }
 
 // used to create outgoing messages for testing
 func (m *MockMsg) WithID(id courier.MsgID) courier.MsgOut       { m.id = id; return m }

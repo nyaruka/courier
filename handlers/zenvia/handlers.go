@@ -99,7 +99,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	contactName := payload.Visitor.Name
 
-	msgs := []courier.Msg{}
+	msgs := []courier.MsgIn{}
 
 	for _, content := range payload.Message.Contents {
 

@@ -58,11 +58,11 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 
 	// create and write the message
 	msg := h.Backend().NewIncomingMsg(c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
 // WriteMsgSuccessResponse writes a success response for the messages
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.MsgIn) error {
 	w.Header().Set("Content-Type", "application/json")
 	_, err := fmt.Fprintf(w, "SMS Accepted: %d", msgs[0].ID())
 	return err

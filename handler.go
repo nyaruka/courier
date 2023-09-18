@@ -30,7 +30,7 @@ type ChannelHandler interface {
 	Send(context.Context, MsgOut, *ChannelLog) (StatusUpdate, error)
 
 	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []StatusUpdate) error
-	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []Msg) error
+	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []MsgIn) error
 	WriteRequestError(context.Context, http.ResponseWriter, error) error
 	WriteRequestIgnored(context.Context, http.ResponseWriter, string) error
 }

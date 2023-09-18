@@ -167,16 +167,16 @@ func (m *Msg) HighPriority() bool           { return m.HighPriority_ }
 
 // incoming specific
 func (m *Msg) ReceivedOn() *time.Time { return m.SentOn_ }
-func (m *Msg) WithAttachment(url string) courier.Msg {
+func (m *Msg) WithAttachment(url string) courier.MsgIn {
 	m.Attachments_ = append(m.Attachments_, url)
 	return m
 }
-func (m *Msg) WithContactName(name string) courier.Msg { m.ContactName_ = name; return m }
-func (m *Msg) WithURNAuthTokens(tokens map[string]string) courier.Msg {
+func (m *Msg) WithContactName(name string) courier.MsgIn { m.ContactName_ = name; return m }
+func (m *Msg) WithURNAuthTokens(tokens map[string]string) courier.MsgIn {
 	m.URNAuthTokens_ = tokens
 	return m
 }
-func (m *Msg) WithReceivedOn(date time.Time) courier.Msg { m.SentOn_ = &date; return m }
+func (m *Msg) WithReceivedOn(date time.Time) courier.MsgIn { m.SentOn_ = &date; return m }
 
 func (m *Msg) hash() string {
 	hash := sha1.Sum([]byte(m.Text_ + "|" + strings.Join(m.Attachments_, "|")))
@@ -184,7 +184,7 @@ func (m *Msg) hash() string {
 }
 
 // WriteMsg creates a message given the passed in arguments
-func writeMsg(ctx context.Context, b *backend, msg courier.Msg, clog *courier.ChannelLog) error {
+func writeMsg(ctx context.Context, b *backend, msg courier.MsgIn, clog *courier.ChannelLog) error {
 	m := msg.(*Msg)
 
 	// this msg has already been written (we received it twice), we are a no op

@@ -120,7 +120,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "ignoring request, no message")
 	}
 
-	msgs := []courier.Msg{}
+	msgs := []courier.MsgIn{}
 	for _, infobipMessage := range payload.Results {
 		messageID := infobipMessage.MessageID
 		text := infobipMessage.Text

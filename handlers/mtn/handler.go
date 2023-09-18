@@ -87,7 +87,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 		// create and write the message
 		msg := h.Backend().NewIncomingMsg(channel, urn, payload.Message, "", clog).WithReceivedOn(date)
-		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
+		return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 
 	} else {
 		clog.SetType(courier.ChannelLogTypeMsgStatus)

@@ -330,7 +330,7 @@ func (s *server) channelHandleWrapper(handler ChannelHandler, handlerFunc Channe
 
 			for _, event := range events {
 				switch e := event.(type) {
-				case Msg:
+				case MsgIn:
 					clog.SetAttached(true)
 					analytics.Gauge(fmt.Sprintf("courier.msg_receive_%s", channel.ChannelType()), secondDuration)
 					LogMsgReceived(r, e)

@@ -48,7 +48,7 @@ func WriteChannelEventSuccess(w http.ResponseWriter, event ChannelEvent) error {
 }
 
 // WriteMsgSuccess writes a JSON response for the passed in msg indicating we handled it
-func WriteMsgSuccess(w http.ResponseWriter, msgs []Msg) error {
+func WriteMsgSuccess(w http.ResponseWriter, msgs []MsgIn) error {
 	data := []any{}
 	for _, msg := range msgs {
 		data = append(data, NewMsgReceiveData(msg))
@@ -85,7 +85,7 @@ type MsgReceiveData struct {
 }
 
 // NewMsgReceiveData creates a new data response for the passed in msg parameters
-func NewMsgReceiveData(msg Msg) MsgReceiveData {
+func NewMsgReceiveData(msg MsgIn) MsgReceiveData {
 	return MsgReceiveData{
 		"msg",
 		msg.Channel().UUID(),

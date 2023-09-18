@@ -146,7 +146,7 @@ func (h *handler) receiveEvents(ctx context.Context, c courier.Channel, w http.R
 	}
 
 	// the list of messages we read
-	msgs := make([]courier.Msg, 0, 2)
+	msgs := make([]courier.MsgIn, 0, 2)
 
 	// for each entry
 	for _, entry := range payload.DirectMessageEvents {

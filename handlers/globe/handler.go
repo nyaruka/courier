@@ -78,7 +78,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "no messages, ignored")
 	}
 
-	msgs := make([]courier.Msg, 0, 1)
+	msgs := make([]courier.MsgIn, 0, 1)
 
 	// parse each inbound message
 	for _, glMsg := range payload.InboundSMSMessageList.InboundSMSMessage {

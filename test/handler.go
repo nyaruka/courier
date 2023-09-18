@@ -60,7 +60,7 @@ func (h *mockHandler) WriteStatusSuccessResponse(ctx context.Context, w http.Res
 	return courier.WriteStatusSuccess(w, statuses)
 }
 
-func (h *mockHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
+func (h *mockHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.MsgIn) error {
 	return courier.WriteMsgSuccess(w, msgs)
 }
 

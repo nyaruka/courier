@@ -22,7 +22,7 @@ func LogMsgStatusReceived(r *http.Request, status StatusUpdate) {
 }
 
 // LogMsgReceived logs that we received the passed in message
-func LogMsgReceived(r *http.Request, msg Msg) {
+func LogMsgReceived(r *http.Request, msg MsgIn) {
 	if logrus.IsLevelEnabled(logrus.DebugLevel) {
 		logrus.WithFields(logrus.Fields{
 			"channel_uuid":    msg.Channel().UUID(),

@@ -43,7 +43,7 @@ type MockBackend struct {
 	mutex     sync.RWMutex
 	redisPool *redis.Pool
 
-	writtenMsgs          []courier.Msg
+	writtenMsgs          []courier.MsgIn
 	writtenMsgStatuses   []courier.StatusUpdate
 	writtenChannelEvents []courier.ChannelEvent
 	writtenChannelLogs   []*courier.ChannelLog
@@ -98,7 +98,7 @@ func (mb *MockBackend) DeleteMsgByExternalID(ctx context.Context, channel courie
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.Msg {
+func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.MsgIn {
 	m := &MockMsg{
 		channel: channel, urn: urn, text: text, externalID: extID,
 	}
@@ -191,7 +191,7 @@ func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 }
 
 // WriteMsg queues the passed in message internally
-func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.Msg, clog *courier.ChannelLog) error {
+func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *courier.ChannelLog) error {
 	mm := m.(*MockMsg)
 
 	// this msg has already been written (we received it twice), we are a no op
@@ -376,7 +376,7 @@ func (mb *MockBackend) RedisPool() *redis.Pool {
 // Methods not part of the backed interface but used in tests
 ////////////////////////////////////////////////////////////////////////////////
 
-func (mb *MockBackend) WrittenMsgs() []courier.Msg                    { return mb.writtenMsgs }
+func (mb *MockBackend) WrittenMsgs() []courier.MsgIn                  { return mb.writtenMsgs }
 func (mb *MockBackend) WrittenMsgStatuses() []courier.StatusUpdate    { return mb.writtenMsgStatuses }
 func (mb *MockBackend) WrittenChannelEvents() []courier.ChannelEvent  { return mb.writtenChannelEvents }
 func (mb *MockBackend) WrittenChannelLogs() []*courier.ChannelLog     { return mb.writtenChannelLogs }

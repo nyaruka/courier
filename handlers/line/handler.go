@@ -116,7 +116,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, err
 	}
 
-	msgs := []courier.Msg{}
+	msgs := []courier.MsgIn{}
 
 	for _, lineEvent := range payload.Events {
 		if lineEvent.ReplyToken == "" || (lineEvent.Source.Type == "" && lineEvent.Source.UserID == "") || (lineEvent.Message.Type == "" && lineEvent.Message.ID == "") {

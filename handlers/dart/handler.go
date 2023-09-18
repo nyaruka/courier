@@ -87,7 +87,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Message, form.MessageID, clog)
 
 	// and finally queue our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
 type statusForm struct {
@@ -139,7 +139,7 @@ func (h *handler) WriteStatusSuccessResponse(ctx context.Context, w http.Respons
 }
 
 // DartMedia expects "000" from a status request
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.MsgIn) error {
 	w.WriteHeader(200)
 	_, err := fmt.Fprint(w, "000")
 	return err
