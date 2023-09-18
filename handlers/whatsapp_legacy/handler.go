@@ -493,7 +493,7 @@ type mtErrorPayload struct {
 const maxMsgLength = 4096
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	conn := h.Backend().RedisPool().Get()
 	defer conn.Close()
 
@@ -556,7 +556,7 @@ func (h *handler) WriteRequestError(ctx context.Context, w http.ResponseWriter, 
 	return courier.WriteError(w, http.StatusOK, err)
 }
 
-func buildPayloads(msg courier.Msg, h *handler, clog *courier.ChannelLog) ([]any, error) {
+func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]any, error) {
 	var payloads []any
 	var err error
 
@@ -1116,7 +1116,7 @@ func checkWhatsAppContact(channel courier.Channel, baseURL string, urn urns.URN,
 	}
 }
 
-func (h *handler) getTemplating(msg courier.Msg) (*MsgTemplating, error) {
+func (h *handler) getTemplating(msg courier.MsgOut) (*MsgTemplating, error) {
 	if len(msg.Metadata()) == 0 {
 		return nil, nil
 	}

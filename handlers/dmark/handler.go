@@ -106,7 +106,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	// get our authentication token
 	auth := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if auth == "" {

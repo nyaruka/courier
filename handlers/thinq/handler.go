@@ -135,7 +135,7 @@ type mtMessage struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	accountID := msg.Channel().StringConfigForKey(configAccountID, "")
 	if accountID == "" {
 		return nil, fmt.Errorf("no account id set for TQ channel")

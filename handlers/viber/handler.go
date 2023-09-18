@@ -349,7 +349,7 @@ type mtResponse struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if authToken == "" {
 		return nil, fmt.Errorf("missing auth token in config")

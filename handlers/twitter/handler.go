@@ -248,7 +248,7 @@ type mtAttachment struct {
 	} `json:"media"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	apiKey := msg.Channel().StringConfigForKey(configAPIKey, "")
 	apiSecret := msg.Channel().StringConfigForKey(configAPISecret, "")
 	accessToken := msg.Channel().StringConfigForKey(configAccessToken, "")

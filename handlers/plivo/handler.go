@@ -136,7 +136,7 @@ type mtPayload struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	authID := msg.Channel().StringConfigForKey(configPlivoAuthID, "")
 	authToken := msg.Channel().StringConfigForKey(configPlivoAuthToken, "")
 	plivoAppID := msg.Channel().StringConfigForKey(configPlivoAPPID, "")

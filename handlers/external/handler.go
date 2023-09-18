@@ -271,7 +271,7 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	channel := msg.Channel()
 
 	sendURL := channel.StringConfigForKey(courier.ConfigSendURL, "")

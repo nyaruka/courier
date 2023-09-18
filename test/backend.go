@@ -36,7 +36,7 @@ type MockBackend struct {
 	channels          map[courier.ChannelUUID]courier.Channel
 	channelsByAddress map[courier.ChannelAddress]courier.Channel
 	contacts          map[urns.URN]courier.Contact
-	outgoingMsgs      []courier.Msg
+	outgoingMsgs      []courier.MsgOut
 	media             map[string]courier.Media // url -> Media
 	errorOnQueue      bool
 
@@ -114,7 +114,7 @@ func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, tex
 
 // NewOutgoingMsg creates a new outgoing message from the given params
 func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, id courier.MsgID, urn urns.URN, text string, highPriority bool, quickReplies []string,
-	topic string, responseToExternalID string, origin courier.MsgOrigin, contactLastSeenOn *time.Time) courier.Msg {
+	topic string, responseToExternalID string, origin courier.MsgOrigin, contactLastSeenOn *time.Time) courier.MsgOut {
 
 	return &MockMsg{
 		channel:              channel,
@@ -131,7 +131,7 @@ func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, id courier.MsgID,
 }
 
 // PushOutgoingMsg is a test method to add a message to our queue of messages to send
-func (mb *MockBackend) PushOutgoingMsg(msg courier.Msg) {
+func (mb *MockBackend) PushOutgoingMsg(msg courier.MsgOut) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -139,7 +139,7 @@ func (mb *MockBackend) PushOutgoingMsg(msg courier.Msg) {
 }
 
 // PopNextOutgoingMsg returns the next message that should be sent, or nil if there are none to send
-func (mb *MockBackend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
+func (mb *MockBackend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 

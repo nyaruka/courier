@@ -62,6 +62,18 @@ type Msg interface {
 	URN() urns.URN
 	Channel() Channel
 
+	// incoming specific
+	ReceivedOn() *time.Time
+	WithAttachment(url string) Msg
+	WithContactName(name string) Msg
+	WithURNAuthTokens(tokens map[string]string) Msg
+	WithReceivedOn(date time.Time) Msg
+}
+
+// MsgOut is our interface to represent an outgoing
+type MsgOut interface {
+	Msg
+
 	// outgoing specific
 	QuickReplies() []string
 	Locale() i18n.Locale
@@ -76,11 +88,4 @@ type Msg interface {
 	Flow() *FlowReference
 	SessionStatus() string
 	HighPriority() bool
-
-	// incoming specific
-	ReceivedOn() *time.Time
-	WithAttachment(url string) Msg
-	WithContactName(name string) Msg
-	WithURNAuthTokens(tokens map[string]string) Msg
-	WithReceivedOn(date time.Time) Msg
 }

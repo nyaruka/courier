@@ -399,7 +399,7 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text str
 }
 
 // PopNextOutgoingMsg pops the next message that needs to be sent
-func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
+func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error) {
 	// pop the next message off our queue
 	rc := b.redisPool.Get()
 	defer rc.Close()

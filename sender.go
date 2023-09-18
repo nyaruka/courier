@@ -105,7 +105,7 @@ func (f *Foreman) Assign() {
 type Sender struct {
 	id      int
 	foreman *Foreman
-	job     chan Msg
+	job     chan MsgOut
 }
 
 // NewSender creates a new sender responsible for sending messages
@@ -113,7 +113,7 @@ func NewSender(foreman *Foreman, id int) *Sender {
 	sender := &Sender{
 		id:      id,
 		foreman: foreman,
-		job:     make(chan Msg, 1),
+		job:     make(chan MsgOut, 1),
 	}
 	return sender
 }
@@ -151,7 +151,7 @@ func (w *Sender) Stop() {
 	close(w.job)
 }
 
-func (w *Sender) sendMessage(msg Msg) {
+func (w *Sender) sendMessage(msg MsgOut) {
 	log := logrus.WithField("comp", "sender").WithField("sender_id", w.id).WithField("channel_uuid", msg.Channel().UUID())
 
 	server := w.foreman.server

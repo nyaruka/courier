@@ -121,7 +121,7 @@ type mtPayload struct {
 }
 
 // Send implements courier.ChannelHandler
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	accessToken, err := h.getAccessToken(ctx, msg.Channel(), clog)
 	if err != nil {
 		return nil, err

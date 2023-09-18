@@ -153,7 +153,7 @@ type mtPayload struct {
 }
 
 // Send implements courier.ChannelHandler
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	apiKey := msg.Channel().StringConfigForKey(courier.ConfigAPIKey, "")
 	if apiKey == "" {
 		return nil, fmt.Errorf("no API key set for JCL channel")

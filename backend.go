@@ -67,7 +67,7 @@ type Backend interface {
 
 	// PopNextOutgoingMsg returns the next message that needs to be sent, callers should call MarkOutgoingMsgComplete with the
 	// returned message when they have dealt with the message (regardless of whether it was sent or not)
-	PopNextOutgoingMsg(context.Context) (Msg, error)
+	PopNextOutgoingMsg(context.Context) (MsgOut, error)
 
 	// WasMsgSent returns whether the backend thinks the passed in message was already sent. This can be used in cases where
 	// a backend wants to implement a failsafe against double sending messages (say if they were double queued)

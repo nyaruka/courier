@@ -145,7 +145,7 @@ func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file
 	return filePath, nil
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	botToken := msg.Channel().StringConfigForKey(configBotToken, "")
 	if botToken == "" {
 		return nil, fmt.Errorf("missing bot token for SL/slack channel")
