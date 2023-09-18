@@ -46,7 +46,7 @@ func TestWriteMsgSuccess(t *testing.T) {
 	msg := test.NewMockBackend().NewIncomingMsg(ch, "tel:+0987654321", "hi there", "", nil).(*test.MockMsg).WithUUID("588aafc4-ab5c-48ce-89e8-05c9fdeeafb7")
 	w := httptest.NewRecorder()
 
-	err := courier.WriteMsgSuccess(w, []courier.Msg{msg})
+	err := courier.WriteMsgSuccess(w, []courier.MsgIn{msg.(courier.MsgIn)})
 	assert.NoError(t, err)
 	assert.Equal(t, 200, w.Code)
 	assert.Equal(t, "{\"message\":\"Message Accepted\",\"data\":[{\"type\":\"msg\",\"channel_uuid\":\"5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec\",\"msg_uuid\":\"588aafc4-ab5c-48ce-89e8-05c9fdeeafb7\",\"text\":\"hi there\",\"urn\":\"tel:+0987654321\"}]}\n", w.Body.String())

@@ -105,7 +105,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "no messages, ignored")
 	}
 
-	msgs := make([]courier.Msg, 0, 1)
+	msgs := make([]courier.MsgIn, 0, 1)
 
 	// parse each inbound message
 	for _, pmMsg := range payload.Message {
@@ -146,7 +146,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(configUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for PM channel")

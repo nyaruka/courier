@@ -632,7 +632,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 	return events, data, nil
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	if msg.Channel().ChannelType() == "FBA" || msg.Channel().ChannelType() == "IG" {
 		return h.sendFacebookInstagramMsg(ctx, msg, clog)
 	} else if msg.Channel().ChannelType() == "WAC" {
@@ -642,7 +642,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return nil, fmt.Errorf("unssuported channel type")
 }
 
-func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	// can't do anything without an access token
 	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if accessToken == "" {
@@ -798,7 +798,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.Msg,
 	return status, nil
 }
 
-func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	// can't do anything without an access token
 	accessToken := h.Server().Config().WhatsappAdminSystemUserToken
 

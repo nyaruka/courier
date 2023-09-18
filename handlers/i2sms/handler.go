@@ -63,7 +63,7 @@ func (h *handler) receive(ctx context.Context, c courier.Channel, w http.Respons
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(c, urn, body, "", clog).WithReceivedOn(time.Now().UTC())
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
 //	{
@@ -84,7 +84,7 @@ type mtResponse struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	if username == "" {
 		return nil, fmt.Errorf("no username set for I2 channel")
@@ -152,7 +152,7 @@ func (h *handler) RedactValues(ch courier.Channel) []string {
 }
 
 // WriteMsgSuccessResponse writes a success response for the messages, i2SMS expects an empty body in our response
-func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
+func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.MsgIn) error {
 	w.Header().Add("Content-type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte{})

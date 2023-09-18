@@ -50,7 +50,7 @@ const (
 // Msg interface
 //-----------------------------------------------------------------------------
 
-// Msg is our interface to represent an incoming or outgoing message
+// Msg is our interface for common methods for an incoming or outgoing message
 type Msg interface {
 	Event
 
@@ -61,6 +61,11 @@ type Msg interface {
 	Attachments() []string
 	URN() urns.URN
 	Channel() Channel
+}
+
+// MsgOut is our interface to represent an outgoing
+type MsgOut interface {
+	Msg
 
 	// outgoing specific
 	QuickReplies() []string
@@ -76,11 +81,16 @@ type Msg interface {
 	Flow() *FlowReference
 	SessionStatus() string
 	HighPriority() bool
+}
+
+// MsgIn is our interface to represent an incoming
+type MsgIn interface {
+	Msg
 
 	// incoming specific
 	ReceivedOn() *time.Time
-	WithAttachment(url string) Msg
-	WithContactName(name string) Msg
-	WithURNAuthTokens(tokens map[string]string) Msg
-	WithReceivedOn(date time.Time) Msg
+	WithAttachment(url string) MsgIn
+	WithContactName(name string) MsgIn
+	WithURNAuthTokens(tokens map[string]string) MsgIn
+	WithReceivedOn(date time.Time) MsgIn
 }

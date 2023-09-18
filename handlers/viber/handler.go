@@ -267,7 +267,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			msg.WithAttachment(mediaURL)
 		}
 		// and finally write our message
-		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
+		return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 	}
 
 	return nil, courier.WriteError(w, http.StatusBadRequest, fmt.Errorf("not handled, unknown event: %s", event))
@@ -349,7 +349,7 @@ type mtResponse struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if authToken == "" {
 		return nil, fmt.Errorf("missing auth token in config")

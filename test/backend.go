@@ -36,14 +36,14 @@ type MockBackend struct {
 	channels          map[courier.ChannelUUID]courier.Channel
 	channelsByAddress map[courier.ChannelAddress]courier.Channel
 	contacts          map[urns.URN]courier.Contact
-	outgoingMsgs      []courier.Msg
+	outgoingMsgs      []courier.MsgOut
 	media             map[string]courier.Media // url -> Media
 	errorOnQueue      bool
 
 	mutex     sync.RWMutex
 	redisPool *redis.Pool
 
-	writtenMsgs          []courier.Msg
+	writtenMsgs          []courier.MsgIn
 	writtenMsgStatuses   []courier.StatusUpdate
 	writtenChannelEvents []courier.ChannelEvent
 	writtenChannelLogs   []*courier.ChannelLog
@@ -98,7 +98,7 @@ func (mb *MockBackend) DeleteMsgByExternalID(ctx context.Context, channel courie
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.Msg {
+func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.MsgIn {
 	m := &MockMsg{
 		channel: channel, urn: urn, text: text, externalID: extID,
 	}
@@ -114,7 +114,7 @@ func (mb *MockBackend) NewIncomingMsg(channel courier.Channel, urn urns.URN, tex
 
 // NewOutgoingMsg creates a new outgoing message from the given params
 func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, id courier.MsgID, urn urns.URN, text string, highPriority bool, quickReplies []string,
-	topic string, responseToExternalID string, origin courier.MsgOrigin, contactLastSeenOn *time.Time) courier.Msg {
+	topic string, responseToExternalID string, origin courier.MsgOrigin, contactLastSeenOn *time.Time) courier.MsgOut {
 
 	return &MockMsg{
 		channel:              channel,
@@ -131,7 +131,7 @@ func (mb *MockBackend) NewOutgoingMsg(channel courier.Channel, id courier.MsgID,
 }
 
 // PushOutgoingMsg is a test method to add a message to our queue of messages to send
-func (mb *MockBackend) PushOutgoingMsg(msg courier.Msg) {
+func (mb *MockBackend) PushOutgoingMsg(msg courier.MsgOut) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -139,7 +139,7 @@ func (mb *MockBackend) PushOutgoingMsg(msg courier.Msg) {
 }
 
 // PopNextOutgoingMsg returns the next message that should be sent, or nil if there are none to send
-func (mb *MockBackend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
+func (mb *MockBackend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -169,7 +169,7 @@ func (mb *MockBackend) ClearMsgSent(ctx context.Context, id courier.MsgID) error
 }
 
 // MarkOutgoingMsgComplete marks the passed msg as having been dealt with
-func (mb *MockBackend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, s courier.StatusUpdate) {
+func (mb *MockBackend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.MsgOut, s courier.StatusUpdate) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 
@@ -191,7 +191,7 @@ func (mb *MockBackend) SetErrorOnQueue(shouldError bool) {
 }
 
 // WriteMsg queues the passed in message internally
-func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.Msg, clog *courier.ChannelLog) error {
+func (mb *MockBackend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *courier.ChannelLog) error {
 	mm := m.(*MockMsg)
 
 	// this msg has already been written (we received it twice), we are a no op
@@ -376,7 +376,7 @@ func (mb *MockBackend) RedisPool() *redis.Pool {
 // Methods not part of the backed interface but used in tests
 ////////////////////////////////////////////////////////////////////////////////
 
-func (mb *MockBackend) WrittenMsgs() []courier.Msg                    { return mb.writtenMsgs }
+func (mb *MockBackend) WrittenMsgs() []courier.MsgIn                  { return mb.writtenMsgs }
 func (mb *MockBackend) WrittenMsgStatuses() []courier.StatusUpdate    { return mb.writtenMsgStatuses }
 func (mb *MockBackend) WrittenChannelEvents() []courier.ChannelEvent  { return mb.writtenChannelEvents }
 func (mb *MockBackend) WrittenChannelLogs() []*courier.ChannelLog     { return mb.writtenChannelLogs }

@@ -104,7 +104,7 @@ func (h *BaseHandler) WriteStatusSuccessResponse(ctx context.Context, w http.Res
 }
 
 // WriteMsgSuccessResponse writes a success response for the messages
-func (h *BaseHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.Msg) error {
+func (h *BaseHandler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWriter, msgs []courier.MsgIn) error {
 	return courier.WriteMsgSuccess(w, msgs)
 }
 

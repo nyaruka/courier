@@ -146,7 +146,7 @@ func (h *handler) receiveEvents(ctx context.Context, c courier.Channel, w http.R
 	}
 
 	// the list of messages we read
-	msgs := make([]courier.Msg, 0, 2)
+	msgs := make([]courier.MsgIn, 0, 2)
 
 	// for each entry
 	for _, entry := range payload.DirectMessageEvents {
@@ -248,7 +248,7 @@ type mtAttachment struct {
 	} `json:"media"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	apiKey := msg.Channel().StringConfigForKey(configAPIKey, "")
 	apiSecret := msg.Channel().StringConfigForKey(configAPISecret, "")
 	accessToken := msg.Channel().StringConfigForKey(configAccessToken, "")
@@ -363,7 +363,7 @@ func generateSignature(secret string, content string) string {
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
-func uploadMediaToTwitter(msg courier.Msg, mediaUrl string, attachmentMimeType string, attachmentURL string, client *http.Client, clog *courier.ChannelLog) (string, error) {
+func uploadMediaToTwitter(msg courier.MsgOut, mediaUrl string, attachmentMimeType string, attachmentURL string, client *http.Client, clog *courier.ChannelLog) (string, error) {
 	// retrieve the media to be sent from S3
 	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
 

@@ -8,7 +8,7 @@ import (
 )
 
 // WriteMsgsAndResponse writes the passed in message to our backend
-func WriteMsgsAndResponse(ctx context.Context, h courier.ChannelHandler, msgs []courier.Msg, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
+func WriteMsgsAndResponse(ctx context.Context, h courier.ChannelHandler, msgs []courier.MsgIn, w http.ResponseWriter, r *http.Request, clog *courier.ChannelLog) ([]courier.Event, error) {
 	events := make([]courier.Event, len(msgs))
 	for i, m := range msgs {
 		err := h.Server().Backend().WriteMsg(ctx, m, clog)

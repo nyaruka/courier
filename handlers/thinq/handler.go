@@ -70,7 +70,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	var msg courier.Msg
+	var msg courier.MsgIn
 
 	if form.Type == "sms" {
 		msg = h.Backend().NewIncomingMsg(channel, urn, form.Message, "", clog)
@@ -83,7 +83,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	} else {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("unknown message type: %s", form.Type))
 	}
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
 // guid: thinQ guid returned when an outbound message is sent via our API
@@ -135,7 +135,7 @@ type mtMessage struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	accountID := msg.Channel().StringConfigForKey(configAccountID, "")
 	if accountID == "" {
 		return nil, fmt.Errorf("no account id set for TQ channel")

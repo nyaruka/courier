@@ -374,7 +374,7 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 	return ""
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	params := buildApiBaseParams(msg.Channel())
@@ -416,7 +416,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 }
 
 // buildTextAndAttachmentParams builds msg text with attachment links (if needed) and attachments list param, also returns the errors that occurred
-func buildTextAndAttachmentParams(msg courier.Msg, clog *courier.ChannelLog) (string, string) {
+func buildTextAndAttachmentParams(msg courier.MsgOut, clog *courier.ChannelLog) (string, string) {
 	var msgAttachments []string
 
 	textBuf := bytes.Buffer{}

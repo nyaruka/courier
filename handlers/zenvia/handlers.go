@@ -99,7 +99,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	contactName := payload.Visitor.Name
 
-	msgs := []courier.Msg{}
+	msgs := []courier.MsgIn{}
 
 	for _, content := range payload.Message.Contents {
 
@@ -179,7 +179,7 @@ type mtPayload struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	channel := msg.Channel()
 
 	token := channel.StringConfigForKey(courier.ConfigAPIKey, "")

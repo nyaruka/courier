@@ -381,7 +381,7 @@ func TestDescribeURN(t *testing.T) {
 }
 
 // setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
 	apiBaseURL = s.URL
 	URLPhotoUploadServer = s.URL + "/upload/photo"
 }

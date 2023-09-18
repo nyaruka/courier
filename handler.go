@@ -27,10 +27,10 @@ type ChannelHandler interface {
 	UseChannelRouteUUID() bool
 	RedactValues(Channel) []string
 	GetChannel(context.Context, *http.Request) (Channel, error)
-	Send(context.Context, Msg, *ChannelLog) (StatusUpdate, error)
+	Send(context.Context, MsgOut, *ChannelLog) (StatusUpdate, error)
 
 	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []StatusUpdate) error
-	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []Msg) error
+	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []MsgIn) error
 	WriteRequestError(context.Context, http.ResponseWriter, error) error
 	WriteRequestIgnored(context.Context, http.ResponseWriter, string) error
 }

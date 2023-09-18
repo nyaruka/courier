@@ -124,7 +124,7 @@ const videoFileMsg = `{
 	"event_time": 1653427243
 }`
 
-func setSendUrl(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
 	apiURL = s.URL
 }
 
@@ -186,7 +186,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"Simple Message"}`,
 		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendUrl,
+		SendPrep:            setSendURL,
 	},
 	{
 		Label:               "Unicode Send",
@@ -196,7 +196,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"☺"}`,
 		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendUrl,
+		SendPrep:            setSendURL,
 	},
 	{
 		Label:               "Send Text Auth Error",
@@ -207,7 +207,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequestBody: `{"channel":"U0123ABCDEF","text":"Hello"}`,
 		ExpectedMsgStatus:   "E",
 		ExpectedErrors:      []*courier.ChannelError{courier.NewChannelError("", "", "invalid_auth")},
-		SendPrep:            setSendUrl,
+		SendPrep:            setSendURL,
 	},
 }
 
@@ -225,7 +225,7 @@ var fileSendTestCases = []OutgoingTestCase{
 			}: httpx.NewMockResponse(200, nil, []byte(`{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`)),
 		},
 		ExpectedMsgStatus: "W",
-		SendPrep:          setSendUrl,
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:          "Send Image",
@@ -240,7 +240,7 @@ var fileSendTestCases = []OutgoingTestCase{
 			}: httpx.NewMockResponse(200, nil, []byte(`{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`)),
 		},
 		ExpectedMsgStatus: "W",
-		SendPrep:          setSendUrl,
+		SendPrep:          setSendURL,
 	},
 }
 

@@ -42,10 +42,10 @@ type Backend interface {
 	DeleteMsgByExternalID(ctx context.Context, channel Channel, externalID string) error
 
 	// NewIncomingMsg creates a new message from the given params
-	NewIncomingMsg(Channel, urns.URN, string, string, *ChannelLog) Msg
+	NewIncomingMsg(Channel, urns.URN, string, string, *ChannelLog) MsgIn
 
 	// WriteMsg writes the passed in message to our backend
-	WriteMsg(context.Context, Msg, *ChannelLog) error
+	WriteMsg(context.Context, MsgIn, *ChannelLog) error
 
 	// NewStatusUpdate creates a new status update for the given message id
 	NewStatusUpdate(Channel, MsgID, MsgStatus, *ChannelLog) StatusUpdate
@@ -67,7 +67,7 @@ type Backend interface {
 
 	// PopNextOutgoingMsg returns the next message that needs to be sent, callers should call MarkOutgoingMsgComplete with the
 	// returned message when they have dealt with the message (regardless of whether it was sent or not)
-	PopNextOutgoingMsg(context.Context) (Msg, error)
+	PopNextOutgoingMsg(context.Context) (MsgOut, error)
 
 	// WasMsgSent returns whether the backend thinks the passed in message was already sent. This can be used in cases where
 	// a backend wants to implement a failsafe against double sending messages (say if they were double queued)
@@ -80,7 +80,7 @@ type Backend interface {
 	// MarkOutgoingMsgComplete marks the passed in message as having been processed. Note this should be called even in the case
 	// of errors during sending as it will manage the number of active workers per channel. The optional status parameter can be
 	// used to determine any sort of deduping of msg sends
-	MarkOutgoingMsgComplete(context.Context, Msg, StatusUpdate)
+	MarkOutgoingMsgComplete(context.Context, MsgOut, StatusUpdate)
 
 	// SaveAttachment saves an attachment to backend storage
 	SaveAttachment(context.Context, Channel, string, []byte, string) (string, error)

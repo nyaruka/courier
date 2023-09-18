@@ -266,7 +266,7 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 }
 
 // SendPrepFunc allows test cases to modify the channel, msg or server before a message is sent
-type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, courier.Channel, courier.Msg)
+type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, courier.Channel, courier.MsgOut)
 
 // OutgoingTestCase defines the test values for a particular test case
 type OutgoingTestCase struct {

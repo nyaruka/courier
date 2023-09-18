@@ -166,11 +166,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// create and write the message
 	msg := h.Backend().NewIncomingMsg(channel, urn, form.Text, form.MessageID, clog)
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	nexmoAPIKey := msg.Channel().StringConfigForKey(configNexmoAPIKey, "")
 	if nexmoAPIKey == "" {
 		return nil, fmt.Errorf("no nexmo API key set for NX channel")

@@ -84,7 +84,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	dbMsg := h.Backend().NewIncomingMsg(channel, urn, form.Msg, "", clog).WithReceivedOn(date).WithContactName(form.Name).WithURNAuthTokens(authTokens)
 
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{dbMsg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{dbMsg}, w, r, clog)
 }
 
 type registerForm struct {
@@ -140,7 +140,7 @@ type mtNotification struct {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
 	if title == "" {
 		return nil, fmt.Errorf("no FCM_TITLE set for FCM channel")

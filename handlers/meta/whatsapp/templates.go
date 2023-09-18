@@ -17,7 +17,7 @@ type MsgTemplating struct {
 	Variables []string `json:"variables"`
 }
 
-func GetTemplating(msg courier.Msg) (*MsgTemplating, error) {
+func GetTemplating(msg courier.MsgOut) (*MsgTemplating, error) {
 	if len(msg.Metadata()) == 0 {
 		return nil, nil
 	}

@@ -290,7 +290,7 @@ func resolveMediaURL(channel courier.Channel, mediaID string, clog *courier.Chan
 }
 
 // Send implements courier.ChannelHandler
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	conn := h.Backend().RedisPool().Get()
 	defer conn.Close()
 

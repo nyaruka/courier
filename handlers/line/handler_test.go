@@ -392,7 +392,7 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 // setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.Msg) {
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
 	replySendURL = s.URL + "/v2/bot/message/reply"
 	pushSendURL = s.URL + "/v2/bot/message/push"
 }

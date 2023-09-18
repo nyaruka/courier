@@ -117,7 +117,7 @@ func NewChannelLogForIncoming(logType ChannelLogType, ch Channel, r *httpx.Recor
 }
 
 // NewChannelLogForSend creates a new channel log for a message send
-func NewChannelLogForSend(msg Msg, redactVals []string) *ChannelLog {
+func NewChannelLogForSend(msg MsgOut, redactVals []string) *ChannelLog {
 	return newChannelLog(ChannelLogTypeMsgSend, msg.Channel(), nil, true, redactVals)
 }
 

@@ -380,7 +380,7 @@ func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Cha
 }
 
 // NewIncomingMsg creates a new message from the given params
-func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.Msg {
+func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text string, extID string, clog *courier.ChannelLog) courier.MsgIn {
 	// strip out invalid UTF8 and NULL chars
 	urn = urns.URN(dbutil.ToValidUTF8(string(urn)))
 	text = dbutil.ToValidUTF8(text)
@@ -399,7 +399,7 @@ func (b *backend) NewIncomingMsg(channel courier.Channel, urn urns.URN, text str
 }
 
 // PopNextOutgoingMsg pops the next message that needs to be sent
-func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.Msg, error) {
+func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error) {
 	// pop the next message off our queue
 	rc := b.redisPool.Get()
 	defer rc.Close()
@@ -481,7 +481,7 @@ func (b *backend) ClearMsgSent(ctx context.Context, id courier.MsgID) error {
 }
 
 // MarkOutgoingMsgComplete marks the passed in message as having completed processing, freeing up a worker for that channel
-func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, status courier.StatusUpdate) {
+func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.MsgOut, status courier.StatusUpdate) {
 	rc := b.redisPool.Get()
 	defer rc.Close()
 
@@ -510,7 +510,7 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.Msg, 
 }
 
 // WriteMsg writes the passed in message to our store
-func (b *backend) WriteMsg(ctx context.Context, m courier.Msg, clog *courier.ChannelLog) error {
+func (b *backend) WriteMsg(ctx context.Context, m courier.MsgIn, clog *courier.ChannelLog) error {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 

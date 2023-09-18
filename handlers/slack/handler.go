@@ -97,7 +97,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 			msg.WithAttachment(attURL)
 		}
 
-		return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
+		return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 	}
 	return nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "Ignoring request, no message")
 }
@@ -145,7 +145,7 @@ func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file
 	return filePath, nil
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	botToken := msg.Channel().StringConfigForKey(configBotToken, "")
 	if botToken == "" {
 		return nil, fmt.Errorf("missing bot token for SL/slack channel")
@@ -181,7 +181,7 @@ func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.Chann
 	return status, nil
 }
 
-func sendTextMsgPart(msg courier.Msg, token string, clog *courier.ChannelLog) error {
+func sendTextMsgPart(msg courier.MsgOut, token string, clog *courier.ChannelLog) error {
 	sendURL := apiURL + "/chat.postMessage"
 
 	msgPayload := &mtPayload{
@@ -221,7 +221,7 @@ func sendTextMsgPart(msg courier.Msg, token string, clog *courier.ChannelLog) er
 	return nil
 }
 
-func parseAttachmentToFileParams(msg courier.Msg, attachment string, clog *courier.ChannelLog) (*FileParams, error) {
+func parseAttachmentToFileParams(msg courier.MsgOut, attachment string, clog *courier.ChannelLog) (*FileParams, error) {
 	_, attURL := handlers.SplitAttachment(attachment)
 
 	req, err := http.NewRequest(http.MethodGet, attURL, nil)
@@ -241,7 +241,7 @@ func parseAttachmentToFileParams(msg courier.Msg, attachment string, clog *couri
 	return &FileParams{File: respBody, FileName: filename, Channels: msg.URN().Path()}, nil
 }
 
-func sendFilePart(msg courier.Msg, token string, fileParams *FileParams, clog *courier.ChannelLog) error {
+func sendFilePart(msg courier.MsgOut, token string, fileParams *FileParams, clog *courier.ChannelLog) error {
 	uploadURL := apiURL + "/files.upload"
 
 	body := &bytes.Buffer{}

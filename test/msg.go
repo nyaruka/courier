@@ -73,21 +73,24 @@ func (m *MockMsg) HighPriority() bool            { return m.highPriority }
 
 // incoming specific
 func (m *MockMsg) ReceivedOn() *time.Time { return m.receivedOn }
-func (m *MockMsg) WithAttachment(url string) courier.Msg {
+func (m *MockMsg) WithAttachment(url string) courier.MsgIn {
 	m.attachments = append(m.attachments, url)
 	return m
 }
-func (m *MockMsg) WithContactName(name string) courier.Msg { m.contactName = name; return m }
-func (m *MockMsg) WithURNAuthTokens(tokens map[string]string) courier.Msg {
+func (m *MockMsg) WithContactName(name string) courier.MsgIn { m.contactName = name; return m }
+func (m *MockMsg) WithURNAuthTokens(tokens map[string]string) courier.MsgIn {
 	m.urnAuthTokens = tokens
 	return m
 }
-func (m *MockMsg) WithReceivedOn(date time.Time) courier.Msg { m.receivedOn = &date; return m }
+func (m *MockMsg) WithReceivedOn(date time.Time) courier.MsgIn { m.receivedOn = &date; return m }
 
 // used to create outgoing messages for testing
-func (m *MockMsg) WithID(id courier.MsgID) courier.Msg               { m.id = id; return m }
-func (m *MockMsg) WithUUID(uuid courier.MsgUUID) courier.Msg         { m.uuid = uuid; return m }
-func (m *MockMsg) WithMetadata(metadata json.RawMessage) courier.Msg { m.metadata = metadata; return m }
-func (m *MockMsg) WithFlow(flow *courier.FlowReference) courier.Msg  { m.flow = flow; return m }
-func (m *MockMsg) WithLocale(lc i18n.Locale) courier.Msg             { m.locale = lc; return m }
-func (m *MockMsg) WithURNAuth(token string) courier.Msg              { m.urnAuth = token; return m }
+func (m *MockMsg) WithID(id courier.MsgID) courier.MsgOut       { m.id = id; return m }
+func (m *MockMsg) WithUUID(uuid courier.MsgUUID) courier.MsgOut { m.uuid = uuid; return m }
+func (m *MockMsg) WithMetadata(metadata json.RawMessage) courier.MsgOut {
+	m.metadata = metadata
+	return m
+}
+func (m *MockMsg) WithFlow(flow *courier.FlowReference) courier.MsgOut { m.flow = flow; return m }
+func (m *MockMsg) WithLocale(lc i18n.Locale) courier.MsgOut            { m.locale = lc; return m }
+func (m *MockMsg) WithURNAuth(token string) courier.MsgOut             { m.urnAuth = token; return m }

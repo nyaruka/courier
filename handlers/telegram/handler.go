@@ -130,7 +130,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		msg.WithAttachment(mediaURL)
 	}
 	// and finally write our message
-	return handlers.WriteMsgsAndResponse(ctx, h, []courier.Msg{msg}, w, r, clog)
+	return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 }
 
 type mtResponse struct {
@@ -142,7 +142,7 @@ type mtResponse struct {
 	} `json:"result"`
 }
 
-func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form url.Values, keyboard *ReplyKeyboardMarkup, clog *courier.ChannelLog) (string, bool, error) {
+func (h *handler) sendMsgPart(msg courier.MsgOut, token string, path string, form url.Values, keyboard *ReplyKeyboardMarkup, clog *courier.ChannelLog) (string, bool, error) {
 	// either include or remove our keyboard
 	if keyboard == nil {
 		form.Add("reply_markup", `{"remove_keyboard":true}`)
@@ -178,7 +178,7 @@ func (h *handler) sendMsgPart(msg courier.Msg, token string, path string, form u
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.Msg, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	confAuth := msg.Channel().ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {
