@@ -1,3 +1,10 @@
+v8.3.18 (2023-09-18)
+-------------------------
+ * Add separate MsgIn and MsgOut interface types
+ * Use functional options pattern to create base handlers
+ * Improve testing of status updates from handlers and allow testing of multiple status updates per request
+ * Split up Meta notification payload into whatsapp and messenger specific parts
+
 v8.3.17 (2023-09-14)
 -------------------------
  * Fix stop contact event task names
