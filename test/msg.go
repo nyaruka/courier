@@ -37,13 +37,14 @@ type MockMsg struct {
 	sentOn     *time.Time
 }
 
-func NewMockMsg(id courier.MsgID, uuid courier.MsgUUID, channel courier.Channel, urn urns.URN, text string) *MockMsg {
+func NewMockMsg(id courier.MsgID, uuid courier.MsgUUID, channel courier.Channel, urn urns.URN, text string, attachments []string) *MockMsg {
 	return &MockMsg{
-		id:      id,
-		uuid:    uuid,
-		channel: channel,
-		urn:     urn,
-		text:    text,
+		id:          id,
+		uuid:        uuid,
+		channel:     channel,
+		urn:         urn,
+		text:        text,
+		attachments: attachments,
 	}
 }
 

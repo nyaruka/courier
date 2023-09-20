@@ -44,7 +44,7 @@ func TestHandling(t *testing.T) {
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", map[string]any{})
 	mb.AddChannel(mockChannel)
 
-	msg := test.NewMockMsg(courier.MsgID(101), courier.NilMsgUUID, brokenChannel, "tel:+250788383383", "test message")
+	msg := test.NewMockMsg(courier.MsgID(101), courier.NilMsgUUID, brokenChannel, "tel:+250788383383", "test message", nil)
 	mb.PushOutgoingMsg(msg)
 
 	// sleep a second, sender should take care of it in that time
@@ -59,7 +59,7 @@ func TestHandling(t *testing.T) {
 	mb.Reset()
 
 	// change our channel to our dummy channel
-	msg = test.NewMockMsg(courier.MsgID(102), courier.NilMsgUUID, mockChannel, "tel:+250788383383", "test message 2")
+	msg = test.NewMockMsg(courier.MsgID(102), courier.NilMsgUUID, mockChannel, "tel:+250788383383", "test message 2", nil)
 
 	// send it
 	mb.PushOutgoingMsg(msg)

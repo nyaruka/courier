@@ -10,7 +10,7 @@ import (
 )
 
 func TestGetTemplating(t *testing.T) {
-	msg := test.NewMockMsg(1, "87995844-2017-4ba0-bc73-f3da75b32f9b", nil, "tel:+1234567890", "hi")
+	msg := test.NewMockMsg(1, "87995844-2017-4ba0-bc73-f3da75b32f9b", nil, "tel:+1234567890", "hi", nil)
 
 	// no metadata, no templating
 	tpl, err := whatsapp.GetTemplating(msg)
