@@ -1,3 +1,9 @@
+v8.3.19 (2023-09-20)
+-------------------------
+ * Fix queueing of optin/optout events to mailroom
+ * Implement sending opt-in requests for FBA channels
+ * Simplfy handlers splitting up messages
+
 v8.3.18 (2023-09-18)
 -------------------------
  * Add separate MsgIn and MsgOut interface types
