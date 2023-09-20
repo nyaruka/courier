@@ -37,6 +37,11 @@ type FlowReference struct {
 	Name string `json:"name"`
 }
 
+type OptInReference struct {
+	UUID string `json:"uuid" validate:"uuid4"`
+	Name string `json:"name"`
+}
+
 type MsgOrigin string
 
 const (
@@ -79,6 +84,7 @@ type MsgOut interface {
 	SentOn() *time.Time
 	IsResend() bool
 	Flow() *FlowReference
+	OptIn() *OptInReference
 	SessionStatus() string
 	HighPriority() bool
 }

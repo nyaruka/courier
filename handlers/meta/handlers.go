@@ -652,6 +652,13 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 	isHuman := msg.Origin() == courier.MsgOriginChat || msg.Origin() == courier.MsgOriginTicket
 	payload := &messenger.SendRequest{}
 
+	// build our recipient
+	if msg.URN().IsFacebookRef() {
+		payload.Recipient.UserRef = msg.URN().FacebookRef()
+	} else {
+		payload.Recipient.ID = msg.URN().Path()
+	}
+
 	if msg.Topic() != "" || isHuman {
 		payload.MessagingType = "MESSAGE_TAG"
 
@@ -669,13 +676,6 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 		}
 	}
 
-	// build our recipient
-	if msg.URN().IsFacebookRef() {
-		payload.Recipient.UserRef = msg.URN().FacebookRef()
-	} else {
-		payload.Recipient.ID = msg.URN().Path()
-	}
-
 	msgURL, _ := url.Parse(sendURL)
 	query := url.Values{}
 	query.Set("access_token", accessToken)
@@ -686,8 +686,15 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 	// Send each text segment and attachment separately. We send attachments first as otherwise quick replies get
 	// attached to attachment segments and are hidden when images load.
 	for _, part := range handlers.SplitMsg(msg, handlers.SplitOptions{MaxTextLen: maxMsgLength}) {
-		if part.Type == handlers.MsgPartTypeAttachment {
-			// this is an attachment
+		if part.Type == handlers.MsgPartTypeOptIn {
+			payload.Message.Attachment = &messenger.Attachment{}
+			payload.Message.Attachment.Type = "template"
+			payload.Message.Attachment.Payload.TemplateType = "notification_messages"
+			payload.Message.Attachment.Payload.Title = part.OptIn.Name
+			payload.Message.Attachment.Payload.Payload = part.OptIn.UUID
+			payload.Message.Text = ""
+
+		} else if part.Type == handlers.MsgPartTypeAttachment {
 			payload.Message.Attachment = &messenger.Attachment{}
 			attType, attURL := handlers.SplitAttachment(part.Attachment)
 			attType = strings.Split(attType, "/")[0]
@@ -698,8 +705,8 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 			payload.Message.Attachment.Payload.URL = attURL
 			payload.Message.Attachment.Payload.IsReusable = true
 			payload.Message.Text = ""
+
 		} else {
-			// this is still a text part
 			payload.Message.Text = part.Text
 			payload.Message.Attachment = nil
 		}

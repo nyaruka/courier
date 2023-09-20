@@ -31,9 +31,8 @@ type MsgDirection string
 
 // Possible values for MsgDirection
 const (
-	MsgIncoming     MsgDirection = "I"
-	MsgOutgoing     MsgDirection = "O"
-	NilMsgDirection MsgDirection = ""
+	MsgIncoming MsgDirection = "I"
+	MsgOutgoing MsgDirection = "O"
 )
 
 // MsgVisibility is the visibility of a message
@@ -78,14 +77,15 @@ type Msg struct {
 	LogUUIDs     pq.StringArray `                     db:"log_uuids"`
 
 	// extra non-model fields that mailroom will include in queued payload
-	ChannelUUID_          courier.ChannelUUID    `json:"channel_uuid"`
-	URN_                  urns.URN               `json:"urn"`
-	URNAuth_              string                 `json:"urn_auth"`
-	ResponseToExternalID_ string                 `json:"response_to_external_id"`
-	IsResend_             bool                   `json:"is_resend"`
-	Flow_                 *courier.FlowReference `json:"flow"`
-	Origin_               courier.MsgOrigin      `json:"origin"`
-	ContactLastSeenOn_    *time.Time             `json:"contact_last_seen_on"`
+	ChannelUUID_          courier.ChannelUUID     `json:"channel_uuid"`
+	URN_                  urns.URN                `json:"urn"`
+	URNAuth_              string                  `json:"urn_auth"`
+	ResponseToExternalID_ string                  `json:"response_to_external_id"`
+	IsResend_             bool                    `json:"is_resend"`
+	Flow_                 *courier.FlowReference  `json:"flow"`
+	OptIn_                *courier.OptInReference `json:"optin"`
+	Origin_               courier.MsgOrigin       `json:"origin"`
+	ContactLastSeenOn_    *time.Time              `json:"contact_last_seen_on"`
 
 	// extra fields used to allow courier to update a session's timeout to *after* the message has been sent
 	SessionID_            SessionID  `json:"session_id"`
@@ -158,12 +158,13 @@ func (m *Msg) Topic() string {
 func (m *Msg) Metadata() json.RawMessage {
 	return m.Metadata_
 }
-func (m *Msg) ResponseToExternalID() string { return m.ResponseToExternalID_ }
-func (m *Msg) SentOn() *time.Time           { return m.SentOn_ }
-func (m *Msg) IsResend() bool               { return m.IsResend_ }
-func (m *Msg) Flow() *courier.FlowReference { return m.Flow_ }
-func (m *Msg) SessionStatus() string        { return m.SessionStatus_ }
-func (m *Msg) HighPriority() bool           { return m.HighPriority_ }
+func (m *Msg) ResponseToExternalID() string   { return m.ResponseToExternalID_ }
+func (m *Msg) SentOn() *time.Time             { return m.SentOn_ }
+func (m *Msg) IsResend() bool                 { return m.IsResend_ }
+func (m *Msg) Flow() *courier.FlowReference   { return m.Flow_ }
+func (m *Msg) OptIn() *courier.OptInReference { return m.OptIn_ }
+func (m *Msg) SessionStatus() string          { return m.SessionStatus_ }
+func (m *Msg) HighPriority() bool             { return m.HighPriority_ }
 
 // incoming specific
 func (m *Msg) ReceivedOn() *time.Time { return m.SentOn_ }
