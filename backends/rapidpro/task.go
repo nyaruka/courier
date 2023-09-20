@@ -76,6 +76,28 @@ func queueChannelEvent(rc redis.Conn, c *Contact, e *ChannelEvent) error {
 		}
 		return queueMailroomTask(rc, "new_conversation", e.OrgID_, e.ContactID_, body)
 
+	case courier.EventTypeOptIn:
+		body := map[string]any{
+			"org_id":      e.OrgID_,
+			"contact_id":  e.ContactID_,
+			"urn_id":      e.ContactURNID_,
+			"channel_id":  e.ChannelID_,
+			"extra":       e.Extra(),
+			"occurred_on": e.OccurredOn_,
+		}
+		return queueMailroomTask(rc, "optin", e.OrgID_, e.ContactID_, body)
+
+	case courier.EventTypeOptOut:
+		body := map[string]any{
+			"org_id":      e.OrgID_,
+			"contact_id":  e.ContactID_,
+			"urn_id":      e.ContactURNID_,
+			"channel_id":  e.ChannelID_,
+			"extra":       e.Extra(),
+			"occurred_on": e.OccurredOn_,
+		}
+		return queueMailroomTask(rc, "optout", e.OrgID_, e.ContactID_, body)
+
 	default:
 		return fmt.Errorf("unknown event type: %s", e.EventType())
 	}
