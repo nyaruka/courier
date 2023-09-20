@@ -284,6 +284,7 @@ type OutgoingTestCase struct {
 	MsgResponseToExternalID string
 	MsgMetadata             json.RawMessage
 	MsgFlow                 *courier.FlowReference
+	MsgOptIn                *courier.OptInReference
 	MsgOrigin               courier.MsgOrigin
 	MsgContactLastSeenOn    *time.Time
 
@@ -341,6 +342,9 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			}
 			if tc.MsgFlow != nil {
 				msg.WithFlow(tc.MsgFlow)
+			}
+			if tc.MsgOptIn != nil {
+				msg.WithOptIn(tc.MsgOptIn)
 			}
 
 			var testRequest *http.Request

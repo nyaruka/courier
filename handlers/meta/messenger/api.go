@@ -33,8 +33,12 @@ type SendRequest struct {
 type Attachment struct {
 	Type    string `json:"type"`
 	Payload struct {
-		URL        string `json:"url"`
-		IsReusable bool   `json:"is_reusable"`
+		URL        string `json:"url,omitempty"`
+		IsReusable bool   `json:"is_reusable,omitempty"`
+
+		TemplateType string `json:"template_type,omitempty"`
+		Title        string `json:"title,omitempty"`
+		Payload      string `json:"payload,omitempty"`
 	} `json:"payload"`
 }
 

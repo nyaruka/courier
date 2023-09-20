@@ -456,6 +456,17 @@ var facebookOutgoingTests = []OutgoingTestCase{
 		SendPrep:            setSendURL,
 	},
 	{
+		Label:               "Opt-in request",
+		MsgURN:              "facebook:12345",
+		MsgOptIn:            &courier.OptInReference{UUID: "9f6651f2-e962-4367-b175-c07a6ff0f6dd", Name: "Joke Of The Day"},
+		MockResponseBody:    `{"message_id": "mid.133"}`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"template","payload":{"template_type":"notification_messages","title":"Joke Of The Day","payload":"9f6651f2-e962-4367-b175-c07a6ff0f6dd"}}}}`,
+		ExpectedMsgStatus:   "W",
+		ExpectedExternalID:  "mid.133",
+		SendPrep:            setSendURL,
+	},
+	{
 		Label:              "Response doesn't contain message id",
 		MsgText:            "ID Error",
 		MsgURN:             "facebook:12345",
