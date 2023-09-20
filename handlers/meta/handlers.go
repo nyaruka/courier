@@ -683,18 +683,13 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 
 	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
-	msgParts := make([]string, 0)
-	if msg.Text() != "" {
-		msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
-	}
-
-	// send each part and each attachment separately. we send attachments first as otherwise quick replies
-	// attached to text messages get hidden when images get delivered
-	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
-		if i < len(msg.Attachments()) {
+	// Send each text segment and attachment separately. We send attachments first as otherwise quick replies get
+	// attached to attachment segments and are hidden when images load.
+	for _, part := range handlers.SplitMsg(msg, handlers.SplitOptions{MaxTextLen: maxMsgLength}) {
+		if part.Type == handlers.MsgPartTypeAttachment {
 			// this is an attachment
 			payload.Message.Attachment = &messenger.Attachment{}
-			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
+			attType, attURL := handlers.SplitAttachment(part.Attachment)
 			attType = strings.Split(attType, "/")[0]
 			if attType == "application" {
 				attType = "file"
@@ -704,13 +699,13 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 			payload.Message.Attachment.Payload.IsReusable = true
 			payload.Message.Text = ""
 		} else {
-			// this is still a msg part
-			payload.Message.Text = msgParts[i-len(msg.Attachments())]
+			// this is still a text part
+			payload.Message.Text = part.Text
 			payload.Message.Attachment = nil
 		}
 
 		// include any quick replies on the last piece we send
-		if i == (len(msgParts)+len(msg.Attachments()))-1 {
+		if part.IsLast {
 			for _, qr := range msg.QuickReplies() {
 				payload.Message.QuickReplies = append(payload.Message.QuickReplies, messenger.QuickReply{qr, qr, "text"})
 			}
@@ -749,7 +744,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 		}
 
 		// if this is our first message, record the external id
-		if i == 0 {
+		if part.IsFirst {
 			status.SetExternalID(respPayload.ExternalID)
 			if msg.URN().IsFacebookRef() {
 				recipientID := respPayload.RecipientID

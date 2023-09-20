@@ -37,13 +37,13 @@ func TestDecodePossibleBase64(t *testing.T) {
 	assert.Contains(DecodePossibleBase64(test6), "I received your letter today")
 }
 
-func TestSplitMsg(t *testing.T) {
+func TestSplitText(t *testing.T) {
 	assert := assert.New(t)
-	assert.Equal([]string{""}, SplitMsg("", 160))
-	assert.Equal([]string{"Simple message"}, SplitMsg("Simple message", 160))
-	assert.Equal([]string{"This is a message", "longer than 10"}, SplitMsg("This is a message longer than 10", 20))
-	assert.Equal([]string{" "}, SplitMsg(" ", 20))
-	assert.Equal([]string{"This is a message", "longer than 10"}, SplitMsg("This is a message   longer than 10", 20))
+	assert.Equal([]string{""}, SplitText("", 160))
+	assert.Equal([]string{"Simple message"}, SplitText("Simple message", 160))
+	assert.Equal([]string{"This is a message", "longer than 10"}, SplitText("This is a message longer than 10", 20))
+	assert.Equal([]string{" "}, SplitText(" ", 20))
+	assert.Equal([]string{"This is a message", "longer than 10"}, SplitText("This is a message   longer than 10", 20))
 }
 
 func TestSplitMsgByChannel(t *testing.T) {

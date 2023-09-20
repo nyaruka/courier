@@ -365,21 +365,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		buttonLayout := msg.Channel().ConfigForKey("button_layout", map[string]any{}).(map[string]any)
 		keyboard = NewKeyboardFromReplies(qrs, buttonLayout)
 	}
-	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 
-	descriptionPart := ""
-	if len(msg.Attachments()) == 1 && len(msg.Text()) < descriptionMaxLength {
-		mediaType, _ := handlers.SplitAttachment(msg.Attachments()[0])
-		isImage := strings.Split(mediaType, "/")[0] == "image"
-
-		if isImage {
-			descriptionPart = msg.Text()
-			parts = []string{}
-		}
-
-	}
-
-	for i := 0; i < len(parts)+len(msg.Attachments()); i++ {
+	for _, part := range handlers.SplitMsg(msg, handlers.SplitOptions{MaxTextLen: maxMsgLength, MaxCaptionLen: descriptionMaxLength, Captionable: []handlers.MediaType{handlers.MediaTypeImage}}) {
 		msgType := "text"
 		attSize := -1
 		attURL := ""
@@ -387,13 +374,13 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		msgText := ""
 		var err error
 
-		if i < len(msg.Attachments()) {
-			mediaType, mediaURL := handlers.SplitAttachment(msg.Attachments()[0])
+		if part.Type == handlers.MsgPartTypeAttachment || part.Type == handlers.MsgPartTypeCaptionedAttachment {
+			mediaType, mediaURL := handlers.SplitAttachment(part.Attachment)
 			switch strings.Split(mediaType, "/")[0] {
 			case "image":
 				msgType = "picture"
 				attURL = mediaURL
-				msgText = descriptionPart
+				msgText = part.Text
 
 			case "video":
 				msgType = "video"
@@ -419,7 +406,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 			}
 
 		} else {
-			msgText = parts[i-len(msg.Attachments())]
+			msgText = part.Text
 		}
 
 		payload := mtPayload{
