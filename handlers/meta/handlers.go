@@ -26,8 +26,8 @@ import (
 
 // Endpoints we hit
 var (
-	sendURL  = "https://graph.facebook.com/v12.0/me/messages"
-	graphURL = "https://graph.facebook.com/v12.0/"
+	sendURL  = "https://graph.facebook.com/v17.0/me/messages"
+	graphURL = "https://graph.facebook.com/v17.0/"
 
 	signatureHeader = "X-Hub-Signature-256"
 
