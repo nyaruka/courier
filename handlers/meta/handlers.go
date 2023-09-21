@@ -436,9 +436,12 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 			if msg.OptIn.Type == "notification_messages" {
 				eventType := courier.EventTypeOptIn
-				optInName := msg.OptIn.Title
-				optInUUID := msg.OptIn.Payload
 				authToken := msg.OptIn.NotificationMessagesToken
+				optInName := msg.OptIn.Title
+				optInID, err := strconv.Atoi(msg.OptIn.Payload)
+				if err != nil {
+					return nil, nil, err
+				}
 
 				if msg.OptIn.NotificationMessagesStatus == "STOP_NOTIFICATIONS" {
 					eventType = courier.EventTypeOptOut
@@ -447,8 +450,8 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 				event = h.Backend().NewChannelEvent(channel, eventType, urn, clog).
 					WithOccurredOn(date).
-					WithExtra(map[string]string{"optin_uuid": optInUUID, "optin_name": optInName}).
-					WithURNAuthTokens(map[string]string{fmt.Sprintf("optin:%s", optInUUID): authToken})
+					WithExtra(map[string]any{"optin_id": optInID, "optin_name": optInName}).
+					WithURNAuthTokens(map[string]string{fmt.Sprintf("optin:%d", optInID): authToken})
 			} else {
 
 				// this is an opt in, if we have a user_ref, use that as our URN (this is a checkbox plugin)
@@ -466,7 +469,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 				event = h.Backend().NewChannelEvent(channel, courier.EventTypeReferral, urn, clog).
 					WithOccurredOn(date).
-					WithExtra(map[string]string{
+					WithExtra(map[string]any{
 						referrerIDKey: msg.OptIn.Ref,
 					})
 			}
@@ -488,7 +491,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			event := h.Backend().NewChannelEvent(channel, eventType, urn, clog).WithOccurredOn(date)
 
 			// build our extra
-			extra := map[string]string{
+			extra := map[string]any{
 				titleKey:   msg.Postback.Title,
 				payloadKey: msg.Postback.Payload,
 			}
@@ -519,7 +522,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			event := h.Backend().NewChannelEvent(channel, courier.EventTypeReferral, urn, clog).WithOccurredOn(date)
 
 			// build our extra
-			extra := map[string]string{
+			extra := map[string]any{
 				sourceKey: msg.Referral.Source,
 				typeKey:   msg.Referral.Type,
 			}
@@ -691,7 +694,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 			payload.Message.Attachment.Type = "template"
 			payload.Message.Attachment.Payload.TemplateType = "notification_messages"
 			payload.Message.Attachment.Payload.Title = part.OptIn.Name
-			payload.Message.Attachment.Payload.Payload = part.OptIn.UUID
+			payload.Message.Attachment.Payload.Payload = fmt.Sprint(part.OptIn.ID)
 			payload.Message.Text = ""
 
 		} else if part.Type == handlers.MsgPartTypeAttachment {

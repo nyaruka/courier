@@ -15,7 +15,7 @@
                     },
                     "optin": {
                         "type": "notification_messages",
-                        "payload": "2fad015d-2126-4ac2-a008-b5ac95c3906b",
+                        "payload": "3456",
                         "notification_messages_token": "12345678901234567890",
                         "notification_messages_frequency": "DAILY",
                         "token_expiry_timestamp": 2145916800000,

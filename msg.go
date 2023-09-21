@@ -38,8 +38,8 @@ type FlowReference struct {
 }
 
 type OptInReference struct {
-	UUID string `json:"uuid" validate:"uuid4"`
-	Name string `json:"name"`
+	ID   int64  `json:"id"   validate:"required"`
+	Name string `json:"name" validate:"required"`
 }
 
 type MsgOrigin string
