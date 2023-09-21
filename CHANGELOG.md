@@ -1,3 +1,7 @@
+v8.3.20 (2023-09-21)
+-------------------------
+ * Switch to using optin ids instead of uuids
+
 v8.3.19 (2023-09-20)
 -------------------------
  * Fix queueing of optin/optout events to mailroom
