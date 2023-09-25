@@ -1,3 +1,7 @@
+v8.3.21 (2023-09-25)
+-------------------------
+ * Support sending facebook message with opt-in auth token
+
 v8.3.20 (2023-09-21)
 -------------------------
  * Switch to using optin ids instead of uuids
