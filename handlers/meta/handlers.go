@@ -658,6 +658,8 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 	// build our recipient
 	if msg.URN().IsFacebookRef() {
 		payload.Recipient.UserRef = msg.URN().FacebookRef()
+	} else if msg.URNAuth() != "" {
+		payload.Recipient.NotificationMessagesToken = msg.URNAuth()
 	} else {
 		payload.Recipient.ID = msg.URN().Path()
 	}

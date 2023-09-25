@@ -20,8 +20,9 @@ type SendRequest struct {
 	MessagingType string `json:"messaging_type"`
 	Tag           string `json:"tag,omitempty"`
 	Recipient     struct {
-		UserRef string `json:"user_ref,omitempty"`
-		ID      string `json:"id,omitempty"`
+		UserRef                   string `json:"user_ref,omitempty"`
+		ID                        string `json:"id,omitempty"`
+		NotificationMessagesToken string `json:"notification_messages_token,omitempty"`
 	} `json:"recipient"`
 	Message struct {
 		Text         string       `json:"text,omitempty"`
