@@ -1,3 +1,7 @@
+v8.3.22 (2023-09-27)
+-------------------------
+ * Use Facebook API v17.0
+
 v8.3.21 (2023-09-25)
 -------------------------
  * Support sending facebook message with opt-in auth token
