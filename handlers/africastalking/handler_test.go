@@ -2,6 +2,7 @@ package africastalking
 
 import (
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -123,7 +124,9 @@ var outgoingTestCases = []OutgoingTestCase{
 		MockResponseBody:   `{ "SMSMessageData": {"Recipients": [{"status": "Success", "messageId": "1002"}] } }`,
 		MockResponseStatus: 200,
 		ExpectedHeaders:    map[string]string{"apikey": "KEY"},
-		ExpectedPostParams: map[string]string{"message": "Simple Message ☺", "username": "Username", "to": "+250788383383", "from": "2020"},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"message": {"Simple Message ☺"}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
+		},
 		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "1002",
 		SendPrep:           setSendURL,
@@ -135,7 +138,9 @@ var outgoingTestCases = []OutgoingTestCase{
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:   `{ "SMSMessageData": {"Recipients": [{"status": "Success", "messageId": "1002"}] } }`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"message": "My pic!\nhttps://foo.bar/image.jpg"},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"message": {"My pic!\nhttps://foo.bar/image.jpg"}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
+		},
 		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "1002",
 		SendPrep:           setSendURL,
@@ -146,9 +151,11 @@ var outgoingTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `{ "SMSMessageData": {"Recipients": [{"status": "Failed" }] } }`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"message": `No External ID`},
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"message": {`No External ID`}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
+		},
+		ExpectedMsgStatus: "E",
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:              "Error Sending",
@@ -156,9 +163,11 @@ var outgoingTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `{ "error": "failed" }`,
 		MockResponseStatus: 401,
-		ExpectedPostParams: map[string]string{"message": `Error Message`},
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"message": {`Error Message`}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
+		},
+		ExpectedMsgStatus: "E",
+		SendPrep:          setSendURL,
 	},
 }
 
@@ -170,7 +179,9 @@ var sharedSendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `{ "SMSMessageData": {"Recipients": [{"status": "Success", "messageId": "1002"}] } }`,
 		MockResponseStatus: 200,
 		ExpectedHeaders:    map[string]string{"apikey": "KEY"},
-		ExpectedPostParams: map[string]string{"message": "Simple Message ☺", "username": "Username", "to": "+250788383383", "from": ""},
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"message": {"Simple Message ☺"}, "username": {"Username"}, "to": {"+250788383383"}}},
+		},
 		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "1002",
 		SendPrep:           setSendURL,

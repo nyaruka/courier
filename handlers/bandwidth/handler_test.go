@@ -258,15 +258,19 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+12067791234",
 		MockResponseBody:   `{"id": "55555"}`,
 		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Basic dXNlcjE6cGFzczE=",
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{
+					"Content-Type":  "application/json",
+					"Accept":        "application/json",
+					"Authorization": "Basic dXNlcjE6cGFzczE=",
+				},
+				Body: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"Simple Message ☺"}`,
+			},
 		},
-		ExpectedRequestBody: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"Simple Message ☺"}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "55555",
-		SendPrep:            setSendURL,
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "55555",
+		SendPrep:           setSendURL,
 	},
 	{
 		Label:              "Send Attachment",
@@ -275,15 +279,19 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:   `{"id": "55555"}`,
 		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Basic dXNlcjE6cGFzczE=",
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{
+					"Content-Type":  "application/json",
+					"Accept":        "application/json",
+					"Authorization": "Basic dXNlcjE6cGFzczE=",
+				},
+				Body: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"My pic!","media":["https://foo.bar/image.jpg"]}`,
+			},
 		},
-		ExpectedRequestBody: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"My pic!","media":["https://foo.bar/image.jpg"]}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "55555",
-		SendPrep:            setSendURL,
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "55555",
+		SendPrep:           setSendURL,
 	},
 	{
 		Label:              "No External ID",
@@ -291,15 +299,19 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+12067791234",
 		MockResponseBody:   `{}`,
 		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Basic dXNlcjE6cGFzczE=",
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{
+					"Content-Type":  "application/json",
+					"Accept":        "application/json",
+					"Authorization": "Basic dXNlcjE6cGFzczE=",
+				},
+				Body: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"No External ID"}`,
+			},
 		},
-		ExpectedRequestBody: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"No External ID"}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedErrors:      []*courier.ChannelError{courier.ErrorResponseValueMissing("id")},
-		SendPrep:            setSendURL,
+		ExpectedMsgStatus: "W",
+		ExpectedErrors:    []*courier.ChannelError{courier.ErrorResponseValueMissing("id")},
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:              "Error Sending",
@@ -307,15 +319,19 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+12067791234",
 		MockResponseBody:   `{ "type": "request-validation", "description": "Your request could not be accepted" }`,
 		MockResponseStatus: 401,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Basic dXNlcjE6cGFzczE=",
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{
+					"Content-Type":  "application/json",
+					"Accept":        "application/json",
+					"Authorization": "Basic dXNlcjE6cGFzczE=",
+				},
+				Body: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"Error Message"}`,
+			},
 		},
-		ExpectedRequestBody: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"Error Message"}`,
-		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []*courier.ChannelError{courier.ErrorExternal("request-validation", "Your request could not be accepted")},
-		SendPrep:            setSendURL,
+		ExpectedMsgStatus: "E",
+		ExpectedErrors:    []*courier.ChannelError{courier.ErrorExternal("request-validation", "Your request could not be accepted")},
+		SendPrep:          setSendURL,
 	},
 }
 

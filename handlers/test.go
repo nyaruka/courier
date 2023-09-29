@@ -268,6 +268,36 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 // SendPrepFunc allows test cases to modify the channel, msg or server before a message is sent
 type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, courier.Channel, courier.MsgOut)
 
+type ExpectedRequest struct {
+	Headers map[string]string
+	Path    string
+	Params  url.Values
+	Form    url.Values
+	Body    string
+}
+
+func (e *ExpectedRequest) AssertMatches(t *testing.T, actual *http.Request, requestNum int) {
+	if e.Headers != nil {
+		for k, v := range e.Headers {
+			assert.Equal(t, v, actual.Header.Get(k), "header %s mismatch for request %d", k, requestNum)
+		}
+	}
+	if e.Path != "" {
+		assert.Equal(t, e.Path, actual.URL.Path, "patch mismatch for request %d", requestNum)
+	}
+	if e.Params != nil {
+		assert.Equal(t, e.Params, actual.URL.Query(), "URL params mismatch for request %d", requestNum)
+	}
+	if e.Form != nil {
+		actual.ParseMultipartForm(32 << 20)
+		assert.Equal(t, e.Form, actual.PostForm, "form mismatch for request %d", requestNum)
+	}
+	if e.Body != "" {
+		value, _ := io.ReadAll(actual.Body)
+		assert.Equal(t, e.Body, strings.Trim(string(value), "\n"), "body mismatch for request %d", requestNum)
+	}
+}
+
 // OutgoingTestCase defines the test values for a particular test case
 type OutgoingTestCase struct {
 	Label    string
@@ -292,18 +322,20 @@ type OutgoingTestCase struct {
 	MockResponseBody   string
 	MockResponses      map[MockedRequest]*httpx.MockResponse
 
-	ExpectedRequestPath string
-	ExpectedURLParams   map[string]string
-	ExpectedPostParams  map[string]string // deprecated, use ExpectedPostForm
-	ExpectedPostForm    url.Values
-	ExpectedRequestBody string
-	ExpectedHeaders     map[string]string
+	ExpectedRequests    []ExpectedRequest
 	ExpectedMsgStatus   courier.MsgStatus
 	ExpectedExternalID  string
 	ExpectedErrors      []*courier.ChannelError
 	ExpectedStopEvent   bool
 	ExpectedContactURNs map[string]bool
 	ExpectedNewURN      string
+
+	// deprecated, use ExpectedRequests
+	ExpectedRequestPath string
+	ExpectedURLParams   map[string]string
+	ExpectedPostParams  map[string]string
+	ExpectedRequestBody string
+	ExpectedHeaders     map[string]string
 }
 
 // RunOutgoingTestCases runs all the passed in test cases against the channel
@@ -347,11 +379,13 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 				msg.WithOptIn(tc.MsgOptIn)
 			}
 
-			var testRequest *http.Request
+			actualRequests := make([]*http.Request, 0, 1)
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// copy request and add to list
 				body, _ := io.ReadAll(r.Body)
-				testRequest = httptest.NewRequest(r.Method, r.URL.String(), bytes.NewBuffer(body))
-				testRequest.Header = r.Header
+				copy := httptest.NewRequest(r.Method, r.URL.String(), bytes.NewBuffer(body))
+				copy.Header = r.Header
+				actualRequests = append(actualRequests, copy)
 
 				if (len(tc.MockResponses)) == 0 {
 					w.WriteHeader(tc.MockResponseStatus)
@@ -387,47 +421,52 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 
 			assert.Equal(t, tc.ExpectedErrors, clog.Errors(), "unexpected errors logged")
 
-			if tc.ExpectedRequestPath != "" {
-				require.NotNil(testRequest, "path should not be nil")
-				require.Equal(tc.ExpectedRequestPath, testRequest.URL.Path)
-			}
+			if tc.ExpectedRequestPath != "" || tc.ExpectedURLParams != nil || tc.ExpectedPostParams != nil || tc.ExpectedRequestBody != "" || tc.ExpectedHeaders != nil {
+				testRequest := actualRequests[len(actualRequests)-1]
 
-			if tc.ExpectedURLParams != nil {
-				require.NotNil(testRequest)
-				for k, v := range tc.ExpectedURLParams {
-					value := testRequest.URL.Query().Get(k)
-					require.Equal(v, value, fmt.Sprintf("%s not equal", k))
+				if tc.ExpectedRequestPath != "" {
+					require.NotNil(testRequest, "path should not be nil")
+					require.Equal(tc.ExpectedRequestPath, testRequest.URL.Path)
 				}
-			}
-
-			if tc.ExpectedPostParams != nil {
-				require.NotNil(testRequest, "post body should not be nil")
-				for k, v := range tc.ExpectedPostParams {
-					value := testRequest.PostFormValue(k)
-					require.Equal(v, value)
+				if tc.ExpectedURLParams != nil {
+					require.NotNil(testRequest)
+					for k, v := range tc.ExpectedURLParams {
+						value := testRequest.URL.Query().Get(k)
+						require.Equal(v, value, fmt.Sprintf("%s not equal", k))
+					}
 				}
-			} else if tc.ExpectedPostForm != nil {
-				require.NotNil(testRequest, "post body should not be nil")
-				testRequest.ParseMultipartForm(32 << 20)
-				assert.Equal(t, tc.ExpectedPostForm, testRequest.PostForm)
-			}
+				if tc.ExpectedPostParams != nil {
+					require.NotNil(testRequest, "post body should not be nil")
+					for k, v := range tc.ExpectedPostParams {
+						value := testRequest.PostFormValue(k)
+						require.Equal(v, value)
+					}
+				}
+				if tc.ExpectedRequestBody != "" {
+					require.NotNil(testRequest, "request body should not be nil")
+					value, _ := io.ReadAll(testRequest.Body)
+					require.Equal(tc.ExpectedRequestBody, strings.Trim(string(value), "\n"))
+				}
+				if tc.ExpectedHeaders != nil {
+					require.NotNil(testRequest, "headers should not be nil")
+					for k, v := range tc.ExpectedHeaders {
+						value := testRequest.Header.Get(k)
+						require.Equal(v, value)
+					}
+				}
+			} else if len(tc.ExpectedRequests) > 0 {
+				assert.Len(t, actualRequests, len(tc.ExpectedRequests), "unexpected number of requests made")
 
-			if tc.ExpectedRequestBody != "" {
-				require.NotNil(testRequest, "request body should not be nil")
-				value, _ := io.ReadAll(testRequest.Body)
-				require.Equal(tc.ExpectedRequestBody, strings.Trim(string(value), "\n"))
+				for i, expectedRequest := range tc.ExpectedRequests {
+					if (len(actualRequests) - 1) < i {
+						break
+					}
+					expectedRequest.AssertMatches(t, actualRequests[i], i)
+				}
 			}
 
 			if (len(tc.MockResponses)) != 0 {
 				assert.Equal(t, len(tc.MockResponses), mockRRCount, "mocked request count mismatch")
-			}
-
-			if tc.ExpectedHeaders != nil {
-				require.NotNil(testRequest, "headers should not be nil")
-				for k, v := range tc.ExpectedHeaders {
-					value := testRequest.Header.Get(k)
-					require.Equal(v, value)
-				}
 			}
 
 			if tc.ExpectedExternalID != "" {

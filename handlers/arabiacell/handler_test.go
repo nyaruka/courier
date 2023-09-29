@@ -2,6 +2,7 @@ package arabiacell
 
 import (
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -60,14 +61,18 @@ var defaultSendTestCases = []OutgoingTestCase{
 		<message_id>external1</message_id>
 </response>`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{
-			"userName":      "user1",
-			"password":      "pass1",
-			"handlerType":   "send_msg",
-			"serviceId":     "service1",
-			"msisdn":        "+250788383383",
-			"messageBody":   "Simple Message ☺\nhttps://foo.bar/image.jpg",
-			"chargingLevel": "0",
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Form: url.Values{
+					"userName":      {"user1"},
+					"password":      {"pass1"},
+					"handlerType":   {"send_msg"},
+					"serviceId":     {"service1"},
+					"msisdn":        {"+250788383383"},
+					"messageBody":   {"Simple Message ☺\nhttps://foo.bar/image.jpg"},
+					"chargingLevel": {"0"},
+				},
+			},
 		},
 		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "external1",

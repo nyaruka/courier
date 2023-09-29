@@ -631,12 +631,16 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:   `{ "sid": "1002" }`,
 		MockResponseStatus: 200,
-		ExpectedPostForm: url.Values{
-			"Body":           []string{"My pic!"},
-			"To":             []string{"+250788383383"},
-			"MediaUrl":       []string{"https://foo.bar/image.jpg"},
-			"From":           []string{"2020"},
-			"StatusCallback": []string{"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Form: url.Values{
+					"Body":           []string{"My pic!"},
+					"To":             []string{"+250788383383"},
+					"MediaUrl":       []string{"https://foo.bar/image.jpg"},
+					"From":           []string{"2020"},
+					"StatusCallback": []string{"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+				},
+			},
 		},
 		ExpectedMsgStatus: "W",
 		SendPrep:          setSendURL,
@@ -647,12 +651,16 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg", "audio/mp4:https://foo.bar/audio.m4a"},
 		MockResponseBody:   `{ "sid": "1002" }`,
 		MockResponseStatus: 200,
-		ExpectedPostForm: url.Values{
-			"Body":           []string{""},
-			"To":             []string{"+250788383383"},
-			"MediaUrl":       []string{"https://foo.bar/image.jpg", "https://foo.bar/audio.m4a"},
-			"From":           []string{"2020"},
-			"StatusCallback": []string{"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Form: url.Values{
+					"Body":           []string{""},
+					"To":             []string{"+250788383383"},
+					"MediaUrl":       []string{"https://foo.bar/image.jpg", "https://foo.bar/audio.m4a"},
+					"From":           []string{"2020"},
+					"StatusCallback": []string{"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
+				},
+			},
 		},
 		ExpectedMsgStatus: "W",
 		SendPrep:          setSendURL,

@@ -2,6 +2,7 @@ package bongolive
 
 import (
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -94,13 +95,18 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:   `{"results": [{"status": "0", "msgid": "123"}]}`,
 		MockResponseStatus: 200,
-		ExpectedURLParams: map[string]string{
-			"USERNAME":   "user1",
-			"PASSWORD":   "pass1",
-			"SOURCEADDR": "2020",
-			"DESTADDR":   "250788383383",
-			"DLR":        "1",
-			"MESSAGE":    "Simple Message ☺\nhttps://foo.bar/image.jpg",
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{
+					"USERNAME":   {"user1"},
+					"PASSWORD":   {"pass1"},
+					"SOURCEADDR": {"2020"},
+					"DESTADDR":   {"250788383383"},
+					"DLR":        {"1"},
+					"MESSAGE":    {"Simple Message ☺\nhttps://foo.bar/image.jpg"},
+					"CHARCODE":   {"2"},
+				},
+			},
 		},
 		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "123",
@@ -113,13 +119,18 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:   `{"results": [{"status": "3"}]}`,
 		MockResponseStatus: 200,
-		ExpectedURLParams: map[string]string{
-			"USERNAME":   "user1",
-			"PASSWORD":   "pass1",
-			"SOURCEADDR": "2020",
-			"DESTADDR":   "250788383383",
-			"DLR":        "1",
-			"MESSAGE":    "Simple Message ☺\nhttps://foo.bar/image.jpg",
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{
+					"USERNAME":   {"user1"},
+					"PASSWORD":   {"pass1"},
+					"SOURCEADDR": {"2020"},
+					"DESTADDR":   {"250788383383"},
+					"DLR":        {"1"},
+					"MESSAGE":    {"Simple Message ☺\nhttps://foo.bar/image.jpg"},
+					"CHARCODE":   {"2"},
+				},
+			},
 		},
 		ExpectedMsgStatus: "E",
 		SendPrep:          setSendURL,
