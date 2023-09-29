@@ -2,6 +2,7 @@ package burstsms
 
 import (
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -69,10 +70,14 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:   `{ "message_id": 19835, "recipients": 3, "cost": 1.000 }`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{
-			"to":      "250788383383",
-			"message": "Simple Message ☺\nhttps://foo.bar/image.jpg",
-			"from":    "2020",
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Form: url.Values{
+					"to":      {"250788383383"},
+					"message": {"Simple Message ☺\nhttps://foo.bar/image.jpg"},
+					"from":    {"2020"},
+				},
+			},
 		},
 		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "19835",

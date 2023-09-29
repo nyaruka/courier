@@ -2,6 +2,7 @@ package i2sms
 
 import (
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -57,11 +58,15 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:   `{"result":{"session_id":"5b8fc97d58795484819426"}, "error_code": "00", "error_desc": "Success"}`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{
-			"action":  "send_single",
-			"mobile":  "250788383383",
-			"message": "Simple Message ☺\nhttps://foo.bar/image.jpg",
-			"channel": "hash123",
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Form: url.Values{
+					"action":  {"send_single"},
+					"mobile":  {"250788383383"},
+					"message": {"Simple Message ☺\nhttps://foo.bar/image.jpg"},
+					"channel": {"hash123"},
+				},
+			},
 		},
 		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "5b8fc97d58795484819426",
