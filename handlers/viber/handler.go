@@ -26,8 +26,6 @@ const (
 var (
 	viberSignatureHeader = "X-Viber-Content-Signature"
 	sendURL              = "https://chatapi.viber.com/pa/send_message"
-	maxMsgLength         = 7000
-	descriptionMaxLength = 512
 
 	// https://developers.viber.com/docs/api/rest-bot-api/#error-codes
 	sendErrorCodes = map[int]string{
@@ -67,7 +65,14 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("VP"), "Viber")}
+	return &handler{handlers.NewBaseHandler(
+		courier.ChannelType("VP"), "Viber",
+		handlers.WithSplitOptions(handlers.SplitOptions{
+			MaxTextLen:    7000,
+			MaxCaptionLen: 512,
+			Captionable:   []handlers.MediaType{handlers.MediaTypeImage}},
+		),
+	)}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -366,7 +371,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		keyboard = NewKeyboardFromReplies(qrs, buttonLayout)
 	}
 
-	for _, part := range handlers.SplitMsg(msg, handlers.SplitOptions{MaxTextLen: maxMsgLength, MaxCaptionLen: descriptionMaxLength, Captionable: []handlers.MediaType{handlers.MediaTypeImage}}) {
+	for _, part := range h.SplitMsg(msg) {
 		msgType := "text"
 		attSize := -1
 		attURL := ""

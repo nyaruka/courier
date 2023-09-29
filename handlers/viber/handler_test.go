@@ -58,14 +58,15 @@ var defaultSendTestCases = []OutgoingTestCase{
 	},
 	{
 		Label:               "Long Send",
-		MsgText:             "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgText:             strings.Repeat("X", 7500),
 		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
 		MockResponseStatus:  200,
 		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"I need to keep adding more things to make it work","type":"text","tracking_data":"10"}`,
+		ExpectedRequestBody: fmt.Sprintf(`{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"%s","type":"text","tracking_data":"10"}`, strings.Repeat("X", 500)),
 		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL},
+		SendPrep:            setSendURL,
+	},
 	{
 		Label:               "Unicode Send",
 		MsgText:             "☺",
@@ -103,13 +104,13 @@ var defaultSendTestCases = []OutgoingTestCase{
 	},
 	{
 		Label:               "Long Description with Attachment",
-		MsgText:             "Text description is longer that 10 characters",
+		MsgText:             strings.Repeat("X", 513),
 		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
 		MsgAttachments:      []string{"image/jpeg:https://localhost/image.jpg"},
 		MockResponseStatus:  200,
 		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Text description is longer that 10 characters","type":"text","tracking_data":"10"}`,
+		ExpectedRequestBody: fmt.Sprintf(`{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"%s","type":"text","tracking_data":"10"}`, strings.Repeat("X", 513)),
 		ExpectedMsgStatus:   "W",
 		SendPrep:            setSendURL,
 	},
@@ -212,8 +213,6 @@ func TestOutgoing(t *testing.T) {
 	attachmentService := buildMockAttachmentService(defaultSendTestCases)
 	defer attachmentService.Close()
 
-	maxMsgLength = 160
-	descriptionMaxLength = 10
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
 		map[string]any{
 			courier.ConfigAuthToken: "Token",

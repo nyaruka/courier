@@ -37,7 +37,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("TG"), "Telegram")}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("TG"), "Telegram", handlers.WithMediaSupport(mediaSupport, true))}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -185,7 +185,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		return nil, fmt.Errorf("invalid auth token config")
 	}
 
-	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, true)
+	attachments, err := h.ResolveAttachments(ctx, msg.Attachments())
 	if err != nil {
 		return nil, errors.Wrap(err, "error resolving attachments")
 	}

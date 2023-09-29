@@ -62,7 +62,12 @@ const (
 )
 
 func newHandler(channelType courier.ChannelType, name string) courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(channelType, name, handlers.DisableUUIDRouting(), handlers.WithRedactConfigKeys(courier.ConfigAuthToken))}
+	return &handler{handlers.NewBaseHandler(
+		channelType, name,
+		handlers.DisableUUIDRouting(),
+		handlers.WithSplitOptions(handlers.SplitOptions{MaxTextLen: maxMsgLength}),
+		handlers.WithRedactConfigKeys(courier.ConfigAuthToken),
+	)}
 }
 
 func init() {
@@ -690,7 +695,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 
 	// Send each text segment and attachment separately. We send attachments first as otherwise quick replies get
 	// attached to attachment segments and are hidden when images load.
-	for _, part := range handlers.SplitMsg(msg, handlers.SplitOptions{MaxTextLen: maxMsgLength}) {
+	for _, part := range h.SplitMsg(msg) {
 		if part.Type == handlers.MsgPartTypeOptIn {
 			payload.Message.Attachment = &messenger.Attachment{}
 			payload.Message.Attachment.Type = "template"

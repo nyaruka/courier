@@ -513,10 +513,10 @@ func addInvalidSignature(r *http.Request) {
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newTWIMLHandler("T", "Twilio", true), testCases)
-	RunIncomingTestCases(t, tmsTestChannels, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsTestCases)
-	RunIncomingTestCases(t, twTestChannels, newTWIMLHandler("TW", "TwiML API", true), twTestCases)
-	RunIncomingTestCases(t, swTestChannels, newTWIMLHandler("SW", "SignalWire", false), swTestCases)
+	RunIncomingTestCases(t, testChannels, newHandler("T", "Twilio", true), testCases)
+	RunIncomingTestCases(t, tmsTestChannels, newHandler("TMS", "Twilio Messaging Service", true), tmsTestCases)
+	RunIncomingTestCases(t, twTestChannels, newHandler("TW", "TwiML API", true), twTestCases)
+	RunIncomingTestCases(t, swTestChannels, newHandler("SW", "SignalWire", false), swTestCases)
 
 	waChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
 		map[string]any{
@@ -525,7 +525,7 @@ func TestIncoming(t *testing.T) {
 		},
 	)
 	waChannel.SetScheme(urns.WhatsAppScheme)
-	RunIncomingTestCases(t, []courier.Channel{waChannel}, newTWIMLHandler("T", "TwilioWhatsApp", true), waTestCases)
+	RunIncomingTestCases(t, []courier.Channel{waChannel}, newHandler("T", "TwilioWhatsApp", true), waTestCases)
 
 	twaChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
 		map[string]any{
@@ -534,13 +534,13 @@ func TestIncoming(t *testing.T) {
 		},
 	)
 	twaChannel.SetScheme(urns.WhatsAppScheme)
-	RunIncomingTestCases(t, []courier.Channel{twaChannel}, newTWIMLHandler("TWA", "Twilio WhatsApp", true), twaTestCases)
+	RunIncomingTestCases(t, []courier.Channel{twaChannel}, newHandler("TWA", "Twilio WhatsApp", true), twaTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newTWIMLHandler("T", "Twilio", true), testCases)
-	RunChannelBenchmarks(b, tmsTestChannels, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsTestCases)
-	RunChannelBenchmarks(b, twTestChannels, newTWIMLHandler("TW", "TwiML API", true), twTestCases)
+	RunChannelBenchmarks(b, testChannels, newHandler("T", "Twilio", true), testCases)
+	RunChannelBenchmarks(b, tmsTestChannels, newHandler("TMS", "Twilio Messaging Service", true), tmsTestCases)
+	RunChannelBenchmarks(b, twTestChannels, newHandler("TW", "TwiML API", true), twTestCases)
 }
 
 // setSendURL takes care of setting the send_url to our test server host
@@ -971,10 +971,10 @@ func TestOutgoing(t *testing.T) {
 			configSendURL:           "BASE_URL",
 		})
 
-	RunOutgoingTestCases(t, defaultChannel, newTWIMLHandler("T", "Twilio", true), defaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
-	RunOutgoingTestCases(t, tmsDefaultChannel, newTWIMLHandler("TMS", "Twilio Messaging Service", true), tmsDefaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
-	RunOutgoingTestCases(t, twDefaultChannel, newTWIMLHandler("TW", "TwiML", true), twDefaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
-	RunOutgoingTestCases(t, swChannel, newTWIMLHandler("SW", "SignalWire", false), swSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler("T", "Twilio", true), defaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunOutgoingTestCases(t, tmsDefaultChannel, newHandler("TMS", "Twilio Messaging Service", true), tmsDefaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunOutgoingTestCases(t, twDefaultChannel, newHandler("TW", "TwiML", true), twDefaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunOutgoingTestCases(t, swChannel, newHandler("SW", "SignalWire", false), swSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 
 	waChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "+12065551212", "US",
 		map[string]any{
@@ -984,7 +984,7 @@ func TestOutgoing(t *testing.T) {
 	)
 	waChannel.SetScheme(urns.WhatsAppScheme)
 
-	RunOutgoingTestCases(t, waChannel, newTWIMLHandler("T", "Twilio Whatsapp", true), waSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunOutgoingTestCases(t, waChannel, newHandler("T", "Twilio Whatsapp", true), waSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 
 	twaChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
 		map[string]any{
@@ -994,7 +994,7 @@ func TestOutgoing(t *testing.T) {
 	)
 	twaChannel.SetScheme(urns.WhatsAppScheme)
 
-	RunOutgoingTestCases(t, twaChannel, newTWIMLHandler("TWA", "Twilio Whatsapp", true), twaSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunOutgoingTestCases(t, twaChannel, newHandler("TWA", "Twilio Whatsapp", true), twaSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {

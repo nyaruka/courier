@@ -60,19 +60,20 @@ const errorStopped = 21610
 
 type handler struct {
 	handlers.BaseHandler
+
 	validateSignatures bool
 }
 
-func newTWIMLHandler(channelType courier.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(channelType, name), validateSignatures}
+func newHandler(channelType courier.ChannelType, name string, validateSignatures bool) courier.ChannelHandler {
+	return &handler{handlers.NewBaseHandler(channelType, name, handlers.WithMediaSupport(mediaSupport, true)), validateSignatures}
 }
 
 func init() {
-	courier.RegisterHandler(newTWIMLHandler("TW", "TWIML API", true))
-	courier.RegisterHandler(newTWIMLHandler("T", "Twilio", true))
-	courier.RegisterHandler(newTWIMLHandler("TMS", "Twilio Messaging Service", true))
-	courier.RegisterHandler(newTWIMLHandler("TWA", "Twilio Whatsapp", true))
-	courier.RegisterHandler(newTWIMLHandler("SW", "SignalWire", false))
+	courier.RegisterHandler(newHandler("TW", "TWIML API", true))
+	courier.RegisterHandler(newHandler("T", "Twilio", true))
+	courier.RegisterHandler(newHandler("TMS", "Twilio Messaging Service", true))
+	courier.RegisterHandler(newHandler("TWA", "Twilio Whatsapp", true))
+	courier.RegisterHandler(newHandler("SW", "SignalWire", false))
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -231,7 +232,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 
 	channel := msg.Channel()
 
-	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, true)
+	attachments, err := h.ResolveAttachments(ctx, msg.Attachments())
 	if err != nil {
 		return nil, errors.Wrap(err, "error resolving attachments")
 	}

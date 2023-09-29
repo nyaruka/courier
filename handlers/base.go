@@ -17,7 +17,14 @@ type BaseHandler struct {
 	server             courier.Server
 	backend            courier.Backend
 	uuidChannelRouting bool
-	redactConfigKeys   []string
+
+	// outgoing message preparation
+	splitOptions      SplitOptions
+	mediaSupport      map[MediaType]MediaTypeSupport
+	allowURLOnlyMedia bool
+
+	// keys in the config whose values should be redacted from channel logs
+	redactConfigKeys []string
 }
 
 // NewBaseHandler returns a newly constructed BaseHandler with the passed in parameters
@@ -43,6 +50,19 @@ func DisableUUIDRouting() func(*BaseHandler) {
 func WithRedactConfigKeys(keys ...string) func(*BaseHandler) {
 	return func(s *BaseHandler) {
 		s.redactConfigKeys = keys
+	}
+}
+
+func WithSplitOptions(opts SplitOptions) func(*BaseHandler) {
+	return func(s *BaseHandler) {
+		s.splitOptions = opts
+	}
+}
+
+func WithMediaSupport(ms map[MediaType]MediaTypeSupport, allowURLOnlyMedia bool) func(*BaseHandler) {
+	return func(s *BaseHandler) {
+		s.mediaSupport = ms
+		s.allowURLOnlyMedia = allowURLOnlyMedia
 	}
 }
 
@@ -116,4 +136,12 @@ func (h *BaseHandler) WriteRequestError(ctx context.Context, w http.ResponseWrit
 // WriteRequestIgnored writes an ignored payload to our response writer
 func (h *BaseHandler) WriteRequestIgnored(ctx context.Context, w http.ResponseWriter, details string) error {
 	return courier.WriteIgnored(w, details)
+}
+
+func (h *BaseHandler) ResolveAttachments(ctx context.Context, attachments []string) ([]*Attachment, error) {
+	return ResolveAttachments(ctx, h.backend, attachments, h.mediaSupport, h.allowURLOnlyMedia)
+}
+
+func (h *BaseHandler) SplitMsg(m courier.MsgOut) []MsgPart {
+	return SplitMsg(m, h.splitOptions)
 }

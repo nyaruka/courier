@@ -47,7 +47,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("LN"), "Line")}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("LN"), "Line", handlers.WithMediaSupport(mediaSupport, false))}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -295,7 +295,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	qrs := msg.QuickReplies()
 
-	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, false)
+	attachments, err := h.ResolveAttachments(ctx, msg.Attachments())
 	if err != nil {
 		return nil, errors.Wrap(err, "error resolving attachments")
 	}
