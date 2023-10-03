@@ -3,7 +3,6 @@ package zenvia
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -223,11 +223,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		})
 	}
 
-	jsonBody, err := json.Marshal(payload)
-	if err != nil {
-		return status, err
-	}
-
+	jsonBody := jsonx.MustMarshal(payload)
 	sendURL := whatsappSendURL
 	if channel.ChannelType() == "ZVS" {
 		sendURL = smsSendURL

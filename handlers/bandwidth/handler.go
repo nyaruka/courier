@@ -13,6 +13,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/jsonx"
 )
 
 var (
@@ -215,10 +216,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 			payload.Media = attachments
 		}
 
-		jsonBody, err := json.Marshal(payload)
-		if err != nil {
-			return status, err
-		}
+		jsonBody := jsonx.MustMarshal(payload)
 
 		// build our request
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, accountID), bytes.NewReader(jsonBody))

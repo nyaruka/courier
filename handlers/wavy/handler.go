@@ -3,7 +3,6 @@ package wavy
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/jsonx"
 )
 
 var (
@@ -137,10 +137,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 	payload.Destination = strings.TrimPrefix(msg.URN().Path(), "+")
 	payload.Message = handlers.GetTextAndAttachments(msg)
 
-	jsonPayload, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
-	}
+	jsonPayload := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonPayload))
 	if err != nil {

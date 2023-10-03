@@ -3,7 +3,6 @@ package rocketchat
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -123,10 +123,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		payload.Attachments = append(payload.Attachments, Attachment{mimeType, url})
 	}
 
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return status, err
-	}
+	body := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, baseURL+"/message", bytes.NewReader(body))
 	if err != nil {

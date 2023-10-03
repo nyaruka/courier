@@ -9,7 +9,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"strconv"
 
 	"fmt"
@@ -21,6 +20,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/sirupsen/logrus"
 )
@@ -216,10 +216,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		payload.MediaURLs = append(payload.MediaURLs, mediaURL)
 	}
 
-	jsonBody, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
-	}
+	jsonBody := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, sendUrl, bytes.NewReader(jsonBody))
 

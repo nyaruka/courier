@@ -3,7 +3,6 @@ package facebook_legacy
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -14,6 +13,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -540,10 +540,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 			payload.Message.QuickReplies = nil
 		}
 
-		jsonBody, err := json.Marshal(payload)
-		if err != nil {
-			return status, err
-		}
+		jsonBody := jsonx.MustMarshal(payload)
 
 		req, err := http.NewRequest(http.MethodPost, msgURL.String(), bytes.NewReader(jsonBody))
 		if err != nil {
