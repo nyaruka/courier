@@ -11,6 +11,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -185,10 +186,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 			payload.ContentAvailable = true
 		}
 
-		jsonPayload, err := json.Marshal(payload)
-		if err != nil {
-			return nil, err
-		}
+		jsonPayload := jsonx.MustMarshal(payload)
 
 		req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonPayload))
 		if err != nil {

@@ -20,6 +20,7 @@ import (
 	"github.com/nyaruka/courier/handlers/meta/messenger"
 	"github.com/nyaruka/courier/handlers/meta/whatsapp"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
@@ -719,16 +720,13 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 		// include any quick replies on the last piece we send
 		if part.IsLast {
 			for _, qr := range msg.QuickReplies() {
-				payload.Message.QuickReplies = append(payload.Message.QuickReplies, messenger.QuickReply{qr, qr, "text"})
+				payload.Message.QuickReplies = append(payload.Message.QuickReplies, messenger.QuickReply{Title: qr, Payload: qr, ContentType: "text"})
 			}
 		} else {
 			payload.Message.QuickReplies = nil
 		}
 
-		jsonBody, err := json.Marshal(payload)
-		if err != nil {
-			return status, err
-		}
+		jsonBody := jsonx.MustMarshal(payload)
 
 		req, err := http.NewRequest(http.MethodPost, msgURL.String(), bytes.NewReader(jsonBody))
 		if err != nil {
@@ -1013,7 +1011,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 								zeroIndex = true
 							}
 							payloadAudio = whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &whatsapp.Media{Link: attURL}}
-							status, err := requestWAC(payloadAudio, accessToken, status, wacPhoneURL, zeroIndex, clog)
+							err := requestWAC(payloadAudio, accessToken, status, wacPhoneURL, zeroIndex, clog)
 							if err != nil {
 								return status, nil
 							}
@@ -1082,7 +1080,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 			zeroIndex = true
 		}
 
-		status, err := requestWAC(payload, accessToken, status, wacPhoneURL, zeroIndex, clog)
+		err := requestWAC(payload, accessToken, status, wacPhoneURL, zeroIndex, clog)
 		if err != nil {
 			return status, err
 		}
@@ -1094,15 +1092,12 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 	return status, nil
 }
 
-func requestWAC(payload whatsapp.SendRequest, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
-	jsonBody, err := json.Marshal(payload)
-	if err != nil {
-		return status, err
-	}
+func requestWAC(payload whatsapp.SendRequest, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) error {
+	jsonBody := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
@@ -1114,12 +1109,12 @@ func requestWAC(payload whatsapp.SendRequest, accessToken string, status courier
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
 		clog.Error(courier.ErrorResponseUnparseable("JSON"))
-		return status, nil
+		return nil
 	}
 
 	if respPayload.Error.Code != 0 {
 		clog.Error(courier.ErrorExternal(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message))
-		return status, nil
+		return nil
 	}
 
 	externalID := respPayload.Messages[0].ID
@@ -1128,7 +1123,7 @@ func requestWAC(payload whatsapp.SendRequest, accessToken string, status courier
 	}
 	// this was wired successfully
 	status.SetStatus(courier.MsgStatusWired)
-	return status, nil
+	return nil
 }
 
 // DescribeURN looks up URN metadata for new contacts

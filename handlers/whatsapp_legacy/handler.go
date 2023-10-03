@@ -18,6 +18,7 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/redisx"
 	"github.com/patrickmn/go-cache"
@@ -909,11 +910,8 @@ func (h *handler) fetchMediaID(msg courier.MsgOut, mimeType, mediaURL string, cl
 }
 
 func sendWhatsAppMsg(rc redis.Conn, msg courier.MsgOut, sendPath *url.URL, payload any, clog *courier.ChannelLog) (string, string, error) {
-	jsonBody, err := json.Marshal(payload)
+	jsonBody := jsonx.MustMarshal(payload)
 
-	if err != nil {
-		return "", "", err
-	}
 	req, _ := http.NewRequest(http.MethodPost, sendPath.String(), bytes.NewReader(jsonBody))
 	req.Header = buildWhatsAppHeaders(msg.Channel())
 
@@ -997,11 +995,7 @@ func sendWhatsAppMsg(rc redis.Conn, msg courier.MsgOut, sendPath *url.URL, paylo
 			// marshal updated payload
 			if updatedPayload != nil {
 				payload = updatedPayload
-				jsonBody, err = json.Marshal(payload)
-
-				if err != nil {
-					return "", "", err
-				}
+				jsonBody = jsonx.MustMarshal(payload)
 			}
 		}
 		// try send msg again
@@ -1091,11 +1085,7 @@ func checkWhatsAppContact(channel courier.Channel, baseURL string, urn urns.URN,
 		Contacts:   []string{fmt.Sprintf("+%s", urn.Path())},
 		ForceCheck: true,
 	}
-	reqBody, err := json.Marshal(payload)
-
-	if err != nil {
-		return nil, err
-	}
+	reqBody := jsonx.MustMarshal(payload)
 	sendURL := fmt.Sprintf("%s/v1/contacts", baseURL)
 	req, _ := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(reqBody))
 	req.Header = buildWhatsAppHeaders(channel)

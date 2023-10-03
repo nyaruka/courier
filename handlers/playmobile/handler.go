@@ -3,7 +3,6 @@ package playmobile
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -13,6 +12,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/jsonx"
 )
 
 const (
@@ -183,11 +183,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		message.SMS.Content.Text = part
 
 		payload.Messages = append(payload.Messages, message)
-		jsonBody, err := json.Marshal(payload)
-
-		if err != nil {
-			return nil, err
-		}
+		jsonBody := jsonx.MustMarshal(payload)
 
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, baseURL), bytes.NewReader(jsonBody))
 		if err != nil {
