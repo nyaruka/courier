@@ -44,7 +44,7 @@ type ChannelEvent struct {
 	URN_         urns.URN                 `json:"urn"                     db:"urn"`
 	EventType_   courier.ChannelEventType `json:"event_type"              db:"event_type"`
 	OptInID_     null.Int                 `json:"optin_id"                db:"optin_id"`
-	Extra_       null.Map[any]            `json:"extra"                   db:"extra"`
+	Extra_       null.Map[string]         `json:"extra"                   db:"extra"`
 	OccurredOn_  time.Time                `json:"occurred_on"             db:"occurred_on"`
 	CreatedOn_   time.Time                `json:"created_on"              db:"created_on"`
 	LogUUIDs     pq.StringArray           `json:"log_uuids"               db:"log_uuids"`
@@ -83,7 +83,7 @@ func (e *ChannelEvent) ChannelID() courier.ChannelID        { return e.ChannelID
 func (e *ChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.ChannelUUID_ }
 func (e *ChannelEvent) EventType() courier.ChannelEventType { return e.EventType_ }
 func (e *ChannelEvent) URN() urns.URN                       { return e.URN_ }
-func (e *ChannelEvent) Extra() map[string]any               { return e.Extra_ }
+func (e *ChannelEvent) Extra() map[string]string            { return e.Extra_ }
 func (e *ChannelEvent) OccurredOn() time.Time               { return e.OccurredOn_ }
 func (e *ChannelEvent) CreatedOn() time.Time                { return e.CreatedOn_ }
 func (e *ChannelEvent) Channel() *Channel                   { return e.channel }
@@ -98,15 +98,16 @@ func (e *ChannelEvent) WithURNAuthTokens(tokens map[string]string) courier.Chann
 	return e
 }
 
-func (e *ChannelEvent) WithExtra(extra map[string]any) courier.ChannelEvent {
-	optInID, ok := extra["optin_id"]
-	if ok {
-		asStr, _ := optInID.(string)
-		asInt, _ := strconv.Atoi(asStr)
-		e.OptInID_ = null.Int(asInt)
+func (e *ChannelEvent) WithExtra(extra map[string]string) courier.ChannelEvent {
+	if e.EventType_ == courier.EventTypeOptIn || e.EventType_ == courier.EventTypeOptOut {
+		optInID := extra["payload"]
+		if optInID != "" {
+			asInt, _ := strconv.Atoi(optInID)
+			e.OptInID_ = null.Int(asInt)
+		}
 	}
 
-	e.Extra_ = null.Map[any](extra)
+	e.Extra_ = null.Map[string](extra)
 	return e
 }
 
