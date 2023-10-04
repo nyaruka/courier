@@ -40,7 +40,7 @@ type ExpectedEvent struct {
 	Type  courier.ChannelEventType
 	URN   urns.URN
 	Time  time.Time
-	Extra map[string]any
+	Extra map[string]string
 }
 
 // IncomingTestCase defines the test values for a particular test case

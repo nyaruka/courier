@@ -43,7 +43,8 @@ type ChannelEvent struct {
 	ChannelID_   courier.ChannelID        `json:"channel_id"              db:"channel_id"`
 	URN_         urns.URN                 `json:"urn"                     db:"urn"`
 	EventType_   courier.ChannelEventType `json:"event_type"              db:"event_type"`
-	Extra_       null.Map[any]            `json:"extra"                   db:"extra"`
+	OptInID_     null.Int                 `json:"optin_id"                db:"optin_id"`
+	Extra_       null.Map[string]         `json:"extra"                   db:"extra"`
 	OccurredOn_  time.Time                `json:"occurred_on"             db:"occurred_on"`
 	CreatedOn_   time.Time                `json:"created_on"              db:"created_on"`
 	LogUUIDs     pq.StringArray           `json:"log_uuids"               db:"log_uuids"`
@@ -82,7 +83,7 @@ func (e *ChannelEvent) ChannelID() courier.ChannelID        { return e.ChannelID
 func (e *ChannelEvent) ChannelUUID() courier.ChannelUUID    { return e.ChannelUUID_ }
 func (e *ChannelEvent) EventType() courier.ChannelEventType { return e.EventType_ }
 func (e *ChannelEvent) URN() urns.URN                       { return e.URN_ }
-func (e *ChannelEvent) Extra() map[string]any               { return e.Extra_ }
+func (e *ChannelEvent) Extra() map[string]string            { return e.Extra_ }
 func (e *ChannelEvent) OccurredOn() time.Time               { return e.OccurredOn_ }
 func (e *ChannelEvent) CreatedOn() time.Time                { return e.CreatedOn_ }
 func (e *ChannelEvent) Channel() *Channel                   { return e.channel }
@@ -97,8 +98,16 @@ func (e *ChannelEvent) WithURNAuthTokens(tokens map[string]string) courier.Chann
 	return e
 }
 
-func (e *ChannelEvent) WithExtra(extra map[string]any) courier.ChannelEvent {
-	e.Extra_ = null.Map[any](extra)
+func (e *ChannelEvent) WithExtra(extra map[string]string) courier.ChannelEvent {
+	if e.EventType_ == courier.EventTypeOptIn || e.EventType_ == courier.EventTypeOptOut {
+		optInID := extra["payload"]
+		if optInID != "" {
+			asInt, _ := strconv.Atoi(optInID)
+			e.OptInID_ = null.Int(asInt)
+		}
+	}
+
+	e.Extra_ = null.Map[string](extra)
 	return e
 }
 
@@ -127,8 +136,8 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 
 const sqlInsertChannelEvent = `
 INSERT INTO 
-	channels_channelevent( org_id,  channel_id,  contact_id,  contact_urn_id,  event_type,  extra,  occurred_on,  created_on,  log_uuids)
-				   VALUES(:org_id, :channel_id, :contact_id, :contact_urn_id, :event_type, :extra, :occurred_on, :created_on, :log_uuids)
+	channels_channelevent( org_id,  channel_id,  contact_id,  contact_urn_id,  event_type,  optin_id,  extra,  occurred_on,  created_on,  log_uuids)
+				   VALUES(:org_id, :channel_id, :contact_id, :contact_urn_id, :event_type, :optin_id, :extra, :occurred_on, :created_on, :log_uuids)
 RETURNING id`
 
 // writeChannelEventToDB writes the passed in msg status to our db
