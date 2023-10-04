@@ -122,7 +122,7 @@ var facebookIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeOptIn, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]any{"optin_id": 3456, "optin_name": "Bird Facts"}},
+			{Type: courier.EventTypeOptIn, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]any{"optin_id": "3456", "optin_name": "Bird Facts"}},
 		},
 		ExpectedURNAuthTokens: map[urns.URN]map[string]string{"facebook:5678": {"optin:3456": "12345678901234567890"}},
 		PrepRequest:           addValidSignature,
@@ -134,7 +134,7 @@ var facebookIncomingTests = []IncomingTestCase{
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
 		ExpectedEvents: []ExpectedEvent{
-			{Type: courier.EventTypeOptOut, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]any{"optin_id": 3456, "optin_name": "Bird Facts"}},
+			{Type: courier.EventTypeOptOut, URN: "facebook:5678", Time: time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC), Extra: map[string]any{"optin_id": "3456", "optin_name": "Bird Facts"}},
 		},
 		ExpectedURNAuthTokens: map[urns.URN]map[string]string{"facebook:5678": {}},
 		PrepRequest:           addValidSignature,

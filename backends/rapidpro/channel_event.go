@@ -43,6 +43,7 @@ type ChannelEvent struct {
 	ChannelID_   courier.ChannelID        `json:"channel_id"              db:"channel_id"`
 	URN_         urns.URN                 `json:"urn"                     db:"urn"`
 	EventType_   courier.ChannelEventType `json:"event_type"              db:"event_type"`
+	OptInID_     null.Int                 `json:"optin_id"                db:"optin_id"`
 	Extra_       null.Map[any]            `json:"extra"                   db:"extra"`
 	OccurredOn_  time.Time                `json:"occurred_on"             db:"occurred_on"`
 	CreatedOn_   time.Time                `json:"created_on"              db:"created_on"`
@@ -98,6 +99,13 @@ func (e *ChannelEvent) WithURNAuthTokens(tokens map[string]string) courier.Chann
 }
 
 func (e *ChannelEvent) WithExtra(extra map[string]any) courier.ChannelEvent {
+	optInID, ok := extra["optin_id"]
+	if ok {
+		asStr, _ := optInID.(string)
+		asInt, _ := strconv.Atoi(asStr)
+		e.OptInID_ = null.Int(asInt)
+	}
+
 	e.Extra_ = null.Map[any](extra)
 	return e
 }
@@ -127,8 +135,8 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 
 const sqlInsertChannelEvent = `
 INSERT INTO 
-	channels_channelevent( org_id,  channel_id,  contact_id,  contact_urn_id,  event_type,  extra,  occurred_on,  created_on,  log_uuids)
-				   VALUES(:org_id, :channel_id, :contact_id, :contact_urn_id, :event_type, :extra, :occurred_on, :created_on, :log_uuids)
+	channels_channelevent( org_id,  channel_id,  contact_id,  contact_urn_id,  event_type,  optin_id,  extra,  occurred_on,  created_on,  log_uuids)
+				   VALUES(:org_id, :channel_id, :contact_id, :contact_urn_id, :event_type, :optin_id, :extra, :occurred_on, :created_on, :log_uuids)
 RETURNING id`
 
 // writeChannelEventToDB writes the passed in msg status to our db
