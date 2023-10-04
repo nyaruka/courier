@@ -1,3 +1,9 @@
+v8.3.23 (2023-10-04)
+-------------------------
+ * Switch channelevent.extra to always be strings
+ * Add optin_id to channels_channelevent
+ * Allow outgoing tests to check multiple requests
+
 v8.3.22 (2023-09-27)
 -------------------------
  * Use Facebook API v17.0
