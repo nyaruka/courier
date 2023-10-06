@@ -1,6 +1,7 @@
 package courier_test
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 	"testing"
@@ -10,13 +11,12 @@ import (
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/uuids"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestServer(t *testing.T) {
-	logger := logrus.New()
+	logger := slog.Default()
 	config := courier.NewConfig()
 	config.StatusUsername = "admin"
 	config.StatusPassword = "password123"
@@ -89,7 +89,7 @@ func TestFetchAttachment(t *testing.T) {
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
 	uuids.SetGenerator(uuids.NewSeededGenerator(1234))
 
-	logger := logrus.New()
+	logger := slog.Default()
 	config := courier.NewConfig()
 	config.AuthToken = "sesame"
 
