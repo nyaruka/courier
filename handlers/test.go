@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -147,8 +148,7 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers ma
 
 func newServer(backend courier.Backend) courier.Server {
 	// for benchmarks, log to null
-	logger := logrus.New()
-	logger.Out = io.Discard
+	logger := slog.Default()
 	logrus.SetOutput(io.Discard)
 
 	config := courier.NewConfig()

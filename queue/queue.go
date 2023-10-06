@@ -1,12 +1,12 @@
 package queue
 
 import (
+	"log/slog"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/sirupsen/logrus"
 )
 
 // Priority represents the priority of an item in a queue
@@ -201,7 +201,7 @@ func PopFromQueue(conn redis.Conn, qType string) (WorkerToken, string, error) {
 	epochMS := strconv.FormatFloat(float64(time.Now().UnixNano()/int64(time.Microsecond))/float64(1000000), 'f', 6, 64)
 	values, err := redis.Strings(luaPop.Do(conn, epochMS, qType))
 	if err != nil {
-		logrus.Error(err)
+		slog.Error("error popping from queue", "error", err)
 		return "", "", err
 	}
 	return WorkerToken(values[0]), values[1], nil
@@ -275,7 +275,7 @@ func StartDethrottler(redis *redis.Pool, quitter chan bool, wg *sync.WaitGroup, 
 				conn := redis.Get()
 				_, err := luaDethrottle.Do(conn, qType)
 				if err != nil {
-					logrus.WithError(err).Error("error dethrottling")
+					slog.Error("error dethrottling", "error", err)
 				}
 				conn.Close()
 

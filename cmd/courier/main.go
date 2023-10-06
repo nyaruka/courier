@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -8,6 +9,7 @@ import (
 	"github.com/evalphobia/logrus_sentry"
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/utils"
 	"github.com/sirupsen/logrus"
 
 	// load channel handler packages
@@ -88,9 +90,16 @@ func main() {
 	logrus.SetOutput(os.Stdout)
 	level, err := logrus.ParseLevel(config.LogLevel)
 	if err != nil {
-		logrus.Fatalf("Invalid log level '%s'", level)
+		slog.Error("invalid log level", "level", level)
+		os.Exit(1)
 	}
 	logrus.SetLevel(level)
+
+	// configure golang std structured logging to route to logrus
+	slog.SetDefault(slog.New(utils.NewLogrusHandler(logrus.StandardLogger())))
+
+	log := slog.With("comp", "main")
+	log.Info("starting courier", "version", version)
 
 	// if we have a DSN entry, try to initialize it
 	if config.SentryDSN != "" {
@@ -100,7 +109,8 @@ func main() {
 		hook.StacktraceConfiguration.Skip = 4
 		hook.StacktraceConfiguration.Context = 5
 		if err != nil {
-			logrus.Fatalf("Invalid sentry DSN: '%s': %s", config.SentryDSN, err)
+			log.Error("unable to configure sentry hook", "dsn", config.SentryDSN, "error", err)
+			os.Exit(1)
 		}
 		logrus.StandardLogger().Hooks.Add(hook)
 	}
@@ -108,18 +118,22 @@ func main() {
 	// load our backend
 	backend, err := courier.NewBackend(config)
 	if err != nil {
-		logrus.Fatalf("Error creating backend: %s", err)
+		log.Error("error creating backend", "error", err)
+		os.Exit(1)
 	}
 
 	server := courier.NewServer(config, backend)
 	err = server.Start()
 	if err != nil {
-		logrus.Fatalf("Error starting server: %s", err)
+		log.Error("unable to start server", "error", err)
+		os.Exit(1)
 	}
 
-	ch := make(chan os.Signal)
+	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	logrus.WithField("comp", "main").WithField("signal", <-ch).Info("stopping")
+	slog.Info("stopping", "comp", "main", "signal", <-ch)
+	logrus.WithField("comp", "main").WithField("signal", <-ch)
 
 	server.Stop()
+
 }

@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"runtime/debug"
@@ -56,13 +57,13 @@ type Server interface {
 // afterwards, which is when configuration options are checked.
 func NewServer(config *Config, backend Backend) Server {
 	// create our top level router
-	logger := logrus.New()
+	logger := slog.Default()
 	return NewServerWithLogger(config, backend, logger)
 }
 
 // NewServerWithLogger creates a new Server for the passed in configuration. The server will have to be started
 // afterwards, which is when configuration options are checked.
-func NewServerWithLogger(config *Config, backend Backend, logger *logrus.Logger) Server {
+func NewServerWithLogger(config *Config, backend Backend, logger *slog.Logger) Server {
 	router := chi.NewRouter()
 	router.Use(middleware.Compress(flate.DefaultCompression))
 	router.Use(middleware.StripSlashes)

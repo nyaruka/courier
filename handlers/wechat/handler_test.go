@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -212,8 +213,7 @@ func buildMockWCAPI(testCases []IncomingTestCase) *httptest.Server {
 
 func newServer(backend courier.Backend) courier.Server {
 	// for benchmarks, log to null
-	logger := logrus.New()
-	logger.Out = io.Discard
+	logger := slog.Default()
 	logrus.SetOutput(io.Discard)
 	config := courier.NewConfig()
 	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
