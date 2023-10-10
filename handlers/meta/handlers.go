@@ -560,6 +560,9 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 				if att.Type == "image" && att.Payload != nil && att.Payload.StickerID != 0 {
 					text = stickerIDToEmoji[att.Payload.StickerID]
 				}
+				if att.Type == "like_heart" {
+					text = "❤️"
+				}
 
 				if att.Type == "location" {
 					attachmentURLs = append(attachmentURLs, fmt.Sprintf("geo:%f,%f", att.Payload.Coordinates.Lat, att.Payload.Coordinates.Long))

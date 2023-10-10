@@ -73,7 +73,7 @@ var instagramIncomingTests = []IncomingTestCase{
 		Data:                 string(test.ReadFile("./testdata/ig/like_heart.json")),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Handled",
-		ExpectedMsgText:      Sp(""),
+		ExpectedMsgText:      Sp("❤️"),
 		ExpectedURN:          "instagram:5678",
 		ExpectedExternalID:   "external_id",
 		ExpectedDate:         time.Date(2016, 4, 7, 1, 11, 27, 970000000, time.UTC),
