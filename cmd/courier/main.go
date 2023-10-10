@@ -132,7 +132,6 @@ func main() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	slog.Info("stopping", "comp", "main", "signal", <-ch)
-	logrus.WithField("comp", "main").WithField("signal", <-ch)
 
 	server.Stop()
 
