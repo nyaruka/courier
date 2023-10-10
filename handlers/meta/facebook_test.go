@@ -184,6 +184,14 @@ var facebookIncomingTests = []IncomingTestCase{
 		PrepRequest: addValidSignature,
 	},
 	{
+		Label:              "Receive Fallback Attachment",
+		URL:                "/c/fba/receive",
+		Data:               string(test.ReadFile("./testdata/fba/fallback.json")),
+		ExpectedRespStatus: 200,
+		ExpectedEvents:     []ExpectedEvent{},
+		PrepRequest:        addValidSignature,
+	},
+	{
 		Label:                "Receive DLR",
 		URL:                  "/c/fba/receive",
 		Data:                 string(test.ReadFile("./testdata/fba/dlr.json")),
