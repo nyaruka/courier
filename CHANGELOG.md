@@ -1,3 +1,9 @@
+v8.3.24 (2023-10-10)
+-------------------------
+ * Fix handling IG like hearts
+ * Ignore attachments of type fallback on FBA channels
+ * More logrus replacement to use slog
+
 v8.3.23 (2023-10-04)
 -------------------------
  * Switch channelevent.extra to always be strings
