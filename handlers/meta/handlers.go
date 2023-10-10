@@ -552,16 +552,16 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 				continue
 			}
 
-			has_story_mentions := false
-
 			text := msg.Message.Text
-
 			attachmentURLs := make([]string, 0, 2)
 
-			// if we have a sticker ID, use that as our text
 			for _, att := range msg.Message.Attachments {
+				// if we have a sticker ID, use that as our text
 				if att.Type == "image" && att.Payload != nil && att.Payload.StickerID != 0 {
 					text = stickerIDToEmoji[att.Payload.StickerID]
+				}
+				if att.Type == "like_heart" {
+					text = "❤️"
 				}
 
 				if att.Type == "location" {
@@ -570,18 +570,17 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 				if att.Type == "story_mention" {
 					data = append(data, courier.NewInfoData("ignoring story_mention"))
-					has_story_mentions = true
 					continue
 				}
 
-				if att.Payload != nil && att.Payload.URL != "" {
+				if att.Payload != nil && att.Payload.URL != "" && att.Type != "fallback" {
 					attachmentURLs = append(attachmentURLs, att.Payload.URL)
 				}
 
 			}
 
-			// if we have a story mention, skip and do not save any message
-			if has_story_mentions {
+			// if we have no text or accepted attachments, don't create a message
+			if text == "" && len(attachmentURLs) == 0 {
 				continue
 			}
 

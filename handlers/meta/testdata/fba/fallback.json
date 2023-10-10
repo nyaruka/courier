@@ -1,0 +1,32 @@
+{
+	"object": "page",
+	"entry": [
+		{
+			"id": "12345",
+			"messaging": [
+				{
+					"message": {
+						"mid": "external_id",
+						"attachments": [
+							{
+								"type": "fallback",
+								"payload": {
+									"url": "My Documents/foo.doc",
+									"title": "Foo"
+								}
+							}
+						]
+					},
+					"recipient": {
+						"id": "12345"
+					},
+					"sender": {
+						"id": "5678"
+					},
+					"timestamp": 1459991487970
+				}
+			],
+			"time": 1459991487970
+		}
+	]
+}
