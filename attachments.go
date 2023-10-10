@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"mime"
 	"net/http"
 	"net/url"
@@ -12,7 +13,6 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/h2non/filetype.v1"
 )
 
@@ -64,7 +64,7 @@ func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAtt
 	// try to write channel log even if we have an error
 	clog.End()
 	if err := b.WriteChannelLog(ctx, clog); err != nil {
-		logrus.WithError(err).Error()
+		slog.Error("error writing log", "error", err)
 	}
 
 	if err != nil {

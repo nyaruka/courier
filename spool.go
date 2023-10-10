@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
 
 // FlusherFunc defines our interface for flushers, they are handed a filename and byte blob and are expected
@@ -46,8 +45,8 @@ func startSpoolFlushers(s Server) {
 	go func() {
 		defer s.WaitGroup().Done()
 
-		log := logrus.WithField("comp", "spool")
-		log.WithField("state", "started").Info("spool started")
+		log := slog.With("comp", "spool")
+		log.Info("spool started", "state", "started")
 
 		// runs until stopped, checking every 30 seconds if there is anything to flush from our spool
 		for {
@@ -55,7 +54,7 @@ func startSpoolFlushers(s Server) {
 
 			// our server is shutting down, exit
 			case <-s.StopChan():
-				log.WithField("state", "stopped").Info("spool stopped")
+				log.Info("spool stopped", "state", "stopped")
 				return
 
 			// every 30 seconds we check to see if there are any files to spool
@@ -99,18 +98,18 @@ func newSpoolFlusher(s Server, dir string, flusherFunc FlusherFunc) *flusher {
 			return nil
 		}
 
-		log := logrus.WithField("comp", "spool").WithField("filename", filename)
+		log := slog.With("comp", "spool", "filename", filename)
 
 		// otherwise, read our msg json
 		contents, err := os.ReadFile(filename)
 		if err != nil {
-			log.WithError(err).Error("reading spool file")
+			log.Error("reading spool file", "error", err)
 			return nil
 		}
 
 		err = flusherFunc(filename, contents)
 		if err != nil {
-			log.WithError(err).Error("flushing spool file")
+			log.Error("flushing spool file", "error", err)
 			return err
 		}
 		log.Info("flushed")
