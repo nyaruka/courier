@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -23,7 +24,6 @@ import (
 	"github.com/nyaruka/redisx"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/mod/semver"
 )
 
@@ -577,7 +577,7 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 			mimeType, mediaURL := handlers.SplitAttachment(attachment)
 			mediaID, err := h.fetchMediaID(msg, mimeType, mediaURL, clog)
 			if err != nil {
-				logrus.WithField("channel_uuid", msg.Channel().UUID()).WithError(err).Error("error while uploading media to whatsapp")
+				slog.Error("error while uploading media to whatsapp", "error", err, "channel_uuid", msg.Channel().UUID())
 			}
 			fileURL := mediaURL
 			if err == nil && mediaID != "" {
@@ -604,7 +604,7 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 
 				// Logging error
 				if err != nil {
-					logrus.WithField("channel_uuid", msg.Channel().UUID()).WithError(err).Error("Error while parsing the media URL")
+					slog.Error("Error while parsing the media URL", "error", err, "channel_uuid", msg.Channel().UUID())
 				}
 				payload.Document = mediaPayload
 				payloads = append(payloads, payload)

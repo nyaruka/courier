@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -16,7 +17,6 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Endpoints we hit
@@ -124,7 +124,7 @@ func (h *handler) subscribeToEvents(ctx context.Context, channel courier.Channel
 	// log if we get any kind of error
 	success, _ := jsonparser.GetBoolean(respBody, "success")
 	if err != nil || resp.StatusCode/100 != 2 || !success {
-		logrus.WithField("channel_uuid", channel.UUID()).Error("error subscribing to Facebook page events")
+		slog.Error("error subscribing to Facebook page events", "channel_uuid", channel.UUID())
 	}
 
 	h.Backend().WriteChannelLog(ctx, clog)

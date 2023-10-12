@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -14,7 +15,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -181,7 +181,7 @@ func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg c
 	conn.Close()
 
 	if err != nil {
-		logrus.WithError(err).Error("error caching HM access token")
+		slog.Error("error caching HM access token", "error", err)
 	}
 
 	return token, nil

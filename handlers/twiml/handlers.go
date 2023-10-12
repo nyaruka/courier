@@ -12,6 +12,7 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"sort"
@@ -25,7 +26,6 @@ import (
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -181,7 +181,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	if idString != "" {
 		msgID, err := strconv.ParseInt(idString, 10, 64)
 		if err != nil {
-			logrus.WithError(err).WithField("id", idString).Error("error converting twilio callback id to integer")
+			slog.Error("error converting twilio callback id to integer", "error", err, "id", idString)
 		} else {
 			status = h.Backend().NewStatusUpdate(channel, courier.MsgID(msgID), msgStatus, clog)
 		}
