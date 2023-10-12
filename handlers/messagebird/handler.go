@@ -9,6 +9,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"log/slog"
 	"strconv"
 
 	"fmt"
@@ -22,7 +23,6 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -113,7 +113,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	if receivedStatus.Reference != "" {
 		msgID, err := strconv.ParseInt(receivedStatus.Reference, 10, 64)
 		if err != nil {
-			logrus.WithError(err).WithField("id", receivedStatus.Reference).Error("error converting Messagebird status id to integer")
+			slog.Error("error converting Messagebird status id to integer", "error", err, "id", receivedStatus.Reference)
 		} else {
 			status = h.Backend().NewStatusUpdate(channel, courier.MsgID(msgID), msgStatus, clog)
 		}
