@@ -1,16 +1,17 @@
 package main
 
 import (
+	"log"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
-	"github.com/evalphobia/logrus_sentry"
+	"github.com/getsentry/sentry-go"
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/utils"
-	"github.com/sirupsen/logrus"
+	slogsentry "github.com/samber/slog-sentry"
 
 	// load channel handler packages
 	_ "github.com/nyaruka/courier/handlers/africastalking"
@@ -87,51 +88,56 @@ func main() {
 	}
 
 	// configure our logger
-	logrus.SetOutput(os.Stdout)
-	level, err := logrus.ParseLevel(config.LogLevel)
+	loggerLevel := new(slog.LevelVar)
+	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: loggerLevel})
+	slog.SetDefault(slog.New(logHandler))
+
+	var level slog.Level
+	err := level.UnmarshalText([]byte(config.LogLevel))
 	if err != nil {
-		slog.Error("invalid log level", "level", level)
+		log.Fatalf("invalid log level %s", level)
 		os.Exit(1)
 	}
-	logrus.SetLevel(level)
+	loggerLevel.Set(level)
 
-	// configure golang std structured logging to route to logrus
-	slog.SetDefault(slog.New(utils.NewLogrusHandler(logrus.StandardLogger())))
-
-	log := slog.With("comp", "main")
-	log.Info("starting courier", "version", version)
+	logger := slog.With("comp", "main")
+	logger.Info("starting courier", "version", version)
 
 	// if we have a DSN entry, try to initialize it
 	if config.SentryDSN != "" {
-		hook, err := logrus_sentry.NewSentryHook(config.SentryDSN, []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel})
-		hook.Timeout = 0
-		hook.StacktraceConfiguration.Enable = true
-		hook.StacktraceConfiguration.Skip = 4
-		hook.StacktraceConfiguration.Context = 5
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn:           config.SentryDSN,
+			EnableTracing: false,
+		})
 		if err != nil {
-			log.Error("unable to configure sentry hook", "dsn", config.SentryDSN, "error", err)
+			log.Fatalf("error initiating sentry client, error %s, dsn %s", err, config.SentryDSN)
 			os.Exit(1)
 		}
-		logrus.StandardLogger().Hooks.Add(hook)
+
+		defer sentry.Flush(2 * time.Second)
+
+		logger = slog.New(slogsentry.Option{Level: slog.LevelError}.NewSentryHandler())
+		logger = logger.With("release", version)
+		slog.SetDefault(logger)
 	}
 
 	// load our backend
 	backend, err := courier.NewBackend(config)
 	if err != nil {
-		log.Error("error creating backend", "error", err)
+		logger.Error("error creating backend", "error", err)
 		os.Exit(1)
 	}
 
 	server := courier.NewServer(config, backend)
 	err = server.Start()
 	if err != nil {
-		log.Error("unable to start server", "error", err)
+		logger.Error("unable to start server", "error", err)
 		os.Exit(1)
 	}
 
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	slog.Info("stopping", "comp", "main", "signal", <-ch)
+	logger.Info("stopping", "comp", "main", "signal", <-ch)
 
 	server.Stop()
 
