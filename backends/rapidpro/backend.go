@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -29,7 +30,6 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/redisx"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // the name for our message queue
@@ -105,10 +105,10 @@ func newBackend(cfg *courier.Config) courier.Backend {
 // Start starts our RapidPro backend, this tests our various connections and starts our spool flushers
 func (b *backend) Start() error {
 	// parse and test our redis config
-	log := logrus.WithFields(logrus.Fields{
-		"comp":  "backend",
-		"state": "starting",
-	})
+	log := slog.With(
+		"comp", "backend",
+		"state", "starting",
+	)
 	log.Info("starting backend")
 
 	// parse and test our db config
@@ -137,7 +137,7 @@ func (b *backend) Start() error {
 	err = b.db.PingContext(ctx)
 	cancel()
 	if err != nil {
-		log.WithError(err).Error("db not reachable")
+		log.Error("db not reachable", "error", err)
 	} else {
 		log.Info("db ok")
 	}
@@ -183,7 +183,7 @@ func (b *backend) Start() error {
 	defer conn.Close()
 	_, err = conn.Do("PING")
 	if err != nil {
-		log.WithError(err).Error("redis not reachable")
+		log.Error("redis not reachable", "error", err)
 	} else {
 		log.Info("redis ok")
 	}
@@ -221,12 +221,12 @@ func (b *backend) Start() error {
 
 	// check our storages
 	if err := checkStorage(b.attachmentStorage); err != nil {
-		log.WithError(err).Error(b.attachmentStorage.Name() + " attachment storage not available")
+		log.Error(b.attachmentStorage.Name()+" attachment storage not available", "error", err)
 	} else {
 		log.Info(b.attachmentStorage.Name() + " attachment storage ok")
 	}
 	if err := checkStorage(b.logStorage); err != nil {
-		log.WithError(err).Error(b.logStorage.Name() + " log storage not available")
+		log.Error(b.logStorage.Name()+" log storage not available", "error", err)
 	} else {
 		log.Info(b.logStorage.Name() + " log storage ok")
 	}
@@ -240,7 +240,7 @@ func (b *backend) Start() error {
 		err = courier.EnsureSpoolDirPresent(b.config.SpoolDir, "events")
 	}
 	if err != nil {
-		log.WithError(err).Error("spool directories not writable")
+		log.Error("spool directories not writable", "error", err)
 	} else {
 		log.Info("spool directories ok")
 	}
@@ -260,7 +260,7 @@ func (b *backend) Start() error {
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "statuses"), b.flushStatusFile)
 	courier.RegisterFlusher(path.Join(b.config.SpoolDir, "events"), b.flushChannelEventFile)
 
-	logrus.WithFields(logrus.Fields{"comp": "backend", "state": "started"}).Info("backend started")
+	slog.Info("backend started", "comp", "backend", "state", "started")
 	return nil
 }
 
@@ -496,14 +496,14 @@ func (b *backend) MarkOutgoingMsgComplete(ctx context.Context, msg courier.MsgOu
 		rc.Send("expire", dateKey, 60*60*24*2)
 		_, err := rc.Do("")
 		if err != nil {
-			logrus.WithError(err).WithField("sent_msgs_key", dateKey).Error("unable to add new unsent message")
+			slog.Error("unable to add new unsent message", "error", err, "sent_msgs_key", dateKey)
 		}
 
 		// if our msg has an associated session and timeout, update that
 		if dbMsg.SessionWaitStartedOn_ != nil {
 			err = updateSessionTimeout(ctx, b, dbMsg.SessionID_, *dbMsg.SessionWaitStartedOn_, dbMsg.SessionTimeout_)
 			if err != nil {
-				logrus.WithError(err).WithField("session_id", dbMsg.SessionID_).Error("unable to update session timeout")
+				slog.Error("unable to update session timeout", "error", err, "session_id", dbMsg.SessionID_)
 			}
 		}
 	}
@@ -529,7 +529,7 @@ func (b *backend) NewStatusUpdateByExternalID(channel courier.Channel, externalI
 
 // WriteStatusUpdate writes the passed in MsgStatus to our store
 func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUpdate) error {
-	log := logrus.WithFields(logrus.Fields{"msg_id": status.MsgID(), "msg_external_id": status.ExternalID(), "status": status.Status()})
+	log := slog.With("msg_id", status.MsgID(), "msg_external_id", status.ExternalID(), "status", status.Status())
 	su := status.(*StatusUpdate)
 
 	if status.MsgID() == courier.NilMsgID && status.ExternalID() == "" {
@@ -553,7 +553,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 
 			err := b.sentExternalIDs.Set(rc, fmt.Sprintf("%d|%s", su.ChannelID_, su.ExternalID_), fmt.Sprintf("%d", status.MsgID()))
 			if err != nil {
-				log.WithError(err).Error("error recording external id")
+				log.Error("error recording external id", "error", err)
 			}
 		}
 
@@ -561,7 +561,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 		if status.Status() == courier.MsgStatusErrored {
 			err := b.ClearMsgSent(ctx, status.MsgID())
 			if err != nil {
-				log.WithError(err).Error("error clearing sent flags")
+				log.Error("error clearing sent flags", "error", err)
 			}
 		}
 	}
@@ -799,16 +799,14 @@ func (b *backend) Heartbeat() error {
 	analytics.Gauge("courier.bulk_queue", float64(bulkSize))
 	analytics.Gauge("courier.priority_queue", float64(prioritySize))
 
-	logrus.WithFields(logrus.Fields{
-		"db_busy":          dbStats.InUse,
-		"db_idle":          dbStats.Idle,
-		"db_wait_time":     dbWaitDurationInPeriod,
-		"db_wait_count":    dbWaitCountInPeriod,
-		"redis_wait_time":  dbWaitDurationInPeriod,
-		"redis_wait_count": dbWaitCountInPeriod,
-		"priority_size":    prioritySize,
-		"bulk_size":        bulkSize,
-	}).Info("current analytics")
+	slog.Info("current analytics", "db_busy", dbStats.InUse,
+		"db_idle", dbStats.Idle,
+		"db_wait_time", dbWaitDurationInPeriod,
+		"db_wait_count", dbWaitCountInPeriod,
+		"redis_wait_time", dbWaitDurationInPeriod,
+		"redis_wait_count", dbWaitCountInPeriod,
+		"priority_size", prioritySize,
+		"bulk_size", bulkSize)
 
 	return nil
 }

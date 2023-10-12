@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"log/slog"
 	"mime/multipart"
 	"net/http"
@@ -21,7 +22,6 @@ import (
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -149,7 +149,7 @@ func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers ma
 func newServer(backend courier.Backend) courier.Server {
 	// for benchmarks, log to null
 	logger := slog.Default()
-	logrus.SetOutput(io.Discard)
+	log.SetOutput(io.Discard)
 
 	config := courier.NewConfig()
 	config.FacebookWebhookSecret = "fb_webhook_secret"

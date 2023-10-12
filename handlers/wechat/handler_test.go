@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"io"
+	"log"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -19,7 +20,6 @@ import (
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -214,7 +214,7 @@ func buildMockWCAPI(testCases []IncomingTestCase) *httptest.Server {
 func newServer(backend courier.Backend) courier.Server {
 	// for benchmarks, log to null
 	logger := slog.Default()
-	logrus.SetOutput(io.Discard)
+	log.SetOutput(io.Discard)
 	config := courier.NewConfig()
 	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"

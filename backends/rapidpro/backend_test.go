@@ -26,7 +26,6 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
 	"github.com/nyaruka/redisx/assertredis"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -47,7 +46,7 @@ func (ts *BackendTestSuite) SetupSuite() {
 	storageDir = "_test_storage"
 
 	// turn off logging
-	logrus.SetOutput(io.Discard)
+	log.SetOutput(io.Discard)
 
 	b, err := courier.NewBackend(testConfig())
 	if err != nil {

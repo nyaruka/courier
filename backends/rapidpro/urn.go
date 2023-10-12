@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"log/slog"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/courier"
@@ -11,7 +12,6 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null/v3"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // ContactURNID represents a contact urn's id
@@ -98,7 +98,7 @@ func setDefaultURN(db *sqlx.Tx, channel *Channel, contact *Contact, urn urns.URN
 	scheme := urn.Scheme()
 	contactURNs, err := getURNsForContact(db, contact.ID_)
 	if err != nil {
-		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("channel_id", channel.ID()).Error("error looking up contact urns")
+		slog.Error("error looking up contact urns", "error", err, "urn", urn.Identity(), "channel_id", channel.ID())
 		return err
 	}
 
@@ -248,7 +248,7 @@ UPDATE contacts_contacturn
 func updateContactURN(db *sqlx.Tx, urn *ContactURN) error {
 	rows, err := db.NamedQuery(sqlUpdateURN, urn)
 	if err != nil {
-		logrus.WithError(err).WithField("urn_id", urn.ID).Error("error updating contact urn")
+		slog.Error("error updating contact urn", "error", err, "urn_id", urn.ID)
 		return err
 	}
 	defer rows.Close()
@@ -263,7 +263,7 @@ func updateContactURN(db *sqlx.Tx, urn *ContactURN) error {
 func fullyUpdateContactURN(db *sqlx.Tx, urn *ContactURN) error {
 	rows, err := db.NamedQuery(sqlFullyUpdateURN, urn)
 	if err != nil {
-		logrus.WithError(err).WithField("urn_id", urn.ID).Error("error updating contact urn")
+		slog.Error("error updating contact urn", "error", err, "urn_id", urn.ID)
 		return err
 	}
 	defer rows.Close()

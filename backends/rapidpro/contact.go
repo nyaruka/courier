@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"log/slog"
 	"strconv"
 	"time"
 	"unicode/utf8"
@@ -16,7 +17,6 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // used by unit tests to slow down urn operations to test races
@@ -107,7 +107,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 	contact := &Contact{}
 	err := b.db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
 	if err != nil && err != sql.ErrNoRows {
-		logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
+		slog.Error("error looking up contact", "error", err, "urn", urn.Identity(), "org_id", org)
 		return nil, errors.Wrap(err, "error looking up contact by URN")
 	}
 
@@ -116,13 +116,13 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 		// insert it
 		tx, err := b.db.BeginTxx(ctx, nil)
 		if err != nil {
-			logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
+			slog.Error("error looking up contact", "error", err, "urn", urn.Identity(), "org_id", org)
 			return nil, errors.Wrap(err, "error beginning transaction")
 		}
 
 		err = setDefaultURN(tx, channel, contact, urn, authTokens)
 		if err != nil {
-			logrus.WithError(err).WithField("urn", urn.Identity()).WithField("org_id", org).Error("error looking up contact")
+			slog.Error("error looking up contact", "error", err, "urn", urn.Identity(), "org_id", org)
 			tx.Rollback()
 			return nil, errors.Wrap(err, "error setting default URN for contact")
 		}
@@ -148,7 +148,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 
 					// in the case of errors, we log the error but move onwards anyways
 					if err != nil {
-						logrus.WithField("channel_uuid", channel.UUID()).WithField("channel_type", channel.ChannelType()).WithField("urn", urn).WithError(err).Error("unable to describe URN")
+						slog.Error("unable to describe URN", "error", err, "channel_uuid", channel.UUID(), "channel_type", channel.ChannelType(), "urn", urn)
 					} else {
 						name = attrs["name"]
 					}
