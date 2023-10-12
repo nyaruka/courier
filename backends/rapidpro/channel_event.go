@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"strconv"
 	"time"
@@ -14,7 +15,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null/v3"
-	"github.com/sirupsen/logrus"
 )
 
 // ChannelEventID is the type of our channel event ids
@@ -124,7 +124,7 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 
 	// failed writing, write to our spool instead
 	if err != nil {
-		logrus.WithError(err).WithField("channel_id", dbEvent.ChannelID).WithField("event_type", dbEvent.EventType_).Error("error writing channel event to db")
+		slog.Error("error writing channel event to db", "error", err, "channel_id", dbEvent.ChannelID, "event_type", dbEvent.EventType_)
 	}
 
 	if err != nil {
@@ -171,7 +171,7 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clo
 	// if we had a problem queueing the event, log it
 	err = queueChannelEvent(rc, contact, e)
 	if err != nil {
-		logrus.WithError(err).WithField("evt_id", e.ID_).Error("error queueing channel event")
+		slog.Error("error queueing channel event", "error", err, "evt_id", e.ID_)
 	}
 
 	return nil

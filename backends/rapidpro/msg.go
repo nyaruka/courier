@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -22,7 +23,6 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	filetype "gopkg.in/h2non/filetype.v1"
 )
 
@@ -228,7 +228,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.MsgIn, clog *courier.
 
 	// fail? log
 	if err != nil {
-		logrus.WithError(err).WithField("msg", m.UUID()).Error("error writing to db")
+		slog.Error("error writing to db", "error", err, "msg", m.UUID())
 	}
 
 	// if we failed write to spool
@@ -282,7 +282,7 @@ func writeMsgToDB(ctx context.Context, b *backend, m *Msg, clog *courier.Channel
 	// if we had a problem queueing the handling, log it, but our message is written, it'll
 	// get picked up by our rapidpro catch-all after a period
 	if err != nil {
-		logrus.WithError(err).WithField("msg_id", m.ID_).Error("error queueing msg handling")
+		slog.Error("error queueing msg handling", "error", err, "msg_id", m.ID_)
 	}
 
 	return nil

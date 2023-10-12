@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"path"
 	"sync"
 	"time"
@@ -15,7 +16,6 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/syncx"
-	"github.com/sirupsen/logrus"
 )
 
 const sqlInsertChannelLog = `
@@ -57,7 +57,7 @@ type channelError struct {
 
 // queues the passed in channel log to a writer
 func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) {
-	log := logrus.WithFields(logrus.Fields{"log_uuid": clog.UUID(), "log_type": clog.Type(), "channel_uuid": clog.Channel().UUID()})
+	log := slog.With("log_uuid", clog.UUID(), "log_type", clog.Type(), "channel_uuid", clog.Channel().UUID())
 	dbChan := clog.Channel().(*Channel)
 
 	// so that we don't save null
@@ -79,7 +79,7 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 
 	// if log is attached to a call or message, only write to storage
 	if clog.Attached() {
-		log = log.WithField("storage", "s3")
+		log = log.With("storage", "s3")
 		v := &stChannelLog{
 			UUID:        clog.UUID(),
 			Type:        clog.Type(),
@@ -94,7 +94,7 @@ func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) 
 		}
 	} else {
 		// otherwise write to database so it's retrievable
-		log = log.WithField("storage", "db")
+		log = log.With("storage", "db")
 		v := &dbChannelLog{
 			UUID:      clog.UUID(),
 			Type:      clog.Type(),
@@ -136,14 +136,14 @@ func writeDBChannelLogs(ctx context.Context, db *sqlx.DB, batch []*dbChannelLog)
 		for _, v := range batch {
 			err = dbutil.BulkQuery(ctx, db, sqlInsertChannelLog, []*dbChannelLog{v})
 			if err != nil {
-				log := logrus.WithField("comp", "log writer").WithField("log_uuid", v.UUID)
+				log := slog.With("comp", "log writer", "log_uuid", v.UUID)
 
 				if qerr := dbutil.AsQueryError(err); qerr != nil {
 					query, params := qerr.Query()
-					log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
+					log = log.With("sql", query, "sql_params", params)
 				}
 
-				log.WithError(err).Error("error writing channel log")
+				log.Error("error writing channel log", "error", err)
 			}
 		}
 	}
@@ -174,6 +174,6 @@ func writeStorageChannelLogs(ctx context.Context, st storage.Storage, batch []*s
 		}
 	}
 	if err := st.BatchPut(ctx, uploads); err != nil {
-		logrus.WithField("comp", "storage log writer").Error("error writing channel logs")
+		slog.Error("error writing channel logs", "comp", "storage log writer")
 	}
 }

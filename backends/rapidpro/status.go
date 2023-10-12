@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 	"sync"
@@ -14,7 +15,6 @@ import (
 	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // StatusUpdate represents a status update on a message
@@ -121,7 +121,7 @@ func (b *backend) flushStatusFile(filename string, contents []byte) error {
 	status := &StatusUpdate{}
 	err := json.Unmarshal(contents, status)
 	if err != nil {
-		logrus.Printf("ERROR unmarshalling spool file '%s', renaming: %s\n", filename, err)
+		slog.Info(fmt.Sprintf("ERROR unmarshalling spool file '%s', renaming: %s\n", filename, err))
 		os.Rename(filename, fmt.Sprintf("%s.error", filename))
 		return nil
 	}
@@ -182,7 +182,7 @@ func NewStatusWriter(b *backend, spoolDir string, wg *sync.WaitGroup) *StatusWri
 
 // tries to write a batch of message statuses to the database and spools those that fail
 func (b *backend) writeStatuseUpdates(ctx context.Context, spoolDir string, batch []*StatusUpdate) {
-	log := logrus.WithField("comp", "status writer")
+	log := slog.With("comp", "status writer")
 
 	unresolved, err := b.writeStatusUpdatesToDB(ctx, batch)
 
@@ -191,24 +191,24 @@ func (b *backend) writeStatuseUpdates(ctx context.Context, spoolDir string, batc
 		for _, s := range batch {
 			_, err = b.writeStatusUpdatesToDB(ctx, []*StatusUpdate{s})
 			if err != nil {
-				log := log.WithField("msg_id", s.MsgID())
+				log := log.With("msg_id", s.MsgID())
 
 				if qerr := dbutil.AsQueryError(err); qerr != nil {
 					query, params := qerr.Query()
-					log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
+					log = log.With("sql", query, "sql_params", params)
 				}
 
-				log.WithError(err).Error("error writing msg status")
+				log.Error("error writing msg status", "error", err)
 
 				err := courier.WriteToSpool(spoolDir, "statuses", s)
 				if err != nil {
-					log.WithError(err).Error("error writing status to spool") // just have to log and move on
+					log.Error("error writing status to spool", "error", err) // just have to log and move on
 				}
 			}
 		}
 	} else {
 		for _, s := range unresolved {
-			log.Warnf("unable to find message with channel_id=%d and external_id=%s", s.ChannelID_, s.ExternalID_)
+			log.Warn(fmt.Sprintf("unable to find message with channel_id=%d and external_id=%s", s.ChannelID_, s.ExternalID_))
 		}
 	}
 }
@@ -268,7 +268,7 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*Sta
 	cachedIDs, err := b.sentExternalIDs.MGet(rc, chAndExtKeys...)
 	if err != nil {
 		// log error but we continue and try to get ids from the database
-		logrus.WithError(err).Error("error looking up sent message ids in redis")
+		slog.Error("error looking up sent message ids in redis", "error", err)
 	}
 
 	// collect the statuses that couldn't be resolved from cache, update the ones that could
