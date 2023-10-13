@@ -11,6 +11,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
+	slogmulti "github.com/samber/slog-multi"
 	slogsentry "github.com/samber/slog-sentry"
 
 	// load channel handler packages
@@ -116,7 +117,12 @@ func main() {
 
 		defer sentry.Flush(2 * time.Second)
 
-		logger = slog.New(slogsentry.Option{Level: slog.LevelError}.NewSentryHandler())
+		logger = slog.New(
+			slogmulti.Fanout(
+				logHandler,
+				slogsentry.Option{Level: slog.LevelError}.NewSentryHandler(),
+			),
+		)
 		logger = logger.With("release", version)
 		slog.SetDefault(logger)
 	}
