@@ -1,3 +1,9 @@
+v8.3.25 (2023-10-25)
+-------------------------
+ * Update docker image to go 1.21
+ * Remove use of logrus and use slog with sentry
+ * Bump golang.org/x/net from 0.14.0 to 0.17.0
+
 v8.3.24 (2023-10-10)
 -------------------------
  * Fix handling IG like hearts
