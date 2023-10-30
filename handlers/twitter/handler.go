@@ -19,7 +19,6 @@ import (
 	"github.com/dghubble/oauth1"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
@@ -288,7 +287,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 			mimeType, s3url := handlers.SplitAttachment(attachment)
 			mediaID := ""
 			if strings.HasPrefix(mimeType, "image") || strings.HasPrefix(mimeType, "video") {
-				mediaID, err = uploadMediaToTwitter(msg, mediaURL, mimeType, s3url, client, clog)
+				mediaID, err = h.uploadMediaToTwitter(msg, mediaURL, mimeType, s3url, client, clog)
 				if err != nil {
 					clog.RawError(errors.Wrap(err, "unable to upload media to Twitter server"))
 				}
@@ -328,7 +327,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		resp, respBody, err := handlers.RequestHTTPWithClient(client, req, clog)
+		resp, respBody, err := h.RequestHTTPWithClient(client, req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
@@ -360,11 +359,11 @@ func generateSignature(secret string, content string) string {
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
-func uploadMediaToTwitter(msg courier.MsgOut, mediaUrl string, attachmentMimeType string, attachmentURL string, client *http.Client, clog *courier.ChannelLog) (string, error) {
+func (h *handler) uploadMediaToTwitter(msg courier.MsgOut, mediaUrl string, attachmentMimeType string, attachmentURL string, client *http.Client, clog *courier.ChannelLog) (string, error) {
 	// retrieve the media to be sent from S3
 	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
 
-	s3Resp, s3RespBody, err := handlers.RequestHTTP(req, clog)
+	s3Resp, s3RespBody, err := h.RequestHTTP(req, clog)
 	if err != nil || s3Resp.StatusCode/100 != 2 {
 		return "", err
 	}
@@ -392,9 +391,8 @@ func uploadMediaToTwitter(msg courier.MsgOut, mediaUrl string, attachmentMimeTyp
 	twReq, _ := http.NewRequest(http.MethodPost, mediaUrl, strings.NewReader(form.Encode()))
 	twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	twReq.Header.Set("Accept", "application/json")
-	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
 
-	twResp, twRespBody, err := handlers.RequestHTTPWithClient(client, twReq, clog)
+	twResp, twRespBody, err := h.RequestHTTPWithClient(client, twReq, clog)
 	if err != nil || twResp.StatusCode/100 != 2 {
 		return "", err
 	}
@@ -435,9 +433,8 @@ func uploadMediaToTwitter(msg courier.MsgOut, mediaUrl string, attachmentMimeTyp
 	twReq, _ = http.NewRequest(http.MethodPost, mediaUrl, bytes.NewReader(body.Bytes()))
 	twReq.Header.Set("Content-Type", contentType)
 	twReq.Header.Set("Accept", "application/json")
-	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
 
-	twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, clog)
+	twResp, twRespBody, err = h.RequestHTTPWithClient(client, twReq, clog)
 	if err != nil || twResp.StatusCode/100 != 2 {
 		return "", err
 	}
@@ -454,9 +451,8 @@ func uploadMediaToTwitter(msg courier.MsgOut, mediaUrl string, attachmentMimeTyp
 
 	twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	twReq.Header.Set("Accept", "application/json")
-	twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
 
-	twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, clog)
+	twResp, twRespBody, err = h.RequestHTTPWithClient(client, twReq, clog)
 	if err != nil || twResp.StatusCode/100 != 2 {
 		return "", err
 	}
@@ -485,9 +481,8 @@ func uploadMediaToTwitter(msg courier.MsgOut, mediaUrl string, attachmentMimeTyp
 		twReq, _ = http.NewRequest(http.MethodGet, statusURL.String(), nil)
 		twReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		twReq.Header.Set("Accept", "application/json")
-		twReq.Header.Set("User-Agent", utils.HTTPUserAgent)
 
-		twResp, twRespBody, err = handlers.RequestHTTPWithClient(client, twReq, clog)
+		twResp, twRespBody, err = h.RequestHTTPWithClient(client, twReq, clog)
 		if err != nil || twResp.StatusCode/100 != 2 {
 			return "", err
 		}

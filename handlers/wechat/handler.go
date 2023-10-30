@@ -209,7 +209,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		resp, _, err := handlers.RequestHTTP(req, clog)
+		resp, _, err := h.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
@@ -239,7 +239,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 
 	req, _ := http.NewRequest(http.MethodGet, reqURL.String(), nil)
 
-	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return nil, errors.New("unable to look up contact data")
 	}
@@ -326,7 +326,7 @@ func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel,
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
 
-	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return "", 0, err
 	}

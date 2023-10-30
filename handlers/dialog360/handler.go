@@ -149,21 +149,21 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 					text = msg.Text.Body
 				} else if msg.Type == "audio" && msg.Audio != nil {
 					text = msg.Audio.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Audio.ID, clog)
+					mediaURL, err = h.resolveMediaURL(channel, msg.Audio.ID, clog)
 				} else if msg.Type == "voice" && msg.Voice != nil {
 					text = msg.Voice.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Voice.ID, clog)
+					mediaURL, err = h.resolveMediaURL(channel, msg.Voice.ID, clog)
 				} else if msg.Type == "button" && msg.Button != nil {
 					text = msg.Button.Text
 				} else if msg.Type == "document" && msg.Document != nil {
 					text = msg.Document.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Document.ID, clog)
+					mediaURL, err = h.resolveMediaURL(channel, msg.Document.ID, clog)
 				} else if msg.Type == "image" && msg.Image != nil {
 					text = msg.Image.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Image.ID, clog)
+					mediaURL, err = h.resolveMediaURL(channel, msg.Image.ID, clog)
 				} else if msg.Type == "video" && msg.Video != nil {
 					text = msg.Video.Caption
-					mediaURL, err = resolveMediaURL(channel, msg.Video.ID, clog)
+					mediaURL, err = h.resolveMediaURL(channel, msg.Video.ID, clog)
 				} else if msg.Type == "location" && msg.Location != nil {
 					mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
 				} else if msg.Type == "interactive" && msg.Interactive.Type == "button_reply" {
@@ -244,14 +244,13 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 
 	// set the access token as the authorization header
 	req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
-	req.Header.Set("User-Agent", utils.HTTPUserAgent)
 	req.Header.Set(d3AuthorizationKey, token)
 	return req, nil
 }
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
-func resolveMediaURL(channel courier.Channel, mediaID string, clog *courier.ChannelLog) (string, error) {
+func (h *handler) resolveMediaURL(channel courier.Channel, mediaID string, clog *courier.ChannelLog) (string, error) {
 	// sometimes WA will send an attachment with status=undownloaded and no ID
 	if mediaID == "" {
 		return "", nil
@@ -272,10 +271,9 @@ func resolveMediaURL(channel courier.Channel, mediaID string, clog *courier.Chan
 	mediaURL := url.ResolveReference(mediaPath).String()
 
 	req, _ := http.NewRequest(http.MethodGet, mediaURL, nil)
-	req.Header.Set("User-Agent", utils.HTTPUserAgent)
 	req.Header.Set(d3AuthorizationKey, token)
 
-	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return "", fmt.Errorf("failed to request media URL for D3C channel: %s", err)
 	}
@@ -509,7 +507,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 								zeroIndex = true
 							}
 							payloadAudio = whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &whatsapp.Media{Link: attURL}}
-							status, err := requestD3C(payloadAudio, accessToken, status, sendURL, zeroIndex, clog)
+							status, err := h.requestD3C(payloadAudio, accessToken, status, sendURL, zeroIndex, clog)
 							if err != nil {
 								return status, nil
 							}
@@ -578,7 +576,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 			zeroIndex = true
 		}
 
-		status, err := requestD3C(payload, accessToken, status, sendURL, zeroIndex, clog)
+		status, err := h.requestD3C(payload, accessToken, status, sendURL, zeroIndex, clog)
 		if err != nil {
 			return status, err
 		}
@@ -590,7 +588,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 	return status, nil
 }
 
-func requestD3C(payload whatsapp.SendRequest, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	jsonBody := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))
@@ -602,7 +600,7 @@ func requestD3C(payload whatsapp.SendRequest, accessToken string, status courier
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	_, respBody, _ := handlers.RequestHTTP(req, clog)
+	_, respBody, _ := h.RequestHTTP(req, clog)
 	respPayload := &whatsapp.SendResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {

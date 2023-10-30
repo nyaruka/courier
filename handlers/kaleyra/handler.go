@@ -158,7 +158,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 
 			// download media
 			req, _ := http.NewRequest(http.MethodGet, attachmentURL, nil)
-			resp, attBody, err := handlers.RequestHTTP(req, clog)
+			resp, attBody, err := h.RequestHTTP(req, clog)
 			if err != nil || resp.StatusCode/100 != 2 {
 				kwaErr = errors.New("unable to fetch media")
 				break
@@ -203,7 +203,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 			// send multipart form
 			req, _ = http.NewRequest(http.MethodPost, sendURL, body)
 			req.Header.Set("Content-Type", writer.FormDataContentType())
-			kwaResp, kwaRespBody, kwaErr = handlers.RequestHTTP(req, clog)
+			kwaResp, kwaRespBody, kwaErr = h.RequestHTTP(req, clog)
 		}
 	} else {
 		form := url.Values{}
@@ -219,7 +219,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 
 		req, _ := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		kwaResp, kwaRespBody, kwaErr = handlers.RequestHTTP(req, clog)
+		kwaResp, kwaRespBody, kwaErr = h.RequestHTTP(req, clog)
 	}
 
 	if kwaErr != nil || kwaResp.StatusCode/100 != 2 {

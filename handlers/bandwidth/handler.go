@@ -227,7 +227,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(username, password)
 
-		resp, respBody, _ := handlers.RequestHTTP(req, clog)
+		resp, respBody, _ := h.RequestHTTP(req, clog)
 
 		response := &mtResponse{}
 		err = json.Unmarshal(respBody, response)

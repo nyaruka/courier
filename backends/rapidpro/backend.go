@@ -3,10 +3,12 @@ package rapidpro
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -23,6 +25,7 @@ import (
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/dbutil"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/gocommon/syncx"
@@ -66,6 +69,10 @@ type backend struct {
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
 
+	httpClient         *http.Client
+	httpClientInsecure *http.Client
+	httpAccess         *httpx.AccessConfig
+
 	mediaCache   *redisx.IntervalHash
 	mediaMutexes syncx.HashMutex
 
@@ -85,8 +92,25 @@ type backend struct {
 
 // NewBackend creates a new RapidPro backend
 func newBackend(cfg *courier.Config) courier.Backend {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.MaxIdleConns = 64
+	transport.MaxIdleConnsPerHost = 8
+	transport.IdleConnTimeout = 15 * time.Second
+
+	insecureTransport := http.DefaultTransport.(*http.Transport).Clone()
+	insecureTransport.MaxIdleConns = 64
+	insecureTransport.MaxIdleConnsPerHost = 8
+	insecureTransport.IdleConnTimeout = 15 * time.Second
+	insecureTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	disallowedIPs, disallowedNets, _ := cfg.ParseDisallowedNetworks()
+
 	return &backend{
 		config: cfg,
+
+		httpClient:         &http.Client{Transport: transport, Timeout: 30 * time.Second},
+		httpClientInsecure: &http.Client{Transport: insecureTransport, Timeout: 30 * time.Second},
+		httpAccess:         httpx.NewAccessConfig(10*time.Second, disallowedIPs, disallowedNets),
 
 		stopChan:  make(chan bool),
 		waitGroup: &sync.WaitGroup{},
@@ -718,6 +742,17 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 	}
 
 	return media, nil
+}
+
+func (b *backend) HttpClient(secure bool) *http.Client {
+	if secure {
+		return b.httpClient
+	}
+	return b.httpClientInsecure
+}
+
+func (b *backend) HttpAccess() *httpx.AccessConfig {
+	return b.httpAccess
 }
 
 // Health returns the health of this backend as a string, returning "" if all is well

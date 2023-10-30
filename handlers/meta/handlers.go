@@ -188,7 +188,7 @@ func (h *handler) receiveVerify(ctx context.Context, channel courier.Channel, w 
 	return nil, err
 }
 
-func resolveMediaURL(mediaID string, token string, clog *courier.ChannelLog) (string, error) {
+func (h *handler) resolveMediaURL(mediaID string, token string, clog *courier.ChannelLog) (string, error) {
 	if token == "" {
 		return "", fmt.Errorf("missing token for WA channel")
 	}
@@ -202,7 +202,7 @@ func resolveMediaURL(mediaID string, token string, clog *courier.ChannelLog) (st
 	//req.Header.Set("User-Agent", utils.HTTPUserAgent)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return "", errors.New("error resolving media URL")
 	}
@@ -297,21 +297,21 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 					text = msg.Text.Body
 				} else if msg.Type == "audio" && msg.Audio != nil {
 					text = msg.Audio.Caption
-					mediaURL, err = resolveMediaURL(msg.Audio.ID, token, clog)
+					mediaURL, err = h.resolveMediaURL(msg.Audio.ID, token, clog)
 				} else if msg.Type == "voice" && msg.Voice != nil {
 					text = msg.Voice.Caption
-					mediaURL, err = resolveMediaURL(msg.Voice.ID, token, clog)
+					mediaURL, err = h.resolveMediaURL(msg.Voice.ID, token, clog)
 				} else if msg.Type == "button" && msg.Button != nil {
 					text = msg.Button.Text
 				} else if msg.Type == "document" && msg.Document != nil {
 					text = msg.Document.Caption
-					mediaURL, err = resolveMediaURL(msg.Document.ID, token, clog)
+					mediaURL, err = h.resolveMediaURL(msg.Document.ID, token, clog)
 				} else if msg.Type == "image" && msg.Image != nil {
 					text = msg.Image.Caption
-					mediaURL, err = resolveMediaURL(msg.Image.ID, token, clog)
+					mediaURL, err = h.resolveMediaURL(msg.Image.ID, token, clog)
 				} else if msg.Type == "video" && msg.Video != nil {
 					text = msg.Video.Caption
-					mediaURL, err = resolveMediaURL(msg.Video.ID, token, clog)
+					mediaURL, err = h.resolveMediaURL(msg.Video.ID, token, clog)
 				} else if msg.Type == "location" && msg.Location != nil {
 					mediaURL = fmt.Sprintf("geo:%f,%f", msg.Location.Latitude, msg.Location.Longitude)
 				} else if msg.Type == "interactive" && msg.Interactive.Type == "button_reply" {
@@ -721,7 +721,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		_, respBody, _ := handlers.RequestHTTP(req, clog)
+		_, respBody, _ := h.RequestHTTP(req, clog)
 		respPayload := &messenger.SendResponse{}
 		err = json.Unmarshal(respBody, respPayload)
 		if err != nil {
@@ -997,7 +997,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 								zeroIndex = true
 							}
 							payloadAudio = whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &whatsapp.Media{Link: attURL}}
-							err := requestWAC(payloadAudio, accessToken, status, wacPhoneURL, zeroIndex, clog)
+							err := h.requestWAC(payloadAudio, accessToken, status, wacPhoneURL, zeroIndex, clog)
 							if err != nil {
 								return status, nil
 							}
@@ -1066,7 +1066,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 			zeroIndex = true
 		}
 
-		err := requestWAC(payload, accessToken, status, wacPhoneURL, zeroIndex, clog)
+		err := h.requestWAC(payload, accessToken, status, wacPhoneURL, zeroIndex, clog)
 		if err != nil {
 			return status, err
 		}
@@ -1078,7 +1078,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 	return status, nil
 }
 
-func requestWAC(payload whatsapp.SendRequest, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) error {
+func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) error {
 	jsonBody := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))
@@ -1090,7 +1090,7 @@ func requestWAC(payload whatsapp.SendRequest, accessToken string, status courier
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	_, respBody, _ := handlers.RequestHTTP(req, clog)
+	_, respBody, _ := h.RequestHTTP(req, clog)
 	respPayload := &whatsapp.SendResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
@@ -1143,7 +1143,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	u.RawQuery = query.Encode()
 	req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
 
-	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return nil, errors.New("unable to look up contact data")
 	}

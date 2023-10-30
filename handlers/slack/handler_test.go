@@ -360,6 +360,7 @@ func TestDescribeURN(t *testing.T) {
 	defer server.Close()
 
 	handler := newHandler()
+	handler.Initialize(test.NewMockServer(courier.NewConfig(), test.NewMockBackend()))
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
 	urn, _ := urns.NewURNFromParts(urns.SlackScheme, "U012345", "", "")
 

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDoHTTPRequest(t *testing.T) {
+func TestRequestHTTP(t *testing.T) {
 	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
 		"https://api.messages.com/send.json": {
 			httpx.NewMockResponse(200, nil, []byte(`{"status":"success"}`)),
@@ -26,8 +26,14 @@ func TestDoHTTPRequest(t *testing.T) {
 	mm := mb.NewOutgoingMsg(mc, 123, urns.URN("tel:+1234"), "Hello World", false, nil, "", "", courier.MsgOriginChat, nil)
 	clog := courier.NewChannelLogForSend(mm, nil)
 
+	config := courier.NewConfig()
+	server := test.NewMockServer(config, mb)
+
+	h := handlers.NewBaseHandler("NX", "Test")
+	h.SetServer(server)
+
 	req, _ := http.NewRequest("POST", "https://api.messages.com/send.json", nil)
-	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	resp, respBody, err := h.RequestHTTP(req, clog)
 	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode)
 	assert.Equal(t, []byte(`{"status":"success"}`), respBody)
@@ -38,7 +44,7 @@ func TestDoHTTPRequest(t *testing.T) {
 	assert.Equal(t, "https://api.messages.com/send.json", hlog1.URL)
 
 	req, _ = http.NewRequest("POST", "https://api.messages.com/send.json", nil)
-	resp, _, err = handlers.RequestHTTP(req, clog)
+	resp, _, err = h.RequestHTTP(req, clog)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode)
 	assert.Len(t, clog.HTTPLogs(), 2)

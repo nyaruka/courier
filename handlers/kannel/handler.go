@@ -201,9 +201,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 
 	var resp *http.Response
 	if verifySSL {
-		resp, _, err = handlers.RequestHTTP(req, clog)
+		resp, _, err = h.RequestHTTP(req, clog)
 	} else {
-		resp, _, err = handlers.RequestHTTPInsecure(req, clog)
+		resp, _, err = h.RequestHTTPInsecure(req, clog)
 	}
 
 	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)

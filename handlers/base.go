@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var defaultRedactConfigKeys = []string{courier.ConfigAuthToken, courier.ConfigAPIKey, courier.ConfigSecret, courier.ConfigPassword, courier.ConfigSendAuthorization}
@@ -96,6 +98,36 @@ func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
 func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
 	uuid := courier.ChannelUUID(chi.URLParam(r, "uuid"))
 	return h.backend.GetChannel(ctx, h.ChannelType(), uuid)
+}
+
+// RequestHTTP does the given request, logging the trace, and returns the response
+func (h *BaseHandler) RequestHTTP(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
+	return h.RequestHTTPWithClient(h.backend.HttpClient(true), req, clog)
+}
+
+// RequestHTTP does the given request, logging the trace, and returns the response
+func (h *BaseHandler) RequestHTTPInsecure(req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
+	return h.RequestHTTPWithClient(h.backend.HttpClient(false), req, clog)
+}
+
+// RequestHTTP does the given request using the given client, logging the trace, and returns the response
+func (h *BaseHandler) RequestHTTPWithClient(client *http.Client, req *http.Request, clog *courier.ChannelLog) (*http.Response, []byte, error) {
+	var resp *http.Response
+	var body []byte
+
+	req.Header.Set("User-Agent", fmt.Sprintf("Courier/%s", h.server.Config().Version))
+
+	trace, err := httpx.DoTrace(client, req, nil, h.backend.HttpAccess(), 0)
+	if trace != nil {
+		clog.HTTP(trace)
+		resp = trace.Response
+		body = trace.ResponseBody
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return resp, body, nil
 }
 
 // WriteStatusSuccessResponse writes a success response for the statuses
