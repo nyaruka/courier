@@ -15,11 +15,12 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.2.1
-	github.com/nyaruka/gocommon v1.42.0
+	github.com/nyaruka/gocommon v1.42.1
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.5.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
+	github.com/samber/slog-multi v1.0.2
 	github.com/samber/slog-sentry v1.2.2
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
@@ -49,7 +50,6 @@ require (
 	github.com/nyaruka/phonenumbers v1.1.8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/samber/lo v1.38.1 // indirect
-	github.com/samber/slog-multi v1.0.2 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/net v0.17.0 // indirect

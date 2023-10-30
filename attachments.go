@@ -99,7 +99,7 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 
 		// if we got a non-200 response, return the attachment with a pseudo content type which tells the caller
 		// to continue without the attachment
-		if trace.Response == nil || trace.Response.StatusCode/100 != 2 {
+		if trace.Response == nil || trace.Response.StatusCode/100 != 2 || err == httpx.ErrResponseSize || err == httpx.ErrAccessConfig {
 			return &Attachment{ContentType: "unavailable", URL: attURL}, nil
 		}
 	}
