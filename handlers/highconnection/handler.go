@@ -166,7 +166,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 			return nil, err
 		}
 
-		resp, _, err := handlers.RequestHTTP(req, clog)
+		resp, _, err := h.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}

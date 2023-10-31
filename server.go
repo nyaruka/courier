@@ -91,9 +91,6 @@ func NewServerWithLogger(config *Config, backend Backend, logger *slog.Logger) S
 // if it encounters any unrecoverable (or ignorable) error, though its bias is to move forward despite
 // connection errors
 func (s *server) Start() error {
-	// set our user agent, needs to happen before we do anything so we don't change have threading issues
-	utils.HTTPUserAgent = fmt.Sprintf("Courier/%s", s.config.Version)
-
 	// configure librato if we have configuration options for it
 	host, _ := os.Hostname()
 	if s.config.LibratoUsername != "" {

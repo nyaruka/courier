@@ -216,7 +216,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 			}
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-			resp, respBody, requestErr = handlers.RequestHTTP(req, clog)
+			resp, respBody, requestErr = h.RequestHTTP(req, clog)
 			matched := throttledRE.FindAllStringSubmatch(string(respBody), -1)
 			if len(matched) > 0 && len(matched[0]) > 0 {
 				sleepTime, _ := strconv.Atoi(matched[0][1])

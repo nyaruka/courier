@@ -157,7 +157,7 @@ func (h *handler) sendMsgPart(msg courier.MsgOut, token string, path string, for
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, respBody, _ := handlers.RequestHTTP(req, clog)
+	resp, respBody, _ := h.RequestHTTP(req, clog)
 
 	response := &mtResponse{}
 	err = json.Unmarshal(respBody, response)
@@ -346,7 +346,7 @@ func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fi
 		courier.LogRequestError(req, channel, err)
 	}
 
-	resp, respBody, _ := handlers.RequestHTTP(req, clog)
+	resp, respBody, _ := h.RequestHTTP(req, clog)
 
 	respPayload := &fileResponse{}
 	err = json.Unmarshal(respBody, respPayload)

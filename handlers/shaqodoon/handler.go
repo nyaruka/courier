@@ -115,7 +115,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 
 	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
-	resp, _, err := handlers.RequestHTTPInsecure(req, clog)
+	resp, _, err := h.RequestHTTPInsecure(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return status, nil
 	}

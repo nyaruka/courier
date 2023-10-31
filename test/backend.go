@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"sync"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/pkg/errors"
@@ -352,9 +354,17 @@ func (mb *MockBackend) ResolveMedia(ctx context.Context, mediaUrl string) (couri
 	return media, nil
 }
 
-// Health gives a string representing our health, empty for our mock
 func (mb *MockBackend) Health() string {
 	return ""
+}
+
+// Health gives a string representing our health, empty for our mock
+func (mb *MockBackend) HttpClient(bool) *http.Client {
+	return http.DefaultClient
+}
+
+func (mb *MockBackend) HttpAccess() *httpx.AccessConfig {
+	return nil
 }
 
 // Status returns a string describing the status of the service, queue size etc..

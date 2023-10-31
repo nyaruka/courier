@@ -119,7 +119,7 @@ func (h *handler) subscribeToEvents(ctx context.Context, channel courier.Channel
 	req, _ := http.NewRequest(http.MethodPost, subscribeURL, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	resp, respBody, err := h.RequestHTTP(req, clog)
 
 	// log if we get any kind of error
 	success, _ := jsonparser.GetBoolean(respBody, "success")
@@ -545,7 +545,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		resp, respBody, err := handlers.RequestHTTP(req, clog)
+		resp, respBody, err := h.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 != 2 {
 			return status, nil
 		}
@@ -627,7 +627,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	u.RawQuery = query.Encode()
 	req, _ := http.NewRequest(http.MethodGet, u.String(), nil)
 
-	resp, respBody, err := handlers.RequestHTTP(req, clog)
+	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		return nil, errors.New("unable to look up contact data")
 	}

@@ -3,9 +3,11 @@ package courier
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -87,6 +89,10 @@ type Backend interface {
 
 	// ResolveMedia resolves an outgoing attachment URL to a media object
 	ResolveMedia(context.Context, string) (Media, error)
+
+	// HttpClient returns an HTTP client for making external requests
+	HttpClient(bool) *http.Client
+	HttpAccess() *httpx.AccessConfig
 
 	// Health returns a string describing any health problems the backend has, or empty string if all is well
 	Health() string
