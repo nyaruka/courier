@@ -1,3 +1,7 @@
+v8.3.27 (2023-10-31)
+-------------------------
+ * Prevent all courier HTTP requests from accessing local networks
+
 v8.3.26 (2023-10-30)
 -------------------------
  * Update to latest gocommon
