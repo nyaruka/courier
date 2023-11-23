@@ -103,26 +103,28 @@ WHERE
 
 // contactForURN first tries to look up a contact for the passed in URN, if not finding one then creating one
 func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel, urn urns.URN, authTokens map[string]string, name string, clog *courier.ChannelLog) (*Contact, error) {
+	log := slog.With("org_id", org, "urn", urn.Identity(), "channel_uuid", channel.UUID(), "log_uuid", clog.UUID())
+
 	// try to look up our contact by URN
 	contact := &Contact{}
 	err := b.db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
 	if err != nil && err != sql.ErrNoRows {
-		slog.Error("error looking up contact", "error", err, "urn", urn.Identity(), "org_id", org)
+		log.Error("error looking up contact by URN", "error", err)
 		return nil, errors.Wrap(err, "error looking up contact by URN")
 	}
 
 	// we found it, return it
 	if err != sql.ErrNoRows {
-		// insert it
 		tx, err := b.db.BeginTxx(ctx, nil)
 		if err != nil {
-			slog.Error("error looking up contact", "error", err, "urn", urn.Identity(), "org_id", org)
+			log.Error("error beginning transaction", "error", err)
 			return nil, errors.Wrap(err, "error beginning transaction")
 		}
 
+		// update contact's URNs so this URN has priority
 		err = setDefaultURN(tx, channel, contact, urn, authTokens)
 		if err != nil {
-			slog.Error("error looking up contact", "error", err, "urn", urn.Identity(), "org_id", org)
+			log.Error("error updating default URN for contact", "error", err)
 			tx.Rollback()
 			return nil, errors.Wrap(err, "error setting default URN for contact")
 		}
@@ -148,7 +150,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 
 					// in the case of errors, we log the error but move onwards anyways
 					if err != nil {
-						slog.Error("unable to describe URN", "error", err, "channel_uuid", channel.UUID(), "channel_type", channel.ChannelType(), "urn", urn)
+						log.Error("unable to describe URN", "error", err)
 					} else {
 						name = attrs["name"]
 					}
