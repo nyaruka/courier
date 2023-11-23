@@ -1,3 +1,7 @@
+v8.3.28 (2023-11-23)
+-------------------------
+ * Logging tweak
+
 v8.3.27 (2023-10-31)
 -------------------------
  * Prevent all courier HTTP requests from accessing local networks
