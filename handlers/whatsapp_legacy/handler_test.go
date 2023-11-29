@@ -718,7 +718,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:             "templated message",
 		MsgURN:              "whatsapp:250788123123",
 		MsgLocale:           "eng",
-		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "variables": ["Chef", "tomorrow"]}}`),
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type": "body","text": "Hi {{1}}, are you still experiencing problems with {{2}}?","parameters": [{"type": "text", "text": "Chef"},{"type": "text", "text": "tomorrow"}],"example": {"body_text": [["Bob","Product_A"]]}}]}}`),
 		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
@@ -731,7 +731,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:             "templated message",
 		MsgURN:              "whatsapp:250788123123",
 		MsgLocale:           "eng",
-		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "variables": []}}`),
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type": "body","text": "Hi {{1}}, are you still experiencing problems with {{2}}?","parameters": [],"example": {"body_text": [["Bob","Product_A"]]}}]}}`),
 		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body"}]}}`,
@@ -744,7 +744,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:             "templated message",
 		MsgURN:              "whatsapp:250788123123",
 		MsgLocale:           "eng-US",
-		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "variables": ["Chef", "tomorrow"]}}`),
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type": "body","text": "Hi {{1}}, are you still experiencing problems with {{2}}?","parameters": [{"type": "text", "text": "Chef"},{"type": "text", "text": "tomorrow"}],"example": {"body_text": [["Bob","Product_A"]]}}]}}`),
 		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
@@ -757,7 +757,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:             "templated message",
 		MsgURN:              "whatsapp:250788123123",
 		MsgLocale:           "eng-US",
-		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "namespace": "wa_template_namespace", "variables": ["Chef", "tomorrow"]}}`),
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "namespace": "wa_template_namespace", "components": [{"type": "body","text": "Hi {{1}}, are you still experiencing problems with {{2}}?","parameters": [{"type": "text", "text": "Chef"},{"type": "text", "text": "tomorrow"}],"example": {"body_text": [["Bob","Product_A"]]}}]}}`),
 		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"wa_template_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
@@ -770,7 +770,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:             "templated message",
 		MsgURN:              "whatsapp:250788123123",
 		MsgLocale:           "bnt",
-		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "variables": ["Chef", "tomorrow"]}}`),
+		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type": "body","text": "Hi {{1}}, are you still experiencing problems with {{2}}?","parameters": [{"type": "text", "text": "Chef"},{"type": "text", "text": "tomorrow"}],"example": {"body_text": [["Bob","Product_A"]]}}]}}`),
 		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
@@ -1070,21 +1070,6 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 	},
 }
 
-var hsmSupportSendTestCases = []OutgoingTestCase{
-	{
-		Label:               "Template Send",
-		MsgText:             "templated message",
-		MsgURN:              "whatsapp:250788123123",
-		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "language": "eng", "variables": ["Chef", "tomorrow"]}}`),
-		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"to":"250788123123","type":"hsm","hsm":{"namespace":"waba_namespace","element_name":"revive_issue","language":{"policy":"deterministic","code":"en"},"localizable_params":[{"default":"Chef"},{"default":"tomorrow"}]}}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "157b5e14568e8",
-		SendPrep:            setSendURL,
-	},
-}
-
 func mockAttachmentURLs(mediaServer *httptest.Server, testCases []OutgoingTestCase) []OutgoingTestCase {
 	casesWithMockedUrls := make([]OutgoingTestCase, len(testCases))
 
@@ -1108,15 +1093,6 @@ func TestOutgoing(t *testing.T) {
 			"version":      "v2.35.2",
 		})
 
-	var hsmSupportChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WA", "250788383383", "US",
-		map[string]any{
-			"auth_token":   "token123",
-			"base_url":     "https://foo.bar/",
-			"fb_namespace": "waba_namespace",
-			"hsm_support":  true,
-			"version":      "v2.35.2",
-		})
-
 	var d3Channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "D3", "250788383383", "US",
 		map[string]any{
 			"auth_token":   "token123",
@@ -1134,7 +1110,6 @@ func TestOutgoing(t *testing.T) {
 		})
 
 	RunOutgoingTestCases(t, defaultChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), defaultSendTestCases, []string{"token123"}, nil)
-	RunOutgoingTestCases(t, hsmSupportChannel, newWAHandler(courier.ChannelType("WA"), "WhatsApp"), hsmSupportSendTestCases, []string{"token123"}, nil)
 	RunOutgoingTestCases(t, d3Channel, newWAHandler(courier.ChannelType("D3"), "360Dialog"), defaultSendTestCases, []string{"token123"}, nil)
 	RunOutgoingTestCases(t, txwChannel, newWAHandler(courier.ChannelType("TXW"), "TextIt"), defaultSendTestCases, []string{"token123"}, nil)
 

@@ -13,8 +13,8 @@ type MsgTemplating struct {
 		Name string `json:"name" validate:"required"`
 		UUID string `json:"uuid" validate:"required"`
 	} `json:"template" validate:"required,dive"`
-	Namespace string   `json:"namespace"`
-	Variables []string `json:"variables"`
+	Namespace  string      `json:"namespace"`
+	Components []Component `json:"components"`
 }
 
 func GetTemplating(msg courier.MsgOut) (*MsgTemplating, error) {

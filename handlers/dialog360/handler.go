@@ -324,28 +324,83 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
 		payload := whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
 
-		if len(msg.Attachments()) == 0 {
-			// do we have a template?
-			templating, err := whatsapp.GetTemplating(msg)
-			if err != nil {
-				return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
+		// do we have a template?
+		templating, err := whatsapp.GetTemplating(msg)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
+		}
+		if templating != nil {
+
+			payload.Type = "template"
+
+			template := whatsapp.Template{Name: templating.Template.Name, Language: &whatsapp.Language{Policy: "deterministic", Code: lang}}
+			payload.Template = &template
+
+			for _, v := range templating.Components {
+				template.Components = append(payload.Template.Components, &v)
 			}
-			if templating != nil {
 
-				payload.Type = "template"
-
-				template := whatsapp.Template{Name: templating.Template.Name, Language: &whatsapp.Language{Policy: "deterministic", Code: lang}}
-				payload.Template = &template
-
-				component := &whatsapp.Component{Type: "body"}
-
-				for _, v := range templating.Variables {
-					component.Params = append(component.Params, &whatsapp.Param{Type: "text", Text: v})
+		} else if len(msg.Attachments()) == 0 {
+			if i < (len(msgParts) + len(msg.Attachments()) - 1) {
+				// this is still a msg part
+				text := &whatsapp.Text{PreviewURL: false}
+				payload.Type = "text"
+				if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+					text.PreviewURL = true
 				}
-				template.Components = append(payload.Template.Components, component)
-
+				text.Body = msgParts[i-len(msg.Attachments())]
+				payload.Text = text
 			} else {
-				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
+				if len(qrs) > 0 {
+					payload.Type = "interactive"
+					// We can use buttons
+					if len(qrs) <= 3 {
+						interactive := whatsapp.Interactive{Type: "button", Body: struct {
+							Text string "json:\"text\""
+						}{Text: msgParts[i-len(msg.Attachments())]}}
+
+						btns := make([]whatsapp.Button, len(qrs))
+						for i, qr := range qrs {
+							btns[i] = whatsapp.Button{
+								Type: "reply",
+							}
+							btns[i].Reply.ID = fmt.Sprint(i)
+							btns[i].Reply.Title = qr
+						}
+						interactive.Action = &struct {
+							Button   string             "json:\"button,omitempty\""
+							Sections []whatsapp.Section "json:\"sections,omitempty\""
+							Buttons  []whatsapp.Button  "json:\"buttons,omitempty\""
+						}{Buttons: btns}
+						payload.Interactive = &interactive
+					} else if len(qrs) <= 10 {
+						interactive := whatsapp.Interactive{Type: "list", Body: struct {
+							Text string "json:\"text\""
+						}{Text: msgParts[i-len(msg.Attachments())]}}
+
+						section := whatsapp.Section{
+							Rows: make([]whatsapp.SectionRow, len(qrs)),
+						}
+						for i, qr := range qrs {
+							section.Rows[i] = whatsapp.SectionRow{
+								ID:    fmt.Sprint(i),
+								Title: qr,
+							}
+						}
+
+						interactive.Action = &struct {
+							Button   string             "json:\"button,omitempty\""
+							Sections []whatsapp.Section "json:\"sections,omitempty\""
+							Buttons  []whatsapp.Button  "json:\"buttons,omitempty\""
+						}{Button: menuButton, Sections: []whatsapp.Section{
+							section,
+						}}
+
+						payload.Interactive = &interactive
+					} else {
+						return nil, fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
+					}
+				} else {
 					// this is still a msg part
 					text := &whatsapp.Text{PreviewURL: false}
 					payload.Type = "text"
@@ -354,66 +409,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 					}
 					text.Body = msgParts[i-len(msg.Attachments())]
 					payload.Text = text
-				} else {
-					if len(qrs) > 0 {
-						payload.Type = "interactive"
-						// We can use buttons
-						if len(qrs) <= 3 {
-							interactive := whatsapp.Interactive{Type: "button", Body: struct {
-								Text string "json:\"text\""
-							}{Text: msgParts[i-len(msg.Attachments())]}}
-
-							btns := make([]whatsapp.Button, len(qrs))
-							for i, qr := range qrs {
-								btns[i] = whatsapp.Button{
-									Type: "reply",
-								}
-								btns[i].Reply.ID = fmt.Sprint(i)
-								btns[i].Reply.Title = qr
-							}
-							interactive.Action = &struct {
-								Button   string             "json:\"button,omitempty\""
-								Sections []whatsapp.Section "json:\"sections,omitempty\""
-								Buttons  []whatsapp.Button  "json:\"buttons,omitempty\""
-							}{Buttons: btns}
-							payload.Interactive = &interactive
-						} else if len(qrs) <= 10 {
-							interactive := whatsapp.Interactive{Type: "list", Body: struct {
-								Text string "json:\"text\""
-							}{Text: msgParts[i-len(msg.Attachments())]}}
-
-							section := whatsapp.Section{
-								Rows: make([]whatsapp.SectionRow, len(qrs)),
-							}
-							for i, qr := range qrs {
-								section.Rows[i] = whatsapp.SectionRow{
-									ID:    fmt.Sprint(i),
-									Title: qr,
-								}
-							}
-
-							interactive.Action = &struct {
-								Button   string             "json:\"button,omitempty\""
-								Sections []whatsapp.Section "json:\"sections,omitempty\""
-								Buttons  []whatsapp.Button  "json:\"buttons,omitempty\""
-							}{Button: menuButton, Sections: []whatsapp.Section{
-								section,
-							}}
-
-							payload.Interactive = &interactive
-						} else {
-							return nil, fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
-						}
-					} else {
-						// this is still a msg part
-						text := &whatsapp.Text{PreviewURL: false}
-						payload.Type = "text"
-						if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
-							text.PreviewURL = true
-						}
-						text.Body = msgParts[i-len(msg.Attachments())]
-						payload.Text = text
-					}
 				}
 			}
 

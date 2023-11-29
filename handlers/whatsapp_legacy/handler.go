@@ -724,39 +724,18 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 				return nil, errors.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
 			}
 
-			if msg.Channel().BoolConfigForKey(configHSMSupport, false) {
-				payload := hsmPayload{
-					To:   msg.URN().Path(),
-					Type: "hsm",
-				}
-				payload.HSM.Namespace = namespace
-				payload.HSM.ElementName = templating.Template.Name
-				payload.HSM.Language.Policy = "deterministic"
-				payload.HSM.Language.Code = langCode
-				for _, v := range templating.Variables {
-					payload.HSM.LocalizableParams = append(payload.HSM.LocalizableParams, LocalizableParam{Default: v})
-				}
-				payloads = append(payloads, payload)
-			} else {
-
-				payload := templatePayload{
-					To:   msg.URN().Path(),
-					Type: "template",
-				}
-				payload.Template.Namespace = namespace
-				payload.Template.Name = templating.Template.Name
-				payload.Template.Language.Policy = "deterministic"
-				payload.Template.Language.Code = langCode
-
-				component := &Component{Type: "body"}
-
-				for _, v := range templating.Variables {
-					component.Parameters = append(component.Parameters, Param{Type: "text", Text: v})
-				}
-				payload.Template.Components = append(payload.Template.Components, *component)
-
-				payloads = append(payloads, payload)
+			payload := templatePayload{
+				To:   msg.URN().Path(),
+				Type: "template",
 			}
+			payload.Template.Namespace = namespace
+			payload.Template.Name = templating.Template.Name
+			payload.Template.Language.Policy = "deterministic"
+			payload.Template.Language.Code = langCode
+			payload.Template.Components = append(payload.Template.Components, templating.Components...)
+
+			payloads = append(payloads, payload)
+
 		} else {
 
 			if isInteractiveMsg {
@@ -1132,8 +1111,8 @@ type MsgTemplating struct {
 		Name string `json:"name" validate:"required"`
 		UUID string `json:"uuid" validate:"required"`
 	} `json:"template" validate:"required,dive"`
-	Namespace string   `json:"namespace"`
-	Variables []string `json:"variables"`
+	Namespace  string      `json:"namespace"`
+	Components []Component `json:"components"`
 }
 
 func getSupportedLanguage(lc i18n.Locale) string {
