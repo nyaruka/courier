@@ -836,7 +836,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 								template.Components = append(template.Components, component)
 							} else {
 								component := &whatsapp.Component{Type: "button", Index: strings.TrimPrefix(k, "button."), SubType: "payload"}
-								component.Params = append(component.Params, &whatsapp.Param{Type: p.Type, Text: p.Value})
+								component.Params = append(component.Params, &whatsapp.Param{Type: p.Type, Payload: p.Value})
 								template.Components = append(template.Components, component)
 							}
 						}

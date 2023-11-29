@@ -139,9 +139,10 @@ type Button struct {
 }
 
 type Param struct {
-	Type  string `json:"type"`
-	Text  string `json:"text"`
-	Image *struct {
+	Type    string `json:"type"`
+	Text    string `json:"text,omitempty"`
+	Payload string `json:"payload,omitempty"`
+	Image   *struct {
 		Link string `json:"link,omitempty"`
 	} `json:"image,omitempty"`
 	Video *struct {
