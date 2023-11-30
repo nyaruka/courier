@@ -175,7 +175,7 @@ type Language struct {
 type Template struct {
 	Name       string       `json:"name"`
 	Language   *Language    `json:"language"`
-	Components []*Component `json:"components"`
+	Components []*Component `json:"components,omitempty"`
 }
 
 // see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#interactive-object

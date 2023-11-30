@@ -96,7 +96,7 @@ func GetTemplatePayload(templating MsgTemplating, lang string) *Template {
 
 	}
 
-	if len(templating.Params) == 0 {
+	if len(templating.Params) == 0 && len(templating.Variables) != 0 {
 		component := &Component{Type: "body"}
 
 		for _, v := range templating.Variables {

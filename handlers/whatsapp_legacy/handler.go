@@ -439,7 +439,7 @@ type templatePayload struct {
 			Policy string `json:"policy"`
 			Code   string `json:"code"`
 		} `json:"language"`
-		Components []Component `json:"components"`
+		Components []Component `json:"components,omitempty"`
 	} `json:"template"`
 }
 
@@ -745,7 +745,7 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 
 			}
 
-			if len(templating.Params) == 0 {
+			if len(templating.Params) == 0 && len(templating.Variables) != 0 {
 				component := &Component{Type: "body"}
 				for _, v := range templating.Variables {
 					component.Parameters = append(component.Parameters, Param{Type: "text", Text: v})
