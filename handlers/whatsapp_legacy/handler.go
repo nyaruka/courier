@@ -733,12 +733,22 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 			payload.Template.Language.Policy = "deterministic"
 			payload.Template.Language.Code = langCode
 
-			component := &Component{Type: "body"}
+			for k, v := range templating.Params {
+				if k == "body" {
+					component := &Component{Type: "body"}
+					for _, p := range v {
+						component.Parameters = append(component.Parameters, Param{Type: p.Type, Text: p.Value})
+					}
+					payload.Template.Components = append(payload.Template.Components, *component)
 
-			for _, v := range templating.Variables {
-				component.Parameters = append(component.Parameters, Param{Type: "text", Text: v})
+				}
+
 			}
-			payload.Template.Components = append(payload.Template.Components, *component)
+
+			if len(templating.Params) == 0 {
+				component := &Component{Type: "body"}
+				payload.Template.Components = append(payload.Template.Components, *component)
+			}
 
 			payloads = append(payloads, payload)
 
@@ -1117,8 +1127,11 @@ type MsgTemplating struct {
 		Name string `json:"name" validate:"required"`
 		UUID string `json:"uuid" validate:"required"`
 	} `json:"template" validate:"required,dive"`
-	Namespace string   `json:"namespace"`
-	Variables []string `json:"variables"`
+	Namespace string `json:"namespace"`
+	Params    map[string][]struct {
+		Type  string `json:"type"`
+		Value string `json:"value"`
+	} `json:"params"`
 }
 
 func getSupportedLanguage(lc i18n.Locale) string {
