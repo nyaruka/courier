@@ -831,12 +831,12 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 
 						for _, p := range v {
 							if strings.HasPrefix(p.Value, "http") {
-								component := &whatsapp.Component{Type: "button", Index: strings.TrimPrefix(k, "button."), SubType: "url"}
-								component.Params = append(component.Params, &whatsapp.Param{Type: p.Type, Text: p.Value})
+								component := &whatsapp.Component{Type: "button", Index: strings.TrimPrefix(k, "button."), SubType: "quick_reply"}
+								component.Params = append(component.Params, &whatsapp.Param{Type: "url", Text: p.Value})
 								template.Components = append(template.Components, component)
 							} else {
-								component := &whatsapp.Component{Type: "button", Index: strings.TrimPrefix(k, "button."), SubType: "payload"}
-								component.Params = append(component.Params, &whatsapp.Param{Type: p.Type, Payload: p.Value})
+								component := &whatsapp.Component{Type: "button", Index: strings.TrimPrefix(k, "button."), SubType: "quick_reply"}
+								component.Params = append(component.Params, &whatsapp.Param{Type: "payload", Payload: p.Value})
 								template.Components = append(template.Components, component)
 							}
 						}
