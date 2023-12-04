@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
@@ -22,6 +23,7 @@ import (
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
@@ -1313,7 +1315,8 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, nil)
 	urn, _ := urns.NewTelURNForCountry("12065551616", channel.Country())
 
-	event := ts.b.NewChannelEvent(channel, courier.EventTypeReferral, urn, clog).WithExtra(map[string]string{"ref_id": "12345"}).
+	event := ts.b.NewChannelEvent(channel, courier.EventTypeReferral, urn, clog).
+		WithExtra(map[string]string{"ref_id": "12345"}).
 		WithContactName("kermit frog").
 		WithOccurredOn(time.Date(2020, 8, 5, 13, 30, 0, 123456789, time.UTC))
 	err := ts.b.WriteChannelEvent(ctx, event, clog)
@@ -1322,6 +1325,7 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	contact, err := contactForURN(ctx, ts.b, channel.OrgID_, channel, urn, nil, "", clog)
 	ts.NoError(err)
 	ts.Equal(null.String("kermit frog"), contact.Name_)
+	ts.False(contact.IsNew_)
 
 	dbE := event.(*ChannelEvent)
 	dbE = readChannelEventFromDB(ts.b, dbE.ID_)
@@ -1449,9 +1453,11 @@ func (ts *BackendTestSuite) assertQueuedContactTask(contactID ContactID, expecte
 	data, err := redis.Bytes(rc.Do("LPOP", fmt.Sprintf("c:1:%d", contactID)))
 	ts.NoError(err)
 
+	// created_on is usually DB time so exclude it from task body comparison
+	data = jsonparser.Delete(data, "task", "created_on")
+
 	var body map[string]any
-	err = json.Unmarshal(data, &body)
-	ts.NoError(err)
+	jsonx.MustUnmarshal(data, &body)
 	ts.Equal(expectedType, body["type"])
 	ts.Equal(expectedBody, body["task"])
 }

@@ -62,7 +62,6 @@ type ChannelEvent struct {
 // newChannelEvent creates a new channel event
 func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType, urn urns.URN, clog *courier.ChannelLog) *ChannelEvent {
 	dbChannel := channel.(*Channel)
-	now := time.Now().In(time.UTC)
 
 	return &ChannelEvent{
 		ChannelUUID_: dbChannel.UUID_,
@@ -70,8 +69,7 @@ func newChannelEvent(channel courier.Channel, eventType courier.ChannelEventType
 		ChannelID_:   dbChannel.ID_,
 		URN_:         urn,
 		EventType_:   eventType,
-		OccurredOn_:  now,
-		CreatedOn_:   now,
+		OccurredOn_:  time.Now().In(time.UTC),
 		LogUUIDs:     []string{string(clog.UUID())},
 
 		channel: dbChannel,
@@ -136,11 +134,11 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 
 const sqlInsertChannelEvent = `
 INSERT INTO 
-	channels_channelevent( org_id,  channel_id,  contact_id,  contact_urn_id,  event_type,  optin_id,  extra,  occurred_on,  created_on,  log_uuids)
-				   VALUES(:org_id, :channel_id, :contact_id, :contact_urn_id, :event_type, :optin_id, :extra, :occurred_on, :created_on, :log_uuids)
-RETURNING id`
+	channels_channelevent( org_id,  channel_id,  contact_id,  contact_urn_id,  event_type,  optin_id,  extra,  occurred_on, created_on,  log_uuids)
+				   VALUES(:org_id, :channel_id, :contact_id, :contact_urn_id, :event_type, :optin_id, :extra, :occurred_on,      NOW(), :log_uuids)
+RETURNING id, created_on`
 
-// writeChannelEventToDB writes the passed in msg status to our db
+// writeChannelEventToDB writes the passed in channel event to our db
 func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clog *courier.ChannelLog) error {
 	// grab the contact for this event
 	contact, err := contactForURN(ctx, b, e.OrgID_, e.channel, e.URN_, e.URNAuthTokens_, e.ContactName_, clog)
@@ -159,8 +157,8 @@ func writeChannelEventToDB(ctx context.Context, b *backend, e *ChannelEvent, clo
 	defer rows.Close()
 
 	rows.Next()
-	err = rows.Scan(&e.ID_)
-	if err != nil {
+
+	if err = rows.Scan(&e.ID_, &e.CreatedOn_); err != nil {
 		return err
 	}
 
