@@ -279,7 +279,7 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 				if err != nil {
 					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid timestamp: %s", msg.Timestamp))
 				}
-				date := time.Unix(ts, 0).UTC()
+				date := parseTimestamp(ts)
 
 				urn, err := urns.NewWhatsAppURN(msg.From)
 				if err != nil {
@@ -409,15 +409,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 			continue
 		}
 
-		var date time.Time
-
-		if msg.Timestamp >= 10_000_000_000 {
-			// create our date from the timestamp (they give us millis, arg is nanos)
-			date = time.Unix(0, msg.Timestamp*1000000).UTC()
-		} else {
-			// create our date from the timestamp (they give us seconds)
-			date = time.Unix(msg.Timestamp, 0).UTC()
-		}
+		date := parseTimestamp(msg.Timestamp)
 
 		sender := msg.Sender.UserRef
 		if sender == "" {
@@ -1227,3 +1219,11 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 }
 
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
+
+func parseTimestamp(ts int64) time.Time {
+	// sometimes Facebook sends timestamps in seconds rather than milliseconds
+	if ts >= 1_000_000_000_000 {
+		return time.Unix(0, ts*1000000).UTC()
+	}
+	return time.Unix(ts, 0).UTC()
+}
