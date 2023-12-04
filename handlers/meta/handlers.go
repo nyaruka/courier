@@ -411,7 +411,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 		var date time.Time
 
-		if msg.Timestamp >= 10_000_000_000 {
+		if msg.Timestamp >= 100_000_000_000 {
 			// create our date from the timestamp (they give us millis, arg is nanos)
 			date = time.Unix(0, msg.Timestamp*1000000).UTC()
 		} else {
