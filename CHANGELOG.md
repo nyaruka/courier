@@ -1,3 +1,7 @@
+v8.3.30 (2023-12-04)
+-------------------------
+ * Change channel events so that created_on is db time and is included in queued task payload
+
 v8.3.29 (2023-12-04)
 -------------------------
  * Fix FBA timestamps that sometimes are in seconds instead of milliseconds
