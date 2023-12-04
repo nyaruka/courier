@@ -1,3 +1,9 @@
+v8.3.29 (2023-12-04)
+-------------------------
+ * Fix FBA timestamps that sometimes are in seconds instead of milliseconds
+ * Remove support for HSM template support
+ * Update to latest gocommon and phonenumbers
+
 v8.3.28 (2023-11-23)
 -------------------------
  * Logging tweak
