@@ -184,6 +184,17 @@ var facebookIncomingTests = []IncomingTestCase{
 		PrepRequest: addValidSignature,
 	},
 	{
+		Label:                "Receive Referral timestamp seconds",
+		URL:                  "/c/fba/receive",
+		Data:                 string(test.ReadFile("./testdata/fba/referral_seconds.json")),
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"referrer_id":"referral id"`,
+		ExpectedEvents: []ExpectedEvent{
+			{Type: courier.EventTypeReferral, URN: "facebook:5678", Time: time.Date(2023, 12, 3, 10, 25, 11, 0, time.UTC), Extra: map[string]string{"referrer_id": "referral id", "source": "referral source", "type": "referral type", "ad_id": "ad id"}},
+		},
+		PrepRequest: addValidSignature,
+	},
+	{
 		Label:              "Receive Fallback Attachment",
 		URL:                "/c/fba/receive",
 		Data:               string(test.ReadFile("./testdata/fba/fallback.json")),
