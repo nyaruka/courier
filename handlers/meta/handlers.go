@@ -805,8 +805,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	}
 	qrs := msg.QuickReplies()
-	lang := whatsapp.GetSupportedLanguage(msg.Locale())
-	menuButton := whatsapp.GetMenuButton(lang)
+	menuButton := handlers.GetText("Menu", msg.Locale())
 
 	var payloadAudio whatsapp.SendRequest
 
@@ -823,7 +822,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 
 				payload.Type = "template"
 
-				template := whatsapp.Template{Name: templating.Template.Name, Language: &whatsapp.Language{Policy: "deterministic", Code: lang}}
+				template := whatsapp.Template{Name: templating.Template.Name, Language: &whatsapp.Language{Policy: "deterministic", Code: templating.Language}}
 				payload.Template = &template
 
 				component := &whatsapp.Component{Type: "body"}
