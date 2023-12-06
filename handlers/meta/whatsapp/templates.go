@@ -15,6 +15,7 @@ type MsgTemplating struct {
 	} `json:"template" validate:"required,dive"`
 	Namespace string   `json:"namespace"`
 	Variables []string `json:"variables"`
+	Language  string   `json:"language"`
 }
 
 func GetTemplating(msg courier.MsgOut) (*MsgTemplating, error) {
