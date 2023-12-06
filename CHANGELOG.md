@@ -1,3 +1,7 @@
+v8.3.31 (2023-12-06)
+-------------------------
+ * Use language value in templating metadata instead of trying to match
+
 v8.3.30 (2023-12-04)
 -------------------------
  * Change channel events so that created_on is db time and is included in queued task payload
