@@ -200,6 +200,17 @@ var defaultSendTestCases = []OutgoingTestCase{
 		SendPrep:           setSendURL,
 	},
 	{
+		Label:              "Rate Limit Engaged",
+		MsgText:            "Hello",
+		MsgURN:             "tel:+250788383383",
+		MsgHighPriority:    false,
+		ExpectedMsgStatus:  "W",
+		MockResponseBody:   "3: Queued for later delivery",
+		MockResponseStatus: 202,
+		ExpectedURLParams:  map[string]string{"text": `Hello`, "to": "+250788383383", "coding": "", "priority": ""},
+		SendPrep:           setSendURL,
+	},
+	{
 		Label:              "Custom Params",
 		MsgText:            "Custom Params",
 		MsgURN:             "tel:+250788383383",
