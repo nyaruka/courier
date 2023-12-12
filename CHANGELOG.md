@@ -1,3 +1,7 @@
+v8.3.32 (2023-12-12)
+-------------------------
+ * Update deps
+
 v8.3.31 (2023-12-06)
 -------------------------
  * Use language value in templating metadata instead of trying to match
