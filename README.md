@@ -35,7 +35,7 @@ environment variables and parameters and for more details on each option.
 
 ### RapidPro
 
-For use with RapidPro, you will want to configure these settings:
+For use with RapidPro/TextIt, you will want to configure these settings:
 
  * `COURIER_DOMAIN`: The root domain which courier is exposed as (ex `textit.in`)
  * `COURIER_SPOOL_DIR`: A local path where courier can spool files if the database is down, should be writable. (ex: `/home/courier/spool`)
