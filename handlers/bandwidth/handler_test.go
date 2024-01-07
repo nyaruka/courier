@@ -294,6 +294,27 @@ var defaultSendTestCases = []OutgoingTestCase{
 		SendPrep:           setSendURL,
 	},
 	{
+		Label:              "Send Attachment no text",
+		MsgText:            "",
+		MsgURN:             "tel:+12067791234",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:   `{"id": "55555"}`,
+		MockResponseStatus: 200,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{
+					"Content-Type":  "application/json",
+					"Accept":        "application/json",
+					"Authorization": "Basic dXNlcjE6cGFzczE=",
+				},
+				Body: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"","media":["https://foo.bar/image.jpg"]}`,
+			},
+		},
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "55555",
+		SendPrep:           setSendURL,
+	},
+	{
 		Label:              "No External ID",
 		MsgText:            "No External ID",
 		MsgURN:             "tel:+12067791234",
