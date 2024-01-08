@@ -199,7 +199,12 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
+	} else {
+		if len(msg.Attachments()) > 0 {
+			msgParts = append(msgParts, "")
+		}
 	}
+
 	for i, part := range msgParts {
 		payload := &mtPayload{}
 		payload.ApplicationID = applicationID
