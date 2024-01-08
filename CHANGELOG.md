@@ -1,3 +1,7 @@
+v9.0.1 (2024-01-08)
+-------------------------
+ * Fix sending bandwidth MMS without text
+
 v9.0.0 (2024-01-05)
 -------------------------
  * Bump golang.org/x/crypto from 0.16.0 to 0.17.0
