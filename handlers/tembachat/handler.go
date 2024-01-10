@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	defaultSendURL = "http://localhost:8070/send"
+	defaultSendURL = "http://chatserver:8070/send"
 )
 
 func init() {
