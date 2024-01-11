@@ -11,7 +11,7 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 )
 
-const (
+var (
 	defaultSendURL = "http://chatserver:8070/send"
 )
 
@@ -35,19 +35,22 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type receivePayload struct {
-	Type    string `json:"type"`
+	Type    string `json:"type" validate:"required"`
 	Message struct {
-		Identifier string `json:"identifier"`
-		Text       string `json:"text"`
+		Identifier string `json:"identifier" validate:"required"`
+		Text       string `json:"text"       validate:"required"`
 	} `json:"message"`
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *receivePayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if payload.Type == "message" {
-		urn, _ := urns.NewWebChatURN(payload.Message.Identifier)
-		msg := h.Backend().NewIncomingMsg(c, urn, payload.Message.Text, "", clog)
+		urn, err := urns.NewWebChatURN(payload.Message.Identifier)
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+		}
 
+		msg := h.Backend().NewIncomingMsg(c, urn, payload.Message.Text, "", clog)
 		return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 	}
 	return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "")
@@ -56,6 +59,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 type sendPayload struct {
 	Identifier string `json:"identifier"`
 	Text       string `json:"text"`
+	Origin     string `json:"origin"`
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
@@ -64,6 +68,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 	payload := &sendPayload{
 		Identifier: msg.URN().Path(),
 		Text:       msg.Text(),
+		Origin:     string(msg.Origin()),
 	}
 	req, _ := http.NewRequest("POST", sendURL, bytes.NewReader(jsonx.MustMarshal(payload)))
 
