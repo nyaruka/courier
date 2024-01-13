@@ -35,23 +35,38 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 type receivePayload struct {
-	Type    string `json:"type" validate:"required"`
-	Message struct {
-		Identifier string `json:"identifier" validate:"required"`
-		Text       string `json:"text"       validate:"required"`
-	} `json:"message"`
+	Type string `json:"type" validate:"required"`
+	Msg  struct {
+		Identifier string `json:"identifier"`
+		Text       string `json:"text"`
+	} `json:"msg"`
+	Chat struct {
+		Identifier string `json:"identifier"`
+	} `json:"chat"`
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *receivePayload, clog *courier.ChannelLog) ([]courier.Event, error) {
-	if payload.Type == "message" {
-		urn, err := urns.NewWebChatURN(payload.Message.Identifier)
+	if payload.Type == "msg_in" {
+		urn, err := urns.NewWebChatURN(payload.Msg.Identifier)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
-		msg := h.Backend().NewIncomingMsg(c, urn, payload.Message.Text, "", clog)
+		msg := h.Backend().NewIncomingMsg(c, urn, payload.Msg.Text, "", clog)
 		return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
+	} else if payload.Type == "chat_started" {
+		urn, err := urns.NewWebChatURN(payload.Chat.Identifier)
+		if err != nil {
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+		}
+
+		evt := h.Backend().NewChannelEvent(c, courier.EventTypeNewConversation, urn, clog)
+		err = h.Backend().WriteChannelEvent(ctx, evt, clog)
+		if err != nil {
+			return nil, err
+		}
+		return []courier.Event{evt}, courier.WriteChannelEventSuccess(w, evt)
 	}
 	return nil, handlers.WriteAndLogRequestIgnored(ctx, h, c, w, r, "")
 }
