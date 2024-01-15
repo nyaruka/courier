@@ -139,8 +139,17 @@ type Button struct {
 }
 
 type Param struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
+	Type  string `json:"type"`
+	Text  string `json:"text"`
+	Image *struct {
+		Link string `json:"link,omitempty"`
+	} `json:"image,omitempty"`
+	Video *struct {
+		Link string `json:"link,omitempty"`
+	} `json:"video,omitempty"`
+	Document *struct {
+		Link string `json:"link,omitempty"`
+	} `json:"document,omitempty"`
 }
 
 type Component struct {
