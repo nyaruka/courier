@@ -330,19 +330,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 				return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
 			}
 			if templating != nil {
-
 				payload.Type = "template"
-
-				template := whatsapp.Template{Name: templating.Template.Name, Language: &whatsapp.Language{Policy: "deterministic", Code: templating.Language}}
-				payload.Template = &template
-
-				component := &whatsapp.Component{Type: "body"}
-
-				for _, v := range templating.Variables {
-					component.Params = append(component.Params, &whatsapp.Param{Type: "text", Text: v})
-				}
-				template.Components = append(payload.Template.Components, component)
-
+				payload.Template = whatsapp.GetTemplatePayload(*templating)
 			} else {
 				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 					// this is still a msg part

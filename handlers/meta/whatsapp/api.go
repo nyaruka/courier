@@ -139,8 +139,18 @@ type Button struct {
 }
 
 type Param struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
+	Type    string `json:"type"`
+	Text    string `json:"text,omitempty"`
+	Payload string `json:"payload,omitempty"`
+	Image   *struct {
+		Link string `json:"link,omitempty"`
+	} `json:"image,omitempty"`
+	Video *struct {
+		Link string `json:"link,omitempty"`
+	} `json:"video,omitempty"`
+	Document *struct {
+		Link string `json:"link,omitempty"`
+	} `json:"document,omitempty"`
 }
 
 type Component struct {
@@ -165,7 +175,7 @@ type Language struct {
 type Template struct {
 	Name       string       `json:"name"`
 	Language   *Language    `json:"language"`
-	Components []*Component `json:"components"`
+	Components []*Component `json:"components,omitempty"`
 }
 
 // see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#interactive-object
