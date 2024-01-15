@@ -820,7 +820,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 			}
 			if templating != nil {
 				payload.Type = "template"
-				payload.Template = whatsapp.GetTemplatePayload(*templating, templating.Language)
+				payload.Template = whatsapp.GetTemplatePayload(*templating)
 
 			} else {
 				if i < (len(msgParts) + len(msg.Attachments()) - 1) {

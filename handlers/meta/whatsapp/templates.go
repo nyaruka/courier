@@ -46,8 +46,8 @@ func GetTemplating(msg courier.MsgOut) (*MsgTemplating, error) {
 	return metadata.Templating, nil
 }
 
-func GetTemplatePayload(templating MsgTemplating, lang string) *Template {
-	template := Template{Name: templating.Template.Name, Language: &Language{Policy: "deterministic", Code: lang}}
+func GetTemplatePayload(templating MsgTemplating) *Template {
+	template := Template{Name: templating.Template.Name, Language: &Language{Policy: "deterministic", Code: templating.Language}}
 
 	for k, v := range templating.Params {
 		if strings.HasPrefix(k, "button.") {
