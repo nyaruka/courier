@@ -200,13 +200,25 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 	}
 
 	var resp *http.Response
+	var respBody []byte
 	if verifySSL {
-		resp, _, err = h.RequestHTTP(req, clog)
+		resp, respBody, err = h.RequestHTTP(req, clog)
 	} else {
-		resp, _, err = h.RequestHTTPInsecure(req, clog)
+		resp, respBody, err = h.RequestHTTPInsecure(req, clog)
+	}
+	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
+
+	if strings.Contains(string(respBody), "Queued") {
+		rc := h.Backend().RedisPool().Get()
+		defer rc.Close()
+		rateLimitKey := fmt.Sprintf("rate_limit:%s", msg.Channel().UUID())
+		rateLimitBulkKey := fmt.Sprintf("rate_limit_bulk:%s", msg.Channel().UUID())
+		// We pause sending 30 seconds so the connection to the SMSC is reset
+		rc.Do("SET", rateLimitKey, "engaged", "EX", 30)
+		rc.Do("SET", rateLimitBulkKey, "engaged", "EX", 30)
+		// the message reached kannel and we should not return an error here, so continue to get the status below
 	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	if err == nil && resp.StatusCode/100 == 2 {
 		status.SetStatus(courier.MsgStatusWired)
 	}

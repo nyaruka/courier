@@ -60,8 +60,7 @@ func TestLua(t *testing.T) {
 	delay := time.Second*2 - time.Duration(time.Now().UnixNano()%int64(time.Second))
 	time.Sleep(delay)
 
-	conn.Do("SET", "rate_limit_bulk:chan1", "engaged")
-	conn.Do("EXPIRE", "rate_limit_bulk:chan1", 5)
+	conn.Do("SET", "rate_limit_bulk:chan1", "engaged", "EX", 5)
 
 	// we have the rate limit set,
 	queue, value, err := PopFromQueue(conn, "msgs")
@@ -120,8 +119,7 @@ func TestLua(t *testing.T) {
 	assert.NoError(err)
 
 	// make sure pause bulk key do not prevent use to get from the high priority queue
-	conn.Do("SET", "rate_limit_bulk:chan1", "engaged")
-	conn.Do("EXPIRE", "rate_limit_bulk:chan1", 5)
+	conn.Do("SET", "rate_limit_bulk:chan1", "engaged", "EX", 5)
 
 	queue, value, err = PopFromQueue(conn, "msgs")
 	assert.NoError(err)
@@ -194,8 +192,7 @@ func TestLua(t *testing.T) {
 	err = PushOntoQueue(conn, "msgs", "chan1", rate, `[{"id":34}]`, HighPriority)
 	assert.NoError(err)
 
-	conn.Do("SET", "rate_limit:chan1", "engaged")
-	conn.Do("EXPIRE", "rate_limit:chan1", 5)
+	conn.Do("SET", "rate_limit:chan1", "engaged", "EX", 5)
 
 	// we have the rate limit set,
 	queue, value, err = PopFromQueue(conn, "msgs")

@@ -919,12 +919,11 @@ func (h *handler) sendWhatsAppMsg(rc redis.Conn, msg courier.MsgOut, sendPath *u
 
 	if resp != nil && (resp.StatusCode == 429 || resp.StatusCode == 503) {
 		rateLimitKey := fmt.Sprintf("rate_limit:%s", msg.Channel().UUID())
-		rc.Do("SET", rateLimitKey, "engaged")
 
 		// The rate limit is 50 requests per second
 		// We pause sending 2 seconds so the limit count is reset
 		// TODO: In the future we should the header value when available
-		rc.Do("EXPIRE", rateLimitKey, 2)
+		rc.Do("SET", rateLimitKey, "engaged", "EX", 2)
 
 		return "", "", errors.New("received rate-limit response from send endpoint")
 	}
@@ -936,12 +935,10 @@ func (h *handler) sendWhatsAppMsg(rc redis.Conn, msg courier.MsgOut, sendPath *u
 	if err == nil && len(errPayload.Errors) > 0 {
 		if hasTiersError(*errPayload) {
 			rateLimitBulkKey := fmt.Sprintf("rate_limit_bulk:%s", msg.Channel().UUID())
-			rc.Do("SET", rateLimitBulkKey, "engaged")
 
 			// The WA tiers spam rate limit hit
 			// We pause the bulk queue for 24 hours and 5min
-			rc.Do("EXPIRE", rateLimitBulkKey, (60*60*24)+(5*60))
-
+			rc.Do("SET", rateLimitBulkKey, "engaged", "EX", (60*60*24)+(5*60))
 			err := errors.Errorf("received error from send endpoint: %s", errPayload.Errors[0].Title)
 			return "", "", err
 		}
