@@ -331,57 +331,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 			}
 			if templating != nil {
 				payload.Type = "template"
-
-				template := whatsapp.Template{Name: templating.Template.Name, Language: &whatsapp.Language{Policy: "deterministic", Code: templating.Language}}
-				payload.Template = &template
-
-				for k, v := range templating.Params {
-					if strings.HasPrefix(k, "button.") {
-
-						for _, p := range v {
-							if strings.HasPrefix(p.Value, "http") {
-								component := &whatsapp.Component{Type: "button", Index: strings.TrimPrefix(k, "button."), SubType: "quick_reply"}
-								component.Params = append(component.Params, &whatsapp.Param{Type: "url", Text: p.Value})
-								template.Components = append(template.Components, component)
-							} else {
-								component := &whatsapp.Component{Type: "button", Index: strings.TrimPrefix(k, "button."), SubType: "quick_reply"}
-								component.Params = append(component.Params, &whatsapp.Param{Type: "payload", Payload: p.Value})
-								template.Components = append(template.Components, component)
-							}
-						}
-
-					} else if k == "header" {
-						component := &whatsapp.Component{Type: "header"}
-						for _, p := range v {
-							if p.Type == "image" {
-								component.Params = append(component.Params, &whatsapp.Param{Type: p.Type, Image: &struct {
-									Link string "json:\"link,omitempty\""
-								}{Link: p.Value}})
-							} else if p.Type == "video" {
-								component.Params = append(component.Params, &whatsapp.Param{Type: p.Type, Video: &struct {
-									Link string "json:\"link,omitempty\""
-								}{Link: p.Value}})
-							} else if p.Type == "document" {
-								component.Params = append(component.Params, &whatsapp.Param{Type: p.Type, Document: &struct {
-									Link string "json:\"link,omitempty\""
-								}{Link: p.Value}})
-							} else {
-								component.Params = append(component.Params, &whatsapp.Param{Type: p.Type, Text: p.Value})
-							}
-						}
-						template.Components = append(template.Components, component)
-
-					} else {
-						component := &whatsapp.Component{Type: "body"}
-						for _, p := range v {
-							component.Params = append(component.Params, &whatsapp.Param{Type: p.Type, Text: p.Value})
-						}
-						template.Components = append(template.Components, component)
-
-					}
-
-				}
-
+				payload.Template = whatsapp.GetTemplatePayload(*templating, templating.Language)
 			} else {
 				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 					// this is still a msg part
