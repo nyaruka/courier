@@ -747,6 +747,9 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 
 			if len(templating.Params) == 0 {
 				component := &Component{Type: "body"}
+				for _, v := range templating.Variables {
+					component.Parameters = append(component.Parameters, Param{Type: "text", Text: v})
+				}
 				payload.Template.Components = append(payload.Template.Components, *component)
 			}
 
@@ -1127,7 +1130,8 @@ type MsgTemplating struct {
 		Name string `json:"name" validate:"required"`
 		UUID string `json:"uuid" validate:"required"`
 	} `json:"template" validate:"required,dive"`
-	Namespace string `json:"namespace"`
+	Namespace string   `json:"namespace"`
+	Variables []string `json:"variables"`
 	Params    map[string][]struct {
 		Type  string `json:"type"`
 		Value string `json:"value"`
