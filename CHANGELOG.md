@@ -1,3 +1,9 @@
+v9.1.0 (2024-01-15)
+-------------------------
+ * Add support for chat_started event on tembachat handler
+ * Use latest gocommon
+ * Add support for templating params instead of variables
+
 v9.0.1 (2024-01-08)
 -------------------------
  * Fix sending bandwidth MMS without text
