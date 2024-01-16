@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	ulog "log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -79,64 +79,57 @@ import (
 	_ "github.com/nyaruka/courier/backends/rapidpro"
 )
 
-var version = "Dev"
+var (
+	// https://goreleaser.com/cookbooks/using-main.version
+	version = "dev"
+	date    = "unknown"
+)
 
 func main() {
-	config := courier.LoadConfig("courier.toml")
-
-	// if we have a custom version, use it
-	if version != "Dev" {
-		config.Version = version
-	}
+	config := courier.LoadConfig()
+	config.Version = version
 
 	// configure our logger
 	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: config.LogLevel})
 	slog.SetDefault(slog.New(logHandler))
 
-	logger := slog.With("comp", "main")
-	logger.Info("starting courier", "version", version)
-
 	// if we have a DSN entry, try to initialize it
 	if config.SentryDSN != "" {
-		err := sentry.Init(sentry.ClientOptions{
-			Dsn:           config.SentryDSN,
-			EnableTracing: false,
-		})
+		err := sentry.Init(sentry.ClientOptions{Dsn: config.SentryDSN, EnableTracing: false})
 		if err != nil {
-			log.Fatalf("error initiating sentry client, error %s, dsn %s", err, config.SentryDSN)
-			os.Exit(1)
+			ulog.Fatalf("error initiating sentry client, error %s, dsn %s", err, config.SentryDSN)
 		}
 
 		defer sentry.Flush(2 * time.Second)
 
-		logger = slog.New(
+		slog.SetDefault(slog.New(
 			slogmulti.Fanout(
 				logHandler,
 				slogsentry.Option{Level: slog.LevelError}.NewSentryHandler(),
 			),
-		)
-		logger = logger.With("release", version)
-		slog.SetDefault(logger)
+		))
 	}
+
+	log := slog.With("comp", "main")
+	log.Info("starting courier", "version", version, "released", date)
 
 	// load our backend
 	backend, err := courier.NewBackend(config)
 	if err != nil {
-		logger.Error("error creating backend", "error", err)
+		log.Error("error creating backend", "error", err)
 		os.Exit(1)
 	}
 
 	server := courier.NewServer(config, backend)
 	err = server.Start()
 	if err != nil {
-		logger.Error("unable to start server", "error", err)
+		log.Error("unable to start server", "error", err)
 		os.Exit(1)
 	}
 
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	logger.Info("stopping", "comp", "main", "signal", <-ch)
+	log.Info("stopping", "comp", "main", "signal", <-ch)
 
 	server.Stop()
-
 }

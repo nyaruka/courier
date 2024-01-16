@@ -17,4 +17,3 @@ archives:
   - files:
       - LICENSE
       - README.md
-      - courier.toml

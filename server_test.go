@@ -17,7 +17,7 @@ import (
 
 func TestServer(t *testing.T) {
 	logger := slog.Default()
-	config := courier.NewConfig()
+	config := courier.NewDefaultConfig()
 	config.StatusUsername = "admin"
 	config.StatusPassword = "password123"
 
@@ -90,7 +90,7 @@ func TestFetchAttachment(t *testing.T) {
 	uuids.SetGenerator(uuids.NewSeededGenerator(1234))
 
 	logger := slog.Default()
-	config := courier.NewConfig()
+	config := courier.NewDefaultConfig()
 	config.AuthToken = "sesame"
 
 	mb := test.NewMockBackend()

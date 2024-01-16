@@ -3,9 +3,9 @@ package courier
 import (
 	"encoding/csv"
 	"io"
+	"log"
 	"log/slog"
 	"net"
-	"os"
 	"strings"
 
 	"github.com/nyaruka/courier/utils"
@@ -58,8 +58,8 @@ type Config struct {
 	ExcludeChannels []string
 }
 
-// NewConfig returns a new default configuration object
-func NewConfig() *Config {
+// NewDefaultConfig returns a new default configuration object
+func NewDefaultConfig() *Config {
 	return &Config{
 		Backend:  "rapidpro",
 		Domain:   "localhost",
@@ -91,21 +91,14 @@ func NewConfig() *Config {
 	}
 }
 
-// LoadConfig loads our configuration from the passed in filename
-func LoadConfig(filename string) *Config {
-	config := NewConfig()
-	loader := ezconf.NewLoader(
-		config,
-		"courier", "Courier - A fast message broker for SMS and IP messages",
-		[]string{filename},
-	)
-
+func LoadConfig() *Config {
+	config := NewDefaultConfig()
+	loader := ezconf.NewLoader(config, "courier", "Courier - A fast message broker for SMS and IP messages", []string{"config.toml"})
 	loader.MustLoad()
 
 	// ensure config is valid
 	if err := config.Validate(); err != nil {
-		slog.Error("invalid config", "error", err)
-		os.Exit(1)
+		log.Fatalf("invalid config: %s", err)
 	}
 
 	return config
