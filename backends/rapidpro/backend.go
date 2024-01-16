@@ -129,21 +129,8 @@ func newBackend(cfg *courier.Config) courier.Backend {
 // Start starts our RapidPro backend, this tests our various connections and starts our spool flushers
 func (b *backend) Start() error {
 	// parse and test our redis config
-	log := slog.With(
-		"comp", "backend",
-		"state", "starting",
-	)
+	log := slog.With("comp", "backend", "state", "starting")
 	log.Info("starting backend")
-
-	// parse and test our db config
-	dbURL, err := url.Parse(b.config.DB)
-	if err != nil {
-		return fmt.Errorf("unable to parse DB URL '%s': %s", b.config.DB, err)
-	}
-
-	if dbURL.Scheme != "postgres" {
-		return fmt.Errorf("invalid DB URL: '%s', only postgres is supported", b.config.DB)
-	}
 
 	// build our db
 	db, err := sqlx.Open("postgres", b.config.DB)

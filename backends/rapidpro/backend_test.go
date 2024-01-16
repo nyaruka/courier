@@ -1466,27 +1466,6 @@ func TestMsgSuite(t *testing.T) {
 	suite.Run(t, new(BackendTestSuite))
 }
 
-var invalidConfigTestCases = []struct {
-	config        courier.Config
-	expectedError string
-}{
-	{config: courier.Config{DB: ":foo"}, expectedError: "unable to parse DB URL"},
-	{config: courier.Config{DB: "mysql:test"}, expectedError: "only postgres is supported"},
-	{config: courier.Config{DB: "postgres://courier:courier@localhost:5432/courier", Redis: ":foo"}, expectedError: "unable to parse Redis URL"},
-}
-
-func (ts *ServerTestSuite) TestInvalidConfigs() {
-	for _, testCase := range invalidConfigTestCases {
-		config := &testCase.config
-		config.Backend = "rapidpro"
-		backend := newBackend(config)
-		err := backend.Start()
-		if ts.Error(err) {
-			ts.Contains(err.Error(), testCase.expectedError)
-		}
-	}
-}
-
 func TestBackendSuite(t *testing.T) {
 	suite.Run(t, new(ServerTestSuite))
 }
