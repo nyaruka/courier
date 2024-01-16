@@ -89,15 +89,8 @@ func main() {
 		config.Version = version
 	}
 
-	var level slog.Level
-	err := level.UnmarshalText([]byte(config.LogLevel))
-	if err != nil {
-		log.Fatalf("invalid log level %s", level)
-		os.Exit(1)
-	}
-
 	// configure our logger
-	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})
+	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: config.LogLevel})
 	slog.SetDefault(slog.New(logHandler))
 
 	logger := slog.With("comp", "main")

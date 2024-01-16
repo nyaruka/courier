@@ -40,16 +40,16 @@ type Config struct {
 	FacebookWebhookSecret        string `help:"the secret for Facebook webhook URL verification"`
 	WhatsappAdminSystemUserToken string `help:"the token of the admin system user for WhatsApp"`
 
-	DisallowedNetworks string `help:"comma separated list of IP addresses and networks which we disallow fetching attachments from"`
-	MediaDomain        string `help:"the domain on which we'll try to resolve outgoing media URLs"`
-	MaxWorkers         int    `help:"the maximum number of go routines that will be used for sending (set to 0 to disable sending)"`
-	LibratoUsername    string `help:"the username that will be used to authenticate to Librato"`
-	LibratoToken       string `help:"the token that will be used to authenticate to Librato"`
-	StatusUsername     string `help:"the username that is needed to authenticate against the /status endpoint"`
-	StatusPassword     string `help:"the password that is needed to authenticate against the /status endpoint"`
-	AuthToken          string `help:"the authentication token need to access non-channel endpoints"`
-	LogLevel           string `help:"the logging level courier should use"`
-	Version            string `help:"the version that will be used in request and response headers"`
+	DisallowedNetworks string     `help:"comma separated list of IP addresses and networks which we disallow fetching attachments from"`
+	MediaDomain        string     `help:"the domain on which we'll try to resolve outgoing media URLs"`
+	MaxWorkers         int        `help:"the maximum number of go routines that will be used for sending (set to 0 to disable sending)"`
+	LibratoUsername    string     `help:"the username that will be used to authenticate to Librato"`
+	LibratoToken       string     `help:"the token that will be used to authenticate to Librato"`
+	StatusUsername     string     `help:"the username that is needed to authenticate against the /status endpoint"`
+	StatusPassword     string     `help:"the password that is needed to authenticate against the /status endpoint"`
+	AuthToken          string     `help:"the authentication token need to access non-channel endpoints"`
+	LogLevel           slog.Level `help:"the logging level courier should use"`
+	Version            string     `help:"the version that will be used in request and response headers"`
 
 	// IncludeChannels is the list of channels to enable, empty means include all
 	IncludeChannels []string
@@ -86,7 +86,7 @@ func NewConfig() *Config {
 
 		DisallowedNetworks: `127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,169.254.0.0/16,fe80::/10`,
 		MaxWorkers:         32,
-		LogLevel:           "error",
+		LogLevel:           slog.LevelWarn,
 		Version:            "Dev",
 	}
 }
