@@ -3,7 +3,9 @@ package courier
 import (
 	"encoding/csv"
 	"io"
+	"log/slog"
 	"net"
+	"os"
 	"strings"
 
 	"github.com/nyaruka/courier/utils"
@@ -19,8 +21,8 @@ type Config struct {
 	Domain    string `help:"the domain courier is exposed on"`
 	Address   string `help:"the network interface address courier will bind to"`
 	Port      int    `help:"the port courier will listen on"`
-	DB        string `help:"URL describing how to connect to the RapidPro database"`
-	Redis     string `help:"URL describing how to connect to Redis"`
+	DB        string `validate:"url,startswith=postgres:"   help:"URL for your Postgres database"`
+	Redis     string `validate:"url,startswith=redis:"      help:"URL for your Redis instance"`
 	SpoolDir  string `help:"the local directory where courier will write statuses or msgs that need to be retried (needs to be writable)"`
 
 	AWSAccessKeyID      string `help:"the access key id to use when authenticating S3"`
@@ -99,6 +101,13 @@ func LoadConfig(filename string) *Config {
 	)
 
 	loader.MustLoad()
+
+	// ensure config is valid
+	if err := config.Validate(); err != nil {
+		slog.Error("invalid config", "error", err)
+		os.Exit(1)
+	}
+
 	return config
 }
 
