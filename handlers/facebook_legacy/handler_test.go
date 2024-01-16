@@ -632,7 +632,7 @@ func TestDescribeURN(t *testing.T) {
 
 	channel := testChannels[0]
 	handler := newHandler()
-	handler.Initialize(test.NewMockServer(courier.NewConfig(), test.NewMockBackend()))
+	handler.Initialize(test.NewMockServer(courier.NewDefaultConfig(), test.NewMockBackend()))
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, channel, handler.RedactValues(channel))
 
 	tcs := []struct {
