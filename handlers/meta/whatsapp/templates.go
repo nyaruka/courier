@@ -14,8 +14,7 @@ type MsgTemplating struct {
 		Name string `json:"name" validate:"required"`
 		UUID string `json:"uuid" validate:"required"`
 	} `json:"template" validate:"required,dive"`
-	Namespace string   `json:"namespace"`
-	Variables []string `json:"variables"`
+	Namespace string `json:"namespace"`
 	Params    map[string][]struct {
 		Type  string `json:"type"`
 		Value string `json:"value"`
@@ -47,7 +46,7 @@ func GetTemplating(msg courier.MsgOut) (*MsgTemplating, error) {
 }
 
 func GetTemplatePayload(templating MsgTemplating) *Template {
-	template := Template{Name: templating.Template.Name, Language: &Language{Policy: "deterministic", Code: templating.Language}}
+	template := &Template{Name: templating.Template.Name, Language: &Language{Policy: "deterministic", Code: templating.Language}}
 
 	for k, v := range templating.Params {
 		if strings.HasPrefix(k, "button.") {
@@ -96,16 +95,5 @@ func GetTemplatePayload(templating MsgTemplating) *Template {
 
 	}
 
-	if len(templating.Params) == 0 && len(templating.Variables) != 0 {
-		component := &Component{Type: "body"}
-
-		for _, v := range templating.Variables {
-			component.Params = append(component.Params, &Param{Type: "text", Text: v})
-		}
-		template.Components = append(template.Components, component)
-
-	}
-
-	return &template
-
+	return template
 }
