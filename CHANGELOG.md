@@ -1,3 +1,10 @@
+v9.1.1 (2024-01-17)
+-------------------------
+ * Standardize startup code with other services
+ * Drop support for variables field in templating metadata
+ * Update to latest ezconf which has builtin support for slog.Level
+ * Use redisx.NewPool
+
 v9.1.0 (2024-01-15)
 -------------------------
  * Add support for chat_started event on tembachat handler
