@@ -51,6 +51,10 @@ const (
 	MsgOriginChat      MsgOrigin = "chat"
 )
 
+type UserID null.Int64
+
+var NilUserID = UserID(0)
+
 //-----------------------------------------------------------------------------
 // Msg interface
 //-----------------------------------------------------------------------------
@@ -85,6 +89,7 @@ type MsgOut interface {
 	IsResend() bool
 	Flow() *FlowReference
 	OptIn() *OptInReference
+	CreatedByID() UserID
 	SessionStatus() string
 	HighPriority() bool
 }

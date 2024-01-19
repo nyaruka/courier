@@ -31,8 +31,9 @@ type MockMsg struct {
 	alreadyWritten       bool
 	isResend             bool
 
-	flow  *courier.FlowReference
-	optIn *courier.OptInReference
+	flow        *courier.FlowReference
+	optIn       *courier.OptInReference
+	createdByID courier.UserID
 
 	receivedOn *time.Time
 	sentOn     *time.Time
@@ -71,6 +72,7 @@ func (m *MockMsg) SentOn() *time.Time             { return m.sentOn }
 func (m *MockMsg) IsResend() bool                 { return m.isResend }
 func (m *MockMsg) Flow() *courier.FlowReference   { return m.flow }
 func (m *MockMsg) OptIn() *courier.OptInReference { return m.optIn }
+func (m *MockMsg) CreatedByID() courier.UserID    { return m.createdByID }
 func (m *MockMsg) SessionStatus() string          { return "" }
 func (m *MockMsg) HighPriority() bool             { return m.highPriority }
 
@@ -94,7 +96,8 @@ func (m *MockMsg) WithMetadata(metadata json.RawMessage) courier.MsgOut {
 	m.metadata = metadata
 	return m
 }
-func (m *MockMsg) WithFlow(flow *courier.FlowReference) courier.MsgOut    { m.flow = flow; return m }
-func (m *MockMsg) WithOptIn(optIn *courier.OptInReference) courier.MsgOut { m.optIn = optIn; return m }
-func (m *MockMsg) WithLocale(lc i18n.Locale) courier.MsgOut               { m.locale = lc; return m }
-func (m *MockMsg) WithURNAuth(token string) courier.MsgOut                { m.urnAuth = token; return m }
+func (m *MockMsg) WithFlow(f *courier.FlowReference) courier.MsgOut   { m.flow = f; return m }
+func (m *MockMsg) WithOptIn(o *courier.OptInReference) courier.MsgOut { m.optIn = o; return m }
+func (m *MockMsg) WithCreatedByID(u courier.UserID) courier.MsgOut    { m.createdByID = u; return m }
+func (m *MockMsg) WithLocale(lc i18n.Locale) courier.MsgOut           { m.locale = lc; return m }
+func (m *MockMsg) WithURNAuth(token string) courier.MsgOut            { m.urnAuth = token; return m }

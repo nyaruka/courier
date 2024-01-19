@@ -316,6 +316,7 @@ type OutgoingTestCase struct {
 	MsgFlow                 *courier.FlowReference
 	MsgOptIn                *courier.OptInReference
 	MsgOrigin               courier.MsgOrigin
+	MsgCreatedByID          courier.UserID
 	MsgContactLastSeenOn    *time.Time
 
 	MockResponseStatus int
@@ -362,6 +363,7 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 
 			msg := mb.NewOutgoingMsg(channel, 10, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgTopic, tc.MsgResponseToExternalID, msgOrigin, tc.MsgContactLastSeenOn).(*test.MockMsg)
 			msg.WithLocale(tc.MsgLocale)
+			msg.WithCreatedByID(tc.MsgCreatedByID)
 
 			for _, a := range tc.MsgAttachments {
 				msg.WithAttachment(a)
