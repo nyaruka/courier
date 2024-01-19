@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 
 	"github.com/gorilla/schema"
@@ -26,23 +27,24 @@ func init() {
 // DecodeAndValidateForm takes the passed in form and attempts to parse and validate it from the
 // URL query parameters as well as any POST parameters of the passed in request
 func DecodeAndValidateForm(form any, r *http.Request) error {
-	err := r.ParseForm()
-	if err != nil {
-		return err
+	contentType, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+
+	if contentType == "multipart/form-data" {
+		if err := r.ParseMultipartForm(maxBodyReadBytes); err != nil {
+			return err
+		}
+	} else {
+		if err := r.ParseForm(); err != nil {
+			return err
+		}
 	}
 
-	err = decoder.Decode(form, r.Form)
-	if err != nil {
+	if err := decoder.Decode(form, r.Form); err != nil {
 		return err
 	}
 
 	// check our input is valid
-	err = utils.Validate(form)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return utils.Validate(form)
 }
 
 // DecodeAndValidateJSON takes the passed in envelope and tries to unmarshal it from the body
