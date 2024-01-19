@@ -64,7 +64,7 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:               "Plain Send",
+		Label:               "Flow message",
 		MsgText:             "Simple message ☺",
 		MsgURN:              "webchat:65vbbDAQCdPdEWlEhDGy4utO",
 		MockResponseBody:    `{"status": "queued"}`,
@@ -74,7 +74,18 @@ var defaultSendTestCases = []OutgoingTestCase{
 		SendPrep:            setSendURL,
 	},
 	{
-		Label:               "Error Sending",
+		Label:               "Chat message",
+		MsgText:             "Simple message ☺",
+		MsgURN:              "webchat:65vbbDAQCdPdEWlEhDGy4utO",
+		MsgCreatedByID:      7,
+		MockResponseBody:    `{"status": "queued"}`,
+		MockResponseStatus:  200,
+		ExpectedRequestBody: `{"identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow","user_id":7}`,
+		ExpectedMsgStatus:   "W",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Error sending",
 		MsgText:             "Error message",
 		MsgURN:              "webchat:65vbbDAQCdPdEWlEhDGy4utO",
 		MockResponseBody:    `{"error": "boom"}`,
