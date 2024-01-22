@@ -9,11 +9,7 @@ import (
 	"github.com/nyaruka/courier/test"
 )
 
-var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWC", "", "", nil),
-}
-
-var handleTestCases = []IncomingTestCase{
+var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Message with text",
 		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
@@ -55,49 +51,59 @@ var handleTestCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
+	chs := []courier.Channel{
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWC", "", "", nil),
+	}
+
+	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
 }
 
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
 	defaultSendURL = s.URL
 }
 
-var defaultSendTestCases = []OutgoingTestCase{
+var outgoingCases = []OutgoingTestCase{
 	{
-		Label:               "Flow message",
-		MsgText:             "Simple message ☺",
-		MsgURN:              "webchat:65vbbDAQCdPdEWlEhDGy4utO",
-		MockResponseBody:    `{"status": "queued"}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow"}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:              "Flow message",
+		MsgText:            "Simple message ☺",
+		MsgURN:             "webchat:65vbbDAQCdPdEWlEhDGy4utO",
+		MockResponseBody:   `{"status": "queued"}`,
+		MockResponseStatus: 200,
+		ExpectedRequests: []ExpectedRequest{
+			{Body: `{"identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow"}`},
+		},
+		ExpectedMsgStatus: "W",
+		SendPrep:          setSendURL,
 	},
 	{
-		Label:               "Chat message",
-		MsgText:             "Simple message ☺",
-		MsgURN:              "webchat:65vbbDAQCdPdEWlEhDGy4utO",
-		MsgCreatedByID:      7,
-		MockResponseBody:    `{"status": "queued"}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow","user_id":7}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:              "Chat message",
+		MsgText:            "Simple message ☺",
+		MsgURN:             "webchat:65vbbDAQCdPdEWlEhDGy4utO",
+		MsgCreatedByID:     7,
+		MockResponseBody:   `{"status": "queued"}`,
+		MockResponseStatus: 200,
+		ExpectedRequests: []ExpectedRequest{
+			{Body: `{"identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow","user_id":7}`},
+		},
+		ExpectedMsgStatus: "W",
+		SendPrep:          setSendURL,
 	},
 	{
-		Label:               "Error sending",
-		MsgText:             "Error message",
-		MsgURN:              "webchat:65vbbDAQCdPdEWlEhDGy4utO",
-		MockResponseBody:    `{"error": "boom"}`,
-		MockResponseStatus:  400,
-		ExpectedRequestBody: `{"identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Error message","origin":"flow"}`,
-		ExpectedMsgStatus:   "E",
-		SendPrep:            setSendURL,
+		Label:              "Error sending",
+		MsgText:            "Error message",
+		MsgURN:             "webchat:65vbbDAQCdPdEWlEhDGy4utO",
+		MockResponseBody:   `{"error": "boom"}`,
+		MockResponseStatus: 400,
+		ExpectedRequests: []ExpectedRequest{
+			{Body: `{"identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Error message","origin":"flow"}`},
+		},
+		ExpectedMsgStatus: "E",
+		SendPrep:          setSendURL,
 	},
 }
 
 func TestOutgoing(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWC", "", "", nil)
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWC", "", "", nil)
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, nil, nil)
+	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, nil, nil)
 }
