@@ -103,7 +103,13 @@ func (h *handler) receive(ctx context.Context, c courier.Channel, w http.Respons
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
-	msg := h.Backend().NewIncomingMsg(c, urn, request.StrippedText, "", clog)
+	// only include subject in msg text if it's not a reply
+	text := request.StrippedText
+	if !strings.HasPrefix(request.Subject, "Re:") {
+		text = fmt.Sprintf("%s\n\n%s", request.Subject, text)
+	}
+
+	msg := h.Backend().NewIncomingMsg(c, urn, text, "", clog)
 
 	// TODO attachments
 
@@ -123,9 +129,14 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 
 	subject := msg.Channel().StringConfigForKey(configDefaultSubject, "Chat with TextIt")
 
+	from := address
+	if msg.User() != nil {
+		from = fmt.Sprintf("%s <%s>", msg.User().Name, from)
+	}
+
 	b := &bytes.Buffer{}
 	w := multipart.NewWriter(b)
-	w.WriteField("from", address)
+	w.WriteField("from", from)
 	w.WriteField("to", msg.URN().Path())
 	w.WriteField("subject", subject)
 	w.WriteField("text", msg.Text())

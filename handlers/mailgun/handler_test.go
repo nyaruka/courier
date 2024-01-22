@@ -21,13 +21,13 @@ func calculateSignature(timestamp, token, signingKey string) string {
 
 var incomingCases = []IncomingTestCase{
 	{
-		Label: "Message with text",
+		Label: "Thread start",
 		URL:   "/c/mlg/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		MultipartForm: map[string]string{
 			"recipient":     "test@example.com",
 			"sender":        "bob@acme.com",
 			"subject":       "Hi there",
-			"stripped-text": "Join",
+			"stripped-text": "Need help",
 			"timestamp":     "1705798597",
 			"token":         "abcdef",
 			"signature":     calculateSignature("1705798597", "abcdef", "1234567890"),
@@ -35,7 +35,27 @@ var incomingCases = []IncomingTestCase{
 		},
 		ExpectedRespStatus:    200,
 		ExpectedBodyContains:  "Accepted",
-		ExpectedMsgText:       Sp("Join"),
+		ExpectedMsgText:       Sp("Hi there\n\nNeed help"),
+		ExpectedURN:           "mailto:bob@acme.com",
+		NoQueueErrorCheck:     true, // because these currently assume error status 400
+		NoInvalidChannelCheck: true,
+	},
+	{
+		Label: "Thread reply",
+		URL:   "/c/mlg/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		MultipartForm: map[string]string{
+			"recipient":     "test@example.com",
+			"sender":        "bob@acme.com",
+			"subject":       "Re: Re: Hi there",
+			"stripped-text": "Sounds good",
+			"timestamp":     "1705798597",
+			"token":         "abcdef",
+			"signature":     calculateSignature("1705798597", "abcdef", "1234567890"),
+			"message-id":    "<1234567890@example.com>",
+		},
+		ExpectedRespStatus:    200,
+		ExpectedBodyContains:  "Accepted",
+		ExpectedMsgText:       Sp("Sounds good"),
 		ExpectedURN:           "mailto:bob@acme.com",
 		NoQueueErrorCheck:     true, // because these currently assume error status 400
 		NoInvalidChannelCheck: true,
@@ -77,6 +97,29 @@ var outgoingCases = []OutgoingTestCase{
 					"to":      []string{"bob@acme.com"},
 					"subject": []string{"Chat with Nyaruka"},
 					"text":    []string{"Simple message ☺"},
+				},
+			},
+		},
+		ExpectedMsgStatus:  "W",
+		ExpectedExternalID: "<20240122160441.123456789@example.com>",
+		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Chat message",
+		MsgText:            "How can we help?",
+		MsgURN:             "mailto:bob@acme.com",
+		MsgUser:            &courier.UserReference{Email: "adam@example.com", Name: "Adam"},
+		MockResponseBody:   `{"id":"<20240122160441.123456789@example.com>","message":"Queued. Thank you."}`,
+		MockResponseStatus: 200,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Authorization": "Basic YXBpOjA5ODc2NTQzMjE="},
+				Path:    "/example.com/messages",
+				Form: url.Values{
+					"from":    []string{"Adam <test@example.com>"},
+					"to":      []string{"bob@acme.com"},
+					"subject": []string{"Chat with Nyaruka"},
+					"text":    []string{"How can we help?"},
 				},
 			},
 		},
