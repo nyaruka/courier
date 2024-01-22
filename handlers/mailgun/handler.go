@@ -64,13 +64,9 @@ type receiveRequest struct {
 
 // see https://documentation.mailgun.com/en/latest/user_manual.html#securing-webhooks
 func (r *receiveRequest) verify(signingKey string) bool {
-	v := r.Timestamp + r.Token
-
 	mac := hmac.New(sha256.New, []byte(signingKey))
-	mac.Write([]byte(v))
-	expectedMAC := hex.EncodeToString(mac.Sum(nil))
-
-	return hmac.Equal([]byte(r.Signature), []byte(expectedMAC))
+	mac.Write([]byte(r.Timestamp + r.Token))
+	return hmac.Equal([]byte(r.Signature), []byte(hex.EncodeToString(mac.Sum(nil))))
 }
 
 // WriteRequestError writes the passed in error to our response writer

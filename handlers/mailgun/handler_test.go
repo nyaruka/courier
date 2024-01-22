@@ -24,7 +24,7 @@ var incomingCases = []IncomingTestCase{
 		Label: "Thread start",
 		URL:   "/c/mlg/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		MultipartForm: map[string]string{
-			"recipient":     "test@example.com",
+			"recipient":     "test@example.com,it@acme.com",
 			"sender":        "bob@acme.com",
 			"subject":       "Hi there",
 			"stripped-text": "Need help",
@@ -59,6 +59,54 @@ var incomingCases = []IncomingTestCase{
 		ExpectedURN:           "mailto:bob@acme.com",
 		NoQueueErrorCheck:     true, // because these currently assume error status 400
 		NoInvalidChannelCheck: true,
+	},
+	{
+		Label: "Incorrect signature",
+		URL:   "/c/mlg/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		MultipartForm: map[string]string{
+			"recipient":     "test@example.com",
+			"sender":        "bob@acme.com",
+			"subject":       "Re: Re: Hi there",
+			"stripped-text": "Sounds good",
+			"timestamp":     "1705798597",
+			"token":         "abcdef",
+			"signature":     "badsig",
+			"message-id":    "<1234567890@example.com>",
+		},
+		ExpectedRespStatus:   406,
+		ExpectedBodyContains: "signature validation failed",
+	},
+	{
+		Label: "Invalid recipient",
+		URL:   "/c/mlg/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		MultipartForm: map[string]string{
+			"recipient":     "it@acme.com",
+			"sender":        "bob@acme.com",
+			"subject":       "Re: Re: Hi there",
+			"stripped-text": "Sounds good",
+			"timestamp":     "1705798597",
+			"token":         "abcdef",
+			"signature":     "badsig",
+			"message-id":    "<1234567890@example.com>",
+		},
+		ExpectedRespStatus:   406,
+		ExpectedBodyContains: "signature validation failed",
+	},
+	{
+		Label: "Invalid sender",
+		URL:   "/c/mlg/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		MultipartForm: map[string]string{
+			"recipient":     "it@acme.com",
+			"sender":        "!!!",
+			"subject":       "Re: Re: Hi there",
+			"stripped-text": "Sounds good",
+			"timestamp":     "1705798597",
+			"token":         "abcdef",
+			"signature":     "badsig",
+			"message-id":    "<1234567890@example.com>",
+		},
+		ExpectedRespStatus:   406,
+		ExpectedBodyContains: "Field validation for 'Sender' failed on the 'email' tag",
 	},
 }
 
@@ -126,6 +174,28 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "<20240122160441.123456789@example.com>",
 		SendPrep:           setSendURL,
+	},
+	{
+		Label:              "Error from mailgun",
+		MsgText:            "How can we help?",
+		MsgURN:             "mailto:bob@acme.com",
+		MsgUser:            &courier.UserReference{Email: "adam@example.com", Name: "Adam"},
+		MockResponseBody:   `{"error":"Not good"}`,
+		MockResponseStatus: 400,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Authorization": "Basic YXBpOjA5ODc2NTQzMjE="},
+				Path:    "/example.com/messages",
+				Form: url.Values{
+					"from":    []string{"Adam <test@example.com>"},
+					"to":      []string{"bob@acme.com"},
+					"subject": []string{"Chat with Nyaruka"},
+					"text":    []string{"How can we help?"},
+				},
+			},
+		},
+		ExpectedMsgStatus: "E",
+		SendPrep:          setSendURL,
 	},
 }
 
