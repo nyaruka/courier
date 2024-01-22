@@ -79,11 +79,11 @@ var outgoingCases = []OutgoingTestCase{
 		Label:              "Chat message",
 		MsgText:            "Simple message ☺",
 		MsgURN:             "webchat:65vbbDAQCdPdEWlEhDGy4utO",
-		MsgCreatedByID:     7,
+		MsgUser:            &courier.UserReference{Email: "bob@nyaruka.com", Name: "Bob"},
 		MockResponseBody:   `{"status": "queued"}`,
 		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow","user_id":7}`},
+			{Body: `{"identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow","user":{"email":"bob@nyaruka.com","name":"Bob"}}`},
 		},
 		ExpectedMsgStatus: "W",
 		SendPrep:          setSendURL,
