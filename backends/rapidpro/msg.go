@@ -74,7 +74,6 @@ type Msg struct {
 	ModifiedOn_  time.Time      `                     db:"modified_on"`
 	QueuedOn_    time.Time      `                     db:"queued_on"`
 	SentOn_      *time.Time     `                     db:"sent_on"`
-	CreatedByID_ courier.UserID `json:"created_by_id" db:"created_by_id"`
 	LogUUIDs     pq.StringArray `                     db:"log_uuids"`
 
 	// extra non-model fields that mailroom will include in queued payload
@@ -85,6 +84,7 @@ type Msg struct {
 	IsResend_             bool                    `json:"is_resend"`
 	Flow_                 *courier.FlowReference  `json:"flow"`
 	OptIn_                *courier.OptInReference `json:"optin"`
+	User_                 *courier.UserReference  `json:"user"`
 	Origin_               courier.MsgOrigin       `json:"origin"`
 	ContactLastSeenOn_    *time.Time              `json:"contact_last_seen_on"`
 
@@ -164,7 +164,7 @@ func (m *Msg) SentOn() *time.Time             { return m.SentOn_ }
 func (m *Msg) IsResend() bool                 { return m.IsResend_ }
 func (m *Msg) Flow() *courier.FlowReference   { return m.Flow_ }
 func (m *Msg) OptIn() *courier.OptInReference { return m.OptIn_ }
-func (m *Msg) CreatedByID() courier.UserID    { return m.CreatedByID_ }
+func (m *Msg) User() *courier.UserReference   { return m.User_ }
 func (m *Msg) SessionStatus() string          { return m.SessionStatus_ }
 func (m *Msg) HighPriority() bool             { return m.HighPriority_ }
 

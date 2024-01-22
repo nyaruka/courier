@@ -42,6 +42,11 @@ type OptInReference struct {
 	Name string `json:"name" validate:"required"`
 }
 
+type UserReference struct {
+	Email string `json:"email" validate:"required"`
+	Name  string `json:"name"`
+}
+
 type MsgOrigin string
 
 const (
@@ -50,10 +55,6 @@ const (
 	MsgOriginTicket    MsgOrigin = "ticket"
 	MsgOriginChat      MsgOrigin = "chat"
 )
-
-type UserID null.Int64
-
-var NilUserID = UserID(0)
 
 //-----------------------------------------------------------------------------
 // Msg interface
@@ -89,7 +90,7 @@ type MsgOut interface {
 	IsResend() bool
 	Flow() *FlowReference
 	OptIn() *OptInReference
-	CreatedByID() UserID
+	User() *UserReference
 	SessionStatus() string
 	HighPriority() bool
 }
