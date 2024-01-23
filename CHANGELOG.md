@@ -1,3 +1,8 @@
+v9.1.2 (2024-01-23)
+-------------------------
+ * Add optional user email and name to queued messages
+ * Add mailgun handler
+
 v9.1.1 (2024-01-17)
 -------------------------
  * Standardize startup code with other services
