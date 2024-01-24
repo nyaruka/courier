@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/null/v3"
@@ -165,9 +164,9 @@ SELECT
   JOIN orgs_org o ON c.org_id = o.id
  WHERE c.uuid = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL`
 
-func loadChannelByUUID(ctx context.Context, db *sqlx.DB, uuid courier.ChannelUUID) (*Channel, error) {
+func (b *backend) loadChannelByUUID(ctx context.Context, uuid courier.ChannelUUID) (*Channel, error) {
 	channel := &Channel{}
-	err := db.GetContext(ctx, channel, sqlLookupChannelFromUUID, uuid)
+	err := b.db.GetContext(ctx, channel, sqlLookupChannelFromUUID, uuid)
 
 	if err == sql.ErrNoRows {
 		return nil, courier.ErrChannelNotFound
@@ -194,9 +193,9 @@ SELECT
   JOIN orgs_org o ON c.org_id = o.id
  WHERE c.address = $1 AND c.is_active = TRUE AND c.org_id IS NOT NULL`
 
-func loadChannelByAddress(ctx context.Context, db *sqlx.DB, address courier.ChannelAddress) (*Channel, error) {
+func (b *backend) loadChannelByAddress(ctx context.Context, address courier.ChannelAddress) (*Channel, error) {
 	channel := &Channel{}
-	err := db.GetContext(ctx, channel, sqlLookupChannelFromAddress, address)
+	err := b.db.GetContext(ctx, channel, sqlLookupChannelFromAddress, address)
 
 	if err == sql.ErrNoRows {
 		return nil, courier.ErrChannelNotFound

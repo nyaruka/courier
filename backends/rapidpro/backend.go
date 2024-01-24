@@ -67,8 +67,8 @@ type backend struct {
 	attachmentStorage storage.Storage
 	logStorage        storage.Storage
 
-	channelsByUUID *cache.Cache[courier.ChannelUUID, *Channel]
-	channelsByAddr *cache.Cache[courier.ChannelAddress, *Channel]
+	channelsByUUID *cache.Local[courier.ChannelUUID, *Channel]
+	channelsByAddr *cache.Local[courier.ChannelAddress, *Channel]
 
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
@@ -195,15 +195,10 @@ func (b *backend) Start() error {
 		b.logStorage = storage.NewFS(storageDir+"/logs", 0766)
 	}
 
-	// create channel caches...
-	b.channelsByUUID = cache.NewCache[courier.ChannelUUID, *Channel](func(ctx context.Context, uuid courier.ChannelUUID) (*Channel, error) {
-		return loadChannelByUUID(ctx, b.db, uuid)
-	}, time.Minute)
-	b.channelsByAddr = cache.NewCache[courier.ChannelAddress, *Channel](func(ctx context.Context, addr courier.ChannelAddress) (*Channel, error) {
-		return loadChannelByAddress(ctx, b.db, addr)
-	}, time.Minute)
-
+	// create and start channel caches...
+	b.channelsByUUID = cache.NewLocal[courier.ChannelUUID, *Channel](b.loadChannelByUUID, time.Minute)
 	b.channelsByUUID.Start()
+	b.channelsByAddr = cache.NewLocal[courier.ChannelAddress, *Channel](b.loadChannelByAddress, time.Minute)
 	b.channelsByAddr.Start()
 
 	// check our storages
@@ -291,7 +286,7 @@ func (b *backend) GetChannel(ctx context.Context, typ courier.ChannelType, uuid 
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	ch, err := b.channelsByUUID.Get(timeout, uuid)
+	ch, err := b.channelsByUUID.GetOrFetch(timeout, uuid)
 	if err != nil {
 		return nil, err // so we don't return a non-nil interface and nil ptr
 	}
@@ -308,7 +303,7 @@ func (b *backend) GetChannelByAddress(ctx context.Context, typ courier.ChannelTy
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	ch, err := b.channelsByAddr.Get(timeout, address)
+	ch, err := b.channelsByAddr.GetOrFetch(timeout, address)
 	if err != nil {
 		return nil, err // so we don't return a non-nil interface and nil ptr
 	}
