@@ -315,7 +315,7 @@ type OutgoingTestCase struct {
 	MsgMetadata             json.RawMessage
 	MsgFlow                 *courier.FlowReference
 	MsgOptIn                *courier.OptInReference
-	MsgUser                 *courier.UserReference
+	MsgUserID               courier.UserID
 	MsgOrigin               courier.MsgOrigin
 	MsgContactLastSeenOn    *time.Time
 
@@ -363,6 +363,7 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 
 			msg := mb.NewOutgoingMsg(channel, 10, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgTopic, tc.MsgResponseToExternalID, msgOrigin, tc.MsgContactLastSeenOn).(*test.MockMsg)
 			msg.WithLocale(tc.MsgLocale)
+			msg.WithUserID(tc.MsgUserID)
 
 			for _, a := range tc.MsgAttachments {
 				msg.WithAttachment(a)
@@ -378,9 +379,6 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			}
 			if tc.MsgOptIn != nil {
 				msg.WithOptIn(tc.MsgOptIn)
-			}
-			if tc.MsgUser != nil {
-				msg.WithUser(tc.MsgUser)
 			}
 
 			actualRequests := make([]*http.Request, 0, 1)

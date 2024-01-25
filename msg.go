@@ -42,10 +42,7 @@ type OptInReference struct {
 	Name string `json:"name" validate:"required"`
 }
 
-type UserReference struct {
-	Email string `json:"email" validate:"required"`
-	Name  string `json:"name"`
-}
+type UserID int
 
 type MsgOrigin string
 
@@ -90,7 +87,7 @@ type MsgOut interface {
 	IsResend() bool
 	Flow() *FlowReference
 	OptIn() *OptInReference
-	User() *UserReference
+	UserID() UserID
 	SessionStatus() string
 	HighPriority() bool
 }

@@ -45,7 +45,6 @@ import (
 	_ "github.com/nyaruka/courier/handlers/line"
 	_ "github.com/nyaruka/courier/handlers/m3tech"
 	_ "github.com/nyaruka/courier/handlers/macrokiosk"
-	_ "github.com/nyaruka/courier/handlers/mailgun"
 	_ "github.com/nyaruka/courier/handlers/mblox"
 	_ "github.com/nyaruka/courier/handlers/messagebird"
 	_ "github.com/nyaruka/courier/handlers/messangi"
