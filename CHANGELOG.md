@@ -1,3 +1,8 @@
+v9.1.3 (2024-01-25)
+-------------------------
+ * Remove mailgun handler and revert change from user ids to user ref objects
+ * Simplify channel loading and caching
+
 v9.1.2 (2024-01-23)
 -------------------------
  * Add optional user email and name to queued messages
