@@ -24,6 +24,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/queue"
 	"github.com/nyaruka/gocommon/analytics"
+	"github.com/nyaruka/gocommon/cache"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -65,6 +66,9 @@ type backend struct {
 	redisPool         *redis.Pool
 	attachmentStorage storage.Storage
 	logStorage        storage.Storage
+
+	channelsByUUID *cache.Local[courier.ChannelUUID, *Channel]
+	channelsByAddr *cache.Local[courier.ChannelAddress, *Channel]
 
 	stopChan  chan bool
 	waitGroup *sync.WaitGroup
@@ -191,6 +195,12 @@ func (b *backend) Start() error {
 		b.logStorage = storage.NewFS(storageDir+"/logs", 0766)
 	}
 
+	// create and start channel caches...
+	b.channelsByUUID = cache.NewLocal[courier.ChannelUUID, *Channel](b.loadChannelByUUID, time.Minute)
+	b.channelsByUUID.Start()
+	b.channelsByAddr = cache.NewLocal[courier.ChannelAddress, *Channel](b.loadChannelByAddress, time.Minute)
+	b.channelsByAddr.Start()
+
 	// check our storages
 	if err := checkStorage(b.attachmentStorage); err != nil {
 		log.Error(b.attachmentStorage.Name()+" attachment storage not available", "error", err)
@@ -241,6 +251,9 @@ func (b *backend) Stop() error {
 	// close our stop channel
 	close(b.stopChan)
 
+	b.channelsByUUID.Stop()
+	b.channelsByAddr.Stop()
+
 	// wait for our threads to exit
 	b.waitGroup.Wait()
 	return nil
@@ -269,27 +282,37 @@ func (b *backend) Cleanup() error {
 }
 
 // GetChannel returns the channel for the passed in type and UUID
-func (b *backend) GetChannel(ctx context.Context, ct courier.ChannelType, uuid courier.ChannelUUID) (courier.Channel, error) {
+func (b *backend) GetChannel(ctx context.Context, typ courier.ChannelType, uuid courier.ChannelUUID) (courier.Channel, error) {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	ch, err := getChannel(timeout, b.db, ct, uuid)
+	ch, err := b.channelsByUUID.GetOrFetch(timeout, uuid)
 	if err != nil {
 		return nil, err // so we don't return a non-nil interface and nil ptr
 	}
-	return ch, err
+
+	if typ != courier.AnyChannelType && ch.ChannelType() != typ {
+		return nil, courier.ErrChannelWrongType
+	}
+
+	return ch, nil
 }
 
 // GetChannelByAddress returns the channel with the passed in type and address
-func (b *backend) GetChannelByAddress(ctx context.Context, ct courier.ChannelType, address courier.ChannelAddress) (courier.Channel, error) {
+func (b *backend) GetChannelByAddress(ctx context.Context, typ courier.ChannelType, address courier.ChannelAddress) (courier.Channel, error) {
 	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
 	defer cancel()
 
-	ch, err := getChannelByAddress(timeout, b.db, ct, address)
+	ch, err := b.channelsByAddr.GetOrFetch(timeout, address)
 	if err != nil {
 		return nil, err // so we don't return a non-nil interface and nil ptr
 	}
-	return ch, err
+
+	if typ != courier.AnyChannelType && ch.ChannelType() != typ {
+		return nil, courier.ErrChannelWrongType
+	}
+
+	return ch, nil
 }
 
 // GetContact returns the contact for the passed in channel and URN
@@ -839,7 +862,7 @@ func (b *backend) Status() string {
 
 		// try to look up our channel
 		channelUUID := courier.ChannelUUID(uuid)
-		channel, err := getChannel(context.Background(), b.db, courier.AnyChannelType, channelUUID)
+		channel, err := b.GetChannel(context.Background(), courier.AnyChannelType, channelUUID)
 		channelType := "!!"
 		if err == nil {
 			channelType = string(channel.ChannelType())
