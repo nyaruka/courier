@@ -70,7 +70,7 @@ var outgoingCases = []OutgoingTestCase{
 		MockResponseBody:   `{"status": "queued"}`,
 		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"channel":"8eb23e93-5ecb-45ba-b726-3b064e0c56ab","identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow"}`},
+			{Body: `{"msg_id":10,"channel_uuid":"8eb23e93-5ecb-45ba-b726-3b064e0c56ab","urn":"webchat:65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow"}`},
 		},
 		ExpectedMsgStatus: "W",
 		SendPrep:          setSendURL,
@@ -78,12 +78,12 @@ var outgoingCases = []OutgoingTestCase{
 	{
 		Label:              "Chat message",
 		MsgText:            "Simple message ☺",
-		MsgURN:             "webchat:65vbbDAQCdPdEWlEhDGy4utO",
+		MsgURN:             "webchat:65vbbDAQCdPdEWlEhDGy4utO:bob@nyaruka.com",
 		MsgUserID:          123,
 		MockResponseBody:   `{"status": "queued"}`,
 		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"channel":"8eb23e93-5ecb-45ba-b726-3b064e0c56ab","identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow","user_id":123}`},
+			{Body: `{"msg_id":10,"channel_uuid":"8eb23e93-5ecb-45ba-b726-3b064e0c56ab","urn":"webchat:65vbbDAQCdPdEWlEhDGy4utO:bob@nyaruka.com","text":"Simple message ☺","origin":"flow","user_id":123}`},
 		},
 		ExpectedMsgStatus: "W",
 		SendPrep:          setSendURL,
@@ -95,7 +95,7 @@ var outgoingCases = []OutgoingTestCase{
 		MockResponseBody:   `{"error": "boom"}`,
 		MockResponseStatus: 400,
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"channel":"8eb23e93-5ecb-45ba-b726-3b064e0c56ab","identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Error message","origin":"flow"}`},
+			{Body: `{"msg_id":10,"channel_uuid":"8eb23e93-5ecb-45ba-b726-3b064e0c56ab","urn":"webchat:65vbbDAQCdPdEWlEhDGy4utO","text":"Error message","origin":"flow"}`},
 		},
 		ExpectedMsgStatus: "E",
 		SendPrep:          setSendURL,

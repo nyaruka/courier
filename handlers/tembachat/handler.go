@@ -37,32 +37,30 @@ func (h *handler) Initialize(s courier.Server) error {
 type receivePayload struct {
 	Type string `json:"type" validate:"required"`
 	Msg  struct {
-		Identifier string `json:"identifier"`
-		Text       string `json:"text"`
+		URN  urns.URN `json:"urn"`
+		Text string   `json:"text"`
 	} `json:"msg"`
 	Chat struct {
-		Identifier string `json:"identifier"`
+		URN urns.URN `json:"urn"`
 	} `json:"chat"`
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *receivePayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if payload.Type == "msg_in" {
-		urn, err := urns.NewWebChatURN(payload.Msg.Identifier)
-		if err != nil {
+		if err := payload.Msg.URN.Validate(); err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
-		msg := h.Backend().NewIncomingMsg(c, urn, payload.Msg.Text, "", clog)
+		msg := h.Backend().NewIncomingMsg(c, payload.Msg.URN, payload.Msg.Text, "", clog)
 		return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 	} else if payload.Type == "chat_started" {
-		urn, err := urns.NewWebChatURN(payload.Chat.Identifier)
-		if err != nil {
+		if err := payload.Chat.URN.Validate(); err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
-		evt := h.Backend().NewChannelEvent(c, courier.EventTypeNewConversation, urn, clog)
-		err = h.Backend().WriteChannelEvent(ctx, evt, clog)
+		evt := h.Backend().NewChannelEvent(c, courier.EventTypeNewConversation, payload.Chat.URN, clog)
+		err := h.Backend().WriteChannelEvent(ctx, evt, clog)
 		if err != nil {
 			return nil, err
 		}
@@ -72,22 +70,24 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 }
 
 type sendPayload struct {
-	Channel    courier.ChannelUUID `json:"channel"`
-	Identifier string              `json:"identifier"`
-	Text       string              `json:"text"`
-	Origin     string              `json:"origin"`
-	UserID     courier.UserID      `json:"user_id,omitempty"`
+	MsgID       courier.MsgID       `json:"msg_id"`
+	ChannelUUID courier.ChannelUUID `json:"channel_uuid"`
+	URN         urns.URN            `json:"urn"`
+	Text        string              `json:"text"`
+	Origin      courier.MsgOrigin   `json:"origin"`
+	UserID      courier.UserID      `json:"user_id,omitempty"`
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, defaultSendURL)
 
 	payload := &sendPayload{
-		Channel:    msg.Channel().UUID(),
-		Identifier: msg.URN().Path(),
-		Text:       msg.Text(),
-		Origin:     string(msg.Origin()),
-		UserID:     msg.UserID(),
+		MsgID:       msg.ID(),
+		ChannelUUID: msg.Channel().UUID(),
+		URN:         msg.URN(),
+		Text:        msg.Text(),
+		Origin:      msg.Origin(),
+		UserID:      msg.UserID(),
 	}
 	req, _ := http.NewRequest("POST", sendURL, bytes.NewReader(jsonx.MustMarshal(payload)))
 
