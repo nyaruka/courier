@@ -13,7 +13,7 @@ var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Message with text",
 		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
-		Data:                 `{"type": "msg_in", "msg": {"identifier": "65vbbDAQCdPdEWlEhDGy4utO", "text": "Join"}}`,
+		Data:                 `{"type": "msg_in", "msg": {"urn": "webchat:65vbbDAQCdPdEWlEhDGy4utO", "text": "Join"}}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedMsgText:      Sp("Join"),
@@ -22,14 +22,14 @@ var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Message with invalid URN",
 		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
-		Data:                 `{"type": "msg_in", "msg": {"identifier": "xxxxx", "text": "Join"}}`,
+		Data:                 `{"type": "msg_in", "msg": {"urn": "webchat:xxxxx", "text": "Join"}}`,
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "invalid webchat id: xxxxx",
 	},
 	{
 		Label:                "Chat started event",
 		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
-		Data:                 `{"type": "chat_started", "chat": {"identifier": "65vbbDAQCdPdEWlEhDGy4utO"}}`,
+		Data:                 `{"type": "chat_started", "chat": {"urn": "webchat:65vbbDAQCdPdEWlEhDGy4utO"}}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 		ExpectedEvents:       []ExpectedEvent{{Type: courier.EventTypeNewConversation, URN: "webchat:65vbbDAQCdPdEWlEhDGy4utO"}},
@@ -37,7 +37,7 @@ var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Chat started event with invalid URN",
 		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
-		Data:                 `{"type": "chat_started", "chat": {"identifier": "xxxxx"}}`,
+		Data:                 `{"type": "chat_started", "chat": {"urn": "webchat:xxxxx"}}`,
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "invalid webchat id: xxxxx",
 	},
