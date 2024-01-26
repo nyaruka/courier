@@ -70,7 +70,7 @@ var outgoingCases = []OutgoingTestCase{
 		MockResponseBody:   `{"status": "queued"}`,
 		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow"}`},
+			{Body: `{"channel":"8eb23e93-5ecb-45ba-b726-3b064e0c56ab","identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow"}`},
 		},
 		ExpectedMsgStatus: "W",
 		SendPrep:          setSendURL,
@@ -83,7 +83,7 @@ var outgoingCases = []OutgoingTestCase{
 		MockResponseBody:   `{"status": "queued"}`,
 		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow","user_id":123}`},
+			{Body: `{"channel":"8eb23e93-5ecb-45ba-b726-3b064e0c56ab","identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow","user_id":123}`},
 		},
 		ExpectedMsgStatus: "W",
 		SendPrep:          setSendURL,
@@ -95,7 +95,7 @@ var outgoingCases = []OutgoingTestCase{
 		MockResponseBody:   `{"error": "boom"}`,
 		MockResponseStatus: 400,
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Error message","origin":"flow"}`},
+			{Body: `{"channel":"8eb23e93-5ecb-45ba-b726-3b064e0c56ab","identifier":"65vbbDAQCdPdEWlEhDGy4utO","text":"Error message","origin":"flow"}`},
 		},
 		ExpectedMsgStatus: "E",
 		SendPrep:          setSendURL,

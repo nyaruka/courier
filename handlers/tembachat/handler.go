@@ -72,16 +72,18 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 }
 
 type sendPayload struct {
-	Identifier string         `json:"identifier"`
-	Text       string         `json:"text"`
-	Origin     string         `json:"origin"`
-	UserID     courier.UserID `json:"user_id,omitempty"`
+	Channel    courier.ChannelUUID `json:"channel"`
+	Identifier string              `json:"identifier"`
+	Text       string              `json:"text"`
+	Origin     string              `json:"origin"`
+	UserID     courier.UserID      `json:"user_id,omitempty"`
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, defaultSendURL)
 
 	payload := &sendPayload{
+		Channel:    msg.Channel().UUID(),
 		Identifier: msg.URN().Path(),
 		Text:       msg.Text(),
 		Origin:     string(msg.Origin()),
