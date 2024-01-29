@@ -37,31 +37,33 @@ func (h *handler) Initialize(s courier.Server) error {
 type receivePayload struct {
 	Type string `json:"type" validate:"required"`
 	Msg  struct {
-		URN  urns.URN `json:"urn"`
-		Text string   `json:"text"`
+		ChatID string `json:"chat_id"`
+		Text   string `json:"text"`
 	} `json:"msg"`
 	Chat struct {
-		URN urns.URN `json:"urn"`
+		ChatID string `json:"chat_id"`
 	} `json:"chat"`
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
 func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *receivePayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	if payload.Type == "msg_in" {
-		if err := payload.Msg.URN.Validate(); err != nil {
+		urn, err := urns.NewURNFromParts(urns.WebChatScheme, payload.Msg.ChatID, "", "")
+		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
-		msg := h.Backend().NewIncomingMsg(c, payload.Msg.URN, payload.Msg.Text, "", clog)
+		msg := h.Backend().NewIncomingMsg(c, urn, payload.Msg.Text, "", clog)
 		return handlers.WriteMsgsAndResponse(ctx, h, []courier.MsgIn{msg}, w, r, clog)
 	} else if payload.Type == "chat_started" {
-		if err := payload.Chat.URN.Validate(); err != nil {
+		urn, err := urns.NewURNFromParts(urns.WebChatScheme, payload.Chat.ChatID, "", "")
+		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
 
-		evt := h.Backend().NewChannelEvent(c, courier.EventTypeNewConversation, payload.Chat.URN, clog)
-		err := h.Backend().WriteChannelEvent(ctx, evt, clog)
-		if err != nil {
+		evt := h.Backend().NewChannelEvent(c, courier.EventTypeNewConversation, urn, clog)
+
+		if err := h.Backend().WriteChannelEvent(ctx, evt, clog); err != nil {
 			return nil, err
 		}
 		return []courier.Event{evt}, courier.WriteChannelEventSuccess(w, evt)
@@ -72,7 +74,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 type sendPayload struct {
 	MsgID       courier.MsgID       `json:"msg_id"`
 	ChannelUUID courier.ChannelUUID `json:"channel_uuid"`
-	URN         urns.URN            `json:"urn"`
+	ChatID      string              `json:"chat_id"`
 	Text        string              `json:"text"`
 	Origin      courier.MsgOrigin   `json:"origin"`
 	UserID      courier.UserID      `json:"user_id,omitempty"`
@@ -84,7 +86,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 	payload := &sendPayload{
 		MsgID:       msg.ID(),
 		ChannelUUID: msg.Channel().UUID(),
-		URN:         msg.URN(),
+		ChatID:      msg.URN().Path(),
 		Text:        msg.Text(),
 		Origin:      msg.Origin(),
 		UserID:      msg.UserID(),
