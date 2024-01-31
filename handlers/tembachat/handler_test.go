@@ -2,6 +2,7 @@ package tembachat
 
 import (
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -70,7 +71,7 @@ var outgoingCases = []OutgoingTestCase{
 		MockResponseBody:   `{"status": "queued"}`,
 		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"msg_id":10,"channel_uuid":"8eb23e93-5ecb-45ba-b726-3b064e0c56ab","chat_id":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow"}`},
+			{Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}}, Body: `{"msg_id":10,"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow"}`},
 		},
 		ExpectedMsgStatus: "W",
 		SendPrep:          setSendURL,
@@ -83,7 +84,7 @@ var outgoingCases = []OutgoingTestCase{
 		MockResponseBody:   `{"status": "queued"}`,
 		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"msg_id":10,"channel_uuid":"8eb23e93-5ecb-45ba-b726-3b064e0c56ab","chat_id":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow","user_id":123}`},
+			{Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}}, Body: `{"msg_id":10,"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow","user_id":123}`},
 		},
 		ExpectedMsgStatus: "W",
 		SendPrep:          setSendURL,
@@ -95,7 +96,7 @@ var outgoingCases = []OutgoingTestCase{
 		MockResponseBody:   `{"error": "boom"}`,
 		MockResponseStatus: 400,
 		ExpectedRequests: []ExpectedRequest{
-			{Body: `{"msg_id":10,"channel_uuid":"8eb23e93-5ecb-45ba-b726-3b064e0c56ab","chat_id":"65vbbDAQCdPdEWlEhDGy4utO","text":"Error message","origin":"flow"}`},
+			{Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}}, Body: `{"msg_id":10,"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","text":"Error message","origin":"flow"}`},
 		},
 		ExpectedMsgStatus: "E",
 		SendPrep:          setSendURL,

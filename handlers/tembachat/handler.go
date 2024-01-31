@@ -72,24 +72,23 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 }
 
 type sendPayload struct {
-	MsgID       courier.MsgID       `json:"msg_id"`
-	ChannelUUID courier.ChannelUUID `json:"channel_uuid"`
-	ChatID      string              `json:"chat_id"`
-	Text        string              `json:"text"`
-	Origin      courier.MsgOrigin   `json:"origin"`
-	UserID      courier.UserID      `json:"user_id,omitempty"`
+	MsgID  courier.MsgID     `json:"msg_id"`
+	ChatID string            `json:"chat_id"`
+	Text   string            `json:"text"`
+	Origin courier.MsgOrigin `json:"origin"`
+	UserID courier.UserID    `json:"user_id,omitempty"`
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, defaultSendURL)
+	sendURL += "?channel=" + string(msg.Channel().UUID())
 
 	payload := &sendPayload{
-		MsgID:       msg.ID(),
-		ChannelUUID: msg.Channel().UUID(),
-		ChatID:      msg.URN().Path(),
-		Text:        msg.Text(),
-		Origin:      msg.Origin(),
-		UserID:      msg.UserID(),
+		MsgID:  msg.ID(),
+		ChatID: msg.URN().Path(),
+		Text:   msg.Text(),
+		Origin: msg.Origin(),
+		UserID: msg.UserID(),
 	}
 	req, _ := http.NewRequest("POST", sendURL, bytes.NewReader(jsonx.MustMarshal(payload)))
 
