@@ -144,7 +144,6 @@ type mtResponse struct {
 
 func (h *handler) sendMsgPart(msg courier.MsgOut, token string, path string, form url.Values, keyboard *ReplyKeyboardMarkup, clog *courier.ChannelLog) (string, bool, error) {
 	// either include or remove our keyboard
-	form.Add("parse_mode", "MarkdownV2")
 	if keyboard == nil {
 		form.Add("reply_markup", `{"remove_keyboard":true}`)
 	} else {
