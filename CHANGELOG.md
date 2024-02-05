@@ -1,3 +1,8 @@
+v9.1.4 (2024-02-05)
+-------------------------
+ * Support MarkdownV2 text formatting styles
+ * Tweak experimental temba-chat handler
+
 v9.1.3 (2024-01-25)
 -------------------------
  * Remove mailgun handler and revert change from user ids to user ref objects
