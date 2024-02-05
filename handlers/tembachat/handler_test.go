@@ -14,7 +14,7 @@ var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Message with text",
 		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
-		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "events": [{"type": "msg_in", "msg": {"text": "Join"}}]}`,
+		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "secret": "sesame", "events": [{"type": "msg_in", "msg": {"text": "Join"}}]}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Events Handled",
 		ExpectedMsgText:      Sp("Join"),
@@ -23,14 +23,14 @@ var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Message with invalid chat ID",
 		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
-		Data:                 `{"chat_id": "xxxxx", "events": [{"type": "msg_in", "msg": {"text": "Join"}}]}`,
+		Data:                 `{"chat_id": "xxxxx", "secret": "sesame", "events": [{"type": "msg_in", "msg": {"text": "Join"}}]}`,
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "invalid webchat id: xxxxx",
 	},
 	{
 		Label:                "Chat started event",
 		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
-		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "events": [{"type": "chat_started"}]}`,
+		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "secret": "sesame", "events": [{"type": "chat_started"}]}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Events Handled",
 		ExpectedEvents:       []ExpectedEvent{{Type: courier.EventTypeNewConversation, URN: "webchat:65vbbDAQCdPdEWlEhDGy4utO"}},
@@ -38,14 +38,14 @@ var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Chat started event with invalid chat ID",
 		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
-		Data:                 `{"chat_id": "xxxxx", "events": [{"type": "chat_started"}]}`,
+		Data:                 `{"chat_id": "xxxxx", "secret": "sesame", "events": [{"type": "chat_started"}]}`,
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "invalid webchat id: xxxxx",
 	},
 	{
 		Label:                "Msg status update",
 		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
-		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "events": [{"type": "msg_status", "status": {"id": 10, "status": "sent"}}]}`,
+		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "secret": "sesame", "events": [{"type": "msg_status", "status": {"msg_id": 10, "status": "sent"}}]}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Events Handled",
 		ExpectedStatuses:     []ExpectedStatus{{MsgID: 10, Status: courier.MsgStatusSent}},
@@ -57,11 +57,18 @@ var incomingCases = []IncomingTestCase{
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "Field validation for 'ChatID' failed on the 'required' tag",
 	},
+	{
+		Label:                "Incorrect channel secret",
+		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "secret": "xxxxx", "events": [{"type": "msg_in", "msg": {"text": "Join"}}]}`,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "secret incorrect",
+	},
 }
 
 func TestIncoming(t *testing.T) {
 	chs := []courier.Channel{
-		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWC", "", "", nil),
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWC", "", "", map[string]any{"secret": "sesame"}),
 	}
 
 	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
@@ -79,7 +86,10 @@ var outgoingCases = []OutgoingTestCase{
 		MockResponseBody:   `{"status": "queued"}`,
 		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{
-			{Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}}, Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","msg":{"id":10,"text":"Simple message ☺","origin":"flow"}}`},
+			{
+				Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}},
+				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","origin":"flow"}}`,
+			},
 		},
 		ExpectedMsgStatus: "W",
 		SendPrep:          setSendURL,
@@ -92,7 +102,10 @@ var outgoingCases = []OutgoingTestCase{
 		MockResponseBody:   `{"status": "queued"}`,
 		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{
-			{Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}}, Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","msg":{"id":10,"text":"Simple message ☺","origin":"flow","user_id":123}}`},
+			{
+				Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}},
+				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","origin":"flow","user_id":123}}`,
+			},
 		},
 		ExpectedMsgStatus: "W",
 		SendPrep:          setSendURL,
@@ -104,7 +117,10 @@ var outgoingCases = []OutgoingTestCase{
 		MockResponseBody:   `{"error": "boom"}`,
 		MockResponseStatus: 400,
 		ExpectedRequests: []ExpectedRequest{
-			{Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}}, Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","msg":{"id":10,"text":"Error message","origin":"flow"}}`},
+			{
+				Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}},
+				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Error message","origin":"flow"}}`,
+			},
 		},
 		ExpectedMsgStatus: "E",
 		SendPrep:          setSendURL,
@@ -112,7 +128,7 @@ var outgoingCases = []OutgoingTestCase{
 }
 
 func TestOutgoing(t *testing.T) {
-	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWC", "", "", nil)
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWC", "", "", map[string]any{"secret": "sesame"})
 
-	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, nil, nil)
+	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"sesame"}, nil)
 }

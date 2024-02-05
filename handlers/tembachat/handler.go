@@ -3,6 +3,7 @@ package tembachat
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/nyaruka/courier"
@@ -30,7 +31,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("TWC"), "Temba Chat")}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("TWC"), "Temba Chat", handlers.WithRedactConfigKeys(courier.ConfigSecret))}
 }
 
 // Initialize is called by the engine once everything is loaded
@@ -42,13 +43,14 @@ func (h *handler) Initialize(s courier.Server) error {
 
 type receivePayload struct {
 	ChatID string `json:"chat_id" validate:"required"`
+	Secret string `json:"secret"  validate:"required"`
 	Events []struct {
-		Type string `json:"type" validate:"required"`
+		Type string `json:"type"  validate:"required"`
 		Msg  struct {
 			Text string `json:"text"`
 		} `json:"msg"`
 		Status struct {
-			MsgID  courier.MsgID `json:"id"`
+			MsgID  courier.MsgID `json:"msg_id"`
 			Status string        `json:"status"`
 		} `json:"status"`
 	}
@@ -56,6 +58,11 @@ type receivePayload struct {
 
 // receiveMessage is our HTTP handler function for incoming events
 func (h *handler) receive(ctx context.Context, c courier.Channel, w http.ResponseWriter, r *http.Request, payload *receivePayload, clog *courier.ChannelLog) ([]courier.Event, error) {
+	secret := c.StringConfigForKey(courier.ConfigSecret, "")
+	if payload.Secret != secret {
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("secret incorrect"))
+	}
+
 	urn, err := urns.NewURNFromParts(urns.WebChatScheme, payload.ChatID, "", "")
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
@@ -111,15 +118,18 @@ type sendMsg struct {
 
 type sendPayload struct {
 	ChatID string  `json:"chat_id"`
+	Secret string  `json:"secret"`
 	Msg    sendMsg `json:"msg"`
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+	secret := msg.Channel().StringConfigForKey(courier.ConfigSecret, "")
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, defaultSendURL)
 	sendURL += "?channel=" + string(msg.Channel().UUID())
 
 	payload := &sendPayload{
 		ChatID: msg.URN().Path(),
+		Secret: secret,
 		Msg: sendMsg{
 			ID:     msg.ID(),
 			Text:   msg.Text(),
