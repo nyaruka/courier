@@ -1,3 +1,8 @@
+v9.1.5 (2024-02-05)
+-------------------------
+ * Use markdown formatting for Telegram messages
+ * Update temba-chat handler to support multiple events per request and channel secrets
+
 v9.1.4 (2024-02-05)
 -------------------------
  * Support MarkdownV2 text formatting styles
