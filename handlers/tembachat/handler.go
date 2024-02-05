@@ -13,6 +13,12 @@ import (
 
 var (
 	defaultSendURL = "http://chatserver:8070/send"
+
+	statuses = map[string]courier.MsgStatus{
+		"sent":      courier.MsgStatusSent,
+		"delivered": courier.MsgStatusDelivered,
+		"failed":    courier.MsgStatusFailed,
+	}
 )
 
 func init() {
@@ -41,6 +47,10 @@ type receivePayload struct {
 		Msg  struct {
 			Text string `json:"text"`
 		} `json:"msg"`
+		Status struct {
+			MsgID  courier.MsgID `json:"id"`
+			Status string        `json:"status"`
+		} `json:"status"`
 	}
 }
 
@@ -74,18 +84,34 @@ func (h *handler) receive(ctx context.Context, c courier.Channel, w http.Respons
 
 			events = append(events, evt)
 			data = append(data, courier.NewEventReceiveData(evt))
+		} else if event.Type == "msg_status" {
+			status := statuses[event.Status.Status]
+			if status != "" {
+				evt := h.Backend().NewStatusUpdate(c, event.Status.MsgID, status, clog)
+
+				if err := h.Backend().WriteStatusUpdate(ctx, evt); err != nil {
+					return nil, err
+				}
+
+				events = append(events, evt)
+				data = append(data, courier.NewStatusData(evt))
+			}
 		}
 	}
 
 	return events, courier.WriteDataResponse(w, http.StatusOK, "Events Handled", data)
 }
 
-type sendPayload struct {
-	MsgID  courier.MsgID     `json:"msg_id"`
-	ChatID string            `json:"chat_id"`
+type sendMsg struct {
+	ID     courier.MsgID     `json:"id"`
 	Text   string            `json:"text"`
 	Origin courier.MsgOrigin `json:"origin"`
 	UserID courier.UserID    `json:"user_id,omitempty"`
+}
+
+type sendPayload struct {
+	ChatID string  `json:"chat_id"`
+	Msg    sendMsg `json:"msg"`
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
@@ -93,11 +119,13 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 	sendURL += "?channel=" + string(msg.Channel().UUID())
 
 	payload := &sendPayload{
-		MsgID:  msg.ID(),
 		ChatID: msg.URN().Path(),
-		Text:   msg.Text(),
-		Origin: msg.Origin(),
-		UserID: msg.UserID(),
+		Msg: sendMsg{
+			ID:     msg.ID(),
+			Text:   msg.Text(),
+			Origin: msg.Origin(),
+			UserID: msg.UserID(),
+		},
 	}
 	req, _ := http.NewRequest("POST", sendURL, bytes.NewReader(jsonx.MustMarshal(payload)))
 

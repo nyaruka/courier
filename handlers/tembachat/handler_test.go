@@ -43,6 +43,14 @@ var incomingCases = []IncomingTestCase{
 		ExpectedBodyContains: "invalid webchat id: xxxxx",
 	},
 	{
+		Label:                "Msg status update",
+		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "events": [{"type": "msg_status", "status": {"id": 10, "status": "sent"}}]}`,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Events Handled",
+		ExpectedStatuses:     []ExpectedStatus{{MsgID: 10, Status: courier.MsgStatusSent}},
+	},
+	{
 		Label:                "Missing fields",
 		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		Data:                 `{"foo": "bar"}`,
@@ -71,7 +79,7 @@ var outgoingCases = []OutgoingTestCase{
 		MockResponseBody:   `{"status": "queued"}`,
 		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{
-			{Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}}, Body: `{"msg_id":10,"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow"}`},
+			{Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}}, Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","msg":{"id":10,"text":"Simple message ☺","origin":"flow"}}`},
 		},
 		ExpectedMsgStatus: "W",
 		SendPrep:          setSendURL,
@@ -84,7 +92,7 @@ var outgoingCases = []OutgoingTestCase{
 		MockResponseBody:   `{"status": "queued"}`,
 		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{
-			{Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}}, Body: `{"msg_id":10,"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","text":"Simple message ☺","origin":"flow","user_id":123}`},
+			{Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}}, Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","msg":{"id":10,"text":"Simple message ☺","origin":"flow","user_id":123}}`},
 		},
 		ExpectedMsgStatus: "W",
 		SendPrep:          setSendURL,
@@ -96,7 +104,7 @@ var outgoingCases = []OutgoingTestCase{
 		MockResponseBody:   `{"error": "boom"}`,
 		MockResponseStatus: 400,
 		ExpectedRequests: []ExpectedRequest{
-			{Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}}, Body: `{"msg_id":10,"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","text":"Error message","origin":"flow"}`},
+			{Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}}, Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","msg":{"id":10,"text":"Error message","origin":"flow"}}`},
 		},
 		ExpectedMsgStatus: "E",
 		SendPrep:          setSendURL,
