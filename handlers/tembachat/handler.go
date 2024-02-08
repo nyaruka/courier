@@ -122,9 +122,13 @@ type sendPayload struct {
 	Msg    sendMsg `json:"msg"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	secret := msg.Channel().StringConfigForKey(courier.ConfigSecret, "")
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, defaultSendURL)
+	if secret == "" || sendURL == "" {
+		return courier.ErrSendChannelConfig
+	}
+
 	sendURL += "?channel=" + string(msg.Channel().UUID())
 
 	payload := &sendPayload{
@@ -139,12 +143,12 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 	}
 	req, _ := http.NewRequest("POST", sendURL, bytes.NewReader(jsonx.MustMarshal(payload)))
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusWired, clog)
-
 	resp, _, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		status.SetStatus(courier.MsgStatusErrored)
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrSendConnection
+	} else if resp.StatusCode/100 == 4 {
+		return courier.ErrSendResponseUnexpected
 	}
 
-	return status, nil
+	return nil
 }

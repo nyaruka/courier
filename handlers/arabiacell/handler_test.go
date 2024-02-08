@@ -74,7 +74,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "external1",
 		SendPrep:           setSendURL,
 	},
@@ -84,8 +83,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `not xml`,
 		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseUnparseable("XML")},
+		ExpectedError:      courier.ErrSendResponseUnparseable,
 		SendPrep:           setSendURL,
 	},
 	{
@@ -94,8 +92,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `<response><code>501</code><text>failure</text><message_id></message_id></response>`,
 		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseStatusCode()},
+		ExpectedError:      courier.ErrSendResponseUnexpected,
 		SendPrep:           setSendURL,
 	},
 	{
@@ -104,7 +101,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `Bad Gateway`,
 		MockResponseStatus: 501,
-		ExpectedMsgStatus:  "E",
+		ExpectedError:      courier.ErrSendConnection,
 		SendPrep:           setSendURL,
 	},
 }

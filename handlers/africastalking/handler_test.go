@@ -127,7 +127,6 @@ var outgoingTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"message": {"Simple Message ☺"}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
 		},
-		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "1002",
 		SendPrep:           setSendURL,
 	},
@@ -141,24 +140,23 @@ var outgoingTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"message": {"My pic!\nhttps://foo.bar/image.jpg"}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
 		},
-		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "1002",
 		SendPrep:           setSendURL,
 	},
 	{
-		Label:              "No External Id",
-		MsgText:            "No External ID",
+		Label:              "Explicit failed status",
+		MsgText:            "Hi",
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `{ "SMSMessageData": {"Recipients": [{"status": "Failed" }] } }`,
 		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"message": {`No External ID`}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
+			{Form: url.Values{"message": {`Hi`}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
 		},
-		ExpectedMsgStatus: "E",
-		SendPrep:          setSendURL,
+		ExpectedError: courier.ErrSendResponseUnexpected,
+		SendPrep:      setSendURL,
 	},
 	{
-		Label:              "Error Sending",
+		Label:              "Missing status value",
 		MsgText:            "Error Message",
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `{ "error": "failed" }`,
@@ -166,8 +164,8 @@ var outgoingTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"message": {`Error Message`}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
 		},
-		ExpectedMsgStatus: "E",
-		SendPrep:          setSendURL,
+		ExpectedError: courier.ErrSendResponseUnexpected,
+		SendPrep:      setSendURL,
 	},
 }
 
@@ -182,7 +180,6 @@ var sharedSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"message": {"Simple Message ☺"}, "username": {"Username"}, "to": {"+250788383383"}}},
 		},
-		ExpectedMsgStatus:  "W",
 		ExpectedExternalID: "1002",
 		SendPrep:           setSendURL,
 	},
