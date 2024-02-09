@@ -196,16 +196,20 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:               "Plain Send",
-		MsgText:             "Simple Message",
-		MsgURN:              "twitterid:12345",
-		MockResponseBody:    `{"event": { "id": "133"}}`,
-		MockResponseStatus:  200,
-		ExpectedRequestPath: "/1.1/direct_messages/events/new.json",
-		ExpectedRequestBody: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"Simple Message"}}}}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"133"},
-		SendPrep:            setSendURL,
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "twitterid:12345",
+		MockResponseBody:   `{"event": { "id": "133"}}`,
+		MockResponseStatus: 200,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/1.1/direct_messages/events/new.json",
+				Body: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"Simple Message"}}}}`,
+			},
+		},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"133"},
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:               "Quick Reply",

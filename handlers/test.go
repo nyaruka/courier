@@ -335,7 +335,6 @@ type OutgoingTestCase struct {
 	ExpectedMsgStatus courier.MsgStatus
 
 	// deprecated, use ExpectedRequests
-	ExpectedRequestPath string
 	ExpectedURLParams   map[string]string
 	ExpectedPostParams  map[string]string
 	ExpectedRequestBody string
@@ -450,13 +449,9 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 
 			cancel()
 
-			if tc.ExpectedRequestPath != "" || tc.ExpectedURLParams != nil || tc.ExpectedPostParams != nil || tc.ExpectedRequestBody != "" || tc.ExpectedHeaders != nil {
+			if tc.ExpectedURLParams != nil || tc.ExpectedPostParams != nil || tc.ExpectedRequestBody != "" || tc.ExpectedHeaders != nil {
 				testRequest := actualRequests[len(actualRequests)-1]
 
-				if tc.ExpectedRequestPath != "" {
-					require.NotNil(testRequest, "path should not be nil")
-					require.Equal(tc.ExpectedRequestPath, testRequest.URL.Path)
-				}
 				if tc.ExpectedURLParams != nil {
 					require.NotNil(testRequest)
 					for k, v := range tc.ExpectedURLParams {

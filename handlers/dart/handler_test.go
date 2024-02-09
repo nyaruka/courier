@@ -2,6 +2,7 @@ package dart
 
 import (
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -106,9 +107,11 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   "000",
 		MockResponseStatus: 200,
-		ExpectedURLParams:  map[string]string{"message": "Simple Message", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
-		ExpectedMsgStatus:  "W",
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{Params: url.Values{"message": {"Simple Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
+		},
+		ExpectedMsgStatus: "W",
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:              "Long Send",
@@ -116,9 +119,12 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   "000",
 		MockResponseStatus: 200,
-		ExpectedURLParams:  map[string]string{"message": "I need to keep adding more things to make it work", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10.2"},
-		ExpectedMsgStatus:  "W",
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{Params: url.Values{"message": {"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
+			{Params: url.Values{"message": {"I need to keep adding more things to make it work"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10.2"}}},
+		},
+		ExpectedMsgStatus: "W",
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:              "Send Attachment",
@@ -127,9 +133,11 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:   "000",
 		MockResponseStatus: 200,
-		ExpectedURLParams:  map[string]string{"message": "My pic!\nhttps://foo.bar/image.jpg", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
-		ExpectedMsgStatus:  "W",
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{Params: url.Values{"message": {"My pic!\nhttps://foo.bar/image.jpg"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
+		},
+		ExpectedMsgStatus: "W",
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:              "Error Sending",
@@ -137,9 +145,11 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `Error`,
 		MockResponseStatus: 400,
-		ExpectedURLParams:  map[string]string{"message": "Error Message", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{Params: url.Values{"message": {"Error Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
+		},
+		ExpectedMsgStatus: "E",
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:              "Authentication Error",
@@ -147,10 +157,12 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   "001",
 		MockResponseStatus: 200,
-		ExpectedURLParams:  map[string]string{"message": "Simple Message", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("001", "Authentication error.")},
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{Params: url.Values{"message": {"Simple Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
+		},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("001", "Authentication error.")},
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:              "Account Expired",
@@ -158,10 +170,12 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   "101",
 		MockResponseStatus: 200,
-		ExpectedURLParams:  map[string]string{"message": "Simple Message", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("101", "Account expired or invalid parameters.")},
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{Params: url.Values{"message": {"Simple Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
+		},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("101", "Account expired or invalid parameters.")},
+		SendPrep:          setSendURL,
 	},
 }
 

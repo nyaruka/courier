@@ -13,10 +13,6 @@ import (
 	"github.com/nyaruka/courier/test"
 )
 
-var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "TG", "2020", "US", map[string]any{"auth_token": "a123"}),
-}
-
 var helloMsg = `{
   "update_id": 174114370,
   "message": {
@@ -772,22 +768,14 @@ func TestIncoming(t *testing.T) {
 	telegramService := buildMockTelegramService(testCases)
 	defer telegramService.Close()
 
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	chs := []courier.Channel{
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "TG", "2020", "US", map[string]any{"auth_token": "a123"}),
+	}
+
+	RunIncomingTestCases(t, chs, newHandler(), testCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	telegramService := buildMockTelegramService(testCases)
-	defer telegramService.Close()
-
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
-}
-
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	apiURL = s.URL
-}
-
-var defaultSendTestCases = []OutgoingTestCase{
+var outgoingCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message",
@@ -947,9 +935,14 @@ var defaultSendTestCases = []OutgoingTestCase{
 	},
 }
 
-func TestOutgoing(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US",
-		map[string]any{courier.ConfigAuthToken: "auth_token"})
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
+	apiURL = s.URL
+}
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"auth_token"}, nil)
+func TestOutgoing(t *testing.T) {
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TG", "2020", "US",
+		map[string]any{courier.ConfigAuthToken: "auth_token"},
+	)
+
+	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"auth_token"}, nil)
 }

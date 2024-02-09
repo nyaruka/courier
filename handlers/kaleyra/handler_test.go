@@ -18,16 +18,7 @@ const (
 	receiveStatusURL = "/c/kwa/" + channelUUID + "/status"
 )
 
-var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "KWA", "250788383383", "",
-		map[string]any{
-			configAccountSID: "SID",
-			configApiKey:     "123456",
-		},
-	),
-}
-
-var testCases = []IncomingTestCase{
+var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Receive Msg",
 		URL:                  receiveMsgURL + "?created_at=1603914166&type=text&from=14133881111&name=John%20Cruz&body=Hello%20World",
@@ -102,68 +93,82 @@ var testCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
-}
+	chs := []courier.Channel{
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "KWA", "250788383383", "",
+			map[string]any{configAccountSID: "SID", configApiKey: "123456"},
+		),
+	}
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	baseURL = s.URL
+	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
 }
 
 var sendTestCases = []OutgoingTestCase{
 	{
-		Label:               "Plain Send",
-		MsgText:             "Simple Message",
-		MsgURN:              "whatsapp:14133881111",
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"},
-		ExpectedRequestPath: "/v1/SID/messages",
-		ExpectedHeaders:     map[string]string{"Content-type": "application/x-www-form-urlencoded"},
-		ExpectedRequestBody: "api-key=123456&body=Simple+Message&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&to=14133881111&type=text",
-		MockResponseStatus:  200,
-		MockResponseBody:    `{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`,
-		SendPrep:            setSendURL,
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "whatsapp:14133881111",
+		ExpectedMsgStatus:  "W",
+		MockResponseStatus: 200,
+		MockResponseBody:   `{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Content-type": "application/x-www-form-urlencoded"},
+				Path:    "/v1/SID/messages",
+				Body:    "api-key=123456&body=Simple+Message&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&to=14133881111&type=text",
+			},
+		},
+		ExpectedExtIDs: []string{"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"},
+		SendPrep:       setSendURL,
 	},
 	{
-		Label:               "Unicode Send",
-		MsgText:             "☺",
-		MsgURN:              "whatsapp:14133881111",
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"},
-		ExpectedRequestPath: "/v1/SID/messages",
-		ExpectedHeaders:     map[string]string{"Content-type": "application/x-www-form-urlencoded"},
-		ExpectedRequestBody: "api-key=123456&body=%E2%98%BA&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&to=14133881111&type=text",
-		MockResponseStatus:  200,
-		MockResponseBody:    `{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`,
-		SendPrep:            setSendURL,
+		Label:              "Unicode Send",
+		MsgText:            "☺",
+		MsgURN:             "whatsapp:14133881111",
+		MockResponseStatus: 200,
+		MockResponseBody:   `{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Content-type": "application/x-www-form-urlencoded"},
+				Path:    "/v1/SID/messages",
+				Body:    "api-key=123456&body=%E2%98%BA&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&to=14133881111&type=text",
+			},
+		},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"},
+		SendPrep:          setSendURL,
 	},
 	{
-		Label:               "URL Send",
-		MsgText:             "foo https://foo.bar bar",
-		MsgURN:              "whatsapp:14133881111",
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"},
-		ExpectedRequestPath: "/v1/SID/messages",
-		ExpectedHeaders:     map[string]string{"Content-type": "application/x-www-form-urlencoded"},
-		ExpectedRequestBody: "api-key=123456&body=foo+https%3A%2F%2Ffoo.bar+bar&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&preview_url=true&to=14133881111&type=text",
-		MockResponseStatus:  200,
-		MockResponseBody:    `{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`,
-		SendPrep:            setSendURL,
+		Label:              "URL Send",
+		MsgText:            "foo https://foo.bar bar",
+		MsgURN:             "whatsapp:14133881111",
+		MockResponseStatus: 200,
+		MockResponseBody:   `{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Content-type": "application/x-www-form-urlencoded"},
+				Path:    "/v1/SID/messages",
+				Body:    "api-key=123456&body=foo+https%3A%2F%2Ffoo.bar+bar&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&preview_url=true&to=14133881111&type=text",
+			},
+		},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"},
+		SendPrep:          setSendURL,
 	},
 	{
-		Label:               "Plain Send Error",
-		MsgText:             "Error",
-		MsgURN:              "whatsapp:14133881112",
-		ExpectedMsgStatus:   "F",
-		ExpectedRequestPath: "/v1/SID/messages",
-		ExpectedHeaders:     map[string]string{"Content-type": "application/x-www-form-urlencoded"},
-		ExpectedRequestBody: "api-key=123456&body=Error&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&to=14133881112&type=text",
-		MockResponseStatus:  400,
-		MockResponseBody:    `{"error":{"to":"invalid number"}}`,
-		SendPrep:            setSendURL,
+		Label:              "Plain Send Error",
+		MsgText:            "Error",
+		MsgURN:             "whatsapp:14133881112",
+		MockResponseStatus: 400,
+		MockResponseBody:   `{"error":{"to":"invalid number"}}`,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Content-type": "application/x-www-form-urlencoded"},
+				Path:    "/v1/SID/messages",
+				Body:    "api-key=123456&body=Error&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&to=14133881112&type=text",
+			},
+		},
+		ExpectedMsgStatus: "F",
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:             "Medias Send",
@@ -208,6 +213,10 @@ var sendTestCases = []OutgoingTestCase{
 	},
 }
 
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
+	baseURL = s.URL
+}
+
 func mockAttachmentURLs(mediaServer *httptest.Server, testCases []OutgoingTestCase) []OutgoingTestCase {
 	casesWithMockedUrls := make([]OutgoingTestCase, len(testCases))
 
@@ -238,5 +247,9 @@ func TestOutgoing(t *testing.T) {
 	}))
 	mockedSendTestCases := mockAttachmentURLs(mediaServer, sendTestCases)
 
-	RunOutgoingTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, []string{"123456"}, nil)
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "KWA", "250788383383", "",
+		map[string]any{configAccountSID: "SID", configApiKey: "123456"},
+	)
+
+	RunOutgoingTestCases(t, ch, newHandler(), mockedSendTestCases, []string{"123456"}, nil)
 }

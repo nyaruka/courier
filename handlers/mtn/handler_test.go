@@ -10,13 +10,8 @@ import (
 	"github.com/nyaruka/courier/test"
 )
 
-var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MTN", "2020", "US", map[string]any{courier.ConfigAuthToken: "customer-secret123", courier.ConfigAPIKey: "customer-key"}),
-}
-
 var (
 	receiveURL = "/c/mtn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
-	statusURL  = "/c/mtn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"
 )
 
 var helloMsg = `{
@@ -79,7 +74,7 @@ var missingTransactionID = `{
 	"deliveryStatus": "EXPIRED"
 }`
 
-var testCases = []IncomingTestCase{
+var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Message",
 		URL:                  receiveURL,
@@ -151,20 +146,16 @@ var testCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	chs := []courier.Channel{
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MTN", "2020", "US", map[string]any{courier.ConfigAuthToken: "customer-secret123", courier.ConfigAPIKey: "customer-key"}),
+	}
+
+	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
-}
-
-// setSendURL takes care of setting the sendURL to call
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	apiHostURL = s.URL
-}
-
-var defaultSendTestCases = []OutgoingTestCase{
-	{Label: "Plain Send",
+var outgoingCases = []OutgoingTestCase{
+	{
+		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "tel:+250788383383",
 		ExpectedMsgStatus:  "W",
@@ -177,8 +168,10 @@ var defaultSendTestCases = []OutgoingTestCase{
 			"Authorization": "Bearer ACCESS_TOKEN",
 		},
 		ExpectedRequestBody: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"Simple Message ☺","clientCorrelator":"10"}`,
-		SendPrep:            setSendURL},
-	{Label: "Send Attachment",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
 		MsgText:            "My pic!",
 		MsgURN:             "tel:+250788383383",
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
@@ -192,8 +185,10 @@ var defaultSendTestCases = []OutgoingTestCase{
 			"Authorization": "Bearer ACCESS_TOKEN",
 		},
 		ExpectedRequestBody: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"My pic!\nhttps://foo.bar/image.jpg","clientCorrelator":"10"}`,
-		SendPrep:            setSendURL},
-	{Label: "No External Id",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:              "No External Id",
 		MsgText:            "No External ID",
 		MsgURN:             "tel:+250788383383",
 		ExpectedMsgStatus:  "E",
@@ -206,26 +201,23 @@ var defaultSendTestCases = []OutgoingTestCase{
 			"Authorization": "Bearer ACCESS_TOKEN",
 		},
 		ExpectedRequestBody: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"No External ID","clientCorrelator":"10"}`,
-		SendPrep:            setSendURL},
-	{Label: "Error Sending",
+		SendPrep:            setSendURL,
+	},
+	{
+		Label:               "Error Sending",
 		MsgText:             "Error Message",
 		MsgURN:              "tel:+250788383383",
 		ExpectedMsgStatus:   "E",
 		MockResponseBody:    `{ "error": "failed" }`,
 		MockResponseStatus:  401,
 		ExpectedRequestBody: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"Error Message","clientCorrelator":"10"}`,
-		SendPrep:            setSendURL},
+		SendPrep:            setSendURL,
+	},
 }
 
-func setupBackend(mb *test.MockBackend) {
-	// ensure there's a cached access token
-	rc := mb.RedisPool().Get()
-	defer rc.Close()
-	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
-}
-
-var cpAddressSendTestCases = []OutgoingTestCase{
-	{Label: "Plain Send",
+var cpAddressOutgoingCases = []OutgoingTestCase{
+	{
+		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "tel:+250788383383",
 		ExpectedMsgStatus:  "W",
@@ -238,12 +230,25 @@ var cpAddressSendTestCases = []OutgoingTestCase{
 			"Authorization": "Bearer ACCESS_TOKEN",
 		},
 		ExpectedRequestBody: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"Simple Message ☺","clientCorrelator":"10","cpAddress":"FOO"}`,
-		SendPrep:            setSendURL},
+		SendPrep:            setSendURL,
+	},
+}
+
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
+	apiHostURL = s.URL
+}
+
+func setupBackend(mb *test.MockBackend) {
+	// ensure there's a cached access token
+	rc := mb.RedisPool().Get()
+	defer rc.Close()
+	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ACCESS_TOKEN")
 }
 
 func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MTN", "2020", "US", map[string]any{courier.ConfigAuthToken: "customer-secret123", courier.ConfigAPIKey: "customer-key"})
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"customer-key", "customer-secret123"}, setupBackend)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingCases, []string{"customer-key", "customer-secret123"}, setupBackend)
+
 	var cpAddressChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MTN", "2020", "US", map[string]any{courier.ConfigAuthToken: "customer-secret123", courier.ConfigAPIKey: "customer-key", configCPAddress: "FOO"})
-	RunOutgoingTestCases(t, cpAddressChannel, newHandler(), cpAddressSendTestCases, []string{"customer-key", "customer-secret123"}, setupBackend)
+	RunOutgoingTestCases(t, cpAddressChannel, newHandler(), cpAddressOutgoingCases, []string{"customer-key", "customer-secret123"}, setupBackend)
 }

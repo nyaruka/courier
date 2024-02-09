@@ -74,10 +74,6 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
 }
 
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	defaultSendURL = s.URL
-}
-
 var outgoingCases = []OutgoingTestCase{
 	{
 		Label:              "Flow message",
@@ -138,6 +134,10 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedError: courier.ErrConnectionFailed,
 		SendPrep:      setSendURL,
 	},
+}
+
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
+	defaultSendURL = s.URL
 }
 
 func TestOutgoing(t *testing.T) {

@@ -79,34 +79,46 @@ var testCases = []IncomingTestCase{
 
 var sendTestCases = []OutgoingTestCase{
 	{
-		Label:               "Simple Send",
-		MsgText:             "Hello World",
-		MsgURN:              "discord:694634743521607802",
-		ExpectedRequestPath: "/discord/rp/send",
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":null}`,
-		SendPrep:            setSendURL,
+		Label:              "Simple Send",
+		MsgText:            "Hello World",
+		MsgURN:             "discord:694634743521607802",
+		MockResponseStatus: 200,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/discord/rp/send",
+				Body: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":null}`,
+			},
+		},
+		SendPrep: setSendURL,
 	},
 	{
-		Label:               "Simple Send",
-		MsgText:             "Hello World",
-		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MsgURN:              "discord:694634743521607802",
-		ExpectedRequestPath: "/discord/rp/send",
-		ExpectedRequestBody: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"],"quick_replies":null}`,
-		MockResponseStatus:  200,
-		SendPrep:            setSendURL,
+		Label:              "Attachment",
+		MsgText:            "Hello World",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MsgURN:             "discord:694634743521607802",
+		MockResponseStatus: 200,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/discord/rp/send",
+				Body: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"],"quick_replies":null}`,
+			},
+		},
+		SendPrep: setSendURL,
 	},
 	{
-		Label:               "Simple Send with attachements and Quick Replies",
-		MsgText:             "Hello World",
-		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MsgQuickReplies:     []string{"hello", "world"},
-		MsgURN:              "discord:694634743521607802",
-		ExpectedRequestPath: "/discord/rp/send",
-		ExpectedRequestBody: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"],"quick_replies":["hello","world"]}`,
-		MockResponseStatus:  200,
-		SendPrep:            setSendURL,
+		Label:              "Attachement and quick replies",
+		MsgText:            "Hello World",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MsgQuickReplies:    []string{"hello", "world"},
+		MsgURN:             "discord:694634743521607802",
+		MockResponseStatus: 200,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/discord/rp/send",
+				Body: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"],"quick_replies":["hello","world"]}`,
+			},
+		},
+		SendPrep: setSendURL,
 	},
 }
 
