@@ -69,7 +69,7 @@ func TestHandling(t *testing.T) {
 	assert.Len(mb.WrittenMsgStatuses(), 1)
 	status := mb.WrittenMsgStatuses()[0]
 	assert.Equal(msg.ID(), status.MsgID())
-	assert.Equal(courier.MsgStatusSent, status.Status())
+	assert.Equal(courier.MsgStatusWired, status.Status())
 
 	assert.Len(mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]

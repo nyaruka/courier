@@ -44,7 +44,7 @@ func (h *mockHandler) Initialize(s courier.Server) error {
 }
 
 // Send sends the given message, logging any HTTP calls or errors
-func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	// log a request that contains a header value that should be redacted
 	req, _ := httpx.NewRequest("GET", "http://mock.com/send", nil, map[string]string{"Authorization": "Token sesame"})
 	trace, _ := httpx.DoTrace(http.DefaultClient, req, nil, nil, 1024)
@@ -53,7 +53,7 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, clog *courie
 	// log an error than contains a value that should be redacted
 	clog.Error(courier.NewChannelError("seeds", "", "contains sesame seeds"))
 
-	return h.backend.NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusSent, clog), nil
+	return nil
 }
 
 func (h *mockHandler) WriteStatusSuccessResponse(ctx context.Context, w http.ResponseWriter, statuses []courier.StatusUpdate) error {

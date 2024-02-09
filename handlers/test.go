@@ -324,8 +324,9 @@ type OutgoingTestCase struct {
 	MockResponses      map[MockedRequest]*httpx.MockResponse
 
 	ExpectedRequests    []ExpectedRequest
-	ExpectedMsgStatus   courier.MsgStatus
 	ExpectedExternalID  string
+	ExpectedError       error
+	ExpectedMsgStatus   courier.MsgStatus
 	ExpectedErrors      []*courier.ChannelError
 	ExpectedStopEvent   bool
 	ExpectedContactURNs map[string]bool
@@ -411,15 +412,36 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			}
 
 			clog := courier.NewChannelLogForSend(msg, handler.RedactValues(channel))
-
 			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
-			status, err := handler.Send(ctx, msg, clog)
-			cancel()
 
-			// sender adds returned error to channel log if there aren't other logged errors
-			if err != nil && len(clog.Errors()) == 0 {
-				clog.RawError(err)
+			// work out what kind of sending this handler supports.. this is temporary
+			handlerOld, _ := handler.(courier.ChannelLegacyHandler)
+			handlerNew, _ := handler.(courier.ChannelStdHandler)
+
+			var externalID string
+			var status courier.StatusUpdate
+			var serr, err error
+
+			if handlerNew != nil {
+				res := &courier.SendResult{}
+				serr = handlerNew.Send(ctx, msg, res, clog)
+				if len(res.ExternalIDs()) > 0 {
+					externalID = res.ExternalIDs()[0]
+				}
+			} else {
+				status, err = handlerOld.Send(ctx, msg, clog)
+
+				// sender adds returned error to channel log if there aren't other logged errors
+				if err != nil && len(clog.Errors()) == 0 {
+					clog.RawError(err)
+				}
+
+				if status != nil {
+					externalID = status.ExternalID()
+				}
 			}
+
+			cancel()
 
 			assert.Equal(t, tc.ExpectedErrors, clog.Errors(), "unexpected errors logged")
 
@@ -471,9 +493,10 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 				assert.Equal(t, len(tc.MockResponses), mockRRCount, "mocked request count mismatch")
 			}
 
-			if tc.ExpectedExternalID != "" {
-				require.Equal(tc.ExpectedExternalID, status.ExternalID())
+			if handlerNew != nil || tc.ExpectedExternalID != "" {
+				require.Equal(tc.ExpectedExternalID, externalID)
 			}
+			require.Equal(tc.ExpectedError, serr)
 
 			if tc.ExpectedMsgStatus != "" {
 				require.NotNil(status, "status should not be nil")

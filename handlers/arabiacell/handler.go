@@ -3,7 +3,6 @@ package arabiacell
 import (
 	"context"
 	"encoding/xml"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -55,29 +54,16 @@ type mtResponse struct {
 	MessageID string `xml:"message_id"`
 }
 
-// Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("no username set for AC channel")
-	}
-
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("no password set for AC channel")
-	}
-
 	serviceID := msg.Channel().StringConfigForKey(configServiceID, "")
-	if password == "" {
-		return nil, fmt.Errorf("no service_id set for AC channel")
-	}
-
 	chargingLevel := msg.Channel().StringConfigForKey(configChargingLevel, "")
-	if chargingLevel == "" {
-		return nil, fmt.Errorf("no charging_level set for AC channel")
+
+	if username == "" || password == "" || serviceID == "" || chargingLevel == "" {
+		return courier.ErrSendChannelConfig
 	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		form := url.Values{
 			"userName":      []string{username},
@@ -91,34 +77,30 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 
 		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/xml")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrSendConnection
 		}
 
 		// parse our response as XML
 		response := &mtResponse{}
 		err = xml.Unmarshal(respBody, response)
 		if err != nil {
-			clog.Error(courier.ErrorResponseUnparseable("XML"))
-			break
+			return courier.ErrSendResponseUnparseable
 		}
 
 		// we always get 204 on success
 		if response.Code == "204" {
-			status.SetStatus(courier.MsgStatusWired)
-			status.SetExternalID(response.MessageID)
+			res.AddExternalID(response.MessageID)
 		} else {
-			status.SetStatus(courier.MsgStatusFailed)
-			clog.Error(courier.ErrorResponseStatusCode())
-			break
+			return courier.ErrSendResponseUnexpected
 		}
 	}
 
-	return status, nil
+	return nil
 }

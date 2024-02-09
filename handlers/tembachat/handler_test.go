@@ -91,8 +91,7 @@ var outgoingCases = []OutgoingTestCase{
 				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","origin":"flow"}}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		SendPrep:          setSendURL,
+		SendPrep: setSendURL,
 	},
 	{
 		Label:              "Chat message",
@@ -107,14 +106,13 @@ var outgoingCases = []OutgoingTestCase{
 				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","origin":"flow","user_id":123}}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		SendPrep:          setSendURL,
+		SendPrep: setSendURL,
 	},
 	{
-		Label:              "Error sending",
+		Label:              "400 response",
 		MsgText:            "Error message",
 		MsgURN:             "webchat:65vbbDAQCdPdEWlEhDGy4utO",
-		MockResponseBody:   `{"error": "boom"}`,
+		MockResponseBody:   `{"error": "invalid"}`,
 		MockResponseStatus: 400,
 		ExpectedRequests: []ExpectedRequest{
 			{
@@ -122,8 +120,23 @@ var outgoingCases = []OutgoingTestCase{
 				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Error message","origin":"flow"}}`,
 			},
 		},
-		ExpectedMsgStatus: "E",
-		SendPrep:          setSendURL,
+		ExpectedError: courier.ErrSendResponseUnexpected,
+		SendPrep:      setSendURL,
+	},
+	{
+		Label:              "500 response",
+		MsgText:            "Error message",
+		MsgURN:             "webchat:65vbbDAQCdPdEWlEhDGy4utO",
+		MockResponseBody:   `Gateway Error`,
+		MockResponseStatus: 500,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}},
+				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Error message","origin":"flow"}}`,
+			},
+		},
+		ExpectedError: courier.ErrSendConnection,
+		SendPrep:      setSendURL,
 	},
 }
 
