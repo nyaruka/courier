@@ -90,7 +90,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `not json`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseUnparseable("XML")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseUnparseable("XML")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -100,7 +100,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `{ "message_id": 0 }`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("message_id")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("message_id")},
 		SendPrep:           setSendURL,
 	},
 	{

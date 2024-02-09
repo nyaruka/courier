@@ -79,7 +79,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `not json`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -89,7 +89,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `{"result":{}, "error_code": "10", "error_desc": "Failed"}`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueUnexpected("error_code", "00")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueUnexpected("error_code", "00")},
 		SendPrep:           setSendURL,
 	},
 	{

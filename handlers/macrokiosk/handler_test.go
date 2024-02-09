@@ -131,7 +131,7 @@ var outgoingTestCases = []OutgoingTestCase{
 		ExpectedMsgStatus:  "E",
 		MockResponseBody:   `{ "missing":"OzYDlvf3SQVc" }`,
 		MockResponseStatus: 200,
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("", "", "unable to parse response body from Macrokiosk")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.NewChannelError("", "", "unable to parse response body from Macrokiosk")},
 		ExpectedHeaders: map[string]string{
 			"Content-Type": "application/json",
 			"Accept":       "application/json",

@@ -91,7 +91,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `<response><input>sendMT</input><status>ERROR</status><description>Completed</description></response>`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueUnexpected("status", "OK")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueUnexpected("status", "OK")},
 		SendPrep:           setSendURL,
 	},
 }

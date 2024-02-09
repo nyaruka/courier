@@ -628,7 +628,7 @@ var xmlSendWithResponseContentTestCases = []OutgoingTestCase{
 		ExpectedRequestBody: `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		ExpectedHeaders:     map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []*courier.ChannelError{courier.ErrorResponseUnexpected("<return>0</return>")},
+		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorResponseUnexpected("<return>0</return>")},
 		SendPrep:            setSendURL,
 	},
 	{

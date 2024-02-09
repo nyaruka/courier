@@ -567,7 +567,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  403,
 		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
+		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -578,7 +578,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  403,
 		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []*courier.ChannelError{courier.ErrorExternal("403", "Failed to send messages")},
+		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorExternal("403", "Failed to send messages")},
 		SendPrep:            setSendURL,
 	},
 }

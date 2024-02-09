@@ -177,7 +177,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"text": "Error status", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorExternal("send:10", "Too Many Existing Binds")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("send:10", "Too Many Existing Binds")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -208,7 +208,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorExternal("send:1", "Throttled")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("send:1", "Throttled")},
 		SendPrep:           setSendURL,
 	},
 }

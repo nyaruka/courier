@@ -140,7 +140,7 @@ var sendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"from_did":"2065551212","to_did":"2067791234","message":"No External ID"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []*courier.ChannelError{courier.ErrorResponseValueMissing("guid")},
+		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorResponseValueMissing("guid")},
 		SendPrep:            setSendURL,
 	},
 	{

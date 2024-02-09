@@ -166,7 +166,7 @@ var sendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `{ "success": 0 }`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueUnexpected("success", "1")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueUnexpected("success", "1")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -177,7 +177,7 @@ var sendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `{ "success": 1 }`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("multicast_id")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("multicast_id")},
 		SendPrep:           setSendURL,
 	},
 	{

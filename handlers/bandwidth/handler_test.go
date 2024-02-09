@@ -331,7 +331,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedMsgStatus: "W",
-		ExpectedErrors:    []*courier.ChannelError{courier.ErrorResponseValueMissing("id")},
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("id")},
 		SendPrep:          setSendURL,
 	},
 	{
@@ -351,7 +351,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedMsgStatus: "E",
-		ExpectedErrors:    []*courier.ChannelError{courier.ErrorExternal("request-validation", "Your request could not be accepted")},
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("request-validation", "Your request could not be accepted")},
 		SendPrep:          setSendURL,
 	},
 }

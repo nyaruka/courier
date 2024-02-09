@@ -145,7 +145,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `{"results":[{"code": "3", "ticket": "null"}]}`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "F",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("", "", "Error status code, failing permanently")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.NewChannelError("", "", "Error status code, failing permanently")},
 		SendPrep:           setSendURL,
 	},
 }

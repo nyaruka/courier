@@ -71,7 +71,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedURLParams:  map[string]string{"content": "Error Message", "to": "250788383383", "from": "2020", "apiKey": "API-KEY"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("apiMessageId")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("apiMessageId")},
 		SendPrep:           setSendURL,
 	},
 }

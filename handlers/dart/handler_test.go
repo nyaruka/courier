@@ -149,7 +149,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedURLParams:  map[string]string{"message": "Simple Message", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorExternal("001", "Authentication error.")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("001", "Authentication error.")},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -160,7 +160,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedURLParams:  map[string]string{"message": "Simple Message", "sendto": "250788383383", "original": "2020", "userid": "Username", "password": "Password", "dcs": "0", "udhl": "0", "messageid": "10"},
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorExternal("101", "Account expired or invalid parameters.")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("101", "Account expired or invalid parameters.")},
 		SendPrep:           setSendURL,
 	},
 }

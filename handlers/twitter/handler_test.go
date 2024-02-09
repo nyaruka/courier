@@ -346,7 +346,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedMsgStatus: "W",
 		ExpectedExtIDs:    []string{"133"},
-		ExpectedErrors:    []*courier.ChannelError{courier.NewChannelError("", "", "unable to upload media, unsupported Twitter attachment")},
+		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to upload media, unsupported Twitter attachment")},
 		SendPrep:          setSendURL,
 	},
 	{
@@ -356,7 +356,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `{ "is_error": true }`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.NewChannelError("", "", "unable to get message_id from body")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.NewChannelError("", "", "unable to get message_id from body")},
 		SendPrep:           setSendURL,
 	},
 	{

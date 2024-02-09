@@ -146,7 +146,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []*courier.ChannelError{courier.ErrorExternal("3", "There is an error in the request itself (missing comma, brackets, etc.)")},
+		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorExternal("3", "There is an error in the request itself (missing comma, brackets, etc.)")},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -158,7 +158,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []*courier.ChannelError{courier.ErrorExternal("99", "General error")},
+		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorExternal("99", "General error")},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -170,7 +170,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
+		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -182,15 +182,15 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Error Message","type":"text","tracking_data":"10"}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []*courier.ChannelError{courier.ErrorResponseStatusCode()},
+		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorResponseStatusCode()},
 		SendPrep:            setSendURL,
 	},
 }
 
 var invalidTokenSendTestCases = []OutgoingTestCase{
 	{
-		Label:          "Invalid token",
-		ExpectedErrors: []*courier.ChannelError{courier.NewChannelError("", "", "missing auth token in config")},
+		Label:             "Invalid token",
+		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "missing auth token in config")},
 	},
 }
 

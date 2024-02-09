@@ -199,7 +199,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedMsgStatus:  "E",
 		MockResponseBody:   `{"statusCode":"0000"}`,
 		MockResponseStatus: 200,
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("transactionId")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("transactionId")},
 		ExpectedHeaders: map[string]string{
 			"Content-Type":  "application/json",
 			"Accept":        "application/json",

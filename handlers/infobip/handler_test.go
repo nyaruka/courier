@@ -378,7 +378,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		ExpectedMsgStatus:   "E",
-		ExpectedErrors:      []*courier.ChannelError{courier.ErrorResponseValueUnexpected("groupId", "1", "3")},
+		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorResponseValueUnexpected("groupId", "1", "3")},
 		SendPrep:            setSendURL,
 	},
 }

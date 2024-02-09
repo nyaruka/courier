@@ -307,7 +307,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `{ "status": "success" }`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "E",
-		ExpectedErrors:     []*courier.ChannelError{courier.ErrorResponseValueMissing("id")},
+		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("id")},
 		SendPrep:           setSendURL,
 	},
 	{

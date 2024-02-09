@@ -326,11 +326,13 @@ type OutgoingTestCase struct {
 	ExpectedRequests    []ExpectedRequest
 	ExpectedExtIDs      []string
 	ExpectedError       error
-	ExpectedMsgStatus   courier.MsgStatus
-	ExpectedErrors      []*courier.ChannelError
+	ExpectedLogErrors   []*courier.ChannelError
 	ExpectedStopEvent   bool
 	ExpectedContactURNs map[string]bool
 	ExpectedNewURN      string
+
+	// only used by legacy send type handlers
+	ExpectedMsgStatus courier.MsgStatus
 
 	// deprecated, use ExpectedRequests
 	ExpectedRequestPath string
@@ -338,6 +340,35 @@ type OutgoingTestCase struct {
 	ExpectedPostParams  map[string]string
 	ExpectedRequestBody string
 	ExpectedHeaders     map[string]string
+}
+
+// Msg creates the test message for this test case
+func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch courier.Channel) courier.MsgOut {
+	msgOrigin := courier.MsgOriginFlow
+	if tc.MsgOrigin != "" {
+		msgOrigin = tc.MsgOrigin
+	}
+
+	m := mb.NewOutgoingMsg(ch, 10, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgTopic, tc.MsgResponseToExternalID, msgOrigin, tc.MsgContactLastSeenOn).(*test.MockMsg)
+	m.WithLocale(tc.MsgLocale)
+	m.WithUserID(tc.MsgUserID)
+
+	for _, a := range tc.MsgAttachments {
+		m.WithAttachment(a)
+	}
+	if tc.MsgURNAuth != "" {
+		m.WithURNAuth(tc.MsgURNAuth)
+	}
+	if len(tc.MsgMetadata) > 0 {
+		m.WithMetadata(tc.MsgMetadata)
+	}
+	if tc.MsgFlow != nil {
+		m.WithFlow(tc.MsgFlow)
+	}
+	if tc.MsgOptIn != nil {
+		m.WithOptIn(tc.MsgOptIn)
+	}
+	return m
 }
 
 // RunOutgoingTestCases runs all the passed in test cases against the channel
@@ -352,35 +383,13 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 
 	for _, tc := range testCases {
 		mockRRCount := 0
-		msgOrigin := courier.MsgOriginFlow
-		if tc.MsgOrigin != "" {
-			msgOrigin = tc.MsgOrigin
-		}
 
 		mb.Reset()
 
 		t.Run(tc.Label, func(t *testing.T) {
 			require := require.New(t)
 
-			msg := mb.NewOutgoingMsg(channel, 10, urns.URN(tc.MsgURN), tc.MsgText, tc.MsgHighPriority, tc.MsgQuickReplies, tc.MsgTopic, tc.MsgResponseToExternalID, msgOrigin, tc.MsgContactLastSeenOn).(*test.MockMsg)
-			msg.WithLocale(tc.MsgLocale)
-			msg.WithUserID(tc.MsgUserID)
-
-			for _, a := range tc.MsgAttachments {
-				msg.WithAttachment(a)
-			}
-			if tc.MsgURNAuth != "" {
-				msg.WithURNAuth(tc.MsgURNAuth)
-			}
-			if len(tc.MsgMetadata) > 0 {
-				msg.WithMetadata(tc.MsgMetadata)
-			}
-			if tc.MsgFlow != nil {
-				msg.WithFlow(tc.MsgFlow)
-			}
-			if tc.MsgOptIn != nil {
-				msg.WithOptIn(tc.MsgOptIn)
-			}
+			msg := tc.Msg(mb, channel)
 
 			actualRequests := make([]*http.Request, 0, 1)
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -441,8 +450,6 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 
 			cancel()
 
-			assert.Equal(t, tc.ExpectedErrors, clog.Errors(), "unexpected errors logged")
-
 			if tc.ExpectedRequestPath != "" || tc.ExpectedURLParams != nil || tc.ExpectedPostParams != nil || tc.ExpectedRequestBody != "" || tc.ExpectedHeaders != nil {
 				testRequest := actualRequests[len(actualRequests)-1]
 
@@ -491,8 +498,9 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 				assert.Equal(t, len(tc.MockResponses), mockRRCount, "mocked request count mismatch")
 			}
 
-			require.Equal(tc.ExpectedExtIDs, externalIDs)
-			require.Equal(tc.ExpectedError, serr)
+			assert.Equal(t, tc.ExpectedExtIDs, externalIDs, "external IDs mismatch")
+			assert.Equal(t, tc.ExpectedError, serr, "send method error mismatch")
+			assert.Equal(t, tc.ExpectedLogErrors, clog.Errors(), "channel log errors mismatch")
 
 			if tc.ExpectedMsgStatus != "" {
 				require.NotNil(status, "status should not be nil")
