@@ -56,19 +56,13 @@ type mtResponse struct {
 	MessageID int64 `json:"message_id"`
 }
 
-// Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("no username set for BS channel")
-	}
-
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("no password set for BS channel")
+	if username == "" || password == "" {
+		return courier.ErrChannelConfig
 	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		form := url.Values{
 			"to":      []string{strings.TrimLeft(msg.URN().Path(), "+")},
@@ -78,36 +72,33 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 
 		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		req.SetBasicAuth(username, password)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
-		// parse our response as json
 		response := &mtResponse{}
 		err = json.Unmarshal(respBody, response)
 		if err != nil {
-			clog.Error(courier.ErrorResponseUnparseable("XML"))
-			break
+			return courier.ErrResponseUnparseable
 		}
 
 		if response.MessageID != 0 {
-			status.SetStatus(courier.MsgStatusWired)
-			status.SetExternalID(fmt.Sprintf("%d", response.MessageID))
+			res.AddExternalID(fmt.Sprintf("%d", response.MessageID))
 		} else {
-			status.SetStatus(courier.MsgStatusFailed)
-			clog.Error(courier.ErrorResponseValueMissing("message_id"))
-			break
+			return courier.ErrResponseUnexpected
 		}
 	}
 
-	return status, nil
+	return nil
 }
 
 func (h *handler) RedactValues(ch courier.Channel) []string {

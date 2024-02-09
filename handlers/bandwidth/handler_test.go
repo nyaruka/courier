@@ -12,11 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
-		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configApplicationID: "application-id"}),
-}
-
 const (
 	receiveURL = "/c/bw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	statusURL  = "/c/bw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
@@ -179,7 +174,7 @@ var invalidStatus = `[
     }
 ]`
 
-var testCases = []IncomingTestCase{
+var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid",
 		URL:                  receiveURL,
@@ -239,16 +234,13 @@ var testCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
-}
+	chs := []courier.Channel{
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
+			map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configApplicationID: "application-id"},
+		),
+	}
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
-}
-
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL + "?%s"
+	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
 }
 
 var outgoingCases = []OutgoingTestCase{
@@ -350,18 +342,26 @@ var outgoingCases = []OutgoingTestCase{
 	},
 }
 
-func TestOutgoing(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
-		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configApplicationID: "application-id"})
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
+	sendURL = s.URL + "?%s"
+}
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingCases, []string{httpx.BasicAuth("user1", "pass1")}, nil)
+func TestOutgoing(t *testing.T) {
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
+		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configApplicationID: "application-id"},
+	)
+
+	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{httpx.BasicAuth("user1", "pass1")}, nil)
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
+		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configApplicationID: "application-id"},
+	)
 
 	bwHandler := &handler{NewBaseHandler(courier.ChannelType("BW"), "Bandwidth")}
-	req, _ := bwHandler.BuildAttachmentRequest(context.Background(), mb, testChannels[0], "https://example.org/v1/media/41", nil)
+	req, _ := bwHandler.BuildAttachmentRequest(context.Background(), mb, ch, "https://example.org/v1/media/41", nil)
 	assert.Equal(t, "https://example.org/v1/media/41", req.URL.String())
 	assert.Equal(t, "Basic dXNlcjE6cGFzczE=", req.Header.Get("Authorization"))
 }

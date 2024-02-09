@@ -85,6 +85,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		resp, respBody, err := h.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 == 5 {
 			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
 		// parse our response as XML

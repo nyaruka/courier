@@ -125,19 +125,13 @@ func writeBongoLiveResponse(w http.ResponseWriter) error {
 
 }
 
-// Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("no username set for %s channel", msg.Channel().ChannelType())
-	}
-
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("no password set for %s channel", msg.Channel().ChannelType())
+	if username == "" || password == "" {
+		return courier.ErrChannelConfig
 	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
@@ -159,28 +153,27 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		partSendURL, _ := url.Parse(sendURL)
 		partSendURL.RawQuery = form.Encode()
 
-		req, err := http.NewRequest(http.MethodPost, partSendURL.String(), nil)
-		if err != nil {
-			return nil, err
-		}
+		req, _ := http.NewRequest(http.MethodPost, partSendURL.String(), nil)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		resp, respBody, err := h.RequestHTTPInsecure(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
-		// was this request successful?
 		msgStatus, _ := jsonparser.GetString(respBody, "results", "[0]", "status")
 		if msgStatus != "0" {
-			status.SetStatus(courier.MsgStatusErrored)
-			return status, nil
+			return courier.ErrResponseUnexpected
 		}
+
 		// grab the external id if we can
 		externalID, _ := jsonparser.GetString(respBody, "results", "[0]", "msgid")
-		status.SetStatus(courier.MsgStatusWired)
-		status.SetExternalID(externalID)
-
+		if externalID != "" {
+			res.AddExternalID(externalID)
+		}
 	}
-	return status, nil
+
+	return nil
 }

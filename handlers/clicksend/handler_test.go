@@ -14,11 +14,7 @@ const (
 	receiveURL = "/c/cs/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"
 )
 
-var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CS", "2020", "US", nil),
-}
-
-var handleTestCases = []IncomingTestCase{
+var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Message",
 		URL:                  receiveURL,
@@ -40,16 +36,11 @@ var handleTestCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
-}
+	chs := []courier.Channel{
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CS", "2020", "US", nil),
+	}
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
-}
-
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
+	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
 }
 
 const successResponse = `{
@@ -110,41 +101,52 @@ const failureResponse = `{
 	]
 }`
 
-var sendTestCases = []OutgoingTestCase{
+var outgoingCases = []OutgoingTestCase{
 	{
-		Label:               "Plain Send",
-		MsgText:             "Simple Message",
-		MsgURN:              "tel:+250788383383",
-		MockResponseBody:    successResponse,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"Simple Message","source":"courier"}]}`,
-		ExpectedHeaders:     map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"BF7AD270-0DE2-418B-B606-71D527D9C1AE"},
-		SendPrep:            setSendURL,
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   successResponse,
+		MockResponseStatus: 200,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
+				Body:    `{"messages":[{"to":"+250788383383","from":"2020","body":"Simple Message","source":"courier"}]}`,
+			},
+		},
+		ExpectedExtIDs: []string{"BF7AD270-0DE2-418B-B606-71D527D9C1AE"},
+		SendPrep:       setSendURL,
 	},
 	{
-		Label:               "Unicode Send",
-		MsgText:             "☺",
-		MsgURN:              "tel:+250788383383",
-		MockResponseBody:    successResponse,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"☺","source":"courier"}]}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"BF7AD270-0DE2-418B-B606-71D527D9C1AE"},
-		SendPrep:            setSendURL,
+		Label:              "Unicode Send",
+		MsgText:            "☺",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   successResponse,
+		MockResponseStatus: 200,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
+				Body:    `{"messages":[{"to":"+250788383383","from":"2020","body":"☺","source":"courier"}]}`,
+			},
+		},
+		ExpectedExtIDs: []string{"BF7AD270-0DE2-418B-B606-71D527D9C1AE"},
+		SendPrep:       setSendURL,
 	},
 	{
-		Label:               "Send Attachment",
-		MsgText:             "My pic!",
-		MsgURN:              "tel:+250788383383",
-		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:    successResponse,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"My pic!\nhttps://foo.bar/image.jpg","source":"courier"}]}`,
-		ExpectedExtIDs:      []string{"BF7AD270-0DE2-418B-B606-71D527D9C1AE"},
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:              "Send Attachment",
+		MsgText:            "My pic!",
+		MsgURN:             "tel:+250788383383",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:   successResponse,
+		MockResponseStatus: 200,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
+				Body:    `{"messages":[{"to":"+250788383383","from":"2020","body":"My pic!\nhttps://foo.bar/image.jpg","source":"courier"}]}`,
+			},
+		},
+		ExpectedExtIDs: []string{"BF7AD270-0DE2-418B-B606-71D527D9C1AE"},
+		SendPrep:       setSendURL,
 	},
 	{
 		Label:              "Error Sending",
@@ -152,8 +154,14 @@ var sendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `[{"Response": "101"}]`,
 		MockResponseStatus: 403,
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
+				Body:    `{"messages":[{"to":"+250788383383","from":"2020","body":"Error Sending","source":"courier"}]}`,
+			},
+		},
+		ExpectedError: courier.ErrResponseStatus,
+		SendPrep:      setSendURL,
 	},
 	{
 		Label:              "Failure Response",
@@ -161,19 +169,25 @@ var sendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   failureResponse,
 		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueUnexpected("status", "SUCCESS")},
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
+				Body:    `{"messages":[{"to":"+250788383383","from":"2020","body":"Error Sending","source":"courier"}]}`,
+			},
+		},
+		ExpectedError: courier.ErrResponseUnexpected,
+		SendPrep:      setSendURL,
 	},
 }
 
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
+	sendURL = s.URL
+}
+
 func TestOutgoing(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "GL", "2020", "US",
-		map[string]any{
-			"username": "Aladdin",
-			"password": "open sesame",
-		},
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "GL", "2020", "US",
+		map[string]any{"username": "Aladdin", "password": "open sesame"},
 	)
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), sendTestCases, []string{httpx.BasicAuth("Aladdin", "open sesame")}, nil)
+	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{httpx.BasicAuth("Aladdin", "open sesame")}, nil)
 }

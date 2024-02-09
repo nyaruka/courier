@@ -63,6 +63,15 @@ var ErrConnectionThrottled error = &SendError{
 	clogMsg:   "Connection to server has been rate limited.",
 }
 
+// ErrResponseStatus should be returned when channel the response has a non-success status code
+var ErrResponseStatus error = &SendError{
+	msg:       "response status code",
+	retryable: false,
+	loggable:  false,
+	clogCode:  "response_status",
+	clogMsg:   "Response has non-success status code.",
+}
+
 // ErrResponseUnparseable should be returned when channel response can't be parsed in expected format
 var ErrResponseUnparseable error = &SendError{
 	msg:       "response couldn't be parsed",

@@ -153,14 +153,12 @@ func decodeUTF16BE(b []byte) (string, error) {
 	return ret.String(), nil
 }
 
-// Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	apiKey := msg.Channel().StringConfigForKey(courier.ConfigAPIKey, "")
 	if apiKey == "" {
-		return nil, fmt.Errorf("no api_key set for CT channel")
+		return courier.ErrChannelConfig
 	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
@@ -173,27 +171,25 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		partSendURL, _ := url.Parse(sendURL)
 		partSendURL.RawQuery = form.Encode()
 
-		req, err := http.NewRequest(http.MethodGet, partSendURL.String(), nil)
-		if err != nil {
-			return nil, err
-		}
+		req, _ := http.NewRequest(http.MethodGet, partSendURL.String(), nil)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
 		// try to read out our message id, if we can't then this was a failure
-		externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "apiMessageId")
-		if err != nil {
-			clog.Error(courier.ErrorResponseValueMissing("apiMessageId"))
+		externalID, _ := jsonparser.GetString(respBody, "messages", "[0]", "apiMessageId")
+		if externalID != "" {
+			res.AddExternalID(externalID)
 		} else {
-			status.SetStatus(courier.MsgStatusWired)
-			status.SetExternalID(externalID)
+			return courier.ErrResponseUnexpected
 		}
 	}
 
-	return status, nil
+	return nil
 }

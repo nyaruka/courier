@@ -11,10 +11,6 @@ import (
 	"github.com/nyaruka/gocommon/httpx"
 )
 
-var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BS", "2020", "US", nil),
-}
-
 const (
 	receiveURL = "/c/bs/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	statusURL  = "/c/bs/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
@@ -51,18 +47,14 @@ var testCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	chs := []courier.Channel{
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BS", "2020", "US", nil),
+	}
+
+	RunIncomingTestCases(t, chs, newHandler(), testCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-}
-
-var defaultSendTestCases = []OutgoingTestCase{
+var outgoingCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
@@ -79,9 +71,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"19835"},
-		SendPrep:          setSendURL,
+		ExpectedExtIDs: []string{"19835"},
+		SendPrep:       setSendURL,
 	},
 	{
 		Label:              "Invalid JSON",
@@ -89,8 +80,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `not json`,
 		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseUnparseable("XML")},
+		ExpectedError:      courier.ErrResponseUnparseable,
 		SendPrep:           setSendURL,
 	},
 	{
@@ -99,8 +89,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `{ "message_id": 0 }`,
 		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "F",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("message_id")},
+		ExpectedError:      courier.ErrResponseUnexpected,
 		SendPrep:           setSendURL,
 	},
 	{
@@ -109,16 +98,19 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `Bad Gateway`,
 		MockResponseStatus: 501,
-		ExpectedMsgStatus:  "E",
+		ExpectedError:      courier.ErrConnectionFailed,
 		SendPrep:           setSendURL,
 	},
 }
 
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
+	sendURL = s.URL
+}
+
 func TestOutgoing(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BS", "2020", "US",
-		map[string]any{
-			courier.ConfigUsername: "user1",
-			courier.ConfigPassword: "pass1",
-		})
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("user1", "pass1")}, nil)
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BS", "2020", "US",
+		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1"},
+	)
+
+	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{httpx.BasicAuth("user1", "pass1")}, nil)
 }

@@ -11,16 +11,12 @@ import (
 	"github.com/nyaruka/courier/test"
 )
 
-var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AT", "2020", "US", nil),
-}
-
 const (
 	receiveURL = "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 	statusURL  = "/c/at/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status/"
 )
 
-var incomingTestCases = []IncomingTestCase{
+var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid",
 		URL:                  receiveURL,
@@ -104,28 +100,25 @@ var incomingTestCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), incomingTestCases)
+	chs := []courier.Channel{
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AT", "2020", "US", nil),
+	}
+
+	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), incomingTestCases)
-}
-
-// setSendURL takes care of setting the sendURL to call
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-}
-
-var outgoingTestCases = []OutgoingTestCase{
+var outgoingCases = []OutgoingTestCase{
 	{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `{ "SMSMessageData": {"Recipients": [{"status": "Success", "messageId": "1002"}] } }`,
 		MockResponseStatus: 200,
-		ExpectedHeaders:    map[string]string{"apikey": "KEY"},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"message": {"Simple Message ☺"}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
+			{
+				Headers: map[string]string{"apikey": "KEY"},
+				Form:    url.Values{"message": {"Simple Message ☺"}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}},
+			},
 		},
 		ExpectedExtIDs: []string{"1002"},
 		SendPrep:       setSendURL,
@@ -164,12 +157,12 @@ var outgoingTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"message": {`Error Message`}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
 		},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseStatus,
 		SendPrep:      setSendURL,
 	},
 }
 
-var sharedSendTestCases = []OutgoingTestCase{
+var sharedOutgoingCases = []OutgoingTestCase{
 	{
 		Label:              "Shared Send",
 		MsgText:            "Simple Message ☺",
@@ -185,19 +178,23 @@ var sharedSendTestCases = []OutgoingTestCase{
 	},
 }
 
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
+	sendURL = s.URL
+}
+
 func TestOutgoing(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AT", "2020", "US",
+	defaultChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AT", "2020", "US",
 		map[string]any{
 			courier.ConfigUsername: "Username",
 			courier.ConfigAPIKey:   "KEY",
 		})
-	var sharedChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AT", "2020", "US",
+	sharedChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AT", "2020", "US",
 		map[string]any{
 			courier.ConfigUsername: "Username",
 			courier.ConfigAPIKey:   "KEY",
 			configIsShared:         true,
 		})
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingTestCases, []string{"KEY"}, nil)
-	RunOutgoingTestCases(t, sharedChannel, newHandler(), sharedSendTestCases, []string{"KEY"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingCases, []string{"KEY"}, nil)
+	RunOutgoingTestCases(t, sharedChannel, newHandler(), sharedOutgoingCases, []string{"KEY"}, nil)
 }

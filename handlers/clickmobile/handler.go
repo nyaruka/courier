@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"net/http"
@@ -14,6 +13,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/jsonx"
 )
 
 var (
@@ -97,31 +97,16 @@ type mtPayload struct {
 	Message     string `json:"message"`
 }
 
-// Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("no username set for CM channel")
-	}
-
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("no password set for CM channel")
-	}
-
 	appID := msg.Channel().StringConfigForKey(configAppID, "")
-	if appID == "" {
-		return nil, fmt.Errorf("no app_id set for CM channel")
-	}
-
 	orgID := msg.Channel().StringConfigForKey(configOrgID, "")
-	if orgID == "" {
-		return nil, fmt.Errorf("no org_id key set for CM channel")
+	if username == "" || password == "" || appID == "" || orgID == "" {
+		return courier.ErrChannelConfig
 	}
 
 	cmSendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, sendURL)
-
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 
@@ -131,7 +116,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		hasher.Write([]byte(appID + timestamp + password))
 		hash := hex.EncodeToString(hasher.Sum(nil))
 
-		payload := mtPayload{
+		payload := &mtPayload{
 			AppID:       appID,
 			OrgID:       orgID,
 			UserID:      username,
@@ -145,29 +130,24 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 			Message:     part,
 		}
 
-		requestBody := &bytes.Buffer{}
-		json.NewEncoder(requestBody).Encode(payload)
+		requestBody := jsonx.MustMarshal(payload)
 
-		// build our request
-		req, err := http.NewRequest(http.MethodPost, cmSendURL, requestBody)
-		if err != nil {
-			return nil, err
-		}
+		req, _ := http.NewRequest(http.MethodPost, cmSendURL, bytes.NewReader(requestBody))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
 		responseCode, _ := jsonparser.GetString(respBody, "code")
-		if responseCode == "000" {
-			status.SetStatus(courier.MsgStatusWired)
-		} else {
-			clog.Error(courier.ErrorResponseValueUnexpected("code", "000"))
+		if responseCode != "000" {
+			return courier.ErrResponseUnexpected
 		}
 	}
-	return status, nil
 
+	return nil
 }

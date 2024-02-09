@@ -3,14 +3,13 @@ package clicksend
 import (
 	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/jsonx"
 )
 
 var (
@@ -60,19 +59,13 @@ type mtPayload struct {
 	} `json:"messages"`
 }
 
-// Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("Missing 'username' config for CS channel")
-	}
-
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("Missing 'password' config for CS channel")
+	if username == "" || password == "" {
+		return courier.ErrChannelConfig
 	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		payload := &mtPayload{}
@@ -81,42 +74,37 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		payload.Messages[0].Body = part
 		payload.Messages[0].Source = "courier"
 
-		requestBody := &bytes.Buffer{}
-		json.NewEncoder(requestBody).Encode(payload)
+		requestBody := jsonx.MustMarshal(payload)
 
-		// build our request
-		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
+		req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(requestBody))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(username, password)
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
-		// first read our status
 		s, _ := jsonparser.GetString(respBody, "data", "messages", "[0]", "status")
 		if s != "SUCCESS" {
-			clog.Error(courier.ErrorResponseValueUnexpected("status", "SUCCESS"))
-			return status, nil
+			return courier.ErrResponseUnexpected
 		}
 
-		// then get our external id
-		id, err := jsonparser.GetString(respBody, "data", "messages", "[0]", "message_id")
-		if err != nil {
-			clog.Error(courier.ErrorResponseValueMissing("message_id"))
-			return status, nil
+		id, _ := jsonparser.GetString(respBody, "data", "messages", "[0]", "message_id")
+		if id != "" {
+			res.AddExternalID(id)
+		} else {
+			return courier.ErrResponseUnexpected
 		}
-
-		status.SetExternalID(id)
-		status.SetStatus(courier.MsgStatusWired)
 	}
 
-	return status, nil
+	return nil
 }
 
 func (h *handler) RedactValues(ch courier.Channel) []string {

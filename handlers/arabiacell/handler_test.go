@@ -10,15 +10,11 @@ import (
 	"github.com/nyaruka/courier/test"
 )
 
-var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US", nil),
-}
-
 const (
 	receiveURL = "/c/ac/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/"
 )
 
-var testCases = []IncomingTestCase{
+var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid",
 		URL:                  receiveURL,
@@ -38,18 +34,14 @@ var testCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	chs := []courier.Channel{
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US", nil),
+	}
+
+	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-}
-
-var defaultSendTestCases = []OutgoingTestCase{
+var outgoingCases = []OutgoingTestCase{
 	{
 		Label:          "Plain Send",
 		MsgText:        "Simple Message ☺",
@@ -106,13 +98,18 @@ var defaultSendTestCases = []OutgoingTestCase{
 	},
 }
 
+func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
+	sendURL = s.URL
+}
+
 func TestOutgoing(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US",
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US",
 		map[string]any{
 			courier.ConfigUsername: "user1",
 			courier.ConfigPassword: "pass1",
 			configServiceID:        "service1",
 			configChargingLevel:    "0",
 		})
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"pass1"}, nil)
+
+	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"pass1"}, nil)
 }

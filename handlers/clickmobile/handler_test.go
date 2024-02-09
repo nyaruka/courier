@@ -60,11 +60,7 @@ const (
 	</request>`
 )
 
-var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CM", "2020", "MW", nil),
-}
-
-var handleTestCases = []IncomingTestCase{
+var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Receive Valid Message",
 		URL:                  receiveURL,
@@ -135,70 +131,81 @@ var handleTestCases = []IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
+	chs := []courier.Channel{
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CM", "2020", "MW", nil),
+	}
+
+	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
+var outgoingCases = []OutgoingTestCase{
+	{
+		Label:              "Plain Send",
+		MsgText:            "Simple Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`,
+		MockResponseStatus: 200,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Content-Type": "application/json"},
+				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Simple Message"}`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
+	{
+		Label:              "Unicode Send",
+		MsgText:            "☺",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`,
+		MockResponseStatus: 200,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Content-Type": "application/json"},
+				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"☺"}`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
+	{
+		Label:              "Error Sending",
+		MsgText:            "Error Message",
+		MsgURN:             "tel:+250788383383",
+		MockResponseBody:   `{"code":"001","desc":"Database SQL Error"}`,
+		MockResponseStatus: 401,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Content-Type": "application/json"},
+				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Error Message"}`,
+			},
+		},
+		ExpectedError: courier.ErrResponseStatus,
+		SendPrep:      setSendURL,
+	},
+	{
+		Label:              "Send Attachment",
+		MsgText:            "My pic!",
+		MsgURN:             "tel:+250788383383",
+		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponseBody:   `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`,
+		MockResponseStatus: 200,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Content-Type": "application/json"},
+				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"My pic!\nhttps://foo.bar/image.jpg"}`,
+			},
+		},
+		SendPrep: setSendURL,
+	},
 }
 
-// setSendURL takes care of setting the sendURL to call
 func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
 	c.(*test.MockChannel).SetConfig(courier.ConfigSendURL, s.URL)
 	sendURL = s.URL
-
-}
-
-var defaultSendTestCases = []OutgoingTestCase{
-	{
-		Label:               "Plain Send",
-		MsgText:             "Simple Message",
-		MsgURN:              "tel:+250788383383",
-		MockResponseBody:    `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Simple Message"}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json"},
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
-	},
-	{
-		Label:               "Unicode Send",
-		MsgText:             "☺",
-		MsgURN:              "tel:+250788383383",
-		MockResponseBody:    `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"☺"}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json"},
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
-	},
-	{
-		Label:               "Error Sending",
-		MsgText:             "Error Message",
-		MsgURN:              "tel:+250788383383",
-		MockResponseBody:    `{"code":"001","desc":"Database SQL Error"}`,
-		MockResponseStatus:  401,
-		ExpectedRequestBody: `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Error Message"}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json"},
-		ExpectedMsgStatus:   "E",
-		SendPrep:            setSendURL,
-	},
-	{
-		Label:               "Send Attachment",
-		MsgText:             "My pic!",
-		MsgURN:              "tel:+250788383383",
-		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:    `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"My pic!\nhttps://foo.bar/image.jpg"}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json"},
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
-	},
 }
 
 func TestOutgoing(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CM", "2020", "MW",
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CM", "2020", "MW",
 		map[string]any{
 			"password": "Password",
 			"username": "Username",
@@ -211,5 +218,5 @@ func TestOutgoing(t *testing.T) {
 	// mock time so we can have predictable MD5 hashes
 	dates.SetNowSource(dates.NewFixedNowSource(time.Date(2018, 4, 11, 18, 24, 30, 123456000, time.UTC)))
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"Password"}, nil)
 }
