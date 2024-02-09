@@ -1,6 +1,8 @@
 package courier_test
 
 import (
+	"context"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -15,9 +17,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestServer(t *testing.T) {
-	logger := slog.Default()
+func testConfig() *courier.Config {
 	config := courier.NewDefaultConfig()
+	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
+	config.Redis = "redis://localhost:6379/0"
+	return config
+}
+
+func TestServerURLs(t *testing.T) {
+	logger := slog.Default()
+	config := testConfig()
 	config.StatusUsername = "admin"
 	config.StatusPassword = "password123"
 
@@ -65,6 +74,126 @@ func TestServer(t *testing.T) {
 	statusCode, respBody = request("POST", "http://localhost:8080/nothere", "admin", "password123")
 	assert.Equal(t, 404, statusCode)
 	assert.Contains(t, respBody, "not found")
+}
+
+func TestIncoming(t *testing.T) {
+	// create and start our backend and server
+	mb := test.NewMockBackend()
+	s := courier.NewServer(testConfig(), mb)
+
+	s.Start()
+	defer s.Stop()
+
+	resp, err := http.Get("http://localhost:8080/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive")
+	assert.NoError(t, err)
+	assert.Equal(t, 400, resp.StatusCode)
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	assert.Contains(t, string(body), "missing from or text")
+
+	req, _ := http.NewRequest("GET", "http://localhost:8080/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive?from=2065551212&text=hello", nil)
+	req.Header.Set("Cookie", "secret")
+	resp, err = http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode)
+
+	defer resp.Body.Close()
+	body, _ = io.ReadAll(resp.Body)
+	assert.Contains(t, string(body), "ok")
+}
+
+func TestOutgoing(t *testing.T) {
+	defer httpx.SetRequestor(httpx.DefaultRequestor)
+	httpx.SetRequestor(httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
+		"http://mock.com/send": {
+			httpx.NewMockResponse(200, nil, []byte(`SENT`)),
+			httpx.MockConnectionError,
+			httpx.NewMockResponse(200, nil, []byte(`SENT`)),
+			httpx.NewMockResponse(429, nil, []byte(`too much!`)),
+		},
+	}))
+
+	// create and start our backend and server
+	mb := test.NewMockBackend()
+	s := courier.NewServer(testConfig(), mb)
+
+	s.Start()
+	defer s.Stop()
+
+	// create two channels but only register one of them
+	brokenChannel := test.NewMockChannel("53e5aafa-8155-449d-9009-fcb30d54bd26", "XX", "2020", "US", map[string]any{})
+	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", map[string]any{})
+	mb.AddChannel(mockChannel)
+
+	// try to send message via unregistered channel
+	msg := test.NewMockMsg(courier.MsgID(101), courier.NilMsgUUID, brokenChannel, "tel:+250788383383", "test message", nil)
+	sendAndWait(mb, msg)
+
+	// message should have failed...
+	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
+	assert.Equal(t, msg.ID(), mb.WrittenMsgStatuses()[0].MsgID())
+	assert.Equal(t, courier.MsgStatusFailed, mb.WrittenMsgStatuses()[0].Status())
+	assert.Equal(t, 1, len(mb.WrittenChannelLogs()))
+	mb.Reset()
+
+	// send message via registered channel
+	msg = test.NewMockMsg(courier.MsgID(102), courier.NilMsgUUID, mockChannel, "tel:+250788383383", "test message 2", nil)
+	sendAndWait(mb, msg)
+
+	// message should be marked as wired
+	assert.Len(t, mb.WrittenMsgStatuses(), 1)
+	status := mb.WrittenMsgStatuses()[0]
+	assert.Equal(t, msg.ID(), status.MsgID())
+	assert.Equal(t, courier.MsgStatusWired, status.Status())
+
+	// and we should have a channel log with redacted errors and traces
+	assert.Len(t, mb.WrittenChannelLogs(), 1)
+	clog := mb.WrittenChannelLogs()[0]
+	assert.Equal(t, []*courier.ChannelError{courier.NewChannelError("seeds", "", "contains ********** seeds")}, clog.Errors())
+
+	assert.Len(t, clog.HTTPLogs(), 1)
+
+	hlog := clog.HTTPLogs()[0]
+	assert.Equal(t, "http://mock.com/send", hlog.URL)
+	assert.Equal(t,
+		"GET /send HTTP/1.1\r\nHost: mock.com\r\nUser-Agent: Go-http-client/1.1\r\nAuthorization: Token **********\r\nAccept-Encoding: gzip\r\n\r\n",
+		hlog.Request,
+	)
+	mb.Reset()
+
+	// send the message again, should be skipped but again marked as wired
+	mb.PushOutgoingMsg(msg)
+	time.Sleep(time.Millisecond * 500)
+
+	// message should be marked as wired
+	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
+	assert.Equal(t, msg.ID(), mb.WrittenMsgStatuses()[0].MsgID())
+	assert.Equal(t, courier.MsgStatusWired, mb.WrittenMsgStatuses()[0].Status())
+	mb.Reset()
+
+	// send message which will have mocked connection error
+	sendAndWait(mb, test.NewMockMsg(courier.MsgID(103), courier.NilMsgUUID, mockChannel, "tel:+250788383383", "3", nil))
+
+	// message should be marked as errored (retryable)
+	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
+	assert.Equal(t, courier.MsgStatusErrored, mb.WrittenMsgStatuses()[0].Status())
+	mb.Reset()
+
+	// send message which will have mocked channel config error
+	sendAndWait(mb, test.NewMockMsg(courier.MsgID(104), courier.NilMsgUUID, mockChannel, "tel:+250788383383", "err:config", nil))
+
+	// message should be marked as failed (non-retryable)
+	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
+	assert.Equal(t, courier.MsgStatusFailed, mb.WrittenMsgStatuses()[0].Status())
+	mb.Reset()
+
+	// send message which will have mocked rate limiting error
+	sendAndWait(mb, test.NewMockMsg(courier.MsgID(105), courier.NilMsgUUID, mockChannel, "tel:+250788383383", "5", nil))
+
+	// message should be marked as errored (retryable)
+	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
+	assert.Equal(t, courier.MsgStatusErrored, mb.WrittenMsgStatuses()[0].Status())
+	mb.Reset()
 }
 
 func TestFetchAttachment(t *testing.T) {
@@ -153,4 +282,20 @@ func TestFetchAttachment(t *testing.T) {
 	statusCode, respBody = submit(`{"channel_uuid": "e4bb1578-29da-4fa5-a214-9da19dd24230", "channel_type": "MCK", "url": "http://mock.com/media/hello.pdf"}`, "sesame")
 	assert.Equal(t, 200, statusCode)
 	assert.JSONEq(t, `{"attachment": {"content_type": "unavailable", "url": "http://mock.com/media/hello.pdf", "size": 0}, "log_uuid": "338ff339-5663-49ed-8ef6-384876655d1b"}`, string(respBody))
+}
+
+// utility to send a message on a mocked backend and block until it's marked as sent
+func sendAndWait(mb *test.MockBackend, m courier.MsgOut) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	mb.PushOutgoingMsg(m)
+
+	for {
+		time.Sleep(time.Millisecond * 25)
+
+		if sent, _ := mb.WasMsgSent(ctx, m.ID()); sent {
+			return
+		}
+	}
 }

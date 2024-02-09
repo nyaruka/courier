@@ -47,11 +47,21 @@ func (h *mockHandler) Initialize(s courier.Server) error {
 func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	// log a request that contains a header value that should be redacted
 	req, _ := httpx.NewRequest("GET", "http://mock.com/send", nil, map[string]string{"Authorization": "Token sesame"})
-	trace, _ := httpx.DoTrace(http.DefaultClient, req, nil, nil, 1024)
+	trace, err := httpx.DoTrace(http.DefaultClient, req, nil, nil, 1024)
 	clog.HTTP(trace)
+
+	if err != nil || trace.Response.StatusCode/100 == 5 {
+		return courier.ErrSendConnection
+	} else if trace.Response.StatusCode == 429 {
+		return courier.ErrSendRateLimited
+	}
 
 	// log an error than contains a value that should be redacted
 	clog.Error(courier.NewChannelError("seeds", "", "contains sesame seeds"))
+
+	if msg.Text() == "err:config" {
+		return courier.ErrSendChannelConfig
+	}
 
 	return nil
 }
