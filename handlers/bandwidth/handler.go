@@ -172,29 +172,15 @@ type mtResponse struct {
 	Description string `json:"description"`
 }
 
-// Send implements courier.ChannelHandler
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("no username set for BW channel")
-	}
-
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("no password set for BW channel")
-	}
-
 	accountID := msg.Channel().StringConfigForKey(configAccountID, "")
-	if accountID == "" {
-		return nil, fmt.Errorf("no account ID set for BW channel")
-	}
-
 	applicationID := msg.Channel().StringConfigForKey(configApplicationID, "")
-	if applicationID == "" {
-		return nil, fmt.Errorf("no application ID set for BW channel")
-	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
+	if username == "" || password == "" || accountID == "" || applicationID == "" {
+		return courier.ErrChannelConfig
+	}
 
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
@@ -226,32 +212,32 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.Ch
 		// build our request
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, accountID), bytes.NewReader(jsonBody))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(username, password)
 
-		resp, respBody, _ := h.RequestHTTP(req, clog)
+		resp, respBody, err := h.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		}
 
 		response := &mtResponse{}
-		err = json.Unmarshal(respBody, response)
-
-		if err != nil || resp.StatusCode/100 != 2 {
-			clog.Error(courier.ErrorExternal(response.Type, response.Description))
-			return status, nil
+		if err = json.Unmarshal(respBody, response); err != nil {
+			return courier.ErrResponseUnparseable
 		}
 
-		status.SetStatus(courier.MsgStatusWired)
-		if response.ID == "" {
-			clog.Error(courier.ErrorResponseValueMissing("id"))
-		} else {
-			status.SetExternalID(response.ID)
+		if resp.StatusCode/100 != 2 {
+			return courier.ErrFailedWithReason(response.Type, response.Description)
 		}
 
+		if response.ID != "" {
+			res.AddExternalID(response.ID)
+		}
 	}
-	return status, nil
 
+	return nil
 }
 
 // BuildAttachmentRequest to download media for message attachment with Basic auth set

@@ -51,16 +51,16 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier
 	clog.HTTP(trace)
 
 	if err != nil || trace.Response.StatusCode/100 == 5 {
-		return courier.ErrSendConnection
+		return courier.ErrConnectionFailed
 	} else if trace.Response.StatusCode == 429 {
-		return courier.ErrSendRateLimited
+		return courier.ErrConnectionThrottled
 	}
 
 	// log an error than contains a value that should be redacted
 	clog.Error(courier.NewChannelError("seeds", "", "contains sesame seeds"))
 
 	if msg.Text() == "err:config" {
-		return courier.ErrSendChannelConfig
+		return courier.ErrChannelConfig
 	}
 
 	return nil

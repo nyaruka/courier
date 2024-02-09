@@ -83,7 +83,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `not xml`,
 		MockResponseStatus: 200,
-		ExpectedError:      courier.ErrSendResponseUnparseable,
+		ExpectedError:      courier.ErrResponseUnparseable,
 		SendPrep:           setSendURL,
 	},
 	{
@@ -92,7 +92,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `<response><code>501</code><text>failure</text><message_id></message_id></response>`,
 		MockResponseStatus: 200,
-		ExpectedError:      courier.ErrSendResponseUnexpected,
+		ExpectedError:      courier.ErrResponseUnexpected,
 		SendPrep:           setSendURL,
 	},
 	{
@@ -101,7 +101,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `Bad Gateway`,
 		MockResponseStatus: 501,
-		ExpectedError:      courier.ErrSendConnection,
+		ExpectedError:      courier.ErrConnectionFailed,
 		SendPrep:           setSendURL,
 	},
 }

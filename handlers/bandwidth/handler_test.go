@@ -251,9 +251,9 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 	sendURL = s.URL + "?%s"
 }
 
-var defaultSendTestCases = []OutgoingTestCase{
+var outgoingCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
+		Label:              "Plain send",
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "tel:+12067791234",
 		MockResponseBody:   `{"id": "55555"}`,
@@ -268,12 +268,11 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"Simple Message ☺"}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"55555"},
-		SendPrep:          setSendURL,
+		ExpectedExtIDs: []string{"55555"},
+		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "Send Attachment",
+		Label:              "Attachment",
 		MsgText:            "My pic!",
 		MsgURN:             "tel:+12067791234",
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
@@ -289,9 +288,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"My pic!","media":["https://foo.bar/image.jpg"]}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"55555"},
-		SendPrep:          setSendURL,
+		ExpectedExtIDs: []string{"55555"},
+		SendPrep:       setSendURL,
 	},
 	{
 		Label:              "Send Attachment no text",
@@ -310,9 +308,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"","media":["https://foo.bar/image.jpg"]}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"55555"},
-		SendPrep:          setSendURL,
+		ExpectedExtIDs: []string{"55555"},
+		SendPrep:       setSendURL,
 	},
 	{
 		Label:              "No External ID",
@@ -330,12 +327,10 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"No External ID"}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("id")},
-		SendPrep:          setSendURL,
+		SendPrep: setSendURL,
 	},
 	{
-		Label:              "Error Sending",
+		Label:              "Error sending",
 		MsgText:            "Error Message",
 		MsgURN:             "tel:+12067791234",
 		MockResponseBody:   `{ "type": "request-validation", "description": "Your request could not be accepted" }`,
@@ -350,9 +345,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"Error Message"}`,
 			},
 		},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("request-validation", "Your request could not be accepted")},
-		SendPrep:          setSendURL,
+		ExpectedError: courier.ErrFailedWithReason("request-validation", "Your request could not be accepted"),
+		SendPrep:      setSendURL,
 	},
 }
 
@@ -360,7 +354,7 @@ func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
 		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configApplicationID: "application-id"})
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("user1", "pass1")}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingCases, []string{httpx.BasicAuth("user1", "pass1")}, nil)
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {

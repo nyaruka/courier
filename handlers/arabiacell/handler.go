@@ -61,7 +61,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	chargingLevel := msg.Channel().StringConfigForKey(configChargingLevel, "")
 
 	if username == "" || password == "" || serviceID == "" || chargingLevel == "" {
-		return courier.ErrSendChannelConfig
+		return courier.ErrChannelConfig
 	}
 
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
@@ -84,21 +84,21 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 == 5 {
-			return courier.ErrSendConnection
+			return courier.ErrConnectionFailed
 		}
 
 		// parse our response as XML
 		response := &mtResponse{}
 		err = xml.Unmarshal(respBody, response)
 		if err != nil {
-			return courier.ErrSendResponseUnparseable
+			return courier.ErrResponseUnparseable
 		}
 
 		// we always get 204 on success
 		if response.Code == "204" {
 			res.AddExternalID(response.MessageID)
 		} else {
-			return courier.ErrSendResponseUnexpected
+			return courier.ErrResponseUnexpected
 		}
 	}
 

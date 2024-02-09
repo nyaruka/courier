@@ -122,7 +122,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	apiKey := msg.Channel().StringConfigForKey(courier.ConfigAPIKey, "")
 
 	if username == "" || apiKey == "" {
-		return courier.ErrSendChannelConfig
+		return courier.ErrChannelConfig
 	}
 
 	// build our request
@@ -147,13 +147,13 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
-		return courier.ErrSendConnection
+		return courier.ErrConnectionFailed
 	}
 
 	// was this request successful?
 	msgStatus, _ := jsonparser.GetString(respBody, "SMSMessageData", "Recipients", "[0]", "status")
 	if msgStatus != "Success" {
-		return courier.ErrSendResponseUnexpected
+		return courier.ErrResponseUnexpected
 	}
 
 	// grab the external id if we can

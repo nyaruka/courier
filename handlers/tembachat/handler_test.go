@@ -120,7 +120,7 @@ var outgoingCases = []OutgoingTestCase{
 				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Error message","origin":"flow"}}`,
 			},
 		},
-		ExpectedError: courier.ErrSendResponseUnexpected,
+		ExpectedError: courier.ErrResponseUnexpected,
 		SendPrep:      setSendURL,
 	},
 	{
@@ -135,7 +135,7 @@ var outgoingCases = []OutgoingTestCase{
 				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Error message","origin":"flow"}}`,
 			},
 		},
-		ExpectedError: courier.ErrSendConnection,
+		ExpectedError: courier.ErrConnectionFailed,
 		SendPrep:      setSendURL,
 	},
 }

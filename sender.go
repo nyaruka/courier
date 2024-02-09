@@ -36,8 +36,8 @@ func (e *SendError) Error() string {
 	return e.msg
 }
 
-// ErrSendChannelConfig should be returned by a handler send method when channel config is invalid
-var ErrSendChannelConfig error = &SendError{
+// ErrChannelConfig should be returned by a handler send method when channel config is invalid
+var ErrChannelConfig error = &SendError{
 	msg:       "channel config invalid",
 	retryable: false,
 	loggable:  true,
@@ -45,8 +45,8 @@ var ErrSendChannelConfig error = &SendError{
 	clogMsg:   "Channel configuration is missing required values.",
 }
 
-// ErrSendConnection should be returned when connection to the channel fails (timeout or 5XX response)
-var ErrSendConnection error = &SendError{
+// ErrConnectionFailed should be returned when connection to the channel fails (timeout or 5XX response)
+var ErrConnectionFailed error = &SendError{
 	msg:       "channel connection failed",
 	retryable: true,
 	loggable:  false,
@@ -54,8 +54,8 @@ var ErrSendConnection error = &SendError{
 	clogMsg:   "Connection to server failed.",
 }
 
-// ErrSendRateLimited should be returned when channel tells us we're rate limited
-var ErrSendRateLimited error = &SendError{
+// ErrConnectionThrottled should be returned when channel tells us we're rate limited
+var ErrConnectionThrottled error = &SendError{
 	msg:       "channel rate limited",
 	retryable: true,
 	loggable:  false,
@@ -63,8 +63,8 @@ var ErrSendRateLimited error = &SendError{
 	clogMsg:   "Connection to server has been rate limited.",
 }
 
-// ErrSendResponseUnparseable should be returned when channel response can't be parsed in expected format
-var ErrSendResponseUnparseable error = &SendError{
+// ErrResponseUnparseable should be returned when channel response can't be parsed in expected format
+var ErrResponseUnparseable error = &SendError{
 	msg:       "response couldn't be parsed",
 	retryable: false,
 	loggable:  true,
@@ -72,8 +72,8 @@ var ErrSendResponseUnparseable error = &SendError{
 	clogMsg:   "Response could not be parsed in the expected format.",
 }
 
-// ErrSendResponseUnexpected should be returned when channel response doesn't match what we expect
-var ErrSendResponseUnexpected error = &SendError{
+// ErrResponseUnexpected should be returned when channel response doesn't match what we expect
+var ErrResponseUnexpected error = &SendError{
 	msg:       "response not expected values",
 	retryable: false,
 	loggable:  true,
@@ -81,13 +81,24 @@ var ErrSendResponseUnexpected error = &SendError{
 	clogMsg:   "Response doesn't match expected values.",
 }
 
-// ErrSendContactStopped should be returned when channel tells us explicitly that the contact has opted-out
-var ErrSendContactStopped error = &SendError{
+// ErrContactStopped should be returned when channel tells us explicitly that the contact has opted-out
+var ErrContactStopped error = &SendError{
 	msg:       "contact opted out",
 	retryable: false,
 	loggable:  false,
 	clogCode:  "contact_stopped",
 	clogMsg:   "Contact has opted-out of messages from this channel.",
+}
+
+func ErrFailedWithReason(code, desc string) *SendError {
+	return &SendError{
+		msg:         "channel rejected send with reason",
+		retryable:   false,
+		loggable:    false,
+		clogCode:    "rejected_with_reason",
+		clogMsg:     code,
+		clogExtCode: desc,
+	}
 }
 
 // Foreman takes care of managing our set of sending workers and assigns msgs for each to send

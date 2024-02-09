@@ -126,7 +126,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	secret := msg.Channel().StringConfigForKey(courier.ConfigSecret, "")
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, defaultSendURL)
 	if secret == "" || sendURL == "" {
-		return courier.ErrSendChannelConfig
+		return courier.ErrChannelConfig
 	}
 
 	sendURL += "?channel=" + string(msg.Channel().UUID())
@@ -145,9 +145,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	resp, _, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
-		return courier.ErrSendConnection
+		return courier.ErrConnectionFailed
 	} else if resp.StatusCode/100 == 4 {
-		return courier.ErrSendResponseUnexpected
+		return courier.ErrResponseUnexpected
 	}
 
 	return nil
