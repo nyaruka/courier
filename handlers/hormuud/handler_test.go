@@ -80,7 +80,7 @@ var sendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"mobile":"250788383383","message":"Simple Message","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "msg1",
+		ExpectedExtIDs:      []string{"msg1"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -91,7 +91,7 @@ var sendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"mobile":"250788383383","message":"☺","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "msg1",
+		ExpectedExtIDs:      []string{"msg1"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -103,7 +103,7 @@ var sendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"mobile":"250788383383","message":"My pic!\nhttps://foo.bar/image.jpg","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "msg1",
+		ExpectedExtIDs:      []string{"msg1"},
 		SendPrep:            setSendURL,
 	},
 	{

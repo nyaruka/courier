@@ -120,7 +120,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"Simple Message","source":"courier"}]}`,
 		ExpectedHeaders:     map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "BF7AD270-0DE2-418B-B606-71D527D9C1AE",
+		ExpectedExtIDs:      []string{"BF7AD270-0DE2-418B-B606-71D527D9C1AE"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -131,7 +131,7 @@ var sendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"☺","source":"courier"}]}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "BF7AD270-0DE2-418B-B606-71D527D9C1AE",
+		ExpectedExtIDs:      []string{"BF7AD270-0DE2-418B-B606-71D527D9C1AE"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -142,7 +142,7 @@ var sendTestCases = []OutgoingTestCase{
 		MockResponseBody:    successResponse,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messages":[{"to":"+250788383383","from":"2020","body":"My pic!\nhttps://foo.bar/image.jpg","source":"courier"}]}`,
-		ExpectedExternalID:  "BF7AD270-0DE2-418B-B606-71D527D9C1AE",
+		ExpectedExtIDs:      []string{"BF7AD270-0DE2-418B-B606-71D527D9C1AE"},
 		ExpectedMsgStatus:   "W",
 		SendPrep:            setSendURL,
 	},

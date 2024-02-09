@@ -177,7 +177,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">Simple Message ☺</body></message>`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "380502535130309161501",
+		ExpectedExtIDs:      []string{"380502535130309161501"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -192,7 +192,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">I need to keep adding more things to make it work</body></message>`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "380502535130309161501",
+		ExpectedExtIDs:      []string{"380502535130309161501"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -208,7 +208,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `<message><service id="single" source="2020" validity="+12 hours"></service><to>+250788383383</to><body content-type="plain/text" encoding="plain">My pic!&#xA;https://foo.bar/image.jpg</body></message>`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "380502535130309161501",
+		ExpectedExtIDs:      []string{"380502535130309161501"},
 		SendPrep:            setSendURL,
 	},
 	{

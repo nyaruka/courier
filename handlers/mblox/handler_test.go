@@ -99,7 +99,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "tel:+250788383383",
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "",
 		MockResponseBody:   `{ "id":"OzYDlvf3SQVc" }`,
 		MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
@@ -113,7 +112,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
 		MsgURN:             "tel:+250788383383",
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "",
 		MockResponseBody:   `{ "id":"OzYDlvf3SQVc" }`,
 		MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
@@ -128,7 +126,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "",
 		MockResponseBody:   `{ "id":"OzYDlvf3SQVc" }`,
 		MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{

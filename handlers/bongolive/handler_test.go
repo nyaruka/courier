@@ -108,9 +108,9 @@ var defaultSendTestCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "123",
-		SendPrep:           setSendURL,
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"123"},
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:              "Bad Status",

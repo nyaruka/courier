@@ -117,7 +117,7 @@ var sendTestCases = []handlers.OutgoingTestCase{
 		ExpectedRequestBody: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message"}`,
 		MockResponseStatus:  201,
 		MockResponseBody:    `{"id":"iNKE8a6k6cjbqWhWd"}`,
-		ExpectedExternalID:  "iNKE8a6k6cjbqWhWd",
+		ExpectedExtIDs:      []string{"iNKE8a6k6cjbqWhWd"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -128,7 +128,7 @@ var sendTestCases = []handlers.OutgoingTestCase{
 		ExpectedRequestBody: `{"user":"livechat:onrMgdKbpX9Qqtvoi","bot":"rocket.cat","attachments":[{"type":"application/pdf","url":"https://link.to/attachment.pdf"}]}`,
 		MockResponseStatus:  201,
 		MockResponseBody:    `{"id":"iNKE8a6k6cjbqWhWd"}`,
-		ExpectedExternalID:  "iNKE8a6k6cjbqWhWd",
+		ExpectedExtIDs:      []string{"iNKE8a6k6cjbqWhWd"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -140,7 +140,7 @@ var sendTestCases = []handlers.OutgoingTestCase{
 		ExpectedRequestBody: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message","attachments":[{"type":"application/pdf","url":"https://link.to/attachment.pdf"}]}`,
 		MockResponseStatus:  201,
 		MockResponseBody:    `{"id":"iNKE8a6k6cjbqWhWd"}`,
-		ExpectedExternalID:  "iNKE8a6k6cjbqWhWd",
+		ExpectedExtIDs:      []string{"iNKE8a6k6cjbqWhWd"},
 		SendPrep:            setSendURL,
 	},
 }

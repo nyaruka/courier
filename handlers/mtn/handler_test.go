@@ -168,7 +168,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "tel:+250788383383",
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "OzYDlvf3SQVc",
+		ExpectedExtIDs:     []string{"OzYDlvf3SQVc"},
 		MockResponseBody:   `{ "transactionId":"OzYDlvf3SQVc" }`,
 		MockResponseStatus: 201,
 		ExpectedHeaders: map[string]string{
@@ -183,7 +183,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "OzYDlvf3SQVc",
+		ExpectedExtIDs:     []string{"OzYDlvf3SQVc"},
 		MockResponseBody:   `{ "transactionId":"OzYDlvf3SQVc" }`,
 		MockResponseStatus: 200,
 		ExpectedHeaders: map[string]string{
@@ -229,7 +229,7 @@ var cpAddressSendTestCases = []OutgoingTestCase{
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "tel:+250788383383",
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "OzYDlvf3SQVc",
+		ExpectedExtIDs:     []string{"OzYDlvf3SQVc"},
 		MockResponseBody:   `{ "transactionId":"OzYDlvf3SQVc" }`,
 		MockResponseStatus: 201,
 		ExpectedHeaders: map[string]string{

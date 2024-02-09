@@ -316,7 +316,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "12345",
+		ExpectedExtIDs:      []string{"12345"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -397,7 +397,7 @@ var transSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","transliteration":"COLOMBIAN"}]}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "12345",
+		ExpectedExtIDs:      []string{"12345"},
 		SendPrep:            setSendURL,
 	},
 }

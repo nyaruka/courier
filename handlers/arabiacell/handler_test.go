@@ -74,8 +74,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedExternalID: "external1",
-		SendPrep:           setSendURL,
+		ExpectedExtIDs: []string{"external1"},
+		SendPrep:       setSendURL,
 	},
 	{
 		Label:              "Invalid XML",

@@ -286,7 +286,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"+250788383383","body":"Simple Message"}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "12345",
+		ExpectedExtIDs:      []string{"12345"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -298,7 +298,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"from":"2020","to":"+250788383383","body":"This is some text.","media_url":"https://foo.bar/document.pdf"}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "12345",
+		ExpectedExtIDs:      []string{"12345"},
 		SendPrep:            setSendURL},
 	{
 		Label:              "ID Error",

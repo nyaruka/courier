@@ -563,7 +563,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequestPath: "/2010-04-01/Accounts/accountSID/Messages.json",
 		ExpectedHeaders:     map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "1002",
+		ExpectedExtIDs:      []string{"1002"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -576,7 +576,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequestPath: "/2010-04-01/Accounts/accountSID/Messages.json",
 		ExpectedHeaders:     map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "1002",
+		ExpectedExtIDs:      []string{"1002"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -678,7 +678,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequestPath: "/2010-04-01/Accounts/accountSID/Messages.json",
 		ExpectedHeaders:     map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "1002",
+		ExpectedExtIDs:      []string{"1002"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -691,7 +691,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequestPath: "/2010-04-01/Accounts/accountSID/Messages.json",
 		ExpectedHeaders:     map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "1002",
+		ExpectedExtIDs:      []string{"1002"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -763,7 +763,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequestPath: "/2010-04-01/Accounts/accountSID/Messages.json",
 		ExpectedHeaders:     map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "1002",
+		ExpectedExtIDs:      []string{"1002"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -776,7 +776,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequestPath: "/2010-04-01/Accounts/accountSID/Messages.json",
 		ExpectedHeaders:     map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "1002",
+		ExpectedExtIDs:      []string{"1002"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -848,7 +848,7 @@ var swSendTestCases = []OutgoingTestCase{
 		ExpectedRequestPath: "/2010-04-01/Accounts/accountSID/Messages.json",
 		ExpectedHeaders:     map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "1002",
+		ExpectedExtIDs:      []string{"1002"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -861,7 +861,7 @@ var swSendTestCases = []OutgoingTestCase{
 		ExpectedRequestPath: "/2010-04-01/Accounts/accountSID/Messages.json",
 		ExpectedHeaders:     map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "1002",
+		ExpectedExtIDs:      []string{"1002"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -932,7 +932,7 @@ var waSendTestCases = []OutgoingTestCase{
 		ExpectedPostParams: map[string]string{"Body": "Simple Message ☺", "To": "whatsapp:+250788383383", "From": "whatsapp:+12065551212", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedHeaders:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "1002",
+		ExpectedExtIDs:     []string{"1002"},
 		SendPrep:           setSendURL,
 	},
 }
@@ -947,7 +947,7 @@ var twaSendTestCases = []OutgoingTestCase{
 		ExpectedPostParams: map[string]string{"Body": "Simple Message ☺", "To": "whatsapp:+250788383383", "From": "whatsapp:+12065551212", "StatusCallback": "https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedHeaders:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "1002",
+		ExpectedExtIDs:     []string{"1002"},
 		SendPrep:           setSendURL,
 	},
 }

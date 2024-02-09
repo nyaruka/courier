@@ -106,7 +106,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedHeaders:     map[string]string{"Authorization": "Basic dXNlcjE6c2VzYW1l"},
 		ExpectedRequestBody: `{"from_did":"2065551212","to_did":"2067791234","message":"Simple Message ☺"}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "1002",
+		ExpectedExtIDs:      []string{"1002"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -118,7 +118,7 @@ var sendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"from_did":"2065551212","to_did":"2067791234","message":"My pic!"}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "1002",
+		ExpectedExtIDs:      []string{"1002"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -129,7 +129,7 @@ var sendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `{ "guid": "1002" }`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "1002",
+		ExpectedExtIDs:     []string{"1002"},
 		SendPrep:           setSendURL,
 	},
 	{

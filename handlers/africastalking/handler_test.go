@@ -127,8 +127,8 @@ var outgoingTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"message": {"Simple Message ☺"}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
 		},
-		ExpectedExternalID: "1002",
-		SendPrep:           setSendURL,
+		ExpectedExtIDs: []string{"1002"},
+		SendPrep:       setSendURL,
 	},
 	{
 		Label:              "Send Attachment",
@@ -140,8 +140,8 @@ var outgoingTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"message": {"My pic!\nhttps://foo.bar/image.jpg"}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
 		},
-		ExpectedExternalID: "1002",
-		SendPrep:           setSendURL,
+		ExpectedExtIDs: []string{"1002"},
+		SendPrep:       setSendURL,
 	},
 	{
 		Label:              "Explicit failed status",
@@ -180,8 +180,8 @@ var sharedSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"message": {"Simple Message ☺"}, "username": {"Username"}, "to": {"+250788383383"}}},
 		},
-		ExpectedExternalID: "1002",
-		SendPrep:           setSendURL,
+		ExpectedExtIDs: []string{"1002"},
+		SendPrep:       setSendURL,
 	},
 }
 

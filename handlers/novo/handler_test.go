@@ -69,7 +69,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "",
 		SendPrep:           setSendURL,
 	},
 	{
@@ -79,7 +78,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "",
 		SendPrep:           setSendURL,
 	},
 	{
@@ -90,7 +88,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseBody:   `{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`,
 		MockResponseStatus: 200,
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "",
 		SendPrep:           setSendURL,
 	},
 	{

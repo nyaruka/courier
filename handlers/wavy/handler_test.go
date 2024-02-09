@@ -183,7 +183,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedHeaders:     map[string]string{"username": "user1", "authenticationtoken": "token", "Accept": "application/json", "Content-Type": "application/json"},
 		ExpectedRequestBody: `{"destination":"250788383383","messageText":"Simple Message ☺\nhttps://foo.bar/image.jpg"}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "external1",
+		ExpectedExtIDs:      []string{"external1"},
 		SendPrep:            setSendURL,
 	},
 	{

@@ -27,7 +27,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedURLParams:  map[string]string{"content": "Simple Message", "to": "250788383383", "from": "2020", "apiKey": "API-KEY"},
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "id1002",
+		ExpectedExtIDs:     []string{"id1002"},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -38,7 +38,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedURLParams:  map[string]string{"content": "Unicode ☺", "to": "250788383383", "from": "2020", "apiKey": "API-KEY"},
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "id1002",
+		ExpectedExtIDs:     []string{"id1002"},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -50,7 +50,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedURLParams:  map[string]string{"content": "My pic!\nhttps://foo.bar/image.jpg", "to": "250788383383", "from": "2020", "apiKey": "API-KEY"},
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "id1002",
+		ExpectedExtIDs:     []string{"id1002"},
 		SendPrep:           setSendURL,
 	},
 	{

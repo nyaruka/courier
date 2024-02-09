@@ -96,7 +96,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="},
 		ExpectedRequestBody: `{"messages":[{"message_parts":[{"text":{"content":"Simple Message ☺"}}],"actor_id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606","actor_type":"agent"}],"channel_id":"0534f78-b6e9-4f79-8853-11cedfc1f35b","users":[{"id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606"}]}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "",
 		SendPrep:            setSendURL,
 	},
 	{
@@ -109,7 +108,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="},
 		ExpectedRequestBody: `{"messages":[{"message_parts":[{"text":{"content":"Simple Message ☺"}},{"image":{"url":"https://foo.bar/image.jpg"}}],"actor_id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606","actor_type":"agent"}],"channel_id":"0534f78-b6e9-4f79-8853-11cedfc1f35b","users":[{"id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606"}]}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "",
 		SendPrep:            setSendURL,
 	},
 	{
@@ -121,7 +119,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="},
 		ExpectedRequestBody: `{"messages":[{"message_parts":[{"image":{"url":"https://foo.bar/image.jpg"}}],"actor_id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606","actor_type":"agent"}],"channel_id":"0534f78-b6e9-4f79-8853-11cedfc1f35b","users":[{"id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606"}]}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "",
 		SendPrep:            setSendURL,
 	},
 }

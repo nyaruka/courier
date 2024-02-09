@@ -799,9 +799,9 @@ var defaultSendTestCases = []OutgoingTestCase{
 			"chat_id":      "12345",
 			"reply_markup": `{"remove_keyboard":true}`,
 		},
-		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "133",
-		SendPrep:           setSendURL,
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"133"},
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:              "Quick Reply",
@@ -816,9 +816,9 @@ var defaultSendTestCases = []OutgoingTestCase{
 			"parse_mode":   "Markdown",
 			"reply_markup": `{"keyboard":[[{"text":"Yes"},{"text":"No"}]],"resize_keyboard":true,"one_time_keyboard":true}`,
 		},
-		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "133",
-		SendPrep:           setSendURL,
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"133"},
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:              "Quick Reply with multiple attachments",
@@ -834,9 +834,9 @@ var defaultSendTestCases = []OutgoingTestCase{
 			"parse_mode":   "Markdown",
 			"reply_markup": `{"keyboard":[[{"text":"Yes"},{"text":"No"}]],"resize_keyboard":true,"one_time_keyboard":true}`,
 		},
-		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "133",
-		SendPrep:           setSendURL,
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"133"},
+		SendPrep:          setSendURL,
 	},
 
 	{
@@ -847,7 +847,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"text": "☺", "chat_id": "12345", "parse_mode": "Markdown"},
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "133",
+		ExpectedExtIDs:     []string{"133"},
 		SendPrep:           setSendURL,
 	},
 	{

@@ -324,7 +324,7 @@ type OutgoingTestCase struct {
 	MockResponses      map[MockedRequest]*httpx.MockResponse
 
 	ExpectedRequests    []ExpectedRequest
-	ExpectedExternalID  string
+	ExpectedExtIDs      []string
 	ExpectedError       error
 	ExpectedMsgStatus   courier.MsgStatus
 	ExpectedErrors      []*courier.ChannelError
@@ -418,16 +418,14 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			handlerOld, _ := handler.(courier.ChannelLegacyHandler)
 			handlerNew, _ := handler.(courier.ChannelStdHandler)
 
-			var externalID string
+			var externalIDs []string
 			var status courier.StatusUpdate
 			var serr, err error
 
 			if handlerNew != nil {
 				res := &courier.SendResult{}
 				serr = handlerNew.Send(ctx, msg, res, clog)
-				if len(res.ExternalIDs()) > 0 {
-					externalID = res.ExternalIDs()[0]
-				}
+				externalIDs = res.ExternalIDs()
 			} else {
 				status, err = handlerOld.Send(ctx, msg, clog)
 
@@ -436,8 +434,8 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 					clog.RawError(err)
 				}
 
-				if status != nil {
-					externalID = status.ExternalID()
+				if status != nil && status.ExternalID() != "" {
+					externalIDs = []string{status.ExternalID()}
 				}
 			}
 
@@ -493,8 +491,8 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 				assert.Equal(t, len(tc.MockResponses), mockRRCount, "mocked request count mismatch")
 			}
 
-			if handlerNew != nil || tc.ExpectedExternalID != "" {
-				require.Equal(tc.ExpectedExternalID, externalID)
+			if handlerNew != nil || len(tc.ExpectedExtIDs) > 0 {
+				require.Equal(tc.ExpectedExtIDs, externalIDs)
 			}
 			require.Equal(tc.ExpectedError, serr)
 

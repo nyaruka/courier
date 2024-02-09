@@ -111,7 +111,7 @@ var notificationSendTestCases = []OutgoingTestCase{
 		ExpectedHeaders:     map[string]string{"Authorization": "key=FCMKey"},
 		ExpectedRequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"notification":{"title":"FCMTitle","body":"Simple Message"},"content_available":true,"to":"auth1","priority":"high"}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "123456",
+		ExpectedExtIDs:      []string{"123456"},
 		SendPrep:            setSendURL,
 	},
 }
@@ -127,7 +127,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedHeaders:     map[string]string{"Authorization": "key=FCMKey"},
 		ExpectedRequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "123456",
+		ExpectedExtIDs:      []string{"123456"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -140,7 +140,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedHeaders:     map[string]string{"Authorization": "key=FCMKey"},
 		ExpectedRequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"ate ac.","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "123456",
+		ExpectedExtIDs:      []string{"123456"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -155,7 +155,7 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedHeaders:     map[string]string{"Authorization": "key=FCMKey"},
 		ExpectedRequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":10,"session_status":"","quick_replies":["yes","no"]},"content_available":false,"to":"auth1","priority":"high"}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "123456",
+		ExpectedExtIDs:      []string{"123456"},
 		SendPrep:            setSendURL,
 	},
 	{

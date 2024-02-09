@@ -309,7 +309,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"Simple Message ☺"}}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "",
 		SendPrep:            setSendURL,
 	},
 	{
@@ -323,7 +322,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"I need to keep adding more things to make it work"}}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "",
 		SendPrep:            setSendURL,
 	},
 	{
@@ -338,7 +336,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `{"msgtype":"text","touser":"12345","text":{"content":"My pic!\nhttps://foo.bar/image.jpg"}}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "",
 		SendPrep:            setSendURL,
 	},
 	{

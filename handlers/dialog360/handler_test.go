@@ -329,7 +329,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Simple Message","preview_url":false}}`,
 		ExpectedRequestPath: "/messages",
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "157b5e14568e8",
+		ExpectedExtIDs:      []string{"157b5e14568e8"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -341,7 +341,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"☺","preview_url":false}}`,
 		ExpectedRequestPath: "/messages",
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "157b5e14568e8",
+		ExpectedExtIDs:      []string{"157b5e14568e8"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -361,9 +361,9 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"audio caption","preview_url":false}}`,
 			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 		},
-		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "157b5e14568e8",
-		SendPrep:           setSendURL,
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:               "Document Send",
@@ -375,7 +375,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`,
 		ExpectedRequestPath: "/messages",
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "157b5e14568e8",
+		ExpectedExtIDs:      []string{"157b5e14568e8"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -388,7 +388,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg","caption":"image caption"}}`,
 		ExpectedRequestPath: "/messages",
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "157b5e14568e8",
+		ExpectedExtIDs:      []string{"157b5e14568e8"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -401,7 +401,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"video","video":{"link":"https://foo.bar/video.mp4","caption":"video caption"}}`,
 		ExpectedRequestPath: "/messages",
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "157b5e14568e8",
+		ExpectedExtIDs:      []string{"157b5e14568e8"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -411,7 +411,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MsgLocale:           "eng",
 		MsgMetadata:         json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "params": {"body": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}, "language": "en_US"}}`),
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "157b5e14568e8",
+		ExpectedExtIDs:      []string{"157b5e14568e8"},
 		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","sub_type":"","index":"","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
@@ -426,7 +426,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MockResponseStatus:  201,
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "157b5e14568e8",
+		ExpectedExtIDs:      []string{"157b5e14568e8"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -438,7 +438,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MockResponseStatus:  201,
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "157b5e14568e8",
+		ExpectedExtIDs:      []string{"157b5e14568e8"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -451,7 +451,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MockResponseStatus:  201,
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Hola"},"action":{"button":"Menú","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "157b5e14568e8",
+		ExpectedExtIDs:      []string{"157b5e14568e8"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -465,7 +465,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","header":{"type":"image","image":{"link":"https://foo.bar/image.jpg"}},"body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
 		ExpectedRequestPath: "/messages",
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "157b5e14568e8",
+		ExpectedExtIDs:      []string{"157b5e14568e8"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -479,7 +479,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","header":{"type":"video","video":{"link":"https://foo.bar/video.mp4"}},"body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
 		ExpectedRequestPath: "/messages",
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "157b5e14568e8",
+		ExpectedExtIDs:      []string{"157b5e14568e8"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -493,7 +493,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","header":{"type":"document","document":{"link":"https://foo.bar/document.pdf","filename":"document.pdf"}},"body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
 		ExpectedRequestPath: "/messages",
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "157b5e14568e8",
+		ExpectedExtIDs:      []string{"157b5e14568e8"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -514,9 +514,9 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"ROW1"}},{"type":"reply","reply":{"id":"1","title":"ROW2"}},{"type":"reply","reply":{"id":"2","title":"ROW3"}}]}}}`,
 			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 		},
-		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "157b5e14568e8",
-		SendPrep:           setSendURL,
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:           "Interactive List Message Send with attachment",
@@ -536,9 +536,9 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				Body:   `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
 			}: httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 		},
-		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "157b5e14568e8",
-		SendPrep:           setSendURL,
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:               "Link Sending",
@@ -549,7 +549,7 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Link Sending https://link.com","preview_url":true}}`,
 		ExpectedRequestPath: "/messages",
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "157b5e14568e8",
+		ExpectedExtIDs:      []string{"157b5e14568e8"},
 		SendPrep:            setSendURL,
 	},
 	{

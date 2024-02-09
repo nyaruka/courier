@@ -100,7 +100,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		Label:              "Plain Send",
 		MsgText:            "Simple Message ☺",
 		MsgURN:             "tel:+250788383383",
-		ExpectedExternalID: "6b1c15d3-cba2-46f7-9a25-78265e58057d",
+		ExpectedExtIDs:     []string{"6b1c15d3-cba2-46f7-9a25-78265e58057d"},
 		MockResponseBody:   `{ "type": "MT", "sms_id": "6b1c15d3-cba2-46f7-9a25-78265e58057d" }`,
 		MockResponseStatus: 200,
 		ExpectedHeaders:    map[string]string{"Authorization": "Token Authy"},

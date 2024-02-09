@@ -68,9 +68,9 @@ var defaultSendTestCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "5b8fc97d58795484819426",
-		SendPrep:           setSendURL,
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"5b8fc97d58795484819426"},
+		SendPrep:          setSendURL,
 	},
 	{
 		Label:              "Invalid JSON",

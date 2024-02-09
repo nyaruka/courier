@@ -96,7 +96,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:             "tel:+250788383383",
 		MockResponseBody:   `Success "External ID1"`,
 		MockResponseStatus: 200,
-		ExpectedExternalID: "External ID1",
+		ExpectedExtIDs:     []string{"External ID1"},
 		ExpectedURLParams: map[string]string{
 			"content":    "Simple Message",
 			"to":         "250788383383",

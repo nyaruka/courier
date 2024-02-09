@@ -742,7 +742,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "mid.133",
+		ExpectedExtIDs:      []string{"mid.133"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -754,7 +754,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus:      200,
 		ExpectedRequestBody:     `{"messaging_type":"RESPONSE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		ExpectedMsgStatus:       "W",
-		ExpectedExternalID:      "mid.133",
+		ExpectedExtIDs:          []string{"mid.133"},
 		SendPrep:                setSendURL,
 	},
 	{
@@ -766,7 +766,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"user_ref":"67890"},"message":{"text":"Simple Message"}}`,
 		ExpectedContactURNs: map[string]bool{"facebook:12345": true, "ext:67890": true, "facebook:ref:67890": false},
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "mid.133",
+		ExpectedExtIDs:      []string{"mid.133"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -778,7 +778,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Are you happy?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "mid.133",
+		ExpectedExtIDs:      []string{"mid.133"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -788,7 +788,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgQuickReplies:     []string{"Yes", "No"},
 		MsgTopic:            "account",
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "mid.133",
+		ExpectedExtIDs:      []string{"mid.133"},
 		MockResponseBody:    `{"message_id": "mid.133"}`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messaging_type":"MESSAGE_TAG","tag":"ACCOUNT_UPDATE","recipient":{"id":"12345"},"message":{"text":"we exceed the max length?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
@@ -799,7 +799,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:              "facebook:12345",
 		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "mid.133",
+		ExpectedExtIDs:      []string{"mid.133"},
 		MockResponseBody:    `{"message_id": "mid.133"}`,
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
@@ -816,7 +816,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messaging_type":"MESSAGE_TAG","tag":"CONFIRMED_EVENT_UPDATE","recipient":{"id":"12345"},"message":{"text":"This is some text.","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "mid.133",
+		ExpectedExtIDs:      []string{"mid.133"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -827,7 +827,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus:  200,
 		ExpectedRequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"file","payload":{"url":"https://foo.bar/document.pdf","is_reusable":true}}}}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "mid.133",
+		ExpectedExtIDs:      []string{"mid.133"},
 		SendPrep:            setSendURL,
 	},
 	{

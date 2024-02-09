@@ -132,7 +132,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "1002",
+		ExpectedExtIDs:     []string{"1002"},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -143,7 +143,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"text": "Unicode ☺", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "unicode"},
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "1002",
+		ExpectedExtIDs:     []string{"1002"},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -154,7 +154,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"text": "I need to keep adding more things to make it work", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "1002",
+		ExpectedExtIDs:     []string{"1002"},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -166,7 +166,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
 		ExpectedMsgStatus:  "W",
-		ExpectedExternalID: "1002",
+		ExpectedExtIDs:     []string{"1002"},
 		SendPrep:           setSendURL,
 	},
 	{

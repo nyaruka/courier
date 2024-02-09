@@ -262,7 +262,7 @@ var defaultWhatsappSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Simple Message ☺"}]}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "55555",
+		ExpectedExtIDs:      []string{"55555"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -278,7 +278,7 @@ var defaultWhatsappSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"},{"type":"text","text":"I need to keep adding more things to make it work"}]}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "55555",
+		ExpectedExtIDs:      []string{"55555"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -295,7 +295,7 @@ var defaultWhatsappSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"file","fileUrl":"https://foo.bar/image.jpg","fileMimeType":"image/jpeg"},{"type":"text","text":"My pic!"}]}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "55555",
+		ExpectedExtIDs:      []string{"55555"},
 		SendPrep:            setSendURL,
 	},
 	{
@@ -340,7 +340,7 @@ var defaultSMSSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Simple Message ☺"}]}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "55555",
+		ExpectedExtIDs:      []string{"55555"},
 		SendPrep:            setSendURL},
 	{
 		Label:              "Long Send",
@@ -355,7 +355,7 @@ var defaultSMSSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"},{"type":"text","text":"I need to keep adding more things to make it work"}]}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "55555",
+		ExpectedExtIDs:      []string{"55555"},
 		SendPrep:            setSendURL},
 	{
 		Label:              "Send Attachment",
@@ -371,7 +371,7 @@ var defaultSMSSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequestBody: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"My pic!\nhttps://foo.bar/image.jpg"}]}`,
 		ExpectedMsgStatus:   "W",
-		ExpectedExternalID:  "55555",
+		ExpectedExtIDs:      []string{"55555"},
 		SendPrep:            setSendURL,
 	},
 	{

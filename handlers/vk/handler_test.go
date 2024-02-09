@@ -389,12 +389,12 @@ func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel,
 
 var sendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Send simple message",
-		MsgText:            "Simple message",
-		MsgURN:             "vk:123456789",
-		ExpectedMsgStatus:  "S",
-		SendPrep:           setSendURL,
-		ExpectedExternalID: "1",
+		Label:             "Send simple message",
+		MsgText:           "Simple message",
+		MsgURN:            "vk:123456789",
+		ExpectedMsgStatus: "S",
+		SendPrep:          setSendURL,
+		ExpectedExtIDs:    []string{"1"},
 		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method:   "POST",
@@ -404,13 +404,13 @@ var sendTestCases = []OutgoingTestCase{
 		},
 	},
 	{
-		Label:              "Send photo attachment",
-		MsgText:            "",
-		MsgURN:             "vk:123456789",
-		MsgAttachments:     []string{"image/png:https://foo.bar/image.png"},
-		ExpectedMsgStatus:  "S",
-		SendPrep:           setSendURL,
-		ExpectedExternalID: "1",
+		Label:             "Send photo attachment",
+		MsgText:           "",
+		MsgURN:            "vk:123456789",
+		MsgAttachments:    []string{"image/png:https://foo.bar/image.png"},
+		ExpectedMsgStatus: "S",
+		SendPrep:          setSendURL,
+		ExpectedExtIDs:    []string{"1"},
 		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method:       "POST",
@@ -430,13 +430,13 @@ var sendTestCases = []OutgoingTestCase{
 		},
 	},
 	{
-		Label:              "Send photo and another attachment type",
-		MsgText:            "Attachments",
-		MsgURN:             "vk:123456789",
-		MsgAttachments:     []string{"image/png:https://foo.bar/image.png", "audio/mp3:https://foo.bar/audio.mp3"},
-		ExpectedMsgStatus:  "S",
-		SendPrep:           setSendURL,
-		ExpectedExternalID: "1",
+		Label:             "Send photo and another attachment type",
+		MsgText:           "Attachments",
+		MsgURN:            "vk:123456789",
+		MsgAttachments:    []string{"image/png:https://foo.bar/image.png", "audio/mp3:https://foo.bar/audio.mp3"},
+		ExpectedMsgStatus: "S",
+		SendPrep:          setSendURL,
+		ExpectedExtIDs:    []string{"1"},
 		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method:       "POST",
@@ -456,13 +456,13 @@ var sendTestCases = []OutgoingTestCase{
 		},
 	},
 	{
-		Label:              "Send keyboard",
-		MsgText:            "Send keyboard",
-		MsgURN:             "vk:123456789",
-		MsgQuickReplies:    []string{"A", "B", "C", "D", "E"},
-		ExpectedMsgStatus:  "S",
-		SendPrep:           setSendURL,
-		ExpectedExternalID: "1",
+		Label:             "Send keyboard",
+		MsgText:           "Send keyboard",
+		MsgURN:            "vk:123456789",
+		MsgQuickReplies:   []string{"A", "B", "C", "D", "E"},
+		ExpectedMsgStatus: "S",
+		SendPrep:          setSendURL,
+		ExpectedExtIDs:    []string{"1"},
 		MockResponses: map[MockedRequest]*httpx.MockResponse{
 			{
 				Method:   "POST",
