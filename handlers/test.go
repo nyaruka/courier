@@ -491,9 +491,7 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 				assert.Equal(t, len(tc.MockResponses), mockRRCount, "mocked request count mismatch")
 			}
 
-			if handlerNew != nil || len(tc.ExpectedExtIDs) > 0 {
-				require.Equal(tc.ExpectedExtIDs, externalIDs)
-			}
+			require.Equal(tc.ExpectedExtIDs, externalIDs)
 			require.Equal(tc.ExpectedError, serr)
 
 			if tc.ExpectedMsgStatus != "" {

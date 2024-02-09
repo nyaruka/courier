@@ -643,6 +643,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"1002"},
 		SendPrep:          setSendURL,
 	},
 	{
@@ -663,6 +664,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"1002"},
 		SendPrep:          setSendURL,
 	},
 }
@@ -748,6 +750,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "My pic!", "To": "+250788383383", "MediaUrl": "https://foo.bar/image.jpg", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "W",
+		ExpectedExtIDs:     []string{"1002"},
 		SendPrep:           setSendURL,
 	},
 }
@@ -833,6 +836,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "My pic!", "To": "+250788383383", "MediaUrl": "https://foo.bar/image.jpg", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "W",
+		ExpectedExtIDs:     []string{"1002"},
 		SendPrep:           setSendURL,
 	},
 }
@@ -918,6 +922,7 @@ var swSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"Body": "My pic!", "To": "+250788383383", "MediaUrl": "https://foo.bar/image.jpg", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
 		ExpectedMsgStatus:  "W",
+		ExpectedExtIDs:     []string{"1002"},
 		SendPrep:           setSendURL,
 	},
 }

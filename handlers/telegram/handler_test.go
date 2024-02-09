@@ -897,6 +897,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"caption": "My pic!", "chat_id": "12345", "parse_mode": "Markdown", "photo": "https://foo.bar/image.jpg"},
 		ExpectedMsgStatus:  "W",
+		ExpectedExtIDs:     []string{"133"},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -908,6 +909,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"caption": "My vid!", "chat_id": "12345", "parse_mode": "Markdown", "video": "https://foo.bar/video.mpeg"},
 		ExpectedMsgStatus:  "W",
+		ExpectedExtIDs:     []string{"133"},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -919,6 +921,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"caption": "My audio!", "chat_id": "12345", "parse_mode": "Markdown", "audio": "https://foo.bar/audio.mp3"},
 		ExpectedMsgStatus:  "W",
+		ExpectedExtIDs:     []string{"133"},
 		SendPrep:           setSendURL,
 	},
 	{
@@ -930,6 +933,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MockResponseStatus: 200,
 		ExpectedPostParams: map[string]string{"caption": "My document!", "chat_id": "12345", "parse_mode": "Markdown", "document": "https://foo.bar/document.pdf"},
 		ExpectedMsgStatus:  "W",
+		ExpectedExtIDs:     []string{"133"},
 		SendPrep:           setSendURL,
 	},
 	{
