@@ -423,19 +423,14 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 
 			// work out what kind of sending this handler supports.. this is temporary
-			handlerOld, _ := handler.(courier.ChannelLegacyHandler)
-			handlerNew, _ := handler.(courier.ChannelStdHandler)
+			legacyHandler, _ := handler.(courier.ChannelLegacyHandler)
 
 			var externalIDs []string
 			var status courier.StatusUpdate
 			var serr, err error
 
-			if handlerNew != nil {
-				res := &courier.SendResult{}
-				serr = handlerNew.Send(ctx, msg, res, clog)
-				externalIDs = res.ExternalIDs()
-			} else {
-				status, err = handlerOld.Send(ctx, msg, clog)
+			if legacyHandler != nil {
+				status, err = legacyHandler.SendLegacy(ctx, msg, clog)
 
 				// sender adds returned error to channel log if there aren't other logged errors
 				if err != nil && len(clog.Errors()) == 0 {
@@ -445,6 +440,10 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 				if status != nil && status.ExternalID() != "" {
 					externalIDs = []string{status.ExternalID()}
 				}
+			} else {
+				res := &courier.SendResult{}
+				serr = handler.Send(ctx, msg, res, clog)
+				externalIDs = res.ExternalIDs()
 			}
 
 			cancel()

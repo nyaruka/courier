@@ -178,8 +178,12 @@ func (h *handler) sendMsgPart(msg courier.MsgOut, token string, path string, for
 	return "", false, errors.Errorf("no 'result.message_id' in response")
 }
 
-// Send sends the given message, logging any HTTP calls or errors
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+	// TODO convert functionality from legacy method below
+	return nil
+}
+
+func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	confAuth := msg.Channel().ConfigForKey(courier.ConfigAuthToken, "")
 	authToken, isStr := confAuth.(string)
 	if !isStr || authToken == "" {

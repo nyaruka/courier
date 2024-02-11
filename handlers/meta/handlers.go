@@ -621,7 +621,12 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 	return events, data, nil
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+	// TODO convert functionality from legacy method below
+	return nil
+}
+
+func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	if msg.Channel().ChannelType() == "FBA" || msg.Channel().ChannelType() == "IG" {
 		return h.sendFacebookInstagramMsg(ctx, msg, clog)
 	} else if msg.Channel().ChannelType() == "WAC" {

@@ -288,8 +288,12 @@ func (h *handler) resolveMediaURL(channel courier.Channel, mediaID string, clog 
 	return fileURL, nil
 }
 
-// Send implements courier.ChannelHandler
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+	// TODO convert functionality from legacy method below
+	return nil
+}
+
+func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	conn := h.Backend().RedisPool().Get()
 	defer conn.Close()
 

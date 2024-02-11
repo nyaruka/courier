@@ -27,6 +27,7 @@ type ChannelHandler interface {
 	UseChannelRouteUUID() bool
 	RedactValues(Channel) []string
 	GetChannel(context.Context, *http.Request) (Channel, error)
+	Send(context.Context, MsgOut, *SendResult, *ChannelLog) error
 
 	WriteStatusSuccessResponse(context.Context, http.ResponseWriter, []StatusUpdate) error
 	WriteMsgSuccessResponse(context.Context, http.ResponseWriter, []MsgIn) error
@@ -36,12 +37,7 @@ type ChannelHandler interface {
 
 type ChannelLegacyHandler interface {
 	ChannelHandler
-	Send(context.Context, MsgOut, *ChannelLog) (StatusUpdate, error)
-}
-
-type ChannelStdHandler interface {
-	ChannelHandler
-	Send(context.Context, MsgOut, *SendResult, *ChannelLog) error
+	SendLegacy(context.Context, MsgOut, *ChannelLog) (StatusUpdate, error)
 }
 
 // URNDescriber is the interface handlers which can look up URN metadata for new contacts should satisfy.

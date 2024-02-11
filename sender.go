@@ -307,14 +307,11 @@ func (w *Sender) sendMessage(msg MsgOut) {
 	} else {
 		// work out what kind of sending this handler supports.. this is temporary
 		legacyHandler, _ := handler.(ChannelLegacyHandler)
-		stdHandler, _ := handler.(ChannelStdHandler)
 
 		if legacyHandler != nil {
 			status = w.sendByLegacyHandler(sendCTX, legacyHandler, msg, clog, log)
-		} else if stdHandler != nil {
-			status = w.sendByHandler(sendCTX, stdHandler, msg, clog, log)
 		} else {
-			panic("handler doesn't implement old or new interfaces")
+			status = w.sendByHandler(sendCTX, handler, msg, clog, log)
 		}
 
 		duration := time.Since(start)
@@ -350,7 +347,7 @@ func (w *Sender) sendMessage(msg MsgOut) {
 	backend.MarkOutgoingMsgComplete(writeCTX, msg, status)
 }
 
-func (w *Sender) sendByHandler(ctx context.Context, h ChannelStdHandler, m MsgOut, clog *ChannelLog, log *slog.Logger) StatusUpdate {
+func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, clog *ChannelLog, log *slog.Logger) StatusUpdate {
 	backend := w.foreman.server.Backend()
 	res := &SendResult{}
 	err := h.Send(ctx, m, res, clog)
@@ -391,7 +388,7 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelStdHandler, m MsgOu
 func (w *Sender) sendByLegacyHandler(ctx context.Context, h ChannelLegacyHandler, m MsgOut, clog *ChannelLog, log *slog.Logger) StatusUpdate {
 	backend := w.foreman.server.Backend()
 
-	status, err := h.Send(ctx, m, clog)
+	status, err := h.SendLegacy(ctx, m, clog)
 	if err != nil {
 		log.Error("error sending message", "error", err)
 

@@ -247,7 +247,12 @@ type mtAttachment struct {
 	} `json:"media"`
 }
 
-func (h *handler) Send(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
+	// TODO convert functionality from legacy method below
+	return nil
+}
+
+func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	apiKey := msg.Channel().StringConfigForKey(configAPIKey, "")
 	apiSecret := msg.Channel().StringConfigForKey(configAPISecret, "")
 	accessToken := msg.Channel().StringConfigForKey(configAccessToken, "")
