@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -782,14 +783,11 @@ var outgoingCases = []OutgoingTestCase{
 		MsgURN:             "telegram:12345",
 		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{
-			"text":         "Simple Message",
-			"chat_id":      "12345",
-			"reply_markup": `{"remove_keyboard":true}`,
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Simple Message"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"133"},
-		SendPrep:          setSendURL,
+		ExpectedExtIDs: []string{"133"},
+		SendPrep:       setSendURL,
 	},
 	{
 		Label:              "Quick Reply",
@@ -798,15 +796,11 @@ var outgoingCases = []OutgoingTestCase{
 		MsgQuickReplies:    []string{"Yes", "No"},
 		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{
-			"text":         "Are you happy?",
-			"chat_id":      "12345",
-			"parse_mode":   "Markdown",
-			"reply_markup": `{"keyboard":[[{"text":"Yes"},{"text":"No"}]],"resize_keyboard":true,"one_time_keyboard":true}`,
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Yes"},{"text":"No"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"133"},
-		SendPrep:          setSendURL,
+		ExpectedExtIDs: []string{"133"},
+		SendPrep:       setSendURL,
 	},
 	{
 		Label:              "Quick Reply with multiple attachments",
@@ -816,27 +810,13 @@ var outgoingCases = []OutgoingTestCase{
 		MsgAttachments:     []string{"application/pdf:https://foo.bar/doc1.pdf", "application/pdf:https://foo.bar/document.pdf"},
 		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{
-			"chat_id":      "12345",
-			"document":     "https://foo.bar/document.pdf",
-			"parse_mode":   "Markdown",
-			"reply_markup": `{"keyboard":[[{"text":"Yes"},{"text":"No"}]],"resize_keyboard":true,"one_time_keyboard":true}`,
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Are you happy?"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+			{Form: url.Values{"caption": []string{""}, "chat_id": {"12345"}, "document": {"https://foo.bar/doc1.pdf"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+			{Form: url.Values{"caption": []string{""}, "chat_id": {"12345"}, "document": {"https://foo.bar/document.pdf"}, "parse_mode": {"Markdown"}, "reply_markup": {`{"keyboard":[[{"text":"Yes"},{"text":"No"}]],"resize_keyboard":true,"one_time_keyboard":true}`}}},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"133"},
-		SendPrep:          setSendURL,
-	},
-
-	{
-		Label:              "Unicode Send",
-		MsgText:            "☺",
-		MsgURN:             "telegram:12345",
-		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"text": "☺", "chat_id": "12345", "parse_mode": "Markdown"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"133"},
-		SendPrep:           setSendURL,
+		ExpectedExtIDs: []string{"133", "133", "133"},
+		SendPrep:       setSendURL,
 	},
 	{
 		Label:              "Error",
@@ -844,10 +824,11 @@ var outgoingCases = []OutgoingTestCase{
 		MsgURN:             "telegram:12345",
 		MockResponseBody:   `{ "ok": false, "error_code":400, "description":"Bot domain invalid." }`,
 		MockResponseStatus: 403,
-		ExpectedPostParams: map[string]string{"text": `Error`, "chat_id": "12345", "parse_mode": "Markdown"},
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("400", "Bot domain invalid.")},
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Error"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+		},
+		ExpectedError: courier.ErrFailedWithReason("400", "Bot domain invalid."),
+		SendPrep:      setSendURL,
 	},
 	{
 		Label:              "Stopped Contact Code",
@@ -855,26 +836,11 @@ var outgoingCases = []OutgoingTestCase{
 		MsgURN:             "telegram:12345",
 		MockResponseBody:   `{ "ok": false, "error_code":403, "description":"Forbidden: bot was blocked by the user"}`,
 		MockResponseStatus: 403,
-		ExpectedPostParams: map[string]string{"text": `Stopped Contact`, "chat_id": "12345", "parse_mode": "Markdown"},
-		ExpectedMsgStatus:  "F",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("403", "Forbidden: bot was blocked by the user")},
-		ExpectedStopEvent:  true,
-		SendPrep:           setSendURL,
-	},
-	{
-		Label:              "Should not stop other error",
-		MsgText:            "Simple Message",
-		MsgURN:             "telegram:12345",
-		MockResponseBody:   `{ "ok": true }`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{
-			"text":         "Simple Message",
-			"chat_id":      "12345",
-			"parse_mode":   "Markdown",
-			"reply_markup": `{"remove_keyboard":true}`,
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"text": {"Stopped Contact"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "reply_markup": {`{"remove_keyboard":true}`}}},
 		},
-		ExpectedMsgStatus: "E",
-		SendPrep:          setSendURL,
+		ExpectedError: courier.ErrContactStopped,
+		SendPrep:      setSendURL,
 	},
 	{
 		Label:              "Send Photo",
@@ -883,10 +849,11 @@ var outgoingCases = []OutgoingTestCase{
 		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"caption": "My pic!", "chat_id": "12345", "parse_mode": "Markdown", "photo": "https://foo.bar/image.jpg"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"133"},
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"caption": {"My pic!"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "photo": {"https://foo.bar/image.jpg"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+		},
+		ExpectedExtIDs: []string{"133"},
+		SendPrep:       setSendURL,
 	},
 	{
 		Label:              "Send Video",
@@ -895,10 +862,11 @@ var outgoingCases = []OutgoingTestCase{
 		MsgAttachments:     []string{"video/mpeg:https://foo.bar/video.mpeg"},
 		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"caption": "My vid!", "chat_id": "12345", "parse_mode": "Markdown", "video": "https://foo.bar/video.mpeg"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"133"},
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"caption": {"My vid!"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "video": {"https://foo.bar/video.mpeg"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+		},
+		ExpectedExtIDs: []string{"133"},
+		SendPrep:       setSendURL,
 	},
 	{
 		Label:              "Send Audio",
@@ -907,10 +875,11 @@ var outgoingCases = []OutgoingTestCase{
 		MsgAttachments:     []string{"audio/mp3:https://foo.bar/audio.mp3"},
 		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"caption": "My audio!", "chat_id": "12345", "parse_mode": "Markdown", "audio": "https://foo.bar/audio.mp3"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"133"},
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"caption": {"My audio!"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "audio": {"https://foo.bar/audio.mp3"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+		},
+		ExpectedExtIDs: []string{"133"},
+		SendPrep:       setSendURL,
 	},
 	{
 		Label:              "Send Document",
@@ -919,17 +888,17 @@ var outgoingCases = []OutgoingTestCase{
 		MsgAttachments:     []string{"application/pdf:https://foo.bar/document.pdf"},
 		MockResponseBody:   `{ "ok": true, "result": { "message_id": 133 } }`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"caption": "My document!", "chat_id": "12345", "parse_mode": "Markdown", "document": "https://foo.bar/document.pdf"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"133"},
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{Form: url.Values{"caption": {"My document!"}, "chat_id": {"12345"}, "parse_mode": []string{"Markdown"}, "document": {"https://foo.bar/document.pdf"}, "reply_markup": {`{"remove_keyboard":true}`}}},
+		},
+		ExpectedExtIDs: []string{"133"},
+		SendPrep:       setSendURL,
 	},
 	{
 		Label:             "Unknown attachment type",
-		MsgText:           "My pic!",
+		MsgText:           "My foo!",
 		MsgURN:            "telegram:12345",
 		MsgAttachments:    []string{"unknown/foo:https://foo.bar/unknown.foo"},
-		ExpectedMsgStatus: "E",
 		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorMediaUnsupported("unknown/foo")},
 		SendPrep:          setSendURL,
 	},

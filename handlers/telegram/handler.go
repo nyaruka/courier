@@ -142,7 +142,7 @@ type mtResponse struct {
 	} `json:"result"`
 }
 
-func (h *handler) sendMsgPart(msg courier.MsgOut, token string, path string, form url.Values, keyboard *ReplyKeyboardMarkup, clog *courier.ChannelLog) (string, bool, error) {
+func (h *handler) sendMsgPart(msg courier.MsgOut, token, path string, form url.Values, keyboard *ReplyKeyboardMarkup, clog *courier.ChannelLog) (string, error) {
 	// either include or remove our keyboard
 	form.Add("parse_mode", "Markdown")
 	if keyboard == nil {
@@ -154,45 +154,43 @@ func (h *handler) sendMsgPart(msg courier.MsgOut, token string, path string, for
 	sendURL := fmt.Sprintf("%s/bot%s/%s", apiURL, token, path)
 	req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		return "", false, err
+		return "", err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, respBody, _ := h.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 == 5 {
+		return "", courier.ErrConnectionFailed
+	}
 
 	response := &mtResponse{}
 	err = json.Unmarshal(respBody, response)
 
 	if err != nil || resp.StatusCode/100 != 2 || !response.Ok {
-		clog.Error(courier.ErrorExternal(strconv.Itoa(response.ErrorCode), response.Description))
 		if response.ErrorCode == 403 && response.Description == "Forbidden: bot was blocked by the user" {
-			return "", true, errors.Errorf("response not 'ok'")
+			return "", courier.ErrContactStopped
+		} else if response.ErrorCode > 0 {
+			return "", courier.ErrFailedWithReason(strconv.Itoa(response.ErrorCode), response.Description)
 		}
-		return "", false, errors.Errorf("response not 'ok'")
 
+		return "", courier.ErrResponseStatus
 	}
 
 	if response.Result.MessageID > 0 {
-		return strconv.FormatInt(response.Result.MessageID, 10), false, nil
+		return strconv.FormatInt(response.Result.MessageID, 10), nil
 	}
-	return "", false, errors.Errorf("no 'result.message_id' in response")
+	return "", courier.ErrResponseUnexpected
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
-	confAuth := msg.Channel().ConfigForKey(courier.ConfigAuthToken, "")
-	authToken, isStr := confAuth.(string)
-	if !isStr || authToken == "" {
-		return nil, fmt.Errorf("invalid auth token config")
+	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
+	if authToken == "" {
+		return courier.ErrChannelConfig
 	}
 
 	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, true)
 	if err != nil {
-		return nil, errors.Wrap(err, "error resolving attachments")
+		return errors.Wrap(err, "error resolving attachments")
 	}
 
 	// we only caption if there is only a single attachment
@@ -200,12 +198,6 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 	if len(attachments) == 1 {
 		caption = msg.Text()
 	}
-
-	// the status that will be written for this message
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
-
-	// whether we encountered any errors sending any parts
-	hasError := true
 
 	// figure out whether we have a keyboard to send as well
 	qrs := msg.QuickReplies()
@@ -221,21 +213,14 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 			msgKeyBoard = keyboard
 		}
 
-		form := url.Values{
-			"chat_id": []string{msg.URN().Path()},
-			"text":    []string{msg.Text()},
+		form := url.Values{"chat_id": []string{msg.URN().Path()}, "text": []string{msg.Text()}}
+
+		externalID, err := h.sendMsgPart(msg, authToken, "sendMessage", form, msgKeyBoard, clog)
+		if err != nil {
+			return err
 		}
 
-		externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendMessage", form, msgKeyBoard, clog)
-		if botBlocked {
-			status.SetStatus(courier.MsgStatusFailed)
-			channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.EventTypeStopContact, msg.URN(), clog)
-			err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
-			return status, err
-		}
-		status.SetExternalID(externalID)
-		hasError = err != nil
-
+		res.AddExternalID(externalID)
 	}
 
 	// send each attachment
@@ -252,15 +237,11 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 				"photo":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
-			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, attachmentKeyBoard, clog)
-			if botBlocked {
-				status.SetStatus(courier.MsgStatusFailed)
-				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.EventTypeStopContact, msg.URN(), clog)
-				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
-				return status, err
+			externalID, err := h.sendMsgPart(msg, authToken, "sendPhoto", form, attachmentKeyBoard, clog)
+			if err != nil {
+				return err
 			}
-			status.SetExternalID(externalID)
-			hasError = err != nil
+			res.AddExternalID(externalID)
 
 		case handlers.MediaTypeVideo:
 			form := url.Values{
@@ -268,15 +249,11 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 				"video":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
-			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendVideo", form, attachmentKeyBoard, clog)
-			if botBlocked {
-				status.SetStatus(courier.MsgStatusFailed)
-				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.EventTypeStopContact, msg.URN(), clog)
-				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
-				return status, err
+			externalID, err := h.sendMsgPart(msg, authToken, "sendVideo", form, attachmentKeyBoard, clog)
+			if err != nil {
+				return err
 			}
-			status.SetExternalID(externalID)
-			hasError = err != nil
+			res.AddExternalID(externalID)
 
 		case handlers.MediaTypeAudio:
 			form := url.Values{
@@ -284,15 +261,11 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 				"audio":   []string{attachment.URL},
 				"caption": []string{caption},
 			}
-			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendAudio", form, attachmentKeyBoard, clog)
-			if botBlocked {
-				status.SetStatus(courier.MsgStatusFailed)
-				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.EventTypeStopContact, msg.URN(), clog)
-				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
-				return status, err
+			externalID, err := h.sendMsgPart(msg, authToken, "sendAudio", form, attachmentKeyBoard, clog)
+			if err != nil {
+				return err
 			}
-			status.SetExternalID(externalID)
-			hasError = err != nil
+			res.AddExternalID(externalID)
 
 		case handlers.MediaTypeApplication:
 			form := url.Values{
@@ -300,27 +273,18 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 				"document": []string{attachment.URL},
 				"caption":  []string{caption},
 			}
-			externalID, botBlocked, err := h.sendMsgPart(msg, authToken, "sendDocument", form, attachmentKeyBoard, clog)
-			if botBlocked {
-				status.SetStatus(courier.MsgStatusFailed)
-				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.EventTypeStopContact, msg.URN(), clog)
-				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
-				return status, err
+			externalID, err := h.sendMsgPart(msg, authToken, "sendDocument", form, attachmentKeyBoard, clog)
+			if err != nil {
+				return err
 			}
-			status.SetExternalID(externalID)
-			hasError = err != nil
+			res.AddExternalID(externalID)
 
 		default:
 			clog.Error(courier.ErrorMediaUnsupported(attachment.ContentType))
-			hasError = true
 		}
 	}
 
-	if !hasError {
-		status.SetStatus(courier.MsgStatusWired)
-	}
-
-	return status, nil
+	return nil
 }
 
 type fileResponse struct {
