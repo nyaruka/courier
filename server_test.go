@@ -110,6 +110,7 @@ func TestOutgoing(t *testing.T) {
 			httpx.MockConnectionError,
 			httpx.NewMockResponse(200, nil, []byte(`SENT`)),
 			httpx.NewMockResponse(429, nil, []byte(`too much!`)),
+			httpx.NewMockResponse(403, nil, []byte(`stop!`)),
 		},
 	}))
 
@@ -193,6 +194,18 @@ func TestOutgoing(t *testing.T) {
 	// message should be marked as errored (retryable)
 	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
 	assert.Equal(t, courier.MsgStatusErrored, mb.WrittenMsgStatuses()[0].Status())
+	mb.Reset()
+
+	// send message which will have mocked contact-stopped error
+	sendAndWait(mb, test.NewMockMsg(courier.MsgID(106), courier.NilMsgUUID, mockChannel, "tel:+250788383383", "6", nil))
+
+	// message should be marked as failed (non-retryable)
+	assert.Equal(t, 1, len(mb.WrittenMsgStatuses()))
+	assert.Equal(t, courier.MsgStatusFailed, mb.WrittenMsgStatuses()[0].Status())
+
+	// and we should have created a contact stop event
+	assert.Equal(t, 1, len(mb.WrittenChannelEvents()))
+	assert.Equal(t, courier.EventTypeStopContact, mb.WrittenChannelEvents()[0].EventType())
 	mb.Reset()
 }
 

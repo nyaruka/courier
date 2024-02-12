@@ -52,6 +52,8 @@ func (h *mockHandler) Send(ctx context.Context, msg courier.MsgOut, res *courier
 
 	if err != nil || trace.Response.StatusCode/100 == 5 {
 		return courier.ErrConnectionFailed
+	} else if trace.Response.StatusCode == 403 {
+		return courier.ErrContactStopped
 	} else if trace.Response.StatusCode == 429 {
 		return courier.ErrConnectionThrottled
 	}

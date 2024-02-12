@@ -360,7 +360,7 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 	}
 
 	var serr *SendError
-	if err != nil && errors.As(err, &serr) {
+	if errors.As(err, &serr) {
 		if serr.loggable {
 			log.Error("error sending message", "error", err)
 		}
@@ -372,7 +372,13 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 
 		clog.Error(NewChannelError(serr.clogCode, serr.clogExtCode, serr.clogMsg))
 
-		// TODO handle creating stop event for ErrSendContactStopped
+		// if handler returned ErrContactStopped need to write a stop event
+		if serr == ErrContactStopped {
+			channelEvent := backend.NewChannelEvent(m.Channel(), EventTypeStopContact, m.URN(), clog)
+			if err = backend.WriteChannelEvent(ctx, channelEvent, clog); err != nil {
+				log.Error("error writing stop event", "error", err)
+			}
+		}
 
 	} else if err != nil {
 		log.Error("error sending message", "error", err)
