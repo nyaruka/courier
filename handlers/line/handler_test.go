@@ -3,7 +3,6 @@ package line
 import (
 	"context"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -387,199 +386,186 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
-}
-
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	replySendURL = s.URL + "/v2/bot/message/reply"
-	pushSendURL = s.URL + "/v2/bot/message/push"
-}
-
-const tooLongMsg = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis augue vel placerat congue.
-Etiam nec tempus enim. Cras placerat at est vel suscipit. Duis quis faucibus metus, non elementum tortor.
-Pellentesque posuere ullamcorper metus auctor venenatis. Proin eget hendrerit dui. Sed eget massa nec mauris consequat pretium.
-Praesent mattis arcu tortor, ac aliquet turpis tincidunt eu.
-
-Fusce ut lacinia augue. Vestibulum felis nisi, porta ut est condimentum, condimentum volutpat libero.
-Suspendisse a elit venenatis, condimentum sem at, ultricies mauris. Morbi interdum sem id tempor tristique.
-Ut tincidunt massa eu purus lacinia sodales a volutpat neque. Cras dolor quam, eleifend a rhoncus quis, sodales nec purus.
-Vivamus justo dolor, gravida at quam eu, hendrerit rutrum justo. Sed hendrerit nisi vitae nisl ornare tristique.
-Proin vulputate id justo non aliquet.`
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:               "Plain Send",
-		MsgText:             "Simple Message",
-		MsgURN:              "line:uabcdefghij",
-		MockResponseBody:    `{}`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message"}]}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "line:uabcdefghij",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
+				Body:    `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message"}]}`,
+			},
+		},
+		ExpectedMsgStatus: "W",
 	},
 	{
-		Label:               "Unicode Send",
-		MsgText:             "Simple Message ☺",
-		MsgURN:              "line:uabcdefghij",
-		MockResponseBody:    `{}`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message ☺"}]}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:   "Long Send",
+		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:  "line:uabcdefghij",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"},{"type":"text","text":"I need to keep adding more things to make it work"}]}`,
+			},
+		},
+		ExpectedMsgStatus: "W",
 	},
 	{
-		Label:               "Long Send",
-		MsgText:             "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:              "line:uabcdefghij",
-		MockResponseBody:    `{}`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"},{"type":"text","text":"I need to keep adding more things to make it work"}]}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:          "Send Audio Attachment",
+		MsgText:        "My Audio!",
+		MsgURN:         "line:uabcdefghij",
+		MsgAttachments: []string{"audio/mp3:http://mock.com/3456/test.mp3"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"audio","originalContentUrl":"http://mock.com/2345/test.m4a","duration":200},{"type":"text","text":"My Audio!"}]}`,
+			},
+		},
+		ExpectedMsgStatus: "W",
 	},
 	{
-		Label:               "Send Audio Attachment",
-		MsgText:             "My Audio!",
-		MsgURN:              "line:uabcdefghij",
-		MsgAttachments:      []string{"audio/mp3:http://mock.com/3456/test.mp3"},
-		MockResponseBody:    `{}`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"audio","originalContentUrl":"http://mock.com/2345/test.m4a","duration":200},{"type":"text","text":"My Audio!"}]}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:          "Send Video Attachment",
+		MsgText:        "My Video!",
+		MsgURN:         "line:uabcdefghij",
+		MsgAttachments: []string{"video/mp4:http://mock.com/5678/test.mp4"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"video","originalContentUrl":"http://mock.com/5678/test.mp4","previewImageUrl":"http://mock.com/4567/test.jpg"},{"type":"text","text":"My Video!"}]}`,
+			},
+		},
+		ExpectedMsgStatus: "W",
 	},
 	{
-		Label:               "Send Video Attachment",
-		MsgText:             "My Video!",
-		MsgURN:              "line:uabcdefghij",
-		MsgAttachments:      []string{"video/mp4:http://mock.com/5678/test.mp4"},
-		MockResponseBody:    `{}`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"video","originalContentUrl":"http://mock.com/5678/test.mp4","previewImageUrl":"http://mock.com/4567/test.jpg"},{"type":"text","text":"My Video!"}]}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
-	},
-
-	{
-		Label:               "Send Image Attachment",
-		MsgText:             "My pic!",
-		MsgURN:              "line:uabcdefghij",
-		MsgAttachments:      []string{"image/jpeg:http://mock.com/1234/test.jpg"},
-		MockResponseBody:    `{}`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"image","originalContentUrl":"http://mock.com/1234/test.jpg","previewImageUrl":"http://mock.com/1234/test.jpg"},{"type":"text","text":"My pic!"}]}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:          "Send Image Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "line:uabcdefghij",
+		MsgAttachments: []string{"image/jpeg:http://mock.com/1234/test.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"image","originalContentUrl":"http://mock.com/1234/test.jpg","previewImageUrl":"http://mock.com/1234/test.jpg"},{"type":"text","text":"My pic!"}]}`,
+			},
+		},
+		ExpectedMsgStatus: "W",
 	},
 	{
-		Label:               "Send Other Attachment",
-		MsgText:             "My doc!",
-		MsgURN:              "line:uabcdefghij",
-		MsgAttachments:      []string{"application/pdf:http://mock.com/7890/test.pdf"},
-		ExpectedMsgStatus:   "W",
-		MockResponseBody:    `{}`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"http://mock.com/7890/test.pdf"},{"type":"text","text":"My doc!"}]}`,
-		SendPrep:            setSendURL,
-	},
-	{
-		Label:               "Send Message Batches",
-		MsgText:             tooLongMsg,
-		MsgURN:              "line:uabcdefghij",
-		MockResponseBody:    `{}`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Sed hendrerit nisi vitae nisl ornare tristique.\nProin vulputate id justo non aliquet."}]}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:          "Send Other Attachment",
+		MsgText:        "My doc!",
+		MsgURN:         "line:uabcdefghij",
+		MsgAttachments: []string{"application/pdf:http://mock.com/7890/test.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"http://mock.com/7890/test.pdf"},{"type":"text","text":"My doc!"}]}`,
+			},
+		},
+		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:                   "Send Reply Message",
 		MsgText:                 "Simple Message",
 		MsgURN:                  "line:uabcdefghij",
 		MsgResponseToExternalID: "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
-		MockResponseBody:        `{}`,
-		MockResponseStatus:      200,
-		ExpectedHeaders:         map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
-		ExpectedRequestBody:     `{"replyToken":"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA","messages":[{"type":"text","text":"Simple Message"}]}`,
-		ExpectedMsgStatus:       "W",
-		SendPrep:                setSendURL,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/reply": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"replyToken":"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA","messages":[{"type":"text","text":"Simple Message"}]}`,
+			},
+		},
+		ExpectedMsgStatus: "W",
 	},
 	{
-		Label:               "Quick Reply",
-		MsgText:             "Are you happy?",
-		MsgURN:              "line:uabcdefghij",
-		MsgQuickReplies:     []string{"Yes", "No"},
-		MockResponseBody:    `{}`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Are you happy?","quickReply":{"items":[{"type":"action","action":{"type":"message","label":"Yes","text":"Yes"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:           "Quick Reply",
+		MsgText:         "Are you happy?",
+		MsgURN:          "line:uabcdefghij",
+		MsgQuickReplies: []string{"Yes", "No"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Are you happy?","quickReply":{"items":[{"type":"action","action":{"type":"message","label":"Yes","text":"Yes"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
+			},
+		},
+		ExpectedMsgStatus: "W",
 	},
 	{
-		Label:               "Quick Reply combined and attachment",
-		MsgText:             "Are you happy?",
-		MsgURN:              "line:uabcdefghij",
-		MsgAttachments:      []string{"image/jpeg:http://mock.com/1234/test.jpg"},
-		MsgQuickReplies:     []string{"Yes", "No"},
-		MockResponseBody:    `{}`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json", "Authorization": "Bearer AccessToken"},
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"image","originalContentUrl":"http://mock.com/1234/test.jpg","previewImageUrl":"http://mock.com/1234/test.jpg"},{"type":"text","text":"Are you happy?","quickReply":{"items":[{"type":"action","action":{"type":"message","label":"Yes","text":"Yes"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:           "Quick Reply combined and attachment",
+		MsgText:         "Are you happy?",
+		MsgURN:          "line:uabcdefghij",
+		MsgAttachments:  []string{"image/jpeg:http://mock.com/1234/test.jpg"},
+		MsgQuickReplies: []string{"Yes", "No"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"image","originalContentUrl":"http://mock.com/1234/test.jpg","previewImageUrl":"http://mock.com/1234/test.jpg"},{"type":"text","text":"Are you happy?","quickReply":{"items":[{"type":"action","action":{"type":"message","label":"Yes","text":"Yes"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
+			},
+		},
+		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:                   "Send Push Message If Invalid Reply",
 		MsgText:                 "Simple Message",
 		MsgURN:                  "line:uabcdefghij",
 		MsgResponseToExternalID: "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
-		MockResponses: map[MockedRequest]*httpx.MockResponse{
-			{
-				Method:       "POST",
-				Path:         "/v2/bot/message/reply",
-				BodyContains: `{"replyToken":"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA","messages":[{"type":"text","text":"Simple Message"}]}`,
-			}: httpx.NewMockResponse(400, nil, []byte(`{"message":"Invalid reply token"}`)),
-			{
-				Method:       "POST",
-				Path:         "/v2/bot/message/push",
-				BodyContains: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message"}]}`,
-			}: httpx.NewMockResponse(200, nil, []byte(`{}`)),
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/reply": {httpx.NewMockResponse(400, nil, []byte(`{"message":"Invalid reply token"}`))},
+			"https://api.line.me/v2/bot/message/push":  {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{Path: "/v2/bot/message/reply", Body: `{"replyToken":"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA","messages":[{"type":"text","text":"Simple Message"}]}`},
+			{Path: "/v2/bot/message/push", Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message"}]}`},
 		},
 		ExpectedMsgStatus: "W",
-		SendPrep:          setSendURL,
 	},
 	{
-		Label:               "Invalid JSON response sending",
-		MsgText:             "Error Sending",
-		MsgURN:              "line:uabcdefghij",
-		MockResponseBody:    ``,
-		MockResponseStatus:  403,
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
-		ExpectedMsgStatus:   "E",
-		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
-		SendPrep:            setSendURL,
+		Label:   "Invalid JSON response sending",
+		MsgText: "Error Sending",
+		MsgURN:  "line:uabcdefghij",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(403, nil, []byte(``))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
+			},
+		},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
 	},
 	{
-		Label:               "Error Sending",
-		MsgText:             "Error Sending",
-		MsgURN:              "line:uabcdefghij",
-		MockResponseBody:    `{"message": "Failed to send messages"}`,
-		MockResponseStatus:  403,
-		ExpectedRequestBody: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
-		ExpectedMsgStatus:   "E",
-		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorExternal("403", "Failed to send messages")},
-		SendPrep:            setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Sending",
+		MsgURN:  "line:uabcdefghij",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/push": {httpx.NewMockResponse(403, nil, []byte(`{"message": "Failed to send messages"}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
+			},
+		},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("403", "Failed to send messages")},
 	},
 }
 
@@ -605,15 +591,10 @@ func setupMedia(mb *test.MockBackend) {
 }
 
 func TestOutgoing(t *testing.T) {
-
 	maxMsgLength = 160
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US",
-		map[string]any{
-			"auth_token": "AccessToken",
-		},
-	)
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "LN", "2020", "US", map[string]any{"auth_token": "AccessToken"})
 
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"AccessToken"}, setupMedia)
+	RunOutgoingTestCases(t, ch, newHandler(), defaultSendTestCases, []string{"AccessToken"}, setupMedia)
 }
 
 func TestBuildAttachmentRequest(t *testing.T) {

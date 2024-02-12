@@ -72,19 +72,6 @@ type IncomingTestCase struct {
 	NoLogsExpected        bool
 }
 
-// MockedRequest is a fake HTTP request
-type MockedRequest struct {
-	Method       string
-	Path         string
-	RawQuery     string
-	Body         string
-	BodyContains string
-}
-
-func (m MockedRequest) Matches(r *http.Request, body []byte) bool {
-	return m.Method == r.Method && m.Path == r.URL.Path && m.RawQuery == r.URL.RawQuery && (m.Body == string(body) || (m.BodyContains != "" && strings.Contains(string(body), m.BodyContains)))
-}
-
 // utility method to make a request to a handler URL
 func testHandlerRequest(tb testing.TB, s courier.Server, path string, headers map[string]string, data string, multipartFormFields map[string]string, expectedStatus int, expectedBodyContains string, requestPrepFunc RequestPrepFunc) string {
 	var req *http.Request
@@ -269,11 +256,12 @@ func RunIncomingTestCases(t *testing.T, channels []courier.Channel, handler cour
 type SendPrepFunc func(*httptest.Server, courier.ChannelHandler, courier.Channel, courier.MsgOut)
 
 type ExpectedRequest struct {
-	Headers map[string]string
-	Path    string
-	Params  url.Values
-	Form    url.Values
-	Body    string
+	Headers      map[string]string
+	Path         string
+	Params       url.Values
+	Form         url.Values
+	Body         string
+	BodyContains string
 }
 
 func (e *ExpectedRequest) AssertMatches(t *testing.T, actual *http.Request, requestNum int) {
@@ -295,6 +283,10 @@ func (e *ExpectedRequest) AssertMatches(t *testing.T, actual *http.Request, requ
 	if e.Body != "" {
 		value, _ := io.ReadAll(actual.Body)
 		assert.Equal(t, e.Body, strings.Trim(string(value), "\n"), "body mismatch for request %d", requestNum)
+	}
+	if e.BodyContains != "" {
+		value, _ := io.ReadAll(actual.Body)
+		assert.Contains(t, string(value), e.BodyContains, "body contains fail for request %d", requestNum)
 	}
 }
 
@@ -319,9 +311,7 @@ type OutgoingTestCase struct {
 	MsgOrigin               courier.MsgOrigin
 	MsgContactLastSeenOn    *time.Time
 
-	MockResponseStatus int
-	MockResponseBody   string
-	MockResponses      map[MockedRequest]*httpx.MockResponse
+	MockResponses map[string][]*httpx.MockResponse
 
 	ExpectedRequests    []ExpectedRequest
 	ExpectedExtIDs      []string
@@ -333,6 +323,10 @@ type OutgoingTestCase struct {
 
 	// only used by legacy send type handlers
 	ExpectedMsgStatus courier.MsgStatus
+
+	// deprecated, use MockResponses
+	MockResponseStatus int
+	MockResponseBody   string
 
 	// deprecated, use ExpectedRequests
 	ExpectedURLParams   map[string]string
@@ -381,8 +375,6 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 	handler.Initialize(s)
 
 	for _, tc := range testCases {
-		mockRRCount := 0
-
 		mb.Reset()
 
 		t.Run(tc.Label, func(t *testing.T) {
@@ -390,33 +382,29 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 
 			msg := tc.Msg(mb, channel)
 
+			var mockHTTP *httpx.MockRequestor
 			actualRequests := make([]*http.Request, 0, 1)
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				// copy request and add to list
-				body, _ := io.ReadAll(r.Body)
-				copy := httptest.NewRequest(r.Method, r.URL.String(), bytes.NewBuffer(body))
-				copy.Header = r.Header
-				actualRequests = append(actualRequests, copy)
 
-				if (len(tc.MockResponses)) == 0 {
+			if len(tc.MockResponses) > 0 {
+				mockHTTP = httpx.NewMockRequestor(tc.MockResponses).Clone()
+				httpx.SetRequestor(mockHTTP)
+			} else {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					// copy request and add to list
+					body, _ := io.ReadAll(r.Body)
+					copy := httptest.NewRequest(r.Method, r.URL.String(), bytes.NewBuffer(body))
+					copy.Header = r.Header
+					actualRequests = append(actualRequests, copy)
+
 					w.WriteHeader(tc.MockResponseStatus)
 					w.Write([]byte(tc.MockResponseBody))
-				} else {
-					for mockRequest, mockResponse := range tc.MockResponses {
-						if mockRequest == (MockedRequest{}) || mockRequest.Matches(r, body) {
-							w.WriteHeader(mockResponse.Status)
-							w.Write(mockResponse.Body)
-							mockRRCount++
-							break
-						}
-					}
-				}
-			}))
-			defer server.Close()
+				}))
+				defer server.Close()
 
-			// call our prep function if we have one
-			if tc.SendPrep != nil {
-				tc.SendPrep(server, handler, channel, msg)
+				// call our prep function if we have one
+				if tc.SendPrep != nil {
+					tc.SendPrep(server, handler, channel, msg)
+				}
 			}
 
 			clog := courier.NewChannelLogForSend(msg, handler.RedactValues(channel))
@@ -444,6 +432,14 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 				res := &courier.SendResult{}
 				serr = handler.Send(ctx, msg, res, clog)
 				externalIDs = res.ExternalIDs()
+			}
+
+			if mockHTTP != nil {
+				httpx.SetRequestor(httpx.DefaultRequestor)
+
+				actualRequests = mockHTTP.Requests()
+
+				assert.False(t, mockHTTP.HasUnused(), "unused HTTP mocks")
 			}
 
 			cancel()
@@ -486,10 +482,6 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 					}
 					expectedRequest.AssertMatches(t, actualRequests[i], i)
 				}
-			}
-
-			if (len(tc.MockResponses)) != 0 {
-				assert.Equal(t, len(tc.MockResponses), mockRRCount, "mocked request count mismatch")
 			}
 
 			assert.Equal(t, tc.ExpectedExtIDs, externalIDs, "external IDs mismatch")

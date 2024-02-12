@@ -349,7 +349,7 @@ func TestIncoming(t *testing.T) {
 }
 
 func buildMockVKService(testCases []IncomingTestCase) *httptest.Server {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, actionGetUser) {
 			userId := r.URL.Query()["user_ids"][0]
 
@@ -360,13 +360,15 @@ func buildMockVKService(testCases []IncomingTestCase) *httptest.Server {
 			_, _ = w.Write([]byte(`{"response": []}`))
 		}
 	}))
-	apiBaseURL = server.URL
-	return server
 }
 
 func TestDescribeURN(t *testing.T) {
 	server := buildMockVKService([]IncomingTestCase{})
 	defer server.Close()
+
+	realAPIUrl := apiBaseURL
+	apiBaseURL = server.URL
+	defer func() { apiBaseURL = realAPIUrl }()
 
 	handler := newHandler()
 	handler.Initialize(test.NewMockServer(courier.NewDefaultConfig(), test.NewMockBackend()))
@@ -381,53 +383,61 @@ func TestDescribeURN(t *testing.T) {
 	AssertChannelLogRedaction(t, clog, []string{"token123xyz", "abc123xyz"})
 }
 
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	apiBaseURL = s.URL
-	URLPhotoUploadServer = s.URL + "/upload/photo"
-}
-
 var sendTestCases = []OutgoingTestCase{
 	{
-		Label:             "Send simple message",
-		MsgText:           "Simple message",
-		MsgURN:            "vk:123456789",
-		ExpectedMsgStatus: "S",
-		SendPrep:          setSendURL,
-		ExpectedExtIDs:    []string{"1"},
-		MockResponses: map[MockedRequest]*httpx.MockResponse{
-			{
-				Method:   "POST",
-				Path:     actionSendMessage,
-				RawQuery: "access_token=token123xyz&attachment=&message=Simple+message&random_id=10&user_id=123456789&v=5.103",
-			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
+		Label:   "Send simple message",
+		MsgText: "Simple message",
+		MsgURN:  "vk:123456789",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.vk.com/method/messages.send.json?*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
+			},
 		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
+			},
+		},
+		ExpectedMsgStatus: "S",
+		ExpectedExtIDs:    []string{"1"},
 	},
 	{
-		Label:             "Send photo attachment",
-		MsgText:           "",
-		MsgURN:            "vk:123456789",
-		MsgAttachments:    []string{"image/png:https://foo.bar/image.png"},
-		ExpectedMsgStatus: "S",
-		SendPrep:          setSendURL,
-		ExpectedExtIDs:    []string{"1"},
-		MockResponses: map[MockedRequest]*httpx.MockResponse{
-			{
-				Method:       "POST",
-				Path:         "/upload/photo",
-				BodyContains: `media body`,
-			}: httpx.NewMockResponse(200, nil, []byte(`{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`)),
-			{
-				Method:   "POST",
-				Path:     actionSaveUploadedPhotoInfo,
-				RawQuery: "access_token=token123xyz&hash=zxc987qwe&photo=...&server=109876&v=5.103",
-			}: httpx.NewMockResponse(200, nil, []byte(`{"response": [{"id": 1, "owner_id": 1901234}]}`)),
-			{
-				Method:   "POST",
-				Path:     actionSendMessage,
-				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=&random_id=10&user_id=123456789&v=5.103",
-			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
+		Label:          "Send photo attachment",
+		MsgText:        "",
+		MsgURN:         "vk:123456789",
+		MsgAttachments: []string{"image/png:https://foo.bar/image.png"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.vk.com/method/photos.getMessagesUploadServer.json?access_token=token123xyz&v=5.103": {
+				httpx.NewMockResponse(200, nil, []byte(`{"response": {"upload_url": "https://api.vk.com/upload"}}`)),
+			},
+			"https://foo.bar/image.png": {
+				httpx.NewMockResponse(200, nil, []byte(`bytes`)),
+			},
+			"https://api.vk.com/upload": {
+				httpx.NewMockResponse(200, nil, []byte(`{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`)),
+			},
+			"https://api.vk.com/method/photos.saveMessagesPhoto.json*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"response": [{"id": 1, "owner_id": 1901234}]}`)),
+			},
+			"https://api.vk.com/method/messages.send.json*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
+			},
 		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{"access_token": {"token123xyz"}, "v": {"5.103"}},
+			},
+			{},
+			{},
+			{
+				Params: url.Values{"access_token": {"token123xyz"}, "hash": {"zxc987qwe"}, "photo": {"..."}, "server": {"109876"}, "v": {"5.103"}},
+			},
+			{
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {"photo1901234_1"}, "message": {""}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
+			},
+		},
+		ExpectedMsgStatus: "S",
+		ExpectedExtIDs:    []string{"1"},
 	},
 	{
 		Label:             "Send photo and another attachment type",
@@ -435,68 +445,52 @@ var sendTestCases = []OutgoingTestCase{
 		MsgURN:            "vk:123456789",
 		MsgAttachments:    []string{"image/png:https://foo.bar/image.png", "audio/mp3:https://foo.bar/audio.mp3"},
 		ExpectedMsgStatus: "S",
-		SendPrep:          setSendURL,
 		ExpectedExtIDs:    []string{"1"},
-		MockResponses: map[MockedRequest]*httpx.MockResponse{
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://foo.bar/image.png": {
+				httpx.NewMockResponse(200, nil, []byte(`bytes`)),
+			},
+			"https://api.vk.com/upload": {
+				httpx.NewMockResponse(200, nil, []byte(`{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`)),
+			},
+			"https://api.vk.com/method/photos.saveMessagesPhoto.json*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"response": [{"id": 1, "owner_id": 1901234}]}`)),
+			},
+			"https://api.vk.com/method/messages.send.json*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{},
+			{},
 			{
-				Method:       "POST",
-				Path:         "/upload/photo",
-				BodyContains: `media body`,
-			}: httpx.NewMockResponse(200, nil, []byte(`{"server": 109876, "photo": "...", "hash": "zxc987qwe"}`)),
+				Params: url.Values{"access_token": {"token123xyz"}, "hash": {"zxc987qwe"}, "photo": {"..."}, "server": {"109876"}, "v": {"5.103"}},
+			},
 			{
-				Method:   "POST",
-				Path:     actionSaveUploadedPhotoInfo,
-				RawQuery: "access_token=token123xyz&hash=zxc987qwe&photo=...&server=109876&v=5.103",
-			}: httpx.NewMockResponse(200, nil, []byte(`{"response": [{"id": 1, "owner_id": 1901234}]}`)),
-			{
-				Method:   "POST",
-				Path:     actionSendMessage,
-				RawQuery: "access_token=token123xyz&attachment=photo1901234_1&message=Attachments" + url.QueryEscape("\n\nhttps://foo.bar/audio.mp3") + "&random_id=10&user_id=123456789&v=5.103",
-			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {"photo1901234_1"}, "message": {"Attachments\n\nhttps://foo.bar/audio.mp3"}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
+			},
 		},
 	},
 	{
-		Label:             "Send keyboard",
-		MsgText:           "Send keyboard",
-		MsgURN:            "vk:123456789",
-		MsgQuickReplies:   []string{"A", "B", "C", "D", "E"},
-		ExpectedMsgStatus: "S",
-		SendPrep:          setSendURL,
-		ExpectedExtIDs:    []string{"1"},
-		MockResponses: map[MockedRequest]*httpx.MockResponse{
-			{
-				Method:   "POST",
-				Path:     actionSendMessage,
-				RawQuery: "access_token=token123xyz&attachment=&keyboard=" + url.QueryEscape(keyboardJson) + "&message=Send+keyboard&random_id=10&user_id=123456789&v=5.103",
-			}: httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
+		Label:           "Send keyboard",
+		MsgText:         "Send keyboard",
+		MsgURN:          "vk:123456789",
+		MsgQuickReplies: []string{"A", "B", "C", "D", "E"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.vk.com/method/messages.send.json?*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"response": 1}`)),
+			},
 		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "keyboard": {keyboardJson}, "message": {"Send keyboard"}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
+			},
+		},
+		ExpectedMsgStatus: "S",
+		ExpectedExtIDs:    []string{"1"},
 	},
 }
 
-func mockAttachmentURLs(mediaServer *httptest.Server, testCases []OutgoingTestCase) []OutgoingTestCase {
-	casesWithMockedUrls := make([]OutgoingTestCase, len(testCases))
-
-	for i, testCase := range testCases {
-		mockedCase := testCase
-
-		for j, attachment := range testCase.MsgAttachments {
-			prefix, _ := SplitAttachment(attachment)
-			if mediaType := strings.Split(prefix, "/")[0]; mediaType != "image" {
-				continue
-			}
-			mockedCase.MsgAttachments[j] = strings.Replace(attachment, "https://foo.bar", mediaServer.URL, 1)
-		}
-		casesWithMockedUrls[i] = mockedCase
-	}
-	return casesWithMockedUrls
-}
-
-func TestSend(t *testing.T) {
-	mediaServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		defer req.Body.Close()
-		res.WriteHeader(200)
-		res.Write([]byte("media body"))
-	}))
-	mockedSendTestCases := mockAttachmentURLs(mediaServer, sendTestCases)
-	RunOutgoingTestCases(t, testChannels[0], newHandler(), mockedSendTestCases, []string{"token123xyz", "abc123xyz"}, nil)
+func TestOutgoing(t *testing.T) {
+	RunOutgoingTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"token123xyz", "abc123xyz"}, nil)
 }

@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/buger/jsonparser"
@@ -217,27 +216,17 @@ var fileSendTestCases = []OutgoingTestCase{
 		MsgText:        "",
 		MsgURN:         "slack:U0123ABCDEF",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.png"},
-		MockResponses: map[MockedRequest]*httpx.MockResponse{
-			{
-				Method:       "POST",
-				Path:         "/files.upload",
-				BodyContains: "image.png",
-			}: httpx.NewMockResponse(200, nil, []byte(`{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`)),
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/image.png": {
+				httpx.NewMockResponse(200, nil, []byte(`filetype... ...file bytes... ...end`)),
+			},
+			"*/files.upload": {
+				httpx.NewMockResponse(200, nil, []byte(`{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`)),
+			},
 		},
-		ExpectedMsgStatus: "W",
-		SendPrep:          setSendURL,
-	},
-	{
-		Label:          "Send Image",
-		MsgText:        "",
-		MsgURN:         "slack:U0123ABCDEF",
-		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.png"},
-		MockResponses: map[MockedRequest]*httpx.MockResponse{
-			{
-				Method:       "POST",
-				Path:         "/files.upload",
-				BodyContains: "image.png",
-			}: httpx.NewMockResponse(200, nil, []byte(`{"ok":true,"file":{"id":"F1L3SL4CK1D"}}`)),
+		ExpectedRequests: []ExpectedRequest{
+			{},
+			{BodyContains: "image.png"},
 		},
 		ExpectedMsgStatus: "W",
 		SendPrep:          setSendURL,
@@ -256,10 +245,6 @@ func TestOutgoing(t *testing.T) {
 }
 
 func TestSendFiles(t *testing.T) {
-	fileServer := buildMockAttachmentFileServer()
-	defer fileServer.Close()
-	fileSendTestCases := mockAttachmentURLs(fileServer, fileSendTestCases)
-
 	RunOutgoingTestCases(t, testChannels[0], newHandler(), fileSendTestCases, []string{"xoxb-abc123", "one-long-verification-token"}, nil)
 }
 
@@ -275,14 +260,6 @@ func TestVerification(t *testing.T) {
 			Headers: map[string]string{"content-type": "text/plain"},
 		},
 	})
-}
-
-func buildMockAttachmentFileServer() *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-		w.WriteHeader(200)
-		w.Write([]byte("filetype... ...file bytes... ...end"))
-	}))
 }
 
 func buildMockSlackService(testCases []IncomingTestCase) *httptest.Server {
@@ -340,19 +317,6 @@ func buildMockSlackService(testCases []IncomingTestCase) *httptest.Server {
 	apiURL = server.URL
 
 	return server
-}
-
-func mockAttachmentURLs(fileServer *httptest.Server, testCases []OutgoingTestCase) []OutgoingTestCase {
-	casesWithMockedUrls := make([]OutgoingTestCase, len(testCases))
-
-	for i, testCase := range testCases {
-		mockedCase := testCase
-		for j, attachment := range testCase.MsgAttachments {
-			mockedCase.MsgAttachments[j] = strings.Replace(attachment, "https://foo.bar", fileServer.URL, 1)
-		}
-		casesWithMockedUrls[i] = mockedCase
-	}
-	return casesWithMockedUrls
 }
 
 func TestDescribeURN(t *testing.T) {
