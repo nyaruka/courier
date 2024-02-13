@@ -317,12 +317,12 @@ type OutgoingTestCase struct {
 	ExpectedExtIDs      []string
 	ExpectedError       error
 	ExpectedLogErrors   []*courier.ChannelError
-	ExpectedStopEvent   bool
 	ExpectedContactURNs map[string]bool
 	ExpectedNewURN      string
 
 	// only used by legacy send type handlers
 	ExpectedMsgStatus courier.MsgStatus
+	ExpectedStopEvent bool
 
 	// deprecated, use MockResponses
 	MockResponseStatus int
