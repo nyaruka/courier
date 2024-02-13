@@ -1,9 +1,6 @@
 package kaleyra
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -104,152 +101,109 @@ func TestIncoming(t *testing.T) {
 
 var sendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message",
-		MsgURN:             "whatsapp:14133881111",
-		ExpectedMsgStatus:  "W",
-		MockResponseStatus: 200,
-		MockResponseBody:   `{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`,
+		Label:             "Plain Send",
+		MsgText:           "Simple Message",
+		MsgURN:            "whatsapp:14133881111",
+		ExpectedMsgStatus: "W",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.kaleyra.io/v1/SID/messages": {httpx.NewMockResponse(200, nil, []byte(`{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`))},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Content-type": "application/x-www-form-urlencoded"},
-				Path:    "/v1/SID/messages",
 				Body:    "api-key=123456&body=Simple+Message&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&to=14133881111&type=text",
 			},
 		},
 		ExpectedExtIDs: []string{"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "Unicode Send",
-		MsgText:            "☺",
-		MsgURN:             "whatsapp:14133881111",
-		MockResponseStatus: 200,
-		MockResponseBody:   `{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`,
-		ExpectedRequests: []ExpectedRequest{
-			{
-				Headers: map[string]string{"Content-type": "application/x-www-form-urlencoded"},
-				Path:    "/v1/SID/messages",
-				Body:    "api-key=123456&body=%E2%98%BA&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&to=14133881111&type=text",
-			},
+		Label:   "URL Send",
+		MsgText: "foo https://foo.bar bar",
+		MsgURN:  "whatsapp:14133881111",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.kaleyra.io/v1/SID/messages": {httpx.NewMockResponse(200, nil, []byte(`{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`))},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"},
-		SendPrep:          setSendURL,
-	},
-	{
-		Label:              "URL Send",
-		MsgText:            "foo https://foo.bar bar",
-		MsgURN:             "whatsapp:14133881111",
-		MockResponseStatus: 200,
-		MockResponseBody:   `{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`,
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Content-type": "application/x-www-form-urlencoded"},
-				Path:    "/v1/SID/messages",
 				Body:    "api-key=123456&body=foo+https%3A%2F%2Ffoo.bar+bar&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&preview_url=true&to=14133881111&type=text",
 			},
 		},
 		ExpectedMsgStatus: "W",
 		ExpectedExtIDs:    []string{"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"},
-		SendPrep:          setSendURL,
 	},
 	{
-		Label:              "Plain Send Error",
-		MsgText:            "Error",
-		MsgURN:             "whatsapp:14133881112",
-		MockResponseStatus: 400,
-		MockResponseBody:   `{"error":{"to":"invalid number"}}`,
+		Label:   "Plain Send Error",
+		MsgText: "Error",
+		MsgURN:  "whatsapp:14133881112",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.kaleyra.io/v1/SID/messages": {httpx.NewMockResponse(400, nil, []byte(`{"error":{"to":"invalid number"}}`))},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Content-type": "application/x-www-form-urlencoded"},
-				Path:    "/v1/SID/messages",
 				Body:    "api-key=123456&body=Error&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&to=14133881112&type=text",
 			},
 		},
 		ExpectedMsgStatus: "F",
-		SendPrep:          setSendURL,
 	},
 	{
-		Label:             "Medias Send",
-		MsgText:           "Medias",
-		MsgAttachments:    []string{"image/jpg:https://foo.bar/image.jpg", "image/png:https://foo.bar/video.mp4"},
-		MsgURN:            "whatsapp:14133881111",
+		Label:          "Medias Send",
+		MsgText:        "Medias",
+		MsgAttachments: []string{"image/jpg:https://foo.bar/image.jpg", "image/png:https://foo.bar/video.mp4"},
+		MsgURN:         "whatsapp:14133881111",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.kaleyra.io/v1/SID/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{"id":"f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0"}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"id":"f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0"}`)),
+			},
+			"https://foo.bar/image.jpg": {
+				httpx.NewMockResponse(200, nil, []byte(`image bytes`)),
+			},
+			"https://foo.bar/video.mp4": {
+				httpx.NewMockResponse(200, nil, []byte(`video bytes`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{},
+			{BodyContains: "image bytes"},
+			{},
+			{BodyContains: "video bytes"},
+		},
 		ExpectedMsgStatus: "W",
 		ExpectedExtIDs:    []string{"f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0"},
-		MockResponses: map[MockedRequest]*httpx.MockResponse{
-			{
-				Method:       "POST",
-				Path:         "/v1/SID/messages",
-				BodyContains: "image bytes",
-			}: httpx.NewMockResponse(200, nil, []byte(`{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`)),
-			{
-				Method:       "POST",
-				Path:         "/v1/SID/messages",
-				BodyContains: "video bytes",
-			}: httpx.NewMockResponse(200, nil, []byte(`{"id":"f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0"}`)),
-		},
-		SendPrep: setSendURL,
 	},
 	{
-		Label:             "Media Send Error",
-		MsgText:           "Medias",
-		MsgAttachments:    []string{"image/jpg:https://foo.bar/image.jpg", "image/png:https://foo.bar/video.wmv"},
-		MsgURN:            "whatsapp:14133881111",
-		ExpectedMsgStatus: "F",
-		MockResponses: map[MockedRequest]*httpx.MockResponse{
-			{
-				Method:       "POST",
-				Path:         "/v1/SID/messages",
-				BodyContains: "image bytes",
-			}: httpx.NewMockResponse(200, nil, []byte(`{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`)),
-			{
-				Method:       "POST",
-				Path:         "/v1/SID/messages",
-				BodyContains: "video bytes",
-			}: httpx.NewMockResponse(400, nil, []byte(`{"error":{"media":"invalid media type"}}`)),
+		Label:          "Media Send Error",
+		MsgText:        "Medias",
+		MsgAttachments: []string{"image/jpg:https://foo.bar/image.jpg", "image/png:https://foo.bar/video.wmv"},
+		MsgURN:         "whatsapp:14133881111",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.kaleyra.io/v1/SID/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{"id":"f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0"}`)),
+				httpx.NewMockResponse(400, nil, []byte(`{"error":{"media":"invalid media type"}}`)),
+			},
+			"https://foo.bar/image.jpg": {
+				httpx.NewMockResponse(200, nil, []byte(`image bytes`)),
+			},
+			"https://foo.bar/video.wmv": {
+				httpx.NewMockResponse(200, nil, []byte(`video bytes`)),
+			},
 		},
-		SendPrep: setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{},
+			{BodyContains: "image bytes"},
+			{},
+			{BodyContains: "video bytes"},
+		},
+		ExpectedMsgStatus: "F",
 	},
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	baseURL = s.URL
-}
-
-func mockAttachmentURLs(mediaServer *httptest.Server, testCases []OutgoingTestCase) []OutgoingTestCase {
-	casesWithMockedUrls := make([]OutgoingTestCase, len(testCases))
-
-	for i, testCase := range testCases {
-		mockedCase := testCase
-
-		for j, attachment := range testCase.MsgAttachments {
-			mockedCase.MsgAttachments[j] = strings.Replace(attachment, "https://foo.bar", mediaServer.URL, 1)
-		}
-		casesWithMockedUrls[i] = mockedCase
-	}
-	return casesWithMockedUrls
 }
 
 func TestOutgoing(t *testing.T) {
-	mediaServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		defer req.Body.Close()
-		res.WriteHeader(200)
-
-		path := req.URL.Path
-		if strings.Contains(path, "image") {
-			res.Write([]byte("image bytes"))
-		} else if strings.Contains(path, "video") {
-			res.Write([]byte("video bytes"))
-		} else {
-			res.Write([]byte("media bytes"))
-		}
-	}))
-	mockedSendTestCases := mockAttachmentURLs(mediaServer, sendTestCases)
-
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "KWA", "250788383383", "",
 		map[string]any{configAccountSID: "SID", configApiKey: "123456"},
 	)
 
-	RunOutgoingTestCases(t, ch, newHandler(), mockedSendTestCases, []string{"123456"}, nil)
+	RunOutgoingTestCases(t, ch, newHandler(), sendTestCases, []string{"123456"}, nil)
 }

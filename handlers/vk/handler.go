@@ -16,6 +16,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
@@ -524,7 +525,8 @@ func (h *handler) downloadMedia(mediaURL string) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	if res, err := h.Backend().HttpClient(true).Do(req); err == nil {
+
+	if res, err := httpx.Do(h.Backend().HttpClient(true), req, nil, nil); err == nil {
 		return res.Body, nil
 	} else {
 		return nil, err
