@@ -179,25 +179,16 @@ type mtPayload struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	channel := msg.Channel()
-
 	token := channel.StringConfigForKey(courier.ConfigAPIKey, "")
 	if token == "" {
-		return nil, fmt.Errorf("no token set for ZVW channel")
+		return courier.ErrChannelConfig
 	}
 
 	payload := mtPayload{
 		From: strings.TrimLeft(channel.Address(), "+"),
 		To:   strings.TrimLeft(msg.URN().Path(), "+"),
 	}
-
-	status := h.Backend().NewStatusUpdate(channel, msg.ID(), courier.MsgStatusErrored, clog)
-
 	text := ""
 	if channel.ChannelType() == "ZVW" {
 		for _, attachment := range msg.Attachments() {
@@ -234,26 +225,22 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 	}
 
 	req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonBody))
-
 	if err != nil {
-		return nil, err
+		return courier.ErrConnectionFailed
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-API-TOKEN", token)
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		return status, nil
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
 	}
 
 	externalID, err := jsonparser.GetString(respBody, "id")
 	if err != nil {
-		clog.Error(courier.ErrorResponseValueMissing("id"))
-		return status, nil
+		return courier.ErrResponseUnexpected
 	}
-
-	status.SetExternalID(externalID)
-	status.SetStatus(courier.MsgStatusWired)
-	return status, nil
+	res.AddExternalID(externalID)
+	return nil
 }
