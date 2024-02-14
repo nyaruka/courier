@@ -139,6 +139,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			createStatus := responseQS["ybs_autocreate_status"]
 			if len(createStatus) > 0 && createStatus[0] == "OK" {
 				return nil
+			} else {
+				return courier.ErrResponseUnexpected
 			}
 		}
 	}

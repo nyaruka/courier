@@ -1,13 +1,13 @@
 package zenvia
 
 import (
-	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testWhatsappChannels = []courier.Channel{
@@ -242,19 +242,16 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testSMSChannels, newHandler("ZVS", "Zenvia SMS"), testSMSCases)
 }
 
-// setSendURL takes care of setting the sendURL to call
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	whatsappSendURL = s.URL
-	smsSendURL = s.URL
-}
-
 var defaultWhatsappSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"id": "55555"}`,
-		MockResponseStatus: 200,
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.zenvia.com/v2/channels/whatsapp/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{"id": "55555"}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Simple Message ☺"}]}`,
 			Headers: map[string]string{
@@ -264,14 +261,16 @@ var defaultWhatsappSendTestCases = []OutgoingTestCase{
 			},
 		}},
 		ExpectedExtIDs: []string{"55555"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "Long Send",
-		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"id": "55555"}`,
-		MockResponseStatus: 200,
+		Label:   "Long Send",
+		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.zenvia.com/v2/channels/whatsapp/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{"id": "55555"}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type": "application/json",
@@ -281,15 +280,17 @@ var defaultWhatsappSendTestCases = []OutgoingTestCase{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"},{"type":"text","text":"I need to keep adding more things to make it work"}]}`,
 		}},
 		ExpectedExtIDs: []string{"55555"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{"id": "55555"}`,
-		MockResponseStatus: 200,
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.zenvia.com/v2/channels/whatsapp/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{"id": "55555"}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type": "application/json",
@@ -299,14 +300,16 @@ var defaultWhatsappSendTestCases = []OutgoingTestCase{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"file","fileUrl":"https://foo.bar/image.jpg","fileMimeType":"image/jpeg"},{"type":"text","text":"My pic!"}]}`,
 		}},
 		ExpectedExtIDs: []string{"55555"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "No External ID",
-		MsgText:            "No External ID",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"code": "400","message": "Validation error","details": [{"code": "400","path": "Error","message": "Error description"}]}`,
-		MockResponseStatus: 200,
+		Label:   "No External ID",
+		MsgText: "No External ID",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.zenvia.com/v2/channels/whatsapp/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{"code": "400","message": "Validation error","details": [{"code": "400","path": "Error","message": "Error description"}]}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type": "application/json",
@@ -316,29 +319,47 @@ var defaultWhatsappSendTestCases = []OutgoingTestCase{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"No External ID"}]}`,
 		}},
 		ExpectedError: courier.ErrResponseUnexpected,
-		SendPrep:      setSendURL,
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "error": "failed" }`,
-		MockResponseStatus: 401,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.zenvia.com/v2/channels/whatsapp/messages": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Error Message"}]}`,
 		}},
 		ExpectedError: courier.ErrResponseUnexpected,
-		SendPrep:      setSendURL,
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.zenvia.com/v2/channels/whatsapp/messages": {
+				httpx.NewMockResponse(500, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Error Message"}]}`,
+		}},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
 var defaultSMSSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"id": "55555"}`,
-		MockResponseStatus: 200,
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.zenvia.com/v2/channels/sms/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{"id": "55555"}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type": "application/json",
@@ -348,13 +369,16 @@ var defaultSMSSendTestCases = []OutgoingTestCase{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Simple Message ☺"}]}`,
 		}},
 		ExpectedExtIDs: []string{"55555"},
-		SendPrep:       setSendURL},
+	},
 	{
-		Label:              "Long Send",
-		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"id": "55555"}`,
-		MockResponseStatus: 200,
+		Label:   "Long Send",
+		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.zenvia.com/v2/channels/sms/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{"id": "55555"}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type": "application/json",
@@ -364,14 +388,17 @@ var defaultSMSSendTestCases = []OutgoingTestCase{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"},{"type":"text","text":"I need to keep adding more things to make it work"}]}`,
 		}},
 		ExpectedExtIDs: []string{"55555"},
-		SendPrep:       setSendURL},
+	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{"id": "55555"}`,
-		MockResponseStatus: 200,
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.zenvia.com/v2/channels/sms/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{"id": "55555"}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type": "application/json",
@@ -381,14 +408,16 @@ var defaultSMSSendTestCases = []OutgoingTestCase{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"My pic!\nhttps://foo.bar/image.jpg"}]}`,
 		}},
 		ExpectedExtIDs: []string{"55555"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "No External ID",
-		MsgText:            "No External ID",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"code": "400","message": "Validation error","details": [{"code": "400","path": "Error","message": "Error description"}]}`,
-		MockResponseStatus: 200,
+		Label:   "No External ID",
+		MsgText: "No External ID",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.zenvia.com/v2/channels/sms/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{"code": "400","message": "Validation error","details": [{"code": "400","path": "Error","message": "Error description"}]}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type": "application/json",
@@ -398,19 +427,20 @@ var defaultSMSSendTestCases = []OutgoingTestCase{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"No External ID"}]}`,
 		}},
 		ExpectedError: courier.ErrResponseUnexpected,
-		SendPrep:      setSendURL,
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "error": "failed" }`,
-		MockResponseStatus: 401,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.zenvia.com/v2/channels/sms/messages": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Error Message"}]}`,
 		}},
 		ExpectedError: courier.ErrResponseUnexpected,
-		SendPrep:      setSendURL,
 	},
 }
 

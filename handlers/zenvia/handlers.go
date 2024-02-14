@@ -226,7 +226,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonBody))
 	if err != nil {
-		return courier.ErrConnectionFailed
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")

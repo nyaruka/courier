@@ -1,7 +1,6 @@
 package yo
 
 import (
-	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
@@ -9,6 +8,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var (
@@ -49,25 +49,28 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
 }
 
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURLs = []string{s.URL}
-}
-
 var getSendTestCases = []OutgoingTestCase{
 	{Label: "Plain Send",
 		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
-		MockResponseBody: "ybs_autocreate_status=OK", MockResponseStatus: 200,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://smgw1.yo.co.ug:9100/sendsms*": {
+				httpx.NewMockResponse(200, nil, []byte(`ybs_autocreate_status=OK`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{Params: url.Values{"sms_content": {"Simple Message"},
 			"destinations": {"250788383383"},
 			"ybsacctno":    {"yo-username"},
 			"password":     {"yo-password"},
 			"origin":       {"2020"},
 		}}},
-		SendPrep: setSendURL},
+	},
 	{Label: "Blacklisted",
 		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
-		MockResponseBody: "ybs_autocreate_status=ERROR&ybs_autocreate_message=256794224665%3ABLACKLISTED", MockResponseStatus: 200,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://smgw1.yo.co.ug:9100/sendsms*": {
+				httpx.NewMockResponse(200, nil, []byte(`ybs_autocreate_status=ERROR&ybs_autocreate_message=256794224665%3ABLACKLISTED`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{Params: url.Values{"sms_content": {"Simple Message"},
 			"destinations": {"250788383383"},
 			"ybsacctno":    {"yo-username"},
@@ -75,47 +78,80 @@ var getSendTestCases = []OutgoingTestCase{
 			"origin":       {"2020"},
 		}}},
 		ExpectedError: courier.ErrContactStopped,
-		SendPrep:      setSendURL},
+	},
 	{Label: "Errored wrong authorization",
 		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
-		MockResponseBody: "ybs_autocreate_status=ERROR&ybs_autocreate_message=YBS+AutoCreate+Subsystem%3A+Access+denied+due+to+wrong+authorization+code", MockResponseStatus: 200,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://smgw1.yo.co.ug:9100/sendsms*": {
+				httpx.NewMockResponse(200, nil, []byte(`ybs_autocreate_status=ERROR&ybs_autocreate_message=YBS+AutoCreate+Subsystem%3A+Access+denied+due+to+wrong+authorization+code`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{Params: url.Values{"sms_content": {"Simple Message"},
 			"destinations": {"250788383383"},
 			"ybsacctno":    {"yo-username"},
 			"password":     {"yo-password"},
 			"origin":       {"2020"},
 		}}},
-		SendPrep: setSendURL},
+		ExpectedError: courier.ErrResponseUnexpected,
+	},
 	{Label: "Unicode Send",
 		MsgText: "☺", MsgURN: "tel:+250788383383",
-		MockResponseBody: "ybs_autocreate_status=OK", MockResponseStatus: 200,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://smgw1.yo.co.ug:9100/sendsms*": {
+				httpx.NewMockResponse(200, nil, []byte(`ybs_autocreate_status=OK`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{Params: url.Values{"sms_content": {"☺"},
 			"destinations": {"250788383383"},
 			"ybsacctno":    {"yo-username"},
 			"password":     {"yo-password"},
 			"origin":       {"2020"},
 		}}},
-		SendPrep: setSendURL},
+	},
 	{Label: "Error Sending",
 		MsgText: "Error Message", MsgURN: "tel:+250788383383",
-		MockResponseBody: "Error", MockResponseStatus: 401,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://smgw1.yo.co.ug:9100/sendsms*": {
+				httpx.NewMockResponse(401, nil, []byte(`Error`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{Params: url.Values{"sms_content": {"Error Message"},
 			"destinations": {"250788383383"},
 			"ybsacctno":    {"yo-username"},
 			"password":     {"yo-password"},
 			"origin":       {"2020"},
 		}}},
-		SendPrep: setSendURL},
+		ExpectedError: courier.ErrResponseUnexpected,
+	},
+	{Label: "Connection error",
+		MsgText: "Error Message", MsgURN: "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://smgw1.yo.co.ug:9100/sendsms*": {
+				httpx.NewMockResponse(500, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{Params: url.Values{"sms_content": {"Error Message"},
+			"destinations": {"250788383383"},
+			"ybsacctno":    {"yo-username"},
+			"password":     {"yo-password"},
+			"origin":       {"2020"},
+		}}},
+		ExpectedError: courier.ErrConnectionFailed,
+	},
 	{Label: "Send Attachment",
 		MsgText: "My pic!", MsgURN: "tel:+250788383383", MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody: "ybs_autocreate_status=OK", MockResponseStatus: 200,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://smgw1.yo.co.ug:9100/sendsms*": {
+				httpx.NewMockResponse(200, nil, []byte(`ybs_autocreate_status=OK`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{{Params: url.Values{"sms_content": {"My pic!\nhttps://foo.bar/image.jpg"},
 			"destinations": {"250788383383"},
 			"ybsacctno":    {"yo-username"},
 			"password":     {"yo-password"},
 			"origin":       {"2020"},
 		}}},
-		SendPrep: setSendURL},
+	},
 }
 
 func TestOutgoing(t *testing.T) {
