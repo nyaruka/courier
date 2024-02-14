@@ -1,3 +1,7 @@
+v9.1.6 (2024-02-14)
+-------------------------
+ * Rework Telgram, Yo and Zenvia handlers to new send method
+
 v9.1.5 (2024-02-05)
 -------------------------
  * Use markdown formatting for Telegram messages
