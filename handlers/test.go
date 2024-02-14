@@ -292,8 +292,7 @@ func (e *ExpectedRequest) AssertMatches(t *testing.T, actual *http.Request, requ
 
 // OutgoingTestCase defines the test values for a particular test case
 type OutgoingTestCase struct {
-	Label    string
-	SendPrep SendPrepFunc
+	Label string
 
 	MsgText                 string
 	MsgURN                  string
@@ -320,19 +319,18 @@ type OutgoingTestCase struct {
 	ExpectedContactURNs map[string]bool
 	ExpectedNewURN      string
 
-	// only used by legacy send type handlers
+	// only used by legacy send type handlers - for converted handlers ExpectedError covers these.
 	ExpectedMsgStatus courier.MsgStatus
 	ExpectedStopEvent bool
 
-	// deprecated, use MockResponses
-	MockResponseStatus int
-	MockResponseBody   string
+	MockResponseStatus int          // Deprecated: use MockResponses instead.
+	MockResponseBody   string       // Deprecated: use MockResponses instead.
+	SendPrep           SendPrepFunc // Deprecated: use MockResponses instead.
 
-	// deprecated, use ExpectedRequests
-	ExpectedURLParams   map[string]string
-	ExpectedPostParams  map[string]string
-	ExpectedRequestBody string
-	ExpectedHeaders     map[string]string
+	ExpectedURLParams   map[string]string // Deprecated: use ExpectedRequests instead.
+	ExpectedPostParams  map[string]string // Deprecated: use ExpectedRequests instead.
+	ExpectedRequestBody string            // Deprecated: use ExpectedRequests instead.
+	ExpectedHeaders     map[string]string // Deprecated: use ExpectedRequests instead.
 }
 
 // Msg creates the test message for this test case

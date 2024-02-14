@@ -1,13 +1,13 @@
 package tembachat
 
 import (
-	"net/http/httptest"
 	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var incomingCases = []IncomingTestCase{
@@ -76,40 +76,47 @@ func TestIncoming(t *testing.T) {
 
 var outgoingCases = []OutgoingTestCase{
 	{
-		Label:              "Flow message",
-		MsgText:            "Simple message ☺",
-		MsgURN:             "webchat:65vbbDAQCdPdEWlEhDGy4utO",
-		MockResponseBody:   `{"status": "queued"}`,
-		MockResponseStatus: 200,
+		Label:   "Flow message",
+		MsgText: "Simple message ☺",
+		MsgURN:  "webchat:65vbbDAQCdPdEWlEhDGy4utO",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://chatserver:8070/send?channel=8eb23e93-5ecb-45ba-b726-3b064e0c56ab": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status": "queued"}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}},
 				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","origin":"flow"}}`,
 			},
 		},
-		SendPrep: setSendURL,
 	},
 	{
-		Label:              "Chat message",
-		MsgText:            "Simple message ☺",
-		MsgURN:             "webchat:65vbbDAQCdPdEWlEhDGy4utO",
-		MsgUserID:          123,
-		MockResponseBody:   `{"status": "queued"}`,
-		MockResponseStatus: 200,
+		Label:     "Chat message",
+		MsgText:   "Simple message ☺",
+		MsgURN:    "webchat:65vbbDAQCdPdEWlEhDGy4utO",
+		MsgUserID: 123,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://chatserver:8070/send?channel=8eb23e93-5ecb-45ba-b726-3b064e0c56ab": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status": "queued"}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}},
 				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","origin":"flow","user_id":123}}`,
 			},
 		},
-		SendPrep: setSendURL,
 	},
 	{
-		Label:              "400 response",
-		MsgText:            "Error message",
-		MsgURN:             "webchat:65vbbDAQCdPdEWlEhDGy4utO",
-		MockResponseBody:   `{"error": "invalid"}`,
-		MockResponseStatus: 400,
+		Label:   "400 response",
+		MsgText: "Error message",
+		MsgURN:  "webchat:65vbbDAQCdPdEWlEhDGy4utO",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://chatserver:8070/send?channel=8eb23e93-5ecb-45ba-b726-3b064e0c56ab": {
+				httpx.NewMockResponse(400, nil, []byte(`{"error": "invalid"}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}},
@@ -117,14 +124,16 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedError: courier.ErrResponseUnexpected,
-		SendPrep:      setSendURL,
 	},
 	{
-		Label:              "500 response",
-		MsgText:            "Error message",
-		MsgURN:             "webchat:65vbbDAQCdPdEWlEhDGy4utO",
-		MockResponseBody:   `Gateway Error`,
-		MockResponseStatus: 500,
+		Label:   "500 response",
+		MsgText: "Error message",
+		MsgURN:  "webchat:65vbbDAQCdPdEWlEhDGy4utO",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://chatserver:8070/send?channel=8eb23e93-5ecb-45ba-b726-3b064e0c56ab": {
+				httpx.NewMockResponse(500, nil, []byte(`Gateway Error`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}},
@@ -132,12 +141,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedError: courier.ErrConnectionFailed,
-		SendPrep:      setSendURL,
 	},
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	defaultSendURL = s.URL
 }
 
 func TestOutgoing(t *testing.T) {
