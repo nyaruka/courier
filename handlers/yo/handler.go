@@ -6,7 +6,6 @@ GET /handlers/yo/received/uuid?account=12345&dest=8500&message=Msg&sender=256778
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -97,23 +96,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("no username set for YO channel")
-	}
-
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("no password set for YO channel")
-	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
-	var err error
+	if username == "" || password == "" {
+		return courier.ErrChannelConfig
+	}
 
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		form := url.Values{
@@ -130,13 +118,13 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 			req, err := http.NewRequest(http.MethodGet, sendURL.String(), nil)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 			resp, respBody, err := h.RequestHTTP(req, clog)
-			if err != nil || resp.StatusCode/100 != 2 {
-				return status, nil
+			if err != nil || resp.StatusCode/100 == 5 {
+				return courier.ErrConnectionFailed
 			}
 
 			responseQS, _ := url.ParseQuery(string(respBody))
@@ -144,26 +132,17 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 			// check whether we were blacklisted
 			createMessage := responseQS["ybs_autocreate_message"]
 			if len(createMessage) > 0 && strings.Contains(createMessage[0], "BLACKLISTED") {
-				status.SetStatus(courier.MsgStatusFailed)
-
-				// create a stop channel event
-				channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.EventTypeStopContact, msg.URN(), clog)
-				err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
-				if err != nil {
-					return nil, err
-				}
-
-				return status, nil
+				return courier.ErrContactStopped
 			}
 
 			// finally check that we were sent
 			createStatus := responseQS["ybs_autocreate_status"]
 			if len(createStatus) > 0 && createStatus[0] == "OK" {
-				status.SetStatus(courier.MsgStatusWired)
-				return status, nil
+				return nil
+			} else {
+				return courier.ErrResponseUnexpected
 			}
 		}
 	}
-
-	return status, err
+	return nil
 }
