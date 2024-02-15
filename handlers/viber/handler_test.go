@@ -13,12 +13,8 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
-
-// setSend takes care of setting the sendURL to call
-func setSendURL(server *httptest.Server, h courier.ChannelHandler, channel courier.Channel, msg courier.MsgOut) {
-	sendURL = server.URL
-}
 
 func buildMockAttachmentService(testCases []OutgoingTestCase) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -38,6 +34,9 @@ func buildMockAttachmentService(testCases []OutgoingTestCase) *httptest.Server {
 				testCases[c].MsgAttachments[i] = fmt.Sprintf("%s:%s/%s", mediaType, server.URL, parts[len(parts)-1])
 			}
 		}
+		for er := range testCases[c].ExpectedRequests {
+			testCases[c].ExpectedRequests[er].Body = strings.Replace(testCases[c].ExpectedRequests[er].Body, "{{ SERVER_URL }}", server.URL, -1)
+		}
 		testCases[c].ExpectedRequestBody = strings.Replace(testCases[c].ExpectedRequestBody, "{{ SERVER_URL }}", server.URL, -1)
 	}
 
@@ -46,165 +45,251 @@ func buildMockAttachmentService(testCases []OutgoingTestCase) *httptest.Server {
 
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:               "Plain Send",
-		MsgText:             "Simple Message",
-		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MockResponseStatus:  200,
-		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
+		}},
 	},
 	{
-		Label:               "Long Send",
-		MsgText:             "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MockResponseStatus:  200,
-		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"I need to keep adding more things to make it work","type":"text","tracking_data":"10"}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL},
-	{
-		Label:               "Unicode Send",
-		MsgText:             "☺",
-		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MockResponseStatus:  200,
-		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"☺","type":"text","tracking_data":"10"}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:   "Long Send",
+		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:  "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,","type":"text","tracking_data":"10"}`,
+			},
+			{
+				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"I need to keep adding more things to make it work","type":"text","tracking_data":"10"}`,
+			},
+		},
 	},
 	{
-		Label:               "Quick Reply",
-		MsgText:             "Are you happy?",
-		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MsgQuickReplies:     []string{"Yes", "No"},
-		MockResponseStatus:  200,
-		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular","Columns":"3"},{"ActionType":"reply","ActionBody":"No","Text":"No","TextSize":"regular","Columns":"3"}]}}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:   "Unicode Send",
+		MsgText: "☺",
+		MsgURN:  "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"☺","type":"text","tracking_data":"10"}`,
+		}},
 	},
 	{
-		Label:               "Send Attachment",
-		MsgText:             "My pic!",
-		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MsgAttachments:      []string{"image/jpeg:https://localhost/image.jpg"},
-		MockResponseStatus:  200,
-		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My pic!","type":"picture","tracking_data":"10","media":"{{ SERVER_URL }}/image.jpg"}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:           "Quick Reply",
+		MsgText:         "Are you happy?",
+		MsgURN:          "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgQuickReplies: []string{"Yes", "No"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Are you happy?","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"Yes","Text":"Yes","TextSize":"regular","Columns":"3"},{"ActionType":"reply","ActionBody":"No","Text":"No","TextSize":"regular","Columns":"3"}]}}`,
+		}},
 	},
 	{
-		Label:               "Long Description with Attachment",
-		MsgText:             "Text description is longer that 10 characters",
-		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MsgAttachments:      []string{"image/jpeg:https://localhost/image.jpg"},
-		MockResponseStatus:  200,
-		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Text description is longer that 10 characters","type":"text","tracking_data":"10"}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgAttachments: []string{"image/jpeg:https://localhost/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My pic!","type":"picture","tracking_data":"10","media":"{{ SERVER_URL }}/image.jpg"}`,
+		}},
 	},
 	{
-		Label:               "Send Attachment Video",
-		MsgText:             "My video!",
-		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MsgAttachments:      []string{"video/mp4:https://localhost/video.mp4"},
-		MockResponseStatus:  200,
-		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My video!","type":"text","tracking_data":"10"}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:          "Long Description with Attachment",
+		MsgText:        "Text description is longer that 10 characters",
+		MsgURN:         "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgAttachments: []string{"image/jpeg:https://localhost/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","type":"picture","tracking_data":"10","media":"{{ SERVER_URL }}/image.jpg"}`,
+			},
+			{
+				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Text description is longer that 10 characters","type":"text","tracking_data":"10"}`,
+			},
+		},
 	},
 	{
-		Label:               "Send Attachment Audio",
-		MsgText:             "My audio!",
-		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MsgAttachments:      []string{"audio/mp3:https://localhost/audio.mp3"},
-		MockResponseStatus:  200,
-		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My audio!","type":"text","tracking_data":"10"}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:          "Send Attachment Video",
+		MsgText:        "My video!",
+		MsgURN:         "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgAttachments: []string{"video/mp4:https://localhost/video.mp4"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+			},
+			"*/video.mp4": {
+				httpx.NewMockResponse(200, map[string]string{"Content-Length": "12"}, []byte(`filetype... ...file bytes... ...end`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				//Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+				Body: "",
+			},
+			{
+
+				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","type":"video","tracking_data":"10","media":"{{ SERVER_URL }}/video.mp4","size":12}`,
+			},
+			{
+				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My video!","type":"text","tracking_data":"10"}`,
+			},
+		},
 	},
 	{
-		Label:               "Got non-0 response",
-		MsgText:             "Simple Message",
-		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MockResponseStatus:  200,
-		MockResponseBody:    `{"status":3,"status_message":"badData"}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
-		ExpectedMsgStatus:   "E",
-		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorExternal("3", "There is an error in the request itself (missing comma, brackets, etc.)")},
-		SendPrep:            setSendURL,
+		Label:          "Send Attachment Audio",
+		MsgText:        "My audio!",
+		MsgURN:         "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgAttachments: []string{"audio/mp3:https:/localhost/audio.mp3"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+			},
+			"*/audio.mp3": {
+				httpx.NewMockResponse(200, map[string]string{"Content-Length": "12"}, []byte(`filetype... ...file bytes... ...end`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				//Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+				Body: "",
+			},
+			{
+				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","type":"file","tracking_data":"10","media":"{{ SERVER_URL }}/audio.mp3","size":12,"file_name":"Audio"}`,
+			},
+			{
+				Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+				Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"My audio!","type":"text","tracking_data":"10"}`,
+			},
+		},
 	},
 	{
-		Label:               "Got general error response",
-		MsgText:             "Simple Message",
-		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MockResponseStatus:  200,
-		MockResponseBody:    `{"status":99,"status_message":"General error"}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
-		ExpectedMsgStatus:   "E",
-		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorExternal("99", "General error")},
-		SendPrep:            setSendURL,
+		Label:   "Got non-0 response",
+		MsgText: "Simple Message",
+		MsgURN:  "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":3,"status_message":"badData"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
+		}},
+		ExpectedError:     courier.ErrResponseUnexpected,
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("3", "There is an error in the request itself (missing comma, brackets, etc.)")},
 	},
 	{
-		Label:               "Got Invalid JSON response",
-		MsgText:             "Simple Message",
-		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MockResponseStatus:  200,
-		MockResponseBody:    `invalidJSON`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
-		ExpectedMsgStatus:   "E",
-		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
-		SendPrep:            setSendURL,
+		Label:   "Got general error response",
+		MsgText: "Simple Message",
+		MsgURN:  "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":99,"status_message":"General error"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
+		}},
+
+		ExpectedError:     courier.ErrResponseUnexpected,
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("99", "General error")},
 	},
 	{
-		Label:               "Error Sending",
-		MsgText:             "Error Message",
-		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MockResponseStatus:  401,
-		MockResponseBody:    `{"status":"5"}`,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Error Message","type":"text","tracking_data":"10"}`,
-		ExpectedMsgStatus:   "E",
-		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorResponseStatusCode()},
-		SendPrep:            setSendURL,
+		Label:   "Got Invalid JSON response",
+		MsgText: "Simple Message",
+		MsgURN:  "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`invalidJSON`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
+		}},
+		ExpectedError: courier.ErrResponseUnparseable,
+	},
+	{
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(401, nil, []byte(`{"status":"5"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
+			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Error Message","type":"text","tracking_data":"10"}`,
+		}},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 }
 
 var invalidTokenSendTestCases = []OutgoingTestCase{
 	{
-		Label:             "Invalid token",
-		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "missing auth token in config")},
+		Label:         "Invalid token",
+		ExpectedError: courier.ErrChannelConfig,
 	},
 }
 
 var buttonLayoutSendTestCases = []OutgoingTestCase{
 	{
-		Label:               "Quick Reply With Layout With Column, Row and BgColor definitions",
-		MsgText:             "Select a, b, c or d.",
-		MsgURN:              "viber:xy5/5y6O81+/kbWHpLhBoA==",
-		MsgQuickReplies:     []string{"a", "b", "c", "d"},
-		MockResponseStatus:  200,
-		MockResponseBody:    `{"status":0,"status_message":"ok","message_token":4987381194038857789}`,
-		ExpectedRequestBody: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Select a, b, c or d.","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"a","Text":"\u003cfont color=\"#ffffff\"\u003ea\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"b","Text":"\u003cfont color=\"#ffffff\"\u003eb\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"c","Text":"\u003cfont color=\"#ffffff\"\u003ec\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"d","Text":"\u003cfont color=\"#ffffff\"\u003ed\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"6","BgColor":"#f7bb3f"}]}}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:           "Quick Reply With Layout With Column, Row and BgColor definitions",
+		MsgText:         "Select a, b, c or d.",
+		MsgURN:          "viber:xy5/5y6O81+/kbWHpLhBoA==",
+		MsgQuickReplies: []string{"a", "b", "c", "d"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://chatapi.viber.com/pa/send_message": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":0,"status_message":"ok","message_token":4987381194038857789}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Select a, b, c or d.","type":"text","tracking_data":"10","keyboard":{"Type":"keyboard","DefaultHeight":false,"Buttons":[{"ActionType":"reply","ActionBody":"a","Text":"\u003cfont color=\"#ffffff\"\u003ea\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"b","Text":"\u003cfont color=\"#ffffff\"\u003eb\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"c","Text":"\u003cfont color=\"#ffffff\"\u003ec\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"2","BgColor":"#f7bb3f"},{"ActionType":"reply","ActionBody":"d","Text":"\u003cfont color=\"#ffffff\"\u003ed\u003c/font\u003e\u003cbr\u003e\u003cbr\u003e","TextSize":"large","Columns":"6","BgColor":"#f7bb3f"}]}}`,
+		}},
 	},
 }
 
