@@ -1,7 +1,6 @@
 package tembachat
 
 import (
-	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -80,14 +79,13 @@ var outgoingCases = []OutgoingTestCase{
 		MsgText: "Simple message ☺",
 		MsgURN:  "webchat:65vbbDAQCdPdEWlEhDGy4utO",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"http://chatserver:8070/send?channel=8eb23e93-5ecb-45ba-b726-3b064e0c56ab": {
+			"http://chatserver:8070/send/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/": {
 				httpx.NewMockResponse(200, nil, []byte(`{"status": "queued"}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}},
-				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","origin":"flow"}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","origin":"flow"}}`,
 			},
 		},
 	},
@@ -97,14 +95,13 @@ var outgoingCases = []OutgoingTestCase{
 		MsgURN:    "webchat:65vbbDAQCdPdEWlEhDGy4utO",
 		MsgUserID: 123,
 		MockResponses: map[string][]*httpx.MockResponse{
-			"http://chatserver:8070/send?channel=8eb23e93-5ecb-45ba-b726-3b064e0c56ab": {
+			"http://chatserver:8070/send/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/": {
 				httpx.NewMockResponse(200, nil, []byte(`{"status": "queued"}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}},
-				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","origin":"flow","user_id":123}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","origin":"flow","user_id":123}}`,
 			},
 		},
 	},
@@ -113,14 +110,13 @@ var outgoingCases = []OutgoingTestCase{
 		MsgText: "Error message",
 		MsgURN:  "webchat:65vbbDAQCdPdEWlEhDGy4utO",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"http://chatserver:8070/send?channel=8eb23e93-5ecb-45ba-b726-3b064e0c56ab": {
+			"http://chatserver:8070/send/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/": {
 				httpx.NewMockResponse(400, nil, []byte(`{"error": "invalid"}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}},
-				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Error message","origin":"flow"}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Error message","origin":"flow"}}`,
 			},
 		},
 		ExpectedError: courier.ErrResponseUnexpected,
@@ -130,14 +126,13 @@ var outgoingCases = []OutgoingTestCase{
 		MsgText: "Error message",
 		MsgURN:  "webchat:65vbbDAQCdPdEWlEhDGy4utO",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"http://chatserver:8070/send?channel=8eb23e93-5ecb-45ba-b726-3b064e0c56ab": {
+			"http://chatserver:8070/send/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/": {
 				httpx.NewMockResponse(500, nil, []byte(`Gateway Error`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Params: url.Values{"channel": []string{"8eb23e93-5ecb-45ba-b726-3b064e0c56ab"}},
-				Body:   `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Error message","origin":"flow"}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Error message","origin":"flow"}}`,
 			},
 		},
 		ExpectedError: courier.ErrConnectionFailed,

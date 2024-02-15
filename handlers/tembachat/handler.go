@@ -129,8 +129,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		return courier.ErrChannelConfig
 	}
 
-	sendURL += "?channel=" + string(msg.Channel().UUID())
-
 	payload := &sendPayload{
 		ChatID: msg.URN().Path(),
 		Secret: secret,
@@ -141,7 +139,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			UserID: msg.UserID(),
 		},
 	}
-	req, _ := http.NewRequest("POST", sendURL, bytes.NewReader(jsonx.MustMarshal(payload)))
+	req, _ := http.NewRequest("POST", sendURL+"/"+string(msg.Channel().UUID())+"/", bytes.NewReader(jsonx.MustMarshal(payload)))
 
 	resp, _, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 == 5 {
