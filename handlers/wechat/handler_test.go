@@ -309,7 +309,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"msgtype":"text","touser":"12345","text":{"content":"Simple Message ☺"}}`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Long Send",
@@ -337,7 +336,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"msgtype":"text","touser":"12345","text":{"content":"I need to keep adding more things to make it work"}}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:          "Send Attachment",
@@ -356,7 +354,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"msgtype":"text","touser":"12345","text":{"content":"My pic!\nhttps://foo.bar/image.jpg"}}`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Error Sending",
@@ -367,7 +364,17 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(401, nil, []byte(`Error`)),
 			},
 		},
-		ExpectedMsgStatus: "E",
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Error Message",
+		MsgURN:  "wechat:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.weixin.qq.com/cgi-bin/message/custom/send*": {
+				httpx.NewMockResponse(500, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
