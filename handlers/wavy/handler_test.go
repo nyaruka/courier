@@ -188,8 +188,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"username": "user1", "authenticationtoken": "token", "Accept": "application/json", "Content-Type": "application/json"},
 			Body:    `{"destination":"250788383383","messageText":"Simple Message ☺\nhttps://foo.bar/image.jpg"}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"external1"},
+		ExpectedExtIDs: []string{"external1"},
 	},
 	{
 		Label:   "Error status 403",
@@ -200,10 +199,10 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`Error`)),
 			},
 		},
-		ExpectedMsgStatus: "E",
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"destination":"250788383383","messageText":"Error Response"}`,
 		}},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:   "Error Sending",
@@ -214,7 +213,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(501, nil, []byte(`Bad Gateway`)),
 			},
 		},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
