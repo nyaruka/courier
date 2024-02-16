@@ -114,7 +114,6 @@ var sendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(201, nil, []byte(`{"id":"iNKE8a6k6cjbqWhWd"}`)),
 			},
 		},
-		ExpectedMsgStatus: "S",
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message"}`,
 		}},
@@ -129,7 +128,6 @@ var sendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(201, nil, []byte(`{"id":"iNKE8a6k6cjbqWhWd"}`)),
 			},
 		},
-		ExpectedMsgStatus: "S",
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"user":"livechat:onrMgdKbpX9Qqtvoi","bot":"rocket.cat","attachments":[{"type":"application/pdf","url":"https://link.to/attachment.pdf"}]}`,
 		}},
@@ -145,11 +143,38 @@ var sendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(201, nil, []byte(`{"id":"iNKE8a6k6cjbqWhWd"}`)),
 			},
 		},
-		ExpectedMsgStatus: "S",
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message","attachments":[{"type":"application/pdf","url":"https://link.to/attachment.pdf"}]}`,
 		}},
 		ExpectedExtIDs: []string{"iNKE8a6k6cjbqWhWd"},
+	},
+	{
+		Label:   "Unexcepted status response",
+		MsgText: "Simple Message",
+		MsgURN:  "rocketchat:direct:john.doe#john.doe",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": {
+				httpx.NewMockResponse(400, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message"}`,
+		}},
+		ExpectedError: courier.ErrResponseStatus,
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Simple Message",
+		MsgURN:  "rocketchat:direct:john.doe#john.doe",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": {
+				httpx.NewMockResponse(500, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message"}`,
+		}},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 

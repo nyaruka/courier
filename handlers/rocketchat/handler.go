@@ -106,18 +106,12 @@ type mtPayload struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	baseURL := msg.Channel().StringConfigForKey(configBaseURL, "")
 	secret := msg.Channel().StringConfigForKey(configSecret, "")
 	botUsername := msg.Channel().StringConfigForKey(configBotUsername, "")
-
-	// the status that will be written for this message
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
-
+	if baseURL == "" || secret == "" || botUsername == "" {
+		return courier.ErrChannelConfig
+	}
 	payload := &mtPayload{
 		UserURN:     msg.URN().Path(),
 		BotUsername: botUsername,
@@ -132,21 +126,23 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 	req, err := http.NewRequest(http.MethodPost, baseURL+"/message", bytes.NewReader(body))
 	if err != nil {
-		return status, err
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", secret))
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		return status, nil
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	} else if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
 	}
 
 	msgID, err := jsonparser.GetString(respBody, "id")
-	if err == nil {
-		status.SetExternalID(msgID)
+	if err != nil {
+		return courier.ErrResponseUnexpected
 	}
+	res.AddExternalID(msgID)
 
-	status.SetStatus(courier.MsgStatusSent)
-	return status, nil
+	return nil
 }
