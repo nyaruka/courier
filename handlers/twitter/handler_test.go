@@ -199,8 +199,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"Simple Message"}}}}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"133"},
+		ExpectedExtIDs: []string{"133"},
 	},
 	{
 		Label:           "Quick Reply",
@@ -216,8 +215,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Path: "/1.1/direct_messages/events/new.json",
 			Body: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"Are you happy?","quick_reply":{"type":"options","options":[{"label":"Yes"},{"label":"No, but a really long no that is unr"}]}}}}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"133"},
+		ExpectedExtIDs: []string{"133"},
 	},
 	{
 		Label:          "Image Send",
@@ -246,8 +244,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{Body: `command=FINALIZE&media_id=710511363345354753`},
 			{Body: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"","attachment":{"type":"media","media":{"id":"710511363345354753"}}}}}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"133"},
+		ExpectedExtIDs: []string{"133", "133"},
 	},
 	{
 		Label:          "Video Send",
@@ -276,8 +273,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{Body: `command=FINALIZE&media_id=710511363345354753`},
 			{Body: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"","attachment":{"type":"media","media":{"id":"710511363345354753"}}}}}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"133"},
+		ExpectedExtIDs: []string{"133", "133"},
 	},
 	{
 		Label:          "Send Audio",
@@ -294,8 +290,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{Body: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"My audio!"}}}}`},
 			{BodyContains: `"text":"http`}, // audio link send as text
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"133"},
+		ExpectedExtIDs:    []string{"133", "133"},
 		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to upload media, unsupported Twitter attachment")},
 	},
 	{
@@ -307,7 +302,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
-		ExpectedMsgStatus: "E",
+		ExpectedError:     courier.ErrResponseUnexpected,
 		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to get message_id from body")},
 	},
 	{
@@ -319,7 +314,18 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Error",
+		MsgURN:  "twitterid:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twitter.com/1.1/direct_messages/events/new.json": {
+				httpx.NewMockResponse(500, nil, []byte(`{ "is_error": true }`)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
