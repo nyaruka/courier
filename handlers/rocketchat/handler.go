@@ -41,7 +41,7 @@ func (h *handler) Initialize(s courier.Server) error {
 	return nil
 }
 
-type Attachment struct {
+type RCAttachment struct {
 	Type string `json:"type"`
 	URL  string `json:"url"`
 }
@@ -52,8 +52,8 @@ type moPayload struct {
 		Username string `json:"username"`
 		FullName string `json:"full_name"`
 	} `json:"user" validate:"required"`
-	Text        string       `json:"text"`
-	Attachments []Attachment `json:"attachments"`
+	Text        string         `json:"text"`
+	Attachments []RCAttachment `json:"attachments"`
 }
 
 // receiveMessage is our HTTP handler function for incoming messages
@@ -99,10 +99,10 @@ func (h *handler) BuildAttachmentRequest(ctx context.Context, b courier.Backend,
 var _ courier.AttachmentRequestBuilder = (*handler)(nil)
 
 type mtPayload struct {
-	UserURN     string       `json:"user"`
-	BotUsername string       `json:"bot"`
-	Text        string       `json:"text,omitempty"`
-	Attachments []Attachment `json:"attachments,omitempty"`
+	UserURN     string         `json:"user"`
+	BotUsername string         `json:"bot"`
+	Text        string         `json:"text,omitempty"`
+	Attachments []RCAttachment `json:"attachments,omitempty"`
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
@@ -125,7 +125,7 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 	}
 	for _, attachment := range msg.Attachments() {
 		mimeType, url := handlers.SplitAttachment(attachment)
-		payload.Attachments = append(payload.Attachments, Attachment{mimeType, url})
+		payload.Attachments = append(payload.Attachments, RCAttachment{mimeType, url})
 	}
 
 	body := jsonx.MustMarshal(payload)
