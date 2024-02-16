@@ -383,7 +383,7 @@ func TestDescribeURN(t *testing.T) {
 	AssertChannelLogRedaction(t, clog, []string{"token123xyz", "abc123xyz"})
 }
 
-var sendTestCases = []OutgoingTestCase{
+var outgoingCases = []OutgoingTestCase{
 	{
 		Label:   "Send simple message",
 		MsgText: "Simple message",
@@ -504,5 +504,5 @@ var sendTestCases = []OutgoingTestCase{
 }
 
 func TestOutgoing(t *testing.T) {
-	RunOutgoingTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"token123xyz", "abc123xyz"}, nil)
+	RunOutgoingTestCases(t, testChannels[0], newHandler(), outgoingCases, []string{"token123xyz", "abc123xyz"}, nil)
 }

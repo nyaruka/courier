@@ -1,7 +1,6 @@
 package wavy
 
 import (
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -165,15 +164,7 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
-func BenchmarkHandler(b *testing.B) {
-	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-}
-
-var defaultSendTestCases = []OutgoingTestCase{
+var outgoingCases = []OutgoingTestCase{
 	{
 		Label:          "Plain Send",
 		MsgText:        "Simple Message ☺",
@@ -202,7 +193,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"destination":"250788383383","messageText":"Error Response"}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:   "Error Sending",
@@ -223,5 +214,5 @@ func TestOutgoing(t *testing.T) {
 			courier.ConfigUsername:  "user1",
 			courier.ConfigAuthToken: "token",
 		})
-	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"token"}, nil)
+	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingCases, []string{"token"}, nil)
 }
