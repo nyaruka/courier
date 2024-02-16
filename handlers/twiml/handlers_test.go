@@ -3,7 +3,6 @@ package twiml
 import (
 	"context"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"testing"
 
@@ -543,22 +542,16 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, twTestChannels, newTWIMLHandler("TW", "TwiML API", true), twTestCases)
 }
 
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	if c.ChannelType() == courier.ChannelType("TW") || c.ChannelType() == courier.ChannelType("SW") {
-		c.(*test.MockChannel).SetConfig("send_url", s.URL)
-	} else {
-		twilioBaseURL = s.URL
-	}
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
@@ -568,14 +561,17 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedMsgStatus: "W",
 		ExpectedExtIDs:    []string{"1002"},
-		SendPrep:          setSendURL,
 	},
 	{
-		Label:              "Long Send",
-		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
+		Label:   "Long Send",
+		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
@@ -590,60 +586,78 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedMsgStatus: "W",
 		ExpectedExtIDs:    []string{"1002"},
-		SendPrep:          setSendURL,
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "error": "out of credits" }`,
-		MockResponseStatus: 401,
-		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
-		SendPrep:           setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "out of credits" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"Error Message"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 	},
 	{
-		Label:              "Error Code",
-		MsgText:            "Error Code",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "code": 1001 }`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
-		SendPrep:           setSendURL,
+		Label:   "Error Code",
+		MsgText: "Error Code",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "code": 1001 }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 	},
 	{
-		Label:              "Stopped Contact Code",
-		MsgText:            "Stopped Contact",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "code": 21610 }`,
-		MockResponseStatus: 400,
-		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedStopEvent:  true,
-		ExpectedMsgStatus:  "F",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
-		SendPrep:           setSendURL,
+		Label:   "Stopped Contact Code",
+		MsgText: "Stopped Contact",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(400, nil, []byte(`{ "code": 21610 }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"Stopped Contact"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+		}},
+		ExpectedStopEvent: true,
+		ExpectedMsgStatus: "F",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 	},
 	{
-		Label:              "No SID",
-		MsgText:            "No SID",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ }`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
-		SendPrep:           setSendURL,
+		Label:   "No SID",
+		MsgText: "No SID",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"No SID"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 	},
 	{
-		Label:              "Single attachment and text",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
+		Label:          "Single attachment and text",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Form: url.Values{
@@ -657,14 +671,16 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedMsgStatus: "W",
 		ExpectedExtIDs:    []string{"1002"},
-		SendPrep:          setSendURL,
 	},
 	{
-		Label:              "Multiple attachments, no text",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg", "audio/mp4:https://foo.bar/audio.m4a"},
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
+		Label:          "Multiple attachments, no text",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg", "audio/mp4:https://foo.bar/audio.m4a"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Form: url.Values{
@@ -678,17 +694,19 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedMsgStatus: "W",
 		ExpectedExtIDs:    []string{"1002"},
-		SendPrep:          setSendURL,
 	},
 }
 
 var tmsDefaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
@@ -698,14 +716,17 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedMsgStatus: "W",
 		ExpectedExtIDs:    []string{"1002"},
-		SendPrep:          setSendURL,
 	},
 	{
-		Label:              "Long Send",
-		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
+		Label:   "Long Send",
+		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
@@ -720,14 +741,16 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedMsgStatus: "W",
 		ExpectedExtIDs:    []string{"1002"},
-		SendPrep:          setSendURL,
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "error": "out of credits" }`,
-		MockResponseStatus: 401,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "out of credits" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
@@ -737,281 +760,354 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedMsgStatus: "E",
 		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
-		SendPrep:          setSendURL,
 	},
 	{
-		Label:              "Error Code",
-		MsgText:            "Error Code",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "code": 1001 }`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
-		SendPrep:           setSendURL,
+		Label:   "Error Code",
+		MsgText: "Error Code",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "code": 1001 }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"}},
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 	},
 	{
-		Label:              "Stopped Contact Code",
-		MsgText:            "Stopped Contact",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "code": 21610 }`,
-		MockResponseStatus: 400,
-		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
-		ExpectedStopEvent:  true,
-		ExpectedMsgStatus:  "F",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
-		SendPrep:           setSendURL,
+		Label:   "Stopped Contact Code",
+		MsgText: "Stopped Contact",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(400, nil, []byte(`{ "code": 21610 }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"Stopped Contact"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"}},
+		}},
+		ExpectedStopEvent: true,
+		ExpectedMsgStatus: "F",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 	},
 	{
-		Label:              "No SID",
-		MsgText:            "No SID",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ }`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
-		SendPrep:           setSendURL,
+		Label:   "No SID",
+		MsgText: "No SID",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"No SID"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"}},
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "My pic!", "To": "+250788383383", "MediaUrl": "https://foo.bar/image.jpg", "MessagingServiceSid": "messageServiceSID", "StatusCallback": "https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"1002"},
-		SendPrep:           setSendURL,
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"My pic!"}, "To": {"+250788383383"}, "MediaUrl": {"https://foo.bar/image.jpg"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"}},
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"1002"},
 	},
 }
 
 var twDefaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/twiml_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
-				Path:    "/2010-04-01/Accounts/accountSID/Messages.json",
+				Path:    "/twiml_api/2010-04-01/Accounts/accountSID/Messages.json",
 				Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			},
 		},
 		ExpectedMsgStatus: "W",
 		ExpectedExtIDs:    []string{"1002"},
-		SendPrep:          setSendURL,
 	},
 	{
-		Label:              "Long Send",
-		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
+		Label:   "Long Send",
+		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/twiml_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
-				Path:    "/2010-04-01/Accounts/accountSID/Messages.json",
+				Path:    "/twiml_api/2010-04-01/Accounts/accountSID/Messages.json",
 				Form:    url.Values{"Body": {"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			},
 			{
 				Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
-				Path:    "/2010-04-01/Accounts/accountSID/Messages.json",
+				Path:    "/twiml_api/2010-04-01/Accounts/accountSID/Messages.json",
 				Form:    url.Values{"Body": {"I need to keep adding more things to make it work"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			},
 		},
 		ExpectedMsgStatus: "W",
 		ExpectedExtIDs:    []string{"1002"},
-		SendPrep:          setSendURL,
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "error": "out of credits" }`,
-		MockResponseStatus: 401,
-		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
-		SendPrep:           setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/twiml_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "out of credits" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"Error Message"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 	},
 	{
-		Label:              "Error Code",
-		MsgText:            "Error Code",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "code": 1001 }`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
-		SendPrep:           setSendURL,
+		Label:   "Error Code",
+		MsgText: "Error Code",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/twiml_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "code": 1001 }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 	},
 	{
-		Label:              "Stopped Contact Code",
-		MsgText:            "Stopped Contact",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "code": 21610 }`,
-		MockResponseStatus: 400,
-		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "F",
-		ExpectedStopEvent:  true,
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
-		SendPrep:           setSendURL,
+		Label:   "Stopped Contact Code",
+		MsgText: "Stopped Contact",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/twiml_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(400, nil, []byte(`{ "code": 21610 }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"Stopped Contact"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+		}},
+		ExpectedMsgStatus: "F",
+		ExpectedStopEvent: true,
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 	},
 	{
-		Label:              "No SID",
-		MsgText:            "No SID",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ }`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
-		SendPrep:           setSendURL,
+		Label:   "No SID",
+		MsgText: "No SID",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/twiml_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"No SID"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "My pic!", "To": "+250788383383", "MediaUrl": "https://foo.bar/image.jpg", "From": "2020", "StatusCallback": "https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"1002"},
-		SendPrep:           setSendURL,
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/twiml_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"My pic!"}, "To": {"+250788383383"}, "MediaUrl": {"https://foo.bar/image.jpg"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"1002"},
 	},
 }
 
 var swSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
-				Path:    "/2010-04-01/Accounts/accountSID/Messages.json",
+				Path:    "/sigware_api/2010-04-01/Accounts/accountSID/Messages.json",
 				Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			},
 		},
 		ExpectedMsgStatus: "W",
 		ExpectedExtIDs:    []string{"1002"},
-		SendPrep:          setSendURL,
 	},
 	{
-		Label:              "Long Send",
-		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
+		Label:   "Long Send",
+		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
-				Path:    "/2010-04-01/Accounts/accountSID/Messages.json",
+				Path:    "/sigware_api/2010-04-01/Accounts/accountSID/Messages.json",
 				Form:    url.Values{"Body": {"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			},
 			{
 				Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
-				Path:    "/2010-04-01/Accounts/accountSID/Messages.json",
+				Path:    "/sigware_api/2010-04-01/Accounts/accountSID/Messages.json",
 				Form:    url.Values{"Body": {"I need to keep adding more things to make it work"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			},
 		},
 		ExpectedMsgStatus: "W",
 		ExpectedExtIDs:    []string{"1002"},
-		SendPrep:          setSendURL,
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "error": "out of credits" }`,
-		MockResponseStatus: 401,
-		ExpectedPostParams: map[string]string{"Body": "Error Message", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
-		SendPrep:           setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "out of credits" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"Error Message"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+		}}, ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 	},
 	{
-		Label:              "Error Code",
-		MsgText:            "Error Code",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "code": 1001 }`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "Error Code", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
-		SendPrep:           setSendURL,
+		Label:   "Error Code",
+		MsgText: "Error Code",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "code": 1001 }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+		}}, ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 	},
 	{
-		Label:              "Stopped Contact Code",
-		MsgText:            "Stopped Contact",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "code": 21610 }`,
-		MockResponseStatus: 400,
-		ExpectedPostParams: map[string]string{"Body": "Stopped Contact", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "F",
-		ExpectedStopEvent:  true,
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
-		SendPrep:           setSendURL,
+		Label:   "Stopped Contact Code",
+		MsgText: "Stopped Contact",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(400, nil, []byte(`{ "code": 21610 }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"Stopped Contact"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+		}},
+		ExpectedMsgStatus: "F",
+		ExpectedStopEvent: true,
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
 	},
 	{
-		Label:              "No SID",
-		MsgText:            "No SID",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ }`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "No SID", "To": "+250788383383", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
-		SendPrep:           setSendURL,
+		Label:   "No SID",
+		MsgText: "No SID",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"No SID"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "My pic!", "To": "+250788383383", "MediaUrl": "https://foo.bar/image.jpg", "From": "2020", "StatusCallback": "https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"1002"},
-		SendPrep:           setSendURL,
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"Body": {"My pic!"}, "To": {"+250788383383"}, "MediaUrl": {"https://foo.bar/image.jpg"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"1002"},
 	},
 }
 
 var waSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "whatsapp:250788383383",
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "whatsapp:250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
 		MockResponseBody:   `{ "sid": "1002" }`,
 		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "Simple Message ☺", "To": "whatsapp:+250788383383", "From": "whatsapp:+12065551212", "StatusCallback": "https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedHeaders:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"1002"},
-		SendPrep:           setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"1002"},
 	},
 }
 
 var twaSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "whatsapp:250788383383",
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"Body": "Simple Message ☺", "To": "whatsapp:+250788383383", "From": "whatsapp:+12065551212", "StatusCallback": "https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"},
-		ExpectedHeaders:    map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"1002"},
-		SendPrep:           setSendURL,
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "whatsapp:250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"1002"},
 	},
 }
 
@@ -1032,14 +1128,14 @@ func TestOutgoing(t *testing.T) {
 		map[string]any{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken",
-			configSendURL:           "SEND_URL",
+			configSendURL:           "http://example.com/twiml_api/",
 		})
 
 	var swChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SW", "2020", "US",
 		map[string]any{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken",
-			configSendURL:           "BASE_URL",
+			configSendURL:           "http://example.com/sigware_api/",
 		})
 
 	RunOutgoingTestCases(t, defaultChannel, newTWIMLHandler("T", "Twilio", true), defaultSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
@@ -1051,6 +1147,7 @@ func TestOutgoing(t *testing.T) {
 		map[string]any{
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken",
+			configSendURL:           "http://example.com/sigware_api/",
 		},
 	)
 	waChannel.SetScheme(urns.WhatsAppScheme)
