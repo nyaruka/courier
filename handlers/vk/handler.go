@@ -375,13 +375,6 @@ func takeFirstAttachmentUrl(payload moNewMessagePayload) string {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
-
 	params := buildApiBaseParams(msg.Channel())
 	params.Set(paramUserId, msg.URN().Path())
 	params.Set(paramRandomId, msg.ID().String())
@@ -399,25 +392,26 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 	req, err := http.NewRequest(http.MethodPost, apiBaseURL+actionSendMessage, nil)
 	if err != nil {
-		return status, errors.New("Cannot create send message request")
+		return errors.New("Cannot create send message request")
 	}
 
 	req.URL.RawQuery = params.Encode()
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		return status, nil
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	} else if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseUnexpected
 	}
 
 	externalMsgId, err := jsonparser.GetInt(respBody, responseOutgoingMessageKey)
-
 	if err != nil {
-		return status, errors.Errorf("no '%s' value in response", responseOutgoingMessageKey)
+		return courier.ErrResponseUnexpected
 	}
-	status.SetExternalID(strconv.FormatInt(externalMsgId, 10))
-	status.SetStatus(courier.MsgStatusSent)
 
-	return status, nil
+	res.AddExternalID(strconv.FormatInt(externalMsgId, 10))
+
+	return nil
 }
 
 // builds msg text with attachment links (if needed) and attachments list param, also returns the errors that occurred

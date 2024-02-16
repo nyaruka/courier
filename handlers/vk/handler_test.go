@@ -398,8 +398,7 @@ var sendTestCases = []OutgoingTestCase{
 				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
-		ExpectedMsgStatus: "S",
-		ExpectedExtIDs:    []string{"1"},
+		ExpectedExtIDs: []string{"1"},
 	},
 	{
 		Label:          "Send photo attachment",
@@ -436,16 +435,14 @@ var sendTestCases = []OutgoingTestCase{
 				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {"photo1901234_1"}, "message": {""}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
-		ExpectedMsgStatus: "S",
-		ExpectedExtIDs:    []string{"1"},
+		ExpectedExtIDs: []string{"1"},
 	},
 	{
-		Label:             "Send photo and another attachment type",
-		MsgText:           "Attachments",
-		MsgURN:            "vk:123456789",
-		MsgAttachments:    []string{"image/png:https://foo.bar/image.png", "audio/mp3:https://foo.bar/audio.mp3"},
-		ExpectedMsgStatus: "S",
-		ExpectedExtIDs:    []string{"1"},
+		Label:          "Send photo and another attachment type",
+		MsgText:        "Attachments",
+		MsgURN:         "vk:123456789",
+		MsgAttachments: []string{"image/png:https://foo.bar/image.png", "audio/mp3:https://foo.bar/audio.mp3"},
+		ExpectedExtIDs: []string{"1"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://foo.bar/image.png": {
 				httpx.NewMockResponse(200, nil, []byte(`bytes`)),
@@ -486,8 +483,23 @@ var sendTestCases = []OutgoingTestCase{
 				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "keyboard": {keyboardJson}, "message": {"Send keyboard"}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
 			},
 		},
-		ExpectedMsgStatus: "S",
-		ExpectedExtIDs:    []string{"1"},
+		ExpectedExtIDs: []string{"1"},
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Simple message",
+		MsgURN:  "vk:123456789",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.vk.com/method/messages.send.json?*": {
+				httpx.NewMockResponse(500, nil, []byte(`Bad Gateway`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{"access_token": {"token123xyz"}, "attachment": {""}, "message": {"Simple message"}, "random_id": {"10"}, "user_id": {"123456789"}, "v": {"5.103"}},
+			},
+		},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
