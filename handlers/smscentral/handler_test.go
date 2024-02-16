@@ -71,7 +71,6 @@ func BenchmarkHandler(b *testing.B) {
 var defaultSendTestCases = []OutgoingTestCase{
 	{Label: "Plain Send",
 		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
-		ExpectedMsgStatus: "W",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://smail.smscentral.com.np/bp/ApiSms.php": {
 				httpx.NewMockResponse(200, nil, []byte(`[{"id": "1002"}]`)),
@@ -83,7 +82,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 	},
 	{Label: "Unicode Send",
 		MsgText: "☺", MsgURN: "tel:+250788383383",
-		ExpectedMsgStatus: "W",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://smail.smscentral.com.np/bp/ApiSms.php": {
 				httpx.NewMockResponse(200, nil, []byte(`[{"id": "1002"}]`)),
@@ -95,7 +93,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 	},
 	{Label: "Send Attachment",
 		MsgText: "My pic!", MsgURN: "tel:+250788383383", MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedMsgStatus: "W",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://smail.smscentral.com.np/bp/ApiSms.php": {
 				httpx.NewMockResponse(200, nil, []byte(`[{"id": "1002"}]`)),
@@ -107,7 +104,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 	},
 	{Label: "Error Sending",
 		MsgText: "Error Message", MsgURN: "tel:+250788383383",
-		ExpectedMsgStatus: "E",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://smail.smscentral.com.np/bp/ApiSms.php": {
 				httpx.NewMockResponse(401, nil, []byte(`{ "error": "failed" }`)),
@@ -116,6 +112,19 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"content": {`Error Message`}, "mobile": {"250788383383"}, "pass": {"Password"}, "user": {"Username"}},
 		}},
+		ExpectedError: courier.ErrResponseStatus,
+	},
+	{Label: "Connection Error",
+		MsgText: "Error Message", MsgURN: "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://smail.smscentral.com.np/bp/ApiSms.php": {
+				httpx.NewMockResponse(500, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"content": {`Error Message`}, "mobile": {"250788383383"}, "pass": {"Password"}, "user": {"Username"}},
+		}},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
