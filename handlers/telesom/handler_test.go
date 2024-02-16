@@ -97,7 +97,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Params:  url.Values{"msg": {"Simple Message"}, "to": {"0788383383"}, "from": {"2020"}, "username": {"Username"}, "password": {"Password"}, "key": {"D69BB824F88F20482B94ECF3822EBD84"}},
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Unicode Send",
@@ -112,7 +111,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Params:  url.Values{"msg": {"☺"}, "to": {"0788383383"}, "from": {"2020"}, "username": {"Username"}, "password": {"Password"}, "key": {"60421A7D99BD79FE02697D567315AD0E"}},
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Error Sending",
@@ -127,7 +125,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Params:  url.Values{"msg": {`Error Message`}, "to": {"0788383383"}, "from": {"2020"}, "username": {"Username"}, "password": {"Password"}, "key": {"3F1E492B2186551570F24C2F07D5D7E2"}},
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:          "Send Attachment",
@@ -143,7 +141,21 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Params:  url.Values{"msg": {"My pic!\nhttps://foo.bar/image.jpg"}, "to": {"0788383383"}, "from": {"2020"}, "username": {"Username"}, "password": {"Password"}, "key": {"DBE569579FD899628C17254ECCE15DB7"}},
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 		}},
-		ExpectedMsgStatus: "W",
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+252788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://telesom.com/sendsms_other*": {
+				httpx.NewMockResponse(500, nil, []byte(`<return>error</return>`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params:  url.Values{"msg": {`Error Message`}, "to": {"0788383383"}, "from": {"2020"}, "username": {"Username"}, "password": {"Password"}, "key": {"3F1E492B2186551570F24C2F07D5D7E2"}},
+			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+		}},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
