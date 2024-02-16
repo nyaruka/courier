@@ -25,7 +25,6 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -214,33 +213,23 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	// build our callback URL
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	callbackURL := fmt.Sprintf("https://%s/c/%s/%s/status?id=%d&action=callback", callbackDomain, strings.ToLower(string(h.ChannelType())), msg.Channel().UUID(), msg.ID())
 
 	accountSID := msg.Channel().StringConfigForKey(configAccountSID, "")
-	if accountSID == "" {
-		return nil, fmt.Errorf("missing account sid for %s channel", h.ChannelName())
-	}
-
 	accountToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
-	if accountToken == "" {
-		return nil, fmt.Errorf("missing account auth token for %s channel", h.ChannelName())
+	if accountSID == "" || accountToken == "" {
+		return courier.ErrChannelConfig
 	}
 
 	channel := msg.Channel()
 
 	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, true)
 	if err != nil {
-		return nil, errors.Wrap(err, "error resolving attachments")
+		return err
 	}
 
-	status := h.Backend().NewStatusUpdate(channel, msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
 	for i, part := range parts {
 		// build our request
@@ -274,25 +263,25 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		// build our URL
 		baseURL := h.baseURL(channel)
 		if baseURL == "" {
-			return nil, fmt.Errorf("missing base URL for %s channel", h.ChannelName())
+			return courier.ErrChannelConfig
 		}
 
 		sendURL, err := utils.AddURLPath(baseURL, "2010-04-01", "Accounts", accountSID, "Messages.json")
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		req.SetBasicAuth(accountSID, accountToken)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
 		}
 
 		// see if we can parse the error if we have one
@@ -300,36 +289,24 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 			errorCode, _ := jsonparser.GetInt(respBody, "code")
 			if errorCode != 0 {
 				if errorCode == errorStopped {
-					status.SetStatus(courier.MsgStatusFailed)
-
-					// create a stop channel event
-					channelEvent := h.Backend().NewChannelEvent(msg.Channel(), courier.EventTypeStopContact, msg.URN(), clog)
-					err = h.Backend().WriteChannelEvent(ctx, channelEvent, clog)
-					if err != nil {
-						return nil, err
-					}
+					return courier.ErrContactStopped
 				}
-				clog.Error(twilioError(errorCode))
-				return status, nil
+				return courier.ErrResponseUnexpected
 			}
+
+			return courier.ErrResponseStatus
 		}
 
 		// grab the external id
 		externalID, err := jsonparser.GetString(respBody, "sid")
 		if err != nil {
-			clog.Error(courier.ErrorResponseValueMissing("sid"))
-			return status, nil
+			return courier.ErrResponseUnexpected
 		}
 
-		status.SetStatus(courier.MsgStatusWired)
-
-		// only save the first external id
-		if i == 0 {
-			status.SetExternalID(externalID)
-		}
+		res.AddExternalID(externalID)
 	}
 
-	return status, nil
+	return nil
 }
 
 // BuildAttachmentRequest to download media for message attachment with Basic auth set

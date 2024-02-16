@@ -559,8 +559,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002"},
 	},
 	{
 		Label:   "Long Send",
@@ -584,8 +583,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Form:    url.Values{"Body": {"I need to keep adding more things to make it work"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002", "1002"},
 	},
 	{
 		Label:   "Error Sending",
@@ -599,8 +597,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Message"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:   "Error Code",
@@ -614,8 +611,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:   "Stopped Contact Code",
@@ -629,9 +625,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Stopped Contact"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedStopEvent: true,
-		ExpectedMsgStatus: "F",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
+		ExpectedError: courier.ErrContactStopped,
 	},
 	{
 		Label:   "No SID",
@@ -645,8 +639,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"No SID"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:          "Single attachment and text",
@@ -669,8 +662,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002"},
 	},
 	{
 		Label:          "Multiple attachments, no text",
@@ -692,8 +684,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002"},
 	},
 }
 
@@ -714,8 +705,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 				Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"}},
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002"},
 	},
 	{
 		Label:   "Long Send",
@@ -739,8 +729,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 				Form:    url.Values{"Body": {"I need to keep adding more things to make it work"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"}},
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002", "1002"},
 	},
 	{
 		Label:   "Error Sending",
@@ -758,8 +747,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 				Form:    url.Values{"Body": {"Error Message"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"}},
 			},
 		},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:   "Error Code",
@@ -773,8 +761,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"}},
 		}},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:   "Stopped Contact Code",
@@ -788,9 +775,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Stopped Contact"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"}},
 		}},
-		ExpectedStopEvent: true,
-		ExpectedMsgStatus: "F",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
+		ExpectedError: courier.ErrContactStopped,
 	},
 	{
 		Label:   "No SID",
@@ -804,8 +789,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"No SID"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"}},
 		}},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:          "Send Attachment",
@@ -820,8 +804,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"My pic!"}, "To": {"+250788383383"}, "MediaUrl": {"https://foo.bar/image.jpg"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"}},
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002"},
 	},
 }
 
@@ -842,8 +825,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 				Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002"},
 	},
 	{
 		Label:   "Long Send",
@@ -867,8 +849,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 				Form:    url.Values{"Body": {"I need to keep adding more things to make it work"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002", "1002"},
 	},
 	{
 		Label:   "Error Sending",
@@ -882,8 +863,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Message"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:   "Error Code",
@@ -897,8 +877,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:   "Stopped Contact Code",
@@ -912,9 +891,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Stopped Contact"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedMsgStatus: "F",
-		ExpectedStopEvent: true,
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
+		ExpectedError: courier.ErrContactStopped,
 	},
 	{
 		Label:   "No SID",
@@ -928,8 +905,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"No SID"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:          "Send Attachment",
@@ -944,8 +920,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"My pic!"}, "To": {"+250788383383"}, "MediaUrl": {"https://foo.bar/image.jpg"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002"},
 	},
 }
 
@@ -966,8 +941,7 @@ var swSendTestCases = []OutgoingTestCase{
 				Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002"},
 	},
 	{
 		Label:   "Long Send",
@@ -991,8 +965,7 @@ var swSendTestCases = []OutgoingTestCase{
 				Form:    url.Values{"Body": {"I need to keep adding more things to make it work"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002", "1002"},
 	},
 	{
 		Label:   "Error Sending",
@@ -1005,8 +978,8 @@ var swSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Message"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
-		}}, ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
+		}},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:   "Error Code",
@@ -1019,8 +992,8 @@ var swSendTestCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
-		}}, ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
+		}},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:   "Stopped Contact Code",
@@ -1034,9 +1007,7 @@ var swSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Stopped Contact"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedMsgStatus: "F",
-		ExpectedStopEvent: true,
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("21610", "Attempt to send to unsubscribed recipient")},
+		ExpectedError: courier.ErrContactStopped,
 	},
 	{
 		Label:   "No SID",
@@ -1050,8 +1021,7 @@ var swSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"No SID"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:          "Send Attachment",
@@ -1066,8 +1036,7 @@ var swSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"My pic!"}, "To": {"+250788383383"}, "MediaUrl": {"https://foo.bar/image.jpg"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002"},
 	},
 }
 
@@ -1087,8 +1056,7 @@ var waSendTestCases = []OutgoingTestCase{
 			Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002"},
 	},
 }
 
@@ -1106,8 +1074,7 @@ var twaSendTestCases = []OutgoingTestCase{
 			Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002"},
 	},
 }
 
