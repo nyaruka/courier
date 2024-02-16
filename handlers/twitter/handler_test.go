@@ -1,7 +1,6 @@
 package twitter
 
 import (
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -184,40 +183,39 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler("TWT", "Twitter Activity"), testCases)
 }
 
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendDomain = s.URL
-	uploadDomain = s.URL
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message",
-		MsgURN:             "twitterid:12345",
-		MockResponseBody:   `{"event": { "id": "133"}}`,
-		MockResponseStatus: 200,
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "twitterid:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twitter.com/1.1/direct_messages/events/new.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{"event": { "id": "133"}}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/1.1/direct_messages/events/new.json",
 				Body: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"Simple Message"}}}}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"133"},
-		SendPrep:          setSendURL,
+		ExpectedExtIDs: []string{"133"},
 	},
 	{
-		Label:               "Quick Reply",
-		MsgText:             "Are you happy?",
-		MsgURN:              "twitterid:12345",
-		MsgQuickReplies:     []string{"Yes", "No, but a really long no that is unreasonably long"},
-		MockResponseBody:    `{"event": { "id": "133"}}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"Are you happy?","quick_reply":{"type":"options","options":[{"label":"Yes"},{"label":"No, but a really long no that is unr"}]}}}}}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"133"},
-		SendPrep:            setSendURL,
+		Label:           "Quick Reply",
+		MsgText:         "Are you happy?",
+		MsgURN:          "twitterid:12345",
+		MsgQuickReplies: []string{"Yes", "No, but a really long no that is unreasonably long"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twitter.com/1.1/direct_messages/events/new.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{"event": { "id": "133"}}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Path: "/1.1/direct_messages/events/new.json",
+			Body: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"Are you happy?","quick_reply":{"type":"options","options":[{"label":"Yes"},{"label":"No, but a really long no that is unr"}]}}}}}`,
+		}},
+		ExpectedExtIDs: []string{"133"},
 	},
 	{
 		Label:          "Image Send",
@@ -246,8 +244,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{Body: `command=FINALIZE&media_id=710511363345354753`},
 			{Body: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"","attachment":{"type":"media","media":{"id":"710511363345354753"}}}}}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"133"},
+		ExpectedExtIDs: []string{"133", "133"},
 	},
 	{
 		Label:          "Video Send",
@@ -276,8 +273,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{Body: `command=FINALIZE&media_id=710511363345354753`},
 			{Body: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"","attachment":{"type":"media","media":{"id":"710511363345354753"}}}}}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"133"},
+		ExpectedExtIDs: []string{"133", "133"},
 	},
 	{
 		Label:          "Send Audio",
@@ -294,28 +290,42 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{Body: `{"event":{"type":"message_create","message_create":{"target":{"recipient_id":"12345"},"message_data":{"text":"My audio!"}}}}`},
 			{BodyContains: `"text":"http`}, // audio link send as text
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"133"},
+		ExpectedExtIDs:    []string{"133", "133"},
 		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to upload media, unsupported Twitter attachment")},
 	},
 	{
-		Label:              "ID Error",
-		MsgText:            "ID Error",
-		MsgURN:             "twitterid:12345",
-		MockResponseBody:   `{ "is_error": true }`,
-		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.NewChannelError("", "", "unable to get message_id from body")},
-		SendPrep:           setSendURL,
+		Label:   "ID Error",
+		MsgText: "ID Error",
+		MsgURN:  "twitterid:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twitter.com/1.1/direct_messages/events/new.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "is_error": true }`)),
+			},
+		},
+		ExpectedError:     courier.ErrResponseUnexpected,
+		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to get message_id from body")},
 	},
 	{
-		Label:              "Error",
-		MsgText:            "Error",
-		MsgURN:             "twitterid:12345",
-		MockResponseBody:   `{ "is_error": true }`,
-		MockResponseStatus: 403,
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		Label:   "Error",
+		MsgText: "Error",
+		MsgURN:  "twitterid:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twitter.com/1.1/direct_messages/events/new.json": {
+				httpx.NewMockResponse(403, nil, []byte(`{ "is_error": true }`)),
+			},
+		},
+		ExpectedError: courier.ErrResponseStatus,
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Error",
+		MsgURN:  "twitterid:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twitter.com/1.1/direct_messages/events/new.json": {
+				httpx.NewMockResponse(500, nil, []byte(`{ "is_error": true }`)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 

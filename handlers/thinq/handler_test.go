@@ -3,7 +3,6 @@ package thinq
 import (
 	"encoding/base64"
 	"fmt"
-	"net/http/httptest"
 	"net/url"
 	"testing"
 
@@ -91,67 +90,99 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL + "?account_id=%s"
-	sendMMSURL = s.URL + "?account_id=%s"
-}
-
 var sendTestCases = []OutgoingTestCase{
 	{
-		Label:               "Plain Send",
-		MsgText:             "Simple Message ☺",
-		MsgURN:              "tel:+12067791234",
-		MockResponseBody:    `{ "guid": "1002" }`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Authorization": "Basic dXNlcjE6c2VzYW1l"},
-		ExpectedRequestBody: `{"from_did":"2065551212","to_did":"2067791234","message":"Simple Message ☺"}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"1002"},
-		SendPrep:            setSendURL,
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+12067791234",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.thinq.com/account/1234/product/origination/sms/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "guid": "1002" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "Basic dXNlcjE6c2VzYW1l"},
+			Body:    `{"from_did":"2065551212","to_did":"2067791234","message":"Simple Message ☺"}`,
+		}},
+		ExpectedExtIDs: []string{"1002"},
 	},
 	{
-		Label:               "Send Attachment",
-		MsgText:             "My pic!",
-		MsgURN:              "tel:+12067791234",
-		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:    `{ "guid": "1002" }`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"from_did":"2065551212","to_did":"2067791234","message":"My pic!"}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"1002"},
-		SendPrep:            setSendURL,
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+12067791234",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.thinq.com/account/1234/product/origination/sms/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "guid": "1002" }`)),
+			},
+			"https://api.thinq.com/account/1234/product/origination/mms/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "guid": "1002" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Form: url.Values{"from_did": {"2065551212"}, "to_did": {"2067791234"}, "media_url": {"https://foo.bar/image.jpg"}},
+			},
+			{
+				Body: `{"from_did":"2065551212","to_did":"2067791234","message":"My pic!"}`,
+			},
+		},
+		ExpectedExtIDs: []string{"1002", "1002"},
 	},
 	{
-		Label:              "Only Attachment",
-		MsgText:            "",
-		MsgURN:             "tel:+12067791234",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{ "guid": "1002" }`,
-		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"1002"},
-		SendPrep:           setSendURL,
+		Label:          "Only Attachment",
+		MsgText:        "",
+		MsgURN:         "tel:+12067791234",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.thinq.com/account/1234/product/origination/mms/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "guid": "1002" }`)),
+			},
+		},
+		ExpectedExtIDs: []string{"1002"},
 	},
 	{
-		Label:               "No External ID",
-		MsgText:             "No External ID",
-		MsgURN:              "tel:+12067791234",
-		MockResponseBody:    `{}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"from_did":"2065551212","to_did":"2067791234","message":"No External ID"}`,
-		ExpectedMsgStatus:   "E",
-		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorResponseValueMissing("guid")},
-		SendPrep:            setSendURL,
+		Label:   "No External ID",
+		MsgText: "No External ID",
+		MsgURN:  "tel:+12067791234",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.thinq.com/account/1234/product/origination/sms/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"from_did":"2065551212","to_did":"2067791234","message":"No External ID"}`,
+		}},
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("guid")},
+		ExpectedError:     courier.ErrResponseUnexpected,
 	},
 	{
-		Label:               "Error Sending",
-		MsgText:             "Error Message",
-		MsgURN:              "tel:+12067791234",
-		MockResponseBody:    `{ "error": "failed" }`,
-		MockResponseStatus:  401,
-		ExpectedRequestBody: `{"from_did":"2065551212","to_did":"2067791234","message":"Error Message"}`,
-		ExpectedMsgStatus:   "E",
-		SendPrep:            setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+12067791234",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.thinq.com/account/1234/product/origination/sms/send": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"from_did":"2065551212","to_did":"2067791234","message":"Error Message"}`,
+		}},
+		ExpectedError: courier.ErrResponseStatus,
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+12067791234",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.thinq.com/account/1234/product/origination/sms/send": {
+				httpx.NewMockResponse(500, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"from_did":"2065551212","to_did":"2067791234","message":"Error Message"}`,
+		}},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 

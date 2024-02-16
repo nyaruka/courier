@@ -21,7 +21,6 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -248,25 +247,18 @@ type mtAttachment struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
 
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	apiKey := msg.Channel().StringConfigForKey(configAPIKey, "")
 	apiSecret := msg.Channel().StringConfigForKey(configAPISecret, "")
 	accessToken := msg.Channel().StringConfigForKey(configAccessToken, "")
 	accessSecret := msg.Channel().StringConfigForKey(configAccessTokenSecret, "")
 	if apiKey == "" || apiSecret == "" || accessToken == "" || accessSecret == "" {
-		return nil, fmt.Errorf("missing api or tokens for TWT channel")
+		return courier.ErrChannelConfig
 	}
-
 	// create our OAuth client that will take care of signing
 	config := oauth1.NewConfig(apiKey, apiSecret)
 	token := oauth1.NewToken(accessToken, accessSecret)
 	client := config.Client(ctx, token)
-
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	// we build these as needed since our unit tests manipulate apiURL
 	sendURL := sendDomain + "/1.1/direct_messages/events/new.json"
@@ -294,10 +286,10 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 			if strings.HasPrefix(mimeType, "image") || strings.HasPrefix(mimeType, "video") {
 				mediaID, err = h.uploadMediaToTwitter(msg, mediaURL, mimeType, s3url, client, clog)
 				if err != nil {
-					clog.RawError(errors.Wrap(err, "unable to upload media to Twitter server"))
+					clog.Error(courier.NewChannelError("", "", "unable to upload media to Twitter server"))
 				}
 			} else {
-				clog.RawError(errors.New("unable to upload media, unsupported Twitter attachment"))
+				clog.Error(courier.NewChannelError("", "", "unable to upload media, unsupported Twitter attachment"))
 			}
 
 			if mediaID != "" {
@@ -312,7 +304,6 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 				payload.Event.MessageCreate.MessageData.Text = s3url
 			}
 		}
-
 		// attach quick replies if we have them
 		if i == 0 && len(msg.QuickReplies()) > 0 {
 			qrs := &mtQR{}
@@ -333,28 +324,22 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTPWithClient(client, req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
 		externalID, err := jsonparser.GetString(respBody, "event", "id")
 		if err != nil {
-			clog.RawError(errors.Errorf("unable to get message_id from body"))
-			return status, nil
+			clog.Error(courier.NewChannelError("", "", "unable to get message_id from body"))
+			return courier.ErrResponseUnexpected
 		}
 
-		// if this is our first message, record the external id
-		if i == 0 {
-			status.SetExternalID(externalID)
-		}
-
-		if err == nil {
-			// this was wired successfully
-			status.SetStatus(courier.MsgStatusWired)
-		}
+		res.AddExternalID(externalID)
 	}
 
-	return status, nil
+	return nil
 }
 
 // hashes the passed in content in sha256 using the passed in secret
