@@ -1,7 +1,6 @@
 package shaqodoon
 
 import (
-	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
@@ -53,14 +52,9 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
 }
 
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	c.(*test.MockChannel).SetConfig(courier.ConfigSendURL, s.URL)
-}
-
 var getSendTestCases = []OutgoingTestCase{
 	{Label: "Plain Send",
 		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
-		ExpectedMsgStatus: "W",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://example.com/send*": {
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
@@ -69,10 +63,9 @@ var getSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{"msg": {"Simple Message"}, "to": {"250788383383"}, "from": {"2020"}, "username": {"Username"}, "password": {"Password"}},
 		}},
-		SendPrep: setSendURL},
+	},
 	{Label: "Unicode Send",
 		MsgText: "☺", MsgURN: "tel:+250788383383",
-		ExpectedMsgStatus: "W",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://example.com/send*": {
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
@@ -81,10 +74,9 @@ var getSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{"msg": {"☺"}, "to": {"250788383383"}, "from": {"2020"}, "username": {"Username"}, "password": {"Password"}},
 		}},
-		SendPrep: setSendURL},
+	},
 	{Label: "Error Sending",
 		MsgText: "Error Message", MsgURN: "tel:+250788383383",
-		ExpectedMsgStatus: "E",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://example.com/send*": {
 				httpx.NewMockResponse(401, nil, []byte(`1: Unknown channel`)),
@@ -93,10 +85,10 @@ var getSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{"msg": {"Error Message"}, "to": {"250788383383"}, "from": []string{"2020"}, "username": {"Username"}, "password": {"Password"}},
 		}},
-		SendPrep: setSendURL},
+		ExpectedError: courier.ErrResponseStatus,
+	},
 	{Label: "Send Attachment",
 		MsgText: "My pic!", MsgURN: "tel:+250788383383", MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedMsgStatus: "W",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://example.com/send*": {
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
@@ -105,7 +97,7 @@ var getSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{"msg": {"My pic!\nhttps://foo.bar/image.jpg"}, "to": {"250788383383"}, "from": {"2020"}, "username": {"Username"}, "password": {"Password"}},
 		}},
-		SendPrep: setSendURL},
+	},
 }
 
 func TestOutgoing(t *testing.T) {
