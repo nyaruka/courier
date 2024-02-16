@@ -1,12 +1,13 @@
 package smscentral
 
 import (
-	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 const (
@@ -67,36 +68,55 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
 }
 
-// setSend takes care of setting the sendURL to call
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{Label: "Plain Send",
 		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
 		ExpectedMsgStatus: "W",
-		MockResponseBody:  `[{"id": "1002"}]`, MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"content": "Simple Message", "mobile": "250788383383", "pass": "Password", "user": "Username"},
-		SendPrep:           setSendURL},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://smail.smscentral.com.np/bp/ApiSms.php": {
+				httpx.NewMockResponse(200, nil, []byte(`[{"id": "1002"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"content": {"Simple Message"}, "mobile": {"250788383383"}, "pass": {"Password"}, "user": {"Username"}},
+		}},
+	},
 	{Label: "Unicode Send",
 		MsgText: "☺", MsgURN: "tel:+250788383383",
 		ExpectedMsgStatus: "W",
-		MockResponseBody:  `[{"id": "1002"}]`, MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"content": "☺", "mobile": "250788383383", "pass": "Password", "user": "Username"},
-		SendPrep:           setSendURL},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://smail.smscentral.com.np/bp/ApiSms.php": {
+				httpx.NewMockResponse(200, nil, []byte(`[{"id": "1002"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"content": {"☺"}, "mobile": {"250788383383"}, "pass": {"Password"}, "user": {"Username"}},
+		}},
+	},
 	{Label: "Send Attachment",
 		MsgText: "My pic!", MsgURN: "tel:+250788383383", MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		ExpectedMsgStatus: "W",
-		MockResponseBody:  `[{ "id": "1002" }]`, MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"content": "My pic!\nhttps://foo.bar/image.jpg", "mobile": "250788383383", "pass": "Password", "user": "Username"},
-		SendPrep:           setSendURL},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://smail.smscentral.com.np/bp/ApiSms.php": {
+				httpx.NewMockResponse(200, nil, []byte(`[{"id": "1002"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"content": {"My pic!\nhttps://foo.bar/image.jpg"}, "mobile": {"250788383383"}, "pass": {"Password"}, "user": {"Username"}},
+		}},
+	},
 	{Label: "Error Sending",
 		MsgText: "Error Message", MsgURN: "tel:+250788383383",
 		ExpectedMsgStatus: "E",
-		MockResponseBody:  `{ "error": "failed" }`, MockResponseStatus: 401,
-		ExpectedPostParams: map[string]string{"content": `Error Message`, "mobile": "250788383383", "pass": "Password", "user": "Username"},
-		SendPrep:           setSendURL},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://smail.smscentral.com.np/bp/ApiSms.php": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"content": {`Error Message`}, "mobile": {"250788383383"}, "pass": {"Password"}, "user": {"Username"}},
+		}},
+	},
 }
 
 func TestOutgoing(t *testing.T) {
