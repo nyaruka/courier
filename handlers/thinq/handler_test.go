@@ -104,8 +104,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Basic dXNlcjE6c2VzYW1l"},
 			Body:    `{"from_did":"2065551212","to_did":"2067791234","message":"Simple Message ☺"}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002"},
 	},
 	{
 		Label:          "Send Attachment",
@@ -128,8 +127,7 @@ var sendTestCases = []OutgoingTestCase{
 				Body: `{"from_did":"2065551212","to_did":"2067791234","message":"My pic!"}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002", "1002"},
 	},
 	{
 		Label:          "Only Attachment",
@@ -141,8 +139,7 @@ var sendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "guid": "1002" }`)),
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"1002"},
+		ExpectedExtIDs: []string{"1002"},
 	},
 	{
 		Label:   "No External ID",
@@ -156,8 +153,8 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from_did":"2065551212","to_did":"2067791234","message":"No External ID"}`,
 		}},
-		ExpectedMsgStatus: "E",
 		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("guid")},
+		ExpectedError:     courier.ErrResponseUnexpected,
 	},
 	{
 		Label:   "Error Sending",
@@ -171,7 +168,21 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from_did":"2065551212","to_did":"2067791234","message":"Error Message"}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+12067791234",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.thinq.com/account/1234/product/origination/sms/send": {
+				httpx.NewMockResponse(500, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"from_did":"2065551212","to_did":"2067791234","message":"Error Message"}`,
+		}},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
