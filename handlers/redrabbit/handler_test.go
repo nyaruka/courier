@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
@@ -12,7 +13,6 @@ import (
 var defaultSendTestCases = []OutgoingTestCase{
 	{Label: "Plain Send",
 		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
-		ExpectedMsgStatus: "W",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://http1.javna.com/epicenter/GatewaySendG.asp*": {
 				httpx.NewMockResponse(200, nil, []byte(`SENT`)),
@@ -31,7 +31,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 	},
 	{Label: "Unicode Send",
 		MsgText: "☺", MsgURN: "tel:+250788383383",
-		ExpectedMsgStatus: "W",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://http1.javna.com/epicenter/GatewaySendG.asp*": {
 				httpx.NewMockResponse(200, nil, []byte(`SENT`)),
@@ -51,9 +50,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 		}},
 	},
 	{Label: "Longer Unicode Send",
-		MsgText:           "This is a message more than seventy characters with some unicode ☺ in them",
-		MsgURN:            "tel:+250788383383",
-		ExpectedMsgStatus: "W",
+		MsgText: "This is a message more than seventy characters with some unicode ☺ in them",
+		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://http1.javna.com/epicenter/GatewaySendG.asp*": {
 				httpx.NewMockResponse(200, nil, []byte(`SENT`)),
@@ -72,9 +70,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 			}}},
 	},
 	{Label: "Long Send",
-		MsgText:           "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:            "tel:+250788383383",
-		ExpectedMsgStatus: "W",
+		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://http1.javna.com/epicenter/GatewaySendG.asp*": {
 				httpx.NewMockResponse(200, nil, []byte(`SENT`)),
@@ -94,7 +91,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 	},
 	{Label: "Send Attachment",
 		MsgText: "My pic!", MsgURN: "tel:+250788383383", MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedMsgStatus: "W",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://http1.javna.com/epicenter/GatewaySendG.asp*": {
 				httpx.NewMockResponse(200, nil, []byte(`SENT`)),
@@ -113,12 +109,21 @@ var defaultSendTestCases = []OutgoingTestCase{
 	},
 	{Label: "Error Sending",
 		MsgText: "Error Sending", MsgURN: "tel:+250788383383",
-		ExpectedMsgStatus: "E",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://http1.javna.com/epicenter/GatewaySendG.asp*": {
 				httpx.NewMockResponse(403, nil, []byte(`Error`)),
 			},
 		},
+		ExpectedError: courier.ErrResponseStatus,
+	},
+	{Label: "Connection Error",
+		MsgText: "Error Sending", MsgURN: "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://http1.javna.com/epicenter/GatewaySendG.asp*": {
+				httpx.NewMockResponse(500, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 

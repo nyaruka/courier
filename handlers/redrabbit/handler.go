@@ -2,7 +2,6 @@ package redrabbit
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -36,19 +35,13 @@ func (h *handler) Initialize(s courier.Server) error {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	if username == "" || password == "" {
-		return nil, fmt.Errorf("Missing username or password for RR channel")
+		return courier.ErrChannelConfig
 	}
 
 	text := handlers.GetTextAndAttachments(msg)
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	form := url.Values{
 		"LoginName":         []string{username},
 		"Password":          []string{password},
@@ -73,16 +66,15 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 	msgURL.RawQuery = form.Encode()
 	req, err := http.NewRequest(http.MethodGet, msgURL.String(), nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	resp, _, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		return status, nil
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	} else if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
 	}
 
-	// all went well, set ourselves to wired
-	status.SetStatus(courier.MsgStatusWired)
-
-	return status, nil
+	return nil
 }
