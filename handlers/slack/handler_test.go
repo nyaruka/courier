@@ -178,42 +178,40 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText: "Simple Message",
 		MsgURN:  "slack:U0123ABCDEF",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://slack.com/api/chat.postMessage": {
+			"*/chat.postMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{"ok":true,"channel":"U0123ABCDEF"}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"channel":"U0123ABCDEF","text":"Simple Message"}`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Unicode Send",
 		MsgText: "☺",
 		MsgURN:  "slack:U0123ABCDEF",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://slack.com/api/chat.postMessage": {
+			"*/chat.postMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{"ok":true,"channel":"U0123ABCDEF"}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"channel":"U0123ABCDEF","text":"☺"}`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Send Text Auth Error",
 		MsgText: "Hello",
 		MsgURN:  "slack:U0123ABCDEF",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://slack.com/api/chat.postMessage": {
+			"*/chat.postMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{"ok":false,"error":"invalid_auth"}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"channel":"U0123ABCDEF","text":"Hello"}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError:     courier.ErrFailedWithReason("", "invalid_auth"),
 		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "invalid_auth")},
 	},
 }
@@ -236,7 +234,6 @@ var fileSendTestCases = []OutgoingTestCase{
 			{},
 			{BodyContains: "image.png"},
 		},
-		ExpectedMsgStatus: "W",
 	},
 }
 

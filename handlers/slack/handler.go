@@ -146,30 +146,21 @@ func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	botToken := msg.Channel().StringConfigForKey(configBotToken, "")
 	if botToken == "" {
-		return nil, fmt.Errorf("missing bot token for SL/slack channel")
+		return courier.ErrChannelConfig
 	}
-
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	for _, attachment := range msg.Attachments() {
 		fileAttachment, err := h.parseAttachmentToFileParams(msg, attachment, clog)
 		if err != nil {
-			clog.RawError(err)
-			return status, nil
+			return err
 		}
 
 		if fileAttachment != nil {
 			err = h.sendFilePart(msg, botToken, fileAttachment, clog)
 			if err != nil {
-				clog.RawError(err)
-				return status, nil
+				return err
 			}
 		}
 	}
@@ -177,13 +168,11 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 	if msg.Text() != "" {
 		err := h.sendTextMsgPart(msg, botToken, clog)
 		if err != nil {
-			clog.RawError(err)
-			return status, nil
+			return err
 		}
 	}
 
-	status.SetStatus(courier.MsgStatusWired)
-	return status, nil
+	return nil
 }
 
 func (h *handler) sendTextMsgPart(msg courier.MsgOut, token string, clog *courier.ChannelLog) error {
@@ -208,20 +197,23 @@ func (h *handler) sendTextMsgPart(msg courier.MsgOut, token string, clog *courie
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
-		return errors.New("error sending message")
+		return courier.ErrConnectionFailed
+	} else if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
 	}
 
 	ok, err := jsonparser.GetBoolean(respBody, "ok")
 	if err != nil {
-		return err
+		return courier.ErrResponseUnexpected
 	}
 
 	if !ok {
 		errDescription, err := jsonparser.GetString(respBody, "error")
 		if err != nil {
-			return err
+			return courier.ErrResponseUnexpected
 		}
-		return errors.New(errDescription)
+		clog.Error(courier.NewChannelError("", "", errDescription))
+		return courier.ErrFailedWithReason("", errDescription)
 	}
 	return nil
 }
@@ -280,16 +272,18 @@ func (h *handler) sendFilePart(msg courier.MsgOut, token string, fileParams *Fil
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
-		return errors.New("error uploading file to slack")
+		return courier.ErrConnectionFailed
+	} else if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
 	}
 
 	var fr FileResponse
 	if err := json.Unmarshal(respBody, &fr); err != nil {
-		return errors.Errorf("couldn't unmarshal file response: %v", err)
+		return courier.ErrResponseUnparseable
 	}
 
 	if !fr.OK {
-		return errors.Errorf("error uploading file to slack: %s.", fr.Error)
+		return courier.ErrResponseUnexpected
 	}
 
 	return nil
