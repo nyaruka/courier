@@ -783,7 +783,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgText: "Simple Message",
 		MsgURN:  "telegram:12345",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.telegram.org/botauth_token/sendMessage": {
+			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
 			},
 		},
@@ -798,7 +798,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgURN:          "telegram:12345",
 		MsgQuickReplies: []string{"Yes", "No"},
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.telegram.org/botauth_token/sendMessage": {
+			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
 			},
 		},
@@ -814,10 +814,10 @@ var outgoingCases = []OutgoingTestCase{
 		MsgQuickReplies: []string{"Yes", "No"},
 		MsgAttachments:  []string{"application/pdf:https://foo.bar/doc1.pdf", "application/pdf:https://foo.bar/document.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.telegram.org/botauth_token/sendMessage": {
+			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
 			},
-			"https://api.telegram.org/botauth_token/sendDocument": {
+			"*/botauth_token/sendDocument": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
 			},
@@ -834,7 +834,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgText: "Error",
 		MsgURN:  "telegram:12345",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.telegram.org/botauth_token/sendMessage": {
+			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(403, nil, []byte(`{ "ok": false, "error_code":400, "description":"Bot domain invalid." }`)),
 			},
 		},
@@ -848,7 +848,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgText: "Stopped Contact",
 		MsgURN:  "telegram:12345",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.telegram.org/botauth_token/sendMessage": {
+			"*/botauth_token/sendMessage": {
 				httpx.NewMockResponse(403, nil, []byte(`{ "ok": false, "error_code":403, "description":"Forbidden: bot was blocked by the user"}`)),
 			},
 		},
@@ -863,7 +863,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgURN:         "telegram:12345",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.telegram.org/botauth_token/sendPhoto": {
+			"*/botauth_token/sendPhoto": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
 			},
 		},
@@ -878,7 +878,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgURN:         "telegram:12345",
 		MsgAttachments: []string{"video/mpeg:https://foo.bar/video.mpeg"},
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.telegram.org/botauth_token/sendVideo": {
+			"*/botauth_token/sendVideo": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
 			},
 		},
@@ -893,7 +893,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgURN:         "telegram:12345",
 		MsgAttachments: []string{"audio/mp3:https://foo.bar/audio.mp3"},
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.telegram.org/botauth_token/sendAudio": {
+			"*/botauth_token/sendAudio": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
 			},
 		},
@@ -908,7 +908,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgURN:         "telegram:12345",
 		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://api.telegram.org/botauth_token/sendDocument": {
+			"*/botauth_token/sendDocument": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "ok": true, "result": { "message_id": 133 } }`)),
 			},
 		},
