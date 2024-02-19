@@ -139,7 +139,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"messages":[{"recipient":"99999999999","message-id":"10","sms":{"originator":"1122","content":{"text":"Simple Message"}}}]}`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{Label: "Long Send",
 		MsgText: "This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, now, I need to keep adding more things to make it work",
@@ -158,7 +157,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"messages":[{"recipient":"99999999999","message-id":"10.2","sms":{"originator":"1122","content":{"text":"I need to keep adding more things to make it work"}}}]}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{Label: "Send Attachment",
 		MsgText:        "My pic!",
@@ -169,9 +167,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(validMessage)),
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
-	{Label: "Invalid JSON Response",
+	{Label: "Error sending",
 		MsgText: "Error Sending",
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
@@ -179,17 +176,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(400, nil, []byte(`not json`)),
 			},
 		},
-		ExpectedMsgStatus: "E",
-	},
-	{Label: "Missing Message ID",
-		MsgText: missingMessageID,
-		MsgURN:  "tel:+250788383383",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"http://example.com/broker-api/send": {
-				httpx.NewMockResponse(400, nil, []byte(`{}`)),
-			},
-		},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 
