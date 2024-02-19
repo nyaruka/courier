@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
@@ -170,18 +169,11 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
 
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	nexmoAPIKey := msg.Channel().StringConfigForKey(configNexmoAPIKey, "")
-	if nexmoAPIKey == "" {
-		return nil, fmt.Errorf("no nexmo API key set for NX channel")
-	}
 	nexmoAPISecret := msg.Channel().StringConfigForKey(configNexmoAPISecret, "")
-	if nexmoAPISecret == "" {
-		return nil, fmt.Errorf("no nexmo API secret set for NX channel")
+	if nexmoAPIKey == "" || nexmoAPISecret == "" {
+		return courier.ErrChannelConfig
 	}
 
 	// build our callback URL
@@ -195,7 +187,6 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		textType = "unicode"
 	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), text, maxMsgLength)
 	for _, part := range parts {
 		form := url.Values{
@@ -216,38 +207,36 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		for i := 0; i < 3; i++ {
 			req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 			if err != nil {
-				return nil, err
+				return err
 			}
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 			resp, respBody, requestErr = h.RequestHTTP(req, clog)
 			matched := throttledRE.FindAllStringSubmatch(string(respBody), -1)
 			if len(matched) > 0 && len(matched[0]) > 0 {
-				sleepTime, _ := strconv.Atoi(matched[0][1])
-				time.Sleep(time.Duration(sleepTime) * time.Millisecond)
+				return courier.ErrConnectionThrottled
 			} else {
 				break
 			}
 		}
 
-		if requestErr != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if requestErr != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
 		nexmoStatus, err := jsonparser.GetString(respBody, "messages", "[0]", "status")
-		errCode, _ := strconv.Atoi(nexmoStatus)
 		if err != nil || nexmoStatus != "0" {
-			// https://developer.vonage.com/messaging/sms/guides/troubleshooting-sms
-			clog.Error(courier.ErrorExternal("send:"+nexmoStatus, sendErrorCodes[errCode]))
-			return status, nil
+			return courier.ErrResponseUnexpected
 		}
 
 		externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "message-id")
-		if err == nil {
-			status.SetExternalID(externalID)
+		if err != nil {
+			return courier.ErrResponseUnexpected
 		}
-
+		res.AddExternalID(externalID)
 	}
-	status.SetStatus(courier.MsgStatusWired)
-	return status, nil
+
+	return nil
 }
