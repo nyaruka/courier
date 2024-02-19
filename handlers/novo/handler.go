@@ -78,22 +78,11 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	merchantID := msg.Channel().StringConfigForKey(configMerchantId, "")
-	if merchantID == "" {
-		return nil, fmt.Errorf("no merchant_id set for NV channel")
-	}
-
 	merchantSecret := msg.Channel().StringConfigForKey(configMerchantSecret, "")
-	if merchantSecret == "" {
-		return nil, fmt.Errorf("no merchant_secret set for NV channel")
+	if merchantID == "" || merchantSecret == "" {
+		return courier.ErrChannelConfig
 	}
-
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		from := strings.TrimPrefix(msg.Channel().Address(), "+")
@@ -111,25 +100,23 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 		req, err := http.NewRequest(http.MethodGet, partSendURL.String(), nil)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
-		responseMsgStatus, _ := jsonparser.GetString(respBody, "status")
+		responseMsgStatus, err := jsonparser.GetString(respBody, "status")
 
 		// we always get 204 on success
-		if responseMsgStatus == "FINISHED" {
-			status.SetStatus(courier.MsgStatusWired)
-		} else {
-			status.SetStatus(courier.MsgStatusFailed)
-			clog.RawError(fmt.Errorf("received invalid response"))
-			break
+		if responseMsgStatus != "FINISHED" || err != nil {
+			return courier.ErrResponseUnexpected
 		}
 	}
 
-	return status, nil
+	return nil
 }

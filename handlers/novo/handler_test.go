@@ -71,7 +71,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"Simple Message ☺"}, "signature": {"29f1fe56b81979aaf9dfb693b91ad16c87a9303951f38abcc2794501da79fff0"}},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Long Send",
@@ -91,7 +90,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"I need to keep adding more things to make it work"}, "signature": {"d6251beaa3398cb00c9354fd2fa80cc14ff0d9d42f6d6d488ad0f51b0719d89b"}},
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:          "Send Attachment",
@@ -106,7 +104,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"My pic!\nhttps://foo.bar/image.jpg"}, "signature": {"77a0feaf9a39e593f3e87d8cd3798e8aeabc1646501df7331c8d3bc3a54277fb"}},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Invalid Parameters",
@@ -120,8 +117,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"Invalid Parameters"}, "signature": {"4b640a668fd83223e38d429b15ea737ef58e1ab025b756baaca4743f3adb3f77"}},
 		}},
-		ExpectedMsgStatus: "F",
-		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "received invalid response")},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:   "Error Response",
@@ -129,14 +125,13 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:  "tel:+18686846481",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://novosmstools.com/novo_te/my-merchant-id/sendSMS*": {
-				httpx.NewMockResponse(200, nil, []byte(`{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`)),
+				httpx.NewMockResponse(400, nil, []byte(`{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"Error Response"}, "signature": {"9fe49f073109de29f8c6d5108fd5719ee0b70c22cedb23fffdbabc8a99b9a0a9"}},
 		}},
-		ExpectedMsgStatus: "F",
-		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "received invalid response")},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 
