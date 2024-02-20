@@ -1,12 +1,13 @@
 package nexmo
 
 import (
-	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -118,98 +119,127 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
-// setSendURL takes care of setting the sendURL to call
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"messages":[{"status":"0","message-id":"1002"}]}`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"1002"},
-		SendPrep:           setSendURL,
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.nexmo.com/sms/json": {
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":"0","message-id":"1002"}]}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"text": {"Simple Message"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
+		}},
+		ExpectedExtIDs: []string{"1002"},
 	},
 	{
-		Label:              "Unicode Send",
-		MsgText:            "Unicode ☺",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"messages":[{"status":"0","message-id":"1002"}]}`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"text": "Unicode ☺", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "unicode"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"1002"},
-		SendPrep:           setSendURL,
+		Label:   "Unicode Send",
+		MsgText: "Unicode ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.nexmo.com/sms/json": {
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":"0","message-id":"1002"}]}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"text": {"Unicode ☺"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"unicode"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
+		}},
+		ExpectedExtIDs: []string{"1002"},
 	},
 	{
-		Label:              "Long Send",
-		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"messages":[{"status":"0","message-id":"1002"}]}`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"text": "I need to keep adding more things to make it work", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"1002"},
-		SendPrep:           setSendURL,
+		Label:   "Long Send",
+		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.nexmo.com/sms/json": {
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":"0","message-id":"1002"}]}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":"0","message-id":"1002"}]}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Form: url.Values{"text": {"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
+			},
+			{
+				Form: url.Values{"text": {"I need to keep adding more things to make it work"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
+			},
+		},
+		ExpectedExtIDs: []string{"1002", "1002"},
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{"messages":[{"status":"0","message-id":"1002"}]}`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"1002"},
-		SendPrep:           setSendURL,
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.nexmo.com/sms/json": {
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":"0","message-id":"1002"}]}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"text": {"My pic!\nhttps://foo.bar/image.jpg"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
+		}},
+		ExpectedExtIDs: []string{"1002"},
 	},
 	{
-		Label:              "Error Status",
-		MsgText:            "Error status",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"messages":[{"status":"10"}]}`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"text": "Error status", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("send:10", "Too Many Existing Binds")},
-		SendPrep:           setSendURL,
+		Label:   "Error Status",
+		MsgText: "Error status",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.nexmo.com/sms/json": {
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":"10"}]}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"text": {"Error status"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
+		}},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `Error`,
-		MockResponseStatus: 400,
-		ExpectedPostParams: map[string]string{"text": "Error Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.nexmo.com/sms/json": {
+				httpx.NewMockResponse(400, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"text": {"Error Message"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
+		}},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
-		Label:              "Invalid Token",
-		MsgText:            "Simple Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   "Invalid API token",
-		MockResponseStatus: 401,
-		ExpectedPostParams: map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		Label:   "Invalid Token",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.nexmo.com/sms/json": {
+				httpx.NewMockResponse(401, nil, []byte(`Invalid API token`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form: url.Values{"text": {"Simple Message"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
+		}},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
-		Label:              "Throttled by Nexmo",
-		MsgText:            "Simple Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"messages":[{"status":"1","error-text":"Throughput Rate Exceeded - please wait [ 250 ] and retry"}]}`,
-		MockResponseStatus: 200,
-		ExpectedPostParams: map[string]string{"text": "Simple Message", "to": "250788383383", "from": "2020", "api_key": "nexmo-api-key", "api_secret": "nexmo-api-secret", "status-report-req": "1", "type": "text"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("send:1", "Throttled")},
-		SendPrep:           setSendURL,
+		Label:   "Throttled by Nexmo",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.nexmo.com/sms/json": {
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":"1","error-text":"Throughput Rate Exceeded - please wait [ 250 ] and retry"}]}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Form: url.Values{"text": {"Simple Message"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
+			},
+		},
+		ExpectedError: courier.ErrConnectionThrottled,
 	},
 }
 

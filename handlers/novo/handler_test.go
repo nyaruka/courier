@@ -1,12 +1,13 @@
 package novo
 
 import (
-	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -57,58 +58,80 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL + "?%s"
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+18686846481",
-		MockResponseBody:   `{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`,
-		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "W",
-		SendPrep:           setSendURL,
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+18686846481",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://novosmstools.com/novo_te/my-merchant-id/sendSMS*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"Simple Message ☺"}, "signature": {"29f1fe56b81979aaf9dfb693b91ad16c87a9303951f38abcc2794501da79fff0"}},
+		}},
 	},
 	{
-		Label:              "Long Send",
-		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:             "tel:+18686846481",
-		MockResponseBody:   `{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`,
-		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "W",
-		SendPrep:           setSendURL,
+		Label:   "Long Send",
+		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:  "tel:+18686846481",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://novosmstools.com/novo_te/my-merchant-id/sendSMS*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"}, "signature": {"974f711ede732846e4d4da9bc95bf9452ae2337d5452c7417a19ed4034afd197"}},
+			},
+			{
+				Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"I need to keep adding more things to make it work"}, "signature": {"d6251beaa3398cb00c9354fd2fa80cc14ff0d9d42f6d6d488ad0f51b0719d89b"}},
+			},
+		},
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+18686846481",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`,
-		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "W",
-		SendPrep:           setSendURL,
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+18686846481",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://novosmstools.com/novo_te/my-merchant-id/sendSMS*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"blastId": "-437733473338","status": "FINISHED","type": "SMS","statusDescription": "Finished"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"My pic!\nhttps://foo.bar/image.jpg"}, "signature": {"77a0feaf9a39e593f3e87d8cd3798e8aeabc1646501df7331c8d3bc3a54277fb"}},
+		}},
 	},
 	{
-		Label:              "Invalid Parameters",
-		MsgText:            "Invalid Parameters",
-		MsgURN:             "tel:+18686846481",
-		MockResponseBody:   `{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`,
-		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "F",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.NewChannelError("", "", "received invalid response")},
-		SendPrep:           setSendURL,
+		Label:   "Invalid Parameters",
+		MsgText: "Invalid Parameters",
+		MsgURN:  "tel:+18686846481",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://novosmstools.com/novo_te/my-merchant-id/sendSMS*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"Invalid Parameters"}, "signature": {"4b640a668fd83223e38d429b15ea737ef58e1ab025b756baaca4743f3adb3f77"}},
+		}},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
-		Label:              "Error Response",
-		MsgText:            "Error Response",
-		MsgURN:             "tel:+18686846481",
-		MockResponseBody:   `{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`,
-		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "F",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.NewChannelError("", "", "received invalid response")},
-		SendPrep:           setSendURL,
+		Label:   "Error Response",
+		MsgText: "Error Response",
+		MsgURN:  "tel:+18686846481",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://novosmstools.com/novo_te/my-merchant-id/sendSMS*": {
+				httpx.NewMockResponse(400, nil, []byte(`{"error": "Incorrect Query String Authentication ","expectedQueryString": "8868;18686846480;test;"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{"from": {"2020"}, "to": {"18686846481"}, "msg": {"Error Response"}, "signature": {"9fe49f073109de29f8c6d5108fd5719ee0b70c22cedb23fffdbabc8a99b9a0a9"}},
+		}},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 

@@ -1,7 +1,6 @@
 package playmobile
 
 import (
-	"net/http/httptest"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -128,49 +127,57 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL + "?%s"
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{Label: "Plain Send",
-		MsgText:             "Simple Message",
-		MsgURN:              "tel:99999999999",
-		ExpectedMsgStatus:   "W",
-		MockResponseBody:    "Request is received",
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"messages":[{"recipient":"99999999999","message-id":"10","sms":{"originator":"1122","content":{"text":"Simple Message"}}}]}`,
-		SendPrep:            setSendURL},
+		MsgText: "Simple Message",
+		MsgURN:  "tel:99999999999",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/broker-api/send": {
+				httpx.NewMockResponse(200, nil, []byte(`Request is received`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"messages":[{"recipient":"99999999999","message-id":"10","sms":{"originator":"1122","content":{"text":"Simple Message"}}}]}`,
+		}},
+	},
 	{Label: "Long Send",
-		MsgText:             "This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, now, I need to keep adding more things to make it work",
-		MsgURN:              "tel:99999999999",
-		ExpectedMsgStatus:   "W",
-		MockResponseBody:    "Request is received",
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"messages":[{"recipient":"99999999999","message-id":"10.2","sms":{"originator":"1122","content":{"text":"I need to keep adding more things to make it work"}}}]}`,
-		SendPrep:            setSendURL},
+		MsgText: "This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, now, I need to keep adding more things to make it work",
+		MsgURN:  "tel:99999999999",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/broker-api/send": {
+				httpx.NewMockResponse(200, nil, []byte(`Request is received`)),
+				httpx.NewMockResponse(200, nil, []byte(`Request is received`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"messages":[{"recipient":"99999999999","message-id":"10","sms":{"originator":"1122","content":{"text":"This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, now,"}}}]}`,
+			},
+			{
+				Body: `{"messages":[{"recipient":"99999999999","message-id":"10.2","sms":{"originator":"1122","content":{"text":"I need to keep adding more things to make it work"}}}]}`,
+			},
+		},
+	},
 	{Label: "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+18686846481",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedMsgStatus:  "W",
-		MockResponseBody:   validMessage,
-		MockResponseStatus: 200,
-		SendPrep:           setSendURL},
-	{Label: "Invalid JSON Response",
-		MsgText:            "Error Sending",
-		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "E",
-		MockResponseStatus: 400,
-		MockResponseBody:   "not json",
-		SendPrep:           setSendURL},
-	{Label: "Missing Message ID",
-		MsgText:            missingMessageID,
-		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "E",
-		MockResponseStatus: 400,
-		MockResponseBody:   "{}",
-		SendPrep:           setSendURL},
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+18686846481",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/broker-api/send": {
+				httpx.NewMockResponse(200, nil, []byte(validMessage)),
+			},
+		},
+	},
+	{Label: "Error sending",
+		MsgText: "Error Sending",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/broker-api/send": {
+				httpx.NewMockResponse(400, nil, []byte(`not json`)),
+			},
+		},
+		ExpectedError: courier.ErrResponseStatus,
+	},
 }
 
 func TestOutgoing(t *testing.T) {
@@ -179,7 +186,7 @@ func TestOutgoing(t *testing.T) {
 			"password":  "Password",
 			"username":  "Username",
 			"shortcode": "1122",
-			"base_url":  "http://91.204.239.42",
+			"base_url":  "http://example.com",
 		})
 
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{httpx.BasicAuth("Username", "Password")}, nil)

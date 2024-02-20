@@ -1,7 +1,6 @@
 package plivo
 
 import (
-	"net/http/httptest"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -68,77 +67,104 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL + "/%s/"
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{Label: "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"abc123"},
-		MockResponseBody:   `{ "message_uuid":["abc123"] }`,
-		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.plivo.com/v1/Account/AuthID/Message/": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "message_uuid":["abc123"] }`)),
+			},
 		},
-		ExpectedRequestBody: `{"src":"2020","dst":"250788383383","text":"Simple Message ☺","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
-		SendPrep:            setSendURL},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+			},
+			Body: `{"src":"2020","dst":"250788383383","text":"Simple Message ☺","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
+		}},
+		ExpectedExtIDs: []string{"abc123"},
+	},
 	{Label: "Long Send",
-		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"abc123"},
-		MockResponseBody:   `{ "message_uuid":["abc123"] }`,
-		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.plivo.com/v1/Account/AuthID/Message/": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "message_uuid":["abc123"] }`)),
+				httpx.NewMockResponse(200, nil, []byte(`{ "message_uuid":["abc123"] }`)),
+			},
 		},
-		ExpectedRequestBody: `{"src":"2020","dst":"250788383383","text":"I need to keep adding more things to make it work","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
-		SendPrep:            setSendURL},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{
+					"Content-Type":  "application/json",
+					"Accept":        "application/json",
+					"Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+				},
+				Body: `{"src":"2020","dst":"250788383383","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
+			},
+			{
+				Headers: map[string]string{
+					"Content-Type":  "application/json",
+					"Accept":        "application/json",
+					"Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+				},
+				Body: `{"src":"2020","dst":"250788383383","text":"I need to keep adding more things to make it work","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
+			},
+		},
+		ExpectedExtIDs: []string{"abc123", "abc123"},
+	},
 	{Label: "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"abc123"},
-		MockResponseBody:   `{ "message_uuid":["abc123"] }`,
-		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.plivo.com/v1/Account/AuthID/Message/": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "message_uuid":["abc123"] }`)),
+			},
 		},
-		ExpectedRequestBody: `{"src":"2020","dst":"250788383383","text":"My pic!\nhttps://foo.bar/image.jpg","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
-		SendPrep:            setSendURL},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+			},
+			Body: `{"src":"2020","dst":"250788383383","text":"My pic!\nhttps://foo.bar/image.jpg","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
+		}},
+		ExpectedExtIDs: []string{"abc123"},
+	},
 	{Label: "No External Id",
-		MsgText:            "No External ID",
-		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "E",
-		MockResponseBody:   `{ "missing":"OzYDlvf3SQVc" }`,
-		MockResponseStatus: 200,
-		ExpectedLogErrors:  []*courier.ChannelError{courier.NewChannelError("", "", "unable to parse response body from Plivo")},
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+		MsgText: "No External ID",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.plivo.com/v1/Account/AuthID/Message/": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "missing":"OzYDlvf3SQVc" }`)),
+			},
 		},
-		ExpectedRequestBody: `{"src":"2020","dst":"250788383383","text":"No External ID","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
-		SendPrep:            setSendURL},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Basic QXV0aElEOkF1dGhUb2tlbg==",
+			},
+			Body: `{"src":"2020","dst":"250788383383","text":"No External ID","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
+		}},
+		ExpectedError: courier.ErrResponseUnexpected,
+	},
 	{Label: "Error Sending",
-		MsgText:             "Error Message",
-		MsgURN:              "tel:+250788383383",
-		ExpectedMsgStatus:   "E",
-		MockResponseBody:    `{ "error": "failed" }`,
-		MockResponseStatus:  401,
-		ExpectedRequestBody: `{"src":"2020","dst":"250788383383","text":"Error Message","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
-		SendPrep:            setSendURL},
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.plivo.com/v1/Account/AuthID/Message/": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"src":"2020","dst":"250788383383","text":"Error Message","url":"https://localhost/c/pl/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status","method":"POST"}`,
+		}},
+		ExpectedError: courier.ErrResponseStatus,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

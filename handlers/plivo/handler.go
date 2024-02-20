@@ -136,24 +136,18 @@ type mtPayload struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	authID := msg.Channel().StringConfigForKey(configPlivoAuthID, "")
 	authToken := msg.Channel().StringConfigForKey(configPlivoAuthToken, "")
 	plivoAppID := msg.Channel().StringConfigForKey(configPlivoAPPID, "")
 	if authID == "" || authToken == "" || plivoAppID == "" {
-		return nil, fmt.Errorf("missing auth_id, auth_token, app_id for PL channel")
+		return courier.ErrChannelConfig
 	}
 
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	statusURL := fmt.Sprintf("https://%s/c/pl/%s/status", callbackDomain, msg.Channel().UUID())
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
-	for i, part := range parts {
+	for _, part := range parts {
 		payload := &mtPayload{
 			Src:    strings.TrimPrefix(msg.Channel().Address(), "+"),
 			Dst:    strings.TrimPrefix(msg.URN().Path(), "+"),
@@ -168,30 +162,28 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		// build our request
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, authID), requestBody)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.SetBasicAuth(authID, authToken)
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
 		externalID, err := jsonparser.GetString(respBody, "message_uuid", "[0]")
 		if err != nil {
-			return status, fmt.Errorf("unable to parse response body from Plivo")
+			return courier.ErrResponseUnexpected
 		}
 
-		// set external id on first part
-		if i == 0 {
-			status.SetExternalID(externalID)
-		}
+		res.AddExternalID(externalID)
 	}
 
-	status.SetStatus(courier.MsgStatusWired)
-	return status, nil
+	return nil
 }
 
 func (h *handler) RedactValues(ch courier.Channel) []string {

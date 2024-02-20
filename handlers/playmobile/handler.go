@@ -146,32 +146,13 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(configUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("no username set for PM channel")
-	}
-
 	password := msg.Channel().StringConfigForKey(configPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("no password set for PM channel")
-	}
-
 	shortCode := msg.Channel().Address()
-	if shortCode == "" {
-		return nil, fmt.Errorf("no phone sender set for PM channel")
-	}
-
 	baseURL := msg.Channel().StringConfigForKey(configBaseURL, "")
-	if baseURL == "" {
-		return nil, fmt.Errorf("no base url set for PM channel")
+	if username == "" || password == "" || shortCode == "" || baseURL == "" {
+		return courier.ErrChannelConfig
 	}
-
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	for i, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		payload := mtPayload{}
@@ -191,21 +172,20 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(sendURL, baseURL), bytes.NewReader(jsonBody))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		req.SetBasicAuth(username, password)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
 		resp, _, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
-
-		status.SetStatus(courier.MsgStatusWired)
 	}
-
-	return status, nil
+	return nil
 }
 
 func (h *handler) RedactValues(ch courier.Channel) []string {
