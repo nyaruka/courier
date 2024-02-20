@@ -1,3 +1,7 @@
+v9.1.7 (2024-02-20)
+-------------------------
+ * Rework more handlers to new send method and improve tests
+
 v9.1.6 (2024-02-14)
 -------------------------
  * Rework Telgram, Yo and Zenvia handlers to new send method
