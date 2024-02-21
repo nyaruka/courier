@@ -119,24 +119,11 @@ func writeJasminACK(w http.ResponseWriter) error {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("no username set for JS channel")
-	}
-
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("no password set for JS channel")
-	}
-
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
-	if sendURL == "" {
-		return nil, fmt.Errorf("no send url set for JS channel")
+	if username == "" || password == "" || sendURL == "" {
+		return courier.ErrChannelConfig
 	}
 
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
@@ -161,23 +148,21 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 	req, err := http.NewRequest(http.MethodGet, fullURL.String(), nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		return status, nil
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	} else if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
 	}
-
-	status.SetStatus(courier.MsgStatusWired)
 
 	// try to read our external id out
 	matches := idRegex.FindSubmatch(respBody)
 	if len(matches) == 2 {
-		status.SetExternalID(string(matches[1]))
+		res.AddExternalID(string(matches[1]))
 	}
 
-	return status, nil
+	return nil
 }

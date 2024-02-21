@@ -109,8 +109,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"dlr-url":    {"https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"},
 			},
 		}},
-		ExpectedExtIDs:    []string{"External ID1"},
-		ExpectedMsgStatus: "W",
+		ExpectedExtIDs: []string{"External ID1"},
 	},
 	{
 		Label:   "Unicode Send",
@@ -135,8 +134,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"dlr-url":    {"https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"},
 			},
 		}},
-		ExpectedExtIDs:    []string{"External ID1"},
-		ExpectedMsgStatus: "W",
+		ExpectedExtIDs: []string{"External ID1"},
 	},
 	{
 		Label:   "Smart Encoding",
@@ -161,8 +159,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"dlr-url":    {"https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"},
 			},
 		}},
-		ExpectedExtIDs:    []string{"External ID1"},
-		ExpectedMsgStatus: "W",
+		ExpectedExtIDs: []string{"External ID1"},
 	},
 	{
 		Label:           "Send Attachment",
@@ -189,8 +186,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"dlr-url":    {"https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"},
 			},
 		}},
-		ExpectedExtIDs:    []string{"External ID1"},
-		ExpectedMsgStatus: "W",
+		ExpectedExtIDs: []string{"External ID1"},
 	},
 	{
 		Label:           "Error Sending",
@@ -216,7 +212,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"dlr-url":    {"https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"},
 			},
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 
