@@ -201,8 +201,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
 			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"efa6405d518d4c0c88cce11f7db775fb"},
+		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
 	{
 		Label:          "Send with text and image",
@@ -218,8 +217,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
 			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺","mediaUrls":["https://foo.bar/image.jpg"]}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"efa6405d518d4c0c88cce11f7db775fb"},
+		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
 	{
 		Label:          "Send with image only",
@@ -234,8 +232,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
 			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg"]}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"efa6405d518d4c0c88cce11f7db775fb"},
+		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
 	{
 		Label:          "Send with two images",
@@ -250,8 +247,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
 			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg","https://foo.bar/image2.jpg"]}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"efa6405d518d4c0c88cce11f7db775fb"},
+		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
 	{
 		Label:          "Send with video only",
@@ -266,8 +262,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
 			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/movie.mp4"]}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"efa6405d518d4c0c88cce11f7db775fb"},
+		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
 	{
 		Label:          "Send with pdf",
@@ -282,8 +277,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
 			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/document.pdf"]}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"efa6405d518d4c0c88cce11f7db775fb"},
+		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
 	{
 		Label:   "500 on Send",
@@ -298,7 +292,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
 			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 	{
 		Label:   "404 on Send",
@@ -313,7 +307,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
 			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 

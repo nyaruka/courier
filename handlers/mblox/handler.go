@@ -148,7 +148,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		externalID, err := jsonparser.GetString(respBody, "id")
 		if err != nil {
-			clog.Error(courier.NewChannelError("", "", "unable to find id in MBlox response"))
+			clog.Error(courier.ErrorResponseValueMissing("id"))
 		} else {
 			res.AddExternalID(externalID)
 		}

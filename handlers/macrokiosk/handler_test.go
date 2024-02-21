@@ -154,7 +154,7 @@ var outgoingTestCases = []OutgoingTestCase{
 			},
 			Body: `{"user":"Username","pass":"Password","to":"250788383383","text":"No External ID","from":"macro","servid":"service-id","type":"0"}`,
 		}},
-		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to find MsgID in response")},
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("MsgID")},
 	},
 	{
 		Label:   "Error Sending",

@@ -176,7 +176,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":["250788383383"],"body":"No External ID","delivery_report":"per_recipient"}`,
 		}},
-		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to find id in MBlox response")},
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("id")},
 	},
 	{
 		Label:   "Error Sending",

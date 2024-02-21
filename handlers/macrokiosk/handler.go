@@ -196,7 +196,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		externalID, err := jsonparser.GetString(respBody, "MsgID")
 		if err != nil {
-			clog.Error(courier.NewChannelError("", "", "unable to find MsgID in response"))
+			clog.Error(courier.ErrorResponseValueMissing("MsgID"))
 		} else {
 			res.AddExternalID(externalID)
 		}
