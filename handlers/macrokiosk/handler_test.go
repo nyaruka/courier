@@ -1,13 +1,13 @@
 package macrokiosk
 
 import (
-	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -72,82 +72,107 @@ func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler(), incomingTestCases)
 }
 
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-}
-
 var outgoingTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"abc123"},
-		MockResponseBody:   `{ "MsgID":"abc123" }`,
-		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://www.etracker.cc/bulksms/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "MsgID":"abc123" }`)),
+			},
 		},
-		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"Simple Message ☺","from":"macro","servid":"service-id","type":"5"}`,
-		SendPrep:            setSendURL,
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"abc123"},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type": "application/json",
+				"Accept":       "application/json",
+			},
+			Body: `{"user":"Username","pass":"Password","to":"250788383383","text":"Simple Message ☺","from":"macro","servid":"service-id","type":"5"}`,
+		}},
 	},
 	{
-		Label:              "Long Send",
-		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"abc123"},
-		MockResponseBody:   `{ "MsgID":"abc123" }`,
-		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
+		Label:   "Long Send",
+		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://www.etracker.cc/bulksms/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "MsgID":"abc123" }`)),
+				httpx.NewMockResponse(200, nil, []byte(`{ "MsgID":"abc123" }`)),
+			},
 		},
-		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"I need to keep adding more things to make it work","from":"macro","servid":"service-id","type":"0"}`,
-		SendPrep:            setSendURL,
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"abc123"},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{
+					"Content-Type": "application/json",
+					"Accept":       "application/json",
+				},
+				Body: `{"user":"Username","pass":"Password","to":"250788383383","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,","from":"macro","servid":"service-id","type":"0"}`,
+			},
+			{
+				Headers: map[string]string{
+					"Content-Type": "application/json",
+					"Accept":       "application/json",
+				},
+				Body: `{"user":"Username","pass":"Password","to":"250788383383","text":"I need to keep adding more things to make it work","from":"macro","servid":"service-id","type":"0"}`,
+			},
+		},
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"abc123"},
-		MockResponseBody:   `{ "MsgID":"abc123" }`,
-		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://www.etracker.cc/bulksms/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "MsgID":"abc123" }`)),
+			},
 		},
-		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"My pic!\nhttps://foo.bar/image.jpg","from":"macro","servid":"service-id","type":"0"}`,
-		SendPrep:            setSendURL,
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"abc123"},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type": "application/json",
+				"Accept":       "application/json",
+			},
+			Body: `{"user":"Username","pass":"Password","to":"250788383383","text":"My pic!\nhttps://foo.bar/image.jpg","from":"macro","servid":"service-id","type":"0"}`,
+		}},
 	},
 	{
-		Label:              "No External Id",
-		MsgText:            "No External ID",
-		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "E",
-		MockResponseBody:   `{ "missing":"OzYDlvf3SQVc" }`,
-		MockResponseStatus: 200,
-		ExpectedLogErrors:  []*courier.ChannelError{courier.NewChannelError("", "", "unable to parse response body from Macrokiosk")},
-		ExpectedHeaders: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
+		Label:   "No External Id",
+		MsgText: "No External ID",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://www.etracker.cc/bulksms/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "missing":"missing" }`)),
+			},
 		},
-		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"No External ID","from":"macro","servid":"service-id","type":"0"}`,
-		SendPrep:            setSendURL,
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to parse response body from Macrokiosk")},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type": "application/json",
+				"Accept":       "application/json",
+			},
+			Body: `{"user":"Username","pass":"Password","to":"250788383383","text":"No External ID","from":"macro","servid":"service-id","type":"0"}`,
+		}},
 	},
 	{
-		Label:               "Error Sending",
-		MsgText:             "Error Message",
-		MsgURN:              "tel:+250788383383",
-		ExpectedMsgStatus:   "E",
-		MockResponseBody:    `{ "error": "failed" }`,
-		MockResponseStatus:  401,
-		ExpectedRequestBody: `{"user":"Username","pass":"Password","to":"250788383383","text":"Error Message","from":"macro","servid":"service-id","type":"0"}`,
-		SendPrep:            setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://www.etracker.cc/bulksms/send": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"user":"Username","pass":"Password","to":"250788383383","text":"Error Message","from":"macro","servid":"service-id","type":"0"}`,
+		}},
+		ExpectedMsgStatus: "E",
 	},
 }
 
