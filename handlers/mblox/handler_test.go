@@ -107,8 +107,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":["250788383383"],"body":"Simple Message ☺","delivery_report":"per_recipient"}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"OzYDlvf3SQVc"},
+		ExpectedExtIDs: []string{"OzYDlvf3SQVc"},
 	},
 	{
 		Label:   "Long Send",
@@ -138,8 +137,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"from":"2020","to":["250788383383"],"body":"I need to keep adding more things to make it work","delivery_report":"per_recipient"}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"OzYDlvf3SQVc"},
+		ExpectedExtIDs: []string{"OzYDlvf3SQVc", "OzYDlvf3SQVc"},
 	},
 	{
 		Label:          "Send Attachment",
@@ -159,8 +157,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":["250788383383"],"body":"My pic!\nhttps://foo.bar/image.jpg","delivery_report":"per_recipient"}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"OzYDlvf3SQVc"},
+		ExpectedExtIDs: []string{"OzYDlvf3SQVc"},
 	},
 	{
 		Label:   "No External Id",
@@ -179,8 +176,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":["250788383383"],"body":"No External ID","delivery_report":"per_recipient"}`,
 		}},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to parse response body from MBlox")},
+		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to find id in MBlox response")},
 	},
 	{
 		Label:   "Error Sending",
@@ -194,7 +190,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from":"2020","to":["250788383383"],"body":"Error Message","delivery_report":"per_recipient"}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 
