@@ -140,7 +140,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
 			},
 		},
-		ExpectedMsgStatus: "W",
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
 				"text":     {"Simple Message"},
@@ -163,7 +162,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
 			},
 		},
-		ExpectedMsgStatus: "W",
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
 				"text":     {"☺"},
@@ -188,7 +186,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
 			},
 		},
-		ExpectedMsgStatus: "W",
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
 				"text":     {`Fancy "Smart" Quotes`},
@@ -211,7 +208,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`Not routable. Do not try again.`)),
 			},
 		},
-		ExpectedMsgStatus: "F",
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
 				"text":     {"Not Routable"},
@@ -223,6 +219,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"password": {"Password"},
 			},
 		}},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:           "Error Sending",
@@ -234,7 +231,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(401, nil, []byte(`1: Unknown channel`)),
 			},
 		},
-		ExpectedMsgStatus: "E",
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
 				"text":     {"Error Message"},
@@ -246,6 +242,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"password": {"Password"},
 			},
 		}},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 
 	{
@@ -259,7 +256,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
 			},
 		},
-		ExpectedMsgStatus: "W",
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
 				"text":     {"My pic!\nhttps://foo.bar/image.jpg"},
@@ -286,7 +282,6 @@ var customParamsTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(201, nil, []byte(`0: Accepted for delivery`)),
 			},
 		},
-		ExpectedMsgStatus: "W",
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
 				"text":     {"Custom Params"},
@@ -314,7 +309,6 @@ var nationalSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
 			},
 		},
-		ExpectedMsgStatus: "W",
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
 				"text":     {"success"},
