@@ -1,13 +1,13 @@
 package mblox
 
 import (
-	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -89,86 +89,112 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "W",
-		MockResponseBody:   `{ "id":"OzYDlvf3SQVc" }`,
-		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Bearer Password",
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.mblox.com/xms/v1/Username/batches": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "id":"OzYDlvf3SQVc" }`)),
+			},
 		},
-		ExpectedRequestBody: `{"from":"2020","to":["250788383383"],"body":"Simple Message ☺","delivery_report":"per_recipient"}`,
-		ExpectedExtIDs:      []string{"OzYDlvf3SQVc"},
-		SendPrep:            setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Bearer Password",
+			},
+			Body: `{"from":"2020","to":["250788383383"],"body":"Simple Message ☺","delivery_report":"per_recipient"}`,
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"OzYDlvf3SQVc"},
 	},
 	{
-		Label:              "Long Send",
-		MsgText:            "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
-		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "W",
-		MockResponseBody:   `{ "id":"OzYDlvf3SQVc" }`,
-		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Bearer Password",
+		Label:   "Long Send",
+		MsgText: "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.mblox.com/xms/v1/Username/batches": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "id":"OzYDlvf3SQVc" }`)),
+				httpx.NewMockResponse(200, nil, []byte(`{ "id":"OzYDlvf3SQVc" }`)),
+			},
 		},
-		ExpectedRequestBody: `{"from":"2020","to":["250788383383"],"body":"I need to keep adding more things to make it work","delivery_report":"per_recipient"}`,
-		ExpectedExtIDs:      []string{"OzYDlvf3SQVc"},
-		SendPrep:            setSendURL,
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{
+					"Content-Type":  "application/json",
+					"Accept":        "application/json",
+					"Authorization": "Bearer Password",
+				},
+				Body: `{"from":"2020","to":["250788383383"],"body":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,","delivery_report":"per_recipient"}`,
+			},
+			{
+				Headers: map[string]string{
+					"Content-Type":  "application/json",
+					"Accept":        "application/json",
+					"Authorization": "Bearer Password",
+				},
+				Body: `{"from":"2020","to":["250788383383"],"body":"I need to keep adding more things to make it work","delivery_report":"per_recipient"}`,
+			},
+		},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"OzYDlvf3SQVc"},
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedMsgStatus:  "W",
-		MockResponseBody:   `{ "id":"OzYDlvf3SQVc" }`,
-		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Bearer Password",
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.mblox.com/xms/v1/Username/batches": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "id":"OzYDlvf3SQVc" }`)),
+			},
 		},
-		ExpectedRequestBody: `{"from":"2020","to":["250788383383"],"body":"My pic!\nhttps://foo.bar/image.jpg","delivery_report":"per_recipient"}`,
-		ExpectedExtIDs:      []string{"OzYDlvf3SQVc"},
-		SendPrep:            setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Bearer Password",
+			},
+			Body: `{"from":"2020","to":["250788383383"],"body":"My pic!\nhttps://foo.bar/image.jpg","delivery_report":"per_recipient"}`,
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"OzYDlvf3SQVc"},
 	},
 	{
-		Label:              "No External Id",
-		MsgText:            "No External ID",
-		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "E",
-		MockResponseBody:   `{ "missing":"OzYDlvf3SQVc" }`,
-		MockResponseStatus: 200,
-		ExpectedLogErrors:  []*courier.ChannelError{courier.NewChannelError("", "", "unable to parse response body from MBlox")},
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Bearer Password",
+		Label:   "No External Id",
+		MsgText: "No External ID",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.mblox.com/xms/v1/Username/batches": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "missing":"OzYDlvf3SQVc" }`)),
+			},
 		},
-		ExpectedRequestBody: `{"from":"2020","to":["250788383383"],"body":"No External ID","delivery_report":"per_recipient"}`,
-		SendPrep:            setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Bearer Password",
+			},
+			Body: `{"from":"2020","to":["250788383383"],"body":"No External ID","delivery_report":"per_recipient"}`,
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to parse response body from MBlox")},
 	},
 	{
-		Label:               "Error Sending",
-		MsgText:             "Error Message",
-		MsgURN:              "tel:+250788383383",
-		ExpectedMsgStatus:   "E",
-		MockResponseBody:    `{ "error": "failed" }`,
-		MockResponseStatus:  401,
-		ExpectedRequestBody: `{"from":"2020","to":["250788383383"],"body":"Error Message","delivery_report":"per_recipient"}`,
-		SendPrep:            setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.mblox.com/xms/v1/Username/batches": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"from":"2020","to":["250788383383"],"body":"Error Message","delivery_report":"per_recipient"}`,
+		}},
+		ExpectedMsgStatus: "E",
 	},
 }
 
