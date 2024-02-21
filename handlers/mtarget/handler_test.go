@@ -129,8 +129,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"msisdn": {"+250788383383"}, "msg": {"Simple Message"}, "username": {"Username"}, "password": {"Password"}, "serviceid": {"2020"}, "allowunicode": {"true"}}},
 		},
-		ExpectedExtIDs:    []string{"externalID"},
-		ExpectedMsgStatus: "W",
+		ExpectedExtIDs: []string{"externalID"},
 	},
 	{
 		Label:   "Unicode Send",
@@ -144,8 +143,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"msisdn": {"+250788383383"}, "msg": {"☺"}, "username": {"Username"}, "password": {"Password"}, "serviceid": {"2020"}, "allowunicode": {"true"}}},
 		},
-		ExpectedExtIDs:    []string{"externalID"},
-		ExpectedMsgStatus: "W",
+		ExpectedExtIDs: []string{"externalID"},
 	},
 	{
 		Label:          "Send Attachment",
@@ -160,8 +158,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"msisdn": {"+250788383383"}, "msg": {"My pic!\nhttps://foo.bar/image.jpg"}, "username": {"Username"}, "password": {"Password"}, "serviceid": {"2020"}, "allowunicode": {"true"}}},
 		},
-		ExpectedExtIDs:    []string{"externalID"},
-		ExpectedMsgStatus: "W",
+		ExpectedExtIDs: []string{"externalID"},
 	},
 	{
 		Label:   "Error Sending",
@@ -169,10 +166,10 @@ var outgoingCases = []OutgoingTestCase{
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api-public.mtarget.fr/api-sms.json*": {
-				httpx.NewMockResponse(403, nil, []byte(`{"results":[{"code": "3", "ticket": "null"}]}`)),
+				httpx.NewMockResponse(403, nil, []byte(`{"results":[{"code": "3", "reason": "FAILED", "ticket": "null"}]}`)),
 			},
 		},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:   "Error Response",
@@ -180,11 +177,10 @@ var outgoingCases = []OutgoingTestCase{
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api-public.mtarget.fr/api-sms.json*": {
-				httpx.NewMockResponse(200, nil, []byte(`{"results":[{"code": "3", "ticket": "null"}]}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"results":[{"code": "3", "reason": "FAILED", "ticket": "null"}]}`)),
 			},
 		},
-		ExpectedMsgStatus: "F",
-		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "Error status code, failing permanently")},
+		ExpectedError: courier.ErrFailedWithReason("3", "FAILED"),
 	},
 }
 
