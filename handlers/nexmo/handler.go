@@ -229,8 +229,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		nexmoStatus, err := jsonparser.GetString(respBody, "messages", "[0]", "status")
 		errCode, _ := strconv.Atoi(nexmoStatus)
 		if err != nil || nexmoStatus != "0" {
-			// https://developer.vonage.com/messaging/sms/guides/troubleshooting-sms
-			clog.Error(courier.ErrorExternal("send:"+nexmoStatus, sendErrorCodes[errCode]))
 			return courier.ErrFailedWithReason(fmt.Sprint(errCode), sendErrorCodes[errCode])
 		}
 

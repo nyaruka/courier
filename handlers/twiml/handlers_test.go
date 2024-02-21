@@ -611,8 +611,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedError:     courier.ErrResponseStatus,
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("1001", "Service specific error: 1001.")},
+		ExpectedError: courier.ErrFailedWithReason("1001", "Service specific error: 1001."),
 	},
 	{
 		Label:   "Stopped Contact Code",
@@ -762,8 +761,7 @@ var tmsDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/tms/8eb23e93-5ecb-45ba-b726-3b064e0c56cd/status?id=10&action=callback"}},
 		}},
-		ExpectedError:     courier.ErrResponseStatus,
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("1001", "Service specific error: 1001.")},
+		ExpectedError: courier.ErrFailedWithReason("1001", "Service specific error: 1001."),
 	},
 	{
 		Label:   "Stopped Contact Code",
@@ -879,8 +877,7 @@ var twDefaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/tw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedError:     courier.ErrResponseStatus,
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("1001", "Service specific error: 1001.")},
+		ExpectedError: courier.ErrFailedWithReason("1001", "Service specific error: 1001."),
 	},
 	{
 		Label:   "Stopped Contact Code",
@@ -996,8 +993,7 @@ var swSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Form: url.Values{"Body": {"Error Code"}, "To": {"+250788383383"}, "From": {"2020"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 		}},
-		ExpectedError:     courier.ErrResponseStatus,
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("1001", "Service specific error: 1001.")},
+		ExpectedError: courier.ErrFailedWithReason("1001", "Service specific error: 1001."),
 	},
 	{
 		Label:   "Stopped Contact Code",

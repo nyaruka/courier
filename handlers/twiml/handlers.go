@@ -291,7 +291,12 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 				if errorCode == errorStopped {
 					return courier.ErrContactStopped
 				}
-				clog.Error(twilioError(errorCode))
+				codeAsStr := strconv.Itoa(int(errorCode))
+				errMsg, err := jsonparser.GetString(errorCodes, codeAsStr)
+				if err != nil {
+					errMsg = fmt.Sprintf("Service specific error: %s.", codeAsStr)
+				}
+				return courier.ErrFailedWithReason(codeAsStr, errMsg)
 			}
 
 			return courier.ErrResponseStatus
