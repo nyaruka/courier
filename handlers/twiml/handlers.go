@@ -291,7 +291,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 				if errorCode == errorStopped {
 					return courier.ErrContactStopped
 				}
-				return courier.ErrResponseUnexpected
+				clog.Error(twilioError(errorCode))
 			}
 
 			return courier.ErrResponseStatus
@@ -300,10 +300,11 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		// grab the external id
 		externalID, err := jsonparser.GetString(respBody, "sid")
 		if err != nil {
-			return courier.ErrResponseUnexpected
+			clog.Error(courier.ErrorResponseValueMissing("sid"))
+		} else {
+			res.AddExternalID(externalID)
 		}
 
-		res.AddExternalID(externalID)
 	}
 
 	return nil
