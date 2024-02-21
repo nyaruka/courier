@@ -1,13 +1,13 @@
 package mtn
 
 import (
-	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var (
@@ -155,87 +155,104 @@ func TestIncoming(t *testing.T) {
 
 var outgoingCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"OzYDlvf3SQVc"},
-		MockResponseBody:   `{ "transactionId":"OzYDlvf3SQVc" }`,
-		MockResponseStatus: 201,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Bearer ACCESS_TOKEN",
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.mtn.com/v2/messages/sms/outbound": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "transactionId":"OzYDlvf3SQVc" }`)),
+			},
 		},
-		ExpectedRequestBody: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"Simple Message ☺","clientCorrelator":"10"}`,
-		SendPrep:            setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Bearer ACCESS_TOKEN",
+			},
+			Body: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"Simple Message ☺","clientCorrelator":"10"}`,
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"OzYDlvf3SQVc"},
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"OzYDlvf3SQVc"},
-		MockResponseBody:   `{ "transactionId":"OzYDlvf3SQVc" }`,
-		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Bearer ACCESS_TOKEN",
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.mtn.com/v2/messages/sms/outbound": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "transactionId":"OzYDlvf3SQVc" }`)),
+			},
 		},
-		ExpectedRequestBody: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"My pic!\nhttps://foo.bar/image.jpg","clientCorrelator":"10"}`,
-		SendPrep:            setSendURL,
+
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Bearer ACCESS_TOKEN",
+			},
+			Body: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"My pic!\nhttps://foo.bar/image.jpg","clientCorrelator":"10"}`,
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"OzYDlvf3SQVc"},
 	},
 	{
-		Label:              "No External Id",
-		MsgText:            "No External ID",
-		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "E",
-		MockResponseBody:   `{"statusCode":"0000"}`,
-		MockResponseStatus: 200,
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("transactionId")},
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Bearer ACCESS_TOKEN",
+		Label:   "No External Id",
+		MsgText: "No External ID",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.mtn.com/v2/messages/sms/outbound": {
+				httpx.NewMockResponse(200, nil, []byte(`{"statusCode":"0000"}`)),
+			},
 		},
-		ExpectedRequestBody: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"No External ID","clientCorrelator":"10"}`,
-		SendPrep:            setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Bearer ACCESS_TOKEN",
+			},
+			Body: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"No External ID","clientCorrelator":"10"}`,
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("transactionId")},
 	},
 	{
-		Label:               "Error Sending",
-		MsgText:             "Error Message",
-		MsgURN:              "tel:+250788383383",
-		ExpectedMsgStatus:   "E",
-		MockResponseBody:    `{ "error": "failed" }`,
-		MockResponseStatus:  401,
-		ExpectedRequestBody: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"Error Message","clientCorrelator":"10"}`,
-		SendPrep:            setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.mtn.com/v2/messages/sms/outbound": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"Error Message","clientCorrelator":"10"}`,
+		}},
+		ExpectedMsgStatus: "E",
 	},
 }
 
 var cpAddressOutgoingCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		ExpectedMsgStatus:  "W",
-		ExpectedExtIDs:     []string{"OzYDlvf3SQVc"},
-		MockResponseBody:   `{ "transactionId":"OzYDlvf3SQVc" }`,
-		MockResponseStatus: 201,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Bearer ACCESS_TOKEN",
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.mtn.com/v2/messages/sms/outbound": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "transactionId":"OzYDlvf3SQVc" }`)),
+			},
 		},
-		ExpectedRequestBody: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"Simple Message ☺","clientCorrelator":"10","cpAddress":"FOO"}`,
-		SendPrep:            setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Bearer ACCESS_TOKEN",
+			},
+			Body: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"Simple Message ☺","clientCorrelator":"10","cpAddress":"FOO"}`,
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"OzYDlvf3SQVc"},
 	},
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	apiHostURL = s.URL
 }
 
 func setupBackend(mb *test.MockBackend) {
