@@ -1,13 +1,13 @@
 package justcall
 
 import (
-	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -267,57 +267,86 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
-// setSend takes care of setting the sendURL to call
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"status":"success","message":"Text sent","id":12345}`,
-		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "api_key:api_secret",
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.justcall.io/v1/texts/new": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":"success","message":"Text sent","id":12345}`)),
+			},
 		},
-		ExpectedRequestBody: `{"from":"2020","to":"+250788383383","body":"Simple Message"}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"12345"},
-		SendPrep:            setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "api_key:api_secret",
+			},
+			Body: `{"from":"2020","to":"+250788383383","body":"Simple Message"}`,
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"12345"},
 	},
 	{
-		Label:               "Send Document",
-		MsgText:             "This is some text.",
-		MsgURN:              "tel:+250788383383",
-		MsgAttachments:      []string{"application/pdf:https://foo.bar/document.pdf"},
-		MockResponseBody:    `{"status":"success","message":"Text sent","id":12345}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"from":"2020","to":"+250788383383","body":"This is some text.","media_url":"https://foo.bar/document.pdf"}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"12345"},
-		SendPrep:            setSendURL},
-	{
-		Label:              "ID Error",
-		MsgText:            "ID Error",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "status": "success" }`,
-		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("id")},
-		SendPrep:           setSendURL,
+		Label:          "Send Document",
+		MsgText:        "This is some text.",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.justcall.io/v1/texts/new": {
+				httpx.NewMockResponse(200, nil, []byte(`{"status":"success","message":"Text sent","id":12345}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "api_key:api_secret",
+			},
+			Body: `{"from":"2020","to":"+250788383383","body":"This is some text.","media_url":"https://foo.bar/document.pdf"}`,
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"12345"},
 	},
 	{
-		Label:              "Error",
-		MsgText:            "Error",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "status": "fail" }`,
-		MockResponseStatus: 403,
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		Label:   "ID Error",
+		MsgText: "ID Error",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.justcall.io/v1/texts/new": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "status": "success" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "api_key:api_secret",
+			},
+			Body: `{"from":"2020","to":"+250788383383","body":"ID Error"}`,
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("id")},
+	},
+	{
+		Label:   "Error",
+		MsgText: "Error",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.justcall.io/v1/texts/new": {
+				httpx.NewMockResponse(403, nil, []byte(`{ "status": "fail" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "api_key:api_secret",
+			},
+			Body: `{"from":"2020","to":"+250788383383","body":"Error"}`,
+		}},
+		ExpectedMsgStatus: "E",
 	},
 }
 
