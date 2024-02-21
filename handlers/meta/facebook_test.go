@@ -356,12 +356,6 @@ func TestFacebookVerify(t *testing.T) {
 	})
 }
 
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-	graphURL = s.URL
-}
-
 var facebookOutgoingTests = []OutgoingTestCase{
 	{
 		Label:     "Text only chat message",
@@ -377,8 +371,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 			Params: url.Values{"access_token": {"a123"}},
 			Body:   `{"messaging_type":"MESSAGE_TAG","tag":"HUMAN_AGENT","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:     "Text only broadcast message",
@@ -394,8 +387,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 			Params: url.Values{"access_token": {"a123"}},
 			Body:   `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:      "Text only broadcast with opt-in auth token",
@@ -412,8 +404,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 			Params: url.Values{"access_token": {"a123"}},
 			Body:   `{"messaging_type":"UPDATE","recipient":{"notification_messages_token":"345678"},"message":{"text":"Simple Message"}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:                   "Text only flow response",
@@ -430,8 +421,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 			Params: url.Values{"access_token": {"a123"}},
 			Body:   `{"messaging_type":"RESPONSE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:                   "Text only flow response using referal URN",
@@ -449,9 +439,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 			Body:   `{"messaging_type":"RESPONSE","recipient":{"user_ref":"67890"},"message":{"text":"Simple Message"}}`,
 		}},
 		ExpectedContactURNs: map[string]bool{"facebook:12345": true, "ext:67890": true, "facebook:ref:67890": false},
-		ExpectedMsgStatus:   "W",
 		ExpectedExtIDs:      []string{"mid.133"},
-		SendPrep:            setSendURL,
 	},
 	{
 		Label:           "Quick replies on a broadcast message",
@@ -468,9 +456,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 			Params: url.Values{"access_token": {"a123"}},
 			Body:   `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"text":"Are you happy?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
-		SendPrep:          setSendURL,
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:           "Quick replies on a broadcast message",
@@ -487,8 +473,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 			Params: url.Values{"access_token": {"a123"}},
 			Body:   `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"text":"Are you happy?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:           "Message that exceeds max text length",
@@ -512,8 +497,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 				Body:   `{"messaging_type":"MESSAGE_TAG","tag":"ACCOUNT_UPDATE","recipient":{"id":"12345"},"message":{"text":"we exceed the max length?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133", "mid.133"},
 	},
 	{
 		Label:          "Image attachment",
@@ -528,8 +512,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 			Params: url.Values{"access_token": {"a123"}},
 			Body:   `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:           "Text, image attachment, quick replies and explicit message topic",
@@ -554,8 +537,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 				Body:   `{"messaging_type":"MESSAGE_TAG","tag":"CONFIRMED_EVENT_UPDATE","recipient":{"id":"12345"},"message":{"text":"This is some text.","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133", "mid.133"},
 	},
 	{
 		Label:          "Document attachment",
@@ -570,8 +552,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 			Params: url.Values{"access_token": {"a123"}},
 			Body:   `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"file","payload":{"url":"https://foo.bar/document.pdf","is_reusable":true}}}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:    "Opt-in request",
@@ -586,8 +567,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 			Params: url.Values{"access_token": {"a123"}},
 			Body:   `{"messaging_type":"UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"template","payload":{"template_type":"notification_messages","title":"Joke Of The Day","payload":"3456"}}}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:   "Response doesn't contain message id",
@@ -598,7 +578,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
-		ExpectedMsgStatus: "E",
+		ExpectedError:     courier.ErrFailedWithReason("", "response missing message_id"),
 		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("message_id")},
 	},
 	{
@@ -610,8 +590,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("message_id")},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:   "Response is invalid JSON",
@@ -622,8 +601,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`bad json`)),
 			},
 		},
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseUnparseable,
 	},
 	{
 		Label:   "Response is channel specific error",
@@ -631,11 +609,10 @@ var facebookOutgoingTests = []OutgoingTestCase{
 		MsgURN:  "facebook:12345",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://graph.facebook.com/v17.0/me/messages*": {
-				httpx.NewMockResponse(400, nil, []byte(`{ "error": {"message": "The image size is too large.","code": 36000 }}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{ "error": {"message": "The image size is too large.","code": 36000 }}`)),
 			},
 		},
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("36000", "The image size is too large.")},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrFailedWithReason("36000", "The image size is too large."),
 	},
 }
 
