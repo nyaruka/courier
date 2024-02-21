@@ -171,8 +171,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 			Body: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"Simple Message ☺","clientCorrelator":"10"}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"OzYDlvf3SQVc"},
+		ExpectedExtIDs: []string{"OzYDlvf3SQVc"},
 	},
 	{
 		Label:          "Send Attachment",
@@ -193,8 +192,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 			Body: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"My pic!\nhttps://foo.bar/image.jpg","clientCorrelator":"10"}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"OzYDlvf3SQVc"},
+		ExpectedExtIDs: []string{"OzYDlvf3SQVc"},
 	},
 	{
 		Label:   "No External Id",
@@ -213,7 +211,6 @@ var outgoingCases = []OutgoingTestCase{
 			},
 			Body: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"No External ID","clientCorrelator":"10"}`,
 		}},
-		ExpectedMsgStatus: "E",
 		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("transactionId")},
 	},
 	{
@@ -228,7 +225,7 @@ var outgoingCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"Error Message","clientCorrelator":"10"}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 
@@ -250,8 +247,7 @@ var cpAddressOutgoingCases = []OutgoingTestCase{
 			},
 			Body: `{"senderAddress":"2020","receiverAddress":["250788383383"],"message":"Simple Message ☺","clientCorrelator":"10","cpAddress":"FOO"}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"OzYDlvf3SQVc"},
+		ExpectedExtIDs: []string{"OzYDlvf3SQVc"},
 	},
 }
 
