@@ -400,7 +400,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body:    `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message"}]}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Long Send",
@@ -414,7 +413,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"},{"type":"text","text":"I need to keep adding more things to make it work"}]}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:          "Send Audio Attachment",
@@ -429,7 +427,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"audio","originalContentUrl":"http://mock.com/2345/test.m4a","duration":200},{"type":"text","text":"My Audio!"}]}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:          "Send Video Attachment",
@@ -444,7 +441,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"video","originalContentUrl":"http://mock.com/5678/test.mp4","previewImageUrl":"http://mock.com/4567/test.jpg"},{"type":"text","text":"My Video!"}]}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:          "Send Image Attachment",
@@ -459,7 +455,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"image","originalContentUrl":"http://mock.com/1234/test.jpg","previewImageUrl":"http://mock.com/1234/test.jpg"},{"type":"text","text":"My pic!"}]}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:          "Send Other Attachment",
@@ -474,7 +469,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"http://mock.com/7890/test.pdf"},{"type":"text","text":"My doc!"}]}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:                   "Send Reply Message",
@@ -489,7 +483,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"replyToken":"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA","messages":[{"type":"text","text":"Simple Message"}]}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:           "Quick Reply",
@@ -504,7 +497,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Are you happy?","quickReply":{"items":[{"type":"action","action":{"type":"message","label":"Yes","text":"Yes"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:           "Quick Reply combined and attachment",
@@ -520,7 +512,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"image","originalContentUrl":"http://mock.com/1234/test.jpg","previewImageUrl":"http://mock.com/1234/test.jpg"},{"type":"text","text":"Are you happy?","quickReply":{"items":[{"type":"action","action":{"type":"message","label":"Yes","text":"Yes"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:                   "Send Push Message If Invalid Reply",
@@ -535,7 +526,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{Path: "/v2/bot/message/reply", Body: `{"replyToken":"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA","messages":[{"type":"text","text":"Simple Message"}]}`},
 			{Path: "/v2/bot/message/push", Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Simple Message"}]}`},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Invalid JSON response sending",
@@ -549,8 +539,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
 			},
 		},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
+		ExpectedError: courier.ErrResponseUnparseable,
 	},
 	{
 		Label:   "Error Sending",
@@ -564,8 +553,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"uabcdefghij","messages":[{"type":"text","text":"Error Sending"}]}`,
 			},
 		},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("403", "Failed to send messages")},
+		ExpectedError: courier.ErrFailedWithReason("403", "Failed to send messages"),
 	},
 }
 

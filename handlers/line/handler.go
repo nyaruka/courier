@@ -283,16 +283,10 @@ type mtResponse struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if authToken == "" {
-		return nil, fmt.Errorf("no auth token set for LN channel: %s", msg.Channel().UUID())
+		return courier.ErrChannelConfig
 	}
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	// all msg parts in JSON
 	var jsonMsgs []string
@@ -301,7 +295,7 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, false)
 	if err != nil {
-		return nil, errors.Wrap(err, "error resolving attachments")
+		return errors.Wrap(err, "error resolving attachments")
 	}
 
 	// fill all msg parts with attachment parts
@@ -361,7 +355,7 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		if batchCount == maxMsgSend || (i == len(jsonMsgs)-1) {
 			req, err := buildSendMsgRequest(authToken, msg.URN().Path(), msg.ResponseToExternalID(), batch)
 			if err != nil {
-				return status, err
+				return err
 			}
 
 			resp, respBody, err := h.RequestHTTP(req, clog)
@@ -375,15 +369,14 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 			respPayload := &mtResponse{}
 			err = json.Unmarshal(respBody, respPayload)
 			if err != nil {
-				clog.Error(courier.ErrorResponseUnparseable("JSON"))
-				return status, nil
+				return courier.ErrResponseUnparseable
 			}
 
 			errMsg := respPayload.Message
 			if errMsg == "Invalid reply token" {
 				req, err = buildSendMsgRequest(authToken, msg.URN().Path(), "", batch)
 				if err != nil {
-					return status, err
+					return err
 				}
 
 				resp, respBody, _ := h.RequestHTTP(req, clog)
@@ -391,22 +384,19 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 				respPayload := &mtResponse{}
 				err = json.Unmarshal(respBody, respPayload)
 				if err != nil {
-					clog.Error(courier.ErrorResponseUnparseable("JSON"))
-					return status, nil
+					return courier.ErrResponseUnparseable
 				}
 
 				if resp.StatusCode/100 != 2 {
-					clog.Error(courier.ErrorExternal(strconv.Itoa(resp.StatusCode), respPayload.Message))
-					return status, nil
+					return courier.ErrFailedWithReason(strconv.Itoa(resp.StatusCode), respPayload.Message)
 				}
 			} else {
-				clog.Error(courier.ErrorExternal(strconv.Itoa(resp.StatusCode), respPayload.Message))
-				return status, err
+				return courier.ErrFailedWithReason(strconv.Itoa(resp.StatusCode), respPayload.Message)
 			}
 		}
 	}
-	status.SetStatus(courier.MsgStatusWired)
-	return status, nil
+
+	return nil
 }
 
 func buildSendMsgRequest(authToken, to string, replyToken string, jsonMsgs []string) (*http.Request, error) {
