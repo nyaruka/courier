@@ -285,8 +285,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"+250788383383","body":"Simple Message"}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"12345"},
+		ExpectedExtIDs: []string{"12345"},
 	},
 	{
 		Label:          "Send Document",
@@ -306,8 +305,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"+250788383383","body":"This is some text.","media_url":"https://foo.bar/document.pdf"}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"12345"},
+		ExpectedExtIDs: []string{"12345"},
 	},
 	{
 		Label:   "ID Error",
@@ -326,7 +324,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"+250788383383","body":"ID Error"}`,
 		}},
-		ExpectedMsgStatus: "E",
 		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("id")},
 	},
 	{
@@ -346,7 +343,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"from":"2020","to":"+250788383383","body":"Error"}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -153,22 +154,12 @@ type mtPayload struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	apiKey := msg.Channel().StringConfigForKey(courier.ConfigAPIKey, "")
-	if apiKey == "" {
-		return nil, fmt.Errorf("no API key set for JCL channel")
-	}
-
 	apiSecret := msg.Channel().StringConfigForKey(courier.ConfigSecret, "")
-	if apiSecret == "" {
-		return nil, fmt.Errorf("no API secret set for JCL channel")
+	if apiKey == "" || apiSecret == "" {
+		return courier.ErrChannelConfig
 	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	mediaURLs := make([]string, 0, 5)
 	text := msg.Text()
 
@@ -188,38 +179,35 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 	req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonx.MustMarshal(payload)))
 	if err != nil {
-		return nil, err
+		return err
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("%s:%s", apiKey, apiSecret))
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		return status, nil
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	} else if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
 	}
 
 	respStatus, err := jsonparser.GetString(respBody, "status")
 	if err != nil {
 		clog.Error(courier.ErrorResponseValueMissing("status"))
-		return status, h.Backend().WriteChannelLog(ctx, clog)
 	}
 	if respStatus != "success" {
-		return status, nil
+		return courier.ErrFailedWithReason("", "got non-success status")
 
 	}
 
 	externalID, err := jsonparser.GetInt(respBody, "id")
 	if err != nil {
 		clog.Error(courier.ErrorResponseValueMissing("id"))
-		return status, h.Backend().WriteChannelLog(ctx, clog)
+	} else {
+		res.AddExternalID(strconv.Itoa(int(externalID)))
 	}
 
-	if externalID != 0 {
-		status.SetExternalID(fmt.Sprintf("%d", externalID))
-	}
-
-	status.SetStatus(courier.MsgStatusWired)
-	return status, nil
-
+	return nil
 }
