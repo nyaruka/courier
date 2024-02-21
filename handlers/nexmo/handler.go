@@ -229,7 +229,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		nexmoStatus, err := jsonparser.GetString(respBody, "messages", "[0]", "status")
 		errCode, _ := strconv.Atoi(nexmoStatus)
 		if err != nil || nexmoStatus != "0" {
-			return courier.ErrFailedWithReason(fmt.Sprint(errCode), sendErrorCodes[errCode])
+			return courier.ErrFailedWithReason("send:"+nexmoStatus, sendErrorCodes[errCode])
 		}
 
 		externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "message-id")

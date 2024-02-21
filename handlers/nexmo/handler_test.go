@@ -196,7 +196,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Form: url.Values{"text": {"Error status"}, "to": {"250788383383"}, "from": {"2020"}, "api_key": {"nexmo-api-key"}, "api_secret": {"nexmo-api-secret"}, "status-report-req": {"1"}, "type": {"text"}, "callback": {"https://localhost/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"}},
 		}},
 
-		ExpectedError: courier.ErrFailedWithReason("10", "Too Many Existing Binds"),
+		ExpectedError: courier.ErrFailedWithReason("send:10", "Too Many Existing Binds"),
 	},
 	{
 		Label:   "Error Sending",
