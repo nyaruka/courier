@@ -66,8 +66,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"5b8fc97d58795484819426"},
+		ExpectedExtIDs: []string{"5b8fc97d58795484819426"},
 	},
 	{
 		Label:   "Invalid JSON",
@@ -88,8 +87,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
+		ExpectedError: courier.ErrResponseUnparseable,
 	},
 	{
 		Label:   "Error Response",
@@ -110,8 +108,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedMsgStatus: "F",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueUnexpected("error_code", "00")},
+		ExpectedError: courier.ErrFailedWithReason("10", "Failed"),
 	},
 	{
 		Label:   "Error Sending",
@@ -132,7 +129,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
