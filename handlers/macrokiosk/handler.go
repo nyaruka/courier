@@ -150,17 +150,12 @@ type mtPayload struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	servID := msg.Channel().StringConfigForKey(configMacrokioskServiceID, "")
 	senderID := msg.Channel().StringConfigForKey(configMacrokioskSenderID, "")
 	if username == "" || password == "" || servID == "" || senderID == "" {
-		return nil, fmt.Errorf("missing username, password, serviceID or senderID for MK channel")
+		return courier.ErrChannelConfig
 	}
 
 	// figure out if we need to send as unicode (encoding 5)
@@ -170,9 +165,8 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		encoding = "5"
 	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), text, maxMsgLength)
-	for i, part := range parts {
+	for _, part := range parts {
 		payload := &mtPayload{
 			From:   senderID,
 			ServID: servID,
@@ -188,26 +182,24 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		// build our request
 		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
 		externalID, err := jsonparser.GetString(respBody, "MsgID")
 		if err != nil {
-			return status, fmt.Errorf("unable to parse response body from Macrokiosk")
-		}
-
-		// set the external id if this is our first part
-		if i == 0 {
-			status.SetExternalID(externalID)
+			clog.Error(courier.NewChannelError("", "", "unable to find MsgID in response"))
+		} else {
+			res.AddExternalID(externalID)
 		}
 	}
-	status.SetStatus(courier.MsgStatusWired)
-	return status, nil
+	return nil
 }

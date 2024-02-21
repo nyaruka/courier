@@ -82,8 +82,6 @@ var outgoingTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "MsgID":"abc123" }`)),
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"abc123"},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type": "application/json",
@@ -91,6 +89,7 @@ var outgoingTestCases = []OutgoingTestCase{
 			},
 			Body: `{"user":"Username","pass":"Password","to":"250788383383","text":"Simple Message ☺","from":"macro","servid":"service-id","type":"5"}`,
 		}},
+		ExpectedExtIDs: []string{"abc123"},
 	},
 	{
 		Label:   "Long Send",
@@ -102,8 +101,6 @@ var outgoingTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "MsgID":"abc123" }`)),
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"abc123"},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{
@@ -120,6 +117,7 @@ var outgoingTestCases = []OutgoingTestCase{
 				Body: `{"user":"Username","pass":"Password","to":"250788383383","text":"I need to keep adding more things to make it work","from":"macro","servid":"service-id","type":"0"}`,
 			},
 		},
+		ExpectedExtIDs: []string{"abc123", "abc123"},
 	},
 	{
 		Label:          "Send Attachment",
@@ -131,8 +129,6 @@ var outgoingTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "MsgID":"abc123" }`)),
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"abc123"},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type": "application/json",
@@ -140,6 +136,7 @@ var outgoingTestCases = []OutgoingTestCase{
 			},
 			Body: `{"user":"Username","pass":"Password","to":"250788383383","text":"My pic!\nhttps://foo.bar/image.jpg","from":"macro","servid":"service-id","type":"0"}`,
 		}},
+		ExpectedExtIDs: []string{"abc123"},
 	},
 	{
 		Label:   "No External Id",
@@ -150,8 +147,6 @@ var outgoingTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "missing":"missing" }`)),
 			},
 		},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to parse response body from Macrokiosk")},
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type": "application/json",
@@ -159,6 +154,7 @@ var outgoingTestCases = []OutgoingTestCase{
 			},
 			Body: `{"user":"Username","pass":"Password","to":"250788383383","text":"No External ID","from":"macro","servid":"service-id","type":"0"}`,
 		}},
+		ExpectedLogErrors: []*courier.ChannelError{courier.NewChannelError("", "", "unable to find MsgID in response")},
 	},
 	{
 		Label:   "Error Sending",
@@ -172,7 +168,7 @@ var outgoingTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"user":"Username","pass":"Password","to":"250788383383","text":"Error Message","from":"macro","servid":"service-id","type":"0"}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 
