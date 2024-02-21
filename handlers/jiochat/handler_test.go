@@ -362,7 +362,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"msgtype":"text","touser":"12345","text":{"content":"Simple Message ☺"}}`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Long Send",
@@ -392,7 +391,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"msgtype":"text","touser":"12345","text":{"content":"I need to keep adding more things to make it work"}}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:          "Send Attachment",
@@ -412,7 +410,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"msgtype":"text","touser":"12345","text":{"content":"My pic!\nhttps://foo.bar/image.jpg"}}`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Error Sending",
@@ -423,7 +420,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(401, nil, []byte(``)),
 			},
 		},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 
