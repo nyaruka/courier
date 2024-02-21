@@ -60,32 +60,14 @@ type mtResponse struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	publicKey := msg.Channel().StringConfigForKey(configPublicKey, "")
-	if publicKey == "" {
-		return nil, fmt.Errorf("no public_key set for MG channel")
-	}
-
 	privateKey := msg.Channel().StringConfigForKey(configPrivateKey, "")
-	if privateKey == "" {
-		return nil, fmt.Errorf("no private_key set for MG channel")
-	}
-
 	instanceId := msg.Channel().IntConfigForKey(configInstanceId, -1)
-	if instanceId == -1 {
-		return nil, fmt.Errorf("no instance_id set for MG channel")
-	}
-
 	carrierId := msg.Channel().IntConfigForKey(configCarrierId, -1)
-	if carrierId == -1 {
-		return nil, fmt.Errorf("no carrier_id set for MG channel")
+	if publicKey == "" || privateKey == "" || instanceId == -1 || carrierId == -1 {
+		return courier.ErrChannelConfig
 	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		shortcode := strings.TrimPrefix(msg.Channel().Address(), "+")
@@ -97,31 +79,29 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 		req, err := http.NewRequest(http.MethodGet, fullURL, nil)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
 		// parse our response as XML
 		response := &mtResponse{}
 		err = xml.Unmarshal(respBody, response)
 		if err != nil {
-			clog.Error(courier.ErrorResponseUnparseable("XML"))
-			break
+			return courier.ErrResponseUnparseable
 		}
 
 		// we always get 204 on success
-		if response.Status == "OK" {
-			status.SetStatus(courier.MsgStatusWired)
-		} else {
-			status.SetStatus(courier.MsgStatusFailed)
+		if response.Status != "OK" {
 			clog.Error(courier.ErrorResponseValueUnexpected("status", "OK"))
-			break
+			return courier.ErrFailedWithReason("", "response returned non-OK status")
 		}
 	}
 
-	return status, nil
+	return nil
 }

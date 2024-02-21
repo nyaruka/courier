@@ -55,7 +55,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/mmc/rest/api/sendMT/7/2020/2/18765422035/U2ltcGxlIE1lc3NhZ2Ug4pi6/my-public-key/f69bc6a924480d3ed82970d9679c4be90589bd3064add51c47e8bf50a211d55f",
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Long Send",
@@ -75,7 +74,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Path: "/mmc/rest/api/sendMT/7/2020/2/18765422035/SSBuZWVkIHRvIGtlZXAgYWRkaW5nIG1vcmUgdGhpbmdzIHRvIG1ha2UgaXQgd29yaw/my-public-key/ba305915a6cf56c1255071655de42b4408071460317bb5bf3419bb9f865c5078",
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:          "Send Attachment",
@@ -90,7 +88,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/mmc/rest/api/sendMT/7/2020/2/18765422035/TXkgcGljIQpodHRwczovL2Zvby5iYXIvaW1hZ2UuanBn/my-public-key/4babdf316c0b5c7b6b40855329b421b1da1b8e63690d59eb5c231049dc4067fd",
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Invalid Parameters",
@@ -104,7 +101,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/mmc/rest/api/sendMT/7/2020/2/18765422035/SW52YWxpZCBQYXJhbWV0ZXJz/my-public-key/f3d2ea825cf61226925dee2db3c14b7fc00f3183f11809d2183d1e2dbd230df6",
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:   "Error Response",
@@ -118,7 +115,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/mmc/rest/api/sendMT/7/2020/2/18765422035/RXJyb3IgUmVzcG9uc2U/my-public-key/27f4c67fa00848ea6029cc0b1797aae6d05e2970ecb6e44ca486b463b933e61a",
 		}},
-		ExpectedMsgStatus: "F",
+		ExpectedError:     courier.ErrFailedWithReason("", "response returned non-OK status"),
 		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueUnexpected("status", "OK")},
 	},
 }
