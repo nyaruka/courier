@@ -1,13 +1,14 @@
 package kannel
 
 import (
-	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -128,131 +129,233 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
 }
 
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	c.(*test.MockChannel).SetConfig("send_url", s.URL)
-}
-
-// setSendURLWithQuery takes care of setting the send_url to our test server host
-func setSendURLWithQuery(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	c.(*test.MockChannel).SetConfig("send_url", s.URL+"?auth=foo")
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message",
-		MsgURN:             "tel:+250788383383",
-		MsgHighPriority:    false,
-		ExpectedMsgStatus:  "W",
-		MockResponseBody:   "0: Accepted for delivery",
-		MockResponseStatus: 200,
-		ExpectedURLParams: map[string]string{
-			"text":     "Simple Message",
-			"to":       "+250788383383",
-			"coding":   "",
-			"priority": "",
-			"dlr-url":  "https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%d",
+		Label:           "Plain Send",
+		MsgText:         "Simple Message",
+		MsgURN:          "tel:+250788383383",
+		MsgHighPriority: false,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
+			},
 		},
-		SendPrep: setSendURL,
+		ExpectedMsgStatus: "W",
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"text":     {"Simple Message"},
+				"to":       {"+250788383383"},
+				"from":     {"2020"},
+				"dlr-mask": {"27"},
+				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%d"},
+				"username": {"Username"},
+				"password": {"Password"},
+			},
+		}},
 	},
 	{
-		Label:              "Unicode Send",
-		MsgText:            "☺",
-		MsgURN:             "tel:+250788383383",
-		MsgHighPriority:    false,
-		ExpectedMsgStatus:  "W",
-		MockResponseBody:   "0: Accepted for delivery",
-		MockResponseStatus: 200,
-		ExpectedURLParams:  map[string]string{"text": "☺", "to": "+250788383383", "coding": "2", "charset": "utf8", "priority": ""},
-		SendPrep:           setSendURL,
+		Label:           "Unicode Send",
+		MsgText:         "☺",
+		MsgURN:          "tel:+250788383383",
+		MsgHighPriority: false,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
+			},
+		},
+		ExpectedMsgStatus: "W",
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"text":     {"☺"},
+				"to":       {"+250788383383"},
+				"from":     {"2020"},
+				"coding":   {"2"},
+				"charset":  {"utf8"},
+				"dlr-mask": {"27"},
+				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%d"},
+				"username": {"Username"},
+				"password": {"Password"},
+			},
+		}},
 	},
 	{
-		Label:              "Smart Encoding",
-		MsgText:            "Fancy “Smart” Quotes",
-		MsgURN:             "tel:+250788383383",
-		MsgHighPriority:    false,
-		ExpectedMsgStatus:  "W",
-		MockResponseBody:   "0: Accepted for delivery",
-		MockResponseStatus: 200,
-		ExpectedURLParams:  map[string]string{"text": `Fancy "Smart" Quotes`, "to": "+250788383383", "coding": "", "priority": ""},
-		SendPrep:           setSendURL},
-	{
-		Label:              "Not Routable",
-		MsgText:            "Not Routable",
-		MsgURN:             "tel:+250788383383",
-		MsgHighPriority:    false,
-		ExpectedMsgStatus:  "F",
-		MockResponseBody:   "Not routable. Do not try again.",
-		MockResponseStatus: 403,
-		ExpectedURLParams:  map[string]string{"text": `Not Routable`, "to": "+250788383383", "coding": "", "priority": ""},
-		SendPrep:           setSendURL,
+		Label:           "Smart Encoding",
+		MsgText:         "Fancy “Smart” Quotes",
+		MsgURN:          "tel:+250788383383",
+		MsgHighPriority: false,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
+			},
+		},
+		ExpectedMsgStatus: "W",
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"text":     {`Fancy "Smart" Quotes`},
+				"to":       {"+250788383383"},
+				"from":     {"2020"},
+				"dlr-mask": {"27"},
+				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%d"},
+				"username": {"Username"},
+				"password": {"Password"},
+			},
+		}},
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MsgHighPriority:    false,
-		ExpectedMsgStatus:  "E",
-		MockResponseBody:   "1: Unknown channel",
-		MockResponseStatus: 401,
-		ExpectedURLParams:  map[string]string{"text": `Error Message`, "to": "+250788383383", "coding": "", "priority": ""},
-		SendPrep:           setSendURL,
+		Label:           "Not Routable",
+		MsgText:         "Not Routable",
+		MsgURN:          "tel:+250788383383",
+		MsgHighPriority: false,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(403, nil, []byte(`Not routable. Do not try again.`)),
+			},
+		},
+		ExpectedMsgStatus: "F",
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"text":     {"Not Routable"},
+				"to":       {"+250788383383"},
+				"from":     {"2020"},
+				"dlr-mask": {"27"},
+				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%d"},
+				"username": {"Username"},
+				"password": {"Password"},
+			},
+		}},
 	},
 	{
-		Label:              "Custom Params",
-		MsgText:            "Custom Params",
-		MsgURN:             "tel:+250788383383",
-		MsgHighPriority:    true,
-		ExpectedMsgStatus:  "W",
-		MockResponseBody:   "0: Accepted for delivery",
-		MockResponseStatus: 201,
-		ExpectedURLParams:  map[string]string{"text": `Custom Params`, "to": "+250788383383", "coding": "", "priority": "1", "auth": "foo"},
-		SendPrep:           setSendURLWithQuery,
+		Label:           "Error Sending",
+		MsgText:         "Error Message",
+		MsgURN:          "tel:+250788383383",
+		MsgHighPriority: false,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(401, nil, []byte(`1: Unknown channel`)),
+			},
+		},
+		ExpectedMsgStatus: "E",
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"text":     {"Error Message"},
+				"to":       {"+250788383383"},
+				"from":     {"2020"},
+				"dlr-mask": {"27"},
+				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%d"},
+				"username": {"Username"},
+				"password": {"Password"},
+			},
+		}},
 	},
+
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgHighPriority:    true,
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedMsgStatus:  "W",
-		MockResponseBody:   `0: Accepted for delivery`,
-		MockResponseStatus: 200,
-		ExpectedURLParams:  map[string]string{"text": "My pic!\nhttps://foo.bar/image.jpg", "to": "+250788383383", "from": "2020", "dlr-mask": "27"},
-		SendPrep:           setSendURL,
+		Label:           "Send Attachment",
+		MsgText:         "My pic!",
+		MsgURN:          "tel:+250788383383",
+		MsgHighPriority: true,
+		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
+			},
+		},
+		ExpectedMsgStatus: "W",
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"text":     {"My pic!\nhttps://foo.bar/image.jpg"},
+				"to":       {"+250788383383"},
+				"from":     {"2020"},
+				"priority": {"1"},
+				"dlr-mask": {"27"},
+				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%d"},
+				"username": {"Username"},
+				"password": {"Password"},
+			},
+		}},
+	},
+}
+
+var customParamsTestCases = []OutgoingTestCase{
+	{
+		Label:           "Custom Params",
+		MsgText:         "Custom Params",
+		MsgURN:          "tel:+250788383383",
+		MsgHighPriority: true,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(201, nil, []byte(`0: Accepted for delivery`)),
+			},
+		},
+		ExpectedMsgStatus: "W",
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"text":     {"Custom Params"},
+				"to":       {"+250788383383"},
+				"from":     {"2020"},
+				"priority": {"1"},
+				"dlr-mask": {"27"},
+				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%d"},
+				"username": {"Username"},
+				"password": {"Password"},
+				"auth":     {"foo"},
+			},
+		}},
 	},
 }
 
 var nationalSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "National Send",
-		MsgText:            "success",
-		MsgURN:             "tel:+250788383383",
-		MsgHighPriority:    true,
-		ExpectedMsgStatus:  "W",
-		MockResponseBody:   "0: Accepted for delivery",
-		MockResponseStatus: 200,
-		ExpectedURLParams:  map[string]string{"text": "success", "to": "788383383", "coding": "", "priority": "1", "dlr-mask": "3"},
-		SendPrep:           setSendURL,
+		Label:           "National Send",
+		MsgText:         "success",
+		MsgURN:          "tel:+250788383383",
+		MsgHighPriority: true,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
+			},
+		},
+		ExpectedMsgStatus: "W",
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"text":     {"success"},
+				"to":       {"788383383"},
+				"from":     {"2020"},
+				"priority": {"1"},
+				"dlr-mask": {"3"},
+				"dlr-url":  {"https://localhost/c/kn/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%d"},
+				"username": {"Username"},
+				"password": {"Password"},
+			},
+		}},
 	},
 }
 
 func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		map[string]any{
-			"password": "Password",
-			"username": "Username"})
+			"password":            "Password",
+			"username":            "Username",
+			courier.ConfigSendURL: "http://example.com/send",
+		})
+
+	var customParamsChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
+		map[string]any{
+			"password":            "Password",
+			"username":            "Username",
+			courier.ConfigSendURL: "http://example.com/send?auth=foo",
+		})
 
 	var nationalChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "KN", "2020", "US",
 		map[string]any{
-			"password":     "Password",
-			"username":     "Username",
-			"use_national": true,
-			"verify_ssl":   false,
-			"dlr_mask":     "3",
+			"password":            "Password",
+			"username":            "Username",
+			"use_national":        true,
+			"verify_ssl":          false,
+			"dlr_mask":            "3",
+			courier.ConfigSendURL: "http://example.com/send",
 		})
 
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
+	RunOutgoingTestCases(t, customParamsChannel, newHandler(), customParamsTestCases, []string{"Password"}, nil)
 	RunOutgoingTestCases(t, nationalChannel, newHandler(), nationalSendTestCases, []string{"Password"}, nil)
 }
