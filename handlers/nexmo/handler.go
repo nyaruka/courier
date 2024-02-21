@@ -227,15 +227,18 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		}
 
 		nexmoStatus, err := jsonparser.GetString(respBody, "messages", "[0]", "status")
+		errCode, _ := strconv.Atoi(nexmoStatus)
 		if err != nil || nexmoStatus != "0" {
-			return courier.ErrResponseUnexpected
+			// https://developer.vonage.com/messaging/sms/guides/troubleshooting-sms
+			clog.Error(courier.ErrorExternal("send:"+nexmoStatus, sendErrorCodes[errCode]))
+			return courier.ErrFailedWithReason(fmt.Sprint(errCode), sendErrorCodes[errCode])
 		}
 
 		externalID, err := jsonparser.GetString(respBody, "messages", "[0]", "message-id")
-		if err != nil {
-			return courier.ErrResponseUnexpected
+		if err == nil {
+			res.AddExternalID(externalID)
 		}
-		res.AddExternalID(externalID)
+
 	}
 
 	return nil
