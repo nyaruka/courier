@@ -1,12 +1,12 @@
 package rocketchat
 
 import (
-	"net/http/httptest"
 	"testing"
 
 	"github.com/nyaruka/courier"
-	"github.com/nyaruka/courier/handlers"
+	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 const (
@@ -49,7 +49,7 @@ const attachmentMsg = `{
 	"attachments": [{"type": "image/jpg", "url": "https://link.to/image.jpg"}]
 }`
 
-var testCases = []handlers.IncomingTestCase{
+var testCases = []IncomingTestCase{
 	{
 		Label: "Receive Hello Msg",
 		URL:   receiveURL,
@@ -58,7 +58,7 @@ var testCases = []handlers.IncomingTestCase{
 		},
 		Data:                 helloMsg,
 		ExpectedURN:          "rocketchat:direct:john.doe#john.doe",
-		ExpectedMsgText:      handlers.Sp("Hello World"),
+		ExpectedMsgText:      Sp("Hello World"),
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Accepted",
 	},
@@ -97,54 +97,87 @@ var testCases = []handlers.IncomingTestCase{
 }
 
 func TestIncoming(t *testing.T) {
-	handlers.RunIncomingTestCases(t, testChannels, newHandler(), testCases)
+	RunIncomingTestCases(t, testChannels, newHandler(), testCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
-	handlers.RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
+	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	c.(*test.MockChannel).SetConfig(configBaseURL, s.URL)
-}
-
-var sendTestCases = []handlers.OutgoingTestCase{
+var sendTestCases = []OutgoingTestCase{
 	{
-		Label:               "Plain Send",
-		MsgText:             "Simple Message",
-		MsgURN:              "rocketchat:direct:john.doe#john.doe",
-		ExpectedMsgStatus:   "S",
-		ExpectedRequestBody: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message"}`,
-		MockResponseStatus:  201,
-		MockResponseBody:    `{"id":"iNKE8a6k6cjbqWhWd"}`,
-		ExpectedExtIDs:      []string{"iNKE8a6k6cjbqWhWd"},
-		SendPrep:            setSendURL,
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "rocketchat:direct:john.doe#john.doe",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": {
+				httpx.NewMockResponse(201, nil, []byte(`{"id":"iNKE8a6k6cjbqWhWd"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message"}`,
+		}},
+		ExpectedExtIDs: []string{"iNKE8a6k6cjbqWhWd"},
 	},
 	{
-		Label:               "Send Attachment",
-		MsgURN:              "rocketchat:livechat:onrMgdKbpX9Qqtvoi",
-		MsgAttachments:      []string{"application/pdf:https://link.to/attachment.pdf"},
-		ExpectedMsgStatus:   "S",
-		ExpectedRequestBody: `{"user":"livechat:onrMgdKbpX9Qqtvoi","bot":"rocket.cat","attachments":[{"type":"application/pdf","url":"https://link.to/attachment.pdf"}]}`,
-		MockResponseStatus:  201,
-		MockResponseBody:    `{"id":"iNKE8a6k6cjbqWhWd"}`,
-		ExpectedExtIDs:      []string{"iNKE8a6k6cjbqWhWd"},
-		SendPrep:            setSendURL,
+		Label:          "Send Attachment",
+		MsgURN:         "rocketchat:livechat:onrMgdKbpX9Qqtvoi",
+		MsgAttachments: []string{"application/pdf:https://link.to/attachment.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": {
+				httpx.NewMockResponse(201, nil, []byte(`{"id":"iNKE8a6k6cjbqWhWd"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"user":"livechat:onrMgdKbpX9Qqtvoi","bot":"rocket.cat","attachments":[{"type":"application/pdf","url":"https://link.to/attachment.pdf"}]}`,
+		}},
+		ExpectedExtIDs: []string{"iNKE8a6k6cjbqWhWd"},
 	},
 	{
-		Label:               "Send Text And Attachment",
-		MsgURN:              "rocketchat:direct:john.doe",
-		MsgText:             "Simple Message",
-		MsgAttachments:      []string{"application/pdf:https://link.to/attachment.pdf"},
-		ExpectedMsgStatus:   "S",
-		ExpectedRequestBody: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message","attachments":[{"type":"application/pdf","url":"https://link.to/attachment.pdf"}]}`,
-		MockResponseStatus:  201,
-		MockResponseBody:    `{"id":"iNKE8a6k6cjbqWhWd"}`,
-		ExpectedExtIDs:      []string{"iNKE8a6k6cjbqWhWd"},
-		SendPrep:            setSendURL,
+		Label:          "Send Text And Attachment",
+		MsgURN:         "rocketchat:direct:john.doe",
+		MsgText:        "Simple Message",
+		MsgAttachments: []string{"application/pdf:https://link.to/attachment.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": {
+				httpx.NewMockResponse(201, nil, []byte(`{"id":"iNKE8a6k6cjbqWhWd"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message","attachments":[{"type":"application/pdf","url":"https://link.to/attachment.pdf"}]}`,
+		}},
+		ExpectedExtIDs: []string{"iNKE8a6k6cjbqWhWd"},
+	},
+	{
+		Label:   "Unexcepted status response",
+		MsgText: "Simple Message",
+		MsgURN:  "rocketchat:direct:john.doe#john.doe",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": {
+				httpx.NewMockResponse(400, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message"}`,
+		}},
+		ExpectedError: courier.ErrResponseStatus,
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Simple Message",
+		MsgURN:  "rocketchat:direct:john.doe#john.doe",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://my.rocket.chat/api/apps/public/684202ed-1461-4983-9ea7-fde74b15026c/message": {
+				httpx.NewMockResponse(500, nil, []byte(`Error`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"user":"direct:john.doe","bot":"rocket.cat","text":"Simple Message"}`,
+		}},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
 func TestOutgoing(t *testing.T) {
-	handlers.RunOutgoingTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"123456789"}, nil)
+	RunOutgoingTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"123456789"}, nil)
 }

@@ -105,8 +105,8 @@ func ErrFailedWithReason(code, desc string) *SendError {
 		retryable:   false,
 		loggable:    false,
 		clogCode:    "rejected_with_reason",
-		clogMsg:     code,
-		clogExtCode: desc,
+		clogMsg:     desc,
+		clogExtCode: code,
 	}
 }
 
