@@ -316,8 +316,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"12345"},
+		ExpectedExtIDs: []string{"12345"},
 	},
 	{
 		Label:   "Unicode Send",
@@ -338,7 +337,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"☺","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		}},
-		ExpectedMsgStatus: "W",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("messageId")},
 	},
 	{
 		Label:          "Send Attachment",
@@ -360,7 +359,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"My pic!\nhttps://foo.bar/image.jpg","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		}},
-		ExpectedMsgStatus: "W",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("messageId")},
 	},
 	{
 		Label:   "Error Sending",
@@ -379,7 +378,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Error Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:   "Error groupId",
@@ -400,7 +399,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError:     courier.ErrFailedWithReason("", "unexpected groupId value"),
 		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueUnexpected("groupId", "1", "3")},
 	},
 }
@@ -425,8 +424,7 @@ var transSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","transliteration":"COLOMBIAN"}]}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"12345"},
+		ExpectedExtIDs: []string{"12345"},
 	},
 }
 
