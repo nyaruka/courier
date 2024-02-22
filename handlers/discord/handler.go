@@ -143,22 +143,14 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
 
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
-		return nil, fmt.Errorf("no send url set for DS channel")
+		return courier.ErrChannelConfig
 	}
 
-	// figure out what encoding to tell kannel to send as
 	sendMethod := http.MethodPost
-	// sendBody := msg.Channel().StringConfigForKey(courier.ConfigSendBody, "")
 	contentTypeHeader := jsonMimeTypeType
-
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	attachmentURLs := []string{}
 	for _, attachment := range msg.Attachments() {
 		_, attachmentURL := handlers.SplitAttachment(attachment)
@@ -186,13 +178,13 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 	var body io.Reader
 	marshalled, err := json.Marshal(ourMessage)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	body = bytes.NewReader(marshalled)
 
 	req, err := http.NewRequest(sendMethod, sendURL, body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Set("Content-Type", contentTypeHeader)
 
@@ -202,12 +194,11 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 	}
 
 	resp, _, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		return status, nil
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	} else if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
 	}
 
-	// If we don't have an error, set the message as wired and move on
-	status.SetStatus(courier.MsgStatusWired)
-
-	return status, nil
+	return nil
 }

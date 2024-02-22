@@ -143,6 +143,7 @@ var sendTestCases = []OutgoingTestCase{
 				Body: `{"id":"10","text":"Error Sending","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":null}`,
 			},
 		},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:   "Connection Error",
@@ -159,6 +160,7 @@ var sendTestCases = []OutgoingTestCase{
 				Body: `{"id":"10","text":"Error","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":null}`,
 			},
 		},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
