@@ -107,7 +107,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"message": {"Simple Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Long Send",
@@ -123,7 +122,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{Params: url.Values{"message": {"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
 			{Params: url.Values{"message": {"I need to keep adding more things to make it work"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10.2"}}},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:          "Send Attachment",
@@ -138,7 +136,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"message": {"My pic!\nhttps://foo.bar/image.jpg"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Error Sending",
@@ -152,7 +149,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"message": {"Error Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
 		},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:   "Authentication Error",
@@ -166,8 +163,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"message": {"Simple Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
 		},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("001", "Authentication error.")},
+		ExpectedError: courier.ErrFailedWithReason("001", "Authentication error."),
 	},
 	{
 		Label:   "Account Expired",
@@ -181,8 +177,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"message": {"Simple Message"}, "sendto": {"250788383383"}, "original": {"2020"}, "userid": {"Username"}, "password": {"Password"}, "dcs": {"0"}, "udhl": {"0"}, "messageid": {"10"}}},
 		},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("101", "Account expired or invalid parameters.")},
+		ExpectedError: courier.ErrFailedWithReason("101", "Account expired or invalid parameters."),
 	},
 }
 

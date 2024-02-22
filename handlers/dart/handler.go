@@ -146,22 +146,12 @@ func (h *handler) WriteMsgSuccessResponse(ctx context.Context, w http.ResponseWr
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("no username set for %s channel", msg.Channel().ChannelType())
-	}
-
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("no password set for %s channel", msg.Channel().ChannelType())
+	if username == "" || password == "" {
+		return courier.ErrChannelConfig
 	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), h.maxLength)
 	for i, part := range parts {
 		form := url.Values{
@@ -185,24 +175,24 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 		req, err := http.NewRequest(http.MethodGet, partSendURL.String(), nil)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
 		responseCode := stringsx.Truncate(string(respBody), 3)
 		if responseCode != "000" {
-			clog.Error(courier.ErrorExternal(responseCode, errorCodes[responseCode]))
-			return status, nil
+			return courier.ErrFailedWithReason(responseCode, errorCodes[responseCode])
 		}
 
-		status.SetStatus(courier.MsgStatusWired)
-
 	}
-	return status, nil
+
+	return nil
 }
