@@ -1,13 +1,12 @@
 package discord
 
 import (
-	"net/http/httptest"
 	"testing"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
-	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 func TestIncoming(t *testing.T) {
@@ -19,7 +18,7 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("bac782c2-7aeb-4389-92f5-97887744f573", "DS", "discord", "US", map[string]any{courier.ConfigSendAuthorization: "sesame"}),
+	test.NewMockChannel("bac782c2-7aeb-4389-92f5-97887744f573", "DS", "discord", "US", map[string]any{courier.ConfigSendAuthorization: "sesame", courier.ConfigSendURL: "http://example.com/discord/rp/send"}),
 }
 
 var testCases = []IncomingTestCase{
@@ -79,55 +78,88 @@ var testCases = []IncomingTestCase{
 
 var sendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Simple Send",
-		MsgText:            "Hello World",
-		MsgURN:             "discord:694634743521607802",
-		MockResponseStatus: 200,
+		Label:   "Simple Send",
+		MsgText: "Hello World",
+		MsgURN:  "discord:694634743521607802",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/discord/rp/send": {
+				httpx.NewMockResponse(200, nil, []byte(``)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/discord/rp/send",
 				Body: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":null}`,
 			},
 		},
-		SendPrep: setSendURL,
 	},
 	{
-		Label:              "Attachment",
-		MsgText:            "Hello World",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MsgURN:             "discord:694634743521607802",
-		MockResponseStatus: 200,
+		Label:          "Attachment",
+		MsgText:        "Hello World",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MsgURN:         "discord:694634743521607802",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/discord/rp/send": {
+				httpx.NewMockResponse(200, nil, []byte(``)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/discord/rp/send",
 				Body: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"],"quick_replies":null}`,
 			},
 		},
-		SendPrep: setSendURL,
 	},
 	{
-		Label:              "Attachement and quick replies",
-		MsgText:            "Hello World",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MsgQuickReplies:    []string{"hello", "world"},
-		MsgURN:             "discord:694634743521607802",
-		MockResponseStatus: 200,
+		Label:           "Attachement and quick replies",
+		MsgText:         "Hello World",
+		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MsgQuickReplies: []string{"hello", "world"},
+		MsgURN:          "discord:694634743521607802",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/discord/rp/send": {
+				httpx.NewMockResponse(200, nil, []byte(``)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/discord/rp/send",
 				Body: `{"id":"10","text":"Hello World","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":["https://foo.bar/image.jpg"],"quick_replies":["hello","world"]}`,
 			},
 		},
-		SendPrep: setSendURL,
 	},
-}
-
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	// this is actually a path, which we'll combine with the test server URL
-	sendURL := c.StringConfigForKey("send_path", "/discord/rp/send")
-	sendURL, _ = utils.AddURLPath(s.URL, sendURL)
-	c.(*test.MockChannel).SetConfig(courier.ConfigSendURL, sendURL)
+	{
+		Label:   "Error Sending",
+		MsgText: "Error Sending",
+		MsgURN:  "discord:694634743521607802",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/discord/rp/send": {
+				httpx.NewMockResponse(400, nil, []byte(``)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/discord/rp/send",
+				Body: `{"id":"10","text":"Error Sending","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":null}`,
+			},
+		},
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Error",
+		MsgURN:  "discord:694634743521607802",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/discord/rp/send": {
+				httpx.NewMockResponse(500, nil, []byte(``)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/discord/rp/send",
+				Body: `{"id":"10","text":"Error","to":"694634743521607802","channel":"bac782c2-7aeb-4389-92f5-97887744f573","attachments":[],"quick_replies":null}`,
+			},
+		},
+	},
 }
 
 func TestOutgoing(t *testing.T) {
