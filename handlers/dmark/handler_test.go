@@ -1,13 +1,14 @@
 package dmark
 
 import (
-	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -90,46 +91,68 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
-// setSendURL takes care of setting the sendURL to call
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		ExpectedExtIDs:     []string{"6b1c15d3-cba2-46f7-9a25-78265e58057d"},
-		MockResponseBody:   `{ "type": "MT", "sms_id": "6b1c15d3-cba2-46f7-9a25-78265e58057d" }`,
-		MockResponseStatus: 200,
-		ExpectedHeaders:    map[string]string{"Authorization": "Token Authy"},
-		ExpectedPostParams: map[string]string{"text": "Simple Message ☺", "receiver": "250788383383", "sender": "2020", "dlr_url": "https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%s"},
-		ExpectedMsgStatus:  "W",
-		SendPrep:           setSendURL,
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://smsapi1.dmarkmobile.com/sms/": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "type": "MT", "sms_id": "6b1c15d3-cba2-46f7-9a25-78265e58057d" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "Token Authy"},
+			Form: url.Values{
+				"text":     {"Simple Message ☺"},
+				"receiver": {"250788383383"},
+				"sender":   {"2020"},
+				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%s"},
+			},
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"6b1c15d3-cba2-46f7-9a25-78265e58057d"},
 	},
 	{
-		Label:              "Invalid Body",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "error": "failed" }`,
-		MockResponseStatus: 200,
-		ExpectedHeaders:    map[string]string{"Authorization": "Token Authy"},
-		ExpectedPostParams: map[string]string{"text": "Error Message", "receiver": "250788383383", "sender": "2020"},
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("sms_id")},
-		SendPrep:           setSendURL,
+		Label:   "Invalid Body",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://smsapi1.dmarkmobile.com/sms/": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "Token Authy"},
+			Form: url.Values{
+				"text":     {"Error Message"},
+				"receiver": {"250788383383"},
+				"sender":   {"2020"},
+				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%s"},
+			},
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sms_id")},
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "error": "failed" }`,
-		MockResponseStatus: 401,
-		ExpectedHeaders:    map[string]string{"Authorization": "Token Authy"},
-		ExpectedPostParams: map[string]string{"text": "Error Message", "receiver": "250788383383", "sender": "2020"},
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://smsapi1.dmarkmobile.com/sms/": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "Token Authy"},
+			Form: url.Values{
+				"text":     {"Error Message"},
+				"receiver": {"250788383383"},
+				"sender":   {"2020"},
+				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%s"},
+			},
+		}},
+		ExpectedMsgStatus: "E",
 	},
 }
 
