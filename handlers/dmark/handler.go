@@ -106,23 +106,16 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	// get our authentication token
 	auth := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if auth == "" {
-		return nil, fmt.Errorf("no authorization token set for DK channel")
+		return courier.ErrChannelConfig
 	}
-
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
 	dlrURL := fmt.Sprintf("https://%s%s%s/status?id=%s&status=%%s", callbackDomain, "/c/dk/", msg.Channel().UUID(), msg.ID().String())
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
-	for i, part := range parts {
+	for _, part := range parts {
 		form := url.Values{
 			"sender":   []string{strings.TrimLeft(msg.Channel().Address(), "+")},
 			"receiver": []string{strings.TrimLeft(msg.URN().Path(), "+")},
@@ -132,32 +125,27 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Token %s", auth))
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
 		// grab the external id
 		externalID, err := jsonparser.GetString(respBody, "sms_id")
 		if err != nil {
-			clog.Error(courier.ErrorResponseValueMissing("sms_id"))
-			return status, nil
+			return courier.ErrFailedWithReason("", "response missing sms_id")
 		}
 
-		// if this is our first message, record the external id
-		if i == 0 {
-			status.SetExternalID(externalID)
-		}
-
-		// this was wired successfully
-		status.SetStatus(courier.MsgStatusWired)
+		res.AddExternalID(externalID)
 	}
 
-	return status, nil
+	return nil
 }

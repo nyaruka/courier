@@ -110,8 +110,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%s"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"6b1c15d3-cba2-46f7-9a25-78265e58057d"},
+		ExpectedExtIDs: []string{"6b1c15d3-cba2-46f7-9a25-78265e58057d"},
 	},
 	{
 		Label:   "Invalid Body",
@@ -131,8 +130,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%s"},
 			},
 		}},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sms_id")},
+		ExpectedError: courier.ErrFailedWithReason("", "response missing sms_id"),
 	},
 	{
 		Label:   "Error Sending",
@@ -152,7 +150,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"dlr_url":  {"https://localhost/c/dk/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&status=%s"},
 			},
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 
