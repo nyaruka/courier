@@ -467,17 +467,10 @@ type mtQuickReply struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
-	// can't do anything without an access token
 	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if accessToken == "" {
-		return nil, fmt.Errorf("missing access token")
+		return courier.ErrChannelConfig
 	}
-
 	topic := msg.Topic()
 	payload := mtPayload{}
 
@@ -502,8 +495,6 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 	query := url.Values{}
 	query.Set("access_token", accessToken)
 	msgURL.RawQuery = query.Encode()
-
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
@@ -544,69 +535,64 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 		req, err := http.NewRequest(http.MethodPost, msgURL.String(), bytes.NewReader(jsonBody))
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
 		externalID, err := jsonparser.GetString(respBody, "message_id")
 		if err != nil {
-			clog.Error(courier.ErrorResponseValueMissing("message_id"))
-			return status, nil
+			return courier.ErrFailedWithReason("", "response missing message_id")
 		}
 
-		// if this is our first message, record the external id
-		if i == 0 {
-			status.SetExternalID(externalID)
-			if msg.URN().IsFacebookRef() {
-				recipientID, err := jsonparser.GetString(respBody, "recipient_id")
-				if err != nil {
-					clog.Error(courier.ErrorResponseValueMissing("recipient_id"))
-					return status, nil
-				}
+		res.AddExternalID(externalID)
+		if msg.URN().IsFacebookRef() {
+			recipientID, err := jsonparser.GetString(respBody, "recipient_id")
+			if err != nil {
+				return courier.ErrFailedWithReason("", "response missing recipient_id")
+			}
 
-				referralID := msg.URN().FacebookRef()
+			referralID := msg.URN().FacebookRef()
 
-				realIDURN, err := urns.NewFacebookURN(recipientID)
-				if err != nil {
-					clog.RawError(errors.Errorf("unable to make facebook urn from %s", recipientID))
-				}
+			realIDURN, err := urns.NewFacebookURN(recipientID)
+			if err != nil {
+				clog.RawError(errors.Errorf("unable to make facebook urn from %s", recipientID))
+			}
 
-				contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), nil, "", clog)
-				if err != nil {
-					clog.RawError(errors.Errorf("unable to get contact for %s", msg.URN().String()))
-				}
-				realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN, nil)
-				if err != nil {
-					clog.RawError(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
-				}
-				referralIDExtURN, err := urns.NewURNFromParts(urns.ExternalScheme, referralID, "", "")
-				if err != nil {
-					clog.RawError(errors.Errorf("unable to make ext urn from %s", referralID))
-				}
-				extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN, nil)
-				if err != nil {
-					clog.RawError(errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
-				}
+			contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), nil, "", clog)
+			if err != nil {
+				clog.RawError(errors.Errorf("unable to get contact for %s", msg.URN().String()))
+			}
+			realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN, nil)
+			if err != nil {
+				clog.RawError(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
+			}
+			referralIDExtURN, err := urns.NewURNFromParts(urns.ExternalScheme, referralID, "", "")
+			if err != nil {
+				clog.RawError(errors.Errorf("unable to make ext urn from %s", referralID))
+			}
+			extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN, nil)
+			if err != nil {
+				clog.RawError(errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
+			}
 
-				referralFacebookURN, err := h.Backend().RemoveURNfromContact(ctx, msg.Channel(), contact, msg.URN())
-				if err != nil {
-					clog.RawError(errors.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
-				}
+			referralFacebookURN, err := h.Backend().RemoveURNfromContact(ctx, msg.Channel(), contact, msg.URN())
+			if err != nil {
+				clog.RawError(errors.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
 			}
 		}
 
-		// this was wired successfully
-		status.SetStatus(courier.MsgStatusWired)
 	}
 
-	return status, nil
+	return nil
 }
 
 // DescribeURN looks up URN metadata for new contacts

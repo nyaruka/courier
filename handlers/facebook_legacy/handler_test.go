@@ -746,8 +746,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:                   "Plain Response",
@@ -765,8 +764,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messaging_type":"RESPONSE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:   "Plain Send using ref URN",
@@ -784,7 +782,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"user_ref":"67890"},"message":{"text":"Simple Message"}}`,
 		}},
 		ExpectedContactURNs: map[string]bool{"facebook:12345": true, "ext:67890": true, "facebook:ref:67890": false},
-		ExpectedMsgStatus:   "W",
 		ExpectedExtIDs:      []string{"mid.133"},
 	},
 	{
@@ -803,8 +800,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Are you happy?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:           "Long Message",
@@ -832,8 +828,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"messaging_type":"MESSAGE_TAG","tag":"ACCOUNT_UPDATE","recipient":{"id":"12345"},"message":{"text":"we exceed the max length?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133", "mid.133"},
 	},
 	{
 		Label:          "Send Photo",
@@ -850,8 +845,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:           "Send caption and photo with Quick Reply",
@@ -881,8 +875,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"messaging_type":"MESSAGE_TAG","tag":"CONFIRMED_EVENT_UPDATE","recipient":{"id":"12345"},"message":{"text":"This is some text.","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133", "mid.133"},
 	},
 	{
 		Label:          "Send Document",
@@ -899,8 +892,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"file","payload":{"url":"https://foo.bar/document.pdf","is_reusable":true}}}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"mid.133"},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:   "ID Error",
@@ -911,8 +903,13 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("message_id")},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"access_token": {"access_token"},
+			},
+			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"ID Error"}}`,
+		}},
+		ExpectedError: courier.ErrFailedWithReason("", "response missing message_id"),
 	},
 	{
 		Label:   "Error",
@@ -923,7 +920,13 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
-		ExpectedMsgStatus: "E",
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"access_token": {"access_token"},
+			},
+			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Error"}}`,
+		}},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 
