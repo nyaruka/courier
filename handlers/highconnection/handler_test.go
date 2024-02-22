@@ -98,7 +98,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(``)),
 			},
 		},
-		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
 				"accountid":  {"Username"},
@@ -112,7 +111,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"ret_mo_url": {"https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Plain Send without flow",
@@ -123,7 +121,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(``)),
 			},
 		},
-		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
 				"accountid":  {"Username"},
@@ -137,7 +134,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"ret_mo_url": {"https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Unicode Send",
@@ -149,7 +145,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(``)),
 			},
 		},
-		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
 				"accountid":  {"Username"},
@@ -163,7 +158,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"ret_mo_url": {"https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Long Send",
@@ -176,7 +170,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(``)),
 			},
 		},
-		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Params: url.Values{
@@ -205,7 +198,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:          "Send Attachement",
@@ -218,7 +210,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(``)),
 			},
 		},
-		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{{
 			Params: url.Values{
 				"accountid":  {"Username"},
@@ -232,7 +223,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				"ret_mo_url": {"https://localhost/c/hx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Error Sending",
@@ -243,8 +233,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(``)),
 			},
 		},
-		MockResponseStatus: 403,
-		ExpectedMsgStatus:  "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 
