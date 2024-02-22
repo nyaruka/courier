@@ -106,12 +106,11 @@ var notificationSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{"success":1, "multicast_id": 123456}`)),
 			},
 		},
-		MockResponseBody:    `{"success":1, "multicast_id": 123456}`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Authorization": "key=FCMKey"},
-		ExpectedRequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"notification":{"title":"FCMTitle","body":"Simple Message"},"content_available":true,"to":"auth1","priority":"high"}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"123456"},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "key=FCMKey"},
+			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"notification":{"title":"FCMTitle","body":"Simple Message"},"content_available":true,"to":"auth1","priority":"high"}`,
+		}},
+		ExpectedExtIDs: []string{"123456"},
 	},
 }
 
@@ -130,8 +129,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "key=FCMKey"},
 			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"123456"},
+		ExpectedExtIDs: []string{"123456"},
 	},
 	{
 		Label:      "Long Message",
@@ -154,8 +152,7 @@ var sendTestCases = []OutgoingTestCase{
 				Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"ate ac.","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"123456"},
+		ExpectedExtIDs: []string{"123456", "123456"},
 	},
 	{
 		Label:           "Quick Reply",
@@ -173,8 +170,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "key=FCMKey"},
 			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":10,"session_status":"","quick_replies":["yes","no"]},"content_available":false,"to":"auth1","priority":"high"}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"123456"},
+		ExpectedExtIDs: []string{"123456"},
 	},
 	{
 		Label:      "Error",
@@ -190,8 +186,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "key=FCMKey"},
 			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
 		}},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueUnexpected("success", "1")},
+		ExpectedError: courier.ErrFailedWithReason("", "response success value expected be 1"),
 	},
 	{
 		Label:      "No Multicast ID",
@@ -207,8 +202,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "key=FCMKey"},
 			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
 		}},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("multicast_id")},
+		ExpectedError: courier.ErrFailedWithReason("", "response missing multicast_id"),
 	},
 	{
 		Label:      "Request Error",
@@ -224,7 +218,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "key=FCMKey"},
 			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
