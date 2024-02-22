@@ -98,8 +98,7 @@ var sendTestCases = []OutgoingTestCase{
 				Body: `{"mobile":"250788383383","message":"Simple Message","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"msg1"},
+		ExpectedExtIDs: []string{"msg1"},
 	},
 	{
 		Label:   "Unicode Send",
@@ -118,8 +117,7 @@ var sendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"mobile":"250788383383","message":"☺","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"msg1"},
+		ExpectedExtIDs: []string{"msg1"},
 	},
 	{
 		Label:          "Send Attachment",
@@ -139,8 +137,7 @@ var sendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"mobile":"250788383383","message":"My pic!\nhttps://foo.bar/image.jpg","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"msg1"},
+		ExpectedExtIDs: []string{"msg1"},
 	},
 	{
 		Label:   "Error Sending",
@@ -159,7 +156,26 @@ var sendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"mobile":"250788383383","message":"Error Sending","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Error",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://smsapi.hormuud.com/api/SendSMS": {
+				httpx.NewMockResponse(500, nil, []byte(`[{"Response": "101"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Bearer ghK_Wt4lshZhN",
+			},
+			Body: `{"mobile":"250788383383","message":"Error","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
+		}},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
@@ -193,7 +209,7 @@ var tokenTestCases = []OutgoingTestCase{
 				Body: `{"mobile":"250788383383","message":"Simple Message","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
 			},
 		},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 
