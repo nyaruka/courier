@@ -289,29 +289,17 @@ func (h *handler) resolveMediaURL(channel courier.Channel, mediaID string, clog 
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
 
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
-	conn := h.Backend().RedisPool().Get()
-	defer conn.Close()
-
-	// get our token
-	// can't do anything without an access token
 	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
-	if accessToken == "" {
-		return nil, fmt.Errorf("missing token for D3C channel")
-	}
-
 	urlStr := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid base url set for D3C channel: %s", err)
+	if accessToken == "" || err != nil {
+		return courier.ErrChannelConfig
 	}
 	sendURL, _ := url.Parse("/messages")
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
+	conn := h.Backend().RedisPool().Get()
+	defer conn.Close()
 
 	hasCaption := false
 
@@ -331,7 +319,7 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 			// do we have a template?
 			templating, err := whatsapp.GetTemplating(msg)
 			if err != nil {
-				return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
+				return errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
 			}
 			if templating != nil {
 				payload.Type = "template"
@@ -394,7 +382,7 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 							payload.Interactive = &interactive
 						} else {
-							return nil, fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
+							return fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
 						}
 					} else {
 						// this is still a msg part
@@ -480,7 +468,7 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 						} else if attType == "document" {
 							filename, err := utils.BasePathForURL(attURL)
 							if err != nil {
-								return nil, err
+								return err
 							}
 							document := whatsapp.Media{
 								Link:     attURL,
@@ -494,14 +482,10 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 								Document *whatsapp.Media "json:\"document,omitempty\""
 							}{Type: "document", Document: &document}
 						} else if attType == "audio" {
-							var zeroIndex bool
-							if i == 0 {
-								zeroIndex = true
-							}
 							payloadAudio = whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &whatsapp.Media{Link: attURL}}
-							status, err := h.requestD3C(payloadAudio, accessToken, status, sendURL, zeroIndex, clog)
+							err := h.requestD3C(payloadAudio, accessToken, res, sendURL, clog)
 							if err != nil {
-								return status, nil
+								return nil
 							}
 						} else {
 							interactive.Type = "button"
@@ -549,7 +533,7 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 					payload.Interactive = &interactive
 				} else {
-					return nil, fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
+					return fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
 				}
 			} else {
 				// this is still a msg part
@@ -563,29 +547,25 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 			}
 		}
 
-		var zeroIndex bool
-		if i == 0 {
-			zeroIndex = true
-		}
-
-		status, err := h.requestD3C(payload, accessToken, status, sendURL, zeroIndex, clog)
+		err := h.requestD3C(payload, accessToken, res, sendURL, clog)
 		if err != nil {
-			return status, err
+			return err
 		}
 
 		if hasCaption {
 			break
 		}
 	}
-	return status, nil
+
+	return nil
 }
 
-func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *courier.ChannelLog) error {
 	jsonBody := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	req.Header.Set(d3AuthorizationKey, accessToken)
@@ -596,20 +576,16 @@ func (h *handler) requestD3C(payload whatsapp.SendRequest, accessToken string, s
 	respPayload := &whatsapp.SendResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
-		clog.Error(courier.ErrorResponseUnparseable("JSON"))
-		return status, nil
+		return courier.ErrResponseUnparseable
 	}
 
 	if respPayload.Error.Code != 0 {
-		clog.Error(courier.ErrorExternal(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message))
-		return status, nil
+		return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 	}
 
 	externalID := respPayload.Messages[0].ID
-	if zeroIndex && externalID != "" {
-		status.SetExternalID(externalID)
+	if externalID != "" {
+		res.AddExternalID(externalID)
 	}
-	// this was wired successfully
-	status.SetStatus(courier.MsgStatusWired)
-	return status, nil
+	return nil
 }
