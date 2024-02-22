@@ -324,8 +324,6 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
-		MockResponseBody:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-		MockResponseStatus: 201,
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/messages",
@@ -344,8 +342,6 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
-		MockResponseBody:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-		MockResponseStatus: 201,
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/messages",
@@ -380,11 +376,9 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://waba-v2.360dialog.io/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
-		MockResponseBody:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-		MockResponseStatus: 201,
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/messages",
@@ -401,11 +395,9 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://waba-v2.360dialog.io/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
-		MockResponseBody:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-		MockResponseStatus: 201,
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/messages",
@@ -422,11 +414,9 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MsgAttachments: []string{"video/mp4:https://foo.bar/video.mp4"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://waba-v2.360dialog.io/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
-		MockResponseBody:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-		MockResponseStatus: 201,
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/messages",
@@ -447,10 +437,9 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"157b5e14568e8"},
-		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
-		MockResponseStatus:  200,
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"157b5e14568e8"},
+
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","sub_type":"","index":"","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 	},
 	{
@@ -460,11 +449,10 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MsgQuickReplies: []string{"BUTTON1"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://waba-v2.360dialog.io/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
-		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
-		MockResponseStatus:  201,
+
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
 		ExpectedMsgStatus:   "W",
 		ExpectedExtIDs:      []string{"157b5e14568e8"},
@@ -476,11 +464,10 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://waba-v2.360dialog.io/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
-		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
-		MockResponseStatus:  201,
+
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
 		ExpectedMsgStatus:   "W",
 		ExpectedExtIDs:      []string{"157b5e14568e8"},
@@ -493,11 +480,10 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MsgQuickReplies: []string{"ROW1", "ROW2", "ROW3", "ROW4"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://waba-v2.360dialog.io/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
-		MockResponseBody:    `{ "messages": [{"id": "157b5e14568e8"}] }`,
-		MockResponseStatus:  201,
+
 		ExpectedRequestBody: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Hola"},"action":{"button":"Menú","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
 		ExpectedMsgStatus:   "W",
 		ExpectedExtIDs:      []string{"157b5e14568e8"},
@@ -510,11 +496,10 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://waba-v2.360dialog.io/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
-		MockResponseBody:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-		MockResponseStatus: 201,
+
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/messages",
@@ -532,11 +517,10 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MsgAttachments:  []string{"video/mp4:https://foo.bar/video.mp4"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://waba-v2.360dialog.io/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
-		MockResponseBody:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-		MockResponseStatus: 201,
+
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/messages",
@@ -554,11 +538,10 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MsgAttachments:  []string{"document/pdf:https://foo.bar/document.pdf"},
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://waba-v2.360dialog.io/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
-		MockResponseBody:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-		MockResponseStatus: 201,
+
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/messages",
@@ -612,11 +595,10 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		MsgURN:  "whatsapp:250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://waba-v2.360dialog.io/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
 			},
 		},
-		MockResponseBody:   `{ "messages": [{"id": "157b5e14568e8"}] }`,
-		MockResponseStatus: 201,
+
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Path: "/messages",
@@ -635,10 +617,14 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`bad json`)),
 			},
 		},
-		MockResponseBody:   `bad json`,
-		MockResponseStatus: 403,
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
-		ExpectedMsgStatus:  "E",
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/messages",
+				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Error","preview_url":false}}`,
+			},
+		},
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseUnparseable("JSON")},
+		ExpectedMsgStatus: "E",
 	},
 	{
 		Label:   "Error",
@@ -649,10 +635,14 @@ var SendTestCasesD3C = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`{ "error": {"message": "(#130429) Rate limit hit","code": 130429 }}`)),
 			},
 		},
-		MockResponseBody:   `{ "error": {"message": "(#130429) Rate limit hit","code": 130429 }}`,
-		MockResponseStatus: 403,
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorExternal("130429", "(#130429) Rate limit hit")},
-		ExpectedMsgStatus:  "E",
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/messages",
+				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Error","preview_url":false}}`,
+			},
+		},
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("130429", "(#130429) Rate limit hit")},
+		ExpectedMsgStatus: "E",
 	},
 }
 
