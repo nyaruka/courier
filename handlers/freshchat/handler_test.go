@@ -96,7 +96,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="},
 			Body:    `{"messages":[{"message_parts":[{"text":{"content":"Simple Message ☺"}}],"actor_id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606","actor_type":"agent"}],"channel_id":"0534f78-b6e9-4f79-8853-11cedfc1f35b","users":[{"id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606"}]}`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:          "Send with text and image",
@@ -112,7 +111,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="},
 			Body:    `{"messages":[{"message_parts":[{"text":{"content":"Simple Message ☺"}},{"image":{"url":"https://foo.bar/image.jpg"}}],"actor_id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606","actor_type":"agent"}],"channel_id":"0534f78-b6e9-4f79-8853-11cedfc1f35b","users":[{"id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606"}]}`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:          "Send with image only",
@@ -127,7 +125,36 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="},
 			Body:    `{"messages":[{"message_parts":[{"image":{"url":"https://foo.bar/image.jpg"}}],"actor_id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606","actor_type":"agent"}],"channel_id":"0534f78-b6e9-4f79-8853-11cedfc1f35b","users":[{"id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606"}]}`,
 		}},
-		ExpectedMsgStatus: "W",
+	},
+	{
+		Label:   "Error sending",
+		MsgText: "Error",
+		MsgURN:  "freshchat:0534f78-b6e9-4f79-8853-11cedfc1f35b/c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.freshchat.com/v2/conversations": {
+				httpx.NewMockResponse(400, nil, []byte(``)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="},
+			Body:    `{"messages":[{"message_parts":[{"text":{"content":"Error"}}],"actor_id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606","actor_type":"agent"}],"channel_id":"0534f78-b6e9-4f79-8853-11cedfc1f35b","users":[{"id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606"}]}`,
+		}},
+		ExpectedError: courier.ErrResponseStatus,
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Error",
+		MsgURN:  "freshchat:0534f78-b6e9-4f79-8853-11cedfc1f35b/c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.freshchat.com/v2/conversations": {
+				httpx.NewMockResponse(500, nil, []byte(``)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "Bearer enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ="},
+			Body:    `{"messages":[{"message_parts":[{"text":{"content":"Error"}}],"actor_id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606","actor_type":"agent"}],"channel_id":"0534f78-b6e9-4f79-8853-11cedfc1f35b","users":[{"id":"c8fddfaf-622a-4a0e-b060-4f3ccbeab606"}]}`,
+		}},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 

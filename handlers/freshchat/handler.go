@@ -97,24 +97,16 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 
 	agentID := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if agentID == "" {
-		return nil, fmt.Errorf("missing config 'username' for FC channel")
-	}
-
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
-	if authToken == "" {
-		return nil, fmt.Errorf("missing config 'auth_token' for FC channel")
+
+	if agentID == "" || authToken == "" {
+		return courier.ErrChannelConfig
 	}
 
 	user := strings.Split(msg.URN().Path(), "/")
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
+
 	url := apiURL + "/conversations"
 
 	// create base payload
@@ -157,7 +149,7 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(jsonBody))
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
@@ -165,13 +157,13 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 	req.Header.Set("Authorization", bearer)
 
 	resp, _, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		return status, nil
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	} else if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
 	}
 
-	status.SetStatus(courier.MsgStatusWired)
-
-	return status, nil
+	return nil
 }
 
 func (h *handler) validateSignature(c courier.Channel, r *http.Request) error {
