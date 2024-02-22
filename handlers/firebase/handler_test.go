@@ -1,13 +1,13 @@
 package firebase
 
 import (
-	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -95,100 +95,136 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
-// setSendURL takes care of setting the base_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-}
-
 var notificationSendTestCases = []OutgoingTestCase{
 	{
-		Label:               "Plain Send",
-		MsgText:             "Simple Message",
-		MsgURN:              "fcm:250788123123",
-		MsgURNAuth:          "auth1",
+		Label:      "Plain Send",
+		MsgText:    "Simple Message",
+		MsgURN:     "fcm:250788123123",
+		MsgURNAuth: "auth1",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://fcm.googleapis.com/fcm/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"success":1, "multicast_id": 123456}`)),
+			},
+		},
 		MockResponseBody:    `{"success":1, "multicast_id": 123456}`,
 		MockResponseStatus:  200,
 		ExpectedHeaders:     map[string]string{"Authorization": "key=FCMKey"},
 		ExpectedRequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"notification":{"title":"FCMTitle","body":"Simple Message"},"content_available":true,"to":"auth1","priority":"high"}`,
 		ExpectedMsgStatus:   "W",
 		ExpectedExtIDs:      []string{"123456"},
-		SendPrep:            setSendURL,
 	},
 }
 
 var sendTestCases = []OutgoingTestCase{
 	{
-		Label:               "Plain Send",
-		MsgText:             "Simple Message",
-		MsgURN:              "fcm:250788123123",
-		MsgURNAuth:          "auth1",
-		MockResponseBody:    `{"success":1, "multicast_id": 123456}`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Authorization": "key=FCMKey"},
-		ExpectedRequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"123456"},
-		SendPrep:            setSendURL,
+		Label:      "Plain Send",
+		MsgText:    "Simple Message",
+		MsgURN:     "fcm:250788123123",
+		MsgURNAuth: "auth1",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://fcm.googleapis.com/fcm/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"success":1, "multicast_id": 123456}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "key=FCMKey"},
+			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"123456"},
 	},
 	{
-		Label:               "Long Message",
-		MsgText:             longMsg,
-		MsgURN:              "fcm:250788123123",
-		MsgURNAuth:          "auth1",
-		MockResponseBody:    `{"success":1, "multicast_id": 123456}`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Authorization": "key=FCMKey"},
-		ExpectedRequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"ate ac.","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"123456"},
-		SendPrep:            setSendURL,
+		Label:      "Long Message",
+		MsgText:    longMsg,
+		MsgURN:     "fcm:250788123123",
+		MsgURNAuth: "auth1",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://fcm.googleapis.com/fcm/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"success":1, "multicast_id": 123456}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"success":1, "multicast_id": 123456}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Headers: map[string]string{"Authorization": "key=FCMKey"},
+				Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis augue vel placerat congue.\nEtiam nec tempus enim. Cras placerat at est vel suscipit. Duis quis faucibus metus, non elementum tortor.\nPellentesque posuere ullamcorper metus auctor venenatis. Proin eget hendrerit dui. Sed eget massa nec mauris consequat pretium.\nPraesent mattis arcu tortor, ac aliquet turpis tincidunt eu.\n\nFusce ut lacinia augue. Vestibulum felis nisi, porta ut est condimentum, condimentum volutpat libero.\nSuspendisse a elit venenatis, condimentum sem at, ultricies mauris. Morbi interdum sem id tempor tristique.\nUt tincidunt massa eu purus lacinia sodales a volutpat neque. Cras dolor quam, eleifend a rhoncus quis, sodales nec purus.\nVivamus justo dolor, gravida at quam eu, hendrerit rutrum justo. Sed hendrerit nisi vitae nisl ornare tristique.\nProin vulputate id justo non aliquet.\n\nDuis eu arcu pharetra, laoreet nunc at, pharetra sapien. Nulla eu libero diam.\nDonec euismod dapibus ligula, sit amet hendrerit neque vulput","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
+			},
+			{
+				Headers: map[string]string{"Authorization": "key=FCMKey"},
+				Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"ate ac.","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
+			},
+		},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"123456"},
 	},
 	{
-		Label:               "Quick Reply",
-		MsgText:             "Simple Message",
-		MsgURN:              "fcm:250788123123",
-		MsgURNAuth:          "auth1",
-		MsgQuickReplies:     []string{"yes", "no"},
-		MsgAttachments:      []string{"image/jpeg:https://foo.bar"},
-		MockResponseBody:    `{"success":1, "multicast_id": 123456}`,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Authorization": "key=FCMKey"},
-		ExpectedRequestBody: `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":10,"session_status":"","quick_replies":["yes","no"]},"content_available":false,"to":"auth1","priority":"high"}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"123456"},
-		SendPrep:            setSendURL,
+		Label:           "Quick Reply",
+		MsgText:         "Simple Message",
+		MsgURN:          "fcm:250788123123",
+		MsgURNAuth:      "auth1",
+		MsgQuickReplies: []string{"yes", "no"},
+		MsgAttachments:  []string{"image/jpeg:https://foo.bar"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://fcm.googleapis.com/fcm/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"success":1, "multicast_id": 123456}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "key=FCMKey"},
+			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":10,"session_status":"","quick_replies":["yes","no"]},"content_available":false,"to":"auth1","priority":"high"}`,
+		}},
+		ExpectedMsgStatus: "W",
+		ExpectedExtIDs:    []string{"123456"},
 	},
 	{
-		Label:              "Error",
-		MsgText:            "Error",
-		MsgURN:             "fcm:250788123123",
-		MsgURNAuth:         "auth1",
-		MockResponseBody:   `{ "success": 0 }`,
-		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueUnexpected("success", "1")},
-		SendPrep:           setSendURL,
+		Label:      "Error",
+		MsgText:    "Error",
+		MsgURN:     "fcm:250788123123",
+		MsgURNAuth: "auth1",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://fcm.googleapis.com/fcm/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "success": 0 }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "key=FCMKey"},
+			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueUnexpected("success", "1")},
 	},
 	{
-		Label:              "No Multicast ID",
-		MsgText:            "Error",
-		MsgURN:             "fcm:250788123123",
-		MsgURNAuth:         "auth1",
-		MockResponseBody:   `{ "success": 1 }`,
-		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("multicast_id")},
-		SendPrep:           setSendURL,
+		Label:      "No Multicast ID",
+		MsgText:    "Error",
+		MsgURN:     "fcm:250788123123",
+		MsgURNAuth: "auth1",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://fcm.googleapis.com/fcm/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "success": 1 }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "key=FCMKey"},
+			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
+		}},
+		ExpectedMsgStatus: "E",
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("multicast_id")},
 	},
 	{
-		Label:              "Request Error",
-		MsgText:            "Error",
-		MsgURN:             "fcm:250788123123",
-		MsgURNAuth:         "auth1",
-		MockResponseBody:   `{ "success": 0 }`,
-		MockResponseStatus: 500,
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		Label:      "Request Error",
+		MsgText:    "Error",
+		MsgURN:     "fcm:250788123123",
+		MsgURNAuth: "auth1",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://fcm.googleapis.com/fcm/send": {
+				httpx.NewMockResponse(500, nil, []byte(`{ "success": 0 }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Authorization": "key=FCMKey"},
+			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
+		}},
+		ExpectedMsgStatus: "E",
 	},
 }
 
