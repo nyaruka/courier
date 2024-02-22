@@ -178,7 +178,6 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"address":"250788383383","message":"Simple Message","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Unicode Send",
@@ -192,7 +191,6 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"address":"250788383383","message":"☺","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:          "Send Attachment",
@@ -207,7 +205,6 @@ var sendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"address":"250788383383","message":"My pic!\nhttps://foo.bar/image.jpg","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Error Sending",
@@ -218,7 +215,24 @@ var sendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(403, nil, []byte(`[{"Response": "101"}]`)),
 			},
 		},
-		ExpectedMsgStatus: "E",
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"address":"250788383383","message":"Error Sending","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
+		}},
+		ExpectedError: courier.ErrResponseStatus,
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Error",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests": {
+				httpx.NewMockResponse(500, nil, []byte(`[{"Response": "101"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"address":"250788383383","message":"Error","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
+		}},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
