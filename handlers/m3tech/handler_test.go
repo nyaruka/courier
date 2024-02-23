@@ -49,7 +49,8 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 var defaultSendTestCases = []OutgoingTestCase{
-	{Label: "Plain Send",
+	{
+		Label:   "Plain Send",
 		MsgText: "Simple Message",
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
@@ -73,7 +74,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		}},
 	},
-	{Label: "Unicode Send",
+	{
+		Label:   "Unicode Send",
 		MsgText: "☺",
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
@@ -97,7 +99,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		}},
 	},
-	{Label: "Smart Encoding",
+	{
+		Label:   "Smart Encoding",
 		MsgText: "Fancy “Smart” Quotes",
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
@@ -121,7 +124,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		}},
 	},
-	{Label: "Send Attachment",
+	{
+		Label:          "Send Attachment",
 		MsgText:        "My pic!",
 		MsgURN:         "tel:+250788383383",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
@@ -146,7 +150,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		}},
 	},
-	{Label: "Error Sending",
+	{
+		Label:   "Error Sending",
 		MsgText: "Error Sending",
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{

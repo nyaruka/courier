@@ -192,7 +192,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		code, _ := jsonparser.GetString(respBody, "results", "[0]", "code")
 		externalID, _ := jsonparser.GetString(respBody, "results", "[0]", "ticket")
 		if code == "0" && externalID != "" {
-			// all went well, set ourselves to wired
 			res.AddExternalID(externalID)
 		} else {
 			reason, _ := jsonparser.GetString(respBody, "results", "[0]", "reason")
