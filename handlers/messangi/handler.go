@@ -98,8 +98,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		// we always get 204 on success
 		if response.Status != "OK" {
-			clog.Error(courier.ErrorResponseValueUnexpected("status", "OK"))
-			return courier.ErrFailedWithReason("", "response returned non-OK status")
+			return courier.ErrResponseStatus
 		}
 	}
 

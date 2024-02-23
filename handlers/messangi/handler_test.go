@@ -115,8 +115,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/mmc/rest/api/sendMT/7/2020/2/18765422035/RXJyb3IgUmVzcG9uc2U/my-public-key/27f4c67fa00848ea6029cc0b1797aae6d05e2970ecb6e44ca486b463b933e61a",
 		}},
-		ExpectedError:     courier.ErrFailedWithReason("", "response returned non-OK status"),
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueUnexpected("status", "OK")},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 

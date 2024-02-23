@@ -736,16 +736,14 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 		}
 
 		if respPayload.ExternalID == "" {
-			clog.Error(courier.ErrorResponseValueMissing("message_id"))
-			return courier.ErrFailedWithReason("", "response missing message_id")
+			return courier.ErrResponseUnexpected
 		}
 
 		res.AddExternalID(respPayload.ExternalID)
 		if msg.URN().IsFacebookRef() {
 			recipientID := respPayload.RecipientID
 			if recipientID == "" {
-				clog.Error(courier.ErrorResponseValueMissing("recipient_id"))
-				return courier.ErrFailedWithReason("", "response missing recipient_id")
+				return courier.ErrResponseUnexpected
 			}
 
 			referralID := msg.URN().FacebookRef()
@@ -828,6 +826,12 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 				} else {
 					if len(qrs) > 0 {
 						payload.Type = "interactive"
+						if len(qrs) > 10 {
+							clog.Error(courier.NewChannelError("", "", "too many quick replies WAC supports only up to 10 quick replies"))
+							// limit to the first 10
+							qrs = qrs[:10]
+						}
+
 						// We can use buttons
 						if len(qrs) <= 3 {
 							interactive := whatsapp.Interactive{Type: "button", Body: struct {
@@ -872,8 +876,6 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 							}}
 
 							payload.Interactive = &interactive
-						} else {
-							return fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
 						}
 					} else {
 						// this is still a msg part
@@ -921,6 +923,12 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 		} else {
 			if len(qrs) > 0 {
 				payload.Type = "interactive"
+				if len(qrs) > 10 {
+					clog.Error(courier.NewChannelError("", "", "too many quick replies WAC supports only up to 10 quick replies"))
+					// limit to the first 10
+					qrs = qrs[:10]
+				}
+
 				// We can use buttons
 				if len(qrs) <= 3 {
 					interactive := whatsapp.Interactive{Type: "button", Body: struct {
@@ -1024,8 +1032,6 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 					}}
 
 					payload.Interactive = &interactive
-				} else {
-					return fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
 				}
 			} else {
 				// this is still a msg part

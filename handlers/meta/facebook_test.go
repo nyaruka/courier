@@ -578,8 +578,7 @@ var facebookOutgoingTests = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "is_error": true }`)),
 			},
 		},
-		ExpectedError:     courier.ErrFailedWithReason("", "response missing message_id"),
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("message_id")},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:   "Response status code is non-200",
