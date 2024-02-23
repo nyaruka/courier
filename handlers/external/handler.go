@@ -271,16 +271,11 @@ func (h *handler) receiveStatus(ctx context.Context, statusString string, channe
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	channel := msg.Channel()
 
 	sendURL := channel.StringConfigForKey(courier.ConfigSendURL, "")
 	if sendURL == "" {
-		return nil, fmt.Errorf("no send url set for EX channel")
+		return courier.ErrChannelConfig
 	}
 
 	// figure out what encoding to tell kannel to send as
@@ -295,7 +290,6 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		contentTypeHeader = contentType
 	}
 
-	status := h.Backend().NewStatusUpdate(channel, msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(channel, handlers.GetTextAndAttachments(msg), sendMaxLength)
 	for i, part := range parts {
 		// build our request
@@ -351,9 +345,8 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		}
 
 		req, err := http.NewRequest(sendMethod, url, body)
-
 		if err != nil {
-			return nil, err
+			return err
 		}
 		req.Header.Set("Content-Type", contentTypeHeader)
 
@@ -369,18 +362,18 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		}
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
-		if responseCheck == "" || strings.Contains(string(respBody), responseCheck) {
-			status.SetStatus(courier.MsgStatusWired)
-		} else {
-			clog.Error(courier.ErrorResponseUnexpected(responseCheck))
+		if responseCheck != "" && !strings.Contains(string(respBody), responseCheck) {
+			return courier.ErrResponseUnexpected
 		}
 	}
 
-	return status, nil
+	return nil
 }
 
 type quickReplyXMLItem struct {

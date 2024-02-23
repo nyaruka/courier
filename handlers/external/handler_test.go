@@ -315,7 +315,6 @@ var longSendTestCases = []OutgoingTestCase{
 				},
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 }
 
@@ -337,7 +336,6 @@ var getSendSmartEncodingTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 }
 
@@ -359,7 +357,6 @@ var postSendSmartEncodingTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 }
 
@@ -381,7 +378,6 @@ var getSendTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Unicode Send",
@@ -399,7 +395,6 @@ var getSendTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Error Sending",
@@ -418,7 +413,7 @@ var getSendTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:          "Send Attachment",
@@ -438,7 +433,6 @@ var getSendTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 }
 
@@ -460,7 +454,6 @@ var postSendTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Unicode Send",
@@ -471,8 +464,6 @@ var postSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
 			},
 		},
-		MockResponseBody:   "0: Accepted for delivery",
-		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 			Form: url.Values{
@@ -481,7 +472,6 @@ var postSendTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Error Sending",
@@ -500,7 +490,7 @@ var postSendTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:          "Send Attachment",
@@ -520,7 +510,6 @@ var postSendTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 }
 
@@ -534,8 +523,6 @@ var postSendCustomContentTypeTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`0: Accepted for delivery`)),
 			},
 		},
-		MockResponseBody:   "0: Accepted for delivery",
-		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
 			Form: url.Values{
@@ -544,7 +531,6 @@ var postSendCustomContentTypeTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 }
 
@@ -562,7 +548,6 @@ var jsonSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
 			Body:    `{ "to":"+250788383383", "text":"Simple Message", "from":"2020", "quick_replies":[] }`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Unicode Send",
@@ -577,7 +562,6 @@ var jsonSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
 			Body:    `{ "to":"+250788383383", "text":"☺ \"hi!\"", "from":"2020", "quick_replies":[] }`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Error Sending",
@@ -592,7 +576,7 @@ var jsonSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
 			Body:    `{ "to":"+250788383383", "text":"Error Message", "from":"2020", "quick_replies":[] }`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:          "Send Attachment",
@@ -608,7 +592,6 @@ var jsonSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
 			Body:    `{ "to":"+250788383383", "text":"My pic!\nhttps://foo.bar/image.jpg", "from":"2020", "quick_replies":[] }`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:           "Send Quick Replies",
@@ -624,7 +607,6 @@ var jsonSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Token ABCDEF", "Content-Type": "application/json"},
 			Body:    `{ "to":"+250788383383", "text":"Some message", "from":"2020", "quick_replies":["One","Two","Three"] }`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 }
 
@@ -655,7 +637,6 @@ var jsonLongSendTestCases = []OutgoingTestCase{
 				Body:    `{ "to":"+250788383383", "text":"characters", "from":"2020", "quick_replies":["One","Two","Three"] }`,
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 }
 
@@ -673,7 +654,6 @@ var xmlSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    `<msg><to>+250788383383</to><text>Simple Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Unicode Send",
@@ -688,7 +668,6 @@ var xmlSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    `<msg><to>+250788383383</to><text>☺</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Error Sending",
@@ -703,7 +682,7 @@ var xmlSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:          "Send Attachment",
@@ -719,7 +698,6 @@ var xmlSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    `<msg><to>+250788383383</to><text>My pic!&#xA;https://foo.bar/image.jpg</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:           "Send Quick Replies",
@@ -735,7 +713,6 @@ var xmlSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    "<msg><to>+250788383383</to><text>Some message</text><from>2020</from><quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>",
 		}},
-		ExpectedMsgStatus: "W",
 	},
 }
 
@@ -766,16 +743,15 @@ var xmlLongSendTestCases = []OutgoingTestCase{
 				Body:    "<msg><to>+250788383383</to><text>characters</text><from>2020</from><quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>",
 			},
 		},
-		ExpectedMsgStatus: "W",
 	},
 }
 
 var xmlSendWithResponseContentTestCases = []OutgoingTestCase{
 	{
-		Label:             "Plain Send",
-		MsgText:           "Simple Message",
-		MsgURN:            "tel:+250788383383",
-		ExpectedMsgStatus: "W",
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://example.com/send": {
 				httpx.NewMockResponse(200, nil, []byte(`<return>0</return>`)),
@@ -799,7 +775,6 @@ var xmlSendWithResponseContentTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    `<msg><to>+250788383383</to><text>☺</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:   "Error Sending",
@@ -814,7 +789,7 @@ var xmlSendWithResponseContentTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:   "Error Sending with 200 status code",
@@ -829,8 +804,7 @@ var xmlSendWithResponseContentTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    `<msg><to>+250788383383</to><text>Error Message</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		}},
-		ExpectedMsgStatus: "E",
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseUnexpected("<return>0</return>")},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:          "Send Attachment",
@@ -846,7 +820,6 @@ var xmlSendWithResponseContentTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    `<msg><to>+250788383383</to><text>My pic!&#xA;https://foo.bar/image.jpg</text><from>2020</from><quick_replies></quick_replies></msg>`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 	{
 		Label:           "Send Quick Replies",
@@ -862,7 +835,6 @@ var xmlSendWithResponseContentTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "text/xml; charset=utf-8"},
 			Body:    `<msg><to>+250788383383</to><text>Some message</text><from>2020</from><quick_replies><item>One</item><item>Two</item><item>Three</item></quick_replies></msg>`,
 		}},
-		ExpectedMsgStatus: "W",
 	},
 }
 
@@ -884,7 +856,6 @@ var nationalGetSendTestCases = []OutgoingTestCase{
 				"from": {"2020"},
 			},
 		}},
-		ExpectedMsgStatus: "W",
 	},
 }
 
@@ -959,20 +930,20 @@ func TestOutgoing(t *testing.T) {
 
 	var getChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]any{
-			"max_length":             30,
+			courier.ConfigMaxLength:  30,
 			courier.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			courier.ConfigSendMethod: http.MethodGet})
 
 	var getChannel30StrLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]any{
-			"max_length":             "30",
+			courier.ConfigMaxLength:  "30",
 			courier.ConfigSendURL:    "http://example.com/send?to={{to}}&text={{text}}&from={{from}}{{quick_replies}}",
 			courier.ConfigSendMethod: http.MethodGet})
 
 	var jsonChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]any{
 			courier.ConfigSendURL:     "http://example.com/send",
-			"max_length":              30,
+			courier.ConfigMaxLength:   30,
 			courier.ConfigSendBody:    `{ "to":{{to}}, "text":{{text}}, "from":{{from}}, "quick_replies":{{quick_replies}} }`,
 			courier.ConfigContentType: contentJSON,
 			courier.ConfigSendMethod:  http.MethodPost,
@@ -982,7 +953,7 @@ func TestOutgoing(t *testing.T) {
 	var xmlChannel30IntLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "US",
 		map[string]any{
 			courier.ConfigSendURL:     "http://example.com/send",
-			"max_length":              30,
+			courier.ConfigMaxLength:   30,
 			courier.ConfigSendBody:    `<msg><to>{{to}}</to><text>{{text}}</text><from>{{from}}</from><quick_replies>{{quick_replies}}</quick_replies></msg>`,
 			courier.ConfigContentType: contentXML,
 			courier.ConfigSendMethod:  http.MethodPost,
