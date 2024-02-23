@@ -622,25 +622,20 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	if msg.Channel().ChannelType() == "FBA" || msg.Channel().ChannelType() == "IG" {
-		return h.sendFacebookInstagramMsg(ctx, msg, clog)
+		return h.sendFacebookInstagramMsg(ctx, msg, res, clog)
 	} else if msg.Channel().ChannelType() == "WAC" {
-		return h.sendWhatsAppMsg(ctx, msg, clog)
+		return h.sendWhatsAppMsg(ctx, msg, res, clog)
 	}
 
-	return nil, fmt.Errorf("unssuported channel type")
+	return fmt.Errorf("unssuported channel type")
 }
 
-func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	// can't do anything without an access token
 	accessToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if accessToken == "" {
-		return nil, fmt.Errorf("missing access token")
+		return courier.ErrChannelConfig
 	}
 
 	isHuman := msg.Origin() == courier.MsgOriginChat || msg.Origin() == courier.MsgOriginTicket
@@ -676,8 +671,6 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 	query := url.Values{}
 	query.Set("access_token", accessToken)
 	msgURL.RawQuery = query.Encode()
-
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	// Send each text segment and attachment separately. We send attachments first as otherwise quick replies get
 	// attached to attachment segments and are hidden when images load.
@@ -720,88 +713,81 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 
 		req, err := http.NewRequest(http.MethodPost, msgURL.String(), bytes.NewReader(jsonBody))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		_, respBody, _ := h.RequestHTTP(req, clog)
+		resp, respBody, err := h.RequestHTTP(req, clog)
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
+		}
+
 		respPayload := &messenger.SendResponse{}
 		err = json.Unmarshal(respBody, respPayload)
 		if err != nil {
-			clog.Error(courier.ErrorResponseUnparseable("JSON"))
-			return status, nil
+			return courier.ErrResponseUnparseable
 		}
 
 		if respPayload.Error.Code != 0 {
-			clog.Error(courier.ErrorExternal(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message))
-			return status, nil
+			return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 		}
 
 		if respPayload.ExternalID == "" {
-			clog.Error(courier.ErrorResponseValueMissing("message_id"))
-			return status, nil
+			return courier.ErrResponseUnexpected
 		}
 
-		// if this is our first message, record the external id
-		if part.IsFirst {
-			status.SetExternalID(respPayload.ExternalID)
-			if msg.URN().IsFacebookRef() {
-				recipientID := respPayload.RecipientID
-				if recipientID == "" {
-					clog.Error(courier.ErrorResponseValueMissing("recipient_id"))
-					return status, nil
-				}
+		res.AddExternalID(respPayload.ExternalID)
+		if msg.URN().IsFacebookRef() {
+			recipientID := respPayload.RecipientID
+			if recipientID == "" {
+				return courier.ErrResponseUnexpected
+			}
 
-				referralID := msg.URN().FacebookRef()
+			referralID := msg.URN().FacebookRef()
 
-				realIDURN, err := urns.NewFacebookURN(recipientID)
-				if err != nil {
-					clog.RawError(errors.Errorf("unable to make facebook urn from %s", recipientID))
-				}
+			realIDURN, err := urns.NewFacebookURN(recipientID)
+			if err != nil {
+				clog.RawError(errors.Errorf("unable to make facebook urn from %s", recipientID))
+			}
 
-				contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), nil, "", clog)
-				if err != nil {
-					clog.RawError(errors.Errorf("unable to get contact for %s", msg.URN().String()))
-				}
-				realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN, nil)
-				if err != nil {
-					clog.RawError(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
-				}
-				referralIDExtURN, err := urns.NewURNFromParts(urns.ExternalScheme, referralID, "", "")
-				if err != nil {
-					clog.RawError(errors.Errorf("unable to make ext urn from %s", referralID))
-				}
-				extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN, nil)
-				if err != nil {
-					clog.RawError(errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
-				}
+			contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), nil, "", clog)
+			if err != nil {
+				clog.RawError(errors.Errorf("unable to get contact for %s", msg.URN().String()))
+			}
+			realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN, nil)
+			if err != nil {
+				clog.RawError(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
+			}
+			referralIDExtURN, err := urns.NewURNFromParts(urns.ExternalScheme, referralID, "", "")
+			if err != nil {
+				clog.RawError(errors.Errorf("unable to make ext urn from %s", referralID))
+			}
+			extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN, nil)
+			if err != nil {
+				clog.RawError(errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
+			}
 
-				referralFacebookURN, err := h.Backend().RemoveURNfromContact(ctx, msg.Channel(), contact, msg.URN())
-				if err != nil {
-					clog.RawError(errors.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
-				}
-
+			referralFacebookURN, err := h.Backend().RemoveURNfromContact(ctx, msg.Channel(), contact, msg.URN())
+			if err != nil {
+				clog.RawError(errors.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
 			}
 
 		}
-
-		// this was wired successfully
-		status.SetStatus(courier.MsgStatusWired)
 	}
 
-	return status, nil
+	return nil
 }
 
-func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
+func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	// can't do anything without an access token
 	accessToken := h.Server().Config().WhatsappAdminSystemUserToken
 
 	base, _ := url.Parse(graphURL)
 	path, _ := url.Parse(fmt.Sprintf("/%s/messages", msg.Channel().Address()))
 	wacPhoneURL := base.ResolveReference(path)
-
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	hasCaption := false
 
@@ -821,7 +807,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 			// do we have a template?
 			templating, err := whatsapp.GetTemplating(msg)
 			if err != nil {
-				return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
+				return errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
 			}
 			if templating != nil {
 				payload.Type = "template"
@@ -840,6 +826,12 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 				} else {
 					if len(qrs) > 0 {
 						payload.Type = "interactive"
+						if len(qrs) > 10 {
+							clog.Error(courier.NewChannelError("", "", "too many quick replies WAC supports only up to 10 quick replies"))
+							// limit to the first 10
+							qrs = qrs[:10]
+						}
+
 						// We can use buttons
 						if len(qrs) <= 3 {
 							interactive := whatsapp.Interactive{Type: "button", Body: struct {
@@ -884,8 +876,6 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 							}}
 
 							payload.Interactive = &interactive
-						} else {
-							return nil, fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
 						}
 					} else {
 						// this is still a msg part
@@ -933,6 +923,12 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 		} else {
 			if len(qrs) > 0 {
 				payload.Type = "interactive"
+				if len(qrs) > 10 {
+					clog.Error(courier.NewChannelError("", "", "too many quick replies WAC supports only up to 10 quick replies"))
+					// limit to the first 10
+					qrs = qrs[:10]
+				}
+
 				// We can use buttons
 				if len(qrs) <= 3 {
 					interactive := whatsapp.Interactive{Type: "button", Body: struct {
@@ -971,7 +967,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 						} else if attType == "document" {
 							filename, err := utils.BasePathForURL(attURL)
 							if err != nil {
-								return nil, err
+								return err
 							}
 							document := whatsapp.Media{
 								Link:     attURL,
@@ -985,14 +981,11 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 								Document *whatsapp.Media "json:\"document,omitempty\""
 							}{Type: "document", Document: &document}
 						} else if attType == "audio" {
-							var zeroIndex bool
-							if i == 0 {
-								zeroIndex = true
-							}
+
 							payloadAudio = whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &whatsapp.Media{Link: attURL}}
-							err := h.requestWAC(payloadAudio, accessToken, status, wacPhoneURL, zeroIndex, clog)
+							err := h.requestWAC(payloadAudio, accessToken, res, wacPhoneURL, clog)
 							if err != nil {
-								return status, nil
+								return err
 							}
 						} else {
 							interactive.Type = "button"
@@ -1039,8 +1032,6 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 					}}
 
 					payload.Interactive = &interactive
-				} else {
-					return nil, fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
 				}
 			} else {
 				// this is still a msg part
@@ -1054,24 +1045,19 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, clog 
 			}
 		}
 
-		var zeroIndex bool
-		if i == 0 {
-			zeroIndex = true
-		}
-
-		err := h.requestWAC(payload, accessToken, status, wacPhoneURL, zeroIndex, clog)
+		err := h.requestWAC(payload, accessToken, res, wacPhoneURL, clog)
 		if err != nil {
-			return status, err
+			return err
 		}
 
 		if hasCaption {
 			break
 		}
 	}
-	return status, nil
+	return nil
 }
 
-func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, status courier.StatusUpdate, wacPhoneURL *url.URL, zeroIndex bool, clog *courier.ChannelLog) error {
+func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, res *courier.SendResult, wacPhoneURL *url.URL, clog *courier.ChannelLog) error {
 	jsonBody := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, wacPhoneURL.String(), bytes.NewReader(jsonBody))
@@ -1087,21 +1073,17 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, s
 	respPayload := &whatsapp.SendResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
-		clog.Error(courier.ErrorResponseUnparseable("JSON"))
-		return nil
+		return courier.ErrResponseUnparseable
 	}
 
 	if respPayload.Error.Code != 0 {
-		clog.Error(courier.ErrorExternal(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message))
-		return nil
+		return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Error.Code), respPayload.Error.Message)
 	}
 
 	externalID := respPayload.Messages[0].ID
-	if zeroIndex && externalID != "" {
-		status.SetExternalID(externalID)
+	if externalID != "" {
+		res.AddExternalID(externalID)
 	}
-	// this was wired successfully
-	status.SetStatus(courier.MsgStatusWired)
 	return nil
 }
 

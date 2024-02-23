@@ -1,12 +1,13 @@
 package m3tech
 
 import (
-	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -47,52 +48,114 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
 }
 
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{Label: "Plain Send",
-		MsgText: "Simple Message", MsgURN: "tel:+250788383383",
-		ExpectedMsgStatus: "W",
-		MockResponseBody:  `[{"Response": "0"}]`, MockResponseStatus: 200,
-		ExpectedURLParams: map[string]string{
-			"MobileNo":    "250788383383",
-			"SMS":         "Simple Message",
-			"SMSChannel":  "0",
-			"AuthKey":     "m3-Tech",
-			"HandsetPort": "0",
-			"MsgHeader":   "2020",
-			"Telco":       "0",
-			"SMSType":     "0",
-			"UserId":      "Username",
-			"Password":    "Password",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": {
+				httpx.NewMockResponse(200, nil, []byte(`[{"Response": "0"}]`)),
+			},
 		},
-		SendPrep: setSendURL},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"MobileNo":    {"250788383383"},
+				"SMS":         {"Simple Message"},
+				"SMSChannel":  {"0"},
+				"AuthKey":     {"m3-Tech"},
+				"HandsetPort": {"0"},
+				"MsgHeader":   {"2020"},
+				"MsgId":       {"10"},
+				"Telco":       {"0"},
+				"SMSType":     {"0"},
+				"UserId":      {"Username"},
+				"Password":    {"Password"},
+			},
+		}},
+	},
 	{Label: "Unicode Send",
-		MsgText: "☺", MsgURN: "tel:+250788383383",
-		ExpectedMsgStatus: "W",
-		MockResponseBody:  `[{"Response": "0"}]`, MockResponseStatus: 200,
-		ExpectedURLParams: map[string]string{"SMS": "☺", "SMSType": "7"},
-		SendPrep:          setSendURL},
+		MsgText: "☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": {
+				httpx.NewMockResponse(200, nil, []byte(`[{"Response": "0"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"SMS":         {"☺"},
+				"MobileNo":    {"250788383383"},
+				"SMSChannel":  {"0"},
+				"AuthKey":     {"m3-Tech"},
+				"HandsetPort": {"0"},
+				"MsgHeader":   {"2020"},
+				"MsgId":       {"10"},
+				"Telco":       {"0"},
+				"SMSType":     {"7"},
+				"UserId":      {"Username"},
+				"Password":    {"Password"},
+			},
+		}},
+	},
 	{Label: "Smart Encoding",
-		MsgText: "Fancy “Smart” Quotes", MsgURN: "tel:+250788383383",
-		ExpectedMsgStatus: "W",
-		MockResponseBody:  `[{"Response": "0"}]`, MockResponseStatus: 200,
-		ExpectedURLParams: map[string]string{"SMS": `Fancy "Smart" Quotes`, "SMSType": "0"},
-		SendPrep:          setSendURL},
+		MsgText: "Fancy “Smart” Quotes",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": {
+				httpx.NewMockResponse(200, nil, []byte(`[{"Response": "0"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"SMS":         {`Fancy "Smart" Quotes`},
+				"MobileNo":    {"250788383383"},
+				"SMSChannel":  {"0"},
+				"AuthKey":     {"m3-Tech"},
+				"HandsetPort": {"0"},
+				"MsgHeader":   {"2020"},
+				"MsgId":       {"10"},
+				"Telco":       {"0"},
+				"SMSType":     {"0"},
+				"UserId":      {"Username"},
+				"Password":    {"Password"},
+			},
+		}},
+	},
 	{Label: "Send Attachment",
-		MsgText: "My pic!", MsgURN: "tel:+250788383383", MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedMsgStatus: "W",
-		MockResponseBody:  `[{"Response": "0"}]`, MockResponseStatus: 200,
-		ExpectedURLParams: map[string]string{"SMS": "My pic!\nhttps://foo.bar/image.jpg", "SMSType": "0"},
-		SendPrep:          setSendURL},
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": {
+				httpx.NewMockResponse(200, nil, []byte(`[{"Response": "0"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"SMS":         {"My pic!\nhttps://foo.bar/image.jpg"},
+				"MobileNo":    {"250788383383"},
+				"SMSChannel":  {"0"},
+				"AuthKey":     {"m3-Tech"},
+				"HandsetPort": {"0"},
+				"MsgHeader":   {"2020"},
+				"MsgId":       {"10"},
+				"Telco":       {"0"},
+				"SMSType":     {"0"},
+				"UserId":      {"Username"},
+				"Password":    {"Password"},
+			},
+		}},
+	},
 	{Label: "Error Sending",
-		MsgText: "Error Sending", MsgURN: "tel:+250788383383",
-		ExpectedMsgStatus: "E",
-		MockResponseBody:  `[{"Response": "101"}]`, MockResponseStatus: 403,
-		SendPrep: setSendURL},
+		MsgText: "Error Sending",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://secure.m3techservice.com/GenericServiceRestAPI/api/SendSMS*": {
+				httpx.NewMockResponse(403, nil, []byte(`[{"Response": "101"}]`)),
+			},
+		},
+		ExpectedError: courier.ErrResponseStatus,
+	},
 }
 
 func TestOutgoing(t *testing.T) {

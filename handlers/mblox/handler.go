@@ -113,18 +113,12 @@ type mtPayload struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
 
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
 	if username == "" || password == "" {
-		return nil, fmt.Errorf("Missing username or password for MB channel")
+		return courier.ErrChannelConfig
 	}
-
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
 		payload := &mtPayload{}
@@ -139,25 +133,26 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		// build our request
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s/batches", sendURL, username), requestBody)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", password))
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
 		externalID, err := jsonparser.GetString(respBody, "id")
 		if err != nil {
-			return status, fmt.Errorf("unable to parse response body from MBlox")
+			clog.Error(courier.ErrorResponseValueMissing("id"))
+		} else {
+			res.AddExternalID(externalID)
 		}
-
-		status.SetStatus(courier.MsgStatusWired)
-		status.SetExternalID(externalID)
 	}
 
-	return status, nil
+	return nil
 }

@@ -1,13 +1,13 @@
 package mtarget
 
 import (
-	"net/http/httptest"
 	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var (
@@ -118,68 +118,70 @@ func TestIncoming(t *testing.T) {
 
 var outgoingCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"results":[{"code": "0", "ticket": "externalID"}]}`,
-		MockResponseStatus: 200,
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api-public.mtarget.fr/api-sms.json*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"results":[{"code": "0", "ticket": "externalID"}]}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"msisdn": {"+250788383383"}, "msg": {"Simple Message"}, "username": {"Username"}, "password": {"Password"}, "serviceid": {"2020"}, "allowunicode": {"true"}}},
 		},
-		ExpectedExtIDs:    []string{"externalID"},
-		ExpectedMsgStatus: "W",
-		SendPrep:          setSendURL,
+		ExpectedExtIDs: []string{"externalID"},
 	},
 	{
-		Label:              "Unicode Send",
-		MsgText:            "☺",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"results":[{"code": "0", "ticket": "externalID"}]}`,
-		MockResponseStatus: 200,
+		Label:   "Unicode Send",
+		MsgText: "☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api-public.mtarget.fr/api-sms.json*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"results":[{"code": "0", "ticket": "externalID"}]}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"msisdn": {"+250788383383"}, "msg": {"☺"}, "username": {"Username"}, "password": {"Password"}, "serviceid": {"2020"}, "allowunicode": {"true"}}},
 		},
-		ExpectedExtIDs:    []string{"externalID"},
-		ExpectedMsgStatus: "W",
-		SendPrep:          setSendURL,
+		ExpectedExtIDs: []string{"externalID"},
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{"results":[{"code": "0", "ticket": "externalID"}]}`,
-		MockResponseStatus: 200,
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api-public.mtarget.fr/api-sms.json*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"results":[{"code": "0", "ticket": "externalID"}]}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{Params: url.Values{"msisdn": {"+250788383383"}, "msg": {"My pic!\nhttps://foo.bar/image.jpg"}, "username": {"Username"}, "password": {"Password"}, "serviceid": {"2020"}, "allowunicode": {"true"}}},
 		},
-		ExpectedExtIDs:    []string{"externalID"},
-		ExpectedMsgStatus: "W",
-		SendPrep:          setSendURL,
+		ExpectedExtIDs: []string{"externalID"},
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Sending",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"results":[{"code": "3", "ticket": "null"}]}`,
-		MockResponseStatus: 403,
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Sending",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api-public.mtarget.fr/api-sms.json*": {
+				httpx.NewMockResponse(403, nil, []byte(`{"results":[{"code": "3", "reason": "FAILED", "ticket": "null"}]}`)),
+			},
+		},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
-		Label:              "Error Response",
-		MsgText:            "Error Sending",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"results":[{"code": "3", "ticket": "null"}]}`,
-		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "F",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.NewChannelError("", "", "Error status code, failing permanently")},
-		SendPrep:           setSendURL,
+		Label:   "Error Response",
+		MsgText: "Error Sending",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api-public.mtarget.fr/api-sms.json*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"results":[{"code": "3", "reason": "FAILED", "ticket": "null"}]}`)),
+			},
+		},
+		ExpectedError: courier.ErrFailedWithReason("3", "FAILED"),
 	},
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
 }
 
 func TestOutgoing(t *testing.T) {

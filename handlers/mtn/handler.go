@@ -121,21 +121,14 @@ type mtPayload struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	accessToken, err := h.getAccessToken(ctx, msg.Channel(), clog)
 	if err != nil {
-		return nil, err
+		return courier.ErrChannelConfig
 	}
 
 	baseURL := msg.Channel().StringConfigForKey(configAPIHost, apiHostURL)
 	cpAddress := msg.Channel().StringConfigForKey(configCPAddress, "")
 	partSendURL, _ := url.Parse(fmt.Sprintf("%s/%s", baseURL, "v2/messages/sms/outbound"))
-
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	mtMsg := &mtPayload{}
 	mtMsg.From = strings.TrimPrefix(msg.Channel().Address(), "+")
@@ -152,29 +145,27 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 	// build our request
 	req, err := http.NewRequest(http.MethodPost, partSendURL.String(), requestBody)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		return status, nil
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	} else if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
 	}
 
 	externalID, err := jsonparser.GetString(respBody, "transactionId")
 	if err != nil {
 		clog.Error(courier.ErrorResponseValueMissing("transactionId"))
-		return status, nil
+	} else {
+		res.AddExternalID(externalID)
 	}
 
-	// if this is our first message, record the external id
-
-	status.SetExternalID(externalID)
-	status.SetStatus(courier.MsgStatusWired)
-
-	return status, nil
+	return nil
 }
 
 func (h *handler) RedactValues(ch courier.Channel) []string {

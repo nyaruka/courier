@@ -185,20 +185,12 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
-
 	authToken := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
 	if authToken == "" {
-		return nil, fmt.Errorf("missing config 'auth_token' for Messagebird channel")
+		return courier.ErrChannelConfig
 	}
 
 	user := msg.URN().Path()
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
-
 	// create base payload
 	payload := &Message{
 		Recipients: []string{user},
@@ -224,9 +216,8 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 	jsonBody := jsonx.MustMarshal(payload)
 
 	req, err := http.NewRequest(http.MethodPost, sendUrl, bytes.NewReader(jsonBody))
-
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
@@ -234,18 +225,20 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 	req.Header.Set("Authorization", bearer)
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
-	if err != nil || resp.StatusCode/100 != 2 {
-		return status, nil
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	} else if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
 	}
-	status.SetStatus(courier.MsgStatusWired)
 
 	externalID, err := jsonparser.GetString(respBody, "id")
 	if err != nil {
-		clog.Error(courier.ErrorResponseUnparseable("JSON"))
-		return status, nil
+		clog.Error(courier.ErrorResponseValueMissing("id"))
+	} else {
+		res.AddExternalID(externalID)
 	}
-	status.SetExternalID(externalID)
-	return status, nil
+
+	return nil
 }
 
 func verifyToken(tokenString string, secret string) (jwt.MapClaims, error) {

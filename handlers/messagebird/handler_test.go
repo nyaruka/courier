@@ -2,7 +2,6 @@ package messagebird
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 var testChannels = []courier.Channel{
@@ -187,109 +187,127 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler("MBD", "Messagebird", true), defaultReceiveTestCases)
 }
 
-func setSmsSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	smsURL = s.URL
-}
-
-func setMmsSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	mmsURL = s.URL
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:               "Plain Send",
-		MsgText:             "Simple Message ☺",
-		MsgURN:              "tel:188885551515",
-		MockResponseBody:    validResponse,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-		ExpectedRequestBody: `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"efa6405d518d4c0c88cce11f7db775fb"},
-		SendPrep:            setSmsSendURL,
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:188885551515",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.messagebird.com/messages": {
+				httpx.NewMockResponse(200, nil, []byte(validResponse)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
+		}},
+		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
 	{
-		Label:               "Send with text and image",
-		MsgText:             "Simple Message ☺",
-		MsgURN:              "tel:188885551515",
-		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:    validResponse,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-		ExpectedRequestBody: `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺","mediaUrls":["https://foo.bar/image.jpg"]}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"efa6405d518d4c0c88cce11f7db775fb"},
-		SendPrep:            setMmsSendURL,
+		Label:          "Send with text and image",
+		MsgText:        "Simple Message ☺",
+		MsgURN:         "tel:188885551515",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.messagebird.com/mms": {
+				httpx.NewMockResponse(200, nil, []byte(validResponse)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺","mediaUrls":["https://foo.bar/image.jpg"]}`,
+		}},
+		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
 	{
-		Label:               "Send with image only",
-		MsgURN:              "tel:188885551515",
-		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:    validResponse,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-		ExpectedRequestBody: `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg"]}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"efa6405d518d4c0c88cce11f7db775fb"},
-		SendPrep:            setMmsSendURL,
+		Label:          "Send with image only",
+		MsgURN:         "tel:188885551515",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.messagebird.com/mms": {
+				httpx.NewMockResponse(200, nil, []byte(validResponse)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg"]}`,
+		}},
+		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
 	{
-		Label:               "Send with two images",
-		MsgURN:              "tel:188885551515",
-		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg", "image/jpeg:https://foo.bar/image2.jpg"},
-		MockResponseBody:    validResponse,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-		ExpectedRequestBody: `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg","https://foo.bar/image2.jpg"]}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"efa6405d518d4c0c88cce11f7db775fb"},
-		SendPrep:            setMmsSendURL,
+		Label:          "Send with two images",
+		MsgURN:         "tel:188885551515",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg", "image/jpeg:https://foo.bar/image2.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.messagebird.com/mms": {
+				httpx.NewMockResponse(200, nil, []byte(validResponse)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/image.jpg","https://foo.bar/image2.jpg"]}`,
+		}},
+		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
 	{
-		Label:               "Send with video only",
-		MsgURN:              "tel:188885551515",
-		MsgAttachments:      []string{"video/mp4:https://foo.bar/movie.mp4"},
-		MockResponseBody:    validResponse,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-		ExpectedRequestBody: `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/movie.mp4"]}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"efa6405d518d4c0c88cce11f7db775fb"},
-		SendPrep:            setMmsSendURL,
+		Label:          "Send with video only",
+		MsgURN:         "tel:188885551515",
+		MsgAttachments: []string{"video/mp4:https://foo.bar/movie.mp4"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.messagebird.com/mms": {
+				httpx.NewMockResponse(200, nil, []byte(validResponse)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/movie.mp4"]}`,
+		}},
+		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
 	{
-		Label:               "Send with pdf",
-		MsgURN:              "tel:188885551515",
-		MsgAttachments:      []string{"application/pdf:https://foo.bar/document.pdf"},
-		MockResponseBody:    validResponse,
-		MockResponseStatus:  200,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-		ExpectedRequestBody: `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/document.pdf"]}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"efa6405d518d4c0c88cce11f7db775fb"},
-		SendPrep:            setMmsSendURL,
+		Label:          "Send with pdf",
+		MsgURN:         "tel:188885551515",
+		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.messagebird.com/mms": {
+				httpx.NewMockResponse(200, nil, []byte(validResponse)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","mediaUrls":["https://foo.bar/document.pdf"]}`,
+		}},
+		ExpectedExtIDs: []string{"efa6405d518d4c0c88cce11f7db775fb"},
 	},
 	{
-		Label:               "500 on Send",
-		MsgText:             "Simple Message ☺",
-		MsgURN:              "tel:188885551515",
-		MockResponseBody:    validResponse,
-		MockResponseStatus:  500,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-		ExpectedRequestBody: `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
-		ExpectedMsgStatus:   "E",
-		SendPrep:            setSmsSendURL,
+		Label:   "500 on Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:188885551515",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.messagebird.com/messages": {
+				httpx.NewMockResponse(500, nil, []byte(validResponse)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
+		}},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 	{
-		Label:               "404 on Send",
-		MsgText:             "Simple Message ☺",
-		MsgURN:              "tel:188885551515",
-		MockResponseBody:    validResponse,
-		MockResponseStatus:  404,
-		ExpectedHeaders:     map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
-		ExpectedRequestBody: `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
-		ExpectedMsgStatus:   "E",
-		SendPrep:            setSmsSendURL,
+		Label:   "404 on Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:188885551515",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.messagebird.com/messages": {
+				httpx.NewMockResponse(404, nil, []byte(validResponse)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{"Content-Type": "application/json", "Authorization": "AccessKey authtoken"},
+			Body:    `{"recipients":["188885551515"],"reference":"10","originator":"18005551212","body":"Simple Message ☺"}`,
+		}},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 
