@@ -128,7 +128,8 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 var defaultSendTestCases = []OutgoingTestCase{
-	{Label: "Plain Send",
+	{
+		Label:   "Plain Send",
 		MsgText: "Simple Message",
 		MsgURN:  "tel:99999999999",
 		MockResponses: map[string][]*httpx.MockResponse{
@@ -140,7 +141,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"messages":[{"recipient":"99999999999","message-id":"10","sms":{"originator":"1122","content":{"text":"Simple Message"}}}]}`,
 		}},
 	},
-	{Label: "Long Send",
+	{
+		Label:   "Long Send",
 		MsgText: "This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, This is a longer message than 640 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, now, I need to keep adding more things to make it work",
 		MsgURN:  "tel:99999999999",
 		MockResponses: map[string][]*httpx.MockResponse{
@@ -158,7 +160,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 	},
-	{Label: "Send Attachment",
+	{
+		Label:          "Send Attachment",
 		MsgText:        "My pic!",
 		MsgURN:         "tel:+18686846481",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
@@ -168,7 +171,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 		},
 	},
-	{Label: "Error sending",
+	{
+		Label:   "Error sending",
 		MsgText: "Error Sending",
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
