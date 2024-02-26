@@ -629,6 +629,23 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		},
 		ExpectedError: courier.ErrFailedWithReason("130429", "(#130429) Rate limit hit"),
 	},
+	{
+		Label:   "Error Connection",
+		MsgText: "Error",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://waba-v2.360dialog.io/messages": {
+				httpx.NewMockResponse(500, nil, []byte(`Bad gateway`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/messages",
+				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"text","text":{"body":"Error","preview_url":false}}`,
+			},
+		},
+		ExpectedError: courier.ErrConnectionFailed,
+	},
 }
 
 func TestOutgoing(t *testing.T) {
