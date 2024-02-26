@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
@@ -728,126 +730,203 @@ func TestVerify(t *testing.T) {
 	}
 }
 
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:               "Plain Send",
-		MsgText:             "Simple Message",
-		MsgURN:              "facebook:12345",
-		MockResponseBody:    `{"message_id": "mid.133"}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"mid.133"},
-		SendPrep:            setSendURL,
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "facebook:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://graph.facebook.com/v3.3/me/messages*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"access_token": {"access_token"},
+			},
+			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
+		}},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
 		Label:                   "Plain Response",
 		MsgText:                 "Simple Message",
 		MsgURN:                  "facebook:12345",
 		MsgResponseToExternalID: "23526",
-		MockResponseBody:        `{"message_id": "mid.133"}`,
-		MockResponseStatus:      200,
-		ExpectedRequestBody:     `{"messaging_type":"RESPONSE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
-		ExpectedMsgStatus:       "W",
-		ExpectedExtIDs:          []string{"mid.133"},
-		SendPrep:                setSendURL,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://graph.facebook.com/v3.3/me/messages*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"access_token": {"access_token"},
+			},
+			Body: `{"messaging_type":"RESPONSE","recipient":{"id":"12345"},"message":{"text":"Simple Message"}}`,
+		}},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
-		Label:               "Plain Send using ref URN",
-		MsgText:             "Simple Message",
-		MsgURN:              "facebook:ref:67890",
-		MockResponseBody:    `{"message_id": "mid.133", "recipient_id": "12345"}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"user_ref":"67890"},"message":{"text":"Simple Message"}}`,
+		Label:   "Plain Send using ref URN",
+		MsgText: "Simple Message",
+		MsgURN:  "facebook:ref:67890",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://graph.facebook.com/v3.3/me/messages*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133", "recipient_id": "12345"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"access_token": {"access_token"},
+			},
+			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"user_ref":"67890"},"message":{"text":"Simple Message"}}`,
+		}},
 		ExpectedContactURNs: map[string]bool{"facebook:12345": true, "ext:67890": true, "facebook:ref:67890": false},
-		ExpectedMsgStatus:   "W",
 		ExpectedExtIDs:      []string{"mid.133"},
-		SendPrep:            setSendURL,
 	},
 	{
-		Label:               "Quick Reply",
-		MsgText:             "Are you happy?",
-		MsgURN:              "facebook:12345",
-		MsgQuickReplies:     []string{"Yes", "No"},
-		MockResponseBody:    `{"message_id": "mid.133"}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Are you happy?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"mid.133"},
-		SendPrep:            setSendURL,
+		Label:           "Quick Reply",
+		MsgText:         "Are you happy?",
+		MsgURN:          "facebook:12345",
+		MsgQuickReplies: []string{"Yes", "No"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://graph.facebook.com/v3.3/me/messages*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"access_token": {"access_token"},
+			},
+			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Are you happy?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
+		}},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
-		Label:               "Long Message",
-		MsgText:             "This is a long message which spans more than one part, what will actually be sent in the end if we exceed the max length?",
-		MsgURN:              "facebook:12345",
-		MsgQuickReplies:     []string{"Yes", "No"},
-		MsgTopic:            "account",
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"mid.133"},
-		MockResponseBody:    `{"message_id": "mid.133"}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"messaging_type":"MESSAGE_TAG","tag":"ACCOUNT_UPDATE","recipient":{"id":"12345"},"message":{"text":"we exceed the max length?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
-		SendPrep:            setSendURL,
+		Label:           "Long Message",
+		MsgText:         "This is a long message which spans more than one part, what will actually be sent in the end if we exceed the max length?",
+		MsgURN:          "facebook:12345",
+		MsgQuickReplies: []string{"Yes", "No"},
+		MsgTopic:        "account",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://graph.facebook.com/v3.3/me/messages*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{
+					"access_token": {"access_token"},
+				},
+				Body: `{"messaging_type":"MESSAGE_TAG","tag":"ACCOUNT_UPDATE","recipient":{"id":"12345"},"message":{"text":"This is a long message which spans more than one part, what will actually be sent in the end if"}}`,
+			},
+			{
+				Params: url.Values{
+					"access_token": {"access_token"},
+				},
+				Body: `{"messaging_type":"MESSAGE_TAG","tag":"ACCOUNT_UPDATE","recipient":{"id":"12345"},"message":{"text":"we exceed the max length?","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
+			},
+		},
+		ExpectedExtIDs: []string{"mid.133", "mid.133"},
 	},
 	{
-		Label:               "Send Photo",
-		MsgURN:              "facebook:12345",
-		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"mid.133"},
-		MockResponseBody:    `{"message_id": "mid.133"}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
-		SendPrep:            setSendURL,
+		Label:          "Send Photo",
+		MsgURN:         "facebook:12345",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://graph.facebook.com/v3.3/me/messages*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"access_token": {"access_token"},
+			},
+			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
+		}},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
-		Label:               "Send caption and photo with Quick Reply",
-		MsgText:             "This is some text.",
-		MsgURN:              "facebook:12345",
-		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MsgQuickReplies:     []string{"Yes", "No"},
-		MsgTopic:            "event",
-		MockResponseBody:    `{"message_id": "mid.133"}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"messaging_type":"MESSAGE_TAG","tag":"CONFIRMED_EVENT_UPDATE","recipient":{"id":"12345"},"message":{"text":"This is some text.","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"mid.133"},
-		SendPrep:            setSendURL,
+		Label:           "Send caption and photo with Quick Reply",
+		MsgText:         "This is some text.",
+		MsgURN:          "facebook:12345",
+		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MsgQuickReplies: []string{"Yes", "No"},
+		MsgTopic:        "event",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://graph.facebook.com/v3.3/me/messages*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+
+			{
+				Params: url.Values{
+					"access_token": {"access_token"},
+				},
+				Body: `{"messaging_type":"MESSAGE_TAG","tag":"CONFIRMED_EVENT_UPDATE","recipient":{"id":"12345"},"message":{"attachment":{"type":"image","payload":{"url":"https://foo.bar/image.jpg","is_reusable":true}}}}`,
+			},
+			{
+				Params: url.Values{
+					"access_token": {"access_token"},
+				},
+				Body: `{"messaging_type":"MESSAGE_TAG","tag":"CONFIRMED_EVENT_UPDATE","recipient":{"id":"12345"},"message":{"text":"This is some text.","quick_replies":[{"title":"Yes","payload":"Yes","content_type":"text"},{"title":"No","payload":"No","content_type":"text"}]}}`,
+			},
+		},
+		ExpectedExtIDs: []string{"mid.133", "mid.133"},
 	},
 	{
-		Label:               "Send Document",
-		MsgURN:              "facebook:12345",
-		MsgAttachments:      []string{"application/pdf:https://foo.bar/document.pdf"},
-		MockResponseBody:    `{"message_id": "mid.133"}`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"file","payload":{"url":"https://foo.bar/document.pdf","is_reusable":true}}}}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"mid.133"},
-		SendPrep:            setSendURL,
+		Label:          "Send Document",
+		MsgURN:         "facebook:12345",
+		MsgAttachments: []string{"application/pdf:https://foo.bar/document.pdf"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://graph.facebook.com/v3.3/me/messages*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"message_id": "mid.133"}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"access_token": {"access_token"},
+			},
+			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"attachment":{"type":"file","payload":{"url":"https://foo.bar/document.pdf","is_reusable":true}}}}`,
+		}},
+		ExpectedExtIDs: []string{"mid.133"},
 	},
 	{
-		Label:              "ID Error",
-		MsgText:            "ID Error",
-		MsgURN:             "facebook:12345",
-		MockResponseBody:   `{ "is_error": true }`,
-		MockResponseStatus: 200,
-		ExpectedMsgStatus:  "E",
-		ExpectedLogErrors:  []*courier.ChannelError{courier.ErrorResponseValueMissing("message_id")},
-		SendPrep:           setSendURL,
+		Label:   "ID Error",
+		MsgText: "ID Error",
+		MsgURN:  "facebook:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://graph.facebook.com/v3.3/me/messages*": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "is_error": true }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"access_token": {"access_token"},
+			},
+			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"ID Error"}}`,
+		}},
+		ExpectedError: courier.ErrFailedWithReason("", "response missing message_id"),
 	},
 	{
-		Label:              "Error",
-		MsgText:            "Error",
-		MsgURN:             "facebook:12345",
-		MockResponseBody:   `{ "is_error": true }`,
-		MockResponseStatus: 403,
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		Label:   "Error",
+		MsgText: "Error",
+		MsgURN:  "facebook:12345",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://graph.facebook.com/v3.3/me/messages*": {
+				httpx.NewMockResponse(403, nil, []byte(`{ "is_error": true }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"access_token": {"access_token"},
+			},
+			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"Error"}}`,
+		}},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 

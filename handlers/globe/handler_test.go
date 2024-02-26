@@ -1,13 +1,13 @@
 package globe
 
 import (
-	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 const (
@@ -165,51 +165,74 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
 }
 
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL + "?%s"
-}
-
 var sendTestCases = []OutgoingTestCase{
 	{
-		Label:               "Plain Send",
-		MsgText:             "Simple Message",
-		MsgURN:              "tel:+250788383383",
-		MockResponseBody:    `[{"Response": "0"}]`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"address":"250788383383","message":"Simple Message","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests": {
+				httpx.NewMockResponse(200, nil, []byte(`[{"Response": "0"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"address":"250788383383","message":"Simple Message","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
+		}},
 	},
 	{
-		Label:               "Unicode Send",
-		MsgText:             "☺",
-		MsgURN:              "tel:+250788383383",
-		MockResponseBody:    `[{"Response": "0"}]`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"address":"250788383383","message":"☺","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:   "Unicode Send",
+		MsgText: "☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests": {
+				httpx.NewMockResponse(200, nil, []byte(`[{"Response": "0"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"address":"250788383383","message":"☺","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
+		}},
 	},
 	{
-		Label:               "Send Attachment",
-		MsgText:             "My pic!",
-		MsgURN:              "tel:+250788383383",
-		MsgAttachments:      []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:    `[{"Response": "0"}]`,
-		MockResponseStatus:  200,
-		ExpectedRequestBody: `{"address":"250788383383","message":"My pic!\nhttps://foo.bar/image.jpg","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests": {
+				httpx.NewMockResponse(200, nil, []byte(`[{"Response": "0"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"address":"250788383383","message":"My pic!\nhttps://foo.bar/image.jpg","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
+		}},
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Sending",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `[{"Response": "101"}]`,
-		MockResponseStatus: 403,
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Sending",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests": {
+				httpx.NewMockResponse(403, nil, []byte(`[{"Response": "101"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"address":"250788383383","message":"Error Sending","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
+		}},
+		ExpectedError: courier.ErrResponseStatus,
+	},
+	{
+		Label:   "Connection Error",
+		MsgText: "Error",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://devapi.globelabs.com.ph/smsmessaging/v1/outbound/2020/requests": {
+				httpx.NewMockResponse(500, nil, []byte(`[{"Response": "101"}]`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"address":"250788383383","message":"Error","passphrase":"opensesame","app_id":"12345","app_secret":"mysecret"}`,
+		}},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 

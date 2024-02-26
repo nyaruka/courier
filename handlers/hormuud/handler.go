@@ -76,20 +76,12 @@ type mtPayload struct {
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
-
 	token, err := h.FetchToken(ctx, msg.Channel(), msg, clog)
 	if err != nil {
-		return status, errors.Wrapf(err, "unable to fetch token")
+		return errors.Wrapf(err, "unable to fetch token")
 	}
-
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
-	for i, part := range parts {
+	for _, part := range parts {
 		payload := &mtPayload{}
 		payload.Mobile = strings.TrimPrefix(msg.URN().Path(), "+")
 		payload.Message = part
@@ -104,7 +96,7 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		// build our request
 		req, err := http.NewRequest(http.MethodPost, sendURL, requestBody)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		req.Header.Set("Content-Type", "application/json")
@@ -112,31 +104,26 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
-
-		status.SetStatus(courier.MsgStatusWired)
 
 		// try to get the message id out
 		id, _ := jsonparser.GetString(respBody, "Data", "MessageID")
-		if id != "" && i == 0 {
-			status.SetExternalID(id)
+		if id != "" {
+			res.AddExternalID(id)
 		}
 	}
-
-	return status, nil
-}
-
-type tokenResponse struct {
-	AccessToken string `json:"access_token" validate:"required"`
+	return nil
 }
 
 // FetchToken gets the current token for this channel, either from Redis if cached or by requesting it
 func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg courier.MsgOut, clog *courier.ChannelLog) (string, error) {
 	// first check whether we have it in redis
 	conn := h.Backend().RedisPool().Get()
-	token, err := redis.String(conn.Do("GET", fmt.Sprintf("hm_token_%s", channel.UUID())))
+	token, _ := redis.String(conn.Do("GET", fmt.Sprintf("hm_token_%s", channel.UUID())))
 	conn.Close()
 
 	// got a token, use it
