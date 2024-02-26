@@ -615,6 +615,17 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		},
 		ExpectedError: courier.ErrFailedWithReason("130429", "(#130429) Rate limit hit"),
 	},
+	{
+		Label:   "Error Connection",
+		MsgText: "Error",
+		MsgURN:  "whatsapp:250788123123",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/12345_ID/messages": {
+				httpx.NewMockResponse(500, nil, []byte(`Bad Gateway`)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionFailed,
+	},
 }
 
 func TestWhatsAppOutgoing(t *testing.T) {
