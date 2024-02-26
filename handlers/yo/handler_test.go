@@ -121,7 +121,7 @@ var getSendTestCases = []OutgoingTestCase{
 			"password":     {"yo-password"},
 			"origin":       {"2020"},
 		}}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{Label: "Connection error",
 		MsgText: "Error Message", MsgURN: "tel:+250788383383",
