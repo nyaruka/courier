@@ -217,8 +217,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Content-Type": "application/json", "Accept": "application/json"},
 			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
 		}},
-		ExpectedError:     courier.ErrResponseUnexpected,
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("3", "There is an error in the request itself (missing comma, brackets, etc.)")},
+		ExpectedError: courier.ErrFailedWithReason("3", "There is an error in the request itself (missing comma, brackets, etc.)"),
 	},
 	{
 		Label:   "Got general error response",
@@ -234,8 +233,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body:    `{"auth_token":"Token","receiver":"xy5/5y6O81+/kbWHpLhBoA==","text":"Simple Message","type":"text","tracking_data":"10"}`,
 		}},
 
-		ExpectedError:     courier.ErrResponseUnexpected,
-		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorExternal("99", "General error")},
+		ExpectedError: courier.ErrFailedWithReason("99", "General error"),
 	},
 	{
 		Label:   "Got Invalid JSON response",

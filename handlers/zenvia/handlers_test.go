@@ -332,7 +332,7 @@ var defaultWhatsappSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Error Message"}]}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:   "Connection Error",
@@ -440,7 +440,7 @@ var defaultSMSSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{{
 			Body: `{"from":"2020","to":"250788383383","contents":[{"type":"text","text":"Error Message"}]}`,
 		}},
-		ExpectedError: courier.ErrResponseUnexpected,
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 

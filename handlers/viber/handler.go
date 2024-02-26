@@ -452,8 +452,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			if !found {
 				errorMessage = "General error"
 			}
-			clog.Error(courier.ErrorExternal(strconv.Itoa(respPayload.Status), errorMessage))
-			return courier.ErrResponseUnexpected
+			return courier.ErrFailedWithReason(strconv.Itoa(respPayload.Status), errorMessage)
 		}
 
 		keyboard = nil
