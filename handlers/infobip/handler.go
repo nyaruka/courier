@@ -213,7 +213,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	groupID, err := jsonparser.GetInt(respBody, "messages", "[0]", "status", "groupId")
 	if err != nil || (groupID != 1 && groupID != 3) {
-		clog.Error(courier.ErrorResponseValueUnexpected("groupId", "1", "3"))
 		return courier.ErrFailedWithReason("", "unexpected groupId value")
 	}
 
