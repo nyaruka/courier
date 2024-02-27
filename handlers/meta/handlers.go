@@ -1071,7 +1071,11 @@ func (h *handler) requestWAC(payload whatsapp.SendRequest, accessToken string, r
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	_, respBody, _ := h.RequestHTTP(req, clog)
+	resp, respBody, err := h.RequestHTTP(req, clog)
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	}
+
 	respPayload := &whatsapp.SendResponse{}
 	err = json.Unmarshal(respBody, respPayload)
 	if err != nil {
