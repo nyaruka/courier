@@ -337,6 +337,13 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 				} else {
 					if len(qrs) > 0 {
 						payload.Type = "interactive"
+
+						// if we have more than 10 quick replies, truncate and add channel error
+						if len(qrs) > 10 {
+							clog.Error(courier.NewChannelError("", "", "too many quick replies D3C supports only up to 10 quick replies"))
+							qrs = qrs[:10]
+						}
+
 						// We can use buttons
 						if len(qrs) <= 3 {
 							interactive := whatsapp.Interactive{Type: "button", Body: struct {
@@ -357,7 +364,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 								Buttons  []whatsapp.Button  "json:\"buttons,omitempty\""
 							}{Buttons: btns}
 							payload.Interactive = &interactive
-						} else if len(qrs) <= 10 {
+						} else {
 							interactive := whatsapp.Interactive{Type: "list", Body: struct {
 								Text string "json:\"text\""
 							}{Text: msgParts[i-len(msg.Attachments())]}}
@@ -381,8 +388,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 							}}
 
 							payload.Interactive = &interactive
-						} else {
-							return fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
 						}
 					} else {
 						// this is still a msg part
@@ -430,6 +435,12 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		} else {
 			if len(qrs) > 0 {
 				payload.Type = "interactive"
+				// if we have more than 10 quick replies, truncate and add channel error
+				if len(qrs) > 10 {
+					clog.Error(courier.NewChannelError("", "", "too many quick replies D3C supports only up to 10 quick replies"))
+					qrs = qrs[:10]
+				}
+
 				// We can use buttons
 				if len(qrs) <= 3 {
 					interactive := whatsapp.Interactive{Type: "button", Body: struct {
@@ -508,7 +519,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 					}{Buttons: btns}
 					payload.Interactive = &interactive
 
-				} else if len(qrs) <= 10 {
+				} else {
 					interactive := whatsapp.Interactive{Type: "list", Body: struct {
 						Text string "json:\"text\""
 					}{Text: msgParts[i-len(msg.Attachments())]}}
@@ -532,8 +543,6 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 					}}
 
 					payload.Interactive = &interactive
-				} else {
-					return fmt.Errorf("too many quick replies WAC supports only up to 10 quick replies")
 				}
 			} else {
 				// this is still a msg part
