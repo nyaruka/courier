@@ -118,26 +118,13 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
 
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("no username set for KN channel")
-	}
-
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("no password set for KN channel")
-	}
-
 	sendURL := msg.Channel().StringConfigForKey(courier.ConfigSendURL, "")
-	if sendURL == "" {
-		return nil, fmt.Errorf("no send url set for KN channel")
+	if username == "" || password == "" || sendURL == "" {
+		return courier.ErrChannelConfig
 	}
-
 	dlrMask := msg.Channel().StringConfigForKey(configDLRMask, defaultDLRMask)
 
 	callbackDomain := msg.Channel().CallbackDomain(h.Server().Config().Domain)
@@ -200,7 +187,7 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 	req, err := http.NewRequest(http.MethodGet, sendURL, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var resp *http.Response
@@ -210,15 +197,11 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		resp, _, err = h.RequestHTTPInsecure(req, clog)
 	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
-	if err == nil && resp.StatusCode/100 == 2 {
-		status.SetStatus(courier.MsgStatusWired)
+	if err != nil || resp.StatusCode/100 == 5 {
+		return courier.ErrConnectionFailed
+	} else if resp.StatusCode/100 != 2 {
+		return courier.ErrResponseStatus
 	}
 
-	// kannel will respond with a 403 for non-routable numbers, fail permanently in these cases
-	if resp != nil && resp.StatusCode == 403 {
-		status.SetStatus(courier.MsgStatusFailed)
-	}
-
-	return status, nil
+	return nil
 }

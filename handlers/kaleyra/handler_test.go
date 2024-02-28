@@ -101,10 +101,9 @@ func TestIncoming(t *testing.T) {
 
 var sendTestCases = []OutgoingTestCase{
 	{
-		Label:             "Plain Send",
-		MsgText:           "Simple Message",
-		MsgURN:            "whatsapp:14133881111",
-		ExpectedMsgStatus: "W",
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "whatsapp:14133881111",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://api.kaleyra.io/v1/SID/messages": {httpx.NewMockResponse(200, nil, []byte(`{"id":"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"}`))},
 		},
@@ -129,8 +128,7 @@ var sendTestCases = []OutgoingTestCase{
 				Body:    "api-key=123456&body=foo+https%3A%2F%2Ffoo.bar+bar&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&preview_url=true&to=14133881111&type=text",
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"},
+		ExpectedExtIDs: []string{"58f86fab-85c5-4f7c-9b68-9c323248afc4:0"},
 	},
 	{
 		Label:   "Plain Send Error",
@@ -145,7 +143,7 @@ var sendTestCases = []OutgoingTestCase{
 				Body:    "api-key=123456&body=Error&callback_url=https%3A%2F%2Flocalhost%2Fc%2Fkwa%2F8eb23e93-5ecb-45ba-b726-3b064e0c568c%2Fstatus&channel=WhatsApp&from=250788383383&to=14133881112&type=text",
 			},
 		},
-		ExpectedMsgStatus: "F",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
 		Label:          "Medias Send",
@@ -170,8 +168,7 @@ var sendTestCases = []OutgoingTestCase{
 			{},
 			{BodyContains: "video bytes"},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0"},
+		ExpectedExtIDs: []string{"f75fbe1e-a0c0-4923-96e8-5043aa617b2b:0"},
 	},
 	{
 		Label:          "Media Send Error",
@@ -196,7 +193,7 @@ var sendTestCases = []OutgoingTestCase{
 			{},
 			{BodyContains: "video bytes"},
 		},
-		ExpectedMsgStatus: "F",
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 

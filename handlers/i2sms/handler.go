@@ -81,30 +81,17 @@ type mtResponse struct {
 		SessionID string `json:"session_id"`
 	} `json:"result"`
 	ErrorCode string `json:"error_code"`
+	ErrorDesc string `json:"error_desc"`
 }
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	username := msg.Channel().StringConfigForKey(courier.ConfigUsername, "")
-	if username == "" {
-		return nil, fmt.Errorf("no username set for I2 channel")
-	}
-
 	password := msg.Channel().StringConfigForKey(courier.ConfigPassword, "")
-	if password == "" {
-		return nil, fmt.Errorf("no password set for I2 channel")
-	}
-
 	channelHash := msg.Channel().StringConfigForKey(configChannelHash, "")
-	if channelHash == "" {
-		return nil, fmt.Errorf("no channel_hash set for I2 channel")
+	if username == "" || password == "" || channelHash == "" {
+		return courier.ErrChannelConfig
 	}
 
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		form := url.Values{
 			"action":  []string{"send_single"},
@@ -115,37 +102,35 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 		req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		req.SetBasicAuth(username, password)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 != 2 {
-			return status, nil
+		if err != nil || resp.StatusCode/100 == 5 {
+			return courier.ErrConnectionFailed
+		} else if resp.StatusCode/100 != 2 {
+			return courier.ErrResponseStatus
 		}
 
 		// parse our response as JSON
 		response := &mtResponse{}
 		err = json.Unmarshal(respBody, response)
 		if err != nil {
-			clog.Error(courier.ErrorResponseUnparseable("JSON"))
-			break
+			return courier.ErrResponseUnparseable
 		}
 
 		// we always get 00 on success
 		if response.ErrorCode == "00" {
-			status.SetStatus(courier.MsgStatusWired)
-			status.SetExternalID(response.Result.SessionID)
+			res.AddExternalID(response.Result.SessionID)
 		} else {
-			status.SetStatus(courier.MsgStatusFailed)
-			clog.Error(courier.ErrorResponseValueUnexpected("error_code", "00"))
-			break
+			return courier.ErrFailedWithReason(response.ErrorCode, response.ErrorDesc)
 		}
 	}
 
-	return status, nil
+	return nil
 }
 
 func (h *handler) RedactValues(ch courier.Channel) []string {

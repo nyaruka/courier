@@ -1,7 +1,6 @@
 package infobip
 
 import (
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -297,108 +296,134 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), testCases)
 }
 
-// setSend takes care of setting the sendURL to call
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message",
-		MsgURN:             "tel:+250788383383",
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.infobip.com/sms/1/text/advanced": {
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`)),
+			},
+		},
 		MockResponseBody:   `{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`,
 		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
-		},
-		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"12345"},
-		SendPrep:            setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+			},
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		}},
+		ExpectedExtIDs: []string{"12345"},
 	},
 	{
-		Label:              "Unicode Send",
-		MsgText:            "☺",
-		MsgURN:             "tel:+250788383383",
+		Label:   "Unicode Send",
+		MsgText: "☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.infobip.com/sms/1/text/advanced": {
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}}}`)),
+			},
+		},
 		MockResponseBody:   `{"messages":[{"status":{"groupId": 1}}}`,
 		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
-		},
-		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"☺","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+			},
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"☺","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		}},
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("messageId")},
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.infobip.com/sms/1/text/advanced": {
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}}}`)),
+			},
+		},
 		MockResponseBody:   `{"messages":[{"status":{"groupId": 1}}}`,
 		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
-		},
-		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"My pic!\nhttps://foo.bar/image.jpg","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
-		ExpectedMsgStatus:   "W",
-		SendPrep:            setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+			},
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"My pic!\nhttps://foo.bar/image.jpg","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		}},
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("messageId")},
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "error": "failed" }`,
-		MockResponseStatus: 401,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.infobip.com/sms/1/text/advanced": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "failed" }`)),
+			},
 		},
-		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Error Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
-		ExpectedMsgStatus:   "E",
-		SendPrep:            setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+			},
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Error Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		}},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
-		Label:              "Error groupId",
-		MsgText:            "Simple Message",
-		MsgURN:             "tel:+250788383383",
+		Label:   "Error groupId",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.infobip.com/sms/1/text/advanced": {
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 2}}}`)),
+			},
+		},
 		MockResponseBody:   `{"messages":[{"status":{"groupId": 2}}}`,
 		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
-		},
-		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
-		ExpectedMsgStatus:   "E",
-		ExpectedLogErrors:   []*courier.ChannelError{courier.ErrorResponseValueUnexpected("groupId", "1", "3")},
-		SendPrep:            setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+			},
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
+		}},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 }
 
 var transSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message",
-		MsgURN:             "tel:+250788383383",
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.infobip.com/sms/1/text/advanced": {
+				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`)),
+			},
+		},
 		MockResponseBody:   `{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`,
 		MockResponseStatus: 200,
-		ExpectedHeaders: map[string]string{
-			"Content-Type":  "application/json",
-			"Accept":        "application/json",
-			"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
-		},
-		ExpectedRequestBody: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","transliteration":"COLOMBIAN"}]}`,
-		ExpectedMsgStatus:   "W",
-		ExpectedExtIDs:      []string{"12345"},
-		SendPrep:            setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "Basic VXNlcm5hbWU6UGFzc3dvcmQ=",
+			},
+			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered","transliteration":"COLOMBIAN"}]}`,
+		}},
+		ExpectedExtIDs: []string{"12345"},
 	},
 }
 

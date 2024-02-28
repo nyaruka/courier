@@ -2,12 +2,13 @@ package jasmin
 
 import (
 	"net/http"
-	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 const (
@@ -84,85 +85,143 @@ func BenchmarkHandler(b *testing.B) {
 	RunChannelBenchmarks(b, testChannels, newHandler(), handleTestCases)
 }
 
-// setSendURL takes care of setting the send_url to our test server host
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	c.(*test.MockChannel).SetConfig("send_url", s.URL)
-}
-
 var defaultSendTestCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `Success "External ID1"`,
-		MockResponseStatus: 200,
-		ExpectedURLParams: map[string]string{
-			"content":    "Simple Message",
-			"to":         "250788383383",
-			"coding":     "0",
-			"dlr-level":  "2",
-			"dlr":        "yes",
-			"dlr-method": http.MethodPost,
-			"username":   "Username",
-			"password":   "Password",
-			"dlr-url":    "https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status",
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(200, nil, []byte(`Success "External ID1"`)),
+			},
 		},
-		ExpectedExtIDs:    []string{"External ID1"},
-		ExpectedMsgStatus: "W",
-		SendPrep:          setSendURL,
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"content":    {"Simple Message"},
+				"to":         {"250788383383"},
+				"from":       {"2020"},
+				"coding":     {"0"},
+				"dlr-level":  {"2"},
+				"dlr":        {"yes"},
+				"dlr-method": {http.MethodPost},
+				"username":   {"Username"},
+				"password":   {"Password"},
+				"dlr-url":    {"https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"},
+			},
+		}},
+		ExpectedExtIDs: []string{"External ID1"},
 	},
 	{
-		Label:              "Unicode Send",
-		MsgText:            "☺",
-		MockResponseBody:   `Success "External ID1"`,
-		MockResponseStatus: 200,
-		ExpectedURLParams:  map[string]string{"content": "?"},
-		ExpectedExtIDs:     []string{"External ID1"},
-		ExpectedMsgStatus:  "W",
-		SendPrep:           setSendURL,
+		Label:   "Unicode Send",
+		MsgText: "☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(200, nil, []byte(`Success "External ID1"`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"content":    {"?"},
+				"to":         {"250788383383"},
+				"from":       {"2020"},
+				"coding":     {"0"},
+				"dlr-level":  {"2"},
+				"dlr":        {"yes"},
+				"dlr-method": {http.MethodPost},
+				"username":   {"Username"},
+				"password":   {"Password"},
+				"dlr-url":    {"https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"},
+			},
+		}},
+		ExpectedExtIDs: []string{"External ID1"},
 	},
 	{
-		Label:              "Smart Encoding",
-		MsgText:            "Fancy “Smart” Quotes",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `Success "External ID1"`,
-		MockResponseStatus: 200,
-		ExpectedURLParams:  map[string]string{"content": `Fancy "Smart" Quotes`},
-		ExpectedExtIDs:     []string{"External ID1"},
-		ExpectedMsgStatus:  "W",
-		SendPrep:           setSendURL,
+		Label:   "Smart Encoding",
+		MsgText: "Fancy “Smart” Quotes",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(200, nil, []byte(`Success "External ID1"`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"content":    {`Fancy "Smart" Quotes`},
+				"to":         {"250788383383"},
+				"from":       {"2020"},
+				"coding":     {"0"},
+				"dlr-level":  {"2"},
+				"dlr":        {"yes"},
+				"dlr-method": {http.MethodPost},
+				"username":   {"Username"},
+				"password":   {"Password"},
+				"dlr-url":    {"https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"},
+			},
+		}},
+		ExpectedExtIDs: []string{"External ID1"},
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgHighPriority:    true,
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `Success "External ID1"`,
-		MockResponseStatus: 200,
-		ExpectedURLParams:  map[string]string{"content": "My pic!\nhttps://foo.bar/image.jpg"},
-		ExpectedExtIDs:     []string{"External ID1"},
-		ExpectedMsgStatus:  "W",
-		SendPrep:           setSendURL,
+		Label:           "Send Attachment",
+		MsgText:         "My pic!",
+		MsgURN:          "tel:+250788383383",
+		MsgHighPriority: true,
+		MsgAttachments:  []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(200, nil, []byte(`Success "External ID1"`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"content":    {"My pic!\nhttps://foo.bar/image.jpg"},
+				"to":         {"250788383383"},
+				"from":       {"2020"},
+				"coding":     {"0"},
+				"dlr-level":  {"2"},
+				"dlr":        {"yes"},
+				"dlr-method": {http.MethodPost},
+				"username":   {"Username"},
+				"password":   {"Password"},
+				"dlr-url":    {"https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"},
+			},
+		}},
+		ExpectedExtIDs: []string{"External ID1"},
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MsgHighPriority:    false,
-		MockResponseBody:   "Failed Sending",
-		MockResponseStatus: 401,
-		ExpectedURLParams:  map[string]string{"content": `Error Message`},
-		ExpectedMsgStatus:  "E",
-		SendPrep:           setSendURL,
+		Label:           "Error Sending",
+		MsgText:         "Error Message",
+		MsgURN:          "tel:+250788383383",
+		MsgHighPriority: false,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send*": {
+				httpx.NewMockResponse(401, nil, []byte(`Failed Sending`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Params: url.Values{
+				"content":    {"Error Message"},
+				"to":         {"250788383383"},
+				"from":       {"2020"},
+				"coding":     {"0"},
+				"dlr-level":  {"2"},
+				"dlr":        {"yes"},
+				"dlr-method": {http.MethodPost},
+				"username":   {"Username"},
+				"password":   {"Password"},
+				"dlr-url":    {"https://localhost/c/js/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status"},
+			},
+		}},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 
 func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JS", "2020", "US",
 		map[string]any{
-			"password": "Password",
-			"username": "Username",
+			"password":            "Password",
+			"username":            "Username",
+			courier.ConfigSendURL: "http://example.com/send",
 		})
 
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"Password"}, nil)
