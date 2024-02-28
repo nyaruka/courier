@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/nyaruka/gocommon/analytics"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
 type SendResult struct {
 	externalIDs []string
+	newURN      urns.URN
 }
 
 func (r *SendResult) AddExternalID(id string) {
@@ -20,6 +22,15 @@ func (r *SendResult) AddExternalID(id string) {
 
 func (r *SendResult) ExternalIDs() []string {
 	return r.externalIDs
+}
+
+func (r *SendResult) SetNewURN(u urns.URN) {
+	r.newURN = u
+}
+
+func (r *SendResult) GetNewURN() urns.URN {
+	return r.newURN
+
 }
 
 type SendError struct {
@@ -305,14 +316,8 @@ func (w *Sender) sendMessage(msg MsgOut) {
 		log.Warn("duplicate send, marking as wired")
 
 	} else {
-		// work out what kind of sending this handler supports.. this is temporary
-		legacyHandler, _ := handler.(ChannelLegacyHandler)
 
-		if legacyHandler != nil {
-			status = w.sendByLegacyHandler(sendCTX, legacyHandler, msg, clog, log)
-		} else {
-			status = w.sendByHandler(sendCTX, handler, msg, clog, log)
-		}
+		status = w.sendByHandler(sendCTX, handler, msg, clog, log)
 
 		duration := time.Since(start)
 		secondDuration := float64(duration) / float64(time.Second)
@@ -349,7 +354,7 @@ func (w *Sender) sendMessage(msg MsgOut) {
 
 func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, clog *ChannelLog, log *slog.Logger) StatusUpdate {
 	backend := w.foreman.server.Backend()
-	res := &SendResult{}
+	res := &SendResult{newURN: urns.NilURN}
 	err := h.Send(ctx, m, res, clog)
 
 	status := backend.NewStatusUpdate(m.Channel(), m.ID(), MsgStatusWired, clog)
@@ -357,6 +362,13 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 	// fow now we can only store one external id per message
 	if len(res.ExternalIDs()) > 0 {
 		status.SetExternalID(res.ExternalIDs()[0])
+	}
+
+	if res.newURN != urns.NilURN {
+		urnErr := status.SetURNUpdate(m.URN(), res.newURN)
+		if urnErr != nil {
+			clog.RawError(urnErr)
+		}
 	}
 
 	var serr *SendError
@@ -386,27 +398,6 @@ func (w *Sender) sendByHandler(ctx context.Context, h ChannelHandler, m MsgOut, 
 		status.SetStatus(MsgStatusErrored)
 
 		clog.Error(NewChannelError("internal_error", "", "An internal error occured."))
-	}
-
-	return status
-}
-
-func (w *Sender) sendByLegacyHandler(ctx context.Context, h ChannelLegacyHandler, m MsgOut, clog *ChannelLog, log *slog.Logger) StatusUpdate {
-	backend := w.foreman.server.Backend()
-
-	status, err := h.SendLegacy(ctx, m, clog)
-	if err != nil {
-		log.Error("error sending message", "error", err)
-
-		// handlers should log errors implicitly with user friendly messages.. but if not.. add what we have
-		if len(clog.Errors()) == 0 {
-			clog.RawError(err)
-		}
-
-		// possible for handlers to only return an error in which case we construct an error status
-		if status == nil {
-			status = backend.NewStatusUpdate(m.Channel(), m.ID(), MsgStatusErrored, clog)
-		}
 	}
 
 	return status

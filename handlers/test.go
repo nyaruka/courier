@@ -408,29 +408,15 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			clog := courier.NewChannelLogForSend(msg, handler.RedactValues(channel))
 			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 
-			// work out what kind of sending this handler supports.. this is temporary
-			legacyHandler, _ := handler.(courier.ChannelLegacyHandler)
-
 			var externalIDs []string
 			var status courier.StatusUpdate
-			var serr, err error
+			var serr error
+			var resNewURN urns.URN
 
-			if legacyHandler != nil {
-				status, err = legacyHandler.SendLegacy(ctx, msg, clog)
-
-				// sender adds returned error to channel log if there aren't other logged errors
-				if err != nil && len(clog.Errors()) == 0 {
-					clog.RawError(err)
-				}
-
-				if status != nil && status.ExternalID() != "" {
-					externalIDs = []string{status.ExternalID()}
-				}
-			} else {
-				res := &courier.SendResult{}
-				serr = handler.Send(ctx, msg, res, clog)
-				externalIDs = res.ExternalIDs()
-			}
+			res := &courier.SendResult{}
+			serr = handler.Send(ctx, msg, res, clog)
+			externalIDs = res.ExternalIDs()
+			resNewURN = res.GetNewURN()
 
 			if mockHTTP != nil {
 				httpx.SetRequestor(httpx.DefaultRequestor)
@@ -514,9 +500,9 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			}
 
 			if tc.ExpectedNewURN != "" {
-				old, new := status.URNUpdate()
-				require.Equal(urns.URN(tc.MsgURN), old)
-				require.Equal(urns.URN(tc.ExpectedNewURN), new)
+
+				require.Equal(urns.URN(tc.ExpectedNewURN), resNewURN)
+
 			}
 
 			AssertChannelLogRedaction(t, clog, checkRedacted)
