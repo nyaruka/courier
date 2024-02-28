@@ -399,7 +399,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messages":[{"from":"2020","destinations":[{"to":"250788383383","messageId":"10"}],"text":"Simple Message","notifyContentType":"application/json","intermediateReport":true,"notifyUrl":"https://localhost/c/ib/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/delivered"}]}`,
 		}},
-		ExpectedError: courier.ErrFailedWithReason("", "unexpected groupId value"),
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 }
 

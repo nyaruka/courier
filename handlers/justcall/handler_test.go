@@ -327,6 +327,25 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("id")},
 	},
 	{
+		Label:   "Error Sending",
+		MsgText: "Error",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.justcall.io/v1/texts/new": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "status": "fail" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "api_key:api_secret",
+			},
+			Body: `{"from":"2020","to":"+250788383383","body":"Error"}`,
+		}},
+		ExpectedError: courier.ErrResponseUnexpected,
+	},
+	{
 		Label:   "Error",
 		MsgText: "Error",
 		MsgURN:  "tel:+250788383383",
@@ -344,6 +363,25 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"from":"2020","to":"+250788383383","body":"Error"}`,
 		}},
 		ExpectedError: courier.ErrResponseStatus,
+	},
+	{
+		Label:   "Error Connection",
+		MsgText: "Error",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.justcall.io/v1/texts/new": {
+				httpx.NewMockResponse(500, nil, []byte(`Bad Gateway`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Headers: map[string]string{
+				"Content-Type":  "application/json",
+				"Accept":        "application/json",
+				"Authorization": "api_key:api_secret",
+			},
+			Body: `{"from":"2020","to":"+250788383383","body":"Error"}`,
+		}},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
