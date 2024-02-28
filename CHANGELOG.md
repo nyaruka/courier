@@ -1,3 +1,7 @@
+v9.1.11 (2024-02-28)
+-------------------------
+ * Rework more send methods
+
 v9.1.10 (2024-02-26)
 -------------------------
  * Rework more handlers send methods
