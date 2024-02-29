@@ -493,28 +493,18 @@ type mtErrorPayload struct {
 const maxMsgLength = 4096
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
-	// TODO convert functionality from legacy method below
-	return nil
-}
-
-func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *courier.ChannelLog) (courier.StatusUpdate, error) {
 	conn := h.Backend().RedisPool().Get()
 	defer conn.Close()
 
 	// get our token
 	token := msg.Channel().StringConfigForKey(courier.ConfigAuthToken, "")
-	if token == "" {
-		return nil, fmt.Errorf("missing token for WA channel")
-	}
-
 	urlStr := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
 	url, err := url.Parse(urlStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid base url set for WA channel: %s", err)
+
+	if token == "" || err != nil {
+		return courier.ErrChannelConfig
 	}
 	sendPath, _ := url.Parse("/v1/messages")
-
-	status := h.Backend().NewStatusUpdate(msg.Channel(), msg.ID(), courier.MsgStatusErrored, clog)
 
 	var wppID string
 
@@ -522,20 +512,17 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 
 	fail := payloads == nil && err != nil
 	if fail {
-		return nil, err
+		return err
 	}
 
-	for i, payload := range payloads {
+	for _, payload := range payloads {
 		externalID := ""
 		wppID, externalID, err = h.sendWhatsAppMsg(conn, msg, sendPath, payload, clog)
 		if err != nil {
-			break
+			return err
 		}
 
-		// if this is our first message, record the external id
-		if i == 0 {
-			status.SetExternalID(externalID)
-		}
+		res.AddExternalID(externalID)
 	}
 
 	// we are wired it there were no errors
@@ -543,16 +530,11 @@ func (h *handler) SendLegacy(ctx context.Context, msg courier.MsgOut, clog *cour
 		// so update contact URN if wppID != ""
 		if wppID != "" {
 			newURN, _ := urns.NewWhatsAppURN(wppID)
-			err = status.SetURNUpdate(msg.URN(), newURN)
-
-			if err != nil {
-				clog.RawError(err)
-			}
+			res.SetNewURN(newURN)
 		}
-		status.SetStatus(courier.MsgStatusWired)
 	}
 
-	return status, nil
+	return nil
 }
 
 // WriteRequestError writes the passed in error to our response writer
@@ -930,7 +912,7 @@ func (h *handler) sendWhatsAppMsg(rc redis.Conn, msg courier.MsgOut, sendPath *u
 		// TODO: In the future we should the header value when available
 		rc.Do("EXPIRE", rateLimitKey, 2)
 
-		return "", "", errors.New("received rate-limit response from send endpoint")
+		return "", "", courier.ErrConnectionThrottled
 	}
 
 	errPayload := &mtErrorPayload{}
@@ -946,14 +928,13 @@ func (h *handler) sendWhatsAppMsg(rc redis.Conn, msg courier.MsgOut, sendPath *u
 			// We pause the bulk queue for 24 hours and 5min
 			rc.Do("EXPIRE", rateLimitBulkKey, (60*60*24)+(5*60))
 
-			err := errors.Errorf("received error from send endpoint: %s", errPayload.Errors[0].Title)
-			return "", "", err
+			return "", "", courier.ErrConnectionThrottled
 		}
 
 		if !hasWhatsAppContactError(*errPayload) {
-			err := errors.Errorf("received error from send endpoint: %s", errPayload.Errors[0].Title)
-			return "", "", err
+			return "", "", courier.ErrFailedWithReason(strconv.Itoa(errPayload.Errors[0].Code), errPayload.Errors[0].Title)
 		}
+
 		// check contact
 		baseURL := fmt.Sprintf("%s://%s", sendPath.Scheme, sendPath.Host)
 		checkResp, err := h.checkWhatsAppContact(msg.Channel(), baseURL, msg.URN(), clog)
@@ -1012,7 +993,7 @@ func (h *handler) sendWhatsAppMsg(rc redis.Conn, msg courier.MsgOut, sendPath *u
 
 		retryResp, retryRespBody, err := h.RequestHTTP(reqRetry, clog)
 		if err != nil || retryResp.StatusCode/100 != 2 {
-			return "", "", errors.New("error making retry request")
+			return "", "", courier.ErrResponseStatus
 		}
 		externalID, err := getSendWhatsAppMsgId(retryRespBody)
 		return wppID, externalID, err
@@ -1069,7 +1050,7 @@ func getSendWhatsAppMsgId(resp []byte) (string, error) {
 	if externalID, err := jsonparser.GetString(resp, "messages", "[0]", "id"); err == nil {
 		return externalID, nil
 	} else {
-		return "", errors.Errorf("unable to get message id from response body")
+		return "", courier.ErrResponseUnexpected
 	}
 }
 
@@ -1095,14 +1076,15 @@ func (h *handler) checkWhatsAppContact(channel courier.Channel, baseURL string, 
 		return nil, errors.New("error checking contact")
 	}
 	// check contact status
-	if status, err := jsonparser.GetString(respBody, "contacts", "[0]", "status"); err == nil {
+	status, err := jsonparser.GetString(respBody, "contacts", "[0]", "status")
+	if err != nil {
+		return respBody, courier.ErrResponseUnexpected
+	} else {
 		if status == "valid" {
 			return respBody, nil
 		} else {
-			return respBody, errors.Errorf(`contact status is "%s"`, status)
+			return respBody, courier.ErrResponseUnexpected
 		}
-	} else {
-		return respBody, err
 	}
 }
 

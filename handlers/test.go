@@ -319,10 +319,6 @@ type OutgoingTestCase struct {
 	ExpectedContactURNs map[string]bool
 	ExpectedNewURN      string
 
-	// only used by legacy send type handlers - for converted handlers ExpectedError covers these.
-	ExpectedMsgStatus courier.MsgStatus
-	ExpectedStopEvent bool
-
 	MockResponseStatus int          // Deprecated: use MockResponses instead.
 	MockResponseBody   string       // Deprecated: use MockResponses instead.
 	SendPrep           SendPrepFunc // Deprecated: use MockResponses instead.
@@ -408,29 +404,10 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			clog := courier.NewChannelLogForSend(msg, handler.RedactValues(channel))
 			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 
-			// work out what kind of sending this handler supports.. this is temporary
-			legacyHandler, _ := handler.(courier.ChannelLegacyHandler)
-
-			var externalIDs []string
-			var status courier.StatusUpdate
-			var serr, err error
-
-			if legacyHandler != nil {
-				status, err = legacyHandler.SendLegacy(ctx, msg, clog)
-
-				// sender adds returned error to channel log if there aren't other logged errors
-				if err != nil && len(clog.Errors()) == 0 {
-					clog.RawError(err)
-				}
-
-				if status != nil && status.ExternalID() != "" {
-					externalIDs = []string{status.ExternalID()}
-				}
-			} else {
-				res := &courier.SendResult{}
-				serr = handler.Send(ctx, msg, res, clog)
-				externalIDs = res.ExternalIDs()
-			}
+			res := &courier.SendResult{}
+			serr := handler.Send(ctx, msg, res, clog)
+			externalIDs := res.ExternalIDs()
+			resNewURN := res.GetNewURN()
 
 			if mockHTTP != nil {
 				httpx.SetRequestor(httpx.DefaultRequestor)
@@ -486,17 +463,6 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			assert.Equal(t, tc.ExpectedError, serr, "send method error mismatch")
 			assert.Equal(t, tc.ExpectedLogErrors, clog.Errors(), "channel log errors mismatch")
 
-			if tc.ExpectedMsgStatus != "" {
-				require.NotNil(status, "status should not be nil")
-				require.Equal(tc.ExpectedMsgStatus, status.Status())
-			}
-
-			if tc.ExpectedStopEvent {
-				require.Len(mb.WrittenChannelEvents(), 1)
-				event := mb.WrittenChannelEvents()[0]
-				require.Equal(courier.EventTypeStopContact, event.EventType())
-			}
-
 			if tc.ExpectedContactURNs != nil {
 				var contactUUID courier.ContactUUID
 				for urn, shouldBePresent := range tc.ExpectedContactURNs {
@@ -514,9 +480,9 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			}
 
 			if tc.ExpectedNewURN != "" {
-				old, new := status.URNUpdate()
-				require.Equal(urns.URN(tc.MsgURN), old)
-				require.Equal(urns.URN(tc.ExpectedNewURN), new)
+
+				require.Equal(urns.URN(tc.ExpectedNewURN), resNewURN)
+
 			}
 
 			AssertChannelLogRedaction(t, clog, checkRedacted)

@@ -548,8 +548,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"250788123123","type":"text","preview_url":true,"text":{"body":"Link Sending https://link.com"}}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:   "Plain Send",
@@ -566,8 +565,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"250788123123","type":"text","text":{"body":"Simple Message"}}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:   "Unicode Send",
@@ -582,8 +580,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Path: "/v1/messages",
 			Body: `{"to":"250788123123","type":"text","text":{"body":"☺"}}`,
 		}},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:   "Error",
@@ -591,14 +588,14 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:  "whatsapp:250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
-				httpx.NewMockResponse(403, nil, []byte(`{ "errors": [{ "title": "Error Sending" }] }`)),
+				httpx.NewMockResponse(403, nil, []byte(`{ "errors": [{ "title": "Error Sending", "code": 102 }] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/v1/messages",
 			Body: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrFailedWithReason("102", "Error Sending"),
 	},
 	{
 		Label:   "Rate Limit Engaged",
@@ -613,7 +610,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Path: "/v1/messages",
 			Body: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrConnectionThrottled,
 	},
 	{
 		Label:   "No Message ID",
@@ -628,7 +625,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Path: "/v1/messages",
 			Body: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:   "Error Field",
@@ -636,14 +633,14 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgURN:  "whatsapp:250788123123",
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "errors": [{"title":"Error Sending"}] }`)),
+				httpx.NewMockResponse(200, nil, []byte(`{ "errors": [{"title":"Error Sending", "code": 232}] }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
 			Path: "/v1/messages",
 			Body: `{"to":"250788123123","type":"text","text":{"body":"Error"}}`,
 		}},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrFailedWithReason("232", "Error Sending"),
 	},
 	{
 		Label:          "Audio attachment but upload fails",
@@ -668,8 +665,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{Body: `{"to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`},
 			{Body: `{"to":"250788123123","type":"text","text":{"body":"audio has no caption, sent as text"}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
 	},
 	{
 		Label:          "Audio Send with link in text",
@@ -694,8 +690,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{Body: `{"to":"250788123123","type":"audio","audio":{"link":"https://foo.bar/audio.mp3"}}`},
 			{Body: `{"to":"250788123123","type":"text","preview_url":true,"text":{"body":"audio has no caption, sent as text with a https://example.com"}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
 	},
 	{
 		Label:          "Document Send",
@@ -718,8 +713,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{},
 			{Body: `{"to":"250788123123","type":"document","document":{"link":"https://foo.bar/document.pdf","caption":"document caption","filename":"document.pdf"}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:          "Image Send",
@@ -742,8 +736,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{},
 			{Body: `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg","caption":"document caption"}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:          "Video Send",
@@ -766,8 +759,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{},
 			{Body: `{"to":"250788123123","type":"video","video":{"link":"https://foo.bar/video.mp4","caption":"video caption"}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:       "Template Send",
@@ -785,8 +777,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		}},
 
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:       "Template Send no variables",
@@ -804,8 +795,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"}}}`,
 		}},
 
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:       "Template Country Language",
@@ -823,8 +813,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		}},
 
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:       "Template Namespace",
@@ -842,8 +831,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"to":"250788123123","type":"template","template":{"namespace":"wa_template_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		}},
 
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:       "Template Invalid Language",
@@ -861,8 +849,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		}},
 
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:   "WhatsApp Contact Error",
@@ -880,7 +867,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{Body: `{"to":"250788123123","type":"text","text":{"body":"contact status error"}}`},
 			{Body: `{"blocking":"wait","contacts":["+250788123123"],"force_check":true}`},
 		},
-		ExpectedMsgStatus: "E",
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:   "Try Messaging Again After WhatsApp Contact Check",
@@ -900,8 +887,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{Body: `{"blocking":"wait","contacts":["+250788123123"],"force_check":true}`},
 			{Body: `{"to":"250788123123","type":"text","text":{"body":"try again"}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive Button Message Send",
@@ -917,9 +903,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Path: "/v1/messages",
 			Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`,
 		}},
-
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive List Message Send",
@@ -936,8 +920,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`,
 		}},
 
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive Button Message Send with attachment",
@@ -955,8 +938,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{Body: `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`},
 			{Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"button","body":{"text":"Interactive Button Msg"},"action":{"buttons":[{"type":"reply","reply":{"id":"0","title":"BUTTON1"}}]}}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
 	},
 	{
 		Label:           "Interactive List Message Send with attachment",
@@ -974,8 +956,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			{Body: `{"to":"250788123123","type":"image","image":{"link":"https://foo.bar/image.jpg"}}`},
 			{Body: `{"to":"250788123123","type":"interactive","interactive":{"type":"list","body":{"text":"Interactive List Msg"},"action":{"button":"Menu","sections":[{"rows":[{"id":"0","title":"ROW1"},{"id":"1","title":"ROW2"},{"id":"2","title":"ROW3"},{"id":"3","title":"ROW4"}]}]}}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8", "157b5e14568e8"},
 	},
 	{
 		Label:   "Update URN with wa_id returned",
@@ -992,9 +973,8 @@ var defaultSendTestCases = []OutgoingTestCase{
 				Body: `{"to":"5511987654321","type":"text","text":{"body":"Simple Message"}}`,
 			},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
-		ExpectedNewURN:    "whatsapp:551187654321",
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+		ExpectedNewURN: "whatsapp:551187654321",
 	},
 }
 
@@ -1020,8 +1000,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 			{Body: "media bytes"},
 			{BodyContains: `/document.pdf`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:          "Previous Media Upload Error",
@@ -1036,8 +1015,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{BodyContains: `/document.pdf`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:          "Media Upload OK",
@@ -1060,8 +1038,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 			{Body: "media bytes"},
 			{Body: `{"to":"250788123123","type":"video","video":{"id":"36c484d1-1283-4b94-988d-7276bdec4de2","caption":"video caption"}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:          "Cached Media",
@@ -1076,8 +1053,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Body: `{"to":"250788123123","type":"video","video":{"id":"36c484d1-1283-4b94-988d-7276bdec4de2","caption":"video caption"}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:          "Document Upload OK",
@@ -1100,8 +1076,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 			{Body: "media bytes"},
 			{Body: `{"to":"250788123123","type":"document","document":{"id":"25c484d1-1283-4b94-988d-7276bdec4ef3","caption":"document caption","filename":"document2.pdf"}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
 		Label:          "Cached Document",
@@ -1116,8 +1091,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 		ExpectedRequests: []ExpectedRequest{
 			{Body: `{"to":"250788123123","type":"document","document":{"id":"25c484d1-1283-4b94-988d-7276bdec4ef3","caption":"document caption","filename":"document2.pdf"}}`},
 		},
-		ExpectedMsgStatus: "W",
-		ExpectedExtIDs:    []string{"157b5e14568e8"},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 }
 

@@ -35,11 +35,6 @@ type ChannelHandler interface {
 	WriteRequestIgnored(context.Context, http.ResponseWriter, string) error
 }
 
-type ChannelLegacyHandler interface {
-	ChannelHandler
-	SendLegacy(context.Context, MsgOut, *ChannelLog) (StatusUpdate, error)
-}
-
 // URNDescriber is the interface handlers which can look up URN metadata for new contacts should satisfy.
 type URNDescriber interface {
 	DescribeURN(context.Context, Channel, urns.URN, *ChannelLog) (map[string]string, error)
