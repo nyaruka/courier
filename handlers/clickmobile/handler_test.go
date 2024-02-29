@@ -1,7 +1,6 @@
 package clickmobile
 
 import (
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 const (
@@ -140,39 +140,46 @@ func TestIncoming(t *testing.T) {
 
 var outgoingCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`,
-		MockResponseStatus: 200,
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Content-Type": "application/json"},
 				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"Simple Message"}`,
 			},
 		},
-		SendPrep: setSendURL,
 	},
 	{
-		Label:              "Unicode Send",
-		MsgText:            "☺",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`,
-		MockResponseStatus: 200,
+		Label:   "Unicode Send",
+		MsgText: "☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Content-Type": "application/json"},
 				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"☺"}`,
 			},
 		},
-		SendPrep: setSendURL,
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"code":"001","desc":"Database SQL Error"}`,
-		MockResponseStatus: 401,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send": {
+				httpx.NewMockResponse(401, nil, []byte(`{"code":"001","desc":"Database SQL Error"}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Content-Type": "application/json"},
@@ -180,28 +187,24 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedError: courier.ErrResponseStatus,
-		SendPrep:      setSendURL,
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`,
-		MockResponseStatus: 200,
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"code":"000","desc":"Operation successful.","data":{"new_record_id":"9"}}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Content-Type": "application/json"},
 				Body:    `{"app_id":"001-app","org_id":"001-org","user_id":"Username","timestamp":"20180411182430","auth_key":"3e1347ddb444d13aa23d11e097602be0","operation":"send","reference":"10","message_type":"1","src_address":"2020","dst_address":"+250788383383","message":"My pic!\nhttps://foo.bar/image.jpg"}`,
 			},
 		},
-		SendPrep: setSendURL,
 	},
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	c.(*test.MockChannel).SetConfig(courier.ConfigSendURL, s.URL)
-	sendURL = s.URL
 }
 
 func TestOutgoing(t *testing.T) {
@@ -211,7 +214,7 @@ func TestOutgoing(t *testing.T) {
 			"username": "Username",
 			"app_id":   "001-app",
 			"org_id":   "001-org",
-			"send_url": "SendURL",
+			"send_url": "http://example.com/send",
 		},
 	)
 

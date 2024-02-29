@@ -1050,8 +1050,6 @@ var waSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
 			},
 		},
-		MockResponseBody:   `{ "sid": "1002" }`,
-		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{{
 			Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},

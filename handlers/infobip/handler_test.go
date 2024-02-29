@@ -306,8 +306,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`)),
 			},
 		},
-		MockResponseBody:   `{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`,
-		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type":  "application/json",
@@ -327,8 +325,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}}}`)),
 			},
 		},
-		MockResponseBody:   `{"messages":[{"status":{"groupId": 1}}}`,
-		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type":  "application/json",
@@ -349,8 +345,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}}}`)),
 			},
 		},
-		MockResponseBody:   `{"messages":[{"status":{"groupId": 1}}}`,
-		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type":  "application/json",
@@ -389,8 +383,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 2}}}`)),
 			},
 		},
-		MockResponseBody:   `{"messages":[{"status":{"groupId": 2}}}`,
-		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type":  "application/json",
@@ -413,8 +405,6 @@ var transSendTestCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`)),
 			},
 		},
-		MockResponseBody:   `{"messages":[{"status":{"groupId": 1}, "messageId": "12345"}}`,
-		MockResponseStatus: 200,
 		ExpectedRequests: []ExpectedRequest{{
 			Headers: map[string]string{
 				"Content-Type":  "application/json",

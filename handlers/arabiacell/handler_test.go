@@ -1,13 +1,13 @@
 package arabiacell
 
 import (
-	"net/http/httptest"
 	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 const (
@@ -47,12 +47,11 @@ var outgoingCases = []OutgoingTestCase{
 		MsgText:        "Simple Message ☺",
 		MsgURN:         "tel:+250788383383",
 		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody: `<response>
-		<code>204</code>
-		<text>MT is successfully sent</text>
-		<message_id>external1</message_id>
-</response>`,
-		MockResponseStatus: 200,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://acsdp.arabiacell.net": {
+				httpx.NewMockResponse(200, nil, []byte(`<response><code>204</code><text>MT is successfully sent</text><message_id>external1</message_id></response>`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Form: url.Values{
@@ -67,39 +66,40 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedExtIDs: []string{"external1"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "Invalid XML",
-		MsgText:            "Invalid XML",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `not xml`,
-		MockResponseStatus: 200,
-		ExpectedError:      courier.ErrResponseUnparseable,
-		SendPrep:           setSendURL,
+		Label:   "Invalid XML",
+		MsgText: "Invalid XML",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://acsdp.arabiacell.net": {
+				httpx.NewMockResponse(200, nil, []byte(`not xml`)),
+			},
+		},
+		ExpectedError: courier.ErrResponseUnparseable,
 	},
 	{
-		Label:              "Error Response",
-		MsgText:            "Error Response",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `<response><code>501</code><text>failure</text><message_id></message_id></response>`,
-		MockResponseStatus: 200,
-		ExpectedError:      courier.ErrResponseUnexpected,
-		SendPrep:           setSendURL,
+		Label:   "Error Response",
+		MsgText: "Error Response",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://acsdp.arabiacell.net": {
+				httpx.NewMockResponse(200, nil, []byte(`<response><code>501</code><text>failure</text><message_id></message_id></response>`)),
+			},
+		},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `Bad Gateway`,
-		MockResponseStatus: 501,
-		ExpectedError:      courier.ErrConnectionFailed,
-		SendPrep:           setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://acsdp.arabiacell.net": {
+				httpx.NewMockResponse(501, nil, []byte(`Bad Gateway`)),
+			},
+		},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
 }
 
 func TestOutgoing(t *testing.T) {
