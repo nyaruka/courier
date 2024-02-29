@@ -1,3 +1,8 @@
+v9.1.12 (2024-02-29)
+-------------------------
+ * Replace use of deprecated test fields
+ * Rework WA handler to new send, remove channel legacy handler
+
 v9.1.11 (2024-02-28)
 -------------------------
  * Rework more send methods
