@@ -319,10 +319,6 @@ type OutgoingTestCase struct {
 	ExpectedContactURNs map[string]bool
 	ExpectedNewURN      string
 
-	// only used by legacy send type handlers - for converted handlers ExpectedError covers these.
-	ExpectedMsgStatus courier.MsgStatus
-	ExpectedStopEvent bool
-
 	MockResponseStatus int          // Deprecated: use MockResponses instead.
 	MockResponseBody   string       // Deprecated: use MockResponses instead.
 	SendPrep           SendPrepFunc // Deprecated: use MockResponses instead.
@@ -408,15 +404,10 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			clog := courier.NewChannelLogForSend(msg, handler.RedactValues(channel))
 			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 
-			var externalIDs []string
-			var status courier.StatusUpdate
-			var serr error
-			var resNewURN urns.URN
-
 			res := &courier.SendResult{}
-			serr = handler.Send(ctx, msg, res, clog)
-			externalIDs = res.ExternalIDs()
-			resNewURN = res.GetNewURN()
+			serr := handler.Send(ctx, msg, res, clog)
+			externalIDs := res.ExternalIDs()
+			resNewURN := res.GetNewURN()
 
 			if mockHTTP != nil {
 				httpx.SetRequestor(httpx.DefaultRequestor)
@@ -471,17 +462,6 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			assert.Equal(t, tc.ExpectedExtIDs, externalIDs, "external IDs mismatch")
 			assert.Equal(t, tc.ExpectedError, serr, "send method error mismatch")
 			assert.Equal(t, tc.ExpectedLogErrors, clog.Errors(), "channel log errors mismatch")
-
-			if tc.ExpectedMsgStatus != "" {
-				require.NotNil(status, "status should not be nil")
-				require.Equal(tc.ExpectedMsgStatus, status.Status())
-			}
-
-			if tc.ExpectedStopEvent {
-				require.Len(mb.WrittenChannelEvents(), 1)
-				event := mb.WrittenChannelEvents()[0]
-				require.Equal(courier.EventTypeStopContact, event.EventType())
-			}
 
 			if tc.ExpectedContactURNs != nil {
 				var contactUUID courier.ContactUUID
