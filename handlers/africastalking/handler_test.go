@@ -180,9 +180,10 @@ var sharedOutgoingCases = []OutgoingTestCase{
 				httpx.NewMockResponse(200, nil, []byte(`{ "SMSMessageData": {"Recipients": [{"status": "Success", "messageId": "1002"}] } }`)),
 			},
 		},
-		ExpectedHeaders: map[string]string{"apikey": "KEY"},
 		ExpectedRequests: []ExpectedRequest{
-			{Form: url.Values{"message": {"Simple Message ☺"}, "username": {"Username"}, "to": {"+250788383383"}}},
+			{
+				Headers: map[string]string{"apikey": "KEY"},
+				Form:    url.Values{"message": {"Simple Message ☺"}, "username": {"Username"}, "to": {"+250788383383"}}},
 		},
 		ExpectedExtIDs: []string{"1002"},
 	},

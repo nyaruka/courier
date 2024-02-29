@@ -1,7 +1,6 @@
 package burstsms
 
 import (
-	"net/http/httptest"
 	"net/url"
 	"testing"
 
@@ -56,12 +55,15 @@ func TestIncoming(t *testing.T) {
 
 var outgoingCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{ "message_id": 19835, "recipients": 3, "cost": 1.000 }`,
-		MockResponseStatus: 200,
+		Label:          "Plain Send",
+		MsgText:        "Simple Message ☺",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.transmitsms.com/send-sms.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "message_id": 19835, "recipients": 3, "cost": 1.000 }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Form: url.Values{
@@ -72,39 +74,67 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedExtIDs: []string{"19835"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "Invalid JSON",
-		MsgText:            "Invalid JSON",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `not json`,
-		MockResponseStatus: 200,
-		ExpectedError:      courier.ErrResponseUnparseable,
-		SendPrep:           setSendURL,
+		Label:   "Invalid JSON",
+		MsgText: "Invalid JSON",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.transmitsms.com/send-sms.json": {
+				httpx.NewMockResponse(200, nil, []byte(`not json`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Form: url.Values{
+					"to":      {"250788383383"},
+					"message": {"Invalid JSON"},
+					"from":    {"2020"},
+				},
+			},
+		},
+		ExpectedError: courier.ErrResponseUnparseable,
 	},
 	{
-		Label:              "Error Response",
-		MsgText:            "Error Response",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "message_id": 0 }`,
-		MockResponseStatus: 200,
-		ExpectedError:      courier.ErrResponseUnexpected,
-		SendPrep:           setSendURL,
+		Label:   "Error Response",
+		MsgText: "Error Response",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.transmitsms.com/send-sms.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "message_id": 0 }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Form: url.Values{
+					"to":      {"250788383383"},
+					"message": {"Error Response"},
+					"from":    {"2020"},
+				},
+			},
+		},
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `Bad Gateway`,
-		MockResponseStatus: 501,
-		ExpectedError:      courier.ErrConnectionFailed,
-		SendPrep:           setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.transmitsms.com/send-sms.json": {
+				httpx.NewMockResponse(501, nil, []byte(`Bad Gateway`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Form: url.Values{
+					"to":      {"250788383383"},
+					"message": {"Error Message"},
+					"from":    {"2020"},
+				},
+			},
+		},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
 }
 
 func TestOutgoing(t *testing.T) {

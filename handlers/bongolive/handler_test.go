@@ -1,13 +1,13 @@
 package bongolive
 
 import (
-	"net/http/httptest"
 	"net/url"
 	"testing"
 
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 const (
@@ -80,12 +80,15 @@ func TestIncoming(t *testing.T) {
 
 var outgoingCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{"results": [{"status": "0", "msgid": "123"}]}`,
-		MockResponseStatus: 200,
+		Label:          "Plain Send",
+		MsgText:        "Simple Message ☺",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.blsmsgw.com:8443/bin/send.json*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"results": [{"status": "0", "msgid": "123"}]}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Params: url.Values{
@@ -100,15 +103,17 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedExtIDs: []string{"123"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "Bad Status",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{"results": [{"status": "3"}]}`,
-		MockResponseStatus: 200,
+		Label:          "Bad Status",
+		MsgText:        "Simple Message ☺",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.blsmsgw.com:8443/bin/send.json*": {
+				httpx.NewMockResponse(200, nil, []byte(`{"results": [{"status": "3"}]}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Params: url.Values{
@@ -123,30 +128,53 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedError: courier.ErrResponseUnexpected,
-		SendPrep:      setSendURL,
 	},
 	{
-		Label:              "Error status 403",
-		MsgText:            "Error Response",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{"results": [{"status": "1", "msgid": "123"}]}`,
-		MockResponseStatus: 403,
-		ExpectedError:      courier.ErrResponseStatus,
-		SendPrep:           setSendURL,
+		Label:   "Error status 403",
+		MsgText: "Error Response",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.blsmsgw.com:8443/bin/send.json*": {
+				httpx.NewMockResponse(403, nil, []byte(`{"results": [{"status": "1", "msgid": "123"}]}`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{
+					"USERNAME":   {"user1"},
+					"PASSWORD":   {"pass1"},
+					"SOURCEADDR": {"2020"},
+					"DESTADDR":   {"250788383383"},
+					"DLR":        {"1"},
+					"MESSAGE":    {"Error Response"},
+				},
+			},
+		},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `Bad Gateway`,
-		MockResponseStatus: 501,
-		ExpectedError:      courier.ErrConnectionFailed,
-		SendPrep:           setSendURL,
+		Label:   "Error Sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.blsmsgw.com:8443/bin/send.json*": {
+				httpx.NewMockResponse(501, nil, []byte(`Bad Gateway`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Params: url.Values{
+					"USERNAME":   {"user1"},
+					"PASSWORD":   {"pass1"},
+					"SOURCEADDR": {"2020"},
+					"DESTADDR":   {"250788383383"},
+					"DLR":        {"1"},
+					"MESSAGE":    {"Error Message"},
+				},
+			},
+		},
+		ExpectedError: courier.ErrConnectionFailed,
 	},
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
 }
 
 func TestOutgoing(t *testing.T) {

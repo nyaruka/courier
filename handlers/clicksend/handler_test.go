@@ -1,7 +1,6 @@
 package clicksend
 
 import (
-	"net/http/httptest"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -103,11 +102,14 @@ const failureResponse = `{
 
 var outgoingCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   successResponse,
-		MockResponseStatus: 200,
+		Label:   "Plain Send",
+		MsgText: "Simple Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.clicksend.com/v3/sms/send": {
+				httpx.NewMockResponse(200, nil, []byte(successResponse)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
@@ -115,14 +117,16 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedExtIDs: []string{"BF7AD270-0DE2-418B-B606-71D527D9C1AE"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "Unicode Send",
-		MsgText:            "☺",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   successResponse,
-		MockResponseStatus: 200,
+		Label:   "Unicode Send",
+		MsgText: "☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.clicksend.com/v3/sms/send": {
+				httpx.NewMockResponse(200, nil, []byte(successResponse)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
@@ -130,15 +134,17 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedExtIDs: []string{"BF7AD270-0DE2-418B-B606-71D527D9C1AE"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   successResponse,
-		MockResponseStatus: 200,
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.clicksend.com/v3/sms/send": {
+				httpx.NewMockResponse(200, nil, []byte(successResponse)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
@@ -146,14 +152,16 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedExtIDs: []string{"BF7AD270-0DE2-418B-B606-71D527D9C1AE"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "Error Sending",
-		MsgText:            "Error Sending",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `[{"Response": "101"}]`,
-		MockResponseStatus: 403,
+		Label:   "Error Sending",
+		MsgText: "Error Sending",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.clicksend.com/v3/sms/send": {
+				httpx.NewMockResponse(403, nil, []byte(`[{"Response": "101"}]`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
@@ -161,14 +169,16 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedError: courier.ErrResponseStatus,
-		SendPrep:      setSendURL,
 	},
 	{
-		Label:              "Failure Response",
-		MsgText:            "Error Sending",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   failureResponse,
-		MockResponseStatus: 200,
+		Label:   "Failure Response",
+		MsgText: "Error Sending",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://rest.clicksend.com/v3/sms/send": {
+				httpx.NewMockResponse(200, nil, []byte(failureResponse)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="},
@@ -176,12 +186,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedError: courier.ErrResponseUnexpected,
-		SendPrep:      setSendURL,
 	},
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
 }
 
 func TestOutgoing(t *testing.T) {

@@ -37,7 +37,6 @@ func buildMockAttachmentService(testCases []OutgoingTestCase) *httptest.Server {
 		for er := range testCases[c].ExpectedRequests {
 			testCases[c].ExpectedRequests[er].Body = strings.Replace(testCases[c].ExpectedRequests[er].Body, "{{ SERVER_URL }}", server.URL, -1)
 		}
-		testCases[c].ExpectedRequestBody = strings.Replace(testCases[c].ExpectedRequestBody, "{{ SERVER_URL }}", server.URL, -1)
 	}
 
 	return server

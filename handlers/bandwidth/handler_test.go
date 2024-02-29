@@ -2,7 +2,6 @@ package bandwidth
 
 import (
 	"context"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/nyaruka/courier"
@@ -245,11 +244,14 @@ func TestIncoming(t *testing.T) {
 
 var outgoingCases = []OutgoingTestCase{
 	{
-		Label:              "Plain send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+12067791234",
-		MockResponseBody:   `{"id": "55555"}`,
-		MockResponseStatus: 200,
+		Label:   "Plain send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+12067791234",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://messaging.bandwidth.com/api/v2/users/accound-id/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{"id": "55555"}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{
@@ -261,15 +263,17 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedExtIDs: []string{"55555"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+12067791234",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{"id": "55555"}`,
-		MockResponseStatus: 200,
+		Label:          "Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+12067791234",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://messaging.bandwidth.com/api/v2/users/accound-id/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{"id": "55555"}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{
@@ -281,15 +285,17 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedExtIDs: []string{"55555"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "Send Attachment no text",
-		MsgText:            "",
-		MsgURN:             "tel:+12067791234",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{"id": "55555"}`,
-		MockResponseStatus: 200,
+		Label:          "Send Attachment no text",
+		MsgText:        "",
+		MsgURN:         "tel:+12067791234",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://messaging.bandwidth.com/api/v2/users/accound-id/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{"id": "55555"}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{
@@ -301,14 +307,16 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedExtIDs: []string{"55555"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "No External ID",
-		MsgText:            "No External ID",
-		MsgURN:             "tel:+12067791234",
-		MockResponseBody:   `{}`,
-		MockResponseStatus: 200,
+		Label:   "No External ID",
+		MsgText: "No External ID",
+		MsgURN:  "tel:+12067791234",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://messaging.bandwidth.com/api/v2/users/accound-id/messages": {
+				httpx.NewMockResponse(200, nil, []byte(`{}`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{
@@ -319,14 +327,16 @@ var outgoingCases = []OutgoingTestCase{
 				Body: `{"applicationId":"application-id","to":["+12067791234"],"from":"2020","text":"No External ID"}`,
 			},
 		},
-		SendPrep: setSendURL,
 	},
 	{
-		Label:              "Error sending",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+12067791234",
-		MockResponseBody:   `{ "type": "request-validation", "description": "Your request could not be accepted" }`,
-		MockResponseStatus: 401,
+		Label:   "Error sending",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+12067791234",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://messaging.bandwidth.com/api/v2/users/accound-id/messages": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "type": "request-validation", "description": "Your request could not be accepted" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{
@@ -338,12 +348,7 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedError: courier.ErrFailedWithReason("request-validation", "Your request could not be accepted"),
-		SendPrep:      setSendURL,
 	},
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL + "?%s"
 }
 
 func TestOutgoing(t *testing.T) {
