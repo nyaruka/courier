@@ -1,7 +1,6 @@
 package africastalking
 
 import (
-	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
@@ -9,6 +8,7 @@ import (
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/httpx"
 )
 
 const (
@@ -109,11 +109,14 @@ func TestIncoming(t *testing.T) {
 
 var outgoingCases = []OutgoingTestCase{
 	{
-		Label:              "Plain Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "SMSMessageData": {"Recipients": [{"status": "Success", "messageId": "1002"}] } }`,
-		MockResponseStatus: 200,
+		Label:   "Plain Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.africastalking.com/version1/messaging": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "SMSMessageData": {"Recipients": [{"status": "Success", "messageId": "1002"}] } }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{
 				Headers: map[string]string{"apikey": "KEY"},
@@ -121,65 +124,68 @@ var outgoingCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedExtIDs: []string{"1002"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "Send Attachment",
-		MsgText:            "My pic!",
-		MsgURN:             "tel:+250788383383",
-		MsgAttachments:     []string{"image/jpeg:https://foo.bar/image.jpg"},
-		MockResponseBody:   `{ "SMSMessageData": {"Recipients": [{"status": "Success", "messageId": "1002"}] } }`,
-		MockResponseStatus: 200,
+		Label:          "Send Attachment",
+		MsgText:        "My pic!",
+		MsgURN:         "tel:+250788383383",
+		MsgAttachments: []string{"image/jpeg:https://foo.bar/image.jpg"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.africastalking.com/version1/messaging": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "SMSMessageData": {"Recipients": [{"status": "Success", "messageId": "1002"}] } }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"message": {"My pic!\nhttps://foo.bar/image.jpg"}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
 		},
 		ExpectedExtIDs: []string{"1002"},
-		SendPrep:       setSendURL,
 	},
 	{
-		Label:              "Explicit failed status",
-		MsgText:            "Hi",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "SMSMessageData": {"Recipients": [{"status": "Failed" }] } }`,
-		MockResponseStatus: 200,
+		Label:   "Explicit failed status",
+		MsgText: "Hi",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.africastalking.com/version1/messaging": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "SMSMessageData": {"Recipients": [{"status": "Failed" }] } }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"message": {`Hi`}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
 		},
 		ExpectedError: courier.ErrResponseUnexpected,
-		SendPrep:      setSendURL,
 	},
 	{
-		Label:              "Missing status value",
-		MsgText:            "Error Message",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "error": "failed" }`,
-		MockResponseStatus: 401,
+		Label:   "Missing status value",
+		MsgText: "Error Message",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.africastalking.com/version1/messaging": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "failed" }`)),
+			},
+		},
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"message": {`Error Message`}, "username": {"Username"}, "to": {"+250788383383"}, "from": {"2020"}}},
 		},
 		ExpectedError: courier.ErrResponseStatus,
-		SendPrep:      setSendURL,
 	},
 }
 
 var sharedOutgoingCases = []OutgoingTestCase{
 	{
-		Label:              "Shared Send",
-		MsgText:            "Simple Message ☺",
-		MsgURN:             "tel:+250788383383",
-		MockResponseBody:   `{ "SMSMessageData": {"Recipients": [{"status": "Success", "messageId": "1002"}] } }`,
-		MockResponseStatus: 200,
-		ExpectedHeaders:    map[string]string{"apikey": "KEY"},
+		Label:   "Shared Send",
+		MsgText: "Simple Message ☺",
+		MsgURN:  "tel:+250788383383",
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.africastalking.com/version1/messaging": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "SMSMessageData": {"Recipients": [{"status": "Success", "messageId": "1002"}] } }`)),
+			},
+		},
+		ExpectedHeaders: map[string]string{"apikey": "KEY"},
 		ExpectedRequests: []ExpectedRequest{
 			{Form: url.Values{"message": {"Simple Message ☺"}, "username": {"Username"}, "to": {"+250788383383"}}},
 		},
 		ExpectedExtIDs: []string{"1002"},
-		SendPrep:       setSendURL,
 	},
-}
-
-func setSendURL(s *httptest.Server, h courier.ChannelHandler, c courier.Channel, m courier.MsgOut) {
-	sendURL = s.URL
 }
 
 func TestOutgoing(t *testing.T) {
