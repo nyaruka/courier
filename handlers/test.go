@@ -318,15 +318,6 @@ type OutgoingTestCase struct {
 	ExpectedLogErrors   []*courier.ChannelError
 	ExpectedContactURNs map[string]bool
 	ExpectedNewURN      string
-
-	MockResponseStatus int          // Deprecated: use MockResponses instead.
-	MockResponseBody   string       // Deprecated: use MockResponses instead.
-	SendPrep           SendPrepFunc // Deprecated: use MockResponses instead.
-
-	ExpectedURLParams   map[string]string // Deprecated: use ExpectedRequests instead.
-	ExpectedPostParams  map[string]string // Deprecated: use ExpectedRequests instead.
-	ExpectedRequestBody string            // Deprecated: use ExpectedRequests instead.
-	ExpectedHeaders     map[string]string // Deprecated: use ExpectedRequests instead.
 }
 
 // Msg creates the test message for this test case
@@ -382,23 +373,6 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 			if len(tc.MockResponses) > 0 {
 				mockHTTP = httpx.NewMockRequestor(tc.MockResponses).Clone()
 				httpx.SetRequestor(mockHTTP)
-			} else {
-				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					// copy request and add to list
-					body, _ := io.ReadAll(r.Body)
-					copy := httptest.NewRequest(r.Method, r.URL.String(), bytes.NewBuffer(body))
-					copy.Header = r.Header
-					actualRequests = append(actualRequests, copy)
-
-					w.WriteHeader(tc.MockResponseStatus)
-					w.Write([]byte(tc.MockResponseBody))
-				}))
-				defer server.Close()
-
-				// call our prep function if we have one
-				if tc.SendPrep != nil {
-					tc.SendPrep(server, handler, channel, msg)
-				}
 			}
 
 			clog := courier.NewChannelLogForSend(msg, handler.RedactValues(channel))
@@ -419,36 +393,7 @@ func RunOutgoingTestCases(t *testing.T, channel courier.Channel, handler courier
 
 			cancel()
 
-			if tc.ExpectedURLParams != nil || tc.ExpectedPostParams != nil || tc.ExpectedRequestBody != "" || tc.ExpectedHeaders != nil {
-				testRequest := actualRequests[len(actualRequests)-1]
-
-				if tc.ExpectedURLParams != nil {
-					require.NotNil(testRequest)
-					for k, v := range tc.ExpectedURLParams {
-						value := testRequest.URL.Query().Get(k)
-						require.Equal(v, value, fmt.Sprintf("%s not equal", k))
-					}
-				}
-				if tc.ExpectedPostParams != nil {
-					require.NotNil(testRequest, "post body should not be nil")
-					for k, v := range tc.ExpectedPostParams {
-						value := testRequest.PostFormValue(k)
-						require.Equal(v, value)
-					}
-				}
-				if tc.ExpectedRequestBody != "" {
-					require.NotNil(testRequest, "request body should not be nil")
-					value, _ := io.ReadAll(testRequest.Body)
-					require.Equal(tc.ExpectedRequestBody, strings.Trim(string(value), "\n"))
-				}
-				if tc.ExpectedHeaders != nil {
-					require.NotNil(testRequest, "headers should not be nil")
-					for k, v := range tc.ExpectedHeaders {
-						value := testRequest.Header.Get(k)
-						require.Equal(v, value)
-					}
-				}
-			} else if len(tc.ExpectedRequests) > 0 {
+			if len(tc.ExpectedRequests) > 0 {
 				assert.Len(t, actualRequests, len(tc.ExpectedRequests), "unexpected number of requests made")
 
 				for i, expectedRequest := range tc.ExpectedRequests {
