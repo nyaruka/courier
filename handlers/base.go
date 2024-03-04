@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-chi/chi"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/httpx"
 )
@@ -96,7 +95,7 @@ func (h *BaseHandler) RedactValues(ch courier.Channel) []string {
 
 // GetChannel returns the channel
 func (h *BaseHandler) GetChannel(ctx context.Context, r *http.Request) (courier.Channel, error) {
-	uuid := courier.ChannelUUID(chi.URLParam(r, "uuid"))
+	uuid := courier.ChannelUUID(r.PathValue("uuid"))
 	return h.backend.GetChannel(ctx, h.ChannelType(), uuid)
 }
 
