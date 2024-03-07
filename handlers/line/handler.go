@@ -317,6 +317,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		if err == nil {
 			jsonMsgs = append(jsonMsgs, string(jsonMsg))
+		} else {
+			return err
 		}
 	}
 

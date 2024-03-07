@@ -514,6 +514,22 @@ var defaultSendTestCases = []OutgoingTestCase{
 		},
 	},
 	{
+		Label:                   "Long messsage, Quick Reply combined and attachment",
+		MsgText:                 "This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say, I need to keep adding more things to make it work",
+		MsgURN:                  "line:uabcdefghij",
+		MsgResponseToExternalID: "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
+		MsgAttachments:          []string{"image/jpeg:http://mock.com/1234/test.jpg"},
+		MsgQuickReplies:         []string{"Yes", "No"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.line.me/v2/bot/message/reply": {httpx.NewMockResponse(200, nil, []byte(`{}`))},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Body: `{"replyToken":"nHuyWiB7yP5Zw52FIkcQobQuGDXCTA","messages":[{"type":"image","originalContentUrl":"http://mock.com/1234/test.jpg","previewImageUrl":"http://mock.com/1234/test.jpg"},{"type":"text","text":"This is a longer message than 160 characters and will cause us to split it into two separate parts, isn't that right but it is even longer than before I say,"},{"type":"text","text":"I need to keep adding more things to make it work","quickReply":{"items":[{"type":"action","action":{"type":"message","label":"Yes","text":"Yes"}},{"type":"action","action":{"type":"message","label":"No","text":"No"}}]}}]}`,
+			},
+		},
+	},
+	{
 		Label:                   "Send Push Message If Invalid Reply",
 		MsgText:                 "Simple Message",
 		MsgURN:                  "line:uabcdefghij",
