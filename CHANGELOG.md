@@ -1,3 +1,8 @@
+v9.1.13 (2024-03-07)
+-------------------------
+ * Return error with line attachments issues
+ * Update to chi v5 and go 1.22
+
 v9.1.12 (2024-02-29)
 -------------------------
  * Replace use of deprecated test fields
