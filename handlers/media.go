@@ -35,30 +35,32 @@ type Attachment struct {
 }
 
 // ResolveAttachments resolves the given attachment strings (content-type:url) into attachment objects
-func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []string, support map[MediaType]MediaTypeSupport, allowURLOnly bool) ([]*Attachment, error) {
+func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []string, support map[MediaType]MediaTypeSupport, allowURLOnly bool, clog *courier.ChannelLog) ([]*Attachment, error) {
 	resolved := make([]*Attachment, 0, len(attachments))
 
 	for _, as := range attachments {
-		att, err := resolveAttachment(ctx, b, as, support, allowURLOnly)
+		// split into content-type and URL
+		parts := strings.SplitN(as, ":", 2)
+		if len(parts) <= 1 || strings.HasPrefix(parts[1], "//") {
+			return nil, errors.Errorf("invalid attachment format: %s", as)
+		}
+		contentType, mediaUrl := parts[0], parts[1]
+
+		att, err := resolveAttachment(ctx, b, contentType, mediaUrl, support, allowURLOnly)
 		if err != nil {
 			return nil, err
 		}
 		if att != nil {
 			resolved = append(resolved, att)
+		} else {
+			clog.Error(courier.ErrorMediaUnresolveable(contentType))
 		}
 	}
 
 	return resolved, nil
 }
 
-func resolveAttachment(ctx context.Context, b courier.Backend, attachment string, support map[MediaType]MediaTypeSupport, allowURLOnly bool) (*Attachment, error) {
-	// split into content-type and URL
-	parts := strings.SplitN(attachment, ":", 2)
-	if len(parts) <= 1 || strings.HasPrefix(parts[1], "//") {
-		return nil, errors.Errorf("invalid attachment format: %s", attachment)
-	}
-	contentType, mediaUrl := parts[0], parts[1]
-
+func resolveAttachment(ctx context.Context, b courier.Backend, contentType, mediaUrl string, support map[MediaType]MediaTypeSupport, allowURLOnly bool) (*Attachment, error) {
 	media, err := b.ResolveMedia(ctx, mediaUrl)
 	if err != nil {
 		return nil, err

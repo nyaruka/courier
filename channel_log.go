@@ -2,7 +2,6 @@ package courier
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/nyaruka/gocommon/dates"
@@ -56,16 +55,13 @@ func ErrorResponseValueMissing(key string) *ChannelError {
 	return NewChannelError("response_value_missing", "", "Unable to find '%s' response.", key)
 }
 
-func ErrorResponseValueUnexpected(key string, expected ...string) *ChannelError {
-	es := make([]string, len(expected))
-	for i := range expected {
-		es[i] = fmt.Sprintf("'%s'", expected[i])
-	}
-	return NewChannelError("response_value_unexpected", "", "Expected '%s' in response to be %s.", key, strings.Join(es, " or "))
-}
-
 func ErrorMediaUnsupported(contentType string) *ChannelError {
 	return NewChannelError("media_unsupported", "", "Unsupported attachment media type: %s.", contentType)
+}
+
+// ErrorMediaUnresolveable is used when media is unresolveable due to the channel's specific requirements
+func ErrorMediaUnresolveable(contentType string) *ChannelError {
+	return NewChannelError("media_unresolveable", "", "Unable to find version of %s attachment compatible with channel.", contentType)
 }
 
 func ErrorAttachmentNotDecodable() *ChannelError {
