@@ -1366,6 +1366,19 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 				Alternates_:  []*Media{},
 			},
 		},
+		{ // image upload that can be resolved
+			url: "http://nyaruka.us-east-1.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+			media: &Media{
+				UUID_:        "ec6972be-809c-4c8d-be59-ba9dbd74c977",
+				Path_:        "/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+				ContentType_: "image/jpeg",
+				URL_:         "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
+				Size_:        123,
+				Width_:       1024,
+				Height_:      768,
+				Alternates_:  []*Media{},
+			},
+		},
 		{ // same image upload, this time from cache
 			url: "http://nyaruka.s3.com/orgs/1/media/ec69/ec6972be-809c-4c8d-be59-ba9dbd74c977/test.jpg",
 			media: &Media{
