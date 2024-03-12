@@ -1,3 +1,8 @@
+v9.1.14 (2024-03-12)
+-------------------------
+ * Remove S3 region is media hostname before matching the media domain
+ * Unresolveable media should create channel log error
+
 v9.1.13 (2024-03-07)
 -------------------------
  * Return error with line attachments issues
