@@ -109,19 +109,14 @@ func TestChannelErrors(t *testing.T) {
 			expectedMessage: "Unable to find 'id' response.",
 		},
 		{
-			err:             courier.ErrorResponseValueUnexpected("status", "SUCCESS"),
-			expectedCode:    "response_value_unexpected",
-			expectedMessage: "Expected 'status' in response to be 'SUCCESS'.",
-		},
-		{
-			err:             courier.ErrorResponseValueUnexpected("status", "SUCCESS", "OK"),
-			expectedCode:    "response_value_unexpected",
-			expectedMessage: "Expected 'status' in response to be 'SUCCESS' or 'OK'.",
-		},
-		{
 			err:             courier.ErrorMediaUnsupported("image/tiff"),
 			expectedCode:    "media_unsupported",
 			expectedMessage: "Unsupported attachment media type: image/tiff.",
+		},
+		{
+			err:             courier.ErrorMediaUnresolveable("image/jpeg"),
+			expectedCode:    "media_unresolveable",
+			expectedMessage: "Unable to find version of image/jpeg attachment compatible with channel.",
 		},
 		{
 			err:             courier.ErrorAttachmentNotDecodable(),

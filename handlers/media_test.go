@@ -34,6 +34,7 @@ func TestResolveAttachments(t *testing.T) {
 		mediaSupport map[handlers.MediaType]handlers.MediaTypeSupport
 		allowURLOnly bool
 		resolved     []*handlers.Attachment
+		errors       []*courier.ChannelError
 		err          string
 	}{
 		{ // 0: user entered image URL
@@ -57,10 +58,11 @@ func TestResolveAttachments(t *testing.T) {
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/png"}}}, // ignored
 			allowURLOnly: false,
 			resolved:     []*handlers.Attachment{},
+			errors:       []*courier.ChannelError{courier.ErrorMediaUnresolveable("image")},
 		},
 		{ // 3: resolveable uploaded image URL
 			attachments:  []string{"image/jpeg:http://mock.com/1234/test.jpg"},
-			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/jpeg", "image/png"}}},
+			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/png", "image/jpeg"}}},
 			allowURLOnly: true,
 			resolved: []*handlers.Attachment{
 				{Type: handlers.MediaTypeImage, Name: "test.jpg", ContentType: "image/jpeg", URL: "http://mock.com/1234/test.jpg", Media: imageJPG, Thumbnail: nil},
@@ -79,12 +81,14 @@ func TestResolveAttachments(t *testing.T) {
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/jpeg", "image/png"}}},
 			allowURLOnly: false,
 			resolved:     []*handlers.Attachment{},
+			errors:       []*courier.ChannelError{courier.ErrorMediaUnresolveable("image/jpeg")},
 		},
 		{ // 6: resolveable uploaded image URL, type not in supported types
 			attachments:  []string{"image/jpeg:http://mock.com/1234/test.jpg"},
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/png"}}},
 			allowURLOnly: true,
 			resolved:     []*handlers.Attachment{},
+			errors:       []*courier.ChannelError{courier.ErrorMediaUnresolveable("image/jpeg")},
 		},
 		{ // 7: resolveable uploaded audio URL, type in supported types
 			attachments:  []string{"audio/mp3:http://mock.com/3456/test.mp3"},
@@ -123,6 +127,7 @@ func TestResolveAttachments(t *testing.T) {
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeVideo: {Types: []string{"video/quicktime"}, MaxBytes: 10 * 1024 * 1024}},
 			allowURLOnly: true,
 			resolved:     []*handlers.Attachment{},
+			errors:       []*courier.ChannelError{courier.ErrorMediaUnresolveable("video/quicktime")},
 		},
 		{ // 12: invalid attachment format
 			attachments:  []string{"image"},
@@ -137,12 +142,15 @@ func TestResolveAttachments(t *testing.T) {
 	}
 
 	for i, tc := range tcs {
-		resolved, err := handlers.ResolveAttachments(ctx, mb, tc.attachments, tc.mediaSupport, tc.allowURLOnly)
+		clog := courier.NewChannelLog(courier.ChannelLogTypeMsgSend, nil, nil)
+
+		resolved, err := handlers.ResolveAttachments(ctx, mb, tc.attachments, tc.mediaSupport, tc.allowURLOnly, clog)
 		if tc.err != "" {
 			assert.EqualError(t, err, tc.err, "expected error for test %d", i)
 		} else {
 			assert.NoError(t, err, "unexpected error for test %d", i)
-			assert.Equal(t, tc.resolved, resolved, "mismatch for test %d", i)
+			assert.Equal(t, tc.resolved, resolved, "resolved mismatch for test %d", i)
+			assert.Equal(t, tc.errors, clog.Errors(), "errors mismatch for test %d", i)
 		}
 	}
 }
