@@ -682,8 +682,8 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 }
 
 func (ts *BackendTestSuite) TestSentExternalIDCaching() {
-	r := ts.b.redisPool.Get()
-	defer r.Close()
+	rc := ts.b.redisPool.Get()
+	defer rc.Close()
 
 	ctx := context.Background()
 	channel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
@@ -700,10 +700,10 @@ func (ts *BackendTestSuite) TestSentExternalIDCaching() {
 	// give batcher time to write it
 	time.Sleep(time.Millisecond * 600)
 
-	keys, err := redis.Strings(r.Do("KEYS", "sent-external-ids:*"))
+	keys, err := redis.Strings(rc.Do("KEYS", "sent-external-ids:*"))
 	ts.NoError(err)
 	ts.Len(keys, 1)
-	assertredis.HGetAll(ts.T(), ts.b.redisPool, keys[0], map[string]string{"10|ex457": "10000"})
+	assertredis.HGetAll(ts.T(), rc, keys[0], map[string]string{"10|ex457": "10000"})
 
 	// mimic a delay in that status being written by reverting the db changes
 	ts.b.db.MustExec(`UPDATE msgs_msg SET status = 'W', external_id = NULL WHERE id = 10000`)
@@ -732,8 +732,8 @@ func (ts *BackendTestSuite) TestHeartbeat() {
 }
 
 func (ts *BackendTestSuite) TestCheckForDuplicate() {
-	r := ts.b.redisPool.Get()
-	defer r.Close()
+	rc := ts.b.redisPool.Get()
+	defer rc.Close()
 
 	ctx := context.Background()
 	knChannel := ts.getChannel("KN", "dbc126ed-66bc-4e28-b67b-81dc3327c95d")
@@ -752,10 +752,10 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 	msg1 := createAndWriteMsg(knChannel, urn, "ping", "")
 	ts.False(msg1.alreadyWritten)
 
-	keys, err := redis.Strings(r.Do("KEYS", "seen-msgs:*"))
+	keys, err := redis.Strings(rc.Do("KEYS", "seen-msgs:*"))
 	ts.NoError(err)
 	ts.Len(keys, 1)
-	assertredis.HGetAll(ts.T(), ts.b.redisPool, keys[0], map[string]string{
+	assertredis.HGetAll(ts.T(), rc, keys[0], map[string]string{
 		"dbc126ed-66bc-4e28-b67b-81dc3327c95d|tel:+12065551215": string(msg1.UUID()) + "|fb826459f96c6e3ee563238d158a24702afbdd78",
 	})
 
@@ -778,7 +778,7 @@ func (ts *BackendTestSuite) TestCheckForDuplicate() {
 
 	msgJSON, err := json.Marshal([]any{dbMsg})
 	ts.NoError(err)
-	err = queue.PushOntoQueue(r, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
+	err = queue.PushOntoQueue(rc, msgQueueName, "dbc126ed-66bc-4e28-b67b-81dc3327c95d", 10, string(msgJSON), queue.HighPriority)
 	ts.NoError(err)
 	_, err = ts.b.PopNextOutgoingMsg(ctx)
 	ts.NoError(err)
@@ -1347,6 +1347,8 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 
 func (ts *BackendTestSuite) TestResolveMedia() {
 	ctx := context.Background()
+	rc := ts.b.redisPool.Get()
+	defer rc.Close()
 
 	tcs := []struct {
 		url   string
@@ -1446,22 +1448,25 @@ func (ts *BackendTestSuite) TestResolveMedia() {
 	}
 
 	// check we've cached 3 media lookups
-	assertredis.HLen(ts.T(), ts.b.redisPool, fmt.Sprintf("media-lookups:%s", time.Now().In(time.UTC).Format("2006-01-02")), 3)
+	assertredis.HLen(ts.T(), rc, fmt.Sprintf("media-lookups:%s", time.Now().In(time.UTC).Format("2006-01-02")), 3)
 }
 
 func (ts *BackendTestSuite) assertNoQueuedContactTask(contactID ContactID) {
-	assertredis.ZCard(ts.T(), ts.b.redisPool, "handler:1", 0)
-	assertredis.ZCard(ts.T(), ts.b.redisPool, "handler:active", 0)
-	assertredis.LLen(ts.T(), ts.b.redisPool, fmt.Sprintf("c:1:%d", contactID), 0)
+	rc := ts.b.redisPool.Get()
+	defer rc.Close()
+
+	assertredis.ZCard(ts.T(), rc, "handler:1", 0)
+	assertredis.ZCard(ts.T(), rc, "handler:active", 0)
+	assertredis.LLen(ts.T(), rc, fmt.Sprintf("c:1:%d", contactID), 0)
 }
 
 func (ts *BackendTestSuite) assertQueuedContactTask(contactID ContactID, expectedType string, expectedBody map[string]any) {
-	assertredis.ZCard(ts.T(), ts.b.redisPool, "handler:1", 1)
-	assertredis.ZCard(ts.T(), ts.b.redisPool, "handler:active", 1)
-	assertredis.LLen(ts.T(), ts.b.redisPool, fmt.Sprintf("c:1:%d", contactID), 1)
-
 	rc := ts.b.redisPool.Get()
 	defer rc.Close()
+
+	assertredis.ZCard(ts.T(), rc, "handler:1", 1)
+	assertredis.ZCard(ts.T(), rc, "handler:active", 1)
+	assertredis.LLen(ts.T(), rc, fmt.Sprintf("c:1:%d", contactID), 1)
 
 	data, err := redis.Bytes(rc.Do("LPOP", fmt.Sprintf("c:1:%d", contactID)))
 	ts.NoError(err)
