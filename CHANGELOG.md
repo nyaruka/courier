@@ -1,3 +1,7 @@
+v9.1.15 (2024-03-14)
+-------------------------
+ * Update deps
+
 v9.1.14 (2024-03-12)
 -------------------------
  * Remove S3 region is media hostname before matching the media domain
