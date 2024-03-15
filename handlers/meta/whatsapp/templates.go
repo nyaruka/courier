@@ -47,31 +47,23 @@ func GetTemplating(msg courier.MsgOut) (*MsgTemplating, error) {
 	return metadata.Templating, nil
 }
 
-func GetTemplatePayload(templating MsgTemplating) *Template {
-	template := &Template{Name: templating.Template.Name, Language: &Language{Policy: "deterministic", Code: templating.Language}}
+func GetTemplatePayload(templating *MsgTemplating) *Template {
+	template := &Template{
+		Name:       templating.Template.Name,
+		Language:   &Language{Policy: "deterministic", Code: templating.Language},
+		Components: []*Component{},
+	}
 
 	compKeys := maps.Keys(templating.Params)
 	sort.Strings(compKeys) // so that final component order is deterministic
 
 	for _, k := range compKeys {
 		v := templating.Params[k]
+		var component *Component
 
-		if strings.HasPrefix(k, "button.") {
+		if k == "header" {
+			component = &Component{Type: "header"}
 
-			for _, p := range v {
-				if p.Type == "url" {
-					component := &Component{Type: "button", Index: strings.TrimPrefix(k, "button."), SubType: "quick_reply"}
-					component.Params = append(component.Params, &Param{Type: "text", Text: p.Value})
-					template.Components = append(template.Components, component)
-				} else {
-					component := &Component{Type: "button", Index: strings.TrimPrefix(k, "button."), SubType: "quick_reply"}
-					component.Params = append(component.Params, &Param{Type: "payload", Payload: p.Value})
-					template.Components = append(template.Components, component)
-				}
-			}
-
-		} else if k == "header" {
-			component := &Component{Type: "header"}
 			for _, p := range v {
 				if p.Type == "image" {
 					component.Params = append(component.Params, &Param{Type: p.Type, Image: &struct {
@@ -89,17 +81,27 @@ func GetTemplatePayload(templating MsgTemplating) *Template {
 					component.Params = append(component.Params, &Param{Type: p.Type, Text: p.Value})
 				}
 			}
-			template.Components = append(template.Components, component)
+		} else if k == "body" {
+			component = &Component{Type: "body"}
 
-		} else {
-			component := &Component{Type: "body"}
 			for _, p := range v {
 				component.Params = append(component.Params, &Param{Type: p.Type, Text: p.Value})
 			}
-			template.Components = append(template.Components, component)
+		} else if strings.HasPrefix(k, "button.") {
+			component = &Component{Type: "button", Index: strings.TrimPrefix(k, "button."), SubType: "quick_reply", Params: []*Param{}}
 
+			for _, p := range v {
+				if p.Type == "url" {
+					component.Params = append(component.Params, &Param{Type: "text", Text: p.Value})
+				} else {
+					component.Params = append(component.Params, &Param{Type: "payload", Payload: p.Value})
+				}
+			}
 		}
 
+		if component != nil {
+			template.Components = append(template.Components, component)
+		}
 	}
 
 	return template
