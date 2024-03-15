@@ -1,3 +1,8 @@
+v9.1.17 (2024-03-15)
+-------------------------
+ * Fix WA templating generation and add tests
+ * Fix max length for D3C
+
 v9.1.16 (2024-03-15)
 -------------------------
  * Make parameter with type url to be sent as url buttons in WA handler
