@@ -2,11 +2,13 @@ package whatsapp
 
 import (
 	"encoding/json"
+	"sort"
 	"strings"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils"
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 )
 
 type MsgTemplating struct {
@@ -48,7 +50,12 @@ func GetTemplating(msg courier.MsgOut) (*MsgTemplating, error) {
 func GetTemplatePayload(templating MsgTemplating) *Template {
 	template := &Template{Name: templating.Template.Name, Language: &Language{Policy: "deterministic", Code: templating.Language}}
 
-	for k, v := range templating.Params {
+	compKeys := maps.Keys(templating.Params)
+	sort.Strings(compKeys) // so that final component order is deterministic
+
+	for _, k := range compKeys {
+		v := templating.Params[k]
+
 		if strings.HasPrefix(k, "button.") {
 
 			for _, p := range v {
