@@ -422,6 +422,45 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
+		Label:     "Template Send, buttons params",
+		MsgText:   "templated message",
+		MsgURN:    "whatsapp:250788123123",
+		MsgLocale: "eng",
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "params": {
+			"body": [
+				{
+					"type": "text",
+					"value": "Ryan Lewis"
+				},
+				{
+					"type": "text",
+					"value": "niño"
+				}
+			],
+			"button.0": [
+				{
+					"type": "text",
+					"value": "Sip"
+				}
+			],
+			"button.1": [
+				{
+					"type": "url",
+					"value": "id00231"
+				}
+			]
+		}, "language": "en_US"}}`),
+		MockResponses: map[string][]*httpx.MockResponse{
+			"*/12345_ID/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"template","template":{"name":"revive_issue","language":{"policy":"deterministic","code":"en_US"},"components":[{"type":"body","sub_type":"","index":"","parameters":[{"type":"text","text":"Ryan Lewis"},{"type":"text","text":"niño"}]},{"type":"button","sub_type":"quick_reply","index":"0","parameters":[{"type":"payload","payload":"Sip"}]},{"type":"button","sub_type":"quick_reply","index":"1","parameters":[{"type":"text","text":"id00231"}]}]}}`,
+		}},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
 		Label:           "Interactive Button Message Send",
 		MsgText:         "Interactive Button Msg",
 		MsgURN:          "whatsapp:250788123123",

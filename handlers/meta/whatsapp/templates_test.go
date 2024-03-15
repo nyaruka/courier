@@ -33,7 +33,7 @@ func TestGetTemplating(t *testing.T) {
 
 	msg.WithMetadata(json.RawMessage(`{"templating": {"template": {"uuid": "4ed5000f-5c94-4143-9697-b7cbd230a381", "name": "Update"}}}`))
 
-	// invalid templating in metadata, error
+	// valid templating, no error
 	tpl, err = whatsapp.GetTemplating(msg)
 	assert.NoError(t, err)
 	assert.Equal(t, "4ed5000f-5c94-4143-9697-b7cbd230a381", tpl.Template.UUID)
