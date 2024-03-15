@@ -27,7 +27,7 @@ const (
 
 var (
 	// max for the body
-	maxMsgLength = 1000
+	maxMsgLength = 4096
 )
 
 func init() {

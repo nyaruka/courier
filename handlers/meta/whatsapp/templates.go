@@ -102,5 +102,9 @@ func GetTemplatePayload(templating MsgTemplating) *Template {
 
 	}
 
+	sort.SliceStable(template.Components, func(i, j int) bool {
+		return template.Components[i].Index < template.Components[j].Index
+	})
+
 	return template
 }
