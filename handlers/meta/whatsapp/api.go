@@ -155,8 +155,8 @@ type Param struct {
 
 type Component struct {
 	Type    string   `json:"type"`
-	SubType string   `json:"sub_type"`
-	Index   string   `json:"index"`
+	SubType string   `json:"sub_type,omitempty"`
+	Index   string   `json:"index,omitempty"`
 	Params  []*Param `json:"parameters"`
 }
 
