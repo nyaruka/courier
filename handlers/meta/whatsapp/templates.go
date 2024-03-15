@@ -52,7 +52,7 @@ func GetTemplatePayload(templating MsgTemplating) *Template {
 		if strings.HasPrefix(k, "button.") {
 
 			for _, p := range v {
-				if p.Type == "url" || strings.HasPrefix(p.Value, "http") {
+				if p.Type == "url" {
 					component := &Component{Type: "button", Index: strings.TrimPrefix(k, "button."), SubType: "quick_reply"}
 					component.Params = append(component.Params, &Param{Type: "text", Text: p.Value})
 					template.Components = append(template.Components, component)
