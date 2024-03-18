@@ -92,6 +92,7 @@ func GetTemplatePayload(templating *MsgTemplating) *Template {
 
 			for _, p := range v {
 				if p.Type == "url" {
+					component.SubType = "url"
 					component.Params = append(component.Params, &Param{Type: "text", Text: p.Value})
 				} else {
 					component.Params = append(component.Params, &Param{Type: "payload", Payload: p.Value})

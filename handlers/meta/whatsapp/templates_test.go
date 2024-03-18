@@ -84,7 +84,8 @@ func TestGetTemplatePayload(t *testing.T) {
 				"language": "en",
 				"params": {
 					"button.1": [{"type": "text", "value": "No"}],
-					"button.0": [{"type": "text", "value": "Yes"}, {"type": "text", "value": "Bob"}]
+					"button.0": [{"type": "text", "value": "Yes"}, {"type": "text", "value": "Bob"}],
+					"button.2": [{"type": "url", "value": "id0023"}]
 				}
 			}`,
 			expected: &whatsapp.Template{
@@ -93,6 +94,7 @@ func TestGetTemplatePayload(t *testing.T) {
 				Components: []*whatsapp.Component{
 					{Type: "button", SubType: "quick_reply", Index: "0", Params: []*whatsapp.Param{{Type: "payload", Payload: "Yes"}, {Type: "payload", Payload: "Bob"}}},
 					{Type: "button", SubType: "quick_reply", Index: "1", Params: []*whatsapp.Param{{Type: "payload", Payload: "No"}}},
+					{Type: "button", SubType: "url", Index: "2", Params: []*whatsapp.Param{{Type: "text", Text: "id0023"}}},
 				},
 			},
 		},
