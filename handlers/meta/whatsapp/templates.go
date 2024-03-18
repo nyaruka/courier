@@ -65,6 +65,20 @@ func GetTemplatePayload(templating *MsgTemplating) *Template {
 			component = &Component{Type: "header"}
 
 			for _, p := range v {
+				if p.Type == "url" {
+					component := &Component{Type: "button", Index: strings.TrimPrefix(k, "button."), SubType: "url"}
+					component.Params = append(component.Params, &Param{Type: "text", Text: p.Value})
+					template.Components = append(template.Components, component)
+				} else {
+					component := &Component{Type: "button", Index: strings.TrimPrefix(k, "button."), SubType: "quick_reply"}
+					component.Params = append(component.Params, &Param{Type: "payload", Payload: p.Value})
+					template.Components = append(template.Components, component)
+				}
+			}
+
+		} else if k == "header" {
+			component := &Component{Type: "header"}
+			for _, p := range v {
 				if p.Type == "image" {
 					component.Params = append(component.Params, &Param{Type: p.Type, Image: &struct {
 						Link string "json:\"link,omitempty\""
