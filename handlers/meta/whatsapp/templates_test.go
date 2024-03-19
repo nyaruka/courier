@@ -64,17 +64,25 @@ func TestGetTemplatePayload(t *testing.T) {
 			templating: `{
 				"template": {"uuid": "4ed5000f-5c94-4143-9697-b7cbd230a381", "name": "Update"},
 				"language": "en",
-				"params": {
-					"header": [{"type": "text", "value": "Welome"}],
-					"body": [{"type": "text", "value": "Hello"}, {"type": "text", "value": "Bob"}]
-				}
+				"components": [
+					{
+						"type": "header",
+						"name": "header",
+						"params": [{"type": "text", "value": "Welcome"}]
+					},
+					{
+						"type": "body",
+						"name": "body",
+						"params": [{"type": "text", "value": "Hello"}, {"type": "text", "value": "Bob"}]
+					}
+				]
 			}`,
 			expected: &whatsapp.Template{
 				Name:     "Update",
 				Language: &whatsapp.Language{Policy: "deterministic", Code: "en"},
 				Components: []*whatsapp.Component{
+					{Type: "header", Params: []*whatsapp.Param{{Type: "text", Text: "Welcome"}}},
 					{Type: "body", Params: []*whatsapp.Param{{Type: "text", Text: "Hello"}, {Type: "text", Text: "Bob"}}},
-					{Type: "header", Params: []*whatsapp.Param{{Type: "text", Text: "Welome"}}},
 				},
 			},
 		},
@@ -82,11 +90,23 @@ func TestGetTemplatePayload(t *testing.T) {
 			templating: `{
 				"template": {"uuid": "4ed5000f-5c94-4143-9697-b7cbd230a381", "name": "Update"},
 				"language": "en",
-				"params": {
-					"button.1": [{"type": "text", "value": "No"}],
-					"button.0": [{"type": "text", "value": "Yes"}, {"type": "text", "value": "Bob"}],
-					"button.2": [{"type": "url", "value": "id0023"}]
-				}
+				"components": [
+					{
+						"type": "button/quick_reply",
+						"name": "button.0",
+						"params": [{"type": "text", "value": "Yes"}, {"type": "text", "value": "Bob"}]
+					},
+					{
+						"type": "button/quick_reply",
+						"name": "button.1",
+						"params" : [{"type": "text", "value": "No"}]
+					},
+					{
+						"type": "button/url",
+						"name": "button.2",
+						"params": [{"type": "url", "value": "id0023"}]
+					}
+				]
 			}`,
 			expected: &whatsapp.Template{
 				Name:     "Update",

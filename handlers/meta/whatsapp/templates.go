@@ -2,13 +2,12 @@ package whatsapp
 
 import (
 	"encoding/json"
-	"sort"
+	"fmt"
 	"strings"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils"
 	"github.com/pkg/errors"
-	"golang.org/x/exp/maps"
 )
 
 type MsgTemplating struct {
@@ -16,11 +15,14 @@ type MsgTemplating struct {
 		Name string `json:"name" validate:"required"`
 		UUID string `json:"uuid" validate:"required"`
 	} `json:"template" validate:"required,dive"`
-	Namespace string `json:"namespace"`
-	Params    map[string][]struct {
-		Type  string `json:"type"`
-		Value string `json:"value"`
-	} `json:"params"`
+	Namespace  string `json:"namespace"`
+	Components []struct {
+		Type   string `json:"type"`
+		Params []struct {
+			Type  string `json:"type"`
+			Value string `json:"value"`
+		} `json:"params"`
+	} `json:"components"`
 	Language string `json:"language"`
 }
 
@@ -54,17 +56,14 @@ func GetTemplatePayload(templating *MsgTemplating) *Template {
 		Components: []*Component{},
 	}
 
-	compKeys := maps.Keys(templating.Params)
-	sort.Strings(compKeys) // so that final component order is deterministic
-
-	for _, k := range compKeys {
-		v := templating.Params[k]
+	buttonIndex := -1
+	for _, comp := range templating.Components {
 		var component *Component
 
-		if k == "header" {
-			component = &Component{Type: "header"}
+		if comp.Type == "header" {
+			component = &Component{Type: comp.Type}
 
-			for _, p := range v {
+			for _, p := range comp.Params {
 				if p.Type == "image" {
 					component.Params = append(component.Params, &Param{Type: p.Type, Image: &struct {
 						Link string "json:\"link,omitempty\""
@@ -81,18 +80,19 @@ func GetTemplatePayload(templating *MsgTemplating) *Template {
 					component.Params = append(component.Params, &Param{Type: p.Type, Text: p.Value})
 				}
 			}
-		} else if k == "body" {
-			component = &Component{Type: "body"}
+		} else if comp.Type == "body" {
+			component = &Component{Type: comp.Type}
 
-			for _, p := range v {
+			for _, p := range comp.Params {
 				component.Params = append(component.Params, &Param{Type: p.Type, Text: p.Value})
 			}
-		} else if strings.HasPrefix(k, "button.") {
-			component = &Component{Type: "button", Index: strings.TrimPrefix(k, "button."), SubType: "quick_reply", Params: []*Param{}}
+		} else if strings.HasPrefix(comp.Type, "button/") {
+			buttonIndex += 1
 
-			for _, p := range v {
-				if p.Type == "url" {
-					component.SubType = "url"
+			component = &Component{Type: "button", Index: fmt.Sprint(buttonIndex), SubType: strings.TrimPrefix(comp.Type, "button/"), Params: []*Param{}}
+
+			for _, p := range comp.Params {
+				if comp.Type == "button/url" {
 					component.Params = append(component.Params, &Param{Type: "text", Text: p.Value})
 				} else {
 					component.Params = append(component.Params, &Param{Type: "payload", Payload: p.Value})
