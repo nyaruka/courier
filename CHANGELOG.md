@@ -1,3 +1,7 @@
+v9.1.18 (2024-03-20)
+-------------------------
+ * Update to use templating components with type
+
 v9.1.17 (2024-03-15)
 -------------------------
  * Fix WA templating generation and add tests
