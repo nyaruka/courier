@@ -1,3 +1,7 @@
+v9.1.19 (2024-03-20)
+-------------------------
+ * Use component name to find button index
+
 v9.1.18 (2024-03-20)
 -------------------------
  * Update to use templating components with type
