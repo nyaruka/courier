@@ -429,6 +429,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" },"components": [
 			{
 				"type": "body",
+				"name": "body",
 				"params": [
 					{
 						"type": "text",
@@ -442,6 +443,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			},
 			{
 				"type": "button/quick_reply",
+				"name": "button.0",
 				"params": [
 					{
 						"type": "text",
@@ -451,6 +453,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 			},
 			{
 				"type": "button/url",
+				"name": "button.1",
 				"params": [
 					{
 						"type": "url",
