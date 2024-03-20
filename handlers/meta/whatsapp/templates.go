@@ -2,7 +2,6 @@ package whatsapp
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/nyaruka/courier"
@@ -18,6 +17,7 @@ type MsgTemplating struct {
 	Namespace  string `json:"namespace"`
 	Components []struct {
 		Type   string `json:"type"`
+		Name   string `json:"name"`
 		Params []struct {
 			Type  string `json:"type"`
 			Value string `json:"value"`
@@ -56,7 +56,6 @@ func GetTemplatePayload(templating *MsgTemplating) *Template {
 		Components: []*Component{},
 	}
 
-	buttonIndex := -1
 	for _, comp := range templating.Components {
 		var component *Component
 
@@ -87,9 +86,7 @@ func GetTemplatePayload(templating *MsgTemplating) *Template {
 				component.Params = append(component.Params, &Param{Type: p.Type, Text: p.Value})
 			}
 		} else if strings.HasPrefix(comp.Type, "button/") {
-			buttonIndex += 1
-
-			component = &Component{Type: "button", Index: fmt.Sprint(buttonIndex), SubType: strings.TrimPrefix(comp.Type, "button/"), Params: []*Param{}}
+			component = &Component{Type: "button", Index: strings.TrimPrefix(comp.Name, "button."), SubType: strings.TrimPrefix(comp.Type, "button/"), Params: []*Param{}}
 
 			for _, p := range comp.Params {
 				if comp.Type == "button/url" {
