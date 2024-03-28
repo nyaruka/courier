@@ -189,7 +189,7 @@ func (ts *BackendTestSuite) TestDeleteMsgByExternalID() {
 	err = ts.b.DeleteMsgByExternalID(ctx, knChannel, "ext2")
 	ts.Nil(err)
 
-	ts.assertQueuedContactTask(ContactID(100), "msg_deleted", map[string]any{"org_id": float64(1), "msg_id": float64(10002)})
+	ts.assertQueuedContactTask(ContactID(100), "msg_deleted", map[string]any{"msg_id": float64(10002)})
 }
 
 func (ts *BackendTestSuite) TestContact() {
@@ -1169,8 +1169,6 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.NoError(err)
 
 	ts.assertQueuedContactTask(msg.ContactID_, "msg_event", map[string]any{
-		"contact_id":      float64(contact.ID_),
-		"org_id":          float64(1),
 		"channel_id":      float64(10),
 		"msg_id":          float64(msg.ID_),
 		"msg_uuid":        string(msg.UUID()),
@@ -1335,13 +1333,13 @@ func (ts *BackendTestSuite) TestMailroomEvents() {
 	ts.Equal(contact.URNID_, dbE.ContactURNID_)
 
 	ts.assertQueuedContactTask(contact.ID_, "referral", map[string]any{
+		"event_id":    float64(dbE.ID_),
+		"event_type":  "referral",
 		"channel_id":  float64(10),
-		"contact_id":  float64(contact.ID_),
-		"extra":       map[string]any{"ref_id": "12345"},
-		"new_contact": contact.IsNew_,
-		"occurred_on": "2020-08-05T13:30:00.123456789Z",
-		"org_id":      float64(1),
 		"urn_id":      float64(contact.URNID_),
+		"extra":       map[string]any{"ref_id": "12345"},
+		"new_contact": false,
+		"occurred_on": "2020-08-05T13:30:00.123456789Z",
 	})
 }
 
