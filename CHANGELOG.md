@@ -1,3 +1,7 @@
+v9.1.21 (2024-03-28)
+-------------------------
+ * Queue all channel events to mailroom as a single task type
+
 v9.1.20 (2024-03-28)
 -------------------------
  * Update payloads for tasks queued to mailroom
