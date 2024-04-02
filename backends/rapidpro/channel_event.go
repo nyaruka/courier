@@ -134,8 +134,8 @@ func writeChannelEvent(ctx context.Context, b *backend, event courier.ChannelEve
 
 const sqlInsertChannelEvent = `
 INSERT INTO 
-	channels_channelevent( org_id,  channel_id,  contact_id,  contact_urn_id,  event_type,  optin_id,  extra,  occurred_on, created_on,  log_uuids)
-				   VALUES(:org_id, :channel_id, :contact_id, :contact_urn_id, :event_type, :optin_id, :extra, :occurred_on,      NOW(), :log_uuids)
+	channels_channelevent( org_id,  channel_id,  contact_id,  contact_urn_id,  event_type,  optin_id,  extra,  occurred_on, created_on, status,  log_uuids)
+				   VALUES(:org_id, :channel_id, :contact_id, :contact_urn_id, :event_type, :optin_id, :extra, :occurred_on,      NOW(), 'P',    :log_uuids)
 RETURNING id, created_on`
 
 // writeChannelEventToDB writes the passed in channel event to our db
