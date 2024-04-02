@@ -113,6 +113,7 @@ DROP TABLE IF EXISTS channels_channelevent CASCADE;
 CREATE TABLE channels_channelevent (
     id serial primary key,
     event_type character varying(16) NOT NULL,
+    status character varying(1) NOT NULL,
     extra text,
     occurred_on timestamp with time zone NOT NULL,
     created_on timestamp with time zone NOT NULL,
