@@ -1,3 +1,7 @@
+v9.1.22 (2024-04-02)
+-------------------------
+ * Start writing status field on channel events as P
+
 v9.1.21 (2024-03-28)
 -------------------------
  * Queue all channel events to mailroom as a single task type
