@@ -766,7 +766,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:     "templated message",
 		MsgURN:      "whatsapp:250788123123",
 		MsgLocale:   "eng",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "params": {"body": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}}}`),
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}]}}`),
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -784,7 +784,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:     "templated message",
 		MsgURN:      "whatsapp:250788123123",
 		MsgLocale:   "eng",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "params": {}}}`),
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": []}}`),
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -802,7 +802,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:     "templated message",
 		MsgURN:      "whatsapp:250788123123",
 		MsgLocale:   "eng-US",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "params": {"body": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}}}`),
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}]}}`),
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -820,7 +820,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:     "templated message",
 		MsgURN:      "whatsapp:250788123123",
 		MsgLocale:   "eng-US",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "namespace": "wa_template_namespace", "params": {"body": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}}}`),
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "namespace": "wa_template_namespace", "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}]}}`),
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -838,7 +838,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:     "templated message",
 		MsgURN:      "whatsapp:250788123123",
 		MsgLocale:   "bnt",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "params": {"body": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}}}`),
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}]}}`),
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
