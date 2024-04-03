@@ -1,3 +1,7 @@
+v9.1.23 (2024-04-03)
+-------------------------
+ * Adjust legacy WA channel handler to use templating components
+
 v9.1.22 (2024-04-02)
 -------------------------
  * Start writing status field on channel events as P
