@@ -14,12 +14,14 @@ type MsgTemplating struct {
 		Name string `json:"name" validate:"required"`
 		UUID string `json:"uuid" validate:"required"`
 	} `json:"template" validate:"required,dive"`
-	Namespace  string `json:"namespace"`
-	Components []struct {
+	Namespace   string `json:"namespace"`
+	ExternalID_ string `json:"external_id"`
+	Components  []struct {
 		Type   string `json:"type"`
 		Name   string `json:"name"`
 		Params []struct {
 			Type  string `json:"type"`
+			Name  string `json:"name"`
 			Value string `json:"value"`
 		} `json:"params"`
 	} `json:"components"`

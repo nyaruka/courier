@@ -16,6 +16,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/handlers/meta/whatsapp"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
@@ -697,7 +698,7 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 
 	} else {
 		// do we have a template?
-		templating, err := h.getTemplating(msg)
+		templating, err := whatsapp.GetTemplating(msg)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
 		}
@@ -1078,45 +1079,6 @@ func (h *handler) checkWhatsAppContact(channel courier.Channel, baseURL string, 
 			return respBody, courier.ErrResponseUnexpected
 		}
 	}
-}
-
-func (h *handler) getTemplating(msg courier.MsgOut) (*MsgTemplating, error) {
-	if len(msg.Metadata()) == 0 {
-		return nil, nil
-	}
-
-	metadata := &struct {
-		Templating *MsgTemplating `json:"templating"`
-	}{}
-	if err := json.Unmarshal(msg.Metadata(), metadata); err != nil {
-		return nil, err
-	}
-
-	if metadata.Templating == nil {
-		return nil, nil
-	}
-
-	if err := utils.Validate(metadata.Templating); err != nil {
-		return nil, errors.Wrapf(err, "invalid templating definition")
-	}
-
-	return metadata.Templating, nil
-}
-
-type MsgTemplating struct {
-	Template struct {
-		Name string `json:"name" validate:"required"`
-		UUID string `json:"uuid" validate:"required"`
-	} `json:"template" validate:"required,dive"`
-	Namespace  string `json:"namespace"`
-	Components []struct {
-		Type   string `json:"type"`
-		Name   string `json:"name"`
-		Params []struct {
-			Type  string `json:"type"`
-			Value string `json:"value"`
-		} `json:"params"`
-	} `json:"components"`
 }
 
 func getSupportedLanguage(lc i18n.Locale) string {
