@@ -1110,7 +1110,14 @@ var twaSendTestCases = []OutgoingTestCase{
 		}},
 		ExpectedExtIDs: []string{"1002"},
 	},
-
+	{
+		Label:         "Template Send missing external ID",
+		MsgText:       "templated message",
+		MsgURN:        "whatsapp:250788383383",
+		MsgLocale:     "eng",
+		MsgMetadata:   json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "name": "1", "value":"Chef"}, {"type": "text" , "name": "2", "value": "tomorrow"}]}]}}`),
+		ExpectedError: courier.ErrFailedWithReason("", "template missing contentSID"),
+	},
 	{
 		Label:       "Error Code",
 		MsgText:     "Error Code",

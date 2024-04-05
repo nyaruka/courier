@@ -240,6 +240,11 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 
 	if templating != nil && channel.IsScheme(urns.WhatsAppScheme) {
+
+		if templating.ExternalID == "" {
+			return courier.ErrFailedWithReason("", "template missing contentSID")
+		}
+
 		// build our request
 		form := url.Values{
 			"To":             []string{fmt.Sprintf("%s:+%s", urns.WhatsAppScheme, msg.URN().Path())},
