@@ -11,6 +11,7 @@ import (
 	"crypto/sha1"
 	_ "embed"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -22,9 +23,11 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/courier/handlers/meta/whatsapp"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -230,34 +233,35 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		return err
 	}
 
-	parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
-	for i, part := range parts {
+	// do we have a template?
+	templating, err := whatsapp.GetTemplating(msg)
+	if err != nil {
+		return errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
+	}
+
+	if templating != nil && channel.IsScheme(urns.WhatsAppScheme) {
 		// build our request
 		form := url.Values{
-			"To":             []string{msg.URN().Path()},
-			"Body":           []string{part},
+			"To":             []string{fmt.Sprintf("%s:+%s", urns.WhatsAppScheme, msg.URN().Path())},
 			"StatusCallback": []string{callbackURL},
+			"ContentSid":     []string{templating.ExternalID},
+			"From":           []string{fmt.Sprintf("%s:%s", urns.WhatsAppScheme, channel.Address())},
 		}
 
-		// add any attachments to the first part
-		if i == 0 {
-			for _, a := range attachments {
-				form.Add("MediaUrl", a.URL)
+		contentVariables := make(map[string]string)
+
+		for _, comp := range templating.Components {
+			if comp.Type == "body" {
+				for _, p := range comp.Params {
+					contentVariables[p.Name] = p.Value
+				}
 			}
 		}
 
-		// set our from, either as a messaging service or from our address
-		serviceSID := channel.StringConfigForKey(configMessagingServiceSID, "")
-		if serviceSID != "" {
-			form["MessagingServiceSid"] = []string{serviceSID}
-		} else {
-			form["From"] = []string{channel.Address()}
-		}
+		contentVariablesJson, _ := json.Marshal(contentVariables)
 
-		// for whatsapp channels, we have to prepend whatsapp to the To and From
-		if channel.IsScheme(urns.WhatsAppScheme) {
-			form["To"][0] = fmt.Sprintf("%s:+%s", urns.WhatsAppScheme, form["To"][0])
-			form["From"][0] = fmt.Sprintf("%s:%s", urns.WhatsAppScheme, form["From"][0])
+		if len(contentVariables) > 0 {
+			form["ContentVariables"] = []string{string(contentVariablesJson)}
 		}
 
 		// build our URL
@@ -310,6 +314,88 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			res.AddExternalID(externalID)
 		}
 
+	} else {
+		parts := handlers.SplitMsgByChannel(msg.Channel(), msg.Text(), maxMsgLength)
+		for i, part := range parts {
+			// build our request
+			form := url.Values{
+				"To":             []string{msg.URN().Path()},
+				"Body":           []string{part},
+				"StatusCallback": []string{callbackURL},
+			}
+
+			// add any attachments to the first part
+			if i == 0 {
+				for _, a := range attachments {
+					form.Add("MediaUrl", a.URL)
+				}
+			}
+
+			// set our from, either as a messaging service or from our address
+			serviceSID := channel.StringConfigForKey(configMessagingServiceSID, "")
+			if serviceSID != "" {
+				form["MessagingServiceSid"] = []string{serviceSID}
+			} else {
+				form["From"] = []string{channel.Address()}
+			}
+
+			// for whatsapp channels, we have to prepend whatsapp to the To and From
+			if channel.IsScheme(urns.WhatsAppScheme) {
+				form["To"][0] = fmt.Sprintf("%s:+%s", urns.WhatsAppScheme, form["To"][0])
+				form["From"][0] = fmt.Sprintf("%s:%s", urns.WhatsAppScheme, form["From"][0])
+			}
+
+			// build our URL
+			baseURL := h.baseURL(channel)
+			if baseURL == "" {
+				return courier.ErrChannelConfig
+			}
+
+			sendURL, err := utils.AddURLPath(baseURL, "2010-04-01", "Accounts", accountSID, "Messages.json")
+			if err != nil {
+				return err
+			}
+
+			req, err := http.NewRequest(http.MethodPost, sendURL, strings.NewReader(form.Encode()))
+			if err != nil {
+				return err
+			}
+			req.SetBasicAuth(accountSID, accountToken)
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Set("Accept", "application/json")
+
+			resp, respBody, err := h.RequestHTTP(req, clog)
+			if err != nil || resp.StatusCode/100 == 5 {
+				return courier.ErrConnectionFailed
+			}
+
+			// see if we can parse the error if we have one
+			if resp.StatusCode/100 != 2 && len(respBody) > 0 {
+				errorCode, _ := jsonparser.GetInt(respBody, "code")
+				if errorCode != 0 {
+					if errorCode == errorStopped {
+						return courier.ErrContactStopped
+					}
+					codeAsStr := strconv.Itoa(int(errorCode))
+					errMsg, err := jsonparser.GetString(errorCodes, codeAsStr)
+					if err != nil {
+						errMsg = fmt.Sprintf("Service specific error: %s.", codeAsStr)
+					}
+					return courier.ErrFailedWithReason(codeAsStr, errMsg)
+				}
+
+				return courier.ErrResponseStatus
+			}
+
+			// grab the external id
+			externalID, err := jsonparser.GetString(respBody, "sid")
+			if err != nil {
+				clog.Error(courier.ErrorResponseValueMissing("sid"))
+			} else {
+				res.AddExternalID(externalID)
+			}
+
+		}
 	}
 
 	return nil

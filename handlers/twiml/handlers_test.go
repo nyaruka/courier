@@ -2,6 +2,7 @@ package twiml
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"testing"
@@ -1051,7 +1052,25 @@ var waSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/t/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+			Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		}},
+		ExpectedExtIDs: []string{"1002"},
+	},
+	{
+		Label:       "Template Send",
+		MsgText:     "templated message",
+		MsgURN:      "whatsapp:250788383383",
+		MsgLocale:   "eng",
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "external_id": "ext_id_revive_issue", "components": [{"type":"body", "params": [{"type":"text", "name": "1", "value":"Chef"}, {"type": "text" , "name": "2", "value": "tomorrow"}]}]}}`),
+		MockResponses: map[string][]*httpx.MockResponse{
+			"http://example.com/sigware_api/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
+
+		ExpectedRequests: []ExpectedRequest{{
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/sw/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
 		ExpectedExtIDs: []string{"1002"},
@@ -1073,6 +1092,92 @@ var twaSendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
 		ExpectedExtIDs: []string{"1002"},
+	},
+	{
+		Label:       "Template Send",
+		MsgText:     "templated message",
+		MsgURN:      "whatsapp:250788383383",
+		MsgLocale:   "eng",
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "external_id": "ext_id_revive_issue", "components": [{"type":"body", "params": [{"type":"text", "name": "1", "value":"Chef"}, {"type": "text" , "name": "2", "value": "tomorrow"}]}]}}`),
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
+			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		}},
+		ExpectedExtIDs: []string{"1002"},
+	},
+
+	{
+		Label:       "Error Code",
+		MsgText:     "Error Code",
+		MsgURN:      "whatsapp:250788383383",
+		MsgLocale:   "eng",
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "external_id": "ext_id_revive_issue", "components": [{"type":"body", "params": [{"type":"text", "name": "1", "value":"Chef"}, {"type": "text" , "name": "2", "value": "tomorrow"}]}]}}`),
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(400, nil, []byte(`{ "code": 1001 }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
+			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		}},
+		ExpectedError: courier.ErrFailedWithReason("1001", "Service specific error: 1001."),
+	},
+	{
+		Label:       "Stopped Contact Code",
+		MsgText:     "Stopped Contact",
+		MsgURN:      "whatsapp:250788383383",
+		MsgLocale:   "eng",
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "external_id": "ext_id_revive_issue", "components": [{"type":"body", "params": [{"type":"text", "name": "1", "value":"Chef"}, {"type": "text" , "name": "2", "value": "tomorrow"}]}]}}`),
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(400, nil, []byte(`{ "code": 21610 }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
+			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		}},
+		ExpectedError: courier.ErrContactStopped,
+	},
+	{
+		Label:       "No SID",
+		MsgText:     "No SID",
+		MsgURN:      "whatsapp:250788383383",
+		MsgLocale:   "eng",
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "external_id": "ext_id_revive_issue", "components": [{"type":"body", "params": [{"type":"text", "name": "1", "value":"Chef"}, {"type": "text" , "name": "2", "value": "tomorrow"}]}]}}`),
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
+			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		}},
+		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
+	},
+	{
+		Label:       "Error Sending",
+		MsgText:     "Error Message",
+		MsgURN:      "whatsapp:250788383383",
+		MsgLocale:   "eng",
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "external_id": "ext_id_revive_issue", "components": [{"type":"body", "params": [{"type":"text", "name": "1", "value":"Chef"}, {"type": "text" , "name": "2", "value": "tomorrow"}]}]}}`),
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(401, nil, []byte(`{ "error": "out of credits" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
+			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		}},
+		ExpectedError: courier.ErrResponseStatus,
 	},
 }
 
@@ -1117,7 +1222,7 @@ func TestOutgoing(t *testing.T) {
 	)
 	waChannel.SetScheme(urns.WhatsAppScheme)
 
-	RunOutgoingTestCases(t, waChannel, newTWIMLHandler("T", "Twilio Whatsapp", true), waSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
+	RunOutgoingTestCases(t, waChannel, newTWIMLHandler("SW", "SignalWire", true), waSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 
 	twaChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
 		map[string]any{

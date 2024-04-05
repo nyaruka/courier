@@ -394,7 +394,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		MsgText:     "templated message",
 		MsgURN:      "whatsapp:250788123123",
 		MsgLocale:   "eng",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}], "language": "en_US"}}`),
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" },  "external_id": "ext_id_revive_issue", "components": [{"type":"body", "params": [{"type":"text", "name": "1", "value":"Chef"}, {"type": "text" , "name": "2", "value": "tomorrow"}]}], "language": "en_US"}}`),
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -410,7 +410,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		MsgText:     "templated message",
 		MsgURN:      "whatsapp:250788123123",
 		MsgLocale:   "eng",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [], "variables": [], "language": "en_US"}}`),
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" },  "external_id": "ext_id_revive_issue", "components": [], "variables": [], "language": "en_US"}}`),
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -426,17 +426,19 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		MsgText:   "templated message",
 		MsgURN:    "whatsapp:250788123123",
 		MsgLocale: "eng",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" },"components": [
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" },  "external_id": "ext_id_revive_issue", "components": [
 			{
 				"type": "body",
 				"name": "body",
 				"params": [
 					{
 						"type": "text",
+						"name": "1",
 						"value": "Ryan Lewis"
 					},
 					{
 						"type": "text",
+						"name": "2",
 						"value": "niño"
 					}
 				]
@@ -447,6 +449,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				"params": [
 					{
 						"type": "text",
+						"name": "1",
 						"value": "Sip"
 					}
 				]
@@ -457,6 +460,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 				"params": [
 					{
 						"type": "url",
+						"name": "1",
 						"value": "id00231"
 					}
 				]

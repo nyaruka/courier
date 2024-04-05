@@ -766,7 +766,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgText:     "templated message",
 		MsgURN:      "whatsapp:250788123123",
 		MsgLocale:   "eng",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}]}}`),
+		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "external_id": "ext_id_revive_issue", "components": [{"type":"body", "params": [{"type":"text", "name": "1", "value":"Chef"}, {"type": "text" , "name": "2", "value": "tomorrow"}]}]}}`),
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
