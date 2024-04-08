@@ -76,7 +76,6 @@ CREATE TABLE msgs_msg (
     created_on timestamp with time zone NOT NULL,
     modified_on timestamp with time zone,
     sent_on timestamp with time zone,
-    queued_on timestamp with time zone,
     direction character varying(1) NOT NULL,
     status character varying(1) NOT NULL,
     visibility character varying(1) NOT NULL,

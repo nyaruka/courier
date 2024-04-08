@@ -72,7 +72,6 @@ type Msg struct {
 	NextAttempt_ time.Time      `                     db:"next_attempt"`
 	CreatedOn_   time.Time      `json:"created_on"    db:"created_on"`
 	ModifiedOn_  time.Time      `                     db:"modified_on"`
-	QueuedOn_    time.Time      `                     db:"queued_on"`
 	SentOn_      *time.Time     `                     db:"sent_on"`
 	LogUUIDs     pq.StringArray `                     db:"log_uuids"`
 
@@ -125,7 +124,6 @@ func newMsg(direction MsgDirection, channel courier.Channel, urn urns.URN, text 
 		NextAttempt_: now,
 		CreatedOn_:   now,
 		ModifiedOn_:  now,
-		QueuedOn_:    now,
 		LogUUIDs:     []string{string(clog.UUID())},
 
 		channel:        dbChannel,
@@ -247,9 +245,9 @@ func writeMsg(ctx context.Context, b *backend, msg courier.MsgIn, clog *courier.
 const sqlInsertMsg = `
 INSERT INTO
 	msgs_msg(org_id, uuid, direction, text, attachments, msg_type, msg_count, error_count, high_priority, status,
-             visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, queued_on, sent_on, log_uuids)
+             visibility, external_id, channel_id, contact_id, contact_urn_id, created_on, modified_on, next_attempt, sent_on, log_uuids)
     VALUES(:org_id, :uuid, :direction, :text, :attachments, 'T', :msg_count, :error_count, :high_priority, :status,
-           :visibility, :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :next_attempt, :queued_on, :sent_on, :log_uuids)
+           :visibility, :external_id, :channel_id, :contact_id, :contact_urn_id, :created_on, :modified_on, :next_attempt, :sent_on, :log_uuids)
 RETURNING id`
 
 func writeMsgToDB(ctx context.Context, b *backend, m *Msg, clog *courier.ChannelLog) error {
