@@ -1,3 +1,7 @@
+v9.1.24 (2024-04-08)
+-------------------------
+ * Stop writing Msg.queued_on
+
 v9.1.23 (2024-04-03)
 -------------------------
  * Adjust legacy WA channel handler to use templating components
