@@ -1135,7 +1135,6 @@ func (ts *BackendTestSuite) TestWriteMsg() {
 	ts.NotNil(m.NextAttempt_)
 	ts.NotNil(m.CreatedOn_)
 	ts.NotNil(m.ModifiedOn_)
-	ts.NotNil(m.QueuedOn_)
 
 	contact, err := contactForURN(ctx, ts.b, m.OrgID_, knChannel, urn, nil, "", clog)
 	ts.NoError(err)
@@ -1532,7 +1531,6 @@ SELECT
 	created_on,
 	modified_on,
 	next_attempt,
-	queued_on,
 	sent_on,
 	log_uuids
 FROM
