@@ -18,7 +18,6 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -317,13 +316,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		if len(msg.Attachments()) == 0 {
 			// do we have a template?
-			templating, err := whatsapp.GetTemplating(msg)
-			if err != nil {
-				return errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
-			}
-			if templating != nil {
+			if msg.Templating() != nil {
 				payload.Type = "template"
-				payload.Template = whatsapp.GetTemplatePayload(templating)
+				payload.Template = whatsapp.GetTemplatePayload(msg.Templating())
 			} else {
 				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 					// this is still a msg part

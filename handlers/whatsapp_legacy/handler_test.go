@@ -2,7 +2,6 @@ package whatsapp_legacy
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 	"time"
 
@@ -762,11 +761,11 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:       "Template Send",
-		MsgText:     "templated message",
-		MsgURN:      "whatsapp:250788123123",
-		MsgLocale:   "eng",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}]}}`),
+		Label:         "Template Send",
+		MsgText:       "templated message",
+		MsgURN:        "whatsapp:250788123123",
+		MsgLocale:     "eng",
+		MsgTemplating: `{"template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}]}`,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -780,11 +779,11 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:       "Template Send no variables",
-		MsgText:     "templated message",
-		MsgURN:      "whatsapp:250788123123",
-		MsgLocale:   "eng",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": []}}`),
+		Label:         "Template Send no variables",
+		MsgText:       "templated message",
+		MsgURN:        "whatsapp:250788123123",
+		MsgLocale:     "eng",
+		MsgTemplating: `{"template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": []}`,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -798,11 +797,11 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:       "Template Country Language",
-		MsgText:     "templated message",
-		MsgURN:      "whatsapp:250788123123",
-		MsgLocale:   "eng-US",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}]}}`),
+		Label:         "Template Country Language",
+		MsgText:       "templated message",
+		MsgURN:        "whatsapp:250788123123",
+		MsgLocale:     "eng-US",
+		MsgTemplating: `{"template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}]}`,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -816,11 +815,11 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:       "Template Namespace",
-		MsgText:     "templated message",
-		MsgURN:      "whatsapp:250788123123",
-		MsgLocale:   "eng-US",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "namespace": "wa_template_namespace", "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}]}}`),
+		Label:         "Template Namespace",
+		MsgText:       "templated message",
+		MsgURN:        "whatsapp:250788123123",
+		MsgLocale:     "eng-US",
+		MsgTemplating: `{"template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "namespace": "wa_template_namespace", "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}]}`,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -834,11 +833,11 @@ var defaultSendTestCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:       "Template Invalid Language",
-		MsgText:     "templated message",
-		MsgURN:      "whatsapp:250788123123",
-		MsgLocale:   "bnt",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}]}}`),
+		Label:         "Template Invalid Language",
+		MsgText:       "templated message",
+		MsgURN:        "whatsapp:250788123123",
+		MsgLocale:     "bnt",
+		MsgTemplating: `{"template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}]}`,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/v1/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -848,7 +847,6 @@ var defaultSendTestCases = []OutgoingTestCase{
 			Path: "/v1/messages",
 			Body: `{"to":"250788123123","type":"template","template":{"namespace":"waba_namespace","name":"revive_issue","language":{"policy":"deterministic","code":"en"},"components":[{"type":"body","parameters":[{"type":"text","text":"Chef"},{"type":"text","text":"tomorrow"}]}]}}`,
 		}},
-
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{

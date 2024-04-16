@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -21,6 +20,7 @@ import (
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -301,9 +301,9 @@ type OutgoingTestCase struct {
 	MsgQuickReplies         []string
 	MsgLocale               i18n.Locale
 	MsgTopic                string
+	MsgTemplating           string
 	MsgHighPriority         bool
 	MsgResponseToExternalID string
-	MsgMetadata             json.RawMessage
 	MsgFlow                 *courier.FlowReference
 	MsgOptIn                *courier.OptInReference
 	MsgUserID               courier.UserID
@@ -337,8 +337,10 @@ func (tc *OutgoingTestCase) Msg(mb *test.MockBackend, ch courier.Channel) courie
 	if tc.MsgURNAuth != "" {
 		m.WithURNAuth(tc.MsgURNAuth)
 	}
-	if len(tc.MsgMetadata) > 0 {
-		m.WithMetadata(tc.MsgMetadata)
+	if tc.MsgTemplating != "" {
+		templating := &courier.Templating{}
+		jsonx.MustUnmarshal([]byte(tc.MsgTemplating), templating)
+		m.WithTemplating(templating)
 	}
 	if tc.MsgFlow != nil {
 		m.WithFlow(tc.MsgFlow)

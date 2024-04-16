@@ -53,6 +53,24 @@ const (
 	MsgOriginChat      MsgOrigin = "chat"
 )
 
+type Templating struct {
+	Template struct {
+		Name string `json:"name" validate:"required"`
+		UUID string `json:"uuid" validate:"required"`
+	} `json:"template" validate:"required,dive"`
+	Namespace  string `json:"namespace"`
+	Components []struct {
+		Type   string `json:"type"`
+		Name   string `json:"name"`
+		Params []struct {
+			Type  string `json:"type"`
+			Value string `json:"value"`
+		} `json:"params"`
+	} `json:"components"`
+	Language   string `json:"language"`
+	ExternalID string `json:"external_id"`
+}
+
 //-----------------------------------------------------------------------------
 // Msg interface
 //-----------------------------------------------------------------------------
@@ -77,6 +95,7 @@ type MsgOut interface {
 	// outgoing specific
 	QuickReplies() []string
 	Locale() i18n.Locale
+	Templating() *Templating
 	URNAuth() string
 	Origin() MsgOrigin
 	ContactLastSeenOn() *time.Time
