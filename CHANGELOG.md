@@ -1,3 +1,7 @@
+v9.1.26 (2024-04-17)
+-------------------------
+ * Use variables in templating instead of params
+
 v9.1.25 (2024-04-17)
 -------------------------
  * Read templating from new msg field instead of metadata
