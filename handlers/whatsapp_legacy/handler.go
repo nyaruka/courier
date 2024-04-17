@@ -697,12 +697,8 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 
 	} else {
 		// do we have a template?
-		templating, err := h.getTemplating(msg)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to decode template: %s for channel: %s", string(msg.Metadata()), msg.Channel().UUID())
-		}
-		if templating != nil {
-			namespace := templating.Namespace
+		if msg.Templating() != nil {
+			namespace := msg.Templating().Namespace
 			if namespace == "" {
 				namespace = msg.Channel().StringConfigForKey(configNamespace, "")
 			}
@@ -715,11 +711,11 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 				Type: "template",
 			}
 			payload.Template.Namespace = namespace
-			payload.Template.Name = templating.Template.Name
+			payload.Template.Name = msg.Templating().Template.Name
 			payload.Template.Language.Policy = "deterministic"
 			payload.Template.Language.Code = langCode
 
-			for _, comp := range templating.Components {
+			for _, comp := range msg.Templating().Components {
 				if comp.Type == "body" {
 					component := &Component{Type: "body"}
 					for _, p := range comp.Params {
@@ -1078,45 +1074,6 @@ func (h *handler) checkWhatsAppContact(channel courier.Channel, baseURL string, 
 			return respBody, courier.ErrResponseUnexpected
 		}
 	}
-}
-
-func (h *handler) getTemplating(msg courier.MsgOut) (*MsgTemplating, error) {
-	if len(msg.Metadata()) == 0 {
-		return nil, nil
-	}
-
-	metadata := &struct {
-		Templating *MsgTemplating `json:"templating"`
-	}{}
-	if err := json.Unmarshal(msg.Metadata(), metadata); err != nil {
-		return nil, err
-	}
-
-	if metadata.Templating == nil {
-		return nil, nil
-	}
-
-	if err := utils.Validate(metadata.Templating); err != nil {
-		return nil, errors.Wrapf(err, "invalid templating definition")
-	}
-
-	return metadata.Templating, nil
-}
-
-type MsgTemplating struct {
-	Template struct {
-		Name string `json:"name" validate:"required"`
-		UUID string `json:"uuid" validate:"required"`
-	} `json:"template" validate:"required,dive"`
-	Namespace  string `json:"namespace"`
-	Components []struct {
-		Type   string `json:"type"`
-		Name   string `json:"name"`
-		Params []struct {
-			Type  string `json:"type"`
-			Value string `json:"value"`
-		} `json:"params"`
-	} `json:"components"`
 }
 
 func getSupportedLanguage(lc i18n.Locale) string {

@@ -2,7 +2,6 @@ package meta
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 	"time"
 
@@ -390,11 +389,11 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:       "Template Send",
-		MsgText:     "templated message",
-		MsgURN:      "whatsapp:250788123123",
-		MsgLocale:   "eng",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}], "language": "en_US"}}`),
+		Label:         "Template Send",
+		MsgText:       "templated message",
+		MsgURN:        "whatsapp:250788123123",
+		MsgLocale:     "eng",
+		MsgTemplating: `{"template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}], "language": "en_US"}`,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -406,11 +405,11 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:       "Template Send, no variables",
-		MsgText:     "templated message",
-		MsgURN:      "whatsapp:250788123123",
-		MsgLocale:   "eng",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [], "variables": [], "language": "en_US"}}`),
+		Label:         "Template Send, no variables",
+		MsgText:       "templated message",
+		MsgURN:        "whatsapp:250788123123",
+		MsgLocale:     "eng",
+		MsgTemplating: `{"template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [], "variables": [], "language": "en_US"}`,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -426,7 +425,8 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		MsgText:   "templated message",
 		MsgURN:    "whatsapp:250788123123",
 		MsgLocale: "eng",
-		MsgMetadata: json.RawMessage(`{ "templating": { "template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" },"components": [
+		MsgTemplating: `{"template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" },
+			"components": [
 			{
 				"type": "body",
 				"name": "body",
@@ -461,7 +461,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 					}
 				]
 			}
-		], "language": "en_US"}}`),
+		], "language": "en_US"}`,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
