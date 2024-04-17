@@ -420,11 +420,16 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:         "Template Send",
-		MsgText:       "templated message",
-		MsgURN:        "whatsapp:250788123123",
-		MsgLocale:     "eng",
-		MsgTemplating: `{"template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type": "body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}], "language": "en_US"}`,
+		Label:     "Template Send",
+		MsgText:   "templated message",
+		MsgURN:    "whatsapp:250788123123",
+		MsgLocale: "eng",
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"}, 
+			"components": [{"type": "body", "name": "body", "variables": {"1": 0, "2": 1}}],
+			"variables": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}],
+			"language": "en_US"
+		}`,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"https://waba-v2.360dialog.io/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
