@@ -1,3 +1,8 @@
+v9.1.25 (2024-04-17)
+-------------------------
+ * Read templating from new msg field instead of metadata
+ * Update test data schema inline with recent RP changes
+
 v9.1.24 (2024-04-08)
 -------------------------
  * Stop writing Msg.queued_on
