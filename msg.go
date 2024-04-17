@@ -53,6 +53,11 @@ const (
 	MsgOriginChat      MsgOrigin = "chat"
 )
 
+type TemplatingVariable struct {
+	Type  string `json:"type"`
+	Value string `json:"value"`
+}
+
 type Templating struct {
 	Template struct {
 		Name string `json:"name" validate:"required"`
@@ -60,15 +65,13 @@ type Templating struct {
 	} `json:"template" validate:"required,dive"`
 	Namespace  string `json:"namespace"`
 	Components []struct {
-		Type   string `json:"type"`
-		Name   string `json:"name"`
-		Params []struct {
-			Type  string `json:"type"`
-			Value string `json:"value"`
-		} `json:"params"`
+		Type      string         `json:"type"`
+		Name      string         `json:"name"`
+		Variables map[string]int `json:"variables"`
 	} `json:"components"`
-	Language   string `json:"language"`
-	ExternalID string `json:"external_id"`
+	Variables  []TemplatingVariable `json:"variables"`
+	Language   string               `json:"language"`
+	ExternalID string               `json:"external_id"`
 }
 
 //-----------------------------------------------------------------------------

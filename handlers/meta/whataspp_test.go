@@ -389,11 +389,21 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:         "Template Send",
-		MsgText:       "templated message",
-		MsgURN:        "whatsapp:250788123123",
-		MsgLocale:     "eng",
-		MsgTemplating: `{"template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [{"type":"body", "params": [{"type":"text", "value":"Chef"}, {"type": "text" , "value": "tomorrow"}]}], "language": "en_US"}`,
+		Label:     "Template Send",
+		MsgText:   "templated message",
+		MsgURN:    "whatsapp:250788123123",
+		MsgLocale: "eng",
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"}, 
+			"components": [
+				{"type": "body", "name": "body", "variables": {"1": 0, "2": 1}}
+			],
+			"variables": [
+				{"type": "text", "value": "Chef"},
+				{"type": "text" , "value": "tomorrow"}
+			],
+			"language": "en_US"
+		}`,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -405,11 +415,14 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
-		Label:         "Template Send, no variables",
-		MsgText:       "templated message",
-		MsgURN:        "whatsapp:250788123123",
-		MsgLocale:     "eng",
-		MsgTemplating: `{"template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" }, "components": [], "variables": [], "language": "en_US"}`,
+		Label:     "Template Send, no variables",
+		MsgText:   "templated message",
+		MsgURN:    "whatsapp:250788123123",
+		MsgLocale: "eng",
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
+			"language": "en_US"
+		}`,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(200, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
@@ -425,43 +438,21 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		MsgText:   "templated message",
 		MsgURN:    "whatsapp:250788123123",
 		MsgLocale: "eng",
-		MsgTemplating: `{"template": { "name": "revive_issue", "uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3" },
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"}, 
 			"components": [
-			{
-				"type": "body",
-				"name": "body",
-				"params": [
-					{
-						"type": "text",
-						"value": "Ryan Lewis"
-					},
-					{
-						"type": "text",
-						"value": "niño"
-					}
-				]
-			},
-			{
-				"type": "button/quick_reply",
-				"name": "button.0",
-				"params": [
-					{
-						"type": "text",
-						"value": "Sip"
-					}
-				]
-			},
-			{
-				"type": "button/url",
-				"name": "button.1",
-				"params": [
-					{
-						"type": "url",
-						"value": "id00231"
-					}
-				]
-			}
-		], "language": "en_US"}`,
+				{"type": "body", "name": "body", "variables": {"1": 0, "2": 1}},
+				{"type": "button/quick_reply", "name": "button.0", "variables": {"1": 2}},
+				{"type": "button/url", "name": "button.1", "variables": {"1": 3}}
+			],
+			"variables": [
+				{"type": "text", "value": "Ryan Lewis"},
+				{"type": "text", "value": "niño"},
+				{"type": "text", "value": "Sip"},
+				{"type": "text", "value": "id00231"}
+			],
+			"language": "en_US"
+		}`,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"*/12345_ID/messages": {
 				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),

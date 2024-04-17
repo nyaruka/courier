@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +25,7 @@ import (
 	"github.com/nyaruka/redisx"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 	"golang.org/x/mod/semver"
 )
 
@@ -716,9 +718,17 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 			payload.Template.Language.Code = langCode
 
 			for _, comp := range msg.Templating().Components {
+				// get the variables used by this component in order of their names 1, 2 etc
+				compParams := make([]courier.TemplatingVariable, 0, len(comp.Variables))
+				varNames := maps.Keys(comp.Variables)
+				sort.Strings(varNames)
+				for _, varName := range varNames {
+					compParams = append(compParams, msg.Templating().Variables[comp.Variables[varName]])
+				}
+
 				if comp.Type == "body" {
 					component := &Component{Type: "body"}
-					for _, p := range comp.Params {
+					for _, p := range compParams {
 						component.Parameters = append(component.Parameters, Param{Type: p.Type, Text: p.Value})
 					}
 					payload.Template.Components = append(payload.Template.Components, *component)
