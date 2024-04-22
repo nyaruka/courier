@@ -1,3 +1,7 @@
+v9.1.27 (2024-04-22)
+-------------------------
+ * Update deps
+
 v9.1.26 (2024-04-17)
 -------------------------
  * Use variables in templating instead of params
