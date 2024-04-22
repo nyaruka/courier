@@ -1,3 +1,7 @@
+v9.1.28 (2024-04-22)
+-------------------------
+ * Support retrying failed messages for rate limit on Twilio WhatsApp
+
 v9.1.27 (2024-04-22)
 -------------------------
  * Update deps
