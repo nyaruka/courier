@@ -66,9 +66,10 @@ var (
 
 	statusStop = "ErrorCode=21610&MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=failed&To=%2B12028831111"
 
-	statusInvalid = "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=huh"
-	statusValid   = "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=delivered"
-	statusRead    = "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=read"
+	statusInvalid   = "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=huh"
+	statusValid     = "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=delivered"
+	statusRead      = "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=read"
+	statusRateLimit = "MessageSid=SMe287d7109a5a925f182f0e07fe5b223b&MessageStatus=failed&ErrorCode=63018"
 
 	tmsStatusExtra  = "SmsStatus=sent&MessageStatus=sent&To=2021&MessagingServiceSid=MGdb23ec0f89ee2632e46e91d8128f5e2b&MessageSid=SM0b6e2697aae04182a9f5b5c7a8994c7f&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
 	tmsReceiveExtra = "ToCountry=US&ToState=&SmsMessageSid=SMbbf29aeb9d380ce2a1c0ae4635ff9dab&NumMedia=0&ToCity=&FromZip=27609&SmsSid=SMbbf29aeb9d380ce2a1c0ae4635ff9dab&FromState=NC&SmsStatus=received&FromCity=RALEIGH&Body=John+Cruz&FromCountry=US&To=384387&ToZip=&NumSegments=1&MessageSid=SMbbf29aeb9d380ce2a1c0ae4635ff9dab&AccountSid=acctid&From=%2B14133881111&ApiVersion=2010-04-01"
@@ -480,6 +481,18 @@ var twaTestCases = []IncomingTestCase{
 			{MsgID: 12345, Status: courier.MsgStatusDelivered},
 		},
 		PrepRequest: addValidSignature,
+	},
+	{
+		Label:                "Status ID Rate limit",
+		URL:                  twaStatusIDURL,
+		Data:                 statusRateLimit,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: `"status":"E"`,
+		ExpectedStatuses: []ExpectedStatus{
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusErrored},
+		},
+		PrepRequest:    addValidSignature,
+		ExpectedErrors: []*courier.ChannelError{courier.ErrorExternal("63018", "Rate limit exceeded for Channel")},
 	},
 	{
 		Label:                "Status ID Invalid",

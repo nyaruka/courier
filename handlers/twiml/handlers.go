@@ -56,6 +56,7 @@ var mediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{
 
 // error code twilio returns when a contact has sent "stop"
 const errorStopped = 21610
+const errorThrottled = 63018
 
 type handler struct {
 	handlers.BaseHandler
@@ -207,6 +208,9 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 			}
 		}
 		clog.Error(twilioError(errorCode))
+		if errorCode == errorThrottled {
+			status = h.Backend().NewStatusUpdateByExternalID(channel, form.MessageSID, courier.MsgStatusErrored, clog)
+		}
 	}
 
 	return handlers.WriteMsgStatusAndResponse(ctx, h, channel, status, w, r)
