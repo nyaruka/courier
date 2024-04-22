@@ -10,10 +10,10 @@ import (
 	"net/url"
 	"path/filepath"
 
+	"github.com/h2non/filetype"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/pkg/errors"
-	"gopkg.in/h2non/filetype.v1"
 )
 
 const (

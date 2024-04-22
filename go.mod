@@ -12,6 +12,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/gomodule/redigo v1.9.2
 	github.com/gorilla/schema v1.2.1
+	github.com/h2non/filetype v1.1.3
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
@@ -26,7 +27,6 @@ require (
 	golang.org/x/exp v0.0.0-20240314144324-c7f7c6466f7f
 	golang.org/x/mod v0.16.0
 	gopkg.in/go-playground/validator.v9 v9.31.0
-	gopkg.in/h2non/filetype.v1 v1.0.5
 )
 
 require (
