@@ -56,6 +56,7 @@ type Change struct {
 			Video    *MOMedia `json:"video"`
 			Document *MOMedia `json:"document"`
 			Voice    *MOMedia `json:"voice"`
+			Sticker  *MOMedia `json:"sticker"`
 			Location *struct {
 				Latitude  float64 `json:"latitude"`
 				Longitude float64 `json:"longitude"`
@@ -216,6 +217,7 @@ type SendRequest struct {
 	Image    *Media `json:"image,omitempty"`
 	Audio    *Media `json:"audio,omitempty"`
 	Video    *Media `json:"video,omitempty"`
+	Sticker  *Media `json:"sticker,omitempty"`
 
 	Interactive *Interactive `json:"interactive,omitempty"`
 
