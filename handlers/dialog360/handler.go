@@ -160,6 +160,8 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 				} else if msg.Type == "image" && msg.Image != nil {
 					text = msg.Image.Caption
 					mediaURL, err = h.resolveMediaURL(channel, msg.Image.ID, clog)
+				} else if msg.Type == "sticker" && msg.Sticker != nil {
+					mediaURL, err = h.resolveMediaURL(channel, msg.Sticker.ID, clog)
 				} else if msg.Type == "video" && msg.Video != nil {
 					text = msg.Video.Caption
 					mediaURL, err = h.resolveMediaURL(channel, msg.Video.ID, clog)

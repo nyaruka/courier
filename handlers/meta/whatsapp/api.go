@@ -56,6 +56,7 @@ type Change struct {
 			Video    *MOMedia `json:"video"`
 			Document *MOMedia `json:"document"`
 			Voice    *MOMedia `json:"voice"`
+			Sticker  *MOMedia `json:"sticker"`
 			Location *struct {
 				Latitude  float64 `json:"latitude"`
 				Longitude float64 `json:"longitude"`
