@@ -437,6 +437,24 @@ var SendTestCasesD3C = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"157b5e14568e8"},
 	},
 	{
+		Label:          "Sticker Send",
+		MsgText:        "Hello there",
+		MsgURN:         "whatsapp:250788123123",
+		MsgAttachments: []string{"image/webp:http://mock.com/8901/test.webp"},
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://waba-v2.360dialog.io/messages": {
+				httpx.NewMockResponse(201, nil, []byte(`{ "messages": [{"id": "157b5e14568e8"}] }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{
+			{
+				Path: "/messages",
+				Body: `{"messaging_product":"whatsapp","recipient_type":"individual","to":"250788123123","type":"sticker","sticker":{"link":"http://mock.com/8901/test.webp","caption":"Hello there"}}`,
+			},
+		},
+		ExpectedExtIDs: []string{"157b5e14568e8"},
+	},
+	{
 		Label:     "Template Send",
 		MsgText:   "templated message",
 		MsgURN:    "whatsapp:250788123123",
