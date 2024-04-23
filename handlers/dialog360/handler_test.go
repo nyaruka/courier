@@ -115,6 +115,20 @@ var testCasesD3C = []IncomingTestCase{
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 	},
 	{
+		Label:                 "Receive Valid Sticker Message",
+		URL:                   d3CReceiveURL,
+		Data:                  string(test.ReadFile("../meta/testdata/wac/stickerWAC.json")),
+		ExpectedRespStatus:    200,
+		ExpectedBodyContains:  "Handled",
+		NoQueueErrorCheck:     true,
+		NoInvalidChannelCheck: true,
+		ExpectedMsgText:       Sp(""),
+		ExpectedURN:           "whatsapp:5678",
+		ExpectedExternalID:    "external_id",
+		ExpectedAttachments:   []string{"https://waba-v2.360dialog.io/whatsapp_business/attachments/?mid=id_sticker"},
+		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+	},
+	{
 		Label:                 "Receive Valid Video Message",
 		URL:                   d3CReceiveURL,
 		Data:                  string(test.ReadFile("../meta/testdata/wac/video.json")),
@@ -270,6 +284,10 @@ func buildMockD3MediaService(testChannels []courier.Channel, testCases []Incomin
 		}
 		if strings.HasSuffix(r.URL.Path, "id_audio") {
 			fileURL = "https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=id_audio"
+		}
+
+		if strings.HasSuffix(r.URL.Path, "id_sticker") {
+			fileURL = "https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=id_sticker"
 		}
 
 		w.WriteHeader(http.StatusOK)

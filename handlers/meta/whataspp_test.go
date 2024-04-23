@@ -2,6 +2,10 @@ package meta
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -104,6 +108,21 @@ var whatsappIncomingTests = []IncomingTestCase{
 		ExpectedURN:           "whatsapp:5678",
 		ExpectedExternalID:    "external_id",
 		ExpectedAttachments:   []string{"https://foo.bar/attachmentURL_Image"},
+		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
+		PrepRequest:           addValidSignature,
+	},
+	{
+		Label:                 "Receive Valid Sticker Message",
+		URL:                   whatappReceiveURL,
+		Data:                  string(test.ReadFile("./testdata/wac/stickerWAC.json")),
+		ExpectedRespStatus:    200,
+		ExpectedBodyContains:  "Handled",
+		NoQueueErrorCheck:     true,
+		NoInvalidChannelCheck: true,
+		ExpectedMsgText:       Sp(""),
+		ExpectedURN:           "whatsapp:5678",
+		ExpectedExternalID:    "external_id",
+		ExpectedAttachments:   []string{"https://foo.bar/attachmentURL_Sticker"},
 		ExpectedDate:          time.Date(2016, 1, 30, 1, 57, 9, 0, time.UTC),
 		PrepRequest:           addValidSignature,
 	},
@@ -277,7 +296,53 @@ var whatsappIncomingTests = []IncomingTestCase{
 }
 
 func TestWhatsAppIncoming(t *testing.T) {
-	graphURL = createMockGraphAPI().URL
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		accessToken := r.Header.Get("Authorization")
+		defer r.Body.Close()
+
+		// invalid auth token
+		if accessToken != "Bearer a123" && accessToken != "Bearer wac_admin_system_user_token" {
+			fmt.Printf("Access token: %s\n", accessToken)
+			http.Error(w, "invalid auth token", http.StatusForbidden)
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "image") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Image"}`))
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "audio") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Audio"}`))
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "voice") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Voice"}`))
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "video") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Video"}`))
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "document") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Document"}`))
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "sticker") {
+			w.Write([]byte(`{"url": "https://foo.bar/attachmentURL_Sticker"}`))
+			return
+		}
+
+		// valid token
+		w.Write([]byte(`{"url": "https://foo.bar/attachmentURL"}`))
+
+	}))
+	graphURL = server.URL
 
 	RunIncomingTestCases(t, whatsappTestChannels, newHandler("WAC", "Cloud API WhatsApp"), whatsappIncomingTests)
 }

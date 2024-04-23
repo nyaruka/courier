@@ -23,6 +23,13 @@ type MOMedia struct {
 	SHA256   string `json:"sha256"`
 }
 
+type wacSticker struct {
+	Animated bool   `json:"animated"`
+	ID       string `json:"id"`
+	Mimetype string `json:"mime_type"`
+	SHA256   string `json:"sha256"`
+}
+
 type Change struct {
 	Field string `json:"field"`
 	Value struct {
@@ -51,11 +58,12 @@ type Change struct {
 			Text struct {
 				Body string `json:"body"`
 			} `json:"text"`
-			Image    *MOMedia `json:"image"`
-			Audio    *MOMedia `json:"audio"`
-			Video    *MOMedia `json:"video"`
-			Document *MOMedia `json:"document"`
-			Voice    *MOMedia `json:"voice"`
+			Image    *MOMedia    `json:"image"`
+			Audio    *MOMedia    `json:"audio"`
+			Video    *MOMedia    `json:"video"`
+			Document *MOMedia    `json:"document"`
+			Voice    *MOMedia    `json:"voice"`
+			Sticker  *wacSticker `json:"sticker"`
 			Location *struct {
 				Latitude  float64 `json:"latitude"`
 				Longitude float64 `json:"longitude"`
