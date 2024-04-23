@@ -139,6 +139,29 @@ func TestResolveAttachments(t *testing.T) {
 			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{},
 			err:          "invalid attachment format: http://mock.com/1234/test.jpg",
 		},
+		{ // 14: resolveable uploaded image URL with matching dimensions
+			attachments:  []string{"image/jpeg:http://mock.com/1234/test.jpg"},
+			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/jpeg", "image/png"}, MaxWidth: 1000, MaxHeight: 1000}},
+			allowURLOnly: true,
+			resolved: []*handlers.Attachment{
+				{Type: handlers.MediaTypeImage, Name: "test.jpg", ContentType: "image/jpeg", URL: "http://mock.com/1234/test.jpg", Media: imageJPG, Thumbnail: nil},
+			},
+		},
+		{ // 15: resolveable uploaded image URL without matching dimensions
+			attachments:  []string{"image/jpeg:http://mock.com/1234/test.jpg"},
+			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/jpeg", "image/png"}, MaxWidth: 100, MaxHeight: 100}},
+			allowURLOnly: true,
+			resolved:     []*handlers.Attachment{},
+			errors:       []*courier.ChannelError{courier.ErrorMediaUnresolveable("image/jpeg")},
+		},
+		{ // 16: resolveable uploaded image URL without matching dimensions by specific content type precendence
+			attachments:  []string{"image/jpeg:http://mock.com/1234/test.jpg"},
+			mediaSupport: map[handlers.MediaType]handlers.MediaTypeSupport{handlers.MediaTypeImage: {Types: []string{"image/jpeg", "image/png"}, MaxWidth: 100, MaxHeight: 100}, handlers.MediaType("image/jpeg"): {Types: []string{"image/jpeg", "image/png"}, MaxWidth: 1000, MaxHeight: 1000}},
+			allowURLOnly: true,
+			resolved: []*handlers.Attachment{
+				{Type: handlers.MediaTypeImage, Name: "test.jpg", ContentType: "image/jpeg", URL: "http://mock.com/1234/test.jpg", Media: imageJPG, Thumbnail: nil},
+			},
+		},
 	}
 
 	for i, tc := range tcs {
