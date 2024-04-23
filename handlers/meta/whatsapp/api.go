@@ -217,6 +217,7 @@ type SendRequest struct {
 	Image    *Media `json:"image,omitempty"`
 	Audio    *Media `json:"audio,omitempty"`
 	Video    *Media `json:"video,omitempty"`
+	Sticker  *Media `json:"sticker,omitempty"`
 
 	Interactive *Interactive `json:"interactive,omitempty"`
 

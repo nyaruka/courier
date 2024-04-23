@@ -62,6 +62,15 @@ const (
 	payloadKey    = "payload"
 )
 
+// see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media#supported-media-types
+var wacMediaSupport = map[handlers.MediaType]handlers.MediaTypeSupport{
+	handlers.MediaType("image/webp"): {Types: []string{"image/webp"}, MaxBytes: 100 * 1024, MaxWidth: 512, MaxHeight: 512},
+	handlers.MediaTypeImage:          {Types: []string{"image/jpeg", "image/png"}, MaxBytes: 5 * 1024 * 1024},
+	handlers.MediaTypeAudio:          {Types: []string{"audio/aac", "audio/mp4", "audio/mpeg", "audio/amr", "audio/ogg"}, MaxBytes: 16 * 1024 * 1024},
+	handlers.MediaTypeVideo:          {Types: []string{"video/mp4", "video/3gp"}, MaxBytes: 16 * 1024 * 1024},
+	handlers.MediaTypeApplication:    {MaxBytes: 100 * 1024 * 1024},
+}
+
 func newHandler(channelType courier.ChannelType, name string) courier.ChannelHandler {
 	return &handler{handlers.NewBaseHandler(channelType, name, handlers.DisableUUIDRouting(), handlers.WithRedactConfigKeys(courier.ConfigAuthToken))}
 }
@@ -802,24 +811,29 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 
 	var payloadAudio whatsapp.SendRequest
 
-	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
+	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), wacMediaSupport, false, clog)
+	if err != nil {
+		return errors.Wrap(err, "error resolving attachments")
+	}
+
+	for i := 0; i < len(msgParts)+len(attachments); i++ {
 		payload := whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
 
-		if len(msg.Attachments()) == 0 {
+		if len(attachments) == 0 {
 			// do we have a template?
 			if msg.Templating() != nil {
 				payload.Type = "template"
 				payload.Template = whatsapp.GetTemplatePayload(msg.Templating())
 
 			} else {
-				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
+				if i < (len(msgParts) + len(attachments) - 1) {
 					// this is still a msg part
 					text := &whatsapp.Text{PreviewURL: false}
 					payload.Type = "text"
-					if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+					if strings.Contains(msgParts[i-len(attachments)], "https://") || strings.Contains(msgParts[i-len(attachments)], "http://") {
 						text.PreviewURL = true
 					}
-					text.Body = msgParts[i-len(msg.Attachments())]
+					text.Body = msgParts[i-len(attachments)]
 					payload.Text = text
 				} else {
 					if len(qrs) > 0 {
@@ -835,7 +849,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 						if len(qrs) <= 3 {
 							interactive := whatsapp.Interactive{Type: "button", Body: struct {
 								Text string "json:\"text\""
-							}{Text: msgParts[i-len(msg.Attachments())]}}
+							}{Text: msgParts[i-len(attachments)]}}
 
 							btns := make([]whatsapp.Button, len(qrs))
 							for i, qr := range qrs {
@@ -854,7 +868,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 						} else {
 							interactive := whatsapp.Interactive{Type: "list", Body: struct {
 								Text string "json:\"text\""
-							}{Text: msgParts[i-len(msg.Attachments())]}}
+							}{Text: msgParts[i-len(attachments)]}}
 
 							section := whatsapp.Section{
 								Rows: make([]whatsapp.SectionRow, len(qrs)),
@@ -880,31 +894,39 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 						// this is still a msg part
 						text := &whatsapp.Text{PreviewURL: false}
 						payload.Type = "text"
-						if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+						if strings.Contains(msgParts[i-len(attachments)], "https://") || strings.Contains(msgParts[i-len(attachments)], "http://") {
 							text.PreviewURL = true
 						}
-						text.Body = msgParts[i-len(msg.Attachments())]
+						text.Body = msgParts[i-len(attachments)]
 						payload.Text = text
 					}
 				}
 			}
 
-		} else if i < len(msg.Attachments()) && (len(qrs) == 0 || len(qrs) > 3) {
-			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
-			attType = strings.Split(attType, "/")[0]
+		} else if i < len(attachments) && (len(qrs) == 0 || len(qrs) > 3) {
+
+			attURL := attachments[i].Media.URL()
+			attType := string(attachments[i].Type)
+			attContentType := attachments[i].Media.ContentType()
+
 			if attType == "application" {
 				attType = "document"
 			}
 			payload.Type = attType
 			media := whatsapp.Media{Link: attURL}
 
-			if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(msg.QuickReplies()) == 0 {
+			if len(msgParts) == 1 && attType != "audio" && len(attachments) == 1 && len(msg.QuickReplies()) == 0 {
 				media.Caption = msgParts[i]
 				hasCaption = true
 			}
 
 			if attType == "image" {
-				payload.Image = &media
+				if attContentType == "image/webp" {
+					payload.Type = "sticker"
+					payload.Sticker = &media
+				} else {
+					payload.Image = &media
+				}
 			} else if attType == "audio" {
 				payload.Audio = &media
 			} else if attType == "video" {
@@ -935,10 +957,11 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 						Text string "json:\"text\""
 					}{Text: msgParts[i]}}
 
-					if len(msg.Attachments()) > 0 {
+					if len(attachments) > 0 {
 						hasCaption = true
-						attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
-						attType = strings.Split(attType, "/")[0]
+						attURL := attachments[i].Media.URL()
+						attType := string(attachments[i].Type)
+
 						if attType == "application" {
 							attType = "document"
 						}
@@ -1011,7 +1034,7 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 				} else {
 					interactive := whatsapp.Interactive{Type: "list", Body: struct {
 						Text string "json:\"text\""
-					}{Text: msgParts[i-len(msg.Attachments())]}}
+					}{Text: msgParts[i-len(attachments)]}}
 
 					section := whatsapp.Section{
 						Rows: make([]whatsapp.SectionRow, len(qrs)),
@@ -1037,10 +1060,10 @@ func (h *handler) sendWhatsAppMsg(ctx context.Context, msg courier.MsgOut, res *
 				// this is still a msg part
 				text := &whatsapp.Text{PreviewURL: false}
 				payload.Type = "text"
-				if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+				if strings.Contains(msgParts[i-len(attachments)], "https://") || strings.Contains(msgParts[i-len(attachments)], "http://") {
 					text.PreviewURL = true
 				}
-				text.Body = msgParts[i-len(msg.Attachments())]
+				text.Body = msgParts[i-len(attachments)]
 				payload.Text = text
 			}
 		}
