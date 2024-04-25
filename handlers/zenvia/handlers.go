@@ -134,7 +134,7 @@ var statusMapping = map[string]courier.MsgStatus{
 	"NOT_DELIVERED": courier.MsgStatusFailed,
 	"SENT":          courier.MsgStatusSent,
 	"DELIVERED":     courier.MsgStatusDelivered,
-	"READ":          courier.MsgStatusDelivered,
+	"READ":          courier.MsgStatusRead,
 }
 
 type statusPayload struct {

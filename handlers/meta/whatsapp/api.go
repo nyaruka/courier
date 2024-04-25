@@ -6,7 +6,7 @@ import "github.com/nyaruka/courier"
 var StatusMapping = map[string]courier.MsgStatus{
 	"sent":      courier.MsgStatusSent,
 	"delivered": courier.MsgStatusDelivered,
-	"read":      courier.MsgStatusDelivered,
+	"read":      courier.MsgStatusRead,
 	"failed":    courier.MsgStatusFailed,
 }
 
