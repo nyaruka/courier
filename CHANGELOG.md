@@ -1,3 +1,7 @@
+v9.1.30 (2024-04-26)
+-------------------------
+ * Use filetype package to check file content for application/octet-stream content type header
+
 v9.1.29 (2024-04-26)
 -------------------------
  * Prioritize the content-type header for attachments response for mimetype detection
