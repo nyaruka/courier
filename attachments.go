@@ -115,7 +115,7 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 
 	// prioritize to use the response content type header if provided
 	contentTypeHeader := trace.Response.Header.Get("Content-Type")
-	if contentTypeHeader != "" {
+	if contentTypeHeader != "" && contentTypeHeader != "application/octet-stream" {
 		mimeType, _, _ = mime.ParseMediaType(contentTypeHeader)
 		if extension == "" {
 			extensions, err := mime.ExtensionsByType(mimeType)
