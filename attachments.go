@@ -113,20 +113,6 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 		extension = extension[1:]
 	}
 
-	// first try getting our mime type from the first 300 bytes of our body
-	fileType, _ := filetype.Match(trace.ResponseBody[:300])
-	if fileType != filetype.Unknown {
-		mimeType = fileType.MIME.Value
-		extension = fileType.Extension
-	} else {
-		// if that didn't work, try from our extension
-		fileType = filetype.GetType(extension)
-		if fileType != filetype.Unknown {
-			mimeType = fileType.MIME.Value
-			extension = fileType.Extension
-		}
-	}
-
 	// prioritize to use the response content type header if provided
 	contentTypeHeader := trace.Response.Header.Get("Content-Type")
 	if contentTypeHeader != "" {
@@ -137,6 +123,21 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 				extension = ""
 			} else {
 				extension = extensions[0][1:]
+			}
+		}
+	} else {
+
+		// first try getting our mime type from the first 300 bytes of our body
+		fileType, _ := filetype.Match(trace.ResponseBody[:300])
+		if fileType != filetype.Unknown {
+			mimeType = fileType.MIME.Value
+			extension = fileType.Extension
+		} else {
+			// if that didn't work, try from our extension
+			fileType = filetype.GetType(extension)
+			if fileType != filetype.Unknown {
+				mimeType = fileType.MIME.Value
+				extension = fileType.Extension
 			}
 		}
 	}
