@@ -518,6 +518,15 @@ func (ts *BackendTestSuite) TestMsgStatus() {
 	ts.True(m.SentOn_.Equal(sentOn)) // no change
 	ts.Equal(pq.StringArray([]string{string(clog1.UUID()), string(clog2.UUID()), string(clog3.UUID())}), m.LogUUIDs)
 
+	// update to READ using id
+	clog4 := updateStatusByID(10001, courier.MsgStatusRead, "")
+
+	m = readMsgFromDB(ts.b, 10001)
+	ts.Equal(m.Status_, courier.MsgStatusRead)
+	ts.True(m.ModifiedOn_.After(now))
+	ts.True(m.SentOn_.Equal(sentOn)) // no change
+	ts.Equal(pq.StringArray([]string{string(clog1.UUID()), string(clog2.UUID()), string(clog3.UUID()), string(clog4.UUID())}), m.LogUUIDs)
+
 	// no change for incoming messages
 	updateStatusByID(10002, courier.MsgStatusSent, "")
 
