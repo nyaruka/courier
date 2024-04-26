@@ -113,29 +113,31 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 		extension = extension[1:]
 	}
 
-	// first try getting our mime type from the first 300 bytes of our body
-	fileType, _ := filetype.Match(trace.ResponseBody[:300])
-	if fileType != filetype.Unknown {
-		mimeType = fileType.MIME.Value
-		extension = fileType.Extension
-	} else {
-		// if that didn't work, try from our extension
-		fileType = filetype.GetType(extension)
-		if fileType != filetype.Unknown {
-			mimeType = fileType.MIME.Value
-			extension = fileType.Extension
-		}
-	}
-
-	// we still don't know our mime type, use our content header instead
-	if mimeType == "" {
-		mimeType, _, _ = mime.ParseMediaType(trace.Response.Header.Get("Content-Type"))
+	// prioritize to use the response content type header if provided
+	contentTypeHeader := trace.Response.Header.Get("Content-Type")
+	if contentTypeHeader != "" {
+		mimeType, _, _ = mime.ParseMediaType(contentTypeHeader)
 		if extension == "" {
 			extensions, err := mime.ExtensionsByType(mimeType)
 			if extensions == nil || err != nil {
 				extension = ""
 			} else {
 				extension = extensions[0][1:]
+			}
+		}
+	} else {
+
+		// first try getting our mime type from the first 300 bytes of our body
+		fileType, _ := filetype.Match(trace.ResponseBody[:300])
+		if fileType != filetype.Unknown {
+			mimeType = fileType.MIME.Value
+			extension = fileType.Extension
+		} else {
+			// if that didn't work, try from our extension
+			fileType = filetype.GetType(extension)
+			if fileType != filetype.Unknown {
+				mimeType = fileType.MIME.Value
+				extension = fileType.Extension
 			}
 		}
 	}
