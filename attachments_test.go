@@ -23,6 +23,9 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 		"http://mock.com/media/hello2": {
 			httpx.NewMockResponse(200, map[string]string{"Content-Type": "image/jpeg"}, testJPG),
 		},
+		"http://mock.com/media/hello3": {
+			httpx.NewMockResponse(200, map[string]string{"Content-Type": "application/octet-stream"}, testJPG),
+		},
 		"http://mock.com/media/hello.mp3": {
 			httpx.NewMockResponse(502, nil, []byte(`My gateways!`)),
 		},
@@ -81,6 +84,12 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	att, err = courier.FetchAndStoreAttachment(ctx, mb, mockChannel, "http://mock.com/media/hello.pdf", clog)
 	assert.NoError(t, err)
 	assert.Equal(t, &courier.Attachment{ContentType: "unavailable", URL: "http://mock.com/media/hello.pdf"}, att)
+
+	att, err = courier.FetchAndStoreAttachment(ctx, mb, mockChannel, "http://mock.com/media/hello3", clog)
+	assert.NoError(t, err)
+	assert.Equal(t, "image/jpeg", att.ContentType)
+	assert.Equal(t, "https://backend.com/attachments/338ff339-5663-49ed-8ef6-384876655d1b.jpg", att.URL)
+	assert.Equal(t, 17301, att.Size)
 
 	// an actual error on our part should be returned as an error
 	mb.SetStorageError(errors.New("boom"))
