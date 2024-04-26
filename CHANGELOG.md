@@ -1,3 +1,7 @@
+v9.1.29 (2024-04-26)
+-------------------------
+ * Prioritize the content-type header for attachments response for mimetype detection
+
 v9.1.28 (2024-04-22)
 -------------------------
  * Support retrying failed messages for rate limit on Twilio WhatsApp
