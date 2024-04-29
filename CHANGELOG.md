@@ -1,3 +1,7 @@
+v9.1.31 (2024-04-29)
+-------------------------
+ * Add support for read msg status
+
 v9.1.30 (2024-04-26)
 -------------------------
  * Use filetype package to check file content for application/octet-stream content type header
