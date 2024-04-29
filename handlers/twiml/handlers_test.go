@@ -175,9 +175,9 @@ var testCases = []IncomingTestCase{
 		URL:                  statusURL,
 		Data:                 statusRead,
 		ExpectedRespStatus:   200,
-		ExpectedBodyContains: `"status":"D"`,
+		ExpectedBodyContains: `"status":"R"`,
 		ExpectedStatuses: []ExpectedStatus{
-			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusDelivered},
+			{ExternalID: "SMe287d7109a5a925f182f0e07fe5b223b", Status: courier.MsgStatusRead},
 		},
 		PrepRequest: addValidSignature,
 	},

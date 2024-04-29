@@ -90,7 +90,7 @@ UPDATE msgs_msg SET
 	    END,
 	sent_on = CASE 
 		WHEN
-			s.status IN ('W', 'S', 'D')
+			s.status IN ('W', 'S', 'D', 'R')
 		THEN
 			COALESCE(sent_on, NOW())
 		ELSE

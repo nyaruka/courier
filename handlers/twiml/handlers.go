@@ -107,7 +107,7 @@ var statusMapping = map[string]courier.MsgStatus{
 	"failed":      courier.MsgStatusFailed,
 	"sent":        courier.MsgStatusSent,
 	"delivered":   courier.MsgStatusDelivered,
-	"read":        courier.MsgStatusDelivered,
+	"read":        courier.MsgStatusRead,
 	"undelivered": courier.MsgStatusFailed,
 }
 

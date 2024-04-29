@@ -107,7 +107,7 @@ var statusMapping = map[string]courier.MsgStatus{
 	"0":         courier.MsgStatusFailed,
 	"sent":      courier.MsgStatusWired,
 	"delivered": courier.MsgStatusDelivered,
-	"read":      courier.MsgStatusDelivered,
+	"read":      courier.MsgStatusRead,
 }
 
 // receiveStatus is our HTTP handler function for outgoing messages statuses
