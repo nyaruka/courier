@@ -54,39 +54,6 @@ var helloMsg = `{
 	}
 }`
 
-var invalidTwitterHandle = `{
-	"direct_message_events": [
-			{
-					"type": "message_create",
-					"id": "958501034212564996",
-					"created_timestamp": "1517359429301",
-					"message_create": {
-							"target": {
-									"recipient_id": "835740314006511618"
-							},
-							"sender_id": "272953809",
-							"message_data": {
-									"text": "Hello World"
-							}
-					}
-			}
-	],
-	"users": {
-			"272953809": {
-					"id": "272953809",
-					"created_timestamp": "1301236201000",
-					"name": "Nicolas Pottier",
-					"screen_name": "nicpottier!!$"
-			},
-			"835740314006511618": {
-					"id": "835740314006511618",
-					"created_timestamp": "1488090992969",
-					"name": "Resistbot",
-					"screen_name": "resistbot"
-			}
-	}
-}`
-
 var invalidTwitterID = `{
 	"direct_message_events": [
 			{
@@ -168,7 +135,6 @@ var testCases = []IncomingTestCase{
 	{Label: "Receive Attachment", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: attachment, ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("Hello"), ExpectedAttachments: []string{"https://image.foo.com/image.jpg"}, ExpectedURN: "twitterid:272953809#nicpottier", ExpectedExternalID: "958501034212564996", ExpectedDate: time.Date(2018, 1, 31, 0, 43, 49, 301000000, time.UTC)},
 	{Label: "Not JSON", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: notJSON, ExpectedRespStatus: 400, ExpectedBodyContains: "Error"},
-	{Label: "Invalid Twitter handle", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTwitterHandle, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid twitter handle"},
 	{Label: "Invalid Twitter ID", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive", Data: invalidTwitterID, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid twitter id"},
 
 	{Label: "Webhook Verification", URL: "/c/twt/8eb23e93-5ecb-45ba-b726-3b064e0c568c/receive?crc_token=test+token", ExpectedRespStatus: 200, ExpectedBodyContains: "sha256=O5hJl2njQRIa4vsumZ+3oom9ECR5m3aQLRZkPoYelp0="},

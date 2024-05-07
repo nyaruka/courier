@@ -4,6 +4,8 @@ import (
 	"database/sql/driver"
 	"errors"
 
+	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
 )
@@ -123,14 +125,14 @@ type Channel interface {
 	Name() string
 	ChannelType() ChannelType
 	Schemes() []string
-	Country() string
+	Country() i18n.Country
 	Address() string
 	ChannelAddress() ChannelAddress
 
 	Roles() []ChannelRole
 
 	// is this channel for the passed in scheme (and only that scheme)
-	IsScheme(string) bool
+	IsScheme(*urns.Scheme) bool
 
 	// CallbackDomain returns the domain that should be used for any callbacks the channel registers
 	CallbackDomain(fallbackDomain string) string

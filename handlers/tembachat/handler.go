@@ -63,9 +63,9 @@ func (h *handler) receive(ctx context.Context, c courier.Channel, w http.Respons
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("secret incorrect"))
 	}
 
-	urn, err := urns.NewURNFromParts(urns.WebChatScheme, payload.ChatID, "", "")
+	urn, err := urns.New(urns.WebChat, payload.ChatID)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("invalid chat id"))
 	}
 
 	events := make([]courier.Event, 0, 2)

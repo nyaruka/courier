@@ -281,9 +281,9 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 				}
 				date := parseTimestamp(ts)
 
-				urn, err := urns.NewWhatsAppURN(msg.From)
+				urn, err := urns.New(urns.WhatsApp, msg.From)
 				if err != nil {
-					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+					return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid whatsapp id"))
 				}
 
 				for _, msgError := range msg.Errors {
@@ -420,14 +420,14 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 
 		// create our URN
 		if payload.Object == "instagram" {
-			urn, err = urns.NewInstagramURN(sender)
+			urn, err = urns.New(urns.Instagram, sender)
 			if err != nil {
-				return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+				return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid instagram id"))
 			}
 		} else {
-			urn, err = urns.NewFacebookURN(sender)
+			urn, err = urns.New(urns.Facebook, sender)
 			if err != nil {
-				return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+				return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid facebook id"))
 			}
 		}
 
@@ -456,7 +456,7 @@ func (h *handler) processFacebookInstagramPayload(ctx context.Context, channel c
 				//    Right now that we even support this isn't documented and I don't think anybody uses it, so leaving that out.
 				//    (things will still work, we just will have dupe contacts, one with user_ref for the first contact, then with the real id when they reply)
 				if msg.OptIn.UserRef != "" {
-					urn, err = urns.NewFacebookURN(urns.FacebookRefPrefix + msg.OptIn.UserRef)
+					urn, err = urns.New(urns.Facebook, urns.FacebookRefPrefix+msg.OptIn.UserRef)
 					if err != nil {
 						return nil, nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 					}
@@ -642,8 +642,8 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 	payload := &messenger.SendRequest{}
 
 	// build our recipient
-	if msg.URN().IsFacebookRef() {
-		payload.Recipient.UserRef = msg.URN().FacebookRef()
+	if IsFacebookRef(msg.URN()) {
+		payload.Recipient.UserRef = FacebookRef(msg.URN())
 	} else if msg.URNAuth() != "" {
 		payload.Recipient.NotificationMessagesToken = msg.URNAuth()
 	} else {
@@ -740,15 +740,15 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 		}
 
 		res.AddExternalID(respPayload.ExternalID)
-		if msg.URN().IsFacebookRef() {
+		if IsFacebookRef(msg.URN()) {
 			recipientID := respPayload.RecipientID
 			if recipientID == "" {
 				return courier.ErrResponseUnexpected
 			}
 
-			referralID := msg.URN().FacebookRef()
+			referralID := FacebookRef(msg.URN())
 
-			realIDURN, err := urns.NewFacebookURN(recipientID)
+			realIDURN, err := urns.New(urns.Facebook, recipientID)
 			if err != nil {
 				clog.RawError(errors.Errorf("unable to make facebook urn from %s", recipientID))
 			}
@@ -761,7 +761,7 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 			if err != nil {
 				clog.RawError(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
 			}
-			referralIDExtURN, err := urns.NewURNFromParts(urns.ExternalScheme, referralID, "", "")
+			referralIDExtURN, err := urns.New(urns.External, referralID)
 			if err != nil {
 				clog.RawError(errors.Errorf("unable to make ext urn from %s", referralID))
 			}
@@ -1096,7 +1096,7 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	}
 
 	// can't do anything with facebook refs, ignore them
-	if urn.IsFacebookRef() {
+	if IsFacebookRef(urn) {
 		return map[string]string{}, nil
 	}
 

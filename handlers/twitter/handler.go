@@ -6,6 +6,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -166,9 +167,9 @@ func (h *handler) receiveEvents(ctx context.Context, c courier.Channel, w http.R
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("unable to find user for id: %s", senderID))
 		}
 
-		urn, err := urns.NewURNFromParts(urns.TwitterIDScheme, user.ID, "", strings.ToLower(user.ScreenName))
+		urn, err := urns.NewFromParts(urns.TwitterID, user.ID, "", strings.ToLower(user.ScreenName))
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, errors.New("invalid twitter id"))
 		}
 
 		// create our date from the timestamp (they give us millis, arg is nanos)

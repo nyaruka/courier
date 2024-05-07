@@ -373,7 +373,7 @@ func TestDescribeURN(t *testing.T) {
 	handler := newHandler()
 	handler.Initialize(test.NewMockServer(courier.NewDefaultConfig(), test.NewMockBackend()))
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
-	urn, _ := urns.NewURNFromParts(urns.VKScheme, "123456789", "", "")
+	urn, _ := urns.New(urns.VK, "123456789")
 	data := map[string]string{"name": "John Doe"}
 
 	describe, err := handler.(courier.URNDescriber).DescribeURN(context.Background(), testChannels[0], urn, clog)

@@ -75,7 +75,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 
 		date := time.Unix(int64(payload.EventTime), 0)
 
-		urn, err := urns.NewURNFromParts(urns.SlackScheme, payload.Event.User, "", "")
+		urn, err := urns.New(urns.Slack, payload.Event.User)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}

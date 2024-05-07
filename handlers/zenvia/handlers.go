@@ -3,6 +3,7 @@ package zenvia
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -92,9 +93,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn, err := urns.NewWhatsAppURN(payload.Message.From)
+	urn, err := urns.New(urns.WhatsApp, payload.Message.From)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid whatsapp id"))
 	}
 
 	contactName := payload.Visitor.Name

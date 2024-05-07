@@ -252,9 +252,9 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 		date := time.Unix(0, msg.Timestamp*1000000).UTC()
 
 		// create our URN
-		urn, err := urns.NewFacebookURN(msg.Sender.ID)
+		urn, err := urns.New(urns.Facebook, msg.Sender.ID)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid facebook id"))
 		}
 		if msg.OptIn != nil {
 			// this is an opt in, if we have a user_ref, use that as our URN (this is a checkbox plugin)
@@ -264,7 +264,7 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 			//    Right now that we even support this isn't documented and I don't think anybody uses it, so leaving that out.
 			//    (things will still work, we just will have dupe contacts, one with user_ref for the first contact, then with the real id when they reply)
 			if msg.OptIn.UserRef != "" {
-				urn, err = urns.NewFacebookURN(urns.FacebookRefPrefix + msg.OptIn.UserRef)
+				urn, err = urns.New(urns.Facebook, urns.FacebookRefPrefix+msg.OptIn.UserRef)
 				if err != nil {
 					return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 				}
@@ -485,8 +485,8 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	}
 
 	// build our recipient
-	if msg.URN().IsFacebookRef() {
-		payload.Recipient.UserRef = msg.URN().FacebookRef()
+	if IsFacebookRef(msg.URN()) {
+		payload.Recipient.UserRef = FacebookRef(msg.URN())
 	} else {
 		payload.Recipient.ID = msg.URN().Path()
 	}
@@ -554,15 +554,15 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		}
 
 		res.AddExternalID(externalID)
-		if msg.URN().IsFacebookRef() {
+		if IsFacebookRef(msg.URN()) {
 			recipientID, err := jsonparser.GetString(respBody, "recipient_id")
 			if err != nil {
 				return courier.ErrFailedWithReason("", "response missing recipient_id")
 			}
 
-			referralID := msg.URN().FacebookRef()
+			referralID := FacebookRef(msg.URN())
 
-			realIDURN, err := urns.NewFacebookURN(recipientID)
+			realIDURN, err := urns.New(urns.Facebook, recipientID)
 			if err != nil {
 				clog.RawError(errors.Errorf("unable to make facebook urn from %s", recipientID))
 			}
@@ -575,7 +575,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			if err != nil {
 				clog.RawError(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
 			}
-			referralIDExtURN, err := urns.NewURNFromParts(urns.ExternalScheme, referralID, "", "")
+			referralIDExtURN, err := urns.New(urns.External, referralID)
 			if err != nil {
 				clog.RawError(errors.Errorf("unable to make ext urn from %s", referralID))
 			}
@@ -598,7 +598,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 // DescribeURN looks up URN metadata for new contacts
 func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn urns.URN, clog *courier.ChannelLog) (map[string]string, error) {
 	// can't do anything with facebook refs, ignore them
-	if urn.IsFacebookRef() {
+	if IsFacebookRef(urn) {
 		return map[string]string{}, nil
 	}
 
@@ -628,4 +628,16 @@ func (h *handler) DescribeURN(ctx context.Context, channel courier.Channel, urn 
 	lastName, _ := jsonparser.GetString(respBody, "last_name")
 
 	return map[string]string{"name": utils.JoinNonEmpty(" ", firstName, lastName)}, nil
+}
+
+func IsFacebookRef(u urns.URN) bool {
+	return u.Scheme() == urns.Facebook.Prefix && strings.HasPrefix(u.Path(), urns.FacebookRefPrefix)
+}
+
+// FacebookRef returns the facebook referral portion of our path, this return empty string in the case where we aren't a Facebook scheme
+func FacebookRef(u urns.URN) string {
+	if IsFacebookRef(u) {
+		return strings.TrimPrefix(u.Path(), urns.FacebookRefPrefix)
+	}
+	return ""
 }

@@ -145,7 +145,7 @@ func setDefaultURN(db *sqlx.Tx, channel *Channel, contact *Contact, urn urns.URN
 			existing.Priority = currPriority
 
 			// if this is a phone number and we just received a message on a tel scheme, set that as our new preferred channel
-			if existing.Scheme == urns.TelScheme && scheme == urns.TelScheme && channel.HasRole(courier.ChannelRoleSend) {
+			if existing.Scheme == urns.Phone.Prefix && scheme == urns.Phone.Prefix && channel.HasRole(courier.ChannelRoleSend) {
 				existing.ChannelID = channel.ID()
 			}
 			currPriority--

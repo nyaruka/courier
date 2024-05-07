@@ -70,7 +70,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	// create our URN
-	urn, err := urns.NewFirebaseURN(form.From)
+	urn, err := urns.New(urns.Firebase, form.From)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
@@ -103,7 +103,7 @@ func (h *handler) registerContact(ctx context.Context, channel courier.Channel, 
 	}
 
 	// create our URN
-	urn, err := urns.NewFirebaseURN(form.URN)
+	urn, err := urns.New(urns.Firebase, form.URN)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}

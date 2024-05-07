@@ -11,6 +11,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 const (
@@ -150,8 +151,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	// if we are meant to use national formatting (no country code) pull that out
 	if useNational {
-		nationalTo := msg.URN().Localize(msg.Channel().Country())
-		form["to"] = []string{nationalTo.Path()}
+		form["to"] = []string{urns.ToLocalPhone(msg.URN(), msg.Channel().Country())}
 	}
 
 	// figure out what encoding to tell kannel to send as

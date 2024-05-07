@@ -90,7 +90,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	date := time.Now()
 
 	// create our URN
-	urn, err := urns.NewURNFromParts(urns.DiscordScheme, from, "", "")
+	urn, err := urns.New(urns.Discord, from)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}

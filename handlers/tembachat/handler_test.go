@@ -24,7 +24,7 @@ var incomingCases = []IncomingTestCase{
 		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		Data:                 `{"chat_id": "xxxxx", "secret": "sesame", "events": [{"type": "msg_in", "msg": {"text": "Join"}}]}`,
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "invalid webchat id: xxxxx",
+		ExpectedBodyContains: "invalid chat id",
 	},
 	{
 		Label:                "Chat started event",
@@ -39,7 +39,7 @@ var incomingCases = []IncomingTestCase{
 		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		Data:                 `{"chat_id": "xxxxx", "secret": "sesame", "events": [{"type": "chat_started"}]}`,
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "invalid webchat id: xxxxx",
+		ExpectedBodyContains: "invalid chat id",
 	},
 	{
 		Label:                "Msg status update",

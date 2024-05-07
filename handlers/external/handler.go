@@ -100,15 +100,15 @@ func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channe
 
 	// create our URN
 	urn := urns.NilURN
-	if channel.Schemes()[0] == urns.TelScheme {
+	if channel.Schemes()[0] == urns.Phone.Prefix {
 		urn, err = handlers.StrictTelForCountry(form.From, channel.Country())
 	} else {
-		urn, err = urns.NewURNFromParts(channel.Schemes()[0], form.From, "", "")
+		urn = urns.URN(channel.Schemes()[0] + ":" + form.From)
+		err = urn.Validate()
 	}
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
-	urn = urn.Normalize("")
 
 	// create a stop channel event
 	channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeStopContact, urn, clog)
@@ -202,15 +202,15 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 
 	// create our URN
 	urn := urns.NilURN
-	if channel.Schemes()[0] == urns.TelScheme {
+	if channel.Schemes()[0] == urns.Phone.Prefix {
 		urn, err = handlers.StrictTelForCountry(from, channel.Country())
 	} else {
-		urn, err = urns.NewURNFromParts(channel.Schemes()[0], from, "", "")
+		urn = urns.URN(channel.Schemes()[0] + ":" + from)
+		err = urn.Validate()
 	}
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
-	urn = urn.Normalize(channel.Country())
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, text, "", clog).WithReceivedOn(date)
@@ -309,9 +309,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		// if we are meant to use national formatting (no country code) pull that out
 		if useNational {
-			nationalTo := msg.URN().Localize(channel.Country())
-			form["to"] = nationalTo.Path()
-			form["to_no_plus"] = nationalTo.Path()
+			nationalTo := urns.ToLocalPhone(msg.URN(), channel.Country())
+			form["to"] = nationalTo
+			form["to_no_plus"] = nationalTo
 		}
 
 		// if we are smart, first try to convert to GSM7 chars

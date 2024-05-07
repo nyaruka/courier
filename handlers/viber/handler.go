@@ -141,9 +141,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		ContactName := payload.User.Name
 
 		// build the URN
-		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "", "")
+		urn, err := urns.New(urns.Viber, viberID)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid viber id"))
 		}
 		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeWelcomeMessage, urn, clog).WithContactName(ContactName)
@@ -162,9 +162,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		ContactName := payload.User.Name
 
 		// build the URN
-		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "", "")
+		urn, err := urns.New(urns.Viber, viberID)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid viber id"))
 		}
 
 		// build the channel event
@@ -183,9 +183,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		viberID := payload.UserID
 
 		// build the URN
-		urn, err := urns.NewURNFromParts(urns.ViberScheme, viberID, "", "")
+		urn, err := urns.New(urns.Viber, viberID)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid viber id"))
 		}
 		// build the channel event
 		channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeStopContact, urn, clog)
@@ -220,9 +220,9 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		contactName := payload.Sender.Name
 
 		// create our URN
-		urn, err := urns.NewURNFromParts(urns.ViberScheme, sender, "", "")
+		urn, err := urns.New(urns.Viber, sender)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid viber id"))
 		}
 
 		text := payload.Message.Text

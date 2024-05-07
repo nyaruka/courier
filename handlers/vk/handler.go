@@ -233,7 +233,7 @@ func (h *handler) verifyServer(channel courier.Channel, w http.ResponseWriter) (
 // receiveMessage handles new message event
 func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w http.ResponseWriter, r *http.Request, payload *moNewMessagePayload, clog *courier.ChannelLog) ([]courier.Event, error) {
 	userId := payload.Object.Message.UserId
-	urn, err := urns.NewURNFromParts(urns.VKScheme, strconv.FormatInt(userId, 10), "", "")
+	urn, err := urns.New(urns.VK, strconv.FormatInt(userId, 10))
 
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)

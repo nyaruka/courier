@@ -132,9 +132,9 @@ func (h *handler) processWhatsAppPayload(ctx context.Context, channel courier.Ch
 				}
 				date := time.Unix(ts, 0).UTC()
 
-				urn, err := urns.NewWhatsAppURN(msg.From)
+				urn, err := urns.New(urns.WhatsApp, msg.From)
 				if err != nil {
-					return nil, nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, err.Error())
+					return nil, nil, handlers.WriteAndLogRequestIgnored(ctx, h, channel, w, r, "invalid whatsapp id")
 				}
 
 				for _, msgError := range msg.Errors {

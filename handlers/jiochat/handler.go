@@ -115,9 +115,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	date := time.Unix(payload.CreateTime/1000, payload.CreateTime%1000*1000000).UTC()
-	urn, err := urns.NewURNFromParts(urns.JiochatScheme, payload.FromUsername, "", "")
+	urn, err := urns.New(urns.JioChat, payload.FromUsername)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid jiochat id"))
 	}
 
 	// subscribe event, trigger a new conversation

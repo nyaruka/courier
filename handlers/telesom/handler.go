@@ -12,6 +12,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var (
@@ -75,7 +76,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	for _, part := range handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength) {
 		from := strings.TrimPrefix(msg.Channel().Address(), "+")
-		to := fmt.Sprintf("0%s", strings.TrimPrefix(msg.URN().Localize(msg.Channel().Country()).Path(), "0"))
+		to := fmt.Sprintf("0%s", urns.ToLocalPhone(msg.URN(), msg.Channel().Country()))
 
 		// build our request
 		form := url.Values{

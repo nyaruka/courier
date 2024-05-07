@@ -80,9 +80,9 @@ func (h *handler) receiveMsg(ctx context.Context, channel courier.Channel, w htt
 	}
 
 	// build urn
-	urn, err := urns.NewWhatsAppURN(form.From)
+	urn, err := urns.New(urns.WhatsApp, form.From)
 	if err != nil {
-		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid whatsapp id"))
 	}
 
 	// parse created_at timestamp

@@ -69,7 +69,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("no text or attachment"))
 	}
 
-	urn, err := urns.NewURNFromParts(urns.RocketChatScheme, payload.User.URN, "", payload.User.Username)
+	urn, err := urns.NewFromParts(urns.RocketChat, payload.User.URN, "", payload.User.Username)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
