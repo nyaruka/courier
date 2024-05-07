@@ -137,7 +137,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	text := form.Body
-	if channel.IsScheme(urns.WhatsApp.Prefix) && form.ButtonText != "" {
+	if channel.IsScheme(urns.WhatsApp) && form.ButtonText != "" {
 		text = form.ButtonText
 	}
 
@@ -260,7 +260,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		}
 
 		// for whatsapp channels, we have to prepend whatsapp to the To and From
-		if channel.IsScheme(urns.WhatsApp.Prefix) {
+		if channel.IsScheme(urns.WhatsApp) {
 			form["To"][0] = fmt.Sprintf("%s:+%s", urns.WhatsApp.Prefix, form["To"][0])
 			form["From"][0] = fmt.Sprintf("%s:%s", urns.WhatsApp.Prefix, form["From"][0])
 		}
@@ -348,7 +348,7 @@ func (h *handler) RedactValues(ch courier.Channel) []string {
 }
 
 func (h *handler) parseURN(channel courier.Channel, text string, country i18n.Country) (urns.URN, error) {
-	if channel.IsScheme(urns.WhatsApp.Prefix) {
+	if channel.IsScheme(urns.WhatsApp) {
 		// Twilio Whatsapp from is in the form: whatsapp:+12211414154 or +12211414154
 		var fromTel string
 		parts := strings.Split(text, ":")

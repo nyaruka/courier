@@ -109,7 +109,6 @@ func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channe
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
-	urn = urn.Normalize()
 
 	// create a stop channel event
 	channelEvent := h.Backend().NewChannelEvent(channel, courier.EventTypeStopContact, urn, clog)
@@ -212,7 +211,6 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
-	urn = urn.Normalize()
 
 	// build our msg
 	msg := h.Backend().NewIncomingMsg(channel, urn, text, "", clog).WithReceivedOn(date)

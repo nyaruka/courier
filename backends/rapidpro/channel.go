@@ -9,6 +9,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/null/v3"
 )
 
@@ -60,8 +61,8 @@ func (c *Channel) ChannelAddress() courier.ChannelAddress {
 func (c *Channel) Country() i18n.Country { return i18n.Country(c.Country_.String) }
 
 // IsScheme returns whether this channel serves only the passed in scheme
-func (c *Channel) IsScheme(scheme string) bool {
-	return len(c.Schemes_) == 1 && c.Schemes_[0] == scheme
+func (c *Channel) IsScheme(scheme *urns.Scheme) bool {
+	return len(c.Schemes_) == 1 && c.Schemes_[0] == scheme.Prefix
 }
 
 // Roles returns the roles of this channel

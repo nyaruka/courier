@@ -38,8 +38,8 @@ func (c *MockChannel) SetScheme(scheme string) { c.schemes = []string{scheme} }
 func (c *MockChannel) Schemes() []string { return c.schemes }
 
 // IsScheme returns whether the passed in scheme is the scheme for this channel
-func (c *MockChannel) IsScheme(scheme string) bool {
-	return len(c.schemes) == 1 && c.schemes[0] == scheme
+func (c *MockChannel) IsScheme(scheme *urns.Scheme) bool {
+	return len(c.schemes) == 1 && c.schemes[0] == scheme.Prefix
 }
 
 // Address returns the address as a string of this channel
