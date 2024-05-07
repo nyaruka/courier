@@ -1,3 +1,7 @@
+v9.1.32 (2024-05-07)
+-------------------------
+ * Update to new gocommon with urns changes
+
 v9.1.31 (2024-04-29)
 -------------------------
  * Add support for read msg status
