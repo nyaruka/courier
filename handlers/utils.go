@@ -10,6 +10,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/utils"
+	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -95,9 +96,9 @@ func DecodePossibleBase64(original string) string {
 // StrictTelForCountry wraps urns.NewURNTelForCountry but is stricter in
 // what it accepts. Incoming tels must be numeric or we will return an
 // error. (IE, alphanumeric shortcodes are not ok)
-func StrictTelForCountry(number string, country string) (urns.URN, error) {
+func StrictTelForCountry(number string, country i18n.Country) (urns.URN, error) {
 	// first figure out if we are valid non-strictly
-	urn, err := urns.NewTelURNForCountry(number, country)
+	urn, err := urns.ParsePhone(number, country)
 	if err != nil {
 		return urns.NilURN, err
 	}
@@ -112,7 +113,7 @@ func StrictTelForCountry(number string, country string) (urns.URN, error) {
 	// as our URN. This deals with the case where a carrier is handing us an E164 number that
 	// the phonenumbers library doesn't know about yet
 	if fmt.Sprintf("+%s", urn.Path()) == number && len(number) > 7 {
-		urn = urns.URN(urns.TelScheme + ":" + number)
+		urn = urns.URN(urns.Phone.Prefix + ":" + number)
 	}
 
 	return urn, nil

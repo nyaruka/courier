@@ -8,6 +8,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/null/v3"
 )
 
@@ -56,7 +57,7 @@ func (c *Channel) ChannelAddress() courier.ChannelAddress {
 }
 
 // Country returns the country code for this channel if any
-func (c *Channel) Country() string { return c.Country_.String }
+func (c *Channel) Country() i18n.Country { return i18n.Country(c.Country_.String) }
 
 // IsScheme returns whether this channel serves only the passed in scheme
 func (c *Channel) IsScheme(scheme string) bool {

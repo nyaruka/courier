@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"errors"
 
+	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
 )
@@ -123,7 +124,7 @@ type Channel interface {
 	Name() string
 	ChannelType() ChannelType
 	Schemes() []string
-	Country() string
+	Country() i18n.Country
 	Address() string
 	ChannelAddress() ChannelAddress
 

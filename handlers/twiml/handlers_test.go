@@ -536,7 +536,7 @@ func TestIncoming(t *testing.T) {
 			courier.ConfigAuthToken: "6789",
 		},
 	)
-	waChannel.SetScheme(urns.WhatsAppScheme)
+	waChannel.SetScheme(urns.WhatsApp.Prefix)
 	RunIncomingTestCases(t, []courier.Channel{waChannel}, newTWIMLHandler("T", "TwilioWhatsApp", true), waTestCases)
 
 	twaChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
@@ -545,7 +545,7 @@ func TestIncoming(t *testing.T) {
 			courier.ConfigAuthToken: "6789",
 		},
 	)
-	twaChannel.SetScheme(urns.WhatsAppScheme)
+	twaChannel.SetScheme(urns.WhatsApp.Prefix)
 	RunIncomingTestCases(t, []courier.Channel{twaChannel}, newTWIMLHandler("TWA", "Twilio WhatsApp", true), twaTestCases)
 }
 
@@ -1128,7 +1128,7 @@ func TestOutgoing(t *testing.T) {
 			configSendURL:           "http://example.com/sigware_api/",
 		},
 	)
-	waChannel.SetScheme(urns.WhatsAppScheme)
+	waChannel.SetScheme(urns.WhatsApp.Prefix)
 
 	RunOutgoingTestCases(t, waChannel, newTWIMLHandler("T", "Twilio Whatsapp", true), waSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 
@@ -1138,7 +1138,7 @@ func TestOutgoing(t *testing.T) {
 			courier.ConfigAuthToken: "authToken",
 		},
 	)
-	twaChannel.SetScheme(urns.WhatsAppScheme)
+	twaChannel.SetScheme(urns.WhatsApp.Prefix)
 
 	RunOutgoingTestCases(t, twaChannel, newTWIMLHandler("TWA", "Twilio Whatsapp", true), twaSendTestCases, []string{httpx.BasicAuth("accountSID", "authToken")}, nil)
 }

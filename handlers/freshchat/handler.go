@@ -70,7 +70,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// create our URN
 	urn := urns.NilURN
 	urnstring := fmt.Sprintf("%s/%s", payload.Data.Message.ChannelID, payload.Data.Message.ActorID)
-	urn, err = urns.NewURNFromParts("freshchat", urnstring, "", "")
+	urn, err = urns.New(urns.FreshChat, urnstring)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}

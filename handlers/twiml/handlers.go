@@ -24,6 +24,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -125,7 +126,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
 
-	urn, err := h.parseURN(channel, form.From, form.FromCountry)
+	urn, err := h.parseURN(channel, form.From, i18n.Country(form.FromCountry))
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
@@ -136,7 +137,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	}
 
 	text := form.Body
-	if channel.IsScheme(urns.WhatsAppScheme) && form.ButtonText != "" {
+	if channel.IsScheme(urns.WhatsApp.Prefix) && form.ButtonText != "" {
 		text = form.ButtonText
 	}
 
@@ -259,9 +260,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		}
 
 		// for whatsapp channels, we have to prepend whatsapp to the To and From
-		if channel.IsScheme(urns.WhatsAppScheme) {
-			form["To"][0] = fmt.Sprintf("%s:+%s", urns.WhatsAppScheme, form["To"][0])
-			form["From"][0] = fmt.Sprintf("%s:%s", urns.WhatsAppScheme, form["From"][0])
+		if channel.IsScheme(urns.WhatsApp.Prefix) {
+			form["To"][0] = fmt.Sprintf("%s:+%s", urns.WhatsApp.Prefix, form["To"][0])
+			form["From"][0] = fmt.Sprintf("%s:%s", urns.WhatsApp.Prefix, form["From"][0])
 		}
 
 		// build our URL
@@ -346,8 +347,8 @@ func (h *handler) RedactValues(ch courier.Channel) []string {
 	}
 }
 
-func (h *handler) parseURN(channel courier.Channel, text, country string) (urns.URN, error) {
-	if channel.IsScheme(urns.WhatsAppScheme) {
+func (h *handler) parseURN(channel courier.Channel, text string, country i18n.Country) (urns.URN, error) {
+	if channel.IsScheme(urns.WhatsApp.Prefix) {
 		// Twilio Whatsapp from is in the form: whatsapp:+12211414154 or +12211414154
 		var fromTel string
 		parts := strings.Split(text, ":")
@@ -358,10 +359,10 @@ func (h *handler) parseURN(channel courier.Channel, text, country string) (urns.
 		}
 
 		// trim off left +, official whatsapp IDs dont have that
-		return urns.NewWhatsAppURN(strings.TrimLeft(fromTel, "+"))
+		return urns.New(urns.WhatsApp, strings.TrimLeft(fromTel, "+"))
 	}
 
-	return urns.NewTelURNForCountry(text, country)
+	return urns.ParsePhone(text, country)
 }
 
 func (h *handler) baseURL(c courier.Channel) string {

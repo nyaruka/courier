@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 )
 
@@ -15,7 +16,7 @@ type MockChannel struct {
 	channelType courier.ChannelType
 	schemes     []string
 	address     courier.ChannelAddress
-	country     string
+	country     i18n.Country
 	role        string
 	config      map[string]any
 	orgConfig   map[string]any
@@ -48,7 +49,7 @@ func (c *MockChannel) Address() string { return c.address.String() }
 func (c *MockChannel) ChannelAddress() courier.ChannelAddress { return c.address }
 
 // Country returns the country this channel is for (if any)
-func (c *MockChannel) Country() string { return c.country }
+func (c *MockChannel) Country() i18n.Country { return c.country }
 
 // SetConfig sets the passed in config parameter
 func (c *MockChannel) SetConfig(key string, value any) {
@@ -153,11 +154,11 @@ func (c *MockChannel) HasRole(role courier.ChannelRole) bool {
 }
 
 // NewMockChannel creates a new mock channel for the passed in type, address, country and config
-func NewMockChannel(uuid string, channelType string, address string, country string, config map[string]any) *MockChannel {
+func NewMockChannel(uuid string, channelType string, address string, country i18n.Country, config map[string]any) *MockChannel {
 	return &MockChannel{
 		uuid:        courier.ChannelUUID(uuid),
 		channelType: courier.ChannelType(channelType),
-		schemes:     []string{urns.TelScheme},
+		schemes:     []string{urns.Phone.Prefix},
 		address:     courier.ChannelAddress(address),
 		country:     country,
 		config:      config,

@@ -330,7 +330,7 @@ func TestDescribeURN(t *testing.T) {
 	handler := newHandler()
 	handler.Initialize(test.NewMockServer(courier.NewDefaultConfig(), test.NewMockBackend()))
 	clog := courier.NewChannelLog(courier.ChannelLogTypeUnknown, testChannels[0], handler.RedactValues(testChannels[0]))
-	urn, _ := urns.NewURNFromParts(urns.SlackScheme, "U012345", "", "")
+	urn, _ := urns.New(urns.Slack, "U012345")
 
 	data := map[string]string{"name": "dummy user"}
 

@@ -125,7 +125,7 @@ func (h *handler) receiveStatus(ctx context.Context, channel courier.Channel, w 
 	}
 
 	if receivedStatus.StatusErrorCode == errorStopped {
-		urn, err := urns.NewTelURNForCountry(receivedStatus.Recipient, "")
+		urn, err := urns.ParsePhone(receivedStatus.Recipient, "")
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}

@@ -202,9 +202,9 @@ func (h *handler) receiveEvents(ctx context.Context, channel courier.Channel, w 
 		date := time.Unix(ts, 0).UTC()
 
 		// create our URN
-		urn, err := urns.NewWhatsAppURN(msg.From)
+		urn, err := urns.New(urns.WhatsApp, msg.From)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid whatsapp id"))
 		}
 
 		text := ""
@@ -531,7 +531,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	if err == nil {
 		// so update contact URN if wppID != ""
 		if wppID != "" {
-			newURN, _ := urns.NewWhatsAppURN(wppID)
+			newURN, _ := urns.New(urns.WhatsApp, wppID)
 			res.SetNewURN(newURN)
 		}
 	}

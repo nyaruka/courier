@@ -148,9 +148,9 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		// create our date from the timestamp (they give us millis, arg is nanos)
 		date := time.Unix(0, lineEvent.Timestamp*1000000).UTC()
 
-		urn, err := urns.NewURNFromParts(urns.LineScheme, lineEvent.Source.UserID, "", "")
+		urn, err := urns.New(urns.Line, lineEvent.Source.UserID)
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.New("invalid line id"))
 		}
 
 		msg := h.Backend().NewIncomingMsg(channel, urn, text, lineEvent.ReplyToken, clog).WithReceivedOn(date)
