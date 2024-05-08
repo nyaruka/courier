@@ -13,6 +13,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var sendURL = "https://api.infobip.com/sms/1/text/advanced"
@@ -140,7 +141,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		}
 
 		// create our URN
-		urn, err := handlers.StrictTelForCountry(infobipMessage.From, channel.Country())
+		urn, err := urns.ParsePhone(infobipMessage.From, channel.Country())
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}

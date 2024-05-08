@@ -14,6 +14,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var (
@@ -109,7 +110,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		date = date.UTC()
 	}
 
-	urn, err := handlers.StrictTelForCountry(payload.Data.From, c.Country())
+	urn, err := urns.ParsePhone(payload.Data.From, c.Country())
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}

@@ -16,6 +16,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/pkg/errors"
 )
 
@@ -80,7 +81,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		clog.SetType(courier.ChannelLogTypeMsgReceive)
 
 		date := time.Unix(payload.Created/1000, payload.Created%1000*1000000).UTC()
-		urn, err := handlers.StrictTelForCountry(payload.From, channel.Country())
+		urn, err := urns.ParsePhone(payload.From, channel.Country())
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}

@@ -69,7 +69,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	date := time.Unix(form.TS, 0).UTC()
 
 	// create our URN
-	urn, err := handlers.StrictTelForCountry(form.Sender, channel.Country())
+	urn, err := urns.ParsePhone(form.Sender, channel.Country())
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}
