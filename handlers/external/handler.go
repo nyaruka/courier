@@ -101,7 +101,7 @@ func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channe
 	// create our URN
 	urn := urns.NilURN
 	if channel.Schemes()[0] == urns.Phone.Prefix {
-		urn, err = handlers.StrictTelForCountry(form.From, channel.Country())
+		urn, err = urns.ParsePhone(form.From, channel.Country())
 	} else {
 		urn = urns.URN(channel.Schemes()[0] + ":" + form.From)
 		err = urn.Validate()
@@ -203,7 +203,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	// create our URN
 	urn := urns.NilURN
 	if channel.Schemes()[0] == urns.Phone.Prefix {
-		urn, err = handlers.StrictTelForCountry(from, channel.Country())
+		urn, err = urns.ParsePhone(from, channel.Country())
 	} else {
 		urn = urns.URN(channel.Schemes()[0] + ":" + from)
 		err = urn.Validate()

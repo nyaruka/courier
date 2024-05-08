@@ -13,6 +13,7 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 const (
@@ -114,7 +115,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		}
 
 		// create our URN
-		urn, err := handlers.StrictTelForCountry(pmMsg.MSIDSN, c.Country())
+		urn, err := urns.ParsePhone(pmMsg.MSIDSN, c.Country())
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}

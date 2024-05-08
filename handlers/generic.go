@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 // NewTelReceiveHandler creates a new receive handler given the passed in text and from fields
@@ -23,7 +24,7 @@ func NewTelReceiveHandler(h courier.ChannelHandler, fromField string, bodyField 
 			return nil, WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required field '%s'", fromField))
 		}
 		// create our URN
-		urn, err := StrictTelForCountry(from, c.Country())
+		urn, err := urns.ParsePhone(from, c.Country())
 		if err != nil {
 			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}
