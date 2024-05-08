@@ -11,7 +11,7 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MB", "2020", "BR", map[string]any{"username": "zv-username", "password": "zv-password"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MB", "2020", "US", map[string]any{"username": "zv-username", "password": "zv-password"}),
 }
 
 var (
@@ -62,13 +62,31 @@ var (
 )
 
 var testCases = []IncomingTestCase{
-	{Label: "Receive Valid", URL: receiveURL, Data: validReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "Message Accepted",
-		ExpectedMsgText: Sp("Hello World"), ExpectedURN: "tel:+12067799294", ExpectedDate: time.Date(2016, 3, 30, 19, 33, 06, 643000000, time.UTC),
-		ExpectedExternalID: "OzQ5UqIOdoY8"},
-
-	{Label: "Receive Missing Params", URL: receiveURL, Data: missingParamsRecieve, ExpectedRespStatus: 400, ExpectedBodyContains: "missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body"},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedBodyContains: "phone number supplied is not a number"},
-
+	{
+		Label:                "Receive Valid",
+		URL:                  receiveURL,
+		Data:                 validReceive,
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Message Accepted",
+		ExpectedMsgText:      Sp("Hello World"),
+		ExpectedURN:          "tel:+12067799294",
+		ExpectedDate:         time.Date(2016, 3, 30, 19, 33, 06, 643000000, time.UTC),
+		ExpectedExternalID:   "OzQ5UqIOdoY8",
+	},
+	{
+		Label:                "Receive Missing Params",
+		URL:                  receiveURL,
+		Data:                 missingParamsRecieve,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "missing one of 'id', 'from', 'to', 'body' or 'received_at' in request body",
+	},
+	{
+		Label:                "Invalid URN",
+		URL:                  receiveURL,
+		Data:                 invalidURN,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "phone number supplied is not a number",
+	},
 	{
 		Label:                "Status Valid",
 		URL:                  receiveURL,
@@ -77,8 +95,20 @@ var testCases = []IncomingTestCase{
 		ExpectedBodyContains: `"status":"D"`,
 		ExpectedStatuses:     []ExpectedStatus{{ExternalID: "12345", Status: courier.MsgStatusDelivered}},
 	},
-	{Label: "Status Unknown", URL: receiveURL, Data: unknownStatus, ExpectedRespStatus: 400, ExpectedBodyContains: `unknown status 'INVALID'`},
-	{Label: "Status Missing Batch ID", URL: receiveURL, Data: missingBatchID, ExpectedRespStatus: 400, ExpectedBodyContains: "missing one of 'batch_id' or 'status' in request body"},
+	{
+		Label:                "Status Unknown",
+		URL:                  receiveURL,
+		Data:                 unknownStatus,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: `unknown status 'INVALID'`,
+	},
+	{
+		Label:                "Status Missing Batch ID",
+		URL:                  receiveURL,
+		Data:                 missingBatchID,
+		ExpectedRespStatus:   400,
+		ExpectedBodyContains: "missing one of 'batch_id' or 'status' in request body",
+	},
 }
 
 func TestIncoming(t *testing.T) {
