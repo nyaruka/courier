@@ -166,9 +166,15 @@ func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg c
 		return "", errors.Errorf("no access token returned")
 	}
 
-	// we got a token, cache it to redis with a 90 minute expiration
+	expiration, err := jsonparser.GetInt(respBody, "expires_in")
+
+	if err != nil {
+		expiration = 3600
+	}
+
+	// we got a token, cache it to redis with an expiration from the response(we default to 60 minutes)
 	conn = h.Backend().RedisPool().Get()
-	_, err = conn.Do("SETEX", fmt.Sprintf("hm_token_%s", channel.UUID()), 5340, token)
+	_, err = conn.Do("SETEX", fmt.Sprintf("hm_token_%s", channel.UUID()), expiration, token)
 	conn.Close()
 
 	if err != nil {
