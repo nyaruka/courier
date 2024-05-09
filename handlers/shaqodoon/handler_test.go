@@ -38,7 +38,7 @@ var handleTestCases = []IncomingTestCase{
 		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729", ExpectedDate: time.Date(2017, 6, 23, 12, 30, 0, int(500*time.Millisecond), time.UTC)},
 	{Label: "Receive Valid Message With Time", URL: receiveValidMessageWithTime, Data: "empty", ExpectedRespStatus: 200, ExpectedBodyContains: "Accepted",
 		ExpectedMsgText: Sp("Join"), ExpectedURN: "tel:+2349067554729", ExpectedDate: time.Date(2017, 6, 23, 12, 30, 0, 0, time.UTC)},
-	{Label: "Receive invalid URN", URL: receiveInvalidURN, Data: "empty", ExpectedRespStatus: 400, ExpectedBodyContains: "phone number supplied is not a number"},
+	{Label: "Receive invalid URN", URL: receiveInvalidURN, Data: "empty", ExpectedRespStatus: 400, ExpectedBodyContains: "not a possible number"},
 	{Label: "Receive No Params", URL: receiveNoParams, Data: "empty", ExpectedRespStatus: 400, ExpectedBodyContains: "field 'from' required"},
 	{Label: "Receive No Sender", URL: receiveNoSender, Data: "empty", ExpectedRespStatus: 400, ExpectedBodyContains: "field 'from' required"},
 	{Label: "Receive Invalid Date", URL: receiveInvalidDate, Data: "empty", ExpectedRespStatus: 400, ExpectedBodyContains: "invalid date format, must be RFC 3339"},

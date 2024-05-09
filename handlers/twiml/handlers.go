@@ -362,7 +362,7 @@ func (h *handler) parseURN(channel courier.Channel, text string, country i18n.Co
 		return urns.New(urns.WhatsApp, strings.TrimLeft(fromTel, "+"))
 	}
 
-	return urns.ParsePhone(text, country)
+	return urns.ParsePhone(text, country, true, false)
 }
 
 func (h *handler) baseURL(c courier.Channel) string {

@@ -42,7 +42,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 "mobile=MTN&message=Join",
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "phone number supplied is not a number",
+		ExpectedBodyContains: "not a possible number",
 	},
 	{
 		Label:                "Receive No Params",

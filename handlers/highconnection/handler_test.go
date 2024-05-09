@@ -48,7 +48,7 @@ var testCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 "FROM=MTN&TO=5151&MESSAGE=Hello+World&RECEPTION_DATE=2015-04-02T14%3A26%3A06",
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "phone number supplied is not a number",
+		ExpectedBodyContains: "not a possible number",
 	},
 	{
 		Label:                "Receive Missing Params",

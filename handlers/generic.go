@@ -24,7 +24,7 @@ func NewTelReceiveHandler(h courier.ChannelHandler, fromField string, bodyField 
 			return nil, WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("missing required field '%s'", fromField))
 		}
 		// create our URN
-		urn, err := urns.ParsePhone(from, c.Country())
+		urn, err := urns.ParsePhone(from, c.Country(), true, false)
 		if err != nil {
 			return nil, WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}

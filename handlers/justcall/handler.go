@@ -110,7 +110,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		date = date.UTC()
 	}
 
-	urn, err := urns.ParsePhone(payload.Data.From, c.Country())
+	urn, err := urns.ParsePhone(payload.Data.From, c.Country(), true, false)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}

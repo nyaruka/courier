@@ -29,7 +29,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  "/c/m3/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?from=MTN&text=hello+world",
 		Data:                 " ",
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "phone number supplied is not a number",
+		ExpectedBodyContains: "not a possible number",
 	},
 	{
 		Label:                "Receive No From",

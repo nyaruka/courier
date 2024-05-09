@@ -91,7 +91,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		}
 
 		// create our URN
-		urn, err := urns.ParsePhone(payload.From, channel.Country())
+		urn, err := urns.ParsePhone(payload.From, channel.Country(), true, false)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}

@@ -29,7 +29,7 @@ var handleTestCases = []IncomingTestCase{
 		Label:                "Invalid URN",
 		URL:                  "/c/ts/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/?mobile=MTN&msg=Join",
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "phone number supplied is not a number",
+		ExpectedBodyContains: "not a possible number",
 	},
 	{
 		Label:                "Receive No Params",
@@ -57,7 +57,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  "/c/ts/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive/",
 		Data:                 "mobile=MTN&msg=Join",
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "phone number supplied is not a number",
+		ExpectedBodyContains: "not a possible number",
 	},
 	{
 		Label:                "Receive No Params",

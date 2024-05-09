@@ -57,7 +57,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  receiveInvalidURN,
 		Data:                 "empty",
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "phone number supplied is not a number",
+		ExpectedBodyContains: "not a possible number",
 	},
 	//	{Label: "Status No Params", URL: statusNoParams, Status: 400, Response: "field 'status' required"},
 	//	{Label: "Status Invalid Status", URL: statusInvalidStatus, Status: 400, Response: "unknown status '66', must be one of 1,2,4,8,16"},

@@ -118,7 +118,7 @@ var testCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 invalidURNReceive,
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "phone number supplied is not a number",
+		ExpectedBodyContains: "not a possible number",
 	},
 	{
 		Label:                "Receive missing Request ID",

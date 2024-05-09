@@ -93,7 +93,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, fmt.Errorf("invalid 'senderAddress' parameter"))
 		}
 
-		urn, err := urns.ParsePhone(glMsg.SenderAddress[4:], c.Country())
+		urn, err := urns.ParsePhone(glMsg.SenderAddress[4:], c.Country(), true, false)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 		}

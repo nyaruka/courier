@@ -33,7 +33,7 @@ var testCases = []IncomingTestCase{
 		Label:                "Invalid URN",
 		URL:                  "/c/nx/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive?to=2020&msisdn=MTN&text=Join&messageId=external1",
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "phone number supplied is not a number",
+		ExpectedBodyContains: "not a possible number",
 	},
 	{
 		Label:                "Valid Receive Post",

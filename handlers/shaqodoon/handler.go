@@ -73,7 +73,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 		form.From = "+" + form.From[1:]
 	}
 
-	urn, err := urns.ParsePhone(form.From, channel.Country())
+	urn, err := urns.ParsePhone(form.From, channel.Country(), true, false)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}

@@ -36,7 +36,7 @@ var testCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 "text=Msg&short_code=2020&tstamp=2017-10-26T15:51:32.906335%2B00:00&msisdn=MTN",
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "phone number supplied is not a number",
+		ExpectedBodyContains: "not a possible number",
 	},
 	{
 		Label:                "Receive Empty",

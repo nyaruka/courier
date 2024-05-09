@@ -95,7 +95,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  receiveURL + "?sender=MTN&text=Join",
 		Data:                 "empty",
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "phone number supplied is not a number",
+		ExpectedBodyContains: "not a possible number",
 	},
 	{
 		Label:                "Receive No Params",
@@ -185,7 +185,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  "/c/ex/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/stopped/?from=MTN",
 		Data:                 "empty",
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "phone number supplied is not a number",
+		ExpectedBodyContains: "not a possible number",
 	},
 	{
 		Label:                "Stopped event No Params",

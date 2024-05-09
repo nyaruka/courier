@@ -103,7 +103,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	date := time.Unix(0, int64(payload.Timestamp*1000000)).UTC()
 
 	// create our URN
-	urn, err := urns.ParsePhone(payload.From, channel.Country())
+	urn, err := urns.ParsePhone(payload.From, channel.Country(), true, false)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 	}

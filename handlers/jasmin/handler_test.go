@@ -43,7 +43,7 @@ var handleTestCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 "content=%05v%05nement&coding=0&From=MTN&To=2349067554711&id=1001",
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "phone number supplied is not a number",
+		ExpectedBodyContains: "not a possible number",
 	},
 	{
 		Label:                "Status Delivered",

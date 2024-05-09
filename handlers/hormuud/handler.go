@@ -58,7 +58,7 @@ func (h *handler) receiveMessage(ctx context.Context, c courier.Channel, w http.
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}
 
-	urn, err := urns.ParsePhone(payload.Sender, c.Country())
+	urn, err := urns.ParsePhone(payload.Sender, c.Country(), true, false)
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, c, w, r, err)
 	}

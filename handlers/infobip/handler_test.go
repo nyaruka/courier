@@ -223,7 +223,7 @@ var testCases = []IncomingTestCase{
 		URL:                  receiveURL,
 		Data:                 invalidURN,
 		ExpectedRespStatus:   400,
-		ExpectedBodyContains: "phone number supplied is not a number",
+		ExpectedBodyContains: "not a possible number",
 	},
 	{
 		Label:                "Status report invalid JSON",

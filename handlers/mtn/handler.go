@@ -81,7 +81,7 @@ func (h *handler) receiveEvent(ctx context.Context, channel courier.Channel, w h
 		clog.SetType(courier.ChannelLogTypeMsgReceive)
 
 		date := time.Unix(payload.Created/1000, payload.Created%1000*1000000).UTC()
-		urn, err := urns.ParsePhone(payload.From, channel.Country())
+		urn, err := urns.ParsePhone(payload.From, channel.Country(), true, false)
 		if err != nil {
 			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
 		}

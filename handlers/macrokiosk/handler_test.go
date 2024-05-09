@@ -40,7 +40,7 @@ var incomingTestCases = []IncomingTestCase{
 	{Label: "Receive Valid", URL: receiveURL, Data: validLongcodeReceive, ExpectedRespStatus: 200, ExpectedBodyContains: "-1",
 		ExpectedMsgText: Sp("Hello"), ExpectedURN: "tel:+60124361111", ExpectedDate: time.Date(2016, 3, 30, 11, 33, 06, 0, time.UTC),
 		ExpectedExternalID: "abc1234"},
-	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedBodyContains: "phone number supplied is not a number"},
+	{Label: "Invalid URN", URL: receiveURL, Data: invalidURN, ExpectedRespStatus: 400, ExpectedBodyContains: "not a possible number"},
 	{Label: "Missing Params", URL: receiveURL, Data: missingParamsReceive, ExpectedRespStatus: 400, ExpectedBodyContains: "missing shortcode, longcode, from or msisdn parameters"},
 	{Label: "Invalid Params", URL: receiveURL, Data: invalidParamsReceive, ExpectedRespStatus: 400, ExpectedBodyContains: "missing shortcode, longcode, from or msisdn parameters"},
 	{Label: "Invalid Address Params", URL: receiveURL, Data: invalidAddress, ExpectedRespStatus: 400, ExpectedBodyContains: "invalid to number [1515], expecting [2020]"},
