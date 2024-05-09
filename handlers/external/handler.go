@@ -103,8 +103,7 @@ func (h *handler) receiveStopContact(ctx context.Context, channel courier.Channe
 	if channel.Schemes()[0] == urns.Phone.Prefix {
 		urn, err = urns.ParsePhone(form.From, channel.Country())
 	} else {
-		urn = urns.URN(channel.Schemes()[0] + ":" + form.From)
-		err = urn.Validate()
+		urn, err = urns.NewFromParts(channel.Schemes()[0], form.From, nil, "")
 	}
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
@@ -205,8 +204,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 	if channel.Schemes()[0] == urns.Phone.Prefix {
 		urn, err = urns.ParsePhone(from, channel.Country())
 	} else {
-		urn = urns.URN(channel.Schemes()[0] + ":" + from)
-		err = urn.Validate()
+		urn, err = urns.NewFromParts(channel.Schemes()[0], from, nil, "")
 	}
 	if err != nil {
 		return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, err)
