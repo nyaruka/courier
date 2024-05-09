@@ -1,3 +1,7 @@
+v9.1.38 (2024-05-09)
+-------------------------
+ * Fix ext urns creation so we trigger normalization
+
 v9.1.37 (2024-05-09)
 -------------------------
  * Update to latest gocommon
