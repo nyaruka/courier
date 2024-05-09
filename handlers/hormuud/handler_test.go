@@ -181,7 +181,7 @@ var sendTestCases = []OutgoingTestCase{
 
 var tokenTestCases = []OutgoingTestCase{
 	{
-		Label:   "Plain Send",
+		Label:   "Error getting token",
 		MsgText: "Simple Message",
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
