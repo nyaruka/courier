@@ -8,6 +8,7 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var (
@@ -147,7 +148,7 @@ var incomingCases = []IncomingTestCase{
 
 func TestIncoming(t *testing.T) {
 	chs := []courier.Channel{
-		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MTN", "2020", "US", map[string]any{courier.ConfigAuthToken: "customer-secret123", courier.ConfigAPIKey: "customer-key"}),
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MTN", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{courier.ConfigAuthToken: "customer-secret123", courier.ConfigAPIKey: "customer-key"}),
 	}
 
 	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
@@ -259,9 +260,9 @@ func setupBackend(mb *test.MockBackend) {
 }
 
 func TestOutgoing(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MTN", "2020", "US", map[string]any{courier.ConfigAuthToken: "customer-secret123", courier.ConfigAPIKey: "customer-key"})
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MTN", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{courier.ConfigAuthToken: "customer-secret123", courier.ConfigAPIKey: "customer-key"})
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), outgoingCases, []string{"customer-key", "customer-secret123"}, setupBackend)
 
-	var cpAddressChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MTN", "2020", "US", map[string]any{courier.ConfigAuthToken: "customer-secret123", courier.ConfigAPIKey: "customer-key", configCPAddress: "FOO"})
+	var cpAddressChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MTN", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{courier.ConfigAuthToken: "customer-secret123", courier.ConfigAPIKey: "customer-key", configCPAddress: "FOO"})
 	RunOutgoingTestCases(t, cpAddressChannel, newHandler(), cpAddressOutgoingCases, []string{"customer-key", "customer-secret123"}, setupBackend)
 }

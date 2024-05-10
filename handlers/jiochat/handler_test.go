@@ -24,7 +24,7 @@ import (
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]any{configAppSecret: "secret123", configAppID: "app-id"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", []string{urns.JioChat.Prefix}, map[string]any{configAppSecret: "secret123", configAppID: "app-id"}),
 }
 
 var (
@@ -433,7 +433,7 @@ func setupBackend(mb *test.MockBackend) {
 
 func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", map[string]any{configAppSecret: "secret123", configAppID: "app-id"})
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "JC", "2020", "US", []string{urns.JioChat.Prefix}, map[string]any{configAppSecret: "secret123", configAppID: "app-id"})
 
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"secret123"}, setupBackend)
 }

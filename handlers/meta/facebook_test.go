@@ -19,7 +19,7 @@ import (
 )
 
 var facebookTestChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FBA", "12345", "", map[string]any{courier.ConfigAuthToken: "a123"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FBA", "12345", "", []string{urns.Facebook.Prefix}, map[string]any{courier.ConfigAuthToken: "a123"}),
 }
 
 var facebookIncomingTests = []IncomingTestCase{
@@ -619,7 +619,7 @@ func TestFacebookOutgoing(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
 
-	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", map[string]any{courier.ConfigAuthToken: "a123"})
+	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FBA", "12345", "", []string{urns.Facebook.Prefix}, map[string]any{courier.ConfigAuthToken: "a123"})
 
 	checkRedacted := []string{"wac_admin_system_user_token", "missing_facebook_app_secret", "missing_facebook_webhook_secret", "a123"}
 

@@ -8,6 +8,7 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -235,6 +236,7 @@ var incomingCases = []IncomingTestCase{
 func TestIncoming(t *testing.T) {
 	chs := []courier.Channel{
 		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
+			[]string{urns.Phone.Prefix},
 			map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configApplicationID: "application-id"},
 		),
 	}
@@ -353,6 +355,7 @@ var outgoingCases = []OutgoingTestCase{
 
 func TestOutgoing(t *testing.T) {
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
+		[]string{urns.Phone.Prefix},
 		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configApplicationID: "application-id"},
 	)
 
@@ -362,6 +365,7 @@ func TestOutgoing(t *testing.T) {
 func TestBuildAttachmentRequest(t *testing.T) {
 	mb := test.NewMockBackend()
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "BW", "2020", "US",
+		[]string{urns.Phone.Prefix},
 		map[string]any{courier.ConfigUsername: "user1", courier.ConfigPassword: "pass1", configAccountID: "accound-id", configApplicationID: "application-id"},
 	)
 

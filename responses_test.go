@@ -9,6 +9,7 @@ import (
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,7 +32,7 @@ func TestWriteIgnored(t *testing.T) {
 }
 
 func TestWriteAndLogUnauthorized(t *testing.T) {
-	ch := test.NewMockChannel("5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec", "NX", "+1234567890", "US", nil)
+	ch := test.NewMockChannel("5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec", "NX", "+1234567890", "US", []string{urns.Phone.Prefix}, nil)
 	r, _ := http.NewRequest("GET", "http://example.com", nil)
 	w := httptest.NewRecorder()
 
@@ -42,7 +43,7 @@ func TestWriteAndLogUnauthorized(t *testing.T) {
 }
 
 func TestWriteMsgSuccess(t *testing.T) {
-	ch := test.NewMockChannel("5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec", "NX", "+1234567890", "US", nil)
+	ch := test.NewMockChannel("5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec", "NX", "+1234567890", "US", []string{urns.Phone.Prefix}, nil)
 	msg := test.NewMockBackend().NewIncomingMsg(ch, "tel:+0987654321", "hi there", "", nil).(*test.MockMsg).WithUUID("588aafc4-ab5c-48ce-89e8-05c9fdeeafb7")
 	w := httptest.NewRecorder()
 
@@ -53,7 +54,7 @@ func TestWriteMsgSuccess(t *testing.T) {
 }
 
 func TestWriteChannelEventSuccess(t *testing.T) {
-	ch := test.NewMockChannel("5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec", "NX", "+1234567890", "US", nil)
+	ch := test.NewMockChannel("5fccf4b6-48d7-4f5a-bce8-b0d1fd5342ec", "NX", "+1234567890", "US", []string{urns.Phone.Prefix}, nil)
 	evt := test.NewMockBackend().NewChannelEvent(ch, courier.EventTypeStopContact, "tel:+0987654321", nil).WithOccurredOn(time.Date(2022, 9, 15, 12, 7, 30, 0, time.UTC))
 	w := httptest.NewRecorder()
 

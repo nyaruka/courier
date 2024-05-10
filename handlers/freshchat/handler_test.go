@@ -8,10 +8,11 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FC", "2020", "US", map[string]any{
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FC", "2020", "US", []string{urns.FreshChat.Prefix}, map[string]any{
 		"username":   "c8fddfaf-622a-4a0e-b060-4f3ccbeab606", //agent_id
 		"secret":     cert,                                   // public_key for sig
 		"auth_token": "authtoken",                            //API bearer token
@@ -159,7 +160,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 }
 
 func TestOutgoing(t *testing.T) {
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FC", "2020", "US", map[string]any{
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FC", "2020", "US", []string{urns.FreshChat.Prefix}, map[string]any{
 		"username":   "c8fddfaf-622a-4a0e-b060-4f3ccbeab606",
 		"secret":     cert,
 		"auth_token": "enYtdXNlcm5hbWU6enYtcGFzc3dvcmQ=",

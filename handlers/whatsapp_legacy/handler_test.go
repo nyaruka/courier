@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,6 +20,7 @@ var testChannels = []courier.Channel{
 		"WA",
 		"250788383383",
 		"RW",
+		[]string{urns.WhatsApp.Prefix},
 		map[string]any{
 			"auth_token": "the-auth-token",
 			"base_url":   "https://foo.bar/",
@@ -28,6 +30,7 @@ var testChannels = []courier.Channel{
 		"D3",
 		"250788383383",
 		"RW",
+		[]string{urns.WhatsApp.Prefix},
 		map[string]any{
 			"auth_token": "the-auth-token",
 			"base_url":   "https://foo.bar/",
@@ -37,6 +40,7 @@ var testChannels = []courier.Channel{
 		"TXW",
 		"250788383383",
 		"RW",
+		[]string{urns.WhatsApp.Prefix},
 		map[string]any{
 			"auth_token": "the-auth-token",
 			"base_url":   "https://foo.bar/",
@@ -1136,6 +1140,7 @@ var mediaCacheSendTestCases = []OutgoingTestCase{
 
 func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "WA", "250788383383", "US",
+		[]string{urns.WhatsApp.Prefix},
 		map[string]any{
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",
@@ -1144,6 +1149,7 @@ func TestOutgoing(t *testing.T) {
 		})
 
 	var d3Channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "D3", "250788383383", "US",
+		[]string{urns.WhatsApp.Prefix},
 		map[string]any{
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",
@@ -1152,6 +1158,7 @@ func TestOutgoing(t *testing.T) {
 		})
 
 	var txwChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TXW", "250788383383", "US",
+		[]string{urns.WhatsApp.Prefix},
 		map[string]any{
 			"auth_token":   "token123",
 			"base_url":     "https://foo.bar/",

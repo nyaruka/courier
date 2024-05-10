@@ -8,6 +8,7 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/stretchr/testify/assert"
 )
@@ -43,7 +44,7 @@ func TestFetchAndStoreAttachment(t *testing.T) {
 	ctx := context.Background()
 	mb := test.NewMockBackend()
 
-	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", map[string]any{})
+	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
 	mb.AddChannel(mockChannel)
 
 	clog := courier.NewChannelLogForAttachmentFetch(mockChannel, []string{"sesame"})

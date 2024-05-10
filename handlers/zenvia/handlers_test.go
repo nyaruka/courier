@@ -8,15 +8,16 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var testWhatsappChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVW", "2020", "BR", map[string]any{"api_key": "zv-api-token"}),
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", map[string]any{"api_key": "zv-api-token"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVW", "2020", "BR", []string{urns.WhatsApp.Prefix}, map[string]any{"api_key": "zv-api-token"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", []string{urns.WhatsApp.Prefix}, map[string]any{"api_key": "zv-api-token"}),
 }
 
 var testSMSChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", map[string]any{"api_key": "zv-api-token"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", []string{urns.Phone.Prefix}, map[string]any{"api_key": "zv-api-token"}),
 }
 
 var (
@@ -446,9 +447,9 @@ var defaultSMSSendTestCases = []OutgoingTestCase{
 
 func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
-	var defaultWhatsappChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVW", "2020", "BR", map[string]any{"api_key": "zv-api-token"})
+	var defaultWhatsappChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVW", "2020", "BR", []string{urns.WhatsApp.Prefix}, map[string]any{"api_key": "zv-api-token"})
 	RunOutgoingTestCases(t, defaultWhatsappChannel, newHandler("ZVW", "Zenvia WhatsApp"), defaultWhatsappSendTestCases, []string{"zv-api-token"}, nil)
 
-	var defaultSMSChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", map[string]any{"api_key": "zv-api-token"})
+	var defaultSMSChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "ZVS", "2020", "BR", []string{urns.Phone.Prefix}, map[string]any{"api_key": "zv-api-token"})
 	RunOutgoingTestCases(t, defaultSMSChannel, newHandler("ZVS", "Zenvia SMS"), defaultSMSSendTestCases, []string{"zv-api-token"}, nil)
 }

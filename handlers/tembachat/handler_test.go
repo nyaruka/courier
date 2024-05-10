@@ -7,6 +7,7 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var incomingCases = []IncomingTestCase{
@@ -67,7 +68,7 @@ var incomingCases = []IncomingTestCase{
 
 func TestIncoming(t *testing.T) {
 	chs := []courier.Channel{
-		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWC", "", "", map[string]any{"secret": "sesame"}),
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWC", "", "", []string{urns.WebChat.Prefix}, map[string]any{"secret": "sesame"}),
 	}
 
 	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
@@ -140,7 +141,7 @@ var outgoingCases = []OutgoingTestCase{
 }
 
 func TestOutgoing(t *testing.T) {
-	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWC", "", "", map[string]any{"secret": "sesame"})
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWC", "", "", []string{urns.WebChat.Prefix}, map[string]any{"secret": "sesame"})
 
 	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"sesame"}, nil)
 }

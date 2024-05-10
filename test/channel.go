@@ -154,11 +154,11 @@ func (c *MockChannel) HasRole(role courier.ChannelRole) bool {
 }
 
 // NewMockChannel creates a new mock channel for the passed in type, address, country and config
-func NewMockChannel(uuid string, channelType string, address string, country i18n.Country, config map[string]any) *MockChannel {
+func NewMockChannel(uuid string, channelType string, address string, country i18n.Country, schemes []string, config map[string]any) *MockChannel {
 	return &MockChannel{
 		uuid:        courier.ChannelUUID(uuid),
 		channelType: courier.ChannelType(channelType),
-		schemes:     []string{urns.Phone.Prefix},
+		schemes:     schemes,
 		address:     courier.ChannelAddress(address),
 		country:     country,
 		config:      config,

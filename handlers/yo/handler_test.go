@@ -9,6 +9,7 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var (
@@ -23,7 +24,7 @@ var (
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "YO", "2020", "US", map[string]any{"username": "yo-username", "password": "yo-password"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "YO", "2020", "UG", []string{urns.Phone.Prefix}, map[string]any{"username": "yo-username", "password": "yo-password"}),
 }
 
 var handleTestCases = []IncomingTestCase{
@@ -155,7 +156,7 @@ var getSendTestCases = []OutgoingTestCase{
 }
 
 func TestOutgoing(t *testing.T) {
-	var getChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "YO", "2020", "US", map[string]any{"username": "yo-username", "password": "yo-password"})
+	var getChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "YO", "2020", "UG", []string{urns.Phone.Prefix}, map[string]any{"username": "yo-username", "password": "yo-password"})
 
 	RunOutgoingTestCases(t, getChannel, newHandler(), getSendTestCases, []string{"yo-password"}, nil)
 }

@@ -20,6 +20,7 @@ import (
 
 var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FB", "1234", "",
+		[]string{urns.Facebook.Prefix},
 		map[string]any{courier.ConfigAuthToken: "a123", courier.ConfigSecret: "mysecret"}),
 }
 
@@ -933,7 +934,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 func TestSending(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
-	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FB", "2020", "US", map[string]any{courier.ConfigAuthToken: "access_token"})
+	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "FB", "2020", "US", []string{urns.Facebook.Prefix}, map[string]any{courier.ConfigAuthToken: "access_token"})
 
 	RunOutgoingTestCases(t, defaultChannel, newHandler(), defaultSendTestCases, []string{"access_token"}, nil)
 }

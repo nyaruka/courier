@@ -7,6 +7,7 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 func TestIncoming(t *testing.T) {
@@ -18,7 +19,7 @@ func BenchmarkHandler(b *testing.B) {
 }
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("bac782c2-7aeb-4389-92f5-97887744f573", "DS", "discord", "US", map[string]any{courier.ConfigSendAuthorization: "sesame", courier.ConfigSendURL: "http://example.com/discord/rp/send"}),
+	test.NewMockChannel("bac782c2-7aeb-4389-92f5-97887744f573", "DS", "discord", "US", []string{urns.Discord.Prefix}, map[string]any{courier.ConfigSendAuthorization: "sesame", courier.ConfigSendURL: "http://example.com/discord/rp/send"}),
 }
 
 var testCases = []IncomingTestCase{

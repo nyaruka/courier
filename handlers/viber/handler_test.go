@@ -14,6 +14,7 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 func buildMockAttachmentService(testCases []OutgoingTestCase) *httptest.Server {
@@ -297,13 +298,16 @@ func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	descriptionMaxLength = 10
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
+		[]string{urns.Viber.Prefix},
 		map[string]any{
 			courier.ConfigAuthToken: "Token",
 		})
 	var invalidTokenChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "",
+		[]string{urns.Viber.Prefix},
 		map[string]any{},
 	)
 	var buttonLayoutChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2021", "",
+		[]string{urns.Viber.Prefix},
 		map[string]any{
 			courier.ConfigAuthToken: "Token",
 			"button_layout":         map[string]any{"bg_color": "#f7bb3f", "text": "<font color=\"#ffffff\">*</font><br><br>", "text_size": "large"},
@@ -314,13 +318,13 @@ func TestOutgoing(t *testing.T) {
 }
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]any{
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", []string{urns.Viber.Prefix}, map[string]any{
 		courier.ConfigAuthToken: "Token",
 	}),
 }
 
 var testChannelsWithWelcomeMessage = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", map[string]any{
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "VP", "2020", "", []string{urns.Viber.Prefix}, map[string]any{
 		courier.ConfigAuthToken:   "Token",
 		configViberWelcomeMessage: "Welcome to VP, Please subscribe here for more.",
 	}),
