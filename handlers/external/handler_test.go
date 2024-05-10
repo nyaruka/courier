@@ -10,6 +10,7 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 const (
@@ -267,11 +268,36 @@ var customTestCases = []IncomingTestCase{
 	},
 }
 
+var extReceiveTestCases = []IncomingTestCase{
+	{
+		Label:                "Receive Valid Message",
+		URL:                  receiveURL + "?sender=%2B2349067554729&text=Join",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "ext:+2349067554729",
+	},
+	{
+		Label:                "Receive Valid Message trim spaces",
+		URL:                  receiveURL + "?sender=+2349067554729&text=Join",
+		Data:                 "empty",
+		ExpectedRespStatus:   200,
+		ExpectedBodyContains: "Accepted",
+		ExpectedMsgText:      Sp("Join"),
+		ExpectedURN:          "ext:2349067554729",
+	},
+}
+
 func TestIncoming(t *testing.T) {
 	RunIncomingTestCases(t, testChannels, newHandler(), handleTestCases)
 	RunIncomingTestCases(t, testSOAPReceiveChannels, newHandler(), handleSOAPReceiveTestCases)
 	RunIncomingTestCases(t, gmChannels, newHandler(), gmTestCases)
 	RunIncomingTestCases(t, customChannels, newHandler(), customTestCases)
+
+	extChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "EX", "2020", "GM", nil)
+	extChannel.SetScheme(urns.External.Prefix)
+	RunIncomingTestCases(t, []courier.Channel{extChannel}, newHandler(), extReceiveTestCases)
 }
 
 func BenchmarkHandler(b *testing.B) {
