@@ -7,6 +7,7 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 const (
@@ -92,6 +93,7 @@ var incomingCases = []IncomingTestCase{
 func TestIncoming(t *testing.T) {
 	chs := []courier.Channel{
 		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "KWA", "250788383383", "",
+			[]string{urns.WhatsApp.Prefix},
 			map[string]any{configAccountSID: "SID", configApiKey: "123456"},
 		),
 	}
@@ -199,6 +201,7 @@ var sendTestCases = []OutgoingTestCase{
 
 func TestOutgoing(t *testing.T) {
 	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "KWA", "250788383383", "",
+		[]string{urns.WhatsApp.Prefix},
 		map[string]any{configAccountSID: "SID", configApiKey: "123456"},
 	)
 

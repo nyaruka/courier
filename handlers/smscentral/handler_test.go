@@ -8,6 +8,7 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 const (
@@ -15,7 +16,9 @@ const (
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SC", "2020", "US", map[string]any{"username": "Username", "password": "Password"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SC", "2020", "US",
+		[]string{urns.Phone.Prefix},
+		map[string]any{"username": "Username", "password": "Password"}),
 }
 
 var handleTestCases = []IncomingTestCase{
@@ -130,6 +133,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 
 func TestOutgoing(t *testing.T) {
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "SC", "2020", "US",
+		[]string{urns.Phone.Prefix},
 		map[string]any{
 			courier.ConfigPassword: "Password",
 			courier.ConfigUsername: "Username",

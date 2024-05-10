@@ -13,6 +13,7 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,6 +23,7 @@ var testChannels = []courier.Channel{
 		"D3C",
 		"250788383383",
 		"RW",
+		[]string{urns.WhatsApp.Prefix},
 		map[string]any{
 			"auth_token": "the-auth-token",
 			"base_url":   "https://waba-v2.360dialog.io",
@@ -673,7 +675,7 @@ func TestOutgoing(t *testing.T) {
 	// shorter max msg length for testing
 	maxMsgLength = 100
 
-	var ChannelWAC = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "D3C", "12345_ID", "", map[string]any{
+	var ChannelWAC = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "D3C", "12345_ID", "", []string{urns.WhatsApp.Prefix}, map[string]any{
 		"auth_token": "the-auth-token",
 		"base_url":   "https://waba-v2.360dialog.io",
 	})

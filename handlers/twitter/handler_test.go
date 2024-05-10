@@ -8,10 +8,12 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "TWT", "tweeter", "",
+		[]string{urns.Twitter.Prefix, urns.TwitterID.Prefix},
 		map[string]any{
 			configHandleID:          "835740314006511618",
 			configAPIKey:            "apiKey",

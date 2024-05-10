@@ -6,11 +6,12 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSplitMsg(t *testing.T) {
-	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US", nil)
+	var channel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US", []string{urns.Phone.Prefix}, nil)
 
 	tcs := []struct {
 		msg           courier.MsgOut
@@ -50,13 +51,13 @@ func TestSplitMsg(t *testing.T) {
 }
 
 func TestSplitMsgByChannel(t *testing.T) {
-	var channelWithMaxLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US",
+	var channelWithMaxLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US", []string{urns.Phone.Prefix},
 		map[string]any{
 			courier.ConfigUsername:  "user1",
 			courier.ConfigPassword:  "pass1",
 			courier.ConfigMaxLength: 25,
 		})
-	var channelWithoutMaxLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US",
+	var channelWithoutMaxLength = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "AC", "2020", "US", []string{urns.Phone.Prefix},
 		map[string]any{
 			courier.ConfigUsername: "user1",
 			courier.ConfigPassword: "pass1",

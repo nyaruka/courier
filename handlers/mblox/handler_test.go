@@ -8,10 +8,11 @@ import (
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/gocommon/urns"
 )
 
 var testChannels = []courier.Channel{
-	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MB", "2020", "US", map[string]any{"username": "zv-username", "password": "zv-password"}),
+	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MB", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{"username": "zv-username", "password": "zv-password"}),
 }
 
 var (
@@ -227,6 +228,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 func TestOutgoing(t *testing.T) {
 	maxMsgLength = 160
 	var defaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "MB", "2020", "US",
+		[]string{urns.Phone.Prefix},
 		map[string]any{
 			"password": "Password",
 			"username": "Username",

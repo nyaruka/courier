@@ -32,11 +32,13 @@ Donec euismod dapibus ligula, sit amet hendrerit neque vulputate ac.`
 
 var testChannels = []courier.Channel{
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCM", "1234", "",
+		[]string{urns.Firebase.Prefix},
 		map[string]any{
 			configKey:   "FCMKey",
 			configTitle: "FCMTitle",
 		}),
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCM", "1234", "",
+		[]string{urns.Firebase.Prefix},
 		map[string]any{
 			configKey:          "FCMKey",
 			configNotification: true,

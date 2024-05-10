@@ -29,6 +29,7 @@ var testChannels = []courier.Channel{
 		"VK",
 		"123456789",
 		"",
+		[]string{urns.VK.Prefix},
 		map[string]any{
 			courier.ConfigAuthToken:        "token123xyz",
 			courier.ConfigSecret:           "abc123xyz",
