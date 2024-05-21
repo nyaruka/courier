@@ -10,12 +10,13 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 var apiURL = "https://api.telegram.org"
@@ -190,7 +191,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, true, clog)
 	if err != nil {
-		return errors.Wrap(err, "error resolving attachments")
+		return fmt.Errorf("error resolving attachments: %w", err)
 	}
 
 	// we only caption if there is only a single attachment
@@ -330,12 +331,12 @@ func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fi
 	}
 
 	if !respPayload.Ok {
-		return "", errors.Errorf("file id '%s' not present", fileID)
+		return "", fmt.Errorf("file id '%s' not present", fileID)
 	}
 
 	filePath := respPayload.Result.FilePath
 	if filePath == "" {
-		return "", errors.Errorf("no 'result.file_path' in response")
+		return "", fmt.Errorf("no 'result.file_path' in response")
 	}
 	// return the URL
 	return fmt.Sprintf("%s/file/bot%s/%s", apiURL, authToken, filePath), nil

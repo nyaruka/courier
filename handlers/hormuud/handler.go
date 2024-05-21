@@ -15,7 +15,6 @@ import (
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -79,7 +78,7 @@ type mtPayload struct {
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	token, err := h.FetchToken(ctx, msg.Channel(), msg, clog)
 	if err != nil {
-		return errors.Wrapf(err, "unable to fetch token")
+		return fmt.Errorf("unable to fetch token")
 	}
 	parts := handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	for _, part := range parts {
@@ -156,15 +155,15 @@ func (h *handler) FetchToken(ctx context.Context, channel courier.Channel, msg c
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
-		return "", errors.Wrapf(err, "error making token request")
+		return "", fmt.Errorf("error making token request")
 	}
 
 	token, err = jsonparser.GetString(respBody, "access_token")
 	if err != nil {
-		return "", errors.Wrapf(err, "error getting access_token from response")
+		return "", fmt.Errorf("error getting access_token from response")
 	}
 	if token == "" {
-		return "", errors.Errorf("no access token returned")
+		return "", fmt.Errorf("no access token returned")
 	}
 
 	expiration, err := jsonparser.GetInt(respBody, "expires_in")

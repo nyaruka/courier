@@ -6,9 +6,10 @@ import (
 	"log/slog"
 	"time"
 
+	"errors"
+
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 type SendResult struct {

@@ -3,6 +3,7 @@ package courier
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"mime"
@@ -13,7 +14,6 @@ import (
 	"github.com/h2non/filetype"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/httpx"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -41,12 +41,12 @@ type fetchAttachmentResponse struct {
 func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAttachmentResponse, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "error reading request body")
+		return nil, fmt.Errorf("error reading request body: %w", err)
 	}
 
 	fa := &fetchAttachmentRequest{}
 	if err := json.Unmarshal(body, fa); err != nil {
-		return nil, errors.Wrap(err, "error unmarshalling request")
+		return nil, fmt.Errorf("error unmarshalling request: %w", err)
 	}
 	if err := utils.Validate(fa); err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func fetchAttachment(ctx context.Context, b Backend, r *http.Request) (*fetchAtt
 
 	ch, err := b.GetChannel(ctx, fa.ChannelType, fa.ChannelUUID)
 	if err != nil {
-		return nil, errors.Wrap(err, "error getting channel")
+		return nil, fmt.Errorf("error getting channel: %w", err)
 	}
 
 	clog := NewChannelLogForAttachmentFetch(ch, GetHandler(ch.ChannelType()).RedactValues(ch))
@@ -90,7 +90,7 @@ func FetchAndStoreAttachment(ctx context.Context, b Backend, channel Channel, at
 		attRequest, err = http.NewRequest(http.MethodGet, attURL, nil)
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create attachment request")
+		return nil, fmt.Errorf("unable to create attachment request: %w", err)
 	}
 
 	trace, err := httpx.DoTrace(b.HttpClient(true), attRequest, nil, b.HttpAccess(), maxAttBodyReadBytes)

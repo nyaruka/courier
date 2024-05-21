@@ -11,12 +11,13 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 var apiURL = "https://slack.com/api"
@@ -123,7 +124,7 @@ func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file
 
 	var fResponse FileResponse
 	if err := json.Unmarshal(respBody, &fResponse); err != nil {
-		return "", errors.Errorf("couldn't unmarshal file response: %v", err)
+		return "", fmt.Errorf("couldn't unmarshal file response: %v", err)
 	}
 
 	currentFile := fResponse.File
@@ -131,9 +132,9 @@ func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file
 	if !fResponse.OK {
 		if fResponse.Error != ErrAlreadyPublic {
 			if fResponse.Error == ErrPublicVideoNotAllowed {
-				return "", errors.Errorf("public sharing of videos is not available for a free instance of Slack. file id: %s. error: %s", file.ID, fResponse.Error)
+				return "", fmt.Errorf("public sharing of videos is not available for a free instance of Slack. file id: %s. error: %s", file.ID, fResponse.Error)
 			}
-			return "", errors.Errorf("couldn't resolve file for file id: %s. error: %s", file.ID, fResponse.Error)
+			return "", fmt.Errorf("couldn't resolve file for file id: %s. error: %s", file.ID, fResponse.Error)
 		}
 		currentFile = file
 	}
@@ -223,7 +224,7 @@ func (h *handler) parseAttachmentToFileParams(msg courier.MsgOut, attachment str
 
 	req, err := http.NewRequest(http.MethodGet, attURL, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error building file request")
+		return nil, fmt.Errorf("error building file request")
 	}
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
@@ -245,19 +246,19 @@ func (h *handler) sendFilePart(msg courier.MsgOut, token string, fileParams *Fil
 	writer := multipart.NewWriter(body)
 	mediaPart, err := writer.CreateFormFile("file", fileParams.FileName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create file form field")
+		return fmt.Errorf("failed to create file form field")
 	}
 	io.Copy(mediaPart, bytes.NewReader(fileParams.File))
 
 	filenamePart, err := writer.CreateFormField("filename")
 	if err != nil {
-		return errors.Wrapf(err, "failed to create filename form field")
+		return fmt.Errorf("failed to create filename form field")
 	}
 	io.Copy(filenamePart, strings.NewReader(fileParams.FileName))
 
 	channelsPart, err := writer.CreateFormField("channels")
 	if err != nil {
-		return errors.Wrapf(err, "failed to create channels form field")
+		return fmt.Errorf("failed to create channels form field")
 	}
 	io.Copy(channelsPart, strings.NewReader(fileParams.Channels))
 
@@ -265,7 +266,7 @@ func (h *handler) sendFilePart(msg courier.MsgOut, token string, fileParams *Fil
 
 	req, err := http.NewRequest(http.MethodPost, uploadURL, bytes.NewReader(body.Bytes()))
 	if err != nil {
-		return errors.Wrapf(err, "error building request to file upload endpoint")
+		return fmt.Errorf("error building request to file upload endpoint")
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	req.Header.Add("Content-Type", writer.FormDataContentType())

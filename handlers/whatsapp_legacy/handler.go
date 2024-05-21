@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
@@ -24,7 +26,6 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/redisx"
 	"github.com/patrickmn/go-cache"
-	"github.com/pkg/errors"
 	"golang.org/x/exp/maps"
 	"golang.org/x/mod/semver"
 )
@@ -705,7 +706,7 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 				namespace = msg.Channel().StringConfigForKey(configNamespace, "")
 			}
 			if namespace == "" {
-				return nil, errors.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
+				return nil, fmt.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
 			}
 
 			payload := templatePayload{
@@ -827,7 +828,7 @@ func (h *handler) fetchMediaID(msg courier.MsgOut, mimeType, mediaURL string, cl
 	mediaCache := redisx.NewIntervalHash(cacheKey, time.Hour*24, 2)
 	mediaID, err := mediaCache.Get(rc, mediaURL)
 	if err != nil {
-		return "", errors.Wrapf(err, "error reading media id from redis: %s : %s", cacheKey, mediaURL)
+		return "", fmt.Errorf("error reading media id from redis: %s : %s", cacheKey, mediaURL)
 	} else if mediaID != "" {
 		return mediaID, nil
 	}
@@ -844,7 +845,7 @@ func (h *handler) fetchMediaID(msg courier.MsgOut, mimeType, mediaURL string, cl
 	// download media
 	req, err := http.NewRequest("GET", mediaURL, nil)
 	if err != nil {
-		return "", errors.Wrapf(err, "error building media request")
+		return "", fmt.Errorf("error building media request")
 	}
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
@@ -857,13 +858,13 @@ func (h *handler) fetchMediaID(msg courier.MsgOut, mimeType, mediaURL string, cl
 	baseURL := msg.Channel().StringConfigForKey(courier.ConfigBaseURL, "")
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return "", errors.Wrapf(err, "invalid base url set for WA channel: %s", baseURL)
+		return "", fmt.Errorf("invalid base url set for WA channel: %s", baseURL)
 	}
 	dockerMediaURL, _ := url.Parse("/v1/media")
 
 	req, err = http.NewRequest("POST", dockerMediaURL.String(), bytes.NewReader(respBody))
 	if err != nil {
-		return "", errors.Wrapf(err, "error building request to media endpoint")
+		return "", fmt.Errorf("error building request to media endpoint")
 	}
 	setWhatsAppAuthHeader(&req.Header, msg.Channel())
 	mediaType, _ := httpx.DetectContentType(respBody)
@@ -872,19 +873,19 @@ func (h *handler) fetchMediaID(msg courier.MsgOut, mimeType, mediaURL string, cl
 	resp, respBody, err = h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		failedMediaCache.Set(failKey, true, cache.DefaultExpiration)
-		return "", errors.Wrapf(err, "error uploading media to whatsapp")
+		return "", fmt.Errorf("error uploading media to whatsapp")
 	}
 
 	// take uploaded media id
 	mediaID, err = jsonparser.GetString(respBody, "media", "[0]", "id")
 	if err != nil {
-		return "", errors.Wrapf(err, "error reading media id from response")
+		return "", fmt.Errorf("error reading media id from response")
 	}
 
 	// put in cache
 	err = mediaCache.Set(rc, mediaURL, mediaID)
 	if err != nil {
-		return "", errors.Wrapf(err, "error setting media id in cache")
+		return "", fmt.Errorf("error setting media id in cache")
 	}
 
 	return mediaID, nil

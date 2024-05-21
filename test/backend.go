@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"errors"
+
 	"github.com/gomodule/redigo/redis"
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/courier"
@@ -15,7 +17,6 @@ import (
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
-	"github.com/pkg/errors"
 )
 
 func init() {

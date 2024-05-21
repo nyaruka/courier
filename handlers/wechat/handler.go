@@ -14,12 +14,13 @@ import (
 	"sync"
 	"time"
 
+	"errors"
+
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -286,7 +287,7 @@ func (h *handler) getAccessToken(ctx context.Context, channel courier.Channel, c
 
 	token, err := redis.String(rc.Do("GET", tokenKey))
 	if err != nil && err != redis.ErrNil {
-		return "", errors.Wrap(err, "error reading cached access token")
+		return "", fmt.Errorf("error reading cached access token: %w", err)
 	}
 
 	if token != "" {
@@ -295,12 +296,12 @@ func (h *handler) getAccessToken(ctx context.Context, channel courier.Channel, c
 
 	token, expires, err := h.fetchAccessToken(ctx, channel, clog)
 	if err != nil {
-		return "", errors.Wrap(err, "error fetching new access token")
+		return "", fmt.Errorf("error fetching new access token: %w", err)
 	}
 
 	_, err = rc.Do("SET", tokenKey, token, "EX", int(expires/time.Second))
 	if err != nil {
-		return "", errors.Wrap(err, "error updating cached access token")
+		return "", fmt.Errorf("error updating cached access token: %w", err)
 	}
 
 	return token, nil

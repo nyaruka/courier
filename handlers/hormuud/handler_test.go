@@ -186,9 +186,6 @@ var tokenTestCases = []OutgoingTestCase{
 		MsgText: "Simple Message",
 		MsgURN:  "tel:+250788383383",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://smsapi.hormuud.com/api/SendSMS": {
-				httpx.NewMockResponse(400, nil, []byte(`{"error": "invalid token"}`)),
-			},
 			"https://smsapi.hormuud.com/token": {
 				httpx.NewMockResponse(400, nil, []byte(`{"error": "invalid password"}`)),
 			},
@@ -201,16 +198,8 @@ var tokenTestCases = []OutgoingTestCase{
 					"grant_type": {"password"},
 				},
 			},
-			{
-				Headers: map[string]string{
-					"Content-Type":  "application/json",
-					"Accept":        "application/json",
-					"Authorization": "Bearer ",
-				},
-				Body: `{"mobile":"250788383383","message":"Simple Message","senderid":"2020","mType":-1,"eType":-1,"UDH":""}`,
-			},
 		},
-		ExpectedError: courier.ErrResponseStatus,
+		ExpectedError: fmt.Errorf("unable to fetch token"),
 	},
 }
 
