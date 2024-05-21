@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
@@ -24,7 +26,6 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/redisx"
 	"github.com/patrickmn/go-cache"
-	"github.com/pkg/errors"
 	"golang.org/x/exp/maps"
 	"golang.org/x/mod/semver"
 )
@@ -705,7 +706,7 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 				namespace = msg.Channel().StringConfigForKey(configNamespace, "")
 			}
 			if namespace == "" {
-				return nil, errors.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
+				return nil, fmt.Errorf("cannot send template message without Facebook namespace for channel: %s", msg.Channel().UUID())
 			}
 
 			payload := templatePayload{

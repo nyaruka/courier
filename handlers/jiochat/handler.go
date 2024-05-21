@@ -14,13 +14,14 @@ import (
 	"sync"
 	"time"
 
+	"errors"
+
 	"github.com/buger/jsonparser"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 var (

@@ -15,13 +15,14 @@ import (
 	"sync"
 	"time"
 
+	"errors"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
-	"github.com/pkg/errors"
 )
 
 // for use in request.Context

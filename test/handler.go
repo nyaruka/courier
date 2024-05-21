@@ -4,10 +4,11 @@ import (
 	"context"
 	"net/http"
 
+	"errors"
+
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 func init() {

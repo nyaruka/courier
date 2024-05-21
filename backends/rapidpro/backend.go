@@ -18,6 +18,8 @@ import (
 	"sync"
 	"time"
 
+	"errors"
+
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
@@ -33,7 +35,6 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/redisx"
-	"github.com/pkg/errors"
 )
 
 // the name for our message queue
@@ -359,7 +360,7 @@ func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Cha
 	var msgID courier.MsgID
 	var contactID ContactID
 	if err := row.Scan(&msgID, &contactID); err != nil && err != sql.ErrNoRows {
-		return errors.Wrap(err, "error querying deleted msg")
+		return fmt.Errorf("error querying deleted msg: %w", err)
 	}
 
 	if msgID != courier.NilMsgID && contactID != NilContactID {
@@ -367,7 +368,7 @@ func (b *backend) DeleteMsgByExternalID(ctx context.Context, channel courier.Cha
 		defer rc.Close()
 
 		if err := queueMsgDeleted(rc, ch, msgID, contactID); err != nil {
-			return errors.Wrap(err, "error queuing message deleted task")
+			return fmt.Errorf("error queuing message deleted task: %w", err)
 		}
 	}
 
@@ -416,7 +417,7 @@ func (b *backend) PopNextOutgoingMsg(ctx context.Context) (courier.MsgOut, error
 		err = json.Unmarshal([]byte(msgJSON), dbMsg)
 		if err != nil {
 			queue.MarkComplete(rc, msgQueueName, token)
-			return nil, errors.Wrapf(err, "unable to unmarshal message: %s", string(msgJSON))
+			return nil, fmt.Errorf("unable to unmarshal message: %s: %w", string(msgJSON), err)
 		}
 
 		// populate the channel on our db msg
@@ -536,7 +537,7 @@ func (b *backend) WriteStatusUpdate(ctx context.Context, status courier.StatusUp
 	if oldURN != urns.NilURN && newURN != urns.NilURN {
 		err := b.updateContactURN(ctx, status)
 		if err != nil {
-			return errors.Wrap(err, "error updating contact URN")
+			return fmt.Errorf("error updating contact URN: %w", err)
 		}
 	}
 
@@ -575,7 +576,7 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 	// retrieve channel
 	channel, err := b.GetChannel(ctx, courier.AnyChannelType, status.ChannelUUID())
 	if err != nil {
-		return errors.Wrap(err, "error retrieving channel")
+		return fmt.Errorf("error retrieving channel: %w", err)
 	}
 	dbChannel := channel.(*Channel)
 	tx, err := b.db.BeginTxx(ctx, nil)
@@ -585,7 +586,7 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 	// retrieve the old URN
 	oldContactURN, err := getContactURNByIdentity(tx, dbChannel.OrgID(), old)
 	if err != nil {
-		return errors.Wrap(err, "error retrieving old contact URN")
+		return fmt.Errorf("error retrieving old contact URN: %w", err)
 	}
 	// retrieve the new URN
 	newContactURN, err := getContactURNByIdentity(tx, dbChannel.OrgID(), new)
@@ -598,11 +599,11 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 			err = fullyUpdateContactURN(tx, oldContactURN)
 			if err != nil {
 				tx.Rollback()
-				return errors.Wrap(err, "error updating old contact URN")
+				return fmt.Errorf("error updating old contact URN: %w", err)
 			}
 			return tx.Commit()
 		}
-		return errors.Wrap(err, "error retrieving new contact URN")
+		return fmt.Errorf("error retrieving new contact URN: %w", err)
 	}
 
 	// only update the new URN if it doesn't have an associated contact
@@ -616,12 +617,12 @@ func (b *backend) updateContactURN(ctx context.Context, status courier.StatusUpd
 	err = fullyUpdateContactURN(tx, newContactURN)
 	if err != nil {
 		tx.Rollback()
-		return errors.Wrap(err, "error updating new contact URN")
+		return fmt.Errorf("error updating new contact URN: %w", err)
 	}
 	err = fullyUpdateContactURN(tx, oldContactURN)
 	if err != nil {
 		tx.Rollback()
-		return errors.Wrap(err, "error updating old contact URN")
+		return fmt.Errorf("error updating old contact URN: %w", err)
 	}
 	return tx.Commit()
 }
@@ -663,7 +664,7 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 
 	storageURL, err := b.attachmentStorage.Put(ctx, path, contentType, data)
 	if err != nil {
-		return "", errors.Wrapf(err, "error saving attachment to storage (bytes=%d)", len(data))
+		return "", fmt.Errorf("error saving attachment to storage (bytes=%d): %w", len(data), err)
 	}
 
 	return storageURL, nil
@@ -673,7 +674,7 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Media, error) {
 	u, err := url.Parse(mediaUrl)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error parsing media URL")
+		return nil, fmt.Errorf("error parsing media URL: %w", err)
 	}
 
 	mediaUUID := uuidRegex.FindString(u.Path)
@@ -692,7 +693,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 	var media *Media
 	mediaJSON, err := b.mediaCache.Get(rc, mediaUUID)
 	if err != nil {
-		return nil, errors.Wrap(err, "error looking up cached media")
+		return nil, fmt.Errorf("error looking up cached media: %w", err)
 	}
 	if mediaJSON != "" {
 		jsonx.MustUnmarshal([]byte(mediaJSON), &media)
@@ -700,7 +701,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 		// lookup media in our database
 		media, err = lookupMediaFromUUID(ctx, b.db, uuids.UUID(mediaUUID))
 		if err != nil {
-			return nil, errors.Wrap(err, "error looking up media")
+			return nil, fmt.Errorf("error looking up media: %w", err)
 		}
 
 		// cache it for future requests
@@ -756,11 +757,11 @@ func (b *backend) Heartbeat() error {
 
 	active, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("%s:active", msgQueueName), "0", "-1"))
 	if err != nil {
-		return errors.Wrapf(err, "error getting active queues")
+		return fmt.Errorf("error getting active queues: %w", err)
 	}
 	throttled, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("%s:throttled", msgQueueName), "0", "-1"))
 	if err != nil {
-		return errors.Wrapf(err, "error getting throttled queues")
+		return fmt.Errorf("error getting throttled queues: %w", err)
 	}
 	queues := append(active, throttled...)
 
@@ -770,14 +771,14 @@ func (b *backend) Heartbeat() error {
 		q := fmt.Sprintf("%s/1", queue)
 		count, err := redis.Int(rc.Do("ZCARD", q))
 		if err != nil {
-			return errors.Wrapf(err, "error getting size of priority queue: %s", q)
+			return fmt.Errorf("error getting size of priority queue: %s: %w", q, err)
 		}
 		prioritySize += count
 
 		q = fmt.Sprintf("%s/0", queue)
 		count, err = redis.Int(rc.Do("ZCARD", q))
 		if err != nil {
-			return errors.Wrapf(err, "error getting size of bulk queue: %s", q)
+			return fmt.Errorf("error getting size of bulk queue: %s: %w", q, err)
 		}
 		bulkSize += count
 	}

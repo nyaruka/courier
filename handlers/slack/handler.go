@@ -11,12 +11,13 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 var apiURL = "https://slack.com/api"
@@ -123,7 +124,7 @@ func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file
 
 	var fResponse FileResponse
 	if err := json.Unmarshal(respBody, &fResponse); err != nil {
-		return "", errors.Errorf("couldn't unmarshal file response: %v", err)
+		return "", fmt.Errorf("couldn't unmarshal file response: %v", err)
 	}
 
 	currentFile := fResponse.File
@@ -131,9 +132,9 @@ func (h *handler) resolveFile(ctx context.Context, channel courier.Channel, file
 	if !fResponse.OK {
 		if fResponse.Error != ErrAlreadyPublic {
 			if fResponse.Error == ErrPublicVideoNotAllowed {
-				return "", errors.Errorf("public sharing of videos is not available for a free instance of Slack. file id: %s. error: %s", file.ID, fResponse.Error)
+				return "", fmt.Errorf("public sharing of videos is not available for a free instance of Slack. file id: %s. error: %s", file.ID, fResponse.Error)
 			}
-			return "", errors.Errorf("couldn't resolve file for file id: %s. error: %s", file.ID, fResponse.Error)
+			return "", fmt.Errorf("couldn't resolve file for file id: %s. error: %s", file.ID, fResponse.Error)
 		}
 		currentFile = file
 	}

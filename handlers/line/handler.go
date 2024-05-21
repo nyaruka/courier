@@ -14,10 +14,11 @@ import (
 	"strconv"
 	"time"
 
+	"errors"
+
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 var (
