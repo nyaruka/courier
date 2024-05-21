@@ -223,7 +223,7 @@ func (h *handler) parseAttachmentToFileParams(msg courier.MsgOut, attachment str
 
 	req, err := http.NewRequest(http.MethodGet, attURL, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error building file request")
+		return nil, fmt.Errorf("error building file request: %w", err)
 	}
 
 	resp, respBody, err := h.RequestHTTP(req, clog)
@@ -245,19 +245,19 @@ func (h *handler) sendFilePart(msg courier.MsgOut, token string, fileParams *Fil
 	writer := multipart.NewWriter(body)
 	mediaPart, err := writer.CreateFormFile("file", fileParams.FileName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create file form field")
+		return fmt.Errorf("failed to create file form field: %w", err)
 	}
 	io.Copy(mediaPart, bytes.NewReader(fileParams.File))
 
 	filenamePart, err := writer.CreateFormField("filename")
 	if err != nil {
-		return errors.Wrapf(err, "failed to create filename form field")
+		return fmt.Errorf("failed to create filename form field: %w", err)
 	}
 	io.Copy(filenamePart, strings.NewReader(fileParams.FileName))
 
 	channelsPart, err := writer.CreateFormField("channels")
 	if err != nil {
-		return errors.Wrapf(err, "failed to create channels form field")
+		return fmt.Errorf("failed to create channels form field: %w", err)
 	}
 	io.Copy(channelsPart, strings.NewReader(fileParams.Channels))
 
@@ -265,7 +265,7 @@ func (h *handler) sendFilePart(msg courier.MsgOut, token string, fileParams *Fil
 
 	req, err := http.NewRequest(http.MethodPost, uploadURL, bytes.NewReader(body.Bytes()))
 	if err != nil {
-		return errors.Wrapf(err, "error building request to file upload endpoint")
+		return fmt.Errorf("error building request to file upload endpoint: %w", err)
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	req.Header.Add("Content-Type", writer.FormDataContentType())

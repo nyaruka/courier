@@ -17,7 +17,6 @@ import (
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/gsm7"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -177,7 +176,7 @@ func (h *handler) receiveMessage(ctx context.Context, channel courier.Channel, w
 			err = r.ParseForm()
 		}
 		if err != nil {
-			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, errors.Wrapf(err, "invalid request"))
+			return nil, handlers.WriteAndLogRequestError(ctx, h, channel, w, r, fmt.Errorf("invalid request: %w", err))
 		}
 
 		from = getFormField(r.Form, defaultFromFields, channel.StringConfigForKey(configMOFromField, ""))
