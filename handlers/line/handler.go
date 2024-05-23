@@ -295,7 +295,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, false, clog)
 	if err != nil {
-		return errors.Wrap(err, "error resolving attachments")
+		return fmt.Errorf("error resolving attachments: %w", err)
 	}
 
 	// fill all msg parts with attachment parts

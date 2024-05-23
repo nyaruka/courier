@@ -190,7 +190,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	attachments, err := handlers.ResolveAttachments(ctx, h.Backend(), msg.Attachments(), mediaSupport, true, clog)
 	if err != nil {
-		return errors.Wrap(err, "error resolving attachments")
+		return fmt.Errorf("error resolving attachments: %w", err)
 	}
 
 	// we only caption if there is only a single attachment

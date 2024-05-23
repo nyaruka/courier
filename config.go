@@ -2,6 +2,7 @@ package courier
 
 import (
 	"encoding/csv"
+	"fmt"
 	"io"
 	"log"
 	"log/slog"
@@ -11,7 +12,6 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/ezconf"
 	"github.com/nyaruka/gocommon/httpx"
-	"github.com/pkg/errors"
 )
 
 // Config is our top level configuration object
@@ -111,7 +111,7 @@ func (c *Config) Validate() error {
 	}
 
 	if _, _, err := c.ParseDisallowedNetworks(); err != nil {
-		return errors.Wrap(err, "unable to parse 'DisallowedNetworks'")
+		return fmt.Errorf("unable to parse 'DisallowedNetworks': %w", err)
 	}
 	return nil
 }
