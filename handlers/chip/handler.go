@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	defaultSendURL = "http://chatserver:8070/send"
+	defaultSendURL = "http://textit.com/wc/send"
 
 	statuses = map[string]courier.MsgStatus{
 		"sent":      courier.MsgStatusSent,
@@ -31,7 +31,7 @@ type handler struct {
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("TWC"), "Temba Chat", handlers.WithRedactConfigKeys(courier.ConfigSecret))}
+	return &handler{handlers.NewBaseHandler(courier.ChannelType("TWC"), "Chip Chat", handlers.WithRedactConfigKeys(courier.ConfigSecret))}
 }
 
 // Initialize is called by the engine once everything is loaded

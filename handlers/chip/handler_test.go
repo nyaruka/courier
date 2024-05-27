@@ -80,7 +80,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgText: "Simple message ☺",
 		MsgURN:  "webchat:65vbbDAQCdPdEWlEhDGy4utO",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"http://chatserver:8070/send/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/": {
+			"http://textit.com/wc/send/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/": {
 				httpx.NewMockResponse(200, nil, []byte(`{"status": "queued"}`)),
 			},
 		},
@@ -96,7 +96,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgURN:    "webchat:65vbbDAQCdPdEWlEhDGy4utO",
 		MsgUserID: 123,
 		MockResponses: map[string][]*httpx.MockResponse{
-			"http://chatserver:8070/send/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/": {
+			"http://textit.com/wc/send/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/": {
 				httpx.NewMockResponse(200, nil, []byte(`{"status": "queued"}`)),
 			},
 		},
@@ -111,7 +111,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgText: "Error message",
 		MsgURN:  "webchat:65vbbDAQCdPdEWlEhDGy4utO",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"http://chatserver:8070/send/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/": {
+			"http://textit.com/wc/send/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/": {
 				httpx.NewMockResponse(400, nil, []byte(`{"error": "invalid"}`)),
 			},
 		},
@@ -127,7 +127,7 @@ var outgoingCases = []OutgoingTestCase{
 		MsgText: "Error message",
 		MsgURN:  "webchat:65vbbDAQCdPdEWlEhDGy4utO",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"http://chatserver:8070/send/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/": {
+			"http://textit.com/wc/send/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/": {
 				httpx.NewMockResponse(500, nil, []byte(`Gateway Error`)),
 			},
 		},
