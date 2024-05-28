@@ -1,4 +1,4 @@
-package tembachat
+package chip
 
 import (
 	"testing"
@@ -13,7 +13,7 @@ import (
 var incomingCases = []IncomingTestCase{
 	{
 		Label:                "Message with text",
-		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		URL:                  "/c/chp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "secret": "sesame", "events": [{"type": "msg_in", "msg": {"text": "Join"}}]}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Events Handled",
@@ -22,14 +22,14 @@ var incomingCases = []IncomingTestCase{
 	},
 	{
 		Label:                "Message with invalid chat ID",
-		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		URL:                  "/c/chp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		Data:                 `{"chat_id": "xxxxx", "secret": "sesame", "events": [{"type": "msg_in", "msg": {"text": "Join"}}]}`,
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "invalid chat id",
 	},
 	{
 		Label:                "Chat started event",
-		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		URL:                  "/c/chp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "secret": "sesame", "events": [{"type": "chat_started"}]}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Events Handled",
@@ -37,14 +37,14 @@ var incomingCases = []IncomingTestCase{
 	},
 	{
 		Label:                "Chat started event with invalid chat ID",
-		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		URL:                  "/c/chp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		Data:                 `{"chat_id": "xxxxx", "secret": "sesame", "events": [{"type": "chat_started"}]}`,
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "invalid chat id",
 	},
 	{
 		Label:                "Msg status update",
-		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		URL:                  "/c/chp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "secret": "sesame", "events": [{"type": "msg_status", "status": {"msg_id": 10, "status": "sent"}}]}`,
 		ExpectedRespStatus:   200,
 		ExpectedBodyContains: "Events Handled",
@@ -52,14 +52,14 @@ var incomingCases = []IncomingTestCase{
 	},
 	{
 		Label:                "Missing fields",
-		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		URL:                  "/c/chp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		Data:                 `{"foo": "bar"}`,
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "Field validation for 'ChatID' failed on the 'required' tag",
 	},
 	{
 		Label:                "Incorrect channel secret",
-		URL:                  "/c/twc/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
+		URL:                  "/c/chp/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/receive",
 		Data:                 `{"chat_id": "65vbbDAQCdPdEWlEhDGy4utO", "secret": "xxxxx", "events": [{"type": "msg_in", "msg": {"text": "Join"}}]}`,
 		ExpectedRespStatus:   400,
 		ExpectedBodyContains: "secret incorrect",
@@ -68,7 +68,7 @@ var incomingCases = []IncomingTestCase{
 
 func TestIncoming(t *testing.T) {
 	chs := []courier.Channel{
-		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWC", "", "", []string{urns.WebChat.Prefix}, map[string]any{"secret": "sesame"}),
+		test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CHP", "", "", []string{urns.WebChat.Prefix}, map[string]any{"secret": "sesame"}),
 	}
 
 	RunIncomingTestCases(t, chs, newHandler(), incomingCases)
@@ -141,7 +141,7 @@ var outgoingCases = []OutgoingTestCase{
 }
 
 func TestOutgoing(t *testing.T) {
-	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWC", "", "", []string{urns.WebChat.Prefix}, map[string]any{"secret": "sesame"})
+	ch := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "CHP", "", "", []string{urns.WebChat.Prefix}, map[string]any{"secret": "sesame"})
 
 	RunOutgoingTestCases(t, ch, newHandler(), outgoingCases, []string{"sesame"}, nil)
 }
