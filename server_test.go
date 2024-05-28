@@ -22,6 +22,7 @@ func testConfig() *courier.Config {
 	config := courier.NewDefaultConfig()
 	config.DB = "postgres://courier_test:temba@localhost:5432/courier_test?sslmode=disable"
 	config.Redis = "redis://localhost:6379/0"
+	config.Port = 8081
 	return config
 }
 
@@ -52,27 +53,27 @@ func TestServerURLs(t *testing.T) {
 	}
 
 	// route listing at the / root
-	statusCode, respBody := request("GET", "http://localhost:8080/", "", "")
+	statusCode, respBody := request("GET", "http://localhost:8081/", "", "")
 	assert.Equal(t, 200, statusCode)
 	assert.Contains(t, respBody, "/c/mck/{uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/receive - Mock Handler receive")
 
 	// can't access status page without auth
-	statusCode, respBody = request("GET", "http://localhost:8080/status", "", "")
+	statusCode, respBody = request("GET", "http://localhost:8081/status", "", "")
 	assert.Equal(t, 401, statusCode)
 	assert.Contains(t, respBody, "Unauthorized")
 
 	// can access status page without auth
-	statusCode, respBody = request("GET", "http://localhost:8080/status", "admin", "password123")
+	statusCode, respBody = request("GET", "http://localhost:8081/status", "admin", "password123")
 	assert.Equal(t, 200, statusCode)
 	assert.Contains(t, respBody, "ALL GOOD")
 
 	// can't access status page with wrong method
-	statusCode, respBody = request("POST", "http://localhost:8080/status", "admin", "password123")
+	statusCode, respBody = request("POST", "http://localhost:8081/status", "admin", "password123")
 	assert.Equal(t, 405, statusCode)
 	assert.Contains(t, respBody, "Method Not Allowed")
 
 	// can't access non-existent page
-	statusCode, respBody = request("POST", "http://localhost:8080/nothere", "admin", "password123")
+	statusCode, respBody = request("POST", "http://localhost:8081/nothere", "admin", "password123")
 	assert.Equal(t, 404, statusCode)
 	assert.Contains(t, respBody, "not found")
 }
@@ -85,14 +86,14 @@ func TestIncoming(t *testing.T) {
 	s.Start()
 	defer s.Stop()
 
-	resp, err := http.Get("http://localhost:8080/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive")
+	resp, err := http.Get("http://localhost:8081/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive")
 	assert.NoError(t, err)
 	assert.Equal(t, 400, resp.StatusCode)
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	assert.Contains(t, string(body), "missing from or text")
 
-	req, _ := http.NewRequest("GET", "http://localhost:8080/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive?from=2065551212&text=hello", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8081/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive?from=2065551212&text=hello", nil)
 	req.Header.Set("Cookie", "secret")
 	resp, err = http.DefaultClient.Do(req)
 	assert.NoError(t, err)
@@ -235,6 +236,7 @@ func TestFetchAttachment(t *testing.T) {
 	logger := slog.Default()
 	config := courier.NewDefaultConfig()
 	config.AuthToken = "sesame"
+	config.Port = 8081
 
 	mb := test.NewMockBackend()
 	mockChannel := test.NewMockChannel("e4bb1578-29da-4fa5-a214-9da19dd24230", "MCK", "2020", "US", []string{urns.Phone.Prefix}, map[string]any{})
@@ -248,7 +250,7 @@ func TestFetchAttachment(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	submit := func(body, authToken string) (int, []byte) {
-		req, _ := http.NewRequest("POST", "http://localhost:8080/c/_fetch-attachment", strings.NewReader(body))
+		req, _ := http.NewRequest("POST", "http://localhost:8081/c/_fetch-attachment", strings.NewReader(body))
 		if authToken != "" {
 			req.Header.Set("Authorization", "Bearer "+authToken)
 		}
