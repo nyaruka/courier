@@ -110,10 +110,11 @@ func (h *handler) receive(ctx context.Context, c courier.Channel, w http.Respons
 }
 
 type sendMsg struct {
-	ID     courier.MsgID     `json:"id"`
-	Text   string            `json:"text"`
-	Origin courier.MsgOrigin `json:"origin"`
-	UserID courier.UserID    `json:"user_id,omitempty"`
+	ID          courier.MsgID     `json:"id"`
+	Text        string            `json:"text"`
+	Attachments []string          `json:"attachments,omitempty"`
+	Origin      courier.MsgOrigin `json:"origin"`
+	UserID      courier.UserID    `json:"user_id,omitempty"`
 }
 
 type sendPayload struct {
@@ -133,10 +134,11 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		ChatID: msg.URN().Path(),
 		Secret: secret,
 		Msg: sendMsg{
-			ID:     msg.ID(),
-			Text:   msg.Text(),
-			Origin: msg.Origin(),
-			UserID: msg.UserID(),
+			ID:          msg.ID(),
+			Text:        msg.Text(),
+			Attachments: msg.Attachments(),
+			Origin:      msg.Origin(),
+			UserID:      msg.UserID(),
 		},
 	}
 	req, _ := http.NewRequest("POST", sendURL+"/"+string(msg.Channel().UUID())+"/", bytes.NewReader(jsonx.MustMarshal(payload)))

@@ -91,10 +91,10 @@ var outgoingCases = []OutgoingTestCase{
 		},
 	},
 	{
-		Label:     "Chat message",
-		MsgText:   "Simple message ☺",
-		MsgURN:    "webchat:65vbbDAQCdPdEWlEhDGy4utO",
-		MsgUserID: 123,
+		Label:          "Chat message that is an attachment",
+		MsgAttachments: []string{"image/jpeg:https://example.com/image.jpg"},
+		MsgURN:         "webchat:65vbbDAQCdPdEWlEhDGy4utO",
+		MsgUserID:      123,
 		MockResponses: map[string][]*httpx.MockResponse{
 			"http://textit.com/wc/send/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/": {
 				httpx.NewMockResponse(200, nil, []byte(`{"status": "queued"}`)),
@@ -102,7 +102,7 @@ var outgoingCases = []OutgoingTestCase{
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"Simple message ☺","origin":"flow","user_id":123}}`,
+				Body: `{"chat_id":"65vbbDAQCdPdEWlEhDGy4utO","secret":"sesame","msg":{"id":10,"text":"","attachments":["image/jpeg:https://example.com/image.jpg"],"origin":"flow","user_id":123}}`,
 			},
 		},
 	},
