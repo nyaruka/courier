@@ -1,3 +1,9 @@
+v9.1.39 (2024-05-29)
+-------------------------
+ * Fix hoormund bug so we don't ignore errors from fetching tokens
+ * Add test to make sure URN are normalized for EX channel with non phone schemes
+ * Allow sender ID tel urns on twilio channels
+
 v9.1.38 (2024-05-09)
 -------------------------
  * Fix ext urns creation so we trigger normalization
