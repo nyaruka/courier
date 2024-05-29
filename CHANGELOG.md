@@ -1,3 +1,7 @@
+v9.1.41 (2024-05-29)
+-------------------------
+ * Add attachment support for chip
+
 v9.1.40 (2024-05-29)
 -------------------------
  * Set content-type header in chip handler
