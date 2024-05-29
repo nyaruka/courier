@@ -1,3 +1,7 @@
+v9.1.40 (2024-05-29)
+-------------------------
+ * Set content-type header in chip handler
+
 v9.1.39 (2024-05-29)
 -------------------------
  * Fix hoormund bug so we don't ignore errors from fetching tokens
