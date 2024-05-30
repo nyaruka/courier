@@ -7,14 +7,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"

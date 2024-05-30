@@ -6,12 +6,11 @@ GET /handlers/yo/received/uuid?account=12345&dest=8500&message=Msg&sender=256778
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"

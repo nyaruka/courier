@@ -7,13 +7,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
-
-	"errors"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"

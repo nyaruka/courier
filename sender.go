@@ -2,11 +2,10 @@ package courier
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
-
-	"errors"
 
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/urns"

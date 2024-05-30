@@ -2,13 +2,12 @@ package test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"sync"
 	"time"
-
-	"errors"
 
 	"github.com/gomodule/redigo/redis"
 	_ "github.com/lib/pq"

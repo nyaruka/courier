@@ -2,13 +2,12 @@ package shaqodoon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"

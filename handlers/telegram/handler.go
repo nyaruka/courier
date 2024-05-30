@@ -3,14 +3,13 @@ package telegram
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"

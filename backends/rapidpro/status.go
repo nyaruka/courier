@@ -3,14 +3,13 @@ package rapidpro
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"strconv"
 	"sync"
 	"time"
-
-	"errors"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/dbutil"

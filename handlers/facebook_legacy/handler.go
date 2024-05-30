@@ -3,14 +3,13 @@ package facebook_legacy
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"

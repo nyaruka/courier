@@ -2,9 +2,8 @@ package test
 
 import (
 	"context"
-	"net/http"
-
 	"errors"
+	"net/http"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/httpx"

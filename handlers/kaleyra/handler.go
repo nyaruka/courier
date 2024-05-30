@@ -3,6 +3,7 @@ package kaleyra
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -11,8 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"

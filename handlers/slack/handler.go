@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/buger/jsonparser"
 	"github.com/nyaruka/courier"
