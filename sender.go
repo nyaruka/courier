@@ -74,6 +74,15 @@ var ErrConnectionThrottled error = &SendError{
 	clogMsg:   "Connection to server has been rate limited.",
 }
 
+// ErrMessageInvalid should be returned by a handler send method when the message it has received is invalid
+var ErrMessageInvalid error = &SendError{
+	msg:       "message invalid",
+	retryable: false,
+	loggable:  true,
+	clogCode:  "message_invalid",
+	clogMsg:   "Message is missing required values.",
+}
+
 // ErrResponseStatus should be returned when channel the response has a non-success status code
 var ErrResponseStatus error = &SendError{
 	msg:       "response status code",
