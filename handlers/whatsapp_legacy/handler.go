@@ -872,7 +872,11 @@ func (h *handler) fetchMediaID(msg courier.MsgOut, mimeType, mediaURL string, cl
 	resp, respBody, err = h.RequestHTTP(req, clog)
 	if err != nil || resp.StatusCode/100 != 2 {
 		failedMediaCache.Set(failKey, true, cache.DefaultExpiration)
-		return "", fmt.Errorf("error uploading media to whatsapp: %w", err)
+		if err != nil {
+			return "", fmt.Errorf("error uploading media to whatsapp: %w", err)
+		} else {
+			return "", fmt.Errorf("non-200 response uploading media to whatsapp")
+		}
 	}
 
 	// take uploaded media id
