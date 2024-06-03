@@ -188,7 +188,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "key=FCMKey"},
 			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
 		}},
-		ExpectedError: courier.ErrFailedWithReason("", "response success value expected be 1"),
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:      "No Multicast ID",
@@ -204,7 +204,7 @@ var sendTestCases = []OutgoingTestCase{
 			Headers: map[string]string{"Authorization": "key=FCMKey"},
 			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
 		}},
-		ExpectedError: courier.ErrFailedWithReason("", "response missing multicast_id"),
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:      "Request Error",

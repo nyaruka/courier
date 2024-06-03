@@ -142,7 +142,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		// grab the external id
 		externalID, err := jsonparser.GetString(respBody, "sms_id")
 		if err != nil {
-			return courier.ErrFailedWithReason("", "response missing sms_id")
+			return courier.ErrResponseUnexpected
 		}
 
 		res.AddExternalID(externalID)

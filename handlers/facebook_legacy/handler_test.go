@@ -910,7 +910,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			},
 			Body: `{"messaging_type":"NON_PROMOTIONAL_SUBSCRIPTION","recipient":{"id":"12345"},"message":{"text":"ID Error"}}`,
 		}},
-		ExpectedError: courier.ErrFailedWithReason("", "response missing message_id"),
+		ExpectedError: courier.ErrResponseUnexpected,
 	},
 	{
 		Label:   "Error",

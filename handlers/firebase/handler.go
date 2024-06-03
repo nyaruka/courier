@@ -200,12 +200,12 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 		// was this successful
 		success, _ := jsonparser.GetInt(respBody, "success")
 		if success != 1 {
-			return courier.ErrFailedWithReason("", "response success value expected be 1")
+			return courier.ErrResponseUnexpected
 		}
 
 		externalID, err := jsonparser.GetInt(respBody, "multicast_id")
 		if err != nil {
-			return courier.ErrFailedWithReason("", "response missing multicast_id")
+			return courier.ErrResponseUnexpected
 		}
 		res.AddExternalID(fmt.Sprintf("%d", externalID))
 

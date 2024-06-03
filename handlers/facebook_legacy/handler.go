@@ -550,14 +550,14 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		externalID, err := jsonparser.GetString(respBody, "message_id")
 		if err != nil {
-			return courier.ErrFailedWithReason("", "response missing message_id")
+			return courier.ErrResponseUnexpected
 		}
 
 		res.AddExternalID(externalID)
 		if IsFacebookRef(msg.URN()) {
 			recipientID, err := jsonparser.GetString(respBody, "recipient_id")
 			if err != nil {
-				return courier.ErrFailedWithReason("", "response missing recipient_id")
+				return courier.ErrResponseUnexpected
 			}
 
 			referralID := FacebookRef(msg.URN())
