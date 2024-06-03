@@ -18,9 +18,8 @@ require (
 	github.com/nyaruka/ezconf v0.3.0
 	github.com/nyaruka/gocommon v1.55.1
 	github.com/nyaruka/null/v3 v3.0.0
-	github.com/nyaruka/redisx v0.8.0
+	github.com/nyaruka/redisx v0.8.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/pkg/errors v0.9.1
 	github.com/samber/slog-multi v1.0.2
 	github.com/samber/slog-sentry v1.2.2
 	github.com/stretchr/testify v1.9.0

@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"path"
 	"strings"
 
 	"github.com/nyaruka/courier"
-	"github.com/pkg/errors"
 )
 
 type MediaType string
@@ -42,7 +42,7 @@ func ResolveAttachments(ctx context.Context, b courier.Backend, attachments []st
 		// split into content-type and URL
 		parts := strings.SplitN(as, ":", 2)
 		if len(parts) <= 1 || strings.HasPrefix(parts[1], "//") {
-			return nil, errors.Errorf("invalid attachment format: %s", as)
+			return nil, fmt.Errorf("invalid attachment format: %s", as)
 		}
 		contentType, mediaUrl := parts[0], parts[1]
 

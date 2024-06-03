@@ -3,6 +3,7 @@ package telegram
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -15,7 +16,6 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 var apiURL = "https://api.telegram.org"
@@ -330,12 +330,12 @@ func (h *handler) resolveFileID(ctx context.Context, channel courier.Channel, fi
 	}
 
 	if !respPayload.Ok {
-		return "", errors.Errorf("file id '%s' not present", fileID)
+		return "", fmt.Errorf("file id '%s' not present", fileID)
 	}
 
 	filePath := respPayload.Result.FilePath
 	if filePath == "" {
-		return "", errors.Errorf("no 'result.file_path' in response")
+		return "", fmt.Errorf("no 'result.file_path' in response")
 	}
 	// return the URL
 	return fmt.Sprintf("%s/file/bot%s/%s", apiURL, authToken, filePath), nil

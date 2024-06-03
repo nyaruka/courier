@@ -2,13 +2,13 @@ package courier
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 type SendResult struct {

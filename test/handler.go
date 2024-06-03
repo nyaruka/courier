@@ -2,12 +2,12 @@ package test
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 func init() {

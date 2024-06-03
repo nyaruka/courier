@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
 	"log/slog"
 	"strconv"
 	"time"
@@ -16,7 +17,6 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
-	"github.com/pkg/errors"
 )
 
 // used by unit tests to slow down urn operations to test races
@@ -110,7 +110,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 	err := b.db.GetContext(ctx, contact, lookupContactFromURNSQL, urn.Identity(), org)
 	if err != nil && err != sql.ErrNoRows {
 		log.Error("error looking up contact by URN", "error", err)
-		return nil, errors.Wrap(err, "error looking up contact by URN")
+		return nil, fmt.Errorf("error looking up contact by URN: %w", err)
 	}
 
 	// we found it, return it
@@ -118,7 +118,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 		tx, err := b.db.BeginTxx(ctx, nil)
 		if err != nil {
 			log.Error("error beginning transaction", "error", err)
-			return nil, errors.Wrap(err, "error beginning transaction")
+			return nil, fmt.Errorf("error beginning transaction: %w", err)
 		}
 
 		// update contact's URNs so this URN has priority
@@ -126,7 +126,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 		if err != nil {
 			log.Error("error updating default URN for contact", "error", err)
 			tx.Rollback()
-			return nil, errors.Wrap(err, "error setting default URN for contact")
+			return nil, fmt.Errorf("error setting default URN for contact: %w", err)
 		}
 		return contact, tx.Commit()
 	}
@@ -174,13 +174,13 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 	// insert it
 	tx, err := b.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "error beginning transaction")
+		return nil, fmt.Errorf("error beginning transaction: %w", err)
 	}
 
 	err = insertContact(tx, contact)
 	if err != nil {
 		tx.Rollback()
-		return nil, errors.Wrap(err, "error inserting contact")
+		return nil, fmt.Errorf("error inserting contact: %w", err)
 	}
 
 	// used for unit testing contact races
@@ -199,7 +199,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 			// if this was a duplicate URN, start over with a contact lookup
 			return contactForURN(ctx, b, org, channel, urn, authTokens, name, clog)
 		}
-		return nil, errors.Wrap(err, "error getting URN for contact")
+		return nil, fmt.Errorf("error getting URN for contact: %w", err)
 	}
 
 	// we stole the URN from another contact, roll back and start over
@@ -211,7 +211,7 @@ func contactForURN(ctx context.Context, b *backend, org OrgID, channel *Channel,
 	// all is well, we created the new contact, commit and move forward
 	err = tx.Commit()
 	if err != nil {
-		return nil, errors.Wrap(err, "error commiting transaction")
+		return nil, fmt.Errorf("error commiting transaction: %w", err)
 	}
 
 	// store this URN on our contact

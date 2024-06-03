@@ -3,6 +3,7 @@ package rapidpro
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/syncx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 // StatusUpdate represents a status update on a message
@@ -244,7 +244,7 @@ func (b *backend) writeStatusUpdatesToDB(ctx context.Context, statuses []*Status
 
 	err := dbutil.BulkQuery(ctx, b.db, sqlUpdateMsgByID, resolved)
 	if err != nil {
-		return nil, errors.Wrap(err, "error updating status")
+		return nil, fmt.Errorf("error updating status: %w", err)
 	}
 
 	return unresolved, nil
@@ -313,7 +313,7 @@ func (b *backend) resolveStatusUpdateMsgIDs(ctx context.Context, statuses []*Sta
 
 	for rows.Next() {
 		if err := rows.Scan(&msgID, &channelID, &externalID); err != nil {
-			return errors.Wrap(err, "error scanning rows")
+			return fmt.Errorf("error scanning rows: %w", err)
 		}
 
 		// find the status with this channel ID and external ID and update its msg ID

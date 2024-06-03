@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -22,7 +23,6 @@ import (
 	"github.com/nyaruka/courier/utils"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/pkg/errors"
 )
 
 // Endpoints we hit
@@ -750,29 +750,29 @@ func (h *handler) sendFacebookInstagramMsg(ctx context.Context, msg courier.MsgO
 
 			realIDURN, err := urns.New(urns.Facebook, recipientID)
 			if err != nil {
-				clog.RawError(errors.Errorf("unable to make facebook urn from %s", recipientID))
+				clog.RawError(fmt.Errorf("unable to make facebook urn from %s", recipientID))
 			}
 
 			contact, err := h.Backend().GetContact(ctx, msg.Channel(), msg.URN(), nil, "", clog)
 			if err != nil {
-				clog.RawError(errors.Errorf("unable to get contact for %s", msg.URN().String()))
+				clog.RawError(fmt.Errorf("unable to get contact for %s", msg.URN().String()))
 			}
 			realURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, realIDURN, nil)
 			if err != nil {
-				clog.RawError(errors.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
+				clog.RawError(fmt.Errorf("unable to add real facebook URN %s to contact with uuid %s", realURN.String(), contact.UUID()))
 			}
 			referralIDExtURN, err := urns.New(urns.External, referralID)
 			if err != nil {
-				clog.RawError(errors.Errorf("unable to make ext urn from %s", referralID))
+				clog.RawError(fmt.Errorf("unable to make ext urn from %s", referralID))
 			}
 			extURN, err := h.Backend().AddURNtoContact(ctx, msg.Channel(), contact, referralIDExtURN, nil)
 			if err != nil {
-				clog.RawError(errors.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
+				clog.RawError(fmt.Errorf("unable to add URN %s to contact with uuid %s", extURN.String(), contact.UUID()))
 			}
 
 			referralFacebookURN, err := h.Backend().RemoveURNfromContact(ctx, msg.Channel(), contact, msg.URN())
 			if err != nil {
-				clog.RawError(errors.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
+				clog.RawError(fmt.Errorf("unable to remove referral facebook URN %s from contact with uuid %s", referralFacebookURN.String(), contact.UUID()))
 			}
 
 		}

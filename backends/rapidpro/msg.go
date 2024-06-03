@@ -23,7 +23,6 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/null/v3"
-	"github.com/pkg/errors"
 )
 
 // MsgDirection is the direction of a message
@@ -204,7 +203,7 @@ func writeMsg(ctx context.Context, b *backend, msg courier.MsgIn, clog *courier.
 			attData, err := base64.StdEncoding.DecodeString(attURL[5:])
 			if err != nil {
 				clog.Error(courier.ErrorAttachmentNotDecodable())
-				return errors.Wrap(err, "unable to decode attachment data")
+				return fmt.Errorf("unable to decode attachment data: %w", err)
 			}
 
 			var contentType, extension string
@@ -257,7 +256,7 @@ func writeMsgToDB(ctx context.Context, b *backend, m *Msg, clog *courier.Channel
 
 	// our db is down, write to the spool, we will write/queue this later
 	if err != nil {
-		return errors.Wrap(err, "error getting contact for message")
+		return fmt.Errorf("error getting contact for message: %w", err)
 	}
 
 	// set our contact and urn id
@@ -266,14 +265,14 @@ func writeMsgToDB(ctx context.Context, b *backend, m *Msg, clog *courier.Channel
 
 	rows, err := b.db.NamedQueryContext(ctx, sqlInsertMsg, m)
 	if err != nil {
-		return errors.Wrap(err, "error inserting message")
+		return fmt.Errorf("error inserting message: %w", err)
 	}
 	defer rows.Close()
 
 	rows.Next()
 	err = rows.Scan(&m.ID_)
 	if err != nil {
-		return errors.Wrap(err, "error scanning for inserted message id")
+		return fmt.Errorf("error scanning for inserted message id: %w", err)
 	}
 
 	// queue this up to be handled by RapidPro
