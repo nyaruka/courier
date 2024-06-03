@@ -1,3 +1,10 @@
+v9.1.42 (2024-06-03)
+-------------------------
+ * Update deps
+ * Replace incorrect usages of ErrFailedWithReason
+ * Add support for sending Twilio content templates
+ * Use std library errors everywhere
+
 v9.1.41 (2024-05-29)
 -------------------------
  * Add attachment support for chip
