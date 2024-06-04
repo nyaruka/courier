@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/antchfx/xmlquery v1.4.0
-	github.com/aws/aws-sdk-go v1.53.14
+	github.com/aws/aws-sdk-go v1.53.15
 	github.com/buger/jsonparser v1.1.1
 	github.com/dghubble/oauth1 v0.7.3
 	github.com/getsentry/sentry-go v0.28.0
@@ -20,7 +20,7 @@ require (
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.8.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/samber/slog-multi v1.0.3
+	github.com/samber/slog-multi v1.1.0
 	github.com/samber/slog-sentry v1.2.2
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/exp v0.0.0-20240531132922-fd00a4e0eefc
@@ -39,8 +39,6 @@ require (
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
-	github.com/hashicorp/errwrap v1.0.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/jellydator/ttlcache/v3 v3.2.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
