@@ -253,7 +253,13 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		for _, comp := range msg.Templating().Components {
 			for varKey, varIndex := range comp.Variables {
-				contentVariables[varKey] = msg.Templating().Variables[varIndex].Value
+				value := msg.Templating().Variables[varIndex].Value
+
+				if msg.Templating().Variables[varIndex].Type != "text" {
+					_, value = handlers.SplitAttachment(value)
+				}
+
+				contentVariables[varKey] = value
 			}
 		}
 
