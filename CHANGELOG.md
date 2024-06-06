@@ -1,3 +1,7 @@
+v9.1.45 (2024-06-06)
+-------------------------
+ * Adjust attachment variables for TWA templates
+
 v9.1.44 (2024-06-06)
 -------------------------
  * Use split attachments for templates media attachment for consistency with messages attachments
