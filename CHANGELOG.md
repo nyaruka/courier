@@ -1,3 +1,7 @@
+v9.1.44 (2024-06-06)
+-------------------------
+ * Use split attachments for templates media attachment for consistency with messages attachments
+
 v9.1.43 (2024-06-04)
 -------------------------
  * Update slog-multi
