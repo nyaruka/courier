@@ -64,35 +64,96 @@ func TestGetTemplatePayload(t *testing.T) {
 				"language": "en",
 				"components": [
 					{
-						"type": "button/quick_reply",
-						"name": "button.0",
-						"variables": {"1": 0, "2": 1}
+						"type": "header",
+						"name": "header",
+						"variables": {"1": 0}
 					},
 					{
-						"type": "button/quick_reply",
-						"name": "button.1",
-						"variables": {"1": 2}
-					},
-					{
-						"type": "button/url",
-						"name": "button.2",
-						"variables": {"1": 3}
+						"type": "body",
+						"name": "body",
+						"variables": {"1": 1, "2": 2}
 					}
 				],
 				"variables": [
-					{"type": "text", "value": "Yes"},
-					{"type": "text", "value": "Bob"},
-					{"type": "text", "value": "No"},
-					{"type": "text", "value": "id0023"}
+					{"type": "image", "value": "image/jpeg:http://example.com/cat2.jpg"},
+					{"type": "text", "value": "Hello"},
+					{"type": "text", "value": "Bob"}
 				]
 			}`,
 			expected: &whatsapp.Template{
 				Name:     "Update",
 				Language: &whatsapp.Language{Policy: "deterministic", Code: "en"},
 				Components: []*whatsapp.Component{
-					{Type: "button", SubType: "quick_reply", Index: "0", Params: []*whatsapp.Param{{Type: "payload", Payload: "Yes"}, {Type: "payload", Payload: "Bob"}}},
-					{Type: "button", SubType: "quick_reply", Index: "1", Params: []*whatsapp.Param{{Type: "payload", Payload: "No"}}},
-					{Type: "button", SubType: "url", Index: "2", Params: []*whatsapp.Param{{Type: "text", Text: "id0023"}}},
+					{Type: "header", Params: []*whatsapp.Param{{Type: "image", Image: &struct {
+						Link string "json:\"link,omitempty\""
+					}{Link: "http://example.com/cat2.jpg"}}}},
+					{Type: "body", Params: []*whatsapp.Param{{Type: "text", Text: "Hello"}, {Type: "text", Text: "Bob"}}},
+				},
+			},
+		},
+		{
+			templating: `{
+				"template": {"uuid": "4ed5000f-5c94-4143-9697-b7cbd230a381", "name": "Update"},
+				"language": "en",
+				"components": [
+					{
+						"type": "header",
+						"name": "header",
+						"variables": {"1": 0}
+					},
+					{
+						"type": "body",
+						"name": "body",
+						"variables": {"1": 1, "2": 2}
+					}
+				],
+				"variables": [
+					{"type": "video", "value": "video/mp4:http://example.com/video.mp4"},
+					{"type": "text", "value": "Hello"},
+					{"type": "text", "value": "Bob"}
+				]
+			}`,
+			expected: &whatsapp.Template{
+				Name:     "Update",
+				Language: &whatsapp.Language{Policy: "deterministic", Code: "en"},
+				Components: []*whatsapp.Component{
+					{Type: "header", Params: []*whatsapp.Param{{Type: "video", Video: &struct {
+						Link string "json:\"link,omitempty\""
+					}{Link: "http://example.com/video.mp4"}}}},
+					{Type: "body", Params: []*whatsapp.Param{{Type: "text", Text: "Hello"}, {Type: "text", Text: "Bob"}}},
+				},
+			},
+		},
+		{
+			templating: `{
+				"template": {"uuid": "4ed5000f-5c94-4143-9697-b7cbd230a381", "name": "Update"},
+				"language": "en",
+				"components": [
+					{
+						"type": "header",
+						"name": "header",
+						"variables": {"1": 0}
+					},
+					{
+						"type": "body",
+						"name": "body",
+						"variables": {"1": 1, "2": 2}
+					}
+				],
+				"variables": [
+					{"type": "document", "value": "application/pdf:http://example.com/doc.pdf"},
+					{"type": "text", "value": "Hello"},
+					{"type": "text", "value": "Bob"}
+				]
+			}`,
+			expected: &whatsapp.Template{
+				Name:     "Update",
+				Language: &whatsapp.Language{Policy: "deterministic", Code: "en"},
+				Components: []*whatsapp.Component{
+					{Type: "header", Params: []*whatsapp.Param{{Type: "document", Document: &struct {
+						Link string "json:\"link,omitempty\""
+					}{Link: "http://example.com/doc.pdf"}}}},
+					{Type: "body", Params: []*whatsapp.Param{{Type: "text", Text: "Hello"}, {Type: "text", Text: "Bob"}}},
 				},
 			},
 		},
