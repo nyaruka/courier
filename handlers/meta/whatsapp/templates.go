@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/nyaruka/courier"
+	"github.com/nyaruka/courier/handlers"
 	"golang.org/x/exp/maps"
 )
 
@@ -30,18 +31,23 @@ func GetTemplatePayload(templating *courier.Templating) *Template {
 			component = &Component{Type: comp.Type}
 
 			for _, p := range compParams {
-				if p.Type == "image" {
-					component.Params = append(component.Params, &Param{Type: p.Type, Image: &struct {
-						Link string "json:\"link,omitempty\""
-					}{Link: p.Value}})
-				} else if p.Type == "video" {
-					component.Params = append(component.Params, &Param{Type: p.Type, Video: &struct {
-						Link string "json:\"link,omitempty\""
-					}{Link: p.Value}})
-				} else if p.Type == "document" {
-					component.Params = append(component.Params, &Param{Type: p.Type, Document: &struct {
-						Link string "json:\"link,omitempty\""
-					}{Link: p.Value}})
+				if p.Type != "text" {
+					attType, attURL := handlers.SplitAttachment(p.Value)
+					attType = strings.Split(attType, "/")[0]
+
+					if attType == "image" {
+						component.Params = append(component.Params, &Param{Type: "image", Image: &struct {
+							Link string "json:\"link,omitempty\""
+						}{Link: attURL}})
+					} else if attType == "video" {
+						component.Params = append(component.Params, &Param{Type: "video", Video: &struct {
+							Link string "json:\"link,omitempty\""
+						}{Link: attURL}})
+					} else if attType == "application" {
+						component.Params = append(component.Params, &Param{Type: "document", Document: &struct {
+							Link string "json:\"link,omitempty\""
+						}{Link: attURL}})
+					}
 				} else {
 					component.Params = append(component.Params, &Param{Type: p.Type, Text: p.Value})
 				}
