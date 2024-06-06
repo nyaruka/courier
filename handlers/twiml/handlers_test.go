@@ -1145,6 +1145,62 @@ var twaSendTestCases = []OutgoingTestCase{
 		ExpectedExtIDs: []string{"1002"},
 	},
 	{
+		Label:     "Template Send no attachment",
+		MsgText:   "templated message",
+		MsgURN:    "whatsapp:250788383383",
+		MsgLocale: "eng",
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
+			"components": [
+				{"type": "body", "name": "body", "variables": {"1": 0, "2": 1}}
+			],
+			"variables": [
+				{"type": "text", "value": "Chef: common resto"},
+				{"type": "text" , "value": "tomorrow"}
+			],
+			"external_id": "ext_id_revive_issue",
+			"language": "en_US"
+		}`,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef: common resto\",\"2\":\"tomorrow\"}"}},
+			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		}},
+		ExpectedExtIDs: []string{"1002"},
+	},
+	{
+		Label:     "Template Send with image",
+		MsgText:   "templated message",
+		MsgURN:    "whatsapp:250788383383",
+		MsgLocale: "eng",
+		MsgTemplating: `{
+			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
+			"components": [
+				{"type": "header", "name": "header", "variables": {"1": 0, "2": 1}}
+			],
+			"variables": [
+				{"type": "image", "value": "image/jpeg:http://example.com/cat2.jpg"},
+				{"type": "text" , "value": "tomorrow"}
+			],
+			"external_id": "ext_id_revive_issue",
+			"language": "en_US"
+		}`,
+		MockResponses: map[string][]*httpx.MockResponse{
+			"https://api.twilio.com/2010-04-01/Accounts/accountSID/Messages.json": {
+				httpx.NewMockResponse(200, nil, []byte(`{ "sid": "1002" }`)),
+			},
+		},
+		ExpectedRequests: []ExpectedRequest{{
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"http://example.com/cat2.jpg\",\"2\":\"tomorrow\"}"}},
+			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
+		}},
+		ExpectedExtIDs: []string{"1002"},
+	},
+	{
 		Label:     "Template Send missing external ID",
 		MsgText:   "templated message",
 		MsgURN:    "whatsapp:250788383383",
