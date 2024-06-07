@@ -1,3 +1,7 @@
+v9.1.46 (2024-06-07)
+-------------------------
+ * Make sure TWA channels send the set messaging service SID when sending messages
+
 v9.1.45 (2024-06-06)
 -------------------------
  * Adjust attachment variables for TWA templates
