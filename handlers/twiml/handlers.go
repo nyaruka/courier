@@ -246,7 +246,16 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			"To":             []string{fmt.Sprintf("%s:+%s", urns.WhatsApp.Prefix, msg.URN().Path())},
 			"StatusCallback": []string{callbackURL},
 			"ContentSid":     []string{msg.Templating().ExternalID},
-			"From":           []string{fmt.Sprintf("%s:%s", urns.WhatsApp.Prefix, channel.Address())},
+		}
+
+		// set our from, either as a messaging service or from our address
+		serviceSID := channel.StringConfigForKey(configMessagingServiceSID, "")
+		if serviceSID != "" {
+			form["MessagingServiceSid"] = []string{serviceSID}
+		}
+
+		if channel.Address() != "" {
+			form["From"] = []string{fmt.Sprintf("%s:%s", urns.WhatsApp.Prefix, channel.Address())}
 		}
 
 		contentVariables := make(map[string]string, len(msg.Templating().Variables))
@@ -339,7 +348,9 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			serviceSID := channel.StringConfigForKey(configMessagingServiceSID, "")
 			if serviceSID != "" {
 				form["MessagingServiceSid"] = []string{serviceSID}
-			} else {
+			}
+
+			if channel.Address() != "" {
 				form["From"] = []string{channel.Address()}
 			}
 

@@ -1111,7 +1111,7 @@ var twaSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
+			Form:    url.Values{"Body": {"Simple Message ☺"}, "To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
 		ExpectedExtIDs: []string{"1002"},
@@ -1139,7 +1139,7 @@ var twaSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
 		ExpectedExtIDs: []string{"1002"},
@@ -1167,7 +1167,7 @@ var twaSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef: common resto\",\"2\":\"tomorrow\"}"}},
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef: common resto\",\"2\":\"tomorrow\"}"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
 		ExpectedExtIDs: []string{"1002"},
@@ -1195,7 +1195,7 @@ var twaSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"http://example.com/cat2.jpg\",\"2\":\"tomorrow\"}"}},
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"http://example.com/cat2.jpg\",\"2\":\"tomorrow\"}"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
 		ExpectedExtIDs: []string{"1002"},
@@ -1241,7 +1241,7 @@ var twaSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
 		ExpectedError: courier.ErrFailedWithReason("1001", "Service specific error: 1001."),
@@ -1269,7 +1269,7 @@ var twaSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
 		ExpectedError: courier.ErrContactStopped,
@@ -1297,7 +1297,7 @@ var twaSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
 		ExpectedLogErrors: []*courier.ChannelError{courier.ErrorResponseValueMissing("sid")},
@@ -1325,7 +1325,7 @@ var twaSendTestCases = []OutgoingTestCase{
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
+			Form:    url.Values{"To": {"whatsapp:+250788383383"}, "From": {"whatsapp:+12065551212"}, "MessagingServiceSid": {"messageServiceSID"}, "StatusCallback": {"https://localhost/c/twa/8eb23e93-5ecb-45ba-b726-3b064e0c56ab/status?id=10&action=callback"}, "ContentSid": {"ext_id_revive_issue"}, "ContentVariables": {"{\"1\":\"Chef\",\"2\":\"tomorrow\"}"}},
 			Headers: map[string]string{"Authorization": "Basic YWNjb3VudFNJRDphdXRoVG9rZW4="},
 		}},
 		ExpectedError: courier.ErrResponseStatus,
@@ -1340,7 +1340,7 @@ func TestOutgoing(t *testing.T) {
 			configAccountSID:        "accountSID",
 			courier.ConfigAuthToken: "authToken"})
 
-	var tmsDefaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56cd", "TMS", "2021", "US",
+	var tmsDefaultChannel = test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56cd", "TMS", "", "US",
 		[]string{urns.Phone.Prefix},
 		map[string]any{
 			configMessagingServiceSID: "messageServiceSID",
@@ -1382,8 +1382,9 @@ func TestOutgoing(t *testing.T) {
 	twaChannel := test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c56ab", "TWA", "+12065551212", "US",
 		[]string{urns.WhatsApp.Prefix},
 		map[string]any{
-			configAccountSID:        "accountSID",
-			courier.ConfigAuthToken: "authToken",
+			configAccountSID:          "accountSID",
+			courier.ConfigAuthToken:   "authToken",
+			configMessagingServiceSID: "messageServiceSID",
 		},
 	)
 
