@@ -441,7 +441,7 @@ var whatsappOutgoingTests = []OutgoingTestCase{
 		MsgTemplating: `{
 			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"}, 
 			"components": [
-				{"name": "header", "type": "header/image", "variables": {"1": 0}},
+				{"name": "header", "type": "header/media", "variables": {"1": 0}},
 				{"name": "body", "type": "body/text", "variables": {"1": 1, "2": 2}},
 				{"name": "button.0", "type": "button/quick_reply", "variables": {"1": 3}},
 				{"name": "button.1", "type": "button/url", "variables": {"1": 4}}
