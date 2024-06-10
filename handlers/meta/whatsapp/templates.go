@@ -27,8 +27,8 @@ func GetTemplatePayload(templating *courier.Templating) *Template {
 
 		var component *Component
 
-		if comp.Type == "header" {
-			component = &Component{Type: comp.Type}
+		if comp.Type == "header" || strings.HasPrefix(comp.Type, "header/") {
+			component = &Component{Type: "header"}
 
 			for _, p := range compParams {
 				if p.Type != "text" {
@@ -52,8 +52,8 @@ func GetTemplatePayload(templating *courier.Templating) *Template {
 					component.Params = append(component.Params, &Param{Type: p.Type, Text: p.Value})
 				}
 			}
-		} else if comp.Type == "body" {
-			component = &Component{Type: comp.Type}
+		} else if comp.Type == "body" || strings.HasPrefix(comp.Type, "body/") {
+			component = &Component{Type: "body"}
 
 			for _, p := range compParams {
 				component.Params = append(component.Params, &Param{Type: p.Type, Text: p.Value})
