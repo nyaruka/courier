@@ -772,7 +772,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgTemplating: `{
 			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"}, 
 			"components": [
-				{"type": "body", "name": "body", "variables": {"1": 0, "2": 1}}
+				{"type": "body/text", "name": "body", "variables": {"1": 0, "2": 1}}
 			],
 			"variables": [
 				{"type": "text", "value": "Chef"},
@@ -821,7 +821,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgTemplating: `{
 			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
 			"components": [
-				{"type": "body", "name": "body", "variables": {"1": 0, "2": 1}}
+				{"type": "body/text", "name": "body", "variables": {"1": 0, "2": 1}}
 			],
 			"variables": [
 				{"type": "text", "value": "Chef"},
@@ -849,7 +849,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
 			"namespace": "wa_template_namespace", 
 			"components": [
-				{"type": "body", "name": "body", "variables": {"1": 0, "2": 1}}
+				{"type": "body/text", "name": "body", "variables": {"1": 0, "2": 1}}
 			],
 			"variables": [
 				{"type": "text", "value": "Chef"},
@@ -876,7 +876,7 @@ var defaultSendTestCases = []OutgoingTestCase{
 		MsgTemplating: `{
 			"template": {"uuid": "171f8a4d-f725-46d7-85a6-11aceff0bfe3", "name": "revive_issue"},
 			"components": [
-				{"type": "body", "name": "body", "variables": {"1": 0, "2": 1}}
+				{"type": "body/text", "name": "body", "variables": {"1": 0, "2": 1}}
 			],
 			"variables": [
 				{"type": "text", "value": "Chef"},

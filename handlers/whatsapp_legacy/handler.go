@@ -726,7 +726,7 @@ func buildPayloads(msg courier.MsgOut, h *handler, clog *courier.ChannelLog) ([]
 					compParams = append(compParams, msg.Templating().Variables[comp.Variables[varName]])
 				}
 
-				if comp.Type == "body" {
+				if comp.Type == "body" || strings.HasPrefix(comp.Type, "body/") {
 					component := &Component{Type: "body"}
 					for _, p := range compParams {
 						component.Parameters = append(component.Parameters, Param{Type: p.Type, Text: p.Value})
