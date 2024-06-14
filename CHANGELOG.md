@@ -1,3 +1,7 @@
+v9.1.48 (2024-06-14)
+-------------------------
+ * Fix legacy WA components parameters
+
 v9.1.47 (2024-06-10)
 -------------------------
  * Support template component types header/* and body/*
