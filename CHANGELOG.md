@@ -1,3 +1,7 @@
+v9.1.49 (2024-06-17)
+-------------------------
+ * Adjust WA template to be send if present even when we have attachments
+
 v9.1.48 (2024-06-14)
 -------------------------
  * Fix legacy WA components parameters
