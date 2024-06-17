@@ -311,15 +311,24 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 	var payloadAudio whatsapp.SendRequest
 
-	for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
+	// do we have a template?
+	if msg.Templating() != nil {
 		payload := whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
+		payload.Type = "template"
+		payload.Template = whatsapp.GetTemplatePayload(msg.Templating())
 
-		if len(msg.Attachments()) == 0 {
-			// do we have a template?
-			if msg.Templating() != nil {
-				payload.Type = "template"
-				payload.Template = whatsapp.GetTemplatePayload(msg.Templating())
-			} else {
+		err := h.requestD3C(payload, accessToken, res, sendURL, clog)
+		if err != nil {
+			return err
+		}
+
+	} else {
+
+		for i := 0; i < len(msgParts)+len(msg.Attachments()); i++ {
+			payload := whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path()}
+
+			if len(msg.Attachments()) == 0 {
+
 				if i < (len(msgParts) + len(msg.Attachments()) - 1) {
 					// this is still a msg part
 					text := &whatsapp.Text{PreviewURL: false}
@@ -395,169 +404,169 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 						payload.Text = text
 					}
 				}
-			}
 
-		} else if i < len(msg.Attachments()) && (len(qrs) == 0 || len(qrs) > 3) {
-			attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
-			attType = strings.Split(attType, "/")[0]
-			if attType == "application" {
-				attType = "document"
-			}
-			payload.Type = attType
-			media := whatsapp.Media{Link: attURL}
-
-			if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(msg.QuickReplies()) == 0 {
-				media.Caption = msgParts[i]
-				hasCaption = true
-			}
-
-			if attType == "image" {
-				payload.Image = &media
-			} else if attType == "audio" {
-				payload.Audio = &media
-			} else if attType == "video" {
-				payload.Video = &media
-			} else if attType == "document" {
-				filename, err := utils.BasePathForURL(attURL)
-				if err != nil {
-					filename = ""
+			} else if i < len(msg.Attachments()) && (len(qrs) == 0 || len(qrs) > 3) {
+				attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
+				attType = strings.Split(attType, "/")[0]
+				if attType == "application" {
+					attType = "document"
 				}
-				if filename != "" {
-					media.Filename = filename
-				}
-				payload.Document = &media
-			}
-		} else {
-			if len(qrs) > 0 {
-				payload.Type = "interactive"
-				// if we have more than 10 quick replies, truncate and add channel error
-				if len(qrs) > 10 {
-					clog.Error(courier.NewChannelError("", "", "too many quick replies D3C supports only up to 10 quick replies"))
-					qrs = qrs[:10]
+				payload.Type = attType
+				media := whatsapp.Media{Link: attURL}
+
+				if len(msgParts) == 1 && attType != "audio" && len(msg.Attachments()) == 1 && len(msg.QuickReplies()) == 0 {
+					media.Caption = msgParts[i]
+					hasCaption = true
 				}
 
-				// We can use buttons
-				if len(qrs) <= 3 {
-					interactive := whatsapp.Interactive{Type: "button", Body: struct {
-						Text string "json:\"text\""
-					}{Text: msgParts[i]}}
-
-					if len(msg.Attachments()) > 0 {
-						hasCaption = true
-						attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
-						attType = strings.Split(attType, "/")[0]
-						if attType == "application" {
-							attType = "document"
-						}
-						if attType == "image" {
-							image := whatsapp.Media{
-								Link: attURL,
-							}
-							interactive.Header = &struct {
-								Type     string          "json:\"type\""
-								Text     string          "json:\"text,omitempty\""
-								Video    *whatsapp.Media "json:\"video,omitempty\""
-								Image    *whatsapp.Media "json:\"image,omitempty\""
-								Document *whatsapp.Media "json:\"document,omitempty\""
-							}{Type: "image", Image: &image}
-						} else if attType == "video" {
-							video := whatsapp.Media{
-								Link: attURL,
-							}
-							interactive.Header = &struct {
-								Type     string          "json:\"type\""
-								Text     string          "json:\"text,omitempty\""
-								Video    *whatsapp.Media "json:\"video,omitempty\""
-								Image    *whatsapp.Media "json:\"image,omitempty\""
-								Document *whatsapp.Media "json:\"document,omitempty\""
-							}{Type: "video", Video: &video}
-						} else if attType == "document" {
-							filename, err := utils.BasePathForURL(attURL)
-							if err != nil {
-								return err
-							}
-							document := whatsapp.Media{
-								Link:     attURL,
-								Filename: filename,
-							}
-							interactive.Header = &struct {
-								Type     string          "json:\"type\""
-								Text     string          "json:\"text,omitempty\""
-								Video    *whatsapp.Media "json:\"video,omitempty\""
-								Image    *whatsapp.Media "json:\"image,omitempty\""
-								Document *whatsapp.Media "json:\"document,omitempty\""
-							}{Type: "document", Document: &document}
-						} else if attType == "audio" {
-							payloadAudio = whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &whatsapp.Media{Link: attURL}}
-							err := h.requestD3C(payloadAudio, accessToken, res, sendURL, clog)
-							if err != nil {
-								return nil
-							}
-						} else {
-							interactive.Type = "button"
-							interactive.Body.Text = msgParts[i]
-						}
+				if attType == "image" {
+					payload.Image = &media
+				} else if attType == "audio" {
+					payload.Audio = &media
+				} else if attType == "video" {
+					payload.Video = &media
+				} else if attType == "document" {
+					filename, err := utils.BasePathForURL(attURL)
+					if err != nil {
+						filename = ""
 					}
-
-					btns := make([]whatsapp.Button, len(qrs))
-					for i, qr := range qrs {
-						btns[i] = whatsapp.Button{
-							Type: "reply",
-						}
-						btns[i].Reply.ID = fmt.Sprint(i)
-						btns[i].Reply.Title = qr
+					if filename != "" {
+						media.Filename = filename
 					}
-					interactive.Action = &struct {
-						Button   string             "json:\"button,omitempty\""
-						Sections []whatsapp.Section "json:\"sections,omitempty\""
-						Buttons  []whatsapp.Button  "json:\"buttons,omitempty\""
-					}{Buttons: btns}
-					payload.Interactive = &interactive
-
-				} else {
-					interactive := whatsapp.Interactive{Type: "list", Body: struct {
-						Text string "json:\"text\""
-					}{Text: msgParts[i-len(msg.Attachments())]}}
-
-					section := whatsapp.Section{
-						Rows: make([]whatsapp.SectionRow, len(qrs)),
-					}
-					for i, qr := range qrs {
-						section.Rows[i] = whatsapp.SectionRow{
-							ID:    fmt.Sprint(i),
-							Title: qr,
-						}
-					}
-
-					interactive.Action = &struct {
-						Button   string             "json:\"button,omitempty\""
-						Sections []whatsapp.Section "json:\"sections,omitempty\""
-						Buttons  []whatsapp.Button  "json:\"buttons,omitempty\""
-					}{Button: menuButton, Sections: []whatsapp.Section{
-						section,
-					}}
-
-					payload.Interactive = &interactive
+					payload.Document = &media
 				}
 			} else {
-				// this is still a msg part
-				text := &whatsapp.Text{PreviewURL: false}
-				payload.Type = "text"
-				if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
-					text.PreviewURL = true
+				if len(qrs) > 0 {
+					payload.Type = "interactive"
+					// if we have more than 10 quick replies, truncate and add channel error
+					if len(qrs) > 10 {
+						clog.Error(courier.NewChannelError("", "", "too many quick replies D3C supports only up to 10 quick replies"))
+						qrs = qrs[:10]
+					}
+
+					// We can use buttons
+					if len(qrs) <= 3 {
+						interactive := whatsapp.Interactive{Type: "button", Body: struct {
+							Text string "json:\"text\""
+						}{Text: msgParts[i]}}
+
+						if len(msg.Attachments()) > 0 {
+							hasCaption = true
+							attType, attURL := handlers.SplitAttachment(msg.Attachments()[i])
+							attType = strings.Split(attType, "/")[0]
+							if attType == "application" {
+								attType = "document"
+							}
+							if attType == "image" {
+								image := whatsapp.Media{
+									Link: attURL,
+								}
+								interactive.Header = &struct {
+									Type     string          "json:\"type\""
+									Text     string          "json:\"text,omitempty\""
+									Video    *whatsapp.Media "json:\"video,omitempty\""
+									Image    *whatsapp.Media "json:\"image,omitempty\""
+									Document *whatsapp.Media "json:\"document,omitempty\""
+								}{Type: "image", Image: &image}
+							} else if attType == "video" {
+								video := whatsapp.Media{
+									Link: attURL,
+								}
+								interactive.Header = &struct {
+									Type     string          "json:\"type\""
+									Text     string          "json:\"text,omitempty\""
+									Video    *whatsapp.Media "json:\"video,omitempty\""
+									Image    *whatsapp.Media "json:\"image,omitempty\""
+									Document *whatsapp.Media "json:\"document,omitempty\""
+								}{Type: "video", Video: &video}
+							} else if attType == "document" {
+								filename, err := utils.BasePathForURL(attURL)
+								if err != nil {
+									return err
+								}
+								document := whatsapp.Media{
+									Link:     attURL,
+									Filename: filename,
+								}
+								interactive.Header = &struct {
+									Type     string          "json:\"type\""
+									Text     string          "json:\"text,omitempty\""
+									Video    *whatsapp.Media "json:\"video,omitempty\""
+									Image    *whatsapp.Media "json:\"image,omitempty\""
+									Document *whatsapp.Media "json:\"document,omitempty\""
+								}{Type: "document", Document: &document}
+							} else if attType == "audio" {
+								payloadAudio = whatsapp.SendRequest{MessagingProduct: "whatsapp", RecipientType: "individual", To: msg.URN().Path(), Type: "audio", Audio: &whatsapp.Media{Link: attURL}}
+								err := h.requestD3C(payloadAudio, accessToken, res, sendURL, clog)
+								if err != nil {
+									return nil
+								}
+							} else {
+								interactive.Type = "button"
+								interactive.Body.Text = msgParts[i]
+							}
+						}
+
+						btns := make([]whatsapp.Button, len(qrs))
+						for i, qr := range qrs {
+							btns[i] = whatsapp.Button{
+								Type: "reply",
+							}
+							btns[i].Reply.ID = fmt.Sprint(i)
+							btns[i].Reply.Title = qr
+						}
+						interactive.Action = &struct {
+							Button   string             "json:\"button,omitempty\""
+							Sections []whatsapp.Section "json:\"sections,omitempty\""
+							Buttons  []whatsapp.Button  "json:\"buttons,omitempty\""
+						}{Buttons: btns}
+						payload.Interactive = &interactive
+
+					} else {
+						interactive := whatsapp.Interactive{Type: "list", Body: struct {
+							Text string "json:\"text\""
+						}{Text: msgParts[i-len(msg.Attachments())]}}
+
+						section := whatsapp.Section{
+							Rows: make([]whatsapp.SectionRow, len(qrs)),
+						}
+						for i, qr := range qrs {
+							section.Rows[i] = whatsapp.SectionRow{
+								ID:    fmt.Sprint(i),
+								Title: qr,
+							}
+						}
+
+						interactive.Action = &struct {
+							Button   string             "json:\"button,omitempty\""
+							Sections []whatsapp.Section "json:\"sections,omitempty\""
+							Buttons  []whatsapp.Button  "json:\"buttons,omitempty\""
+						}{Button: menuButton, Sections: []whatsapp.Section{
+							section,
+						}}
+
+						payload.Interactive = &interactive
+					}
+				} else {
+					// this is still a msg part
+					text := &whatsapp.Text{PreviewURL: false}
+					payload.Type = "text"
+					if strings.Contains(msgParts[i-len(msg.Attachments())], "https://") || strings.Contains(msgParts[i-len(msg.Attachments())], "http://") {
+						text.PreviewURL = true
+					}
+					text.Body = msgParts[i-len(msg.Attachments())]
+					payload.Text = text
 				}
-				text.Body = msgParts[i-len(msg.Attachments())]
-				payload.Text = text
 			}
-		}
 
-		err := h.requestD3C(payload, accessToken, res, sendURL, clog)
-		if err != nil {
-			return err
-		}
+			err := h.requestD3C(payload, accessToken, res, sendURL, clog)
+			if err != nil {
+				return err
+			}
 
-		if hasCaption {
-			break
+			if hasCaption {
+				break
+			}
 		}
 	}
 
