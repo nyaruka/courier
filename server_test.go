@@ -60,7 +60,7 @@ func TestServerURLs(t *testing.T) {
 	// can't access status page without auth
 	statusCode, respBody = request("GET", "http://localhost:8081/status", "", "")
 	assert.Equal(t, 401, statusCode)
-	assert.Contains(t, respBody, "Unauthorized")
+	assert.Equal(t, respBody, "Unauthorized")
 
 	// can access status page without auth
 	statusCode, respBody = request("GET", "http://localhost:8081/status", "admin", "password123")
@@ -70,12 +70,12 @@ func TestServerURLs(t *testing.T) {
 	// can't access status page with wrong method
 	statusCode, respBody = request("POST", "http://localhost:8081/status", "admin", "password123")
 	assert.Equal(t, 405, statusCode)
-	assert.Contains(t, respBody, "Method Not Allowed")
+	assert.Equal(t, respBody, "{\"message\":\"Method Not Allowed\",\"data\":[{\"type\":\"error\",\"error\":\"method not allowed: POST\"}]}\n")
 
 	// can't access non-existent page
 	statusCode, respBody = request("POST", "http://localhost:8081/nothere", "admin", "password123")
 	assert.Equal(t, 404, statusCode)
-	assert.Contains(t, respBody, "not found")
+	assert.Equal(t, respBody, "{\"message\":\"Not Found\",\"data\":[{\"type\":\"error\",\"error\":\"not found: /nothere\"}]}\n")
 }
 
 func TestIncoming(t *testing.T) {
