@@ -1,3 +1,7 @@
+v9.1.50 (2024-06-20)
+-------------------------
+ * Update chi library
+
 v9.1.49 (2024-06-17)
 -------------------------
  * Adjust WA template to be send if present even when we have attachments
