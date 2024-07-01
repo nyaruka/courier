@@ -3,20 +3,20 @@ module github.com/nyaruka/courier
 go 1.22
 
 require (
-	github.com/antchfx/xmlquery v1.4.0
-	github.com/aws/aws-sdk-go v1.54.4
+	github.com/antchfx/xmlquery v1.4.1
+	github.com/aws/aws-sdk-go v1.54.12
 	github.com/buger/jsonparser v1.1.1
 	github.com/dghubble/oauth1 v0.7.3
 	github.com/getsentry/sentry-go v0.28.1
-	github.com/go-chi/chi/v5 v5.0.13
+	github.com/go-chi/chi/v5 v5.1.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/gomodule/redigo v1.9.2
-	github.com/gorilla/schema v1.4.0
+	github.com/gorilla/schema v1.4.1
 	github.com/h2non/filetype v1.1.3
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
-	github.com/nyaruka/gocommon v1.55.5
+	github.com/nyaruka/gocommon v1.55.6
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.8.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -29,7 +29,7 @@ require (
 )
 
 require (
-	github.com/antchfx/xpath v1.3.0 // indirect
+	github.com/antchfx/xpath v1.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.4 // indirect
@@ -49,7 +49,7 @@ require (
 	github.com/nyaruka/null/v2 v2.0.3 // indirect
 	github.com/nyaruka/phonenumbers v1.3.6 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/samber/lo v1.39.0 // indirect
+	github.com/samber/lo v1.44.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	golang.org/x/crypto v0.24.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
