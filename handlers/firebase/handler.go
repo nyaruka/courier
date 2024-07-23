@@ -1,24 +1,25 @@
 package firebase
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/buger/jsonparser"
+	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/messaging"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
-	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"google.golang.org/api/option"
 )
 
 const (
 	configTitle        = "FCM_TITLE"
 	configNotification = "FCM_NOTIFICATION"
 	configKey          = "FCM_KEY"
+	configAuthJSON     = "FCM_AUTH_JSON"
 )
 
 var (
@@ -143,71 +144,48 @@ type mtNotification struct {
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
 	fcmKey := msg.Channel().StringConfigForKey(configKey, "")
-	if title == "" || fcmKey == "" {
+	fcmAuthJSON := msg.Channel().StringConfigForKey(configAuthJSON, "")
+	if fcmAuthJSON == "" && (title == "" || fcmKey == "") {
 		return courier.ErrChannelConfig
+	}
+
+	app, err := firebase.NewApp(ctx, nil, option.WithCredentialsJSON([]byte(fcmAuthJSON)))
+	if err != nil {
+		return err
+	}
+
+	fcmClient, err := app.Messaging(ctx)
+	if err != nil {
+		return err
 	}
 
 	configNotification := msg.Channel().ConfigForKey(configNotification, false)
 	notification, _ := configNotification.(bool)
+
 	msgParts := make([]string, 0)
 	if msg.Text() != "" {
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	}
 
-	for i, part := range msgParts {
-		payload := mtPayload{}
+	for _, part := range msgParts {
+		payload := messaging.Message{}
 
-		payload.Data.Type = "rapidpro"
-		payload.Data.Title = title
-		payload.Data.Message = part
-		payload.Data.MessageID = int64(msg.ID())
-		payload.Data.SessionStatus = msg.SessionStatus()
+		payload.Data = map[string]string{"type": "rapidpro", "title": title, "message": part, "message_id": msg.ID().String(), "session_status": msg.SessionStatus()}
 
-		// include any quick replies on the last piece we send
-		if i == len(msgParts)-1 {
-			payload.Data.QuickReplies = msg.QuickReplies()
-		}
-
-		payload.To = msg.URNAuth()
-		payload.Priority = "high"
+		payload.Token = msg.URNAuth()
+		payload.Android.Priority = "high"
 
 		if notification {
-			payload.Notification = &mtNotification{
+			payload.Notification = &messaging.Notification{
 				Title: title,
 				Body:  part,
 			}
-			payload.ContentAvailable = true
 		}
 
-		jsonPayload := jsonx.MustMarshal(payload)
-
-		req, err := http.NewRequest(http.MethodPost, sendURL, bytes.NewReader(jsonPayload))
-		if err != nil {
-			return err
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json")
-		req.Header.Set("Authorization", fmt.Sprintf("key=%s", fcmKey))
-
-		resp, respBody, err := h.RequestHTTP(req, clog)
-		if err != nil || resp.StatusCode/100 == 5 {
-			return courier.ErrConnectionFailed
-		} else if resp.StatusCode/100 != 2 {
-			return courier.ErrResponseStatus
-		}
-
-		// was this successful
-		success, _ := jsonparser.GetInt(respBody, "success")
-		if success != 1 {
-			return courier.ErrResponseUnexpected
-		}
-
-		externalID, err := jsonparser.GetInt(respBody, "multicast_id")
+		_, err := fcmClient.Send(ctx, &payload)
 		if err != nil {
 			return courier.ErrResponseUnexpected
 		}
-		res.AddExternalID(fmt.Sprintf("%d", externalID))
 
 	}
 
