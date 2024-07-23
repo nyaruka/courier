@@ -93,6 +93,11 @@ func TestIncoming(t *testing.T) {
 	body, _ := io.ReadAll(resp.Body)
 	assert.Contains(t, string(body), "missing from or text")
 
+	assert.Len(t, mb.WrittenChannelLogs(), 1)
+	clog := mb.WrittenChannelLogs()[0]
+	assert.False(t, clog.Attached())
+	assert.Len(t, clog.HTTPLogs(), 1)
+
 	req, _ := http.NewRequest("GET", "http://localhost:8081/c/mck/e4bb1578-29da-4fa5-a214-9da19dd24230/receive?from=2065551212&text=hello", nil)
 	req.Header.Set("Cookie", "secret")
 	resp, err = http.DefaultClient.Do(req)
@@ -102,6 +107,11 @@ func TestIncoming(t *testing.T) {
 	defer resp.Body.Close()
 	body, _ = io.ReadAll(resp.Body)
 	assert.Contains(t, string(body), "ok")
+
+	assert.Len(t, mb.WrittenChannelLogs(), 2)
+	clog = mb.WrittenChannelLogs()[1]
+	assert.True(t, clog.Attached())
+	assert.Len(t, clog.HTTPLogs(), 1)
 }
 
 func TestOutgoing(t *testing.T) {
@@ -153,7 +163,7 @@ func TestOutgoing(t *testing.T) {
 	assert.Len(t, mb.WrittenChannelLogs(), 1)
 	clog := mb.WrittenChannelLogs()[0]
 	assert.Equal(t, []*courier.ChannelError{courier.NewChannelError("seeds", "", "contains ********** seeds")}, clog.Errors())
-
+	assert.True(t, clog.Attached())
 	assert.Len(t, clog.HTTPLogs(), 1)
 
 	hlog := clog.HTTPLogs()[0]

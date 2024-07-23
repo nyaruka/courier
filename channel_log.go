@@ -134,8 +134,8 @@ func newChannelLog(t ChannelLogType, ch Channel, r *httpx.Recorder, attached boo
 		channel:   ch,
 		recorder:  r,
 		createdOn: dates.Now(),
-
-		redactor: stringsx.NewRedactor("**********", redactVals...),
+		attached:  attached,
+		redactor:  stringsx.NewRedactor("**********", redactVals...),
 	}
 }
 
