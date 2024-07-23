@@ -1,3 +1,7 @@
+v9.2.1 (2024-07-23)
+-------------------------
+ * Fix unnecessarily writing send channel logs to the database
+
 v9.2.0 (2024-07-17)
 -------------------------
  * Update README
