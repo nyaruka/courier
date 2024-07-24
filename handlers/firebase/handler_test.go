@@ -36,7 +36,7 @@ var testChannels = []courier.Channel{
 		map[string]any{
 			configKey:   "FCMKey",
 			configTitle: "FCMTitle",
-			configAuthJSON: `{
+			configCredentialsFile: `{
                 "type": "service_account",
                 "project_id": "foo-project-id",
                 "private_key_id": "123",
@@ -56,7 +56,7 @@ var testChannels = []courier.Channel{
 			configKey:          "FCMKey",
 			configNotification: true,
 			configTitle:        "FCMTitle",
-			configAuthJSON: `{
+			configCredentialsFile: `{
                 "type": "service_account",
                 "project_id": "bar-project-id",
                 "private_key_id": "123",

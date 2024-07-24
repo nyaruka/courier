@@ -21,14 +21,13 @@ import (
 )
 
 const (
-	configTitle        = "FCM_TITLE"
-	configNotification = "FCM_NOTIFICATION"
-	configKey          = "FCM_KEY"
-	configAuthJSON     = "FCM_AUTH_JSON"
+	configTitle           = "FCM_TITLE"
+	configNotification    = "FCM_NOTIFICATION"
+	configKey             = "FCM_KEY"
+	configCredentialsFile = "FCM_CREDENTIALS_JSON"
 )
 
 var (
-	sendURL      = "https://fcm.googleapis.com/fcm/send"
 	maxMsgLength = 1024
 )
 
@@ -154,14 +153,14 @@ type mtNotification struct {
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
-	fcmAuthJSONString := msg.Channel().StringConfigForKey(configAuthJSON, "")
-	if fcmAuthJSONString == "" {
+	credentialsFile := msg.Channel().StringConfigForKey(configCredentialsFile, "")
+	if credentialsFile == "" {
 		return courier.ErrChannelConfig
 	}
 
-	var fcmAuthJSON map[string]string
+	var credentialsFileJSON map[string]string
 
-	err := json.Unmarshal([]byte(fcmAuthJSONString), &fcmAuthJSON)
+	err := json.Unmarshal([]byte(credentialsFile), &credentialsFileJSON)
 	if err != nil {
 		return courier.ErrChannelConfig
 	}
@@ -177,7 +176,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	if msg.Text() != "" {
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	}
-	sendURL := fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", fcmAuthJSON["project_id"])
+	sendURL := fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", credentialsFileJSON["project_id"])
 
 	for i, part := range msgParts {
 		payload := mtPayload{}
@@ -226,10 +225,10 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			return courier.ErrResponseUnexpected
 		}
 
-		if !strings.Contains(responseName, fmt.Sprintf("projects/%s/messages/", fcmAuthJSON["project_id"])) {
+		if !strings.Contains(responseName, fmt.Sprintf("projects/%s/messages/", credentialsFileJSON["project_id"])) {
 			return courier.ErrResponseUnexpected
 		}
-		externalID := strings.TrimLeft(responseName, fmt.Sprintf("projects/%s/messages/", fcmAuthJSON["project_id"]))
+		externalID := strings.TrimLeft(responseName, fmt.Sprintf("projects/%s/messages/", credentialsFileJSON["project_id"]))
 		if externalID == "" {
 			return courier.ErrResponseUnexpected
 		}
@@ -275,21 +274,21 @@ func (h *handler) getAccessToken(ctx context.Context, channel courier.Channel, c
 // fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
 func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel, clog *courier.ChannelLog) (string, time.Duration, error) {
 
-	fcmAuthJSONString := channel.StringConfigForKey(configAuthJSON, "")
-	if fcmAuthJSONString == "" {
+	credentialsFile := channel.StringConfigForKey(configCredentialsFile, "")
+	if credentialsFile == "" {
 		return "", 0, courier.ErrChannelConfig
 	}
 
-	var fcmAuthJSON map[string]string
+	var credentialsFileJSON map[string]string
 
-	err := json.Unmarshal([]byte(fcmAuthJSONString), &fcmAuthJSON)
+	err := json.Unmarshal([]byte(credentialsFile), &credentialsFileJSON)
 	if err != nil {
 		return "", 0, courier.ErrChannelConfig
 	}
 
-	sendURL := fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", fcmAuthJSON["project_id"])
+	sendURL := fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", credentialsFileJSON["project_id"])
 
-	ts, err := idtoken.NewTokenSource(ctx, sendURL, option.WithCredentialsJSON([]byte(fcmAuthJSONString)))
+	ts, err := idtoken.NewTokenSource(ctx, sendURL, option.WithCredentialsJSON([]byte(credentialsFile)))
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to create NewTokenSource: %w", err)
 	}
