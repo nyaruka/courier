@@ -36,6 +36,19 @@ var testChannels = []courier.Channel{
 		map[string]any{
 			configKey:   "FCMKey",
 			configTitle: "FCMTitle",
+			configAuthJSON: `{
+                "type": "service_account",
+                "project_id": "foo-project-id",
+                "private_key_id": "123",
+                "private_key": "BLAH",
+                "client_email": "foo@example.com",
+                "client_id": "123123",
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                "client_x509_cert_url": "",
+                "universe_domain": "googleapis.com"
+            }`,
 		}),
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCM", "1234", "",
 		[]string{urns.Firebase.Prefix},
@@ -43,6 +56,19 @@ var testChannels = []courier.Channel{
 			configKey:          "FCMKey",
 			configNotification: true,
 			configTitle:        "FCMTitle",
+			configAuthJSON: `{
+                "type": "service_account",
+                "project_id": "bar-project-id",
+                "private_key_id": "123",
+                "private_key": "BLAH",
+                "client_email": "foo@example.com",
+                "client_id": "123123",
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                "client_x509_cert_url": "",
+                "universe_domain": "googleapis.com"
+            }`,
 		}),
 }
 
@@ -104,15 +130,15 @@ var notificationSendTestCases = []OutgoingTestCase{
 		MsgURN:     "fcm:250788123123",
 		MsgURNAuth: "auth1",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://fcm.googleapis.com/fcm/send": {
-				httpx.NewMockResponse(200, nil, []byte(`{"success":1, "multicast_id": 123456}`)),
+			"https://fcm.googleapis.com/v1/projects/bar-project-id/messages:send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"name":"projects/bar-project-id/messages/123456-a"}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "key=FCMKey"},
-			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"notification":{"title":"FCMTitle","body":"Simple Message"},"content_available":true,"to":"auth1","priority":"high"}`,
+			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"notification":{"title":"FCMTitle","body":"Simple Message"},"token":"auth1","android":{"priority":"high"}}`,
 		}},
-		ExpectedExtIDs: []string{"123456"},
+		ExpectedExtIDs: []string{"123456-a"},
 	},
 }
 
@@ -123,15 +149,15 @@ var sendTestCases = []OutgoingTestCase{
 		MsgURN:     "fcm:250788123123",
 		MsgURNAuth: "auth1",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://fcm.googleapis.com/fcm/send": {
-				httpx.NewMockResponse(200, nil, []byte(`{"success":1, "multicast_id": 123456}`)),
+			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"name":"projects/foo-project-id/messages/123456-a"}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "key=FCMKey"},
-			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
+			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"token":"auth1","android":{"priority":"high"}}`,
 		}},
-		ExpectedExtIDs: []string{"123456"},
+		ExpectedExtIDs: []string{"123456-a"},
 	},
 	{
 		Label:      "Long Message",
@@ -139,22 +165,22 @@ var sendTestCases = []OutgoingTestCase{
 		MsgURN:     "fcm:250788123123",
 		MsgURNAuth: "auth1",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://fcm.googleapis.com/fcm/send": {
-				httpx.NewMockResponse(200, nil, []byte(`{"success":1, "multicast_id": 123456}`)),
-				httpx.NewMockResponse(200, nil, []byte(`{"success":1, "multicast_id": 123456}`)),
+			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"name":"projects/foo-project-id/messages/123456-a"}`)),
+				httpx.NewMockResponse(200, nil, []byte(`{"name":"projects/foo-project-id/messages/123456-a"}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{
 			{
-				Headers: map[string]string{"Authorization": "key=FCMKey"},
-				Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis augue vel placerat congue.\nEtiam nec tempus enim. Cras placerat at est vel suscipit. Duis quis faucibus metus, non elementum tortor.\nPellentesque posuere ullamcorper metus auctor venenatis. Proin eget hendrerit dui. Sed eget massa nec mauris consequat pretium.\nPraesent mattis arcu tortor, ac aliquet turpis tincidunt eu.\n\nFusce ut lacinia augue. Vestibulum felis nisi, porta ut est condimentum, condimentum volutpat libero.\nSuspendisse a elit venenatis, condimentum sem at, ultricies mauris. Morbi interdum sem id tempor tristique.\nUt tincidunt massa eu purus lacinia sodales a volutpat neque. Cras dolor quam, eleifend a rhoncus quis, sodales nec purus.\nVivamus justo dolor, gravida at quam eu, hendrerit rutrum justo. Sed hendrerit nisi vitae nisl ornare tristique.\nProin vulputate id justo non aliquet.\n\nDuis eu arcu pharetra, laoreet nunc at, pharetra sapien. Nulla eu libero diam.\nDonec euismod dapibus ligula, sit amet hendrerit neque vulput","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
+				Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+				Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas convallis augue vel placerat congue.\nEtiam nec tempus enim. Cras placerat at est vel suscipit. Duis quis faucibus metus, non elementum tortor.\nPellentesque posuere ullamcorper metus auctor venenatis. Proin eget hendrerit dui. Sed eget massa nec mauris consequat pretium.\nPraesent mattis arcu tortor, ac aliquet turpis tincidunt eu.\n\nFusce ut lacinia augue. Vestibulum felis nisi, porta ut est condimentum, condimentum volutpat libero.\nSuspendisse a elit venenatis, condimentum sem at, ultricies mauris. Morbi interdum sem id tempor tristique.\nUt tincidunt massa eu purus lacinia sodales a volutpat neque. Cras dolor quam, eleifend a rhoncus quis, sodales nec purus.\nVivamus justo dolor, gravida at quam eu, hendrerit rutrum justo. Sed hendrerit nisi vitae nisl ornare tristique.\nProin vulputate id justo non aliquet.\n\nDuis eu arcu pharetra, laoreet nunc at, pharetra sapien. Nulla eu libero diam.\nDonec euismod dapibus ligula, sit amet hendrerit neque vulput","message_id":10,"session_status":""},"token":"auth1","android":{"priority":"high"}}`,
 			},
 			{
-				Headers: map[string]string{"Authorization": "key=FCMKey"},
-				Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"ate ac.","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
+				Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+				Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"ate ac.","message_id":10,"session_status":""},"token":"auth1","android":{"priority":"high"}}`,
 			},
 		},
-		ExpectedExtIDs: []string{"123456", "123456"},
+		ExpectedExtIDs: []string{"123456-a", "123456-a"},
 	},
 	{
 		Label:           "Quick Reply",
@@ -164,15 +190,15 @@ var sendTestCases = []OutgoingTestCase{
 		MsgQuickReplies: []string{"yes", "no"},
 		MsgAttachments:  []string{"image/jpeg:https://foo.bar"},
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://fcm.googleapis.com/fcm/send": {
-				httpx.NewMockResponse(200, nil, []byte(`{"success":1, "multicast_id": 123456}`)),
+			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"name":"projects/foo-project-id/messages/123456-a"}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "key=FCMKey"},
-			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":10,"session_status":"","quick_replies":["yes","no"]},"content_available":false,"to":"auth1","priority":"high"}`,
+			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message\nhttps://foo.bar","message_id":10,"session_status":"","quick_replies":["yes","no"]},"token":"auth1","android":{"priority":"high"}}`,
 		}},
-		ExpectedExtIDs: []string{"123456"},
+		ExpectedExtIDs: []string{"123456-a"},
 	},
 	{
 		Label:      "Error",
@@ -180,13 +206,13 @@ var sendTestCases = []OutgoingTestCase{
 		MsgURN:     "fcm:250788123123",
 		MsgURNAuth: "auth1",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://fcm.googleapis.com/fcm/send": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "success": 0 }`)),
+			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"name":""}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "key=FCMKey"},
-			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
+			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"token":"auth1","android":{"priority":"high"}}`,
 		}},
 		ExpectedError: courier.ErrResponseUnexpected,
 	},
@@ -196,13 +222,13 @@ var sendTestCases = []OutgoingTestCase{
 		MsgURN:     "fcm:250788123123",
 		MsgURNAuth: "auth1",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://fcm.googleapis.com/fcm/send": {
-				httpx.NewMockResponse(200, nil, []byte(`{ "success": 1 }`)),
+			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {
+				httpx.NewMockResponse(200, nil, []byte(`{"name":"blah"}`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "key=FCMKey"},
-			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
+			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"token":"auth1","android":{"priority":"high"}}`,
 		}},
 		ExpectedError: courier.ErrResponseUnexpected,
 	},
@@ -212,19 +238,26 @@ var sendTestCases = []OutgoingTestCase{
 		MsgURN:     "fcm:250788123123",
 		MsgURNAuth: "auth1",
 		MockResponses: map[string][]*httpx.MockResponse{
-			"https://fcm.googleapis.com/fcm/send": {
-				httpx.NewMockResponse(500, nil, []byte(`{ "success": 0 }`)),
+			"https://fcm.googleapis.com/v1/projects/foo-project-id/messages:send": {
+				httpx.NewMockResponse(500, nil, []byte(`{ "error": "error" }`)),
 			},
 		},
 		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "key=FCMKey"},
-			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"content_available":false,"to":"auth1","priority":"high"}`,
+			Headers: map[string]string{"Authorization": "Bearer FCMToken"},
+			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Error","message_id":10,"session_status":""},"token":"auth1","android":{"priority":"high"}}`,
 		}},
 		ExpectedError: courier.ErrConnectionFailed,
 	},
 }
 
+func setupBackend(mb *test.MockBackend) {
+	// ensure there's a cached access token
+	rc := mb.RedisPool().Get()
+	defer rc.Close()
+	rc.Do("SET", "channel-token:8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCMToken")
+}
+
 func TestOutgoing(t *testing.T) {
-	RunOutgoingTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"FCMKey"}, nil)
-	RunOutgoingTestCases(t, testChannels[1], newHandler(), notificationSendTestCases, []string{"FCMKey"}, nil)
+	RunOutgoingTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"FCMKey"}, setupBackend)
+	RunOutgoingTestCases(t, testChannels[1], newHandler(), notificationSendTestCases, []string{"FCMKey"}, setupBackend)
 }

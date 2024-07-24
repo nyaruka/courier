@@ -6,19 +6,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/buger/jsonparser"
+	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/courier"
 	"github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"google.golang.org/api/idtoken"
+	"google.golang.org/api/option"
 )
 
 const (
 	configTitle        = "FCM_TITLE"
 	configNotification = "FCM_NOTIFICATION"
 	configKey          = "FCM_KEY"
+	configAuthJSON     = "FCM_AUTH_JSON"
 )
 
 var (
@@ -32,10 +38,15 @@ func init() {
 
 type handler struct {
 	handlers.BaseHandler
+
+	fetchTokenMutex sync.Mutex
 }
 
 func newHandler() courier.ChannelHandler {
-	return &handler{handlers.NewBaseHandler(courier.ChannelType("FCM"), "Firebase", handlers.WithRedactConfigKeys(configKey))}
+	return &handler{
+		BaseHandler:     handlers.NewBaseHandler(courier.ChannelType("FCM"), "Firebase", handlers.WithRedactConfigKeys(configKey)),
+		fetchTokenMutex: sync.Mutex{},
+	}
 }
 
 func (h *handler) Initialize(s courier.Server) error {
@@ -129,10 +140,11 @@ type mtPayload struct {
 		SessionStatus string   `json:"session_status"`
 		QuickReplies  []string `json:"quick_replies,omitempty"`
 	} `json:"data"`
-	Notification     *mtNotification `json:"notification,omitempty"`
-	ContentAvailable bool            `json:"content_available"`
-	To               string          `json:"to"`
-	Priority         string          `json:"priority"`
+	Notification *mtNotification `json:"notification,omitempty"`
+	Token        string          `json:"token"`
+	Android      struct {
+		Priority string `json:"priority"`
+	} `json:"android,omitempty"`
 }
 
 type mtNotification struct {
@@ -142,9 +154,21 @@ type mtNotification struct {
 
 func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.SendResult, clog *courier.ChannelLog) error {
 	title := msg.Channel().StringConfigForKey(configTitle, "")
-	fcmKey := msg.Channel().StringConfigForKey(configKey, "")
-	if title == "" || fcmKey == "" {
+	fcmAuthJSONString := msg.Channel().StringConfigForKey(configAuthJSON, "")
+	if fcmAuthJSONString == "" {
 		return courier.ErrChannelConfig
+	}
+
+	var fcmAuthJSON map[string]string
+
+	err := json.Unmarshal([]byte(fcmAuthJSONString), &fcmAuthJSON)
+	if err != nil {
+		return courier.ErrChannelConfig
+	}
+
+	accessToken, err := h.getAccessToken(ctx, msg.Channel(), clog)
+	if err != nil {
+		return err
 	}
 
 	configNotification := msg.Channel().ConfigForKey(configNotification, false)
@@ -153,6 +177,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 	if msg.Text() != "" {
 		msgParts = handlers.SplitMsgByChannel(msg.Channel(), handlers.GetTextAndAttachments(msg), maxMsgLength)
 	}
+	sendURL := fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", fcmAuthJSON["project_id"])
 
 	for i, part := range msgParts {
 		payload := mtPayload{}
@@ -168,15 +193,14 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			payload.Data.QuickReplies = msg.QuickReplies()
 		}
 
-		payload.To = msg.URNAuth()
-		payload.Priority = "high"
+		payload.Token = msg.URNAuth()
+		payload.Android.Priority = "high"
 
 		if notification {
 			payload.Notification = &mtNotification{
 				Title: title,
 				Body:  part,
 			}
-			payload.ContentAvailable = true
 		}
 
 		jsonPayload := jsonx.MustMarshal(payload)
@@ -188,7 +212,7 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
-		req.Header.Set("Authorization", fmt.Sprintf("key=%s", fcmKey))
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 
 		resp, respBody, err := h.RequestHTTP(req, clog)
 		if err != nil || resp.StatusCode/100 == 5 {
@@ -197,19 +221,83 @@ func (h *handler) Send(ctx context.Context, msg courier.MsgOut, res *courier.Sen
 			return courier.ErrResponseStatus
 		}
 
-		// was this successful
-		success, _ := jsonparser.GetInt(respBody, "success")
-		if success != 1 {
-			return courier.ErrResponseUnexpected
-		}
-
-		externalID, err := jsonparser.GetInt(respBody, "multicast_id")
+		responseName, err := jsonparser.GetString(respBody, "name")
 		if err != nil {
 			return courier.ErrResponseUnexpected
 		}
-		res.AddExternalID(fmt.Sprintf("%d", externalID))
+
+		if !strings.Contains(responseName, fmt.Sprintf("projects/%s/messages/", fcmAuthJSON["project_id"])) {
+			return courier.ErrResponseUnexpected
+		}
+		externalID := strings.TrimLeft(responseName, fmt.Sprintf("projects/%s/messages/", fcmAuthJSON["project_id"]))
+		if externalID == "" {
+			return courier.ErrResponseUnexpected
+		}
+
+		res.AddExternalID(externalID)
 
 	}
 
 	return nil
+}
+
+func (h *handler) getAccessToken(ctx context.Context, channel courier.Channel, clog *courier.ChannelLog) (string, error) {
+	rc := h.Backend().RedisPool().Get()
+	defer rc.Close()
+
+	tokenKey := fmt.Sprintf("channel-token:%s", channel.UUID())
+
+	h.fetchTokenMutex.Lock()
+	defer h.fetchTokenMutex.Unlock()
+
+	token, err := redis.String(rc.Do("GET", tokenKey))
+	if err != nil && err != redis.ErrNil {
+		return "", fmt.Errorf("error reading cached access token: %w", err)
+	}
+
+	if token != "" {
+		return token, nil
+	}
+
+	token, expires, err := h.fetchAccessToken(ctx, channel, clog)
+	if err != nil {
+		return "", fmt.Errorf("error fetching new access token: %w", err)
+	}
+
+	_, err = rc.Do("SET", tokenKey, token, "EX", int(expires/time.Second))
+	if err != nil {
+		return "", fmt.Errorf("error updating cached access token: %w", err)
+	}
+
+	return token, nil
+}
+
+// fetchAccessToken tries to fetch a new token for our channel, setting the result in redis
+func (h *handler) fetchAccessToken(ctx context.Context, channel courier.Channel, clog *courier.ChannelLog) (string, time.Duration, error) {
+
+	fcmAuthJSONString := channel.StringConfigForKey(configAuthJSON, "")
+	if fcmAuthJSONString == "" {
+		return "", 0, courier.ErrChannelConfig
+	}
+
+	var fcmAuthJSON map[string]string
+
+	err := json.Unmarshal([]byte(fcmAuthJSONString), &fcmAuthJSON)
+	if err != nil {
+		return "", 0, courier.ErrChannelConfig
+	}
+
+	sendURL := fmt.Sprintf("https://fcm.googleapis.com/v1/projects/%s/messages:send", fcmAuthJSON["project_id"])
+
+	ts, err := idtoken.NewTokenSource(ctx, sendURL, option.WithCredentialsJSON([]byte(fcmAuthJSONString)))
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to create NewTokenSource: %w", err)
+	}
+
+	token, err := ts.Token()
+	if err != nil {
+		return "", 0, err
+	}
+
+	return token.AccessToken, token.Expiry.UTC().Sub(time.Now().UTC()), nil
 }
