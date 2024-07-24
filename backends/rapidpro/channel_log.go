@@ -56,7 +56,7 @@ type channelError struct {
 }
 
 // queues the passed in channel log to a writer
-func queueChannelLog(ctx context.Context, b *backend, clog *courier.ChannelLog) {
+func queueChannelLog(b *backend, clog *courier.ChannelLog) {
 	log := slog.With("log_uuid", clog.UUID(), "log_type", clog.Type(), "channel_uuid", clog.Channel().UUID())
 	dbChan := clog.Channel().(*Channel)
 
@@ -119,7 +119,7 @@ type DBLogWriter struct {
 
 func NewDBLogWriter(db *sqlx.DB, wg *sync.WaitGroup) *DBLogWriter {
 	return &DBLogWriter{
-		Batcher: syncx.NewBatcher[*dbChannelLog](func(batch []*dbChannelLog) {
+		Batcher: syncx.NewBatcher(func(batch []*dbChannelLog) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel()
 
@@ -155,7 +155,7 @@ type StorageLogWriter struct {
 
 func NewStorageLogWriter(st storage.Storage, wg *sync.WaitGroup) *StorageLogWriter {
 	return &StorageLogWriter{
-		Batcher: syncx.NewBatcher[*stChannelLog](func(batch []*stChannelLog) {
+		Batcher: syncx.NewBatcher(func(batch []*stChannelLog) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel()
 

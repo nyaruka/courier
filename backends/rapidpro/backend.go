@@ -641,11 +641,7 @@ func (b *backend) WriteChannelEvent(ctx context.Context, event courier.ChannelEv
 
 // WriteChannelLog persists the passed in log to our database, for rapidpro we swallow all errors, logging isn't critical
 func (b *backend) WriteChannelLog(ctx context.Context, clog *courier.ChannelLog) error {
-	timeout, cancel := context.WithTimeout(ctx, backendTimeout)
-	defer cancel()
-
-	queueChannelLog(timeout, b, clog)
-
+	queueChannelLog(b, clog)
 	return nil
 }
 
