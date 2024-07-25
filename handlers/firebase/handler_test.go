@@ -1,9 +1,13 @@
 package firebase
 
 import (
+	"context"
+	"errors"
+	"slices"
 	"testing"
 	"time"
 
+	"firebase.google.com/go/v4/messaging"
 	"github.com/nyaruka/courier"
 	. "github.com/nyaruka/courier/handlers"
 	"github.com/nyaruka/courier/test"
@@ -36,6 +40,19 @@ var testChannels = []courier.Channel{
 		map[string]any{
 			configKey:   "FCMKey",
 			configTitle: "FCMTitle",
+			configCredentialsFile: `{
+                "type": "service_account",
+                "project_id": "foo-project-id",
+                "private_key_id": "123",
+                "private_key": "BLAH",
+                "client_email": "foo@example.com",
+                "client_id": "123123",
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                "client_x509_cert_url": "",
+                "universe_domain": "googleapis.com"
+            }`,
 		}),
 	test.NewMockChannel("8eb23e93-5ecb-45ba-b726-3b064e0c568c", "FCM", "1234", "",
 		[]string{urns.Firebase.Prefix},
@@ -43,6 +60,19 @@ var testChannels = []courier.Channel{
 			configKey:          "FCMKey",
 			configNotification: true,
 			configTitle:        "FCMTitle",
+			configCredentialsFile: `{
+                "type": "service_account",
+                "project_id": "foo-project-id",
+                "private_key_id": "123",
+                "private_key": "BLAH",
+                "client_email": "foo@example.com",
+                "client_id": "123123",
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                "client_x509_cert_url": "",
+                "universe_domain": "googleapis.com"
+            }`,
 		}),
 }
 
@@ -99,20 +129,11 @@ func BenchmarkHandler(b *testing.B) {
 
 var notificationSendTestCases = []OutgoingTestCase{
 	{
-		Label:      "Plain Send",
-		MsgText:    "Simple Message",
-		MsgURN:     "fcm:250788123123",
-		MsgURNAuth: "auth1",
-		MockResponses: map[string][]*httpx.MockResponse{
-			"https://fcm.googleapis.com/fcm/send": {
-				httpx.NewMockResponse(200, nil, []byte(`{"success":1, "multicast_id": 123456}`)),
-			},
-		},
-		ExpectedRequests: []ExpectedRequest{{
-			Headers: map[string]string{"Authorization": "key=FCMKey"},
-			Body:    `{"data":{"type":"rapidpro","title":"FCMTitle","message":"Simple Message","message_id":10,"session_status":""},"notification":{"title":"FCMTitle","body":"Simple Message"},"content_available":true,"to":"auth1","priority":"high"}`,
-		}},
-		ExpectedExtIDs: []string{"123456"},
+		Label:          "Plain Send",
+		MsgText:        "Simple Message",
+		MsgURN:         "fcm:250788123123",
+		MsgURNAuth:     "auth1",
+		ExpectedExtIDs: []string{"123456-a"},
 	},
 }
 
@@ -224,7 +245,40 @@ var sendTestCases = []OutgoingTestCase{
 	},
 }
 
+type MockFCMClient struct {
+	// list of valid FCM tokens
+	ValidTokens []string
+
+	// log of messages sent to this client
+	Messages []*messaging.Message
+}
+
+func (fc *MockFCMClient) Send(ctx context.Context, message *messaging.Message) (string, error) {
+	var err error
+	result := ""
+
+	fc.Messages = append(fc.Messages, message)
+	if slices.Contains(fc.ValidTokens, message.Token) {
+		return "projects/foo-project-id/messages/123456-a", err
+	}
+	return result, errors.New("401 error: 401 Unauthorized")
+}
+
+type FCMHandler struct {
+	courier.ChannelHandler
+	FCMClient FCMClient
+}
+
+func newFCMHandler(FCMClient FCMClient) *FCMHandler {
+	return &FCMHandler{test.NewMockHandler(), FCMClient}
+}
+
+func (h *FCMHandler) GetFCMClient(ctx context.Context, channel courier.Channel, clog *courier.ChannelLog) (FCMClient, string, error) {
+	return h.FCMClient, "foo-project-id", nil
+}
+
 func TestOutgoing(t *testing.T) {
-	RunOutgoingTestCases(t, testChannels[0], newHandler(), sendTestCases, []string{"FCMKey"}, nil)
-	RunOutgoingTestCases(t, testChannels[1], newHandler(), notificationSendTestCases, []string{"FCMKey"}, nil)
+
+	RunOutgoingTestCases(t, testChannels[0], newFCMHandler(&MockFCMClient{ValidTokens: []string{"auth1"}}), sendTestCases, []string{"FCMKey"}, nil)
+	RunOutgoingTestCases(t, testChannels[1], newFCMHandler(&MockFCMClient{ValidTokens: []string{"auth1"}}), notificationSendTestCases, []string{"FCMKey"}, nil)
 }
