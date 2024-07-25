@@ -174,22 +174,17 @@ func (b *backend) Start() error {
 		s3config := &storage.S3Options{
 			AWSAccessKeyID:     b.config.AWSAccessKeyID,
 			AWSSecretAccessKey: b.config.AWSSecretAccessKey,
+			Region:             b.config.AWSRegion,
 			Endpoint:           b.config.S3Endpoint,
-			Region:             b.config.S3Region,
-			DisableSSL:         b.config.S3DisableSSL,
 			ForcePathStyle:     b.config.S3ForcePathStyle,
 			MaxRetries:         3,
-		}
-		if b.config.AWSAccessKeyID != "" && !b.config.AWSUseCredChain {
-			s3config.AWSAccessKeyID = b.config.AWSAccessKeyID
-			s3config.AWSSecretAccessKey = b.config.AWSSecretAccessKey
 		}
 		s3Client, err := storage.NewS3Client(s3config)
 		if err != nil {
 			return err
 		}
-		b.attachmentStorage = storage.NewS3(s3Client, b.config.S3AttachmentsBucket, b.config.S3Region, s3.BucketCannedACLPublicRead, 32)
-		b.logStorage = storage.NewS3(s3Client, b.config.S3LogsBucket, b.config.S3Region, s3.BucketCannedACLPrivate, 32)
+		b.attachmentStorage = storage.NewS3(s3Client, b.config.S3AttachmentsBucket, b.config.AWSRegion, s3.BucketCannedACLPublicRead, 32)
+		b.logStorage = storage.NewS3(s3Client, b.config.S3LogsBucket, b.config.AWSRegion, s3.BucketCannedACLPrivate, 32)
 	} else {
 		b.attachmentStorage = storage.NewFS(storageDir+"/attachments", 0766)
 		b.logStorage = storage.NewFS(storageDir+"/logs", 0766)
@@ -655,7 +650,7 @@ func (b *backend) SaveAttachment(ctx context.Context, ch courier.Channel, conten
 
 	orgID := ch.(*Channel).OrgID()
 
-	path := filepath.Join(b.config.S3AttachmentsPrefix, strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
+	path := filepath.Join("attachments", strconv.FormatInt(int64(orgID), 10), filename[:4], filename[4:8], filename)
 
 	storageURL, err := b.attachmentStorage.Put(ctx, path, contentType, data)
 	if err != nil {
@@ -675,7 +670,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 	mediaUUID := uuidRegex.FindString(u.Path)
 
 	// if hostname isn't our media domain, or path doesn't contain a UUID, don't try to resolve
-	if strings.Replace(u.Hostname(), fmt.Sprintf("%s.", b.config.S3Region), "", -1) != b.config.MediaDomain || mediaUUID == "" {
+	if strings.Replace(u.Hostname(), fmt.Sprintf("%s.", b.config.AWSRegion), "", -1) != b.config.MediaDomain || mediaUUID == "" {
 		return nil, nil
 	}
 
@@ -704,7 +699,7 @@ func (b *backend) ResolveMedia(ctx context.Context, mediaUrl string) (courier.Me
 	}
 
 	// if we found a media record but it doesn't match the URL, don't use it
-	if media == nil || (media.URL() != mediaUrl && media.URL() != strings.Replace(mediaUrl, fmt.Sprintf("%s.", b.config.S3Region), "", -1)) {
+	if media == nil || (media.URL() != mediaUrl && media.URL() != strings.Replace(mediaUrl, fmt.Sprintf("%s.", b.config.AWSRegion), "", -1)) {
 		return nil, nil
 	}
 
