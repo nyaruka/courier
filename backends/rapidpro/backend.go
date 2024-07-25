@@ -45,9 +45,6 @@ const sentSetName = "msgs_sent_%s"
 // our timeout for backend operations
 const backendTimeout = time.Second * 20
 
-// storage directory (only used with file system storage)
-var storageDir = "_storage"
-
 var uuidRegex = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 
 func init() {
@@ -169,31 +166,25 @@ func (b *backend) Start() error {
 		queue.StartDethrottler(b.redisPool, b.stopChan, b.waitGroup, msgQueueName)
 	}
 
-	// create our storage (S3 or file system)
-	if b.config.AWSAccessKeyID != "" || b.config.AWSUseCredChain {
-		s3config := &storage.S3Options{
-			AWSAccessKeyID:     b.config.AWSAccessKeyID,
-			AWSSecretAccessKey: b.config.AWSSecretAccessKey,
-			Region:             b.config.AWSRegion,
-			Endpoint:           b.config.S3Endpoint,
-			ForcePathStyle:     b.config.S3ForcePathStyle,
-			MaxRetries:         3,
-		}
-		s3Client, err := storage.NewS3Client(s3config)
-		if err != nil {
-			return err
-		}
-		b.attachmentStorage = storage.NewS3(s3Client, b.config.S3AttachmentsBucket, b.config.AWSRegion, s3.BucketCannedACLPublicRead, 32)
-		b.logStorage = storage.NewS3(s3Client, b.config.S3LogsBucket, b.config.AWSRegion, s3.BucketCannedACLPrivate, 32)
-	} else {
-		b.attachmentStorage = storage.NewFS(storageDir+"/attachments", 0766)
-		b.logStorage = storage.NewFS(storageDir+"/logs", 0766)
+	s3config := &storage.S3Options{
+		AWSAccessKeyID:     b.config.AWSAccessKeyID,
+		AWSSecretAccessKey: b.config.AWSSecretAccessKey,
+		Region:             b.config.AWSRegion,
+		Endpoint:           b.config.S3Endpoint,
+		ForcePathStyle:     b.config.S3ForcePathStyle,
+		MaxRetries:         3,
 	}
+	s3Client, err := storage.NewS3Client(s3config)
+	if err != nil {
+		return err
+	}
+	b.attachmentStorage = storage.NewS3(s3Client, b.config.S3AttachmentsBucket, b.config.AWSRegion, s3.BucketCannedACLPublicRead, 32)
+	b.logStorage = storage.NewS3(s3Client, b.config.S3LogsBucket, b.config.AWSRegion, s3.BucketCannedACLPrivate, 32)
 
 	// create and start channel caches...
-	b.channelsByUUID = cache.NewLocal[courier.ChannelUUID, *Channel](b.loadChannelByUUID, time.Minute)
+	b.channelsByUUID = cache.NewLocal(b.loadChannelByUUID, time.Minute)
 	b.channelsByUUID.Start()
-	b.channelsByAddr = cache.NewLocal[courier.ChannelAddress, *Channel](b.loadChannelByAddress, time.Minute)
+	b.channelsByAddr = cache.NewLocal(b.loadChannelByAddress, time.Minute)
 	b.channelsByAddr.Start()
 
 	// check our storages

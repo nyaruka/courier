@@ -21,7 +21,16 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-
+      minio:
+        image: bitnami/minio:latest
+        env:
+          MINIO_ROOT_USER: root
+          MINIO_ROOT_PASSWORD: tembatemba
+          MINIO_DEFAULT_BUCKETS: temba-attachments,temba-logs
+        ports:
+          - 9000:9000     
+        options: --health-cmd "mc ready local" --health-interval 10s --health-timeout 5s --health-retries 5
+  
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
