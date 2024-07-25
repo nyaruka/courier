@@ -1,3 +1,8 @@
+v9.3.0 (2024-07-25)
+-------------------------
+ * Support minio for local dev enviroment and CI
+ * Update AWS/S3 configs
+
 v9.2.1 (2024-07-23)
 -------------------------
  * Fix unnecessarily writing send channel logs to the database
